@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>平滑移动迷宫挑战 - Kruskal 算法与渐变尾迹</title>
+    <style>
+        :root {
+            --cell-size: 30px;
+            --wall-color: #2c3e50; /* 深灰墙壁 */
+            --path-color: #ecf0f1; /* 浅灰路径 */
+            --player-color: #e74c3c; /* 鲜红小球 */
+            --goal-color: #2ecc71;  /* 鲜绿终点 */
+            --trace-color: rgba(231, 76, 60, 0.6); /* 尾迹颜色（带透明度） */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: gray; /* 网页背景设置为灰色 */
+            color: #ecf0f1;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .game-content {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .rating-sidebar {
+            width: 200px;
+        }
+
+        .rating-sidebar h3 {
+            margin-top: 0;
+            color: #ecf0f1;
+            font-size: 1.2em;
+        }
+
+        #rating-standards {
+            background: rgba(44, 62, 80, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        #rating-standards p {
+            margin: 8px 0;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+
+
+        .controls {
+            position: relative;
+            margin-bottom: 20px;
+            background: #2c3e50; /* 控件背景与墙壁同色 */
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #7f8c8d;
+        }
+
+        #maze-container {
+            position: relative;
+            border: 4px solid var(--wall-color);
+            overflow: hidden;
+        }
+
+        .cell {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: var(--wall-color);
+            box-sizing: border-box;
+        }
+
+        .path { background-color: var(--path-color); }
+
+        /* 小球样式 */
+        #player {
+            position: absolute;
+            width: calc(var(--cell-size) * 0.7);
+            height: calc(var(--cell-size) * 0.7);
+            background-color: var(--player-color);
+            border-radius: 50%;
+            z-index: 10;
+            transition: all 0.1s linear; /* 缩短过渡时间，提升流畅感 */
+            transform: translate(21.5%, 21.5%);
+        }
+
+        /* 移动尾迹样式 */
+        .move-trace {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--trace-color);
+            border-radius: 50%;
+            opacity: 0.6; /* 初始不透明度 */
+            z-index: 5;
+            animation: fadeOutTrace 0.8s forwards; /* 尾迹消失动画 */
+        }
+
+        /* 路径高亮样式 */
+        .path-highlight {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: rgba(46, 204, 113, 0.5); /* 绿色高亮 */
+            z-index: 4;
+        }
+
+        /* 尾迹消失动画 */
+        @keyframes fadeOutTrace {
+            0% { opacity: 0.6; }
+            100% { opacity: 0; }
+        }
+
+        /* 终点样式 */
+        #goal {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: var(--goal-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            z-index: 5;
+        }
+
+        .stats {
+            margin-top: 15px;
+            display: flex;
+            gap: 20px;
+            font-size: 1.1em;
+            color: white;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* 按钮点击动画 */
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: transform 0.1s, box-shadow 0.1s; /* 增加过渡 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            outline: none;
+        }
+
+        button:hover { background: #2980b9; }
+
+        button:active {
+            transform: scale(0.95); /* 按钮点击时缩小 */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* 减小阴影，模拟按下效果 */
+        }
+
+        /* 通关界面样式 */
+        .win-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .win-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .win-content h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .win-stats p {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #34495e;
+        }
+
+        .win-screen button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        /* 作弊按钮组（展开时横向排列，位于菜单右侧 3×2） */
+        .cheat-buttons {
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            transform: translate(10px, -50%);
+            display: grid;
+            grid-template-columns: repeat(3, max-content);
+            grid-auto-rows: max-content;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(44, 62, 80, 0.98);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .cheat-buttons.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .cheat-buttons.open .cheat-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cheat-btn {
+            padding: 6px 10px;
+            font-size: 13px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.14s ease, background 0.14s ease, opacity 0.14s ease;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .cheat-btn:not(.cheat-enabled) {
+            background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #ff69b4);
+            background-size: 400% 400%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: rainbow 3s ease-in-out infinite;
+            opacity: 0.85;
+        }
+
+        /* 炫彩动画 */
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .cheat-buttons.open .cheat-btn:nth-child(1) { transition-delay: 0s; }
+        .cheat-buttons.open .cheat-btn:nth-child(2) { transition-delay: 0.04s; }
+        .cheat-buttons.open .cheat-btn:nth-child(3) { transition-delay: 0.08s; }
+        .cheat-buttons.open .cheat-btn:nth-child(4) { transition-delay: 0.12s; }
+        .cheat-buttons.open .cheat-btn:nth-child(5) { transition-delay: 0.16s; }
+        .cheat-buttons.open .cheat-btn:nth-child(6) { transition-delay: 0.20s; }
+
+        .cheat-btn {
+            padding: 6px 10px;
+            font-size: 13px;
+            background: rgba(236, 240, 241, 0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px;
+            color: #ecf0f1;
+            cursor: pointer;
+            transition: transform 0.14s ease, background 0.14s ease;
+            white-space: nowrap;
+        }
+
+        .cheat-btn:hover {
+            transform: translateX(2px);
+        }
+
+        .cheat-btn.cheat-enabled {
+            background: rgba(241, 196, 15, 0.8);
+            color: #2c3e50;
+            font-weight: 700;
+        }
+
+        .cheat-btn:not(.cheat-enabled) {
+            opacity: 0.85;
+        }
+
+        /* 键盘形式的移动控制按钮 */
+        .keyboard-controls {
+            background: rgba(44, 62, 80, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #7f8c8d;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .keyboard-controls h3 {
+            color: #ecf0f1;
+            font-size: 1.1em;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .keyboard-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(145deg, #34495e, #2c3e50);
+            color: #ecf0f1;
+            border: 2px solid #5d6d7e;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .keyboard-btn:hover {
+            background: linear-gradient(145deg, #3d566e, #34495e);
+            border-color: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .keyboard-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+        }
+
+        .keyboard-btn.wide {
+            width: 95px;
+        }
+
+        .keyboard-btn.space {
+            width: 145px;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" style="position: absolute; top: 20px; left: 20px; padding: 10px 20px; background-color: #95a5a6; color: white; text-decoration: none; border-radius: 5px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; z-index: 100;">返回</a>
+
+    <h2>🧩 Kruskal 算法 - 渐变尾迹迷宫挑战</h2>
+
+    <div class="controls">
+        难度：
+        <select id="difficulty">
+            <option value="11">简单 (11x11)</option>
+            <option value="21" selected>中等 (21x21)</option>
+            <option value="31">困难 (31x31)</option>
+        </select>
+        <button onclick="initGame()">开始新游戏</button>
+        <button onclick="toggleCheatMenu()" id="cheat-toggle">作弊菜单</button>
+        <button onclick="toggleCustomSizeMenu()" id="custom-size-btn">自定义模式</button>
+
+        <!-- 自定义模式菜单 -->
+        <div id="custom-size-menu" class="cheat-buttons">
+            <button class="cheat-btn" onclick="showCustomSizeDialog()">迷宫大小</button>
+        </div>
+
+        <div id="cheat-buttons" class="cheat-buttons">
+            <button class="cheat-btn" data-feature="showPath">显示完整路径</button>
+            <button class="cheat-btn" data-feature="teleport">瞬移到终点</button>
+            <button class="cheat-btn" data-feature="pauseTimer">暂停计时</button>
+            <button class="cheat-btn" data-feature="autoMove">自动寻路</button>
+            <button class="cheat-btn" data-feature="ghostMode">穿墙模式</button>
+            <button class="cheat-btn" data-feature="hideTrail">隐藏尾迹</button>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div class="game-content">
+            <div class="rating-sidebar">
+                <div id="rating-standards">
+                    <h3>评级标准</h3>
+                    <p>S: ≤ <span id="s-threshold">0</span> 步</p>
+                    <p>A: ≤ <span id="a-threshold">0</span> 步</p>
+                    <p>B: ≤ <span id="b-threshold">0</span> 步</p>
+                    <p>C: > <span id="c-threshold">0</span> 步</p>
+                </div>
+
+                <!-- 键盘形式的移动控制按钮 -->
+                <div class="keyboard-controls">
+                    <h3>方向控制</h3>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" onclick="movePlayer(0, -1)">↑</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" onclick="movePlayer(-1, 0)">←</button>
+                        <button class="keyboard-btn" onclick="movePlayer(0, 1)">↓</button>
+                        <button class="keyboard-btn" onclick="movePlayer(1, 0)">→</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="maze-container">
+                <div id="player"></div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div>时间: <span id="timer">0</span>s</div>
+            <div>步数: <span id="steps">0</span></div>
+            <div>最短步数: <span id="min-steps">0</span></div>
+        </div>
+    </div>
+
+    <!-- 通关界面 -->
+    <div id="win-screen" class="win-screen">
+        <div class="win-content">
+            <h2>🎉 恭喜通关！</h2>
+            <div class="win-stats">
+                <p>用时: <span id="win-time">0</span> 秒</p>
+                <p>步数: <span id="win-steps">0</span></p>
+                <p>评分: <span id="win-rating">C</span></p>
+            </div>
+            <button onclick="initGame()">再来一局</button>
+        </div>
+    </div>
+
+    <!-- 自定义模式对话框 -->
+    <div id="custom-size-dialog" class="win-screen">
+        <div class="win-content">
+            <h2>🎮 自定义迷宫大小</h2>
+            <p style="color: #2c3e50; font-weight: bold; margin-bottom: 15px;">请输入迷宫边长（11-61之间的奇数）</p>
+            <input type="number" id="custom-size-input" min="11" max="61" step="1" value="21" style="padding: 8px; font-size: 16px; width: 100px; text-align: center;" oninput="this.value = Math.floor(this.value)">
+            <p id="error-message" style="color: #e74c3c; font-weight: bold; margin-top: 10px; min-height: 20px;"></p>
+            <br>
+            <button onclick="applyCustomSize()">应用</button>
+            <button onclick="closeCustomSizeDialog()" style="background: #e74c3c; margin-left: 10px;">取消</button>
+        </div>
+    </div>
+
+
+    <script>
+        let grid = [];
+        let size = 21;
+        let playerPos = { x: 1, y: 1 };
+        let timerInterval;
+        let isTimerStarted = false;
+        let seconds = 0;
+        let steps = 0;
+        let isGameRunning = false;
+        let playerObj = null; // 用于存储玩家 DOM 对象的引用
+        let minSteps = 0; // 最短步数
+
+        // 作弊相关变量
+        let showPathEnabled = false;
+        let pauseTimerEnabled = false;
+        let autoMoveEnabled = false;
+        let autoMoveInterval;
+        let ghostModeEnabled = false;
+        let hideTrailEnabled = false;
+        let pathCells = []; // 存储路径单元格
+
+        // 墙壁和路径颜色数组
+        const wallColors = [
+            '#2c3e50', // 深灰
+            '#34495e', // 深蓝灰
+            '#8e44ad', // 深紫
+            '#e74c3c', // 深红
+            '#f39c12', // 橙黄
+            '#9b59b6', // 深紫变体
+            '#e67e22', // 橙
+            '#16a085', // 深青
+            '#c0392b', // 深红变体
+            '#2980b9'  // 深蓝
+        ];
+        
+        const pathColors = [
+            '#ecf0f1', // 浅灰
+            '#bdc3c7', // 浅蓝灰
+            '#d5bde0', // 浅紫
+            '#f8c9c3', // 浅红
+            '#fdeaa7', // 浅黄
+            '#d7bde2', // 浅紫变体
+            '#fadbd8', // 浅橙
+            '#a3e4d7', // 浅青
+            '#f5b7b1', // 浅红变体
+            '#a9dfbf'  // 浅绿变体
+        ];
+
+        const container = document.getElementById('maze-container');
+        const timerDoc = document.getElementById('timer');
+        const stepsDoc = document.getElementById('steps');
+
+        function toggleCheatMenu() {
+            const container = document.getElementById('cheat-buttons');
+            const customMenu = document.getElementById('custom-size-menu');
+
+            // 如果自定义菜单是打开的，先关闭它
+            if (customMenu.classList.contains('open')) {
+                customMenu.classList.remove('open');
+            }
+
+            container.classList.toggle('open');
+        }
+
+        function toggleCustomSizeMenu() {
+            const container = document.getElementById('custom-size-menu');
+            const cheatMenu = document.getElementById('cheat-buttons');
+
+            // 如果作弊菜单是打开的，先关闭它
+            if (cheatMenu.classList.contains('open')) {
+                cheatMenu.classList.remove('open');
+            }
+
+            container.classList.toggle('open');
+        }
+
+        function showCustomSizeDialog() {
+            document.getElementById('custom-size-dialog').style.display = 'flex';
+            // 清空错误提示
+            document.getElementById('error-message').textContent = '';
+        }
+
+        function closeCustomSizeDialog() {
+            document.getElementById('custom-size-dialog').style.display = 'none';
+        }
+
+        function applyCustomSize() {
+            const input = document.getElementById('custom-size-input');
+            const errorMessage = document.getElementById('error-message');
+            const customSize = parseInt(input.value);
+
+            // 清空之前的错误提示
+            errorMessage.textContent = '';
+
+            // 验证输入
+            if (isNaN(customSize)) {
+                errorMessage.textContent = '请输入有效的数字！';
+                return;
+            }
+
+            if (customSize < 11 || customSize > 61) {
+                errorMessage.textContent = '边长必须在11到61之间！';
+                return;
+            }
+
+            if (customSize % 2 === 0) {
+                errorMessage.textContent = '边长必须是奇数！';
+                return;
+            }
+
+            // 更新难度选择器的值和显示文本
+            const difficultySelect = document.getElementById('difficulty');
+
+            // 移除所有自定义选项（以"自定义"开头的选项）
+            Array.from(difficultySelect.options).forEach(opt => {
+                if (opt.text.startsWith('自定义')) {
+                    difficultySelect.removeChild(opt);
+                }
+            });
+
+            // 添加新的自定义选项
+            const option = document.createElement('option');
+            option.value = customSize;
+            option.text = `自定义 (${customSize}x${customSize})`;
+            difficultySelect.appendChild(option);
+
+            // 设置为当前选中项
+            difficultySelect.value = customSize;
+
+            // 关闭自定义模式菜单和对话框，并开始新游戏
+            document.getElementById('custom-size-menu').classList.remove('open');
+            closeCustomSizeDialog();
+            initGame();
+        }
+
+        function updateCheatButton(feature, enabled) {
+            const btn = document.querySelector(`.cheat-btn[data-feature="${feature}"]`);
+            if (!btn) return;
+            btn.classList.toggle('cheat-enabled', enabled);
+            const baseText = {
+                showPath: '显示完整路径',
+                teleport: '瞬移到终点',
+                pauseTimer: '暂停计时',
+                autoMove: '自动寻路',
+                ghostMode: '穿墙模式',
+                hideTrail: '隐藏尾迹',
+            }[feature];
+            if (!baseText) return;
+            if (enabled) {
+                btn.textContent = `${baseText} · ON`;
+            } else {
+                btn.textContent = `${baseText} · OFF`;
+            }
+        }
+
+        // 作弊功能函数
+        function toggleShowPath() {
+            showPathEnabled = !showPathEnabled;
+            updateCheatButton('showPath', showPathEnabled);
+            if (showPathEnabled) {
+                calculatePath();
+                drawPath();
+            } else {
+                clearPath();
+            }
+        }
+
+        function calculatePath() {
+            // 使用 BFS 计算从玩家当前位置到终点的路径
+            const start = { x: playerPos.x, y: playerPos.y };
+            const end = { x: size - 2, y: size - 2 };
+            const queue = [start];
+            const visited = Array(size).fill().map(() => Array(size).fill(false));
+            const parent = Array(size).fill().map(() => Array(size).fill(null));
+            visited[start.y][start.x] = true;
+
+            const directions = [
+                { dx: 0, dy: -1 }, // 上
+                { dx: 1, dy: 0 },  // 右
+                { dx: 0, dy: 1 },  // 下
+                { dx: -1, dy: 0 }  // 左
+            ];
+
+            let found = false;
+            while (queue.length > 0 && !found) {
+                const current = queue.shift();
+                for (const dir of directions) {
+                    const nx = current.x + dir.dx;
+                    const ny = current.y + dir.dy;
+                    if (nx >= 0 && nx < size && ny >= 0 && ny < size && grid[ny][nx] === 1 && !visited[ny][nx]) {
+                        visited[ny][nx] = true;
+                        parent[ny][nx] = current;
+                        queue.push({ x: nx, y: ny });
+                        if (nx === end.x && ny === end.y) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 重建路径
+            pathCells = [];
+            let current = end;
+            while (current) {
+                pathCells.push(current);
+                current = parent[current.y][current.x];
+            }
+            pathCells.reverse();
+        }
+
+        function drawPath() {
+            pathCells.forEach(cell => {
+                if (cell.x !== 1 || cell.y !== 1) { // 不绘制起点
+                    const pathDiv = document.createElement('div');
+                    pathDiv.className = 'path-highlight';
+                    pathDiv.style.left = cell.x * 30 + 'px';
+                    pathDiv.style.top = cell.y * 30 + 'px';
+                    container.appendChild(pathDiv);
+                }
+            });
+        }
+
+        function clearPath() {
+            const highlights = container.querySelectorAll('.path-highlight');
+            highlights.forEach(h => container.removeChild(h));
+            pathCells = [];
+        }
+
+        function teleportToEnd() {
+            if (!isGameRunning) return;
+            // 瞬移是一次行为，不保留 ON/OFF 状态
+            playerPos = { x: size - 2, y: size - 2 };
+            steps++;
+            stepsDoc.innerText = steps;
+            updatePlayerPosition();
+            // 触发胜利
+            if (playerPos.x === size - 2 && playerPos.y === size - 2) {
+                win();
+            }
+        }
+
+        function togglePauseTimer() {
+            pauseTimerEnabled = !pauseTimerEnabled;
+            updateCheatButton('pauseTimer', pauseTimerEnabled);
+            if (pauseTimerEnabled) {
+                clearInterval(timerInterval);
+            } else if (isTimerStarted) {
+                startTimer();
+            }
+        }
+
+        function toggleAutoMove() {
+            autoMoveEnabled = !autoMoveEnabled;
+            updateCheatButton('autoMove', autoMoveEnabled);
+            if (autoMoveEnabled) {
+                startAutoMove();
+            } else {
+                clearInterval(autoMoveInterval);
+            }
+        }
+
+        function startAutoMove() {
+            // 初始计算路径
+            calculatePath();
+
+            autoMoveInterval = setInterval(() => {
+                // 每次移动前重新计算路径，确保从当前位置出发
+                calculatePath();
+
+                if (pathCells.length > 1) {
+                    const nextCell = pathCells[1]; // pathCells[0]是当前位置
+                    const dx = nextCell.x - playerPos.x;
+                    const dy = nextCell.y - playerPos.y;
+                    if (dx !== 0 || dy !== 0) {
+                        movePlayer(dx > 0 ? 1 : dx < 0 ? -1 : 0, dy > 0 ? 1 : dy < 0 ? -1 : 0);
+                    }
+                } else {
+                    // 已经到达终点或无法找到路径
+                    clearInterval(autoMoveInterval);
+                    autoMoveEnabled = false;
+                    if (document.getElementById('auto-move')) {
+                        document.getElementById('auto-move').checked = false;
+                    }
+                }
+            }, 200); // 每200ms移动一步
+        }
+
+        function toggleGhostMode() {
+            ghostModeEnabled = !ghostModeEnabled;
+            updateCheatButton('ghostMode', ghostModeEnabled);
+        }
+
+        function toggleHideTrail() {
+            hideTrailEnabled = !hideTrailEnabled;
+            updateCheatButton('hideTrail', hideTrailEnabled);
+        }
+
+        function initGame() {
+            size = parseInt(document.getElementById('difficulty').value);
+            
+            // 随机选择墙壁和路径颜色
+            const wallColor = wallColors[Math.floor(Math.random() * wallColors.length)];
+            const pathColor = pathColors[Math.floor(Math.random() * pathColors.length)];
+            document.documentElement.style.setProperty('--wall-color', wallColor);
+            document.documentElement.style.setProperty('--path-color', pathColor);
+            
+            grid = Array(size).fill().map(() => Array(size).fill(0)); // 0: 墙, 1: 路
+
+            // 重置状态
+            clearInterval(timerInterval);
+            seconds = 0;
+            steps = 0;
+            isTimerStarted = false; // 初始设置为未开始
+            timerDoc.innerText = '0';
+            stepsDoc.innerText = '0';
+            isGameRunning = true;
+            
+            // 重置作弊状态
+            showPathEnabled = false;
+            pauseTimerEnabled = false;
+            autoMoveEnabled = false;
+            clearInterval(autoMoveInterval);
+            ghostModeEnabled = false;
+            hideTrailEnabled = false;
+            clearPath();
+            document.querySelectorAll('.cheat-btn').forEach(btn => {
+                btn.classList.remove('cheat-enabled');
+                const feature = btn.dataset.feature;
+                if (feature) updateCheatButton(feature, false);
+            });
+            
+            // 隐藏通关界面
+            document.getElementById('win-screen').style.display = 'none';
+            // 隐藏作弊按钮
+            document.getElementById('cheat-buttons').classList.remove('open');
+
+            // 重置作弊按钮显示文本
+            updateCheatButton('showPath', false);
+            updateCheatButton('pauseTimer', false);
+            updateCheatButton('autoMove', false);
+            updateCheatButton('ghostMode', false);
+            updateCheatButton('hideTrail', false);
+            
+            // 使用 Kruskal 算法生成迷宫（确保无死角）
+            generateKruskalMaze();
+            drawMaze();
+            
+            // 计算最短路径
+            calculatePath();
+            minSteps = pathCells.length - 1;
+            document.getElementById('min-steps').innerText = minSteps;
+            
+            // 更新评级标准显示
+            document.getElementById('s-threshold').innerText = Math.ceil(minSteps * 1.5);
+            document.getElementById('a-threshold').innerText = Math.ceil(minSteps * 2);
+            document.getElementById('b-threshold').innerText = Math.ceil(minSteps * 3);
+            document.getElementById('c-threshold').innerText = Math.ceil(minSteps * 3);
+            
+            // 初始化玩家
+            playerPos = { x: 1, y: 1 };
+            if (!playerObj) playerObj = document.getElementById('player');
+            updatePlayerPosition();
+            container.style.visibility = "visible";
+        }
+
+        // Kruskal 算法生成无死角迷宫
+        function generateKruskalMaze() {
+            let cellsSet = Array(size * size).fill().map((_, i) => i);
+            function find(i) {
+                while (cellsSet[i] !== i) i = cellsSet[i];
+                return i;
+            }
+            function union(i, j) {
+                cellsSet[find(i)] = find(j);
+            }
+
+            let walls = [];
+            for (let y = 1; y < size - 1; y += 2) {
+                for (let x = 1; x < size - 1; x += 2) {
+                    grid[y][x] = 1; // 标记格子为路
+                    if (x + 2 < size - 1) walls.push({ x: x, y: y, dx: 1, dy: 0 }); // 垂直墙
+                    if (y + 2 < size - 1) walls.push({ x: x, y: y, dx: 0, dy: 1 }); // 水平墙
+                }
+            }
+
+            walls.sort(() => Math.random() - 0.5); // 打乱墙壁顺序
+
+            for (let wall of walls) {
+                let u = wall.y * size + wall.x;
+                let v = (wall.y + wall.dy * 2) * size + (wall.x + wall.dx * 2);
+
+                if (find(u) !== find(v)) {
+                    union(u, v);
+                    grid[wall.y + wall.dy][wall.x + wall.dx] = 1; // 打通墙壁
+                }
+            }
+
+            // 特别确保起点和终点连通（Kruskal 算法的本质优势，无需额外处理即可保证连通）
+            grid[size - 2][size - 2] = 1; // 确保终点是通路
+        }
+
+        function drawMaze() {
+            container.innerHTML = '<div id="player"></div>'; // 重置迷宫（包含玩家）
+            container.style.width = size * 30 + 'px';
+            container.style.height = size * 30 + 'px';
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = grid[y][x] === 1 ? 'cell path' : 'cell';
+                    cell.style.left = x * 30 + 'px';
+                    cell.style.top = y * 30 + 'px';
+                    container.appendChild(cell);
+                }
+            }
+
+            // 放置终点
+            const goal = document.createElement('div');
+            goal.id = 'goal';
+            goal.innerText = '🏁';
+            goal.style.left = (size - 2) * 30 + 'px';
+            goal.style.top = (size - 2) * 30 + 'px';
+            container.appendChild(goal);
+        }
+
+        function updatePlayerPosition() {
+            // 获取最新玩家 DOM 对象
+            playerObj = document.getElementById('player');
+            const prevLeft = playerObj.style.left;
+            const prevTop = playerObj.style.top;
+
+            // 增加移动尾迹
+            if (!hideTrailEnabled && prevLeft && prevTop) {
+                const trace = document.createElement('div');
+                trace.className = 'move-trace';
+                trace.style.left = (parseFloat(prevLeft) + 10) + 'px';
+                trace.style.top = (parseFloat(prevTop) + 10) + 'px';
+                container.appendChild(trace);
+                
+                // 监听动画结束事件，动画结束后移除 DOM 元素
+                trace.addEventListener('animationend', () => {
+                    if (trace.parentNode === container) {
+                        container.removeChild(trace);
+                    }
+                });
+            }
+
+            playerObj.style.left = playerPos.x * 30 + 'px';
+            playerObj.style.top = playerPos.y * 30 + 'px';
+            
+            // 检查是否获胜
+            if (playerPos.x === size - 2 && playerPos.y === size - 2) {
+                win();
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            if (!isGameRunning) return;
+
+            let nx = playerPos.x + dx;
+            let ny = playerPos.y + dy;
+
+            // 不能出界
+            if (nx < 0 || nx >= size || ny < 0 || ny >= size) return;
+
+            if (ghostModeEnabled || (grid[ny] && grid[ny][nx] === 1)) {
+                // 位置真正发生变化时，开始计时
+                if (!isTimerStarted) {
+                    isTimerStarted = true;
+                    startTimer();
+                }
+
+                playerPos.x = nx;
+                playerPos.y = ny;
+                steps++;
+                stepsDoc.innerText = steps;
+                updatePlayerPosition();
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                seconds++;
+                timerDoc.innerText = seconds;
+            }, 1000);
+        }
+
+        function calculateRating(steps) {
+            const sThreshold = minSteps * 1.5;
+            const aThreshold = minSteps * 2;
+            const bThreshold = minSteps * 3;
+            
+            if (steps <= sThreshold) return 'S';
+            if (steps <= aThreshold) return 'A';
+            if (steps <= bThreshold) return 'B';
+            return 'C';
+        }
+
+        function win() {
+            isGameRunning = false;
+            clearInterval(timerInterval);
+            
+            // 显示通关界面
+            document.getElementById('win-time').textContent = seconds;
+            document.getElementById('win-steps').textContent = steps;
+            const rating = calculateRating(steps);
+            document.getElementById('win-rating').textContent = rating;
+            document.getElementById('win-screen').style.display = 'flex';
+            
+            // 隐藏迷宫
+            container.style.visibility = "hidden";
+        }
+
+        // 作弊按钮点击委托（在按钮旁弹出功能）
+        document.addEventListener('click', (event) => {
+            const btn = event.target.closest('.cheat-btn');
+            if (!btn) return;
+            const feature = btn.dataset.feature;
+            switch (feature) {
+                case 'showPath':
+                    toggleShowPath();
+                    break;
+                case 'teleport':
+                    teleportToEnd();
+                    break;
+                case 'pauseTimer':
+                    togglePauseTimer();
+                    break;
+                case 'autoMove':
+                    toggleAutoMove();
+                    break;
+                case 'ghostMode':
+                    toggleGhostMode();
+                    break;
+                case 'hideTrail':
+                    toggleHideTrail();
+                    break;
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': movePlayer(0, -1); break;
+                case 'ArrowDown': movePlayer(0, 1); break;
+                case 'ArrowLeft': movePlayer(-1, 0); break;
+                case 'ArrowRight': movePlayer(1, 0); break;
+            }
+        });
+
+        // 初始化
+        initGame();
+    </script>
+</body>
+</html>
