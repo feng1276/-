@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>星空轮播图</title>
+<style>
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+/* 去除页面默认边距 */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #050505;
+  color: #fff;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+/* 动态星空背景 Canvas */
+#starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+/* 导航栏样式 */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  box-sizing: border-box;
+}
+.navbar .logo {
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.navbar .nav-links {
+  display: flex;
+  gap: 25px;
+}
+.navbar .nav-links a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  padding: 10px 22px;
+  border: 1px solid transparent;
+}
+.navbar .nav-links a:hover {
+  color: #87CEEB;
+  text-shadow: 0 0 10px rgba(135,206,235,0.8);
+  border: 1px solid #87CEEB;
+}
+/* 首页英雄区 */
+.hero {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 20px;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%);
+}
+.hero .title {
+  color: #fff;
+  font-size: 72px;
+  font-weight: bold;
+  letter-spacing: 6px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  pointer-events: none;
+  user-select: none;
+}
+.hero .subtitle {
+  color: #bbb;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+  pointer-events: none;
+  user-select: none;
+  margin-top: 15px;
+  max-width: 600px;
+}
+/* 开始探索按钮 */
+.hero .cta-btn {
+  --c1: #050505;
+  --c2: #0060cc;
+  --size-letter: 26px;
+  margin-top: 35px;
+  padding: 0.6em 1.2em;
+  font-size: var(--size-letter);
+
+  background-color: transparent;
+  border: calc(var(--size-letter) / 6) solid var(--c2);
+  border-radius: 0.2em;
+  cursor: pointer;
+
+  overflow: hidden;
+  position: relative;
+  transition: 300ms cubic-bezier(0.83, 0, 0.17, 1);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.hero .cta-btn > .text {
+  font-weight: 700;
+  color: var(--c2);
+  position: relative;
+  z-index: 1;
+  transition: color 700ms cubic-bezier(0.83, 0, 0.17, 1);
+}
+
+.hero .cta-btn::before {
+  top: 0;
+  left: 0;
+}
+
+.hero .cta-btn::after {
+  top: 100%;
+  left: 100%;
+}
+
+.hero .cta-btn::before,
+.hero .cta-btn::after {
+  content: "";
+  width: 150%;
+  aspect-ratio: 1/1;
+  scale: 0;
+  transition: 1000ms cubic-bezier(0.76, 0, 0.24, 1);
+
+  background-color: var(--c2);
+  border-radius: 50%;
+
+  position: absolute;
+  translate: -50% -50%;
+}
+
+.hero .cta-btn:hover > .text {
+  color: var(--c1);
+}
+
+.hero .cta-btn:hover::before,
+.hero .cta-btn:hover::after {
+  scale: 1;
+}
+
+.hero .cta-btn:active {
+  scale: 0.98;
+  filter: brightness(0.9);
+}
+/* 轮播展示区标题 */
+.gallery-section {
+  padding: 80px 5%;
+}
+.gallery-section .section-title {
+  font-size: 2rem;
+  margin-bottom: 40px;
+  border-left: 4px solid #005daa;
+  padding-left: 15px;
+}
+/* 轮播容器 */
+.banner {
+  width: 100%;
+  max-width: 1000px;
+  height: 500px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* 图片统一尺寸、居中裁切 */
+.banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 1s ease, transform 0.5s ease;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* 当前显示的图片 */
+.banner img.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* 悬停放大效果 */
+.banner:hover img.active {
+  transform: scale(1.08);
+}
+/* 轮播指示器 */
+.banner-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.banner-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.banner-dots .dot.active {
+  background: #005daa;
+  box-shadow: 0 0 8px rgba(0,93,170,0.6);
+}
+/* 深空页面 */
+.deepspace-section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 5%;
+}
+.deepspace-section .deepspace-content {
+  max-width: 800px;
+  text-align: left;
+}
+.deepspace-section .deepspace-title {
+  font-size: 3.2rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #87CEEB;
+  text-shadow: 0 0 20px rgba(135,206,235,0.4);
+  margin-bottom: 40px;
+  text-align: center;
+}
+.deepspace-section .deepspace-text {
+  font-size: 1.5rem;
+  line-height: 2.2;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+/* 关于我们 */
+.about-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100px 5% 60px;
+}
+.about-section .about-title {
+  font-size: 2.8rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #87CEEB;
+  text-shadow: 0 0 20px rgba(135,206,235,0.4);
+  margin-bottom: 15px;
+  text-align: center;
+}
+.about-section .about-subtitle {
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: 2px;
+  margin-bottom: 50px;
+  text-align: center;
+}
+.about-cards {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1100px;
+  margin-bottom: 60px;
+}
+.about-card {
+  flex: 1 1 300px;
+  max-width: 340px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(135,206,235,0.15);
+  border-radius: 16px;
+  padding: 35px 28px;
+  text-align: center;
+  transition: all 0.4s ease;
+  backdrop-filter: blur(6px);
+}
+.about-card:hover {
+  background: rgba(135,206,235,0.08);
+  border-color: rgba(135,206,235,0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 30px rgba(135,206,235,0.12);
+}
+.about-card .card-icon {
+  font-size: 2.8rem;
+  margin-bottom: 18px;
+}
+.about-card .card-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #87CEEB;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+.about-card .card-text {
+  font-size: 1rem;
+  color: #ffffff;
+  line-height: 1.9;
+  letter-spacing: 0.5px;
+}
+.about-mission {
+  max-width: 800px;
+  text-align: center;
+  margin-bottom: 50px;
+}
+.about-mission .mission-title {
+  font-size: 1.6rem;
+  color: #87CEEB;
+  margin-bottom: 18px;
+  letter-spacing: 2px;
+}
+.about-mission .mission-text {
+  font-size: 1.15rem;
+  color: #ffffff;
+  line-height: 2;
+  letter-spacing: 0.5px;
+}
+.about-contact {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+.about-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+.about-contact-item:hover {
+  color: #87CEEB;
+}
+.about-contact-item .contact-icon {
+  font-size: 1.3rem;
+}
+.about-footer {
+  color: #ffffff;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: 20px;
+}
+/* 每日天文图区 */
+.apod-section {
+  padding: 80px 5%;
+}
+.apod-section .section-title {
+  font-size: 2rem;
+  margin-bottom: 40px;
+  border-left: 4px solid #005daa;
+  padding-left: 15px;
+}
+.apod-section .apod-body {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+.apod-section .pic-box {
+  width: 50%;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.apod-section #apodImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.apod-section #apodImg:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+/* 灯箱遮罩 */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.92);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: zoom-out;
+  animation: fadeIn 0.3s ease;
+}
+.lightbox img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(135,206,235,0.3);
+  cursor: default;
+}
+.lightbox .close-tip {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: #aaa;
+  font-size: 16px;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.apod-section .apod-info {
+  flex: 1;
+}
+.apod-section .translate-btn {
+  display: inline-block;
+  padding: 6px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #87CEEB;
+  background: transparent;
+  color: #87CEEB;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+  border-radius: 4px;
+}
+.apod-section .translate-btn:hover {
+  color: #fff;
+  border-color: #fff;
+  background: rgba(135,206,235,0.15);
+  text-shadow: 0 0 8px rgba(135,206,235,0.6);
+}
+.apod-section .translate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.apod-section .apod-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #ffd700;
+}
+.apod-section .apod-date {
+  color: #aaa;
+  margin-bottom: 1rem;
+}
+.apod-section .apod-desc {
+  line-height: 1.8;
+  color: #ddd;
+}
+.apod-section .apod-loading {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 3rem;
+  color: #87CEEB;
+}
+</style>
+<script>
+var _hmt = _hmt || [];
+(function() {
+var hm = document.createElement("script");
+hm.src = "https://hm.baidu.com/hm.js?43572d67ab5bd2cb80169add393b5373";
+var s = document.getElementsByTagName("script")[0]; 
+s.parentNode.insertBefore(hm, s);
+})();
+</script>
+</head>
+<body>
+
+<!-- 星空背景 -->
+<canvas id="starfield"></canvas>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+  <div class="logo">Universe</div>
+  <div class="nav-links">
+    <a href="#home">首页</a>
+    <a href="#gallery">画廊</a>
+    <a href="#galaxy">每日天文图</a>
+    <a href="#deepspace">摘要</a>
+    <a href="#about">关于我们</a>
+  </div>
+</nav>
+
+<!-- 首页英雄区 -->
+<section class="hero" id="home">
+  <div class="title">探索未知</div>
+  <div class="subtitle">从深空摄影到最新的行星际任务，带你领略宇宙的壮丽。</div>
+  <a href="#gallery" class="cta-btn"><span class="text">开始探索</span></a>
+</section>
+
+<!-- 轮播展示区 -->
+<section class="gallery-section" id="gallery">
+  <h2 class="section-title">深空画廊</h2>
+  <div class="banner">
+    <img class="active" src="https://cdn.eso.org/images/screen/eso0934a.jpg">
+    <img src="https://cdn.eso.org/images/screen/eso1031b.jpg">
+    <img src="https://cdn.eso.org/images/screen/airglow_ats_beletsky-CC.jpg">
+    <img src="https://cdn.eso.org/images/screen/potw1912a.jpg">
+    <img src="https://cdn.eso.org/images/screen/paranal-trail.jpg">
+    <img src="https://cdn.eso.org/images/screen/potw2222a.jpg">
+    <img src="https://cdn.eso.org/images/screen/eso1605a.jpg">
+    <img src="https://cdn.eso.org/images/screen/eso1509a.jpg">
+    <img src="https://cdn.eso.org/images/screen/velasnrlasilla.jpg">
+    <img src="https://cdn.eso.org/images/screen/eso0915a.jpg">
+  </div>
+  <div class="banner-dots" id="bannerDots"></div>
+</section>
+
+<!-- 每日天文图 -->
+<section class="apod-section" id="galaxy">
+  <h2 class="section-title">NASA·每日一天文图</h2>
+  <div id="apodContent" class="apod-loading">正在加载天文美图...</div>
+</section>
+
+<!-- 深空 -->
+<section class="deepspace-section" id="deepspace">
+  <div class="deepspace-content">
+    <h2 class="deepspace-title">宇宙是一场无垠的浪漫</h2>
+    <p class="deepspace-text">我们诞生于星尘，在亿万光年的寂静中，孤独而炽烈地燃烧。每一颗恒星都是未读的诗，每一粒行星都是未解的谜。抬头仰望时，你看见的不仅是夜空——是138亿年的史诗，是黑洞的私语，是超新星的余烬，也是人类永不熄灭的追问：我们为何在此？远方可有回音？</p>
+  </div>
+</section>
+
+<!-- 关于我们 -->
+<section class="about-section" id="about">
+  <h2 class="about-title">关于我们</h2>
+  <p class="about-subtitle">仰望星空的人，终将汇聚于此</p>
+
+  <div class="about-cards">
+    <div class="about-card">
+      <div class="card-icon">🔭</div>
+      <div class="card-title">深空探索</div>
+      <div class="card-text">收集自NASA、ESA等机构的深空影像，将宇宙最壮丽的瞬间带到你的眼前。</div>
+    </div>
+    <div class="about-card">
+      <div class="card-icon">🌌</div>
+      <div class="card-title">科普传播</div>
+      <div class="card-text">用通俗易懂的语言解读天文学前沿发现，让每个人都能理解星辰背后的科学故事。</div>
+    </div>
+
+  </div>
+
+  <div class="about-mission">
+    <div class="mission-title">✦ 我的想法 ✦</div>
+    <p class="mission-text">宇宙浩瀚无垠，当我第一次看到它的时候，就被它深深地吸引。至此，我想通过这个平台，向读者分享关于宇宙的奥秘。</p>
+  </div>
+
+  <div class="about-contact">
+    <div class="about-contact-item">
+      <span class="contact-icon">📧</span>
+      <span>contact@universe-explore.com</span>
+    </div>
+    <div class="about-contact-item">
+      <span class="contact-icon">🌐</span>
+      <span>www.universe-explore.com</span>
+    </div>
+    <div class="about-contact-item">
+      <span class="contact-icon">📍</span>
+      <span>地球 · 某处仰望星空的角落</span>
+    </div>
+  </div>
+
+  <div class="about-footer">© 2026 Universe Explore · 仰望星空，脚踏实地</div>
+</section>
+
+<script>
+// 1. 动态星空背景
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let stars = [];
+
+// 初始化星空背景
+
+function initStars() {
+  // 设置canvas尺寸与窗口大小一致
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  stars = [];
+  // 远景星星：小而暗，数量多，移动慢
+  for (let i = 0; i < 300; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 0.8 + 0.2,
+      speed: Math.random() * 0.15,
+      alpha: Math.random() * 0.5 + 0.3
+    });
+  }
+  // 中景星星：中等大小
+  for (let i = 0; i < 100; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 1.2 + 0.5,
+      speed: Math.random() * 0.3,
+      alpha: Math.random() * 0.4 + 0.5
+    });
+  }
+  // 近景星星：大而亮，数量少，移动快
+  for (let i = 0; i < 30; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 1.5 + 0.8,
+      speed: Math.random() * 0.5 + 0.2,
+      alpha: Math.random() * 0.3 + 0.7
+    });
+  }
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "white";
+  stars.forEach(star => {
+    ctx.globalAlpha = star.alpha;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+    ctx.fill();
+    star.y += star.speed;
+    if (star.y > canvas.height) star.y = 0;
+  });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(drawStars);
+}
+
+window.addEventListener('resize', initStars);
+initStars();
+drawStars();
+
+// 2. 轮播图逻辑
+const imgs = document.querySelectorAll('.banner img');
+const dotsContainer = document.getElementById('bannerDots');
+let index = 0;
+
+// 创建指示器
+imgs.forEach((_, i) => {
+  const dot = document.createElement('div');
+  dot.classList.add('dot');
+  if (i === 0) dot.classList.add('active');
+  dot.addEventListener('click', () => {
+    imgs[index].classList.remove('active');
+    dotsContainer.children[index].classList.remove('active');
+    index = i;
+    imgs[index].classList.add('active');
+    dotsContainer.children[index].classList.add('active');
+  });
+  dotsContainer.appendChild(dot);
+});
+
+// 自动轮播 3秒切换一次
+setInterval(() => {
+  imgs[index].classList.remove('active');
+  dotsContainer.children[index].classList.remove('active');
+  index = (index + 1) % imgs.length;
+  imgs[index].classList.add('active');
+  dotsContainer.children[index].classList.add('active');
+}, 3000);
+
+// 3. NASA 每日天文图
+function renderApod(data) {
+  var bodyDiv = document.createElement("div");
+  bodyDiv.className = "apod-body";
+
+  var picBox = document.createElement("div");
+  picBox.className = "pic-box";
+  var img = document.createElement("img");
+  img.id = "apodImg";
+  img.src = data.image_url || data.hdurl || data.url;
+  img.alt = data.title || "";
+  picBox.appendChild(img);
+
+  img.addEventListener("click", function() {
+    var lb = document.createElement("div");
+    lb.className = "lightbox";
+    var lbImg = document.createElement("img");
+    lbImg.src = img.src;
+    lbImg.alt = img.alt;
+    var tip = document.createElement("div");
+    tip.className = "close-tip";
+    tip.textContent = "点击空白处关闭";
+    lb.appendChild(lbImg);
+    lb.appendChild(tip);
+    
+    // 禁止页面滚动
+    document.body.style.overflow = "hidden";
+    
+    lb.addEventListener("click", function(e) {
+      if (e.target !== lbImg) {
+        // 恢复页面滚动
+        document.body.style.overflow = "";
+        lb.remove();
+      }
+    });
+    document.body.appendChild(lb);
+  });
+
+  var infoDiv = document.createElement("div");
+  infoDiv.className = "apod-info";
+
+  var translateBtn = document.createElement("button");
+  translateBtn.className = "translate-btn";
+  translateBtn.textContent = "翻译为中文";
+
+  var titleDiv = document.createElement("div");
+  titleDiv.className = "apod-title";
+  titleDiv.textContent = data.title || "";
+  titleDiv.setAttribute("data-original", data.title || "");
+
+  var dateDiv = document.createElement("div");
+  dateDiv.className = "apod-date";
+  dateDiv.textContent = "日期：" + (data.date || "");
+
+  var descDiv = document.createElement("div");
+  descDiv.className = "apod-desc";
+  descDiv.textContent = data.explanation || data.description || "";
+  descDiv.setAttribute("data-original", data.explanation || data.description || "");
+
+  var creditDiv = document.createElement("div");
+  creditDiv.className = "apod-date";
+  creditDiv.style.marginTop = "1rem";
+  creditDiv.textContent = data.credit ? "来源：" + data.credit : "";
+
+  var isTranslated = false;
+
+  function translateText(text) {
+    var chunkSize = 500;
+    var chunks = [];
+    for (var i = 0; i < text.length; i += chunkSize) {
+      chunks.push(text.substring(i, i + chunkSize));
+    }
+    var promises = chunks.map(function(chunk) {
+      return fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=" + encodeURIComponent(chunk))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          return d[0].map(function(item) { return item[0]; }).join("");
+        });
+    });
+    return Promise.all(promises).then(function(results) { return results.join(""); });
+  }
+
+  translateBtn.addEventListener("click", function() {
+    if (isTranslated) {
+      titleDiv.textContent = titleDiv.getAttribute("data-original");
+      descDiv.textContent = descDiv.getAttribute("data-original");
+      translateBtn.textContent = "翻译为中文";
+      isTranslated = false;
+      return;
+    }
+    translateBtn.disabled = true;
+    translateBtn.textContent = "翻译中...";
+    var titleText = titleDiv.getAttribute("data-original");
+    var descText = descDiv.getAttribute("data-original");
+    Promise.all([
+      translateText(titleText),
+      translateText(descText)
+    ]).then(function(results) {
+      titleDiv.textContent = results[0];
+      descDiv.textContent = results[1];
+      translateBtn.textContent = "查看原文";
+      translateBtn.disabled = false;
+      isTranslated = true;
+    }).catch(function(err) {
+      translateBtn.textContent = "翻译失败，重试";
+      translateBtn.disabled = false;
+      console.error("翻译错误：", err);
+    });
+  });
+
+  infoDiv.appendChild(translateBtn);
+  infoDiv.appendChild(titleDiv);
+  infoDiv.appendChild(dateDiv);
+  infoDiv.appendChild(descDiv);
+  if (data.credit) infoDiv.appendChild(creditDiv);
+
+  bodyDiv.appendChild(picBox);
+  bodyDiv.appendChild(infoDiv);
+
+  var content = document.getElementById("apodContent");
+  content.className = "";
+  content.innerHTML = "";
+  content.appendChild(bodyDiv);
+}
+
+function loadApod() {
+  var NASA_KEY = "ziBWh7e7nFylLbHdUZDIlZCVxVjcfCdf5T24auJl";
+  var apiUrl = "https://api.nasa.gov/planetary/apod?api_key=" + NASA_KEY + "&hd=true";
+  fetch(apiUrl)
+    .then(function(res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      renderApod({
+        image_url: data.hdurl || data.url,
+        title: data.title,
+        date: data.date,
+        explanation: data.explanation,
+        credit: "NASA APOD"
+      });
+    })
+    .catch(function(err) {
+      console.error("接口请求错误：", err);
+      document.getElementById("apodContent").textContent = "加载失败，请稍后再试";
+    });
+}
+loadApod();
+</script>
+
+</body>
+</html>
