@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天体档案库</title>
+    <script>
+var _hmt = _hmt || [];
+(function() {
+var hm = document.createElement("script");
+hm.src = "https://hm.baidu.com/hm.js?43572d67ab5bd2cb80169add393b5373";
+var s = document.getElementsByTagName("script")[0]; 
+s.parentNode.insertBefore(hm, s);
+})();
+    </script>
+    <style>
+        /* 去除页面默认边距 */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-color: #050505;
+            color: #fff;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        }
+        /* 动态星空背景 Canvas */
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        /* 导航栏样式 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            box-sizing: border-box;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .navbar .navbar-title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            margin-right: 30px;
+            letter-spacing: 2px;
+        }
+        .navbar .nav-links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .navbar .nav-links a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border: 1px solid transparent;
+        }
+        .navbar .nav-links a:hover {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.8);
+            border: 1px solid #FFD700;
+            background: rgba(255,215,0,0.1);
+        }
+        .navbar .nav-links a.active {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.8);
+            border: 1px solid #FFD700;
+            background: rgba(255,215,0,0.2);
+        }
+        .content {
+            margin-top: 80px;
+            padding: 20px;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            padding: 15px;
+            width: 240px;
+            min-height: 260px;
+            border-radius: 20px;
+            background: #212121;
+            box-shadow: 5px 5px 8px #1b1b1b,
+                       -5px -5px 8px #272727;
+            transition: 0.4s;
+            display: none;
+        }
+        .card.active {
+            display: block;
+        }
+        .page-card.active {
+            display: block;
+            width: 100%;
+            max-width: 1200px;
+            min-height: auto;
+            padding: 30px;
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 30px;
+            counter-reset: card-index;
+        }
+        .item-card {
+            display: flex !important;
+            flex-direction: column;
+            width: auto !important;
+            position: relative;
+            counter-increment: card-index;
+        }
+        .item-card::after {
+            content: counter(card-index);
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #ffffff;
+            font-weight: 400;
+        }
+        .card:hover {
+            translate: 0 -10px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #b2eccf;
+            margin: 15px 0 0 0;
+            text-align: center;
+        }
+        .card-image {
+            min-height: 120px;
+            background-color: #313131;
+            border-radius: 15px;
+            background: #313131;
+            box-shadow: inset 5px 5px 3px #2f2f2f,
+                      inset -5px -5px 3px #333333;
+        }
+        .card-body {
+            margin: 13px 0 0 10px;
+            color: rgb(184, 184, 184);
+            font-size: 15px;
+        }
+        .footer {
+            float: right;
+            margin: 28px 0 0 18px;
+            font-size: 13px;
+            color: #b3b3b3;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+        .modal-image {
+            width: 100%;
+            height: 250px;
+            border-radius: 20px 20px 0 0;
+            object-fit: cover;
+        }
+        .modal-content {
+            padding: 25px 30px;
+        }
+        .modal-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #b2eccf;
+            margin: 0 0 15px 0;
+        }
+        .modal-section {
+            margin-bottom: 16px;
+        }
+        .modal-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #7ec8a4;
+            margin-bottom: 6px;
+        }
+        .modal-section p {
+            font-size: 14px;
+            color: #c8c8c8;
+            line-height: 1.7;
+            margin: 0;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .modal-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            margin-bottom: 16px;
+        }
+        .modal-info-item {
+            font-size: 13px;
+            color: #aaa;
+        }
+        .modal-info-item span {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        .by-name {
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-title">天体档案库</div>
+        <div class="nav-links">
+            <a href="javascript:void(0)" data-card="exoplanet" onclick="showCard('exoplanet')">系外行星</a>
+            <a href="javascript:void(0)" data-card="brown-dwarf" onclick="showCard('brown-dwarf')">褐矮星</a>
+            <a href="javascript:void(0)" data-card="star" onclick="showCard('star')">恒星</a>
+            <a href="javascript:void(0)" data-card="white-dwarf" onclick="showCard('white-dwarf')">白矮星</a>
+            <a href="javascript:void(0)" data-card="neutron-star" onclick="showCard('neutron-star')">中子星</a>
+            <a href="javascript:void(0)" data-card="black-hole" onclick="showCard('black-hole')">黑洞</a>
+            <a href="javascript:void(0)" data-card="quasar" onclick="showCard('quasar')">类星体</a>
+            <a href="javascript:void(0)" data-card="nebula" onclick="showCard('nebula')">星云</a>
+            <a href="javascript:void(0)" data-card="star-cluster" onclick="showCard('star-cluster')">星团</a>
+            <a href="javascript:void(0)" data-card="galaxy" onclick="showCard('galaxy')">星系</a>
+            <a href="javascript:void(0)" data-card="galaxy-cluster" onclick="showCard('galaxy-cluster')">星系团</a>
+            <a href="javascript:void(0)" data-card="supercluster" onclick="showCard('supercluster')">超星系团</a>
+        </div>
+    </nav>
+    
+    <!-- 动态星空背景 -->
+    <canvas id="starfield"></canvas>
+    
+    
+    <!-- 内容区域 -->
+    <div class="content">
+        <!-- 系外行星 -->
+        <div class="card page-card" id="exoplanet">
+            <div class="card-grid">
+                <div class="card item-card" id="exoplanet-1">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-1</p>
+                </div>
+                <div class="card item-card" id="exoplanet-2">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-2</p>
+                </div>
+                <div class="card item-card" id="exoplanet-3">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-3</p>
+                </div>
+                <div class="card item-card" id="exoplanet-4">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-4</p>
+                </div>
+                <div class="card item-card" id="exoplanet-5">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-5</p>
+                </div>
+                <div class="card item-card" id="exoplanet-6">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-6</p>
+                </div>
+                <div class="card item-card" id="exoplanet-7">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-7</p>
+                </div>
+                <div class="card item-card" id="exoplanet-8">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-8</p>
+                </div>
+                <div class="card item-card" id="exoplanet-9">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-9</p>
+                </div>
+                <div class="card item-card" id="exoplanet-10">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-10</p>
+                </div>
+                <div class="card item-card" id="exoplanet-11">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-11</p>
+                </div>
+                <div class="card item-card" id="exoplanet-12">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-12</p>
+                </div>
+                <div class="card item-card" id="exoplanet-13">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-13</p>
+                </div>
+                <div class="card item-card" id="exoplanet-14">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-14</p>
+                </div>
+                <div class="card item-card" id="exoplanet-15">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-15</p>
+                </div>
+                <div class="card item-card" id="exoplanet-16">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-16</p>
+                </div>
+                <div class="card item-card" id="exoplanet-17">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-17</p>
+                </div>
+                <div class="card item-card" id="exoplanet-18">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-18</p>
+                </div>
+                <div class="card item-card" id="exoplanet-19">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-19</p>
+                </div>
+                <div class="card item-card" id="exoplanet-20">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-20</p>
+                </div>
+                <div class="card item-card" id="exoplanet-21">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-21</p>
+                </div>
+                <div class="card item-card" id="exoplanet-22">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-22</p>
+                </div>
+                <div class="card item-card" id="exoplanet-23">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-23</p>
+                </div>
+                <div class="card item-card" id="exoplanet-24">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-24</p>
+                </div>
+                <div class="card item-card" id="exoplanet-25">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-25</p>
+                </div>
+                <div class="card item-card" id="exoplanet-26">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-26</p>
+                </div>
+                <div class="card item-card" id="exoplanet-27">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-27</p>
+                </div>
+                <div class="card item-card" id="exoplanet-28">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-28</p>
+                </div>
+                <div class="card item-card" id="exoplanet-29">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-29</p>
+                </div>
+                <div class="card item-card" id="exoplanet-30">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-30</p>
+                </div>
+                <div class="card item-card" id="exoplanet-31">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-31</p>
+                </div>
+                <div class="card item-card" id="exoplanet-32">
+                    <div class="card-image"></div>
+                    <p class="card-title">系外行星-32</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 褐矮星 -->
+        <div class="card page-card" id="brown-dwarf">
+            <div class="card-grid">
+                <div class="card item-card" id="brown-dwarf-1"><div class="card-image"></div><p class="card-title">褐矮星-1</p></div>
+                <div class="card item-card" id="brown-dwarf-2"><div class="card-image"></div><p class="card-title">褐矮星-2</p></div>
+                <div class="card item-card" id="brown-dwarf-3"><div class="card-image"></div><p class="card-title">褐矮星-3</p></div>
+                <div class="card item-card" id="brown-dwarf-4"><div class="card-image"></div><p class="card-title">褐矮星-4</p></div>
+                <div class="card item-card" id="brown-dwarf-5"><div class="card-image"></div><p class="card-title">褐矮星-5</p></div>
+                <div class="card item-card" id="brown-dwarf-6"><div class="card-image"></div><p class="card-title">褐矮星-6</p></div>
+                <div class="card item-card" id="brown-dwarf-7"><div class="card-image"></div><p class="card-title">褐矮星-7</p></div>
+                <div class="card item-card" id="brown-dwarf-8"><div class="card-image"></div><p class="card-title">褐矮星-8</p></div>
+                <div class="card item-card" id="brown-dwarf-9"><div class="card-image"></div><p class="card-title">褐矮星-9</p></div>
+                <div class="card item-card" id="brown-dwarf-10"><div class="card-image"></div><p class="card-title">褐矮星-10</p></div>
+                <div class="card item-card" id="brown-dwarf-11"><div class="card-image"></div><p class="card-title">褐矮星-11</p></div>
+                <div class="card item-card" id="brown-dwarf-12"><div class="card-image"></div><p class="card-title">褐矮星-12</p></div>
+                <div class="card item-card" id="brown-dwarf-13"><div class="card-image"></div><p class="card-title">褐矮星-13</p></div>
+                <div class="card item-card" id="brown-dwarf-14"><div class="card-image"></div><p class="card-title">褐矮星-14</p></div>
+                <div class="card item-card" id="brown-dwarf-15"><div class="card-image"></div><p class="card-title">褐矮星-15</p></div>
+                <div class="card item-card" id="brown-dwarf-16"><div class="card-image"></div><p class="card-title">褐矮星-16</p></div>
+                <div class="card item-card" id="brown-dwarf-17"><div class="card-image"></div><p class="card-title">褐矮星-17</p></div>
+                <div class="card item-card" id="brown-dwarf-18"><div class="card-image"></div><p class="card-title">褐矮星-18</p></div>
+                <div class="card item-card" id="brown-dwarf-19"><div class="card-image"></div><p class="card-title">褐矮星-19</p></div>
+                <div class="card item-card" id="brown-dwarf-20"><div class="card-image"></div><p class="card-title">褐矮星-20</p></div>
+                <div class="card item-card" id="brown-dwarf-21"><div class="card-image"></div><p class="card-title">褐矮星-21</p></div>
+                <div class="card item-card" id="brown-dwarf-22"><div class="card-image"></div><p class="card-title">褐矮星-22</p></div>
+                <div class="card item-card" id="brown-dwarf-23"><div class="card-image"></div><p class="card-title">褐矮星-23</p></div>
+                <div class="card item-card" id="brown-dwarf-24"><div class="card-image"></div><p class="card-title">褐矮星-24</p></div>
+                <div class="card item-card" id="brown-dwarf-25"><div class="card-image"></div><p class="card-title">褐矮星-25</p></div>
+                <div class="card item-card" id="brown-dwarf-26"><div class="card-image"></div><p class="card-title">褐矮星-26</p></div>
+                <div class="card item-card" id="brown-dwarf-27"><div class="card-image"></div><p class="card-title">褐矮星-27</p></div>
+                <div class="card item-card" id="brown-dwarf-28"><div class="card-image"></div><p class="card-title">褐矮星-28</p></div>
+                <div class="card item-card" id="brown-dwarf-29"><div class="card-image"></div><p class="card-title">褐矮星-29</p></div>
+                <div class="card item-card" id="brown-dwarf-30"><div class="card-image"></div><p class="card-title">褐矮星-30</p></div>
+                <div class="card item-card" id="brown-dwarf-31"><div class="card-image"></div><p class="card-title">褐矮星-31</p></div>
+                <div class="card item-card" id="brown-dwarf-32"><div class="card-image"></div><p class="card-title">褐矮星-32</p></div>
+            </div>
+        </div>
+
+        <!-- 恒星 -->
+        <div class="card page-card" id="star">
+            <div class="card-grid">
+                <div class="card item-card" id="star-1"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/9/95/New_shot_of_Proxima_Centauri%2C_our_nearest_neighbour.jpg);background-size:cover;background-position:center;"></div><p class="card-title">比邻星</p><p class="card-body">距太阳系最近的恒星，约4.24光年，属于半人马座α三合星系统。</p></div>
+                <div class="card item-card" id="star-2"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/1/18/Barnardstar2006.jpg);background-size:cover;background-position:center;"></div><p class="card-title">巴纳德星</p><p class="card-body">距太阳第二近的恒星，约5.96光年，自行速度最快的恒星。</p></div>
+                <div class="card item-card" id="star-3"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Position_Alpha_Cen.png/500px-Position_Alpha_Cen.png);background-size:cover;background-position:center;"></div><p class="card-title">南门二</p><p class="card-body">半人马座α星，三合星系统，距太阳4.37光年，夜空第三亮恒星。</p></div>
+                <div class="card item-card" id="star-4"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Celestia_Sirius.jpg/500px-Celestia_Sirius.jpg);background-size:cover;background-position:center;"></div><p class="card-title">天狼星</p><p class="card-body">夜空最亮恒星，距太阳8.6光年，大犬座α星，双星系统。</p></div>
+                <div class="card item-card" id="star-5"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Canopus.jpg/500px-Canopus.jpg);background-size:cover;background-position:center;"></div><p class="card-title">老人星</p><p class="card-body">夜空第二亮恒星，船底座α星，距太阳约310光年，F型超巨星。</p></div>
+                <div class="card item-card" id="star-6"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Redgiants.svg/500px-Redgiants.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">大角星</p><p class="card-body">牧夫座α星，北天最亮恒星，红巨星，距太阳约36.7光年。</p></div>
+                <div class="card item-card" id="star-7"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Size_Comparison_of_St2-18%2C_VY_CMa_and_UY_Sct.jpg/500px-Size_Comparison_of_St2-18%2C_VY_CMa_and_UY_Sct.jpg);background-size:cover;background-position:center;"></div><p class="card-title">史蒂文森2-18</p><p class="card-body">已知最大恒星之一，红超巨星，半径约太阳2150倍。</p></div>
+                <div class="card item-card" id="star-8"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Auriga_constellation_map.svg/960px-Auriga_constellation_map.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">五车二</p><p class="card-body">御夫座α星，四合星系统，距太阳约42.9光年，夜空第六亮恒星。</p></div>
+                <div class="card item-card" id="star-9"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Rigel_SOL.jpg/960px-Rigel_SOL.jpg);background-size:cover;background-position:center;"></div><p class="card-title">参宿七</p><p class="card-body">猎户座β星，蓝超巨星，距太阳约860光年，夜空第七亮恒星。</p></div>
+                <div class="card item-card" id="star-10"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/b/b4/Position_Alpha_Cmi.png);background-size:cover;background-position:center;"></div><p class="card-title">南河三</p><p class="card-body">小犬座α星，双星系统，距太阳约11.46光年，夜空第八亮恒星。</p></div>
+                <div class="card item-card" id="star-11"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/8/88/Position_Alpha_Ori.png);background-size:cover;background-position:center;"></div><p class="card-title">参宿四</p><p class="card-body">猎户座α星，红超巨星，距太阳约700光年，即将超新星爆发。</p></div>
+                <div class="card item-card" id="star-12"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Achernar.jpg/500px-Achernar.jpg);background-size:cover;background-position:center;"></div><p class="card-title">水委一</p><p class="card-body">波江座α星，蓝白主序星，距太阳约139光年，自转极快呈扁球形。</p></div>
+                <div class="card item-card" id="star-13"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Alpha%2C_Beta_and_Proxima_Centauri_%281%29.jpg/500px-Alpha%2C_Beta_and_Proxima_Centauri_%281%29.jpg);background-size:cover;background-position:center;"></div><p class="card-title">马腹一</p><p class="card-body">半人马座β星，蓝巨星，距太阳约390光年，与南门二构成指针星。</p></div>
+                <div class="card item-card" id="star-14"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/UY_Scuti_zoomed_in%2C_DSS2_survey%2C_2003.png/960px-UY_Scuti_zoomed_in%2C_DSS2_survey%2C_2003.png);background-size:cover;background-position:center;"></div><p class="card-title">盾牌座UY</p><p class="card-body">红超巨星，曾被认为是已知最大恒星，距太阳约9500光年。</p></div>
+                <div class="card item-card" id="star-15"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/0/0b/Acrux_kstars.png);background-size:cover;background-position:center;"></div><p class="card-title">十字架二</p><p class="card-body">南十字座α星，多重星系统，距太阳约320光年，南天著名导航星。</p></div>
+                <div class="card item-card" id="star-16"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Iades_and_Pleiades_%2832446251210%29.jpg/500px-Iades_and_Pleiades_%2832446251210%29.jpg);background-size:cover;background-position:center;"></div><p class="card-title">毕宿五</p><p class="card-body">金牛座α星，橙巨星，距太阳约65光年，夜空第14亮恒星。</p></div>
+                <div class="card item-card" id="star-17"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Virgo_constellation_map.svg/960px-Virgo_constellation_map.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">角宿一</p><p class="card-body">室女座α星，蓝巨星双星系统，距太阳约250光年，夜空第16亮恒星。</p></div>
+                <div class="card item-card" id="star-18"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/VLTI_reconstructed_view_of_the_surface_of_Antares.jpg/500px-VLTI_reconstructed_view_of_the_surface_of_Antares.jpg);background-size:cover;background-position:center;"></div><p class="card-title">心宿二</p><p class="card-body">天蝎座α星，红超巨星，距太阳约550光年，与参宿四遥相对应。</p></div>
+                <div class="card item-card" id="star-19"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Gemini_constellation_map.svg/500px-Gemini_constellation_map.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">北河三</p><p class="card-body">双子座β星，橙巨星，距太阳约33.8光年，已确认拥有行星。</p></div>
+                <div class="card item-card" id="star-20"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Wide-field_view_of_the_sky_around_the_bright_star_Fomalhaut_%28eso1216c%29.jpg/500px-Wide-field_view_of_the_sky_around_the_bright_star_Fomalhaut_%28eso1216c%29.jpg);background-size:cover;background-position:center;"></div><p class="card-title">北落师门</p><p class="card-body">南鱼座α星，白主序星，距太阳约25光年，拥有著名碎屑盘。</p></div>
+                <div class="card item-card" id="star-21"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Cygnus_constellation_map.png/500px-Cygnus_constellation_map.png);background-size:cover;background-position:center;"></div><p class="card-title">天津四</p><p class="card-body">天鹅座α星，蓝白超巨星，距太阳约2600光年，夏季大三角之一。</p></div>
+                <div class="card item-card" id="star-22"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Precession_N.gif/960px-Precession_N.gif);background-size:cover;background-position:center;"></div><p class="card-title">北极星</p><p class="card-body">小熊座α星，黄白超巨星，距太阳约433光年，当前北天极指示星。</p></div>
+                <div class="card item-card" id="star-23"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Cancer_IAU.svg/500px-Cancer_IAU.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">巨蟹座55</p><p class="card-body">双星系统，距太阳约41光年，拥有多颗行星包括超级地球。</p></div>
+                <div class="card item-card" id="star-24"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Sun_and_VY_Canis_Majoris.svg/500px-Sun_and_VY_Canis_Majoris.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">大犬座VY</p><p class="card-body">红超巨星，距太阳约3900光年，已知最大恒星之一。</p></div>
+                <div class="card item-card" id="star-25"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/61_Vir_as_seen_with_a_12.5%22_telescope_with_a_field_of_view_of_45.1_arcminutes.jpg/500px-61_Vir_as_seen_with_a_12.5%22_telescope_with_a_field_of_view_of_45.1_arcminutes.jpg);background-size:cover;background-position:center;"></div><p class="card-title">天门增四</p><p class="card-body">室女座61，类太阳恒星，距太阳约27.9光年，拥有行星系统。</p></div>
+                <div class="card item-card" id="star-26"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Cepheus_constellation_map.png/500px-Cepheus_constellation_map.png);background-size:cover;background-position:center;"></div><p class="card-title">仙王座γ</p><p class="card-body">双星系统，距太阳约45光年，拥有一颗木星级行星。</p></div>
+                <div class="card item-card" id="star-27"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/UAnd_planets.png/500px-UAnd_planets.png);background-size:cover;background-position:center;"></div><p class="card-title">仙女座υ</p><p class="card-body">仙女座乌普西隆星，距太阳约44光年，首颗发现多行星的主序星。</p></div>
+                <div class="card item-card" id="star-28"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Pistol_star_and_nebula.jpg/500px-Pistol_star_and_nebula.jpg);background-size:cover;background-position:center;"></div><p class="card-title">手枪星</p><p class="card-body">蓝色超巨星，距地球约25000光年，银河系最亮恒星之一。</p></div>
+                <div class="card item-card" id="star-29"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/2/20/Compare_sun_tau_ceti.png);background-size:cover;background-position:center;"></div><p class="card-title">鲸鱼座τ</p><p class="card-body">类太阳恒星，距太阳约11.9光年，宜居带内可能存在行星。</p></div>
+                <div class="card item-card" id="star-30"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Aries_IAU.svg/500px-Aries_IAU.svg.png);background-size:cover;background-position:center;"></div><p class="card-title">白羊座α</p><p class="card-body">娄宿三，橙巨星，距太阳约66光年，白羊座最亮恒星。</p></div>
+                <div class="card item-card" id="star-31"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Perseus_constellation_map.png/500px-Perseus_constellation_map.png);background-size:cover;background-position:center;"></div><p class="card-title">英仙座α</p><p class="card-body">天船三，黄白超巨星，距太阳约510光年，英仙座最亮恒星。</p></div>
+                <div class="card item-card" id="star-32"><div class="card-image" style="background-image:url(https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/EtaCarinae.jpg/500px-EtaCarinae.jpg);background-size:cover;background-position:center;"></div><p class="card-title">海山二</p><p class="card-body">船底座η星，超大质量恒星，距太阳约7500光年，即将超新星爆发。</p></div>
+            </div>
+        </div>
+
+        <!-- 白矮星 -->
+        <div class="card page-card" id="white-dwarf">
+            <div class="card-grid">
+                <div class="card item-card" id="white-dwarf-1"><div class="card-image"></div><p class="card-title">白矮星-1</p></div>
+                <div class="card item-card" id="white-dwarf-2"><div class="card-image"></div><p class="card-title">白矮星-2</p></div>
+                <div class="card item-card" id="white-dwarf-3"><div class="card-image"></div><p class="card-title">白矮星-3</p></div>
+                <div class="card item-card" id="white-dwarf-4"><div class="card-image"></div><p class="card-title">白矮星-4</p></div>
+                <div class="card item-card" id="white-dwarf-5"><div class="card-image"></div><p class="card-title">白矮星-5</p></div>
+                <div class="card item-card" id="white-dwarf-6"><div class="card-image"></div><p class="card-title">白矮星-6</p></div>
+                <div class="card item-card" id="white-dwarf-7"><div class="card-image"></div><p class="card-title">白矮星-7</p></div>
+                <div class="card item-card" id="white-dwarf-8"><div class="card-image"></div><p class="card-title">白矮星-8</p></div>
+                <div class="card item-card" id="white-dwarf-9"><div class="card-image"></div><p class="card-title">白矮星-9</p></div>
+                <div class="card item-card" id="white-dwarf-10"><div class="card-image"></div><p class="card-title">白矮星-10</p></div>
+                <div class="card item-card" id="white-dwarf-11"><div class="card-image"></div><p class="card-title">白矮星-11</p></div>
+                <div class="card item-card" id="white-dwarf-12"><div class="card-image"></div><p class="card-title">白矮星-12</p></div>
+                <div class="card item-card" id="white-dwarf-13"><div class="card-image"></div><p class="card-title">白矮星-13</p></div>
+                <div class="card item-card" id="white-dwarf-14"><div class="card-image"></div><p class="card-title">白矮星-14</p></div>
+                <div class="card item-card" id="white-dwarf-15"><div class="card-image"></div><p class="card-title">白矮星-15</p></div>
+                <div class="card item-card" id="white-dwarf-16"><div class="card-image"></div><p class="card-title">白矮星-16</p></div>
+                <div class="card item-card" id="white-dwarf-17"><div class="card-image"></div><p class="card-title">白矮星-17</p></div>
+                <div class="card item-card" id="white-dwarf-18"><div class="card-image"></div><p class="card-title">白矮星-18</p></div>
+                <div class="card item-card" id="white-dwarf-19"><div class="card-image"></div><p class="card-title">白矮星-19</p></div>
+                <div class="card item-card" id="white-dwarf-20"><div class="card-image"></div><p class="card-title">白矮星-20</p></div>
+                <div class="card item-card" id="white-dwarf-21"><div class="card-image"></div><p class="card-title">白矮星-21</p></div>
+                <div class="card item-card" id="white-dwarf-22"><div class="card-image"></div><p class="card-title">白矮星-22</p></div>
+                <div class="card item-card" id="white-dwarf-23"><div class="card-image"></div><p class="card-title">白矮星-23</p></div>
+                <div class="card item-card" id="white-dwarf-24"><div class="card-image"></div><p class="card-title">白矮星-24</p></div>
+                <div class="card item-card" id="white-dwarf-25"><div class="card-image"></div><p class="card-title">白矮星-25</p></div>
+                <div class="card item-card" id="white-dwarf-26"><div class="card-image"></div><p class="card-title">白矮星-26</p></div>
+                <div class="card item-card" id="white-dwarf-27"><div class="card-image"></div><p class="card-title">白矮星-27</p></div>
+                <div class="card item-card" id="white-dwarf-28"><div class="card-image"></div><p class="card-title">白矮星-28</p></div>
+                <div class="card item-card" id="white-dwarf-29"><div class="card-image"></div><p class="card-title">白矮星-29</p></div>
+                <div class="card item-card" id="white-dwarf-30"><div class="card-image"></div><p class="card-title">白矮星-30</p></div>
+                <div class="card item-card" id="white-dwarf-31"><div class="card-image"></div><p class="card-title">白矮星-31</p></div>
+                <div class="card item-card" id="white-dwarf-32"><div class="card-image"></div><p class="card-title">白矮星-32</p></div>
+            </div>
+        </div>
+
+        <!-- 中子星 -->
+        <div class="card page-card" id="neutron-star">
+            <div class="card-grid">
+                <div class="card item-card" id="neutron-star-1"><div class="card-image"></div><p class="card-title">中子星-1</p></div>
+                <div class="card item-card" id="neutron-star-2"><div class="card-image"></div><p class="card-title">中子星-2</p></div>
+                <div class="card item-card" id="neutron-star-3"><div class="card-image"></div><p class="card-title">中子星-3</p></div>
+                <div class="card item-card" id="neutron-star-4"><div class="card-image"></div><p class="card-title">中子星-4</p></div>
+                <div class="card item-card" id="neutron-star-5"><div class="card-image"></div><p class="card-title">中子星-5</p></div>
+                <div class="card item-card" id="neutron-star-6"><div class="card-image"></div><p class="card-title">中子星-6</p></div>
+                <div class="card item-card" id="neutron-star-7"><div class="card-image"></div><p class="card-title">中子星-7</p></div>
+                <div class="card item-card" id="neutron-star-8"><div class="card-image"></div><p class="card-title">中子星-8</p></div>
+                <div class="card item-card" id="neutron-star-9"><div class="card-image"></div><p class="card-title">中子星-9</p></div>
+                <div class="card item-card" id="neutron-star-10"><div class="card-image"></div><p class="card-title">中子星-10</p></div>
+                <div class="card item-card" id="neutron-star-11"><div class="card-image"></div><p class="card-title">中子星-11</p></div>
+                <div class="card item-card" id="neutron-star-12"><div class="card-image"></div><p class="card-title">中子星-12</p></div>
+                <div class="card item-card" id="neutron-star-13"><div class="card-image"></div><p class="card-title">中子星-13</p></div>
+                <div class="card item-card" id="neutron-star-14"><div class="card-image"></div><p class="card-title">中子星-14</p></div>
+                <div class="card item-card" id="neutron-star-15"><div class="card-image"></div><p class="card-title">中子星-15</p></div>
+                <div class="card item-card" id="neutron-star-16"><div class="card-image"></div><p class="card-title">中子星-16</p></div>
+                <div class="card item-card" id="neutron-star-17"><div class="card-image"></div><p class="card-title">中子星-17</p></div>
+                <div class="card item-card" id="neutron-star-18"><div class="card-image"></div><p class="card-title">中子星-18</p></div>
+                <div class="card item-card" id="neutron-star-19"><div class="card-image"></div><p class="card-title">中子星-19</p></div>
+                <div class="card item-card" id="neutron-star-20"><div class="card-image"></div><p class="card-title">中子星-20</p></div>
+                <div class="card item-card" id="neutron-star-21"><div class="card-image"></div><p class="card-title">中子星-21</p></div>
+                <div class="card item-card" id="neutron-star-22"><div class="card-image"></div><p class="card-title">中子星-22</p></div>
+                <div class="card item-card" id="neutron-star-23"><div class="card-image"></div><p class="card-title">中子星-23</p></div>
+                <div class="card item-card" id="neutron-star-24"><div class="card-image"></div><p class="card-title">中子星-24</p></div>
+                <div class="card item-card" id="neutron-star-25"><div class="card-image"></div><p class="card-title">中子星-25</p></div>
+                <div class="card item-card" id="neutron-star-26"><div class="card-image"></div><p class="card-title">中子星-26</p></div>
+                <div class="card item-card" id="neutron-star-27"><div class="card-image"></div><p class="card-title">中子星-27</p></div>
+                <div class="card item-card" id="neutron-star-28"><div class="card-image"></div><p class="card-title">中子星-28</p></div>
+                <div class="card item-card" id="neutron-star-29"><div class="card-image"></div><p class="card-title">中子星-29</p></div>
+                <div class="card item-card" id="neutron-star-30"><div class="card-image"></div><p class="card-title">中子星-30</p></div>
+                <div class="card item-card" id="neutron-star-31"><div class="card-image"></div><p class="card-title">中子星-31</p></div>
+                <div class="card item-card" id="neutron-star-32"><div class="card-image"></div><p class="card-title">中子星-32</p></div>
+            </div>
+        </div>
+
+        <!-- 黑洞 -->
+        <div class="card page-card" id="black-hole">
+            <div class="card-grid">
+                <div class="card item-card" id="black-hole-1"><div class="card-image"></div><p class="card-title">黑洞-1</p></div>
+                <div class="card item-card" id="black-hole-2"><div class="card-image"></div><p class="card-title">黑洞-2</p></div>
+                <div class="card item-card" id="black-hole-3"><div class="card-image"></div><p class="card-title">黑洞-3</p></div>
+                <div class="card item-card" id="black-hole-4"><div class="card-image"></div><p class="card-title">黑洞-4</p></div>
+                <div class="card item-card" id="black-hole-5"><div class="card-image"></div><p class="card-title">黑洞-5</p></div>
+                <div class="card item-card" id="black-hole-6"><div class="card-image"></div><p class="card-title">黑洞-6</p></div>
+                <div class="card item-card" id="black-hole-7"><div class="card-image"></div><p class="card-title">黑洞-7</p></div>
+                <div class="card item-card" id="black-hole-8"><div class="card-image"></div><p class="card-title">黑洞-8</p></div>
+                <div class="card item-card" id="black-hole-9"><div class="card-image"></div><p class="card-title">黑洞-9</p></div>
+                <div class="card item-card" id="black-hole-10"><div class="card-image"></div><p class="card-title">黑洞-10</p></div>
+                <div class="card item-card" id="black-hole-11"><div class="card-image"></div><p class="card-title">黑洞-11</p></div>
+                <div class="card item-card" id="black-hole-12"><div class="card-image"></div><p class="card-title">黑洞-12</p></div>
+                <div class="card item-card" id="black-hole-13"><div class="card-image"></div><p class="card-title">黑洞-13</p></div>
+                <div class="card item-card" id="black-hole-14"><div class="card-image"></div><p class="card-title">黑洞-14</p></div>
+                <div class="card item-card" id="black-hole-15"><div class="card-image"></div><p class="card-title">黑洞-15</p></div>
+                <div class="card item-card" id="black-hole-16"><div class="card-image"></div><p class="card-title">黑洞-16</p></div>
+                <div class="card item-card" id="black-hole-17"><div class="card-image"></div><p class="card-title">黑洞-17</p></div>
+                <div class="card item-card" id="black-hole-18"><div class="card-image"></div><p class="card-title">黑洞-18</p></div>
+                <div class="card item-card" id="black-hole-19"><div class="card-image"></div><p class="card-title">黑洞-19</p></div>
+                <div class="card item-card" id="black-hole-20"><div class="card-image"></div><p class="card-title">黑洞-20</p></div>
+                <div class="card item-card" id="black-hole-21"><div class="card-image"></div><p class="card-title">黑洞-21</p></div>
+                <div class="card item-card" id="black-hole-22"><div class="card-image"></div><p class="card-title">黑洞-22</p></div>
+                <div class="card item-card" id="black-hole-23"><div class="card-image"></div><p class="card-title">黑洞-23</p></div>
+                <div class="card item-card" id="black-hole-24"><div class="card-image"></div><p class="card-title">黑洞-24</p></div>
+                <div class="card item-card" id="black-hole-25"><div class="card-image"></div><p class="card-title">黑洞-25</p></div>
+                <div class="card item-card" id="black-hole-26"><div class="card-image"></div><p class="card-title">黑洞-26</p></div>
+                <div class="card item-card" id="black-hole-27"><div class="card-image"></div><p class="card-title">黑洞-27</p></div>
+                <div class="card item-card" id="black-hole-28"><div class="card-image"></div><p class="card-title">黑洞-28</p></div>
+                <div class="card item-card" id="black-hole-29"><div class="card-image"></div><p class="card-title">黑洞-29</p></div>
+                <div class="card item-card" id="black-hole-30"><div class="card-image"></div><p class="card-title">黑洞-30</p></div>
+                <div class="card item-card" id="black-hole-31"><div class="card-image"></div><p class="card-title">黑洞-31</p></div>
+                <div class="card item-card" id="black-hole-32"><div class="card-image"></div><p class="card-title">黑洞-32</p></div>
+            </div>
+        </div>
+
+        <!-- 类星体 -->
+        <div class="card page-card" id="quasar">
+            <div class="card-grid">
+                <div class="card item-card" id="quasar-1"><div class="card-image"></div><p class="card-title">类星体-1</p></div>
+                <div class="card item-card" id="quasar-2"><div class="card-image"></div><p class="card-title">类星体-2</p></div>
+                <div class="card item-card" id="quasar-3"><div class="card-image"></div><p class="card-title">类星体-3</p></div>
+                <div class="card item-card" id="quasar-4"><div class="card-image"></div><p class="card-title">类星体-4</p></div>
+                <div class="card item-card" id="quasar-5"><div class="card-image"></div><p class="card-title">类星体-5</p></div>
+                <div class="card item-card" id="quasar-6"><div class="card-image"></div><p class="card-title">类星体-6</p></div>
+                <div class="card item-card" id="quasar-7"><div class="card-image"></div><p class="card-title">类星体-7</p></div>
+                <div class="card item-card" id="quasar-8"><div class="card-image"></div><p class="card-title">类星体-8</p></div>
+                <div class="card item-card" id="quasar-9"><div class="card-image"></div><p class="card-title">类星体-9</p></div>
+                <div class="card item-card" id="quasar-10"><div class="card-image"></div><p class="card-title">类星体-10</p></div>
+                <div class="card item-card" id="quasar-11"><div class="card-image"></div><p class="card-title">类星体-11</p></div>
+                <div class="card item-card" id="quasar-12"><div class="card-image"></div><p class="card-title">类星体-12</p></div>
+                <div class="card item-card" id="quasar-13"><div class="card-image"></div><p class="card-title">类星体-13</p></div>
+                <div class="card item-card" id="quasar-14"><div class="card-image"></div><p class="card-title">类星体-14</p></div>
+                <div class="card item-card" id="quasar-15"><div class="card-image"></div><p class="card-title">类星体-15</p></div>
+                <div class="card item-card" id="quasar-16"><div class="card-image"></div><p class="card-title">类星体-16</p></div>
+                <div class="card item-card" id="quasar-17"><div class="card-image"></div><p class="card-title">类星体-17</p></div>
+                <div class="card item-card" id="quasar-18"><div class="card-image"></div><p class="card-title">类星体-18</p></div>
+                <div class="card item-card" id="quasar-19"><div class="card-image"></div><p class="card-title">类星体-19</p></div>
+                <div class="card item-card" id="quasar-20"><div class="card-image"></div><p class="card-title">类星体-20</p></div>
+                <div class="card item-card" id="quasar-21"><div class="card-image"></div><p class="card-title">类星体-21</p></div>
+                <div class="card item-card" id="quasar-22"><div class="card-image"></div><p class="card-title">类星体-22</p></div>
+                <div class="card item-card" id="quasar-23"><div class="card-image"></div><p class="card-title">类星体-23</p></div>
+                <div class="card item-card" id="quasar-24"><div class="card-image"></div><p class="card-title">类星体-24</p></div>
+                <div class="card item-card" id="quasar-25"><div class="card-image"></div><p class="card-title">类星体-25</p></div>
+                <div class="card item-card" id="quasar-26"><div class="card-image"></div><p class="card-title">类星体-26</p></div>
+                <div class="card item-card" id="quasar-27"><div class="card-image"></div><p class="card-title">类星体-27</p></div>
+                <div class="card item-card" id="quasar-28"><div class="card-image"></div><p class="card-title">类星体-28</p></div>
+                <div class="card item-card" id="quasar-29"><div class="card-image"></div><p class="card-title">类星体-29</p></div>
+                <div class="card item-card" id="quasar-30"><div class="card-image"></div><p class="card-title">类星体-30</p></div>
+                <div class="card item-card" id="quasar-31"><div class="card-image"></div><p class="card-title">类星体-31</p></div>
+                <div class="card item-card" id="quasar-32"><div class="card-image"></div><p class="card-title">类星体-32</p></div>
+            </div>
+        </div>
+
+        <!-- 星云 -->
+        <div class="card page-card" id="nebula">
+            <div class="card-grid">
+                <div class="card item-card" id="nebula-1"><div class="card-image"></div><p class="card-title">星云-1</p></div>
+                <div class="card item-card" id="nebula-2"><div class="card-image"></div><p class="card-title">星云-2</p></div>
+                <div class="card item-card" id="nebula-3"><div class="card-image"></div><p class="card-title">星云-3</p></div>
+                <div class="card item-card" id="nebula-4"><div class="card-image"></div><p class="card-title">星云-4</p></div>
+                <div class="card item-card" id="nebula-5"><div class="card-image"></div><p class="card-title">星云-5</p></div>
+                <div class="card item-card" id="nebula-6"><div class="card-image"></div><p class="card-title">星云-6</p></div>
+                <div class="card item-card" id="nebula-7"><div class="card-image"></div><p class="card-title">星云-7</p></div>
+                <div class="card item-card" id="nebula-8"><div class="card-image"></div><p class="card-title">星云-8</p></div>
+                <div class="card item-card" id="nebula-9"><div class="card-image"></div><p class="card-title">星云-9</p></div>
+                <div class="card item-card" id="nebula-10"><div class="card-image"></div><p class="card-title">星云-10</p></div>
+                <div class="card item-card" id="nebula-11"><div class="card-image"></div><p class="card-title">星云-11</p></div>
+                <div class="card item-card" id="nebula-12"><div class="card-image"></div><p class="card-title">星云-12</p></div>
+                <div class="card item-card" id="nebula-13"><div class="card-image"></div><p class="card-title">星云-13</p></div>
+                <div class="card item-card" id="nebula-14"><div class="card-image"></div><p class="card-title">星云-14</p></div>
+                <div class="card item-card" id="nebula-15"><div class="card-image"></div><p class="card-title">星云-15</p></div>
+                <div class="card item-card" id="nebula-16"><div class="card-image"></div><p class="card-title">星云-16</p></div>
+                <div class="card item-card" id="nebula-17"><div class="card-image"></div><p class="card-title">星云-17</p></div>
+                <div class="card item-card" id="nebula-18"><div class="card-image"></div><p class="card-title">星云-18</p></div>
+                <div class="card item-card" id="nebula-19"><div class="card-image"></div><p class="card-title">星云-19</p></div>
+                <div class="card item-card" id="nebula-20"><div class="card-image"></div><p class="card-title">星云-20</p></div>
+                <div class="card item-card" id="nebula-21"><div class="card-image"></div><p class="card-title">星云-21</p></div>
+                <div class="card item-card" id="nebula-22"><div class="card-image"></div><p class="card-title">星云-22</p></div>
+                <div class="card item-card" id="nebula-23"><div class="card-image"></div><p class="card-title">星云-23</p></div>
+                <div class="card item-card" id="nebula-24"><div class="card-image"></div><p class="card-title">星云-24</p></div>
+                <div class="card item-card" id="nebula-25"><div class="card-image"></div><p class="card-title">星云-25</p></div>
+                <div class="card item-card" id="nebula-26"><div class="card-image"></div><p class="card-title">星云-26</p></div>
+                <div class="card item-card" id="nebula-27"><div class="card-image"></div><p class="card-title">星云-27</p></div>
+                <div class="card item-card" id="nebula-28"><div class="card-image"></div><p class="card-title">星云-28</p></div>
+                <div class="card item-card" id="nebula-29"><div class="card-image"></div><p class="card-title">星云-29</p></div>
+                <div class="card item-card" id="nebula-30"><div class="card-image"></div><p class="card-title">星云-30</p></div>
+                <div class="card item-card" id="nebula-31"><div class="card-image"></div><p class="card-title">星云-31</p></div>
+                <div class="card item-card" id="nebula-32"><div class="card-image"></div><p class="card-title">星云-32</p></div>
+            </div>
+        </div>
+
+        <!-- 星团 -->
+        <div class="card page-card" id="star-cluster">
+            <div class="card-grid">
+                <div class="card item-card" id="star-cluster-1"><div class="card-image"></div><p class="card-title">星团-1</p></div>
+                <div class="card item-card" id="star-cluster-2"><div class="card-image"></div><p class="card-title">星团-2</p></div>
+                <div class="card item-card" id="star-cluster-3"><div class="card-image"></div><p class="card-title">星团-3</p></div>
+                <div class="card item-card" id="star-cluster-4"><div class="card-image"></div><p class="card-title">星团-4</p></div>
+                <div class="card item-card" id="star-cluster-5"><div class="card-image"></div><p class="card-title">星团-5</p></div>
+                <div class="card item-card" id="star-cluster-6"><div class="card-image"></div><p class="card-title">星团-6</p></div>
+                <div class="card item-card" id="star-cluster-7"><div class="card-image"></div><p class="card-title">星团-7</p></div>
+                <div class="card item-card" id="star-cluster-8"><div class="card-image"></div><p class="card-title">星团-8</p></div>
+                <div class="card item-card" id="star-cluster-9"><div class="card-image"></div><p class="card-title">星团-9</p></div>
+                <div class="card item-card" id="star-cluster-10"><div class="card-image"></div><p class="card-title">星团-10</p></div>
+                <div class="card item-card" id="star-cluster-11"><div class="card-image"></div><p class="card-title">星团-11</p></div>
+                <div class="card item-card" id="star-cluster-12"><div class="card-image"></div><p class="card-title">星团-12</p></div>
+                <div class="card item-card" id="star-cluster-13"><div class="card-image"></div><p class="card-title">星团-13</p></div>
+                <div class="card item-card" id="star-cluster-14"><div class="card-image"></div><p class="card-title">星团-14</p></div>
+                <div class="card item-card" id="star-cluster-15"><div class="card-image"></div><p class="card-title">星团-15</p></div>
+                <div class="card item-card" id="star-cluster-16"><div class="card-image"></div><p class="card-title">星团-16</p></div>
+                <div class="card item-card" id="star-cluster-17"><div class="card-image"></div><p class="card-title">星团-17</p></div>
+                <div class="card item-card" id="star-cluster-18"><div class="card-image"></div><p class="card-title">星团-18</p></div>
+                <div class="card item-card" id="star-cluster-19"><div class="card-image"></div><p class="card-title">星团-19</p></div>
+                <div class="card item-card" id="star-cluster-20"><div class="card-image"></div><p class="card-title">星团-20</p></div>
+                <div class="card item-card" id="star-cluster-21"><div class="card-image"></div><p class="card-title">星团-21</p></div>
+                <div class="card item-card" id="star-cluster-22"><div class="card-image"></div><p class="card-title">星团-22</p></div>
+                <div class="card item-card" id="star-cluster-23"><div class="card-image"></div><p class="card-title">星团-23</p></div>
+                <div class="card item-card" id="star-cluster-24"><div class="card-image"></div><p class="card-title">星团-24</p></div>
+                <div class="card item-card" id="star-cluster-25"><div class="card-image"></div><p class="card-title">星团-25</p></div>
+                <div class="card item-card" id="star-cluster-26"><div class="card-image"></div><p class="card-title">星团-26</p></div>
+                <div class="card item-card" id="star-cluster-27"><div class="card-image"></div><p class="card-title">星团-27</p></div>
+                <div class="card item-card" id="star-cluster-28"><div class="card-image"></div><p class="card-title">星团-28</p></div>
+                <div class="card item-card" id="star-cluster-29"><div class="card-image"></div><p class="card-title">星团-29</p></div>
+                <div class="card item-card" id="star-cluster-30"><div class="card-image"></div><p class="card-title">星团-30</p></div>
+                <div class="card item-card" id="star-cluster-31"><div class="card-image"></div><p class="card-title">星团-31</p></div>
+                <div class="card item-card" id="star-cluster-32"><div class="card-image"></div><p class="card-title">星团-32</p></div>
+            </div>
+        </div>
+
+        <!-- 星系 -->
+        <div class="card page-card" id="galaxy">
+            <div class="card-grid">
+                <div class="card item-card" id="galaxy-1"><div class="card-image"></div><p class="card-title">星系-1</p></div>
+                <div class="card item-card" id="galaxy-2"><div class="card-image"></div><p class="card-title">星系-2</p></div>
+                <div class="card item-card" id="galaxy-3"><div class="card-image"></div><p class="card-title">星系-3</p></div>
+                <div class="card item-card" id="galaxy-4"><div class="card-image"></div><p class="card-title">星系-4</p></div>
+                <div class="card item-card" id="galaxy-5"><div class="card-image"></div><p class="card-title">星系-5</p></div>
+                <div class="card item-card" id="galaxy-6"><div class="card-image"></div><p class="card-title">星系-6</p></div>
+                <div class="card item-card" id="galaxy-7"><div class="card-image"></div><p class="card-title">星系-7</p></div>
+                <div class="card item-card" id="galaxy-8"><div class="card-image"></div><p class="card-title">星系-8</p></div>
+                <div class="card item-card" id="galaxy-9"><div class="card-image"></div><p class="card-title">星系-9</p></div>
+                <div class="card item-card" id="galaxy-10"><div class="card-image"></div><p class="card-title">星系-10</p></div>
+                <div class="card item-card" id="galaxy-11"><div class="card-image"></div><p class="card-title">星系-11</p></div>
+                <div class="card item-card" id="galaxy-12"><div class="card-image"></div><p class="card-title">星系-12</p></div>
+                <div class="card item-card" id="galaxy-13"><div class="card-image"></div><p class="card-title">星系-13</p></div>
+                <div class="card item-card" id="galaxy-14"><div class="card-image"></div><p class="card-title">星系-14</p></div>
+                <div class="card item-card" id="galaxy-15"><div class="card-image"></div><p class="card-title">星系-15</p></div>
+                <div class="card item-card" id="galaxy-16"><div class="card-image"></div><p class="card-title">星系-16</p></div>
+                <div class="card item-card" id="galaxy-17"><div class="card-image"></div><p class="card-title">星系-17</p></div>
+                <div class="card item-card" id="galaxy-18"><div class="card-image"></div><p class="card-title">星系-18</p></div>
+                <div class="card item-card" id="galaxy-19"><div class="card-image"></div><p class="card-title">星系-19</p></div>
+                <div class="card item-card" id="galaxy-20"><div class="card-image"></div><p class="card-title">星系-20</p></div>
+                <div class="card item-card" id="galaxy-21"><div class="card-image"></div><p class="card-title">星系-21</p></div>
+                <div class="card item-card" id="galaxy-22"><div class="card-image"></div><p class="card-title">星系-22</p></div>
+                <div class="card item-card" id="galaxy-23"><div class="card-image"></div><p class="card-title">星系-23</p></div>
+                <div class="card item-card" id="galaxy-24"><div class="card-image"></div><p class="card-title">星系-24</p></div>
+                <div class="card item-card" id="galaxy-25"><div class="card-image"></div><p class="card-title">星系-25</p></div>
+                <div class="card item-card" id="galaxy-26"><div class="card-image"></div><p class="card-title">星系-26</p></div>
+                <div class="card item-card" id="galaxy-27"><div class="card-image"></div><p class="card-title">星系-27</p></div>
+                <div class="card item-card" id="galaxy-28"><div class="card-image"></div><p class="card-title">星系-28</p></div>
+                <div class="card item-card" id="galaxy-29"><div class="card-image"></div><p class="card-title">星系-29</p></div>
+                <div class="card item-card" id="galaxy-30"><div class="card-image"></div><p class="card-title">星系-30</p></div>
+                <div class="card item-card" id="galaxy-31"><div class="card-image"></div><p class="card-title">星系-31</p></div>
+                <div class="card item-card" id="galaxy-32"><div class="card-image"></div><p class="card-title">星系-32</p></div>
+            </div>
+        </div>
+
+        <!-- 星系团 -->
+        <div class="card page-card" id="galaxy-cluster">
+            <div class="card-grid">
+                <div class="card item-card" id="galaxy-cluster-1"><div class="card-image"></div><p class="card-title">星系团-1</p></div>
+                <div class="card item-card" id="galaxy-cluster-2"><div class="card-image"></div><p class="card-title">星系团-2</p></div>
+                <div class="card item-card" id="galaxy-cluster-3"><div class="card-image"></div><p class="card-title">星系团-3</p></div>
+                <div class="card item-card" id="galaxy-cluster-4"><div class="card-image"></div><p class="card-title">星系团-4</p></div>
+                <div class="card item-card" id="galaxy-cluster-5"><div class="card-image"></div><p class="card-title">星系团-5</p></div>
+                <div class="card item-card" id="galaxy-cluster-6"><div class="card-image"></div><p class="card-title">星系团-6</p></div>
+                <div class="card item-card" id="galaxy-cluster-7"><div class="card-image"></div><p class="card-title">星系团-7</p></div>
+                <div class="card item-card" id="galaxy-cluster-8"><div class="card-image"></div><p class="card-title">星系团-8</p></div>
+                <div class="card item-card" id="galaxy-cluster-9"><div class="card-image"></div><p class="card-title">星系团-9</p></div>
+                <div class="card item-card" id="galaxy-cluster-10"><div class="card-image"></div><p class="card-title">星系团-10</p></div>
+                <div class="card item-card" id="galaxy-cluster-11"><div class="card-image"></div><p class="card-title">星系团-11</p></div>
+                <div class="card item-card" id="galaxy-cluster-12"><div class="card-image"></div><p class="card-title">星系团-12</p></div>
+                <div class="card item-card" id="galaxy-cluster-13"><div class="card-image"></div><p class="card-title">星系团-13</p></div>
+                <div class="card item-card" id="galaxy-cluster-14"><div class="card-image"></div><p class="card-title">星系团-14</p></div>
+                <div class="card item-card" id="galaxy-cluster-15"><div class="card-image"></div><p class="card-title">星系团-15</p></div>
+                <div class="card item-card" id="galaxy-cluster-16"><div class="card-image"></div><p class="card-title">星系团-16</p></div>
+                <div class="card item-card" id="galaxy-cluster-17"><div class="card-image"></div><p class="card-title">星系团-17</p></div>
+                <div class="card item-card" id="galaxy-cluster-18"><div class="card-image"></div><p class="card-title">星系团-18</p></div>
+                <div class="card item-card" id="galaxy-cluster-19"><div class="card-image"></div><p class="card-title">星系团-19</p></div>
+                <div class="card item-card" id="galaxy-cluster-20"><div class="card-image"></div><p class="card-title">星系团-20</p></div>
+                <div class="card item-card" id="galaxy-cluster-21"><div class="card-image"></div><p class="card-title">星系团-21</p></div>
+                <div class="card item-card" id="galaxy-cluster-22"><div class="card-image"></div><p class="card-title">星系团-22</p></div>
+                <div class="card item-card" id="galaxy-cluster-23"><div class="card-image"></div><p class="card-title">星系团-23</p></div>
+                <div class="card item-card" id="galaxy-cluster-24"><div class="card-image"></div><p class="card-title">星系团-24</p></div>
+                <div class="card item-card" id="galaxy-cluster-25"><div class="card-image"></div><p class="card-title">星系团-25</p></div>
+                <div class="card item-card" id="galaxy-cluster-26"><div class="card-image"></div><p class="card-title">星系团-26</p></div>
+                <div class="card item-card" id="galaxy-cluster-27"><div class="card-image"></div><p class="card-title">星系团-27</p></div>
+                <div class="card item-card" id="galaxy-cluster-28"><div class="card-image"></div><p class="card-title">星系团-28</p></div>
+                <div class="card item-card" id="galaxy-cluster-29"><div class="card-image"></div><p class="card-title">星系团-29</p></div>
+                <div class="card item-card" id="galaxy-cluster-30"><div class="card-image"></div><p class="card-title">星系团-30</p></div>
+                <div class="card item-card" id="galaxy-cluster-31"><div class="card-image"></div><p class="card-title">星系团-31</p></div>
+                <div class="card item-card" id="galaxy-cluster-32"><div class="card-image"></div><p class="card-title">星系团-32</p></div>
+            </div>
+        </div>
+
+        <!-- 超星系团 -->
+        <div class="card page-card" id="supercluster">
+            <div class="card-grid">
+                <div class="card item-card" id="supercluster-1"><div class="card-image"></div><p class="card-title">超星系团-1</p></div>
+                <div class="card item-card" id="supercluster-2"><div class="card-image"></div><p class="card-title">超星系团-2</p></div>
+                <div class="card item-card" id="supercluster-3"><div class="card-image"></div><p class="card-title">超星系团-3</p></div>
+                <div class="card item-card" id="supercluster-4"><div class="card-image"></div><p class="card-title">超星系团-4</p></div>
+                <div class="card item-card" id="supercluster-5"><div class="card-image"></div><p class="card-title">超星系团-5</p></div>
+                <div class="card item-card" id="supercluster-6"><div class="card-image"></div><p class="card-title">超星系团-6</p></div>
+                <div class="card item-card" id="supercluster-7"><div class="card-image"></div><p class="card-title">超星系团-7</p></div>
+                <div class="card item-card" id="supercluster-8"><div class="card-image"></div><p class="card-title">超星系团-8</p></div>
+                <div class="card item-card" id="supercluster-9"><div class="card-image"></div><p class="card-title">超星系团-9</p></div>
+                <div class="card item-card" id="supercluster-10"><div class="card-image"></div><p class="card-title">超星系团-10</p></div>
+                <div class="card item-card" id="supercluster-11"><div class="card-image"></div><p class="card-title">超星系团-11</p></div>
+                <div class="card item-card" id="supercluster-12"><div class="card-image"></div><p class="card-title">超星系团-12</p></div>
+                <div class="card item-card" id="supercluster-13"><div class="card-image"></div><p class="card-title">超星系团-13</p></div>
+                <div class="card item-card" id="supercluster-14"><div class="card-image"></div><p class="card-title">超星系团-14</p></div>
+                <div class="card item-card" id="supercluster-15"><div class="card-image"></div><p class="card-title">超星系团-15</p></div>
+                <div class="card item-card" id="supercluster-16"><div class="card-image"></div><p class="card-title">超星系团-16</p></div>
+                <div class="card item-card" id="supercluster-17"><div class="card-image"></div><p class="card-title">超星系团-17</p></div>
+                <div class="card item-card" id="supercluster-18"><div class="card-image"></div><p class="card-title">超星系团-18</p></div>
+                <div class="card item-card" id="supercluster-19"><div class="card-image"></div><p class="card-title">超星系团-19</p></div>
+                <div class="card item-card" id="supercluster-20"><div class="card-image"></div><p class="card-title">超星系团-20</p></div>
+                <div class="card item-card" id="supercluster-21"><div class="card-image"></div><p class="card-title">超星系团-21</p></div>
+                <div class="card item-card" id="supercluster-22"><div class="card-image"></div><p class="card-title">超星系团-22</p></div>
+                <div class="card item-card" id="supercluster-23"><div class="card-image"></div><p class="card-title">超星系团-23</p></div>
+                <div class="card item-card" id="supercluster-24"><div class="card-image"></div><p class="card-title">超星系团-24</p></div>
+                <div class="card item-card" id="supercluster-25"><div class="card-image"></div><p class="card-title">超星系团-25</p></div>
+                <div class="card item-card" id="supercluster-26"><div class="card-image"></div><p class="card-title">超星系团-26</p></div>
+                <div class="card item-card" id="supercluster-27"><div class="card-image"></div><p class="card-title">超星系团-27</p></div>
+                <div class="card item-card" id="supercluster-28"><div class="card-image"></div><p class="card-title">超星系团-28</p></div>
+                <div class="card item-card" id="supercluster-29"><div class="card-image"></div><p class="card-title">超星系团-29</p></div>
+                <div class="card item-card" id="supercluster-30"><div class="card-image"></div><p class="card-title">超星系团-30</p></div>
+                <div class="card item-card" id="supercluster-31"><div class="card-image"></div><p class="card-title">超星系团-31</p></div>
+                <div class="card item-card" id="supercluster-32"><div class="card-image"></div><p class="card-title">超星系团-32</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 大角星弹窗 -->
+    <div class="modal-overlay" id="arcturus-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeArcturusModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Redgiants.svg/500px-Redgiants.svg.png" alt="大角星">
+            <div class="modal-content">
+                <h2 class="modal-title">大角星（Arcturus）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>K1.5IIIpe</span></div>
+                    <div class="modal-info-item">距离：<span>36.7 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>-0.05</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-0.30</span></div>
+                    <div class="modal-info-item">质量：<span>1.08 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>25.4 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>4,286 K</span></div>
+                    <div class="modal-info-item">光度：<span>170 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>大角星（Arcturus），即牧夫座α星，是北半球夜空中最亮的恒星，也是全天第四亮恒星（仅次于天狼星、老人星和南门二）。它是一颗红巨星，距离太阳约36.7光年，是离太阳最近的亮巨星之一。大角星的名字来源于希腊语"Arktouros"，意为"熊的守护者"，因为它紧随大熊座（北斗七星）运行。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>大角星是一颗光谱类型为K1.5III的红巨星，质量与太阳相近（约1.08倍），但半径已膨胀至太阳的25.4倍，光度约为太阳的170倍。其表面温度约4,286K，呈现橙红色。大角星已经离开了主序阶段，核心的氢燃料已经耗尽，目前正通过氦聚变产生能量。它可能正处于红巨星分支（RGB）阶段，尚未到达氦闪。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">运动特征</div>
+                    <p>大角星以其独特的运动特征而闻名。它的自行速度较大，且相对于太阳的运动速度约122 km/s，远高于普通盘族恒星。这表明大角星可能属于银河系晕族恒星，而非薄盘种群。它可能来自一个被银河系吞噬的矮星系，是牧夫星流的成员之一。大角星正以约5 km/s的速度接近太阳，约数千年后将成为从地球上看最亮的恒星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">文化与历史</div>
+                    <p>大角星在多个古代文明中都有重要地位。古希腊人将大角星与秋季风暴联系在一起。在波利尼西亚航海传统中，大角星是重要的导航星。1933年芝加哥世博会开幕时，天文学家将大角星的光聚焦到光电管上启动了展览照明，因为1893年上一届世博会时光从大角星出发，恰好40年后到达地球。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 史蒂文森2-18弹窗 -->
+    <div class="modal-overlay" id="stephenson-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeStephensonModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Size_Comparison_of_St2-18%2C_VY_CMa_and_UY_Sct.jpg/500px-Size_Comparison_of_St2-18%2C_VY_CMa_and_UY_Sct.jpg" alt="史蒂文森2-18">
+            <div class="modal-content">
+                <h2 class="modal-title">史蒂文森2-18（Stephenson 2-18）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M6</span></div>
+                    <div class="modal-info-item">距离：<span>~19,000 光年</span></div>
+                    <div class="modal-info-item">半径：<span>~2,150 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~3,200 K</span></div>
+                    <div class="modal-info-item">光度：<span>~440,000 L☉</span></div>
+                    <div class="modal-info-item">星座：<span>盾牌座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>史蒂文森2-18（Stephenson 2-18，简称St2-18）是位于盾牌座的一颗红超巨星，距离太阳约19,000光年。它是已知体积最大的恒星之一，半径约为太阳的2,150倍。如果将其放在太阳的位置，其表面将延伸到土星轨道之外，吞噬水星、金星、地球、火星、木星和土星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>史蒂文森2-18是一颗极端红超巨星，光谱类型为M6，表面温度仅约3,200K，是已知最冷的主序后恒星之一。其光度高达太阳的约44万倍，尽管温度很低，但巨大的表面积使其成为宇宙中最明亮的恒星之一。该恒星位于史蒂文森2（Stephenson 2）疏散星团中，该星团是已知最大的疏散星团之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">大小争议</div>
+                    <p>史蒂文森2-18的大小存在较大争议。2020年的一项研究将其半径估计为2,150倍太阳半径，使其成为已知最大恒星。然而，由于距离遥远（约19,000光年），距离测定存在较大不确定性，其真实大小可能被高估。此外，红超巨星的大气层边界模糊，不同测量方法给出的结果差异较大。一些研究认为其半径可能更接近1,500倍太阳半径。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 五车二弹窗 -->
+    <div class="modal-overlay" id="capella-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeCapellaModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Auriga_constellation_map.svg/960px-Auriga_constellation_map.svg.png" alt="五车二">
+            <div class="modal-content">
+                <h2 class="modal-title">五车二（Capella）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>G8III / G1III</span></div>
+                    <div class="modal-info-item">距离：<span>42.9 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.08</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-0.48</span></div>
+                    <div class="modal-info-item">A星质量：<span>2.57 M☉</span></div>
+                    <div class="modal-info-item">B星质量：<span>2.48 M☉</span></div>
+                    <div class="modal-info-item">A星半径：<span>11.98 R☉</span></div>
+                    <div class="modal-info-item">B星半径：<span>8.83 R☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>五车二（Capella），即御夫座α星，是夜空中第六亮的恒星，视星等0.08。它位于御夫座，距离太阳约42.9光年。五车二实际上是一个四合星系统：由两颗黄巨星（五车二Aa和五车二Ab）组成的密近双星，以及距离较远的一对红矮星（五车二H和五车二L）。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">四合星系统</div>
+                    <p>五车二Aa和Ab是一对密近双星，轨道周期约104天，两颗星都是演化离开主序的巨星。Aa是G8III型巨星，质量约2.57倍太阳；Ab是G1III型巨星，质量约2.48倍太阳。两颗星都在核心氦聚变阶段。距离主双星约1万天文单位处还有一对红矮星五车二H和L，它们彼此轨道周期约300年。整个系统构成了一个壮观的四星世界。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">观测与文化</div>
+                    <p>五车二是北半球冬季夜空中的标志性亮星，与参宿七、参宿四等共同构成冬季星空的壮丽景观。在古罗马，五车二被视为牧羊人的守护星。在中国古代星官体系中，五车二是"五车"星官的主星，与军事和车马有关。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 参宿七弹窗 -->
+    <div class="modal-overlay" id="rigel-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeRigelModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Rigel_SOL.jpg/960px-Rigel_SOL.jpg" alt="参宿七">
+            <div class="modal-content">
+                <h2 class="modal-title">参宿七（Rigel）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>B8Ia</span></div>
+                    <div class="modal-info-item">距离：<span>~860 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.13</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-7.84</span></div>
+                    <div class="modal-info-item">质量：<span>~21 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~78.9 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>12,100 K</span></div>
+                    <div class="modal-info-item">光度：<span>~120,000 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>参宿七（Rigel），即猎户座β星，是猎户座中最亮的恒星，也是夜空中第七亮的恒星，视星等0.13。它位于猎户座的左下角（从北半球观察），是一颗蓝白色超巨星，距离太阳约860光年。参宿七的真实光度约为太阳的12万倍，是银河系中最明亮的恒星之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>参宿七是一颗光谱类型为B8Ia的蓝超巨星，质量约21倍太阳，半径约78.9倍太阳，表面温度约12,100K。其极高的温度和巨大的表面积使其发出耀眼的蓝白色光芒。参宿七的绝对星等为-7.84，意味着如果将它放在10秒差距（32.6光年）的标准距离上，它将比满月还亮。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">恒星系统</div>
+                    <p>参宿七是一个多星系统，主星参宿七A周围至少有三颗较暗的伴星。参宿七B是一颗6.7等的恒星，距离主星约9.5角秒，本身也是一个密近双星系统。参宿七C是一颗7.6等的恒星，距离更远。这些伴星与主星的物理联系尚不完全确定。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">演化与命运</div>
+                    <p>作为一颗大质量恒星，参宿七的寿命很短，估计仅约800万年。它目前正处于超巨星阶段，核心正在燃烧重元素。未来它将以超新星爆发的形式结束生命，届时其亮度可能足以在白天可见，爆发后的残骸将形成中子星或黑洞。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 南河三弹窗 -->
+    <div class="modal-overlay" id="procyon-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeProcyonModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Position_Alpha_Cmi.png" alt="南河三">
+            <div class="modal-content">
+                <h2 class="modal-title">南河三（Procyon）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>F5IV-V / DQZ</span></div>
+                    <div class="modal-info-item">距离：<span>11.46 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.34</span></div>
+                    <div class="modal-info-item">绝对星等：<span>2.66</span></div>
+                    <div class="modal-info-item">A星质量：<span>1.50 M☉</span></div>
+                    <div class="modal-info-item">B星质量：<span>0.60 M☉</span></div>
+                    <div class="modal-info-item">A星温度：<span>6,530 K</span></div>
+                    <div class="modal-info-item">星座：<span>小犬座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>南河三（Procyon），即小犬座α星，是夜空中第八亮的恒星，视星等0.34。它位于小犬座，距离太阳仅11.46光年，是距离太阳最近的恒星之一。南河三是一个双星系统，由一颗亚巨星南河三A和一颗白矮星南河三B组成。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">双星系统</div>
+                    <p>南河三A是一颗光谱类型F5IV-V的亚巨星，质量约1.5倍太阳，正开始离开主序阶段。南河三B是一颗白矮星，质量约0.6倍太阳，光谱类型DQZ，表面温度约7,740K。两星轨道周期约40.8年。南河三B的前身曾是一颗质量更大的恒星，在演化末期抛出外层物质后留下了白矮星残骸。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">冬季大三角</div>
+                    <p>南河三与天狼星、参宿四共同构成著名的"冬季大三角"，是北半球冬季夜空中最显著的星群之一。南河三的名字来源于希腊语"Prokyon"，意为"在犬之前"，因为它比天狼星（大犬座主星）略早升起。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 参宿四弹窗 -->
+    <div class="modal-overlay" id="betelgeuse-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeBetelgeuseModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/8/88/Position_Alpha_Ori.png" alt="参宿四">
+            <div class="modal-content">
+                <h2 class="modal-title">参宿四（Betelgeuse）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M1-2Ia-ab</span></div>
+                    <div class="modal-info-item">距离：<span>~700 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.42（变）</span></div>
+                    <div class="modal-info-item">绝对星等：<span>~-5.85</span></div>
+                    <div class="modal-info-item">质量：<span>~16.5 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~764 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~3,600 K</span></div>
+                    <div class="modal-info-item">光度：<span>~126,000 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>参宿四（Betelgeuse），即猎户座α星，是猎户座中第二亮的恒星，位于猎户座的左上角（从北半球观察），是一颗红超巨星。它距离太阳约700光年，是已知最大的恒星之一，半径约为太阳的764倍。参宿四是中国传统星官"参宿"的第四星，英文名可能来源于阿拉伯语"Yad al-Jauzā"（巨人之手）。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>参宿四是一颗光谱类型M1-2Ia-ab的红超巨星，质量约16.5倍太阳，半径约764倍太阳。如果将它放在太阳位置，其表面将延伸到木星轨道附近。参宿四的表面温度仅约3,600K，但由于巨大的表面积，其光度高达太阳的12.6万倍。参宿四是目前唯一被直接拍摄到表面细节的恒星（除太阳外），VLTI观测显示其表面存在巨大的对流泡和不规则形状。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">变星特征与大变暗</div>
+                    <p>参宿四是一颗半规则变星，亮度在0.0到1.6等之间变化，变化周期约400天，还有更长的2,100天周期。2019年底至2020年初，参宿四经历了历史性的"大变暗"事件，亮度降至1.6等，为数十年来最暗。后续研究表明，这可能是由于南半球表面喷出的大量尘埃和气体冷却形成的星尘遮挡所致，而非即将超新星爆发的信号。2023年参宿四再次出现类似的变暗现象。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">超新星前景</div>
+                    <p>作为一颗晚期演化的红超巨星，参宿四将在未来某一时刻以超新星爆发结束生命。爆发时的亮度可能达到满月的数倍，在白天也清晰可见，持续时间数周至数月。爆发后的残骸将形成中子星。虽然天文学家预计这可能在"任何时候"发生——明天或十万年后——但目前的观测表明参宿四仍处于红超巨星阶段，核心尚未开始铁聚变，短期内爆发可能性不大。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 水委一弹窗 -->
+    <div class="modal-overlay" id="achernar-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAchernarModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Achernar.jpg/500px-Achernar.jpg" alt="水委一">
+            <div class="modal-content">
+                <h2 class="modal-title">水委一（Achernar）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>B6Vep</span></div>
+                    <div class="modal-info-item">距离：<span>139 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.46</span></div>
+                    <div class="modal-info-item">质量：<span>~6.7 M☉</span></div>
+                    <div class="modal-info-item">赤道半径：<span>~12 R☉</span></div>
+                    <div class="modal-info-item">极半径：<span>~7.4 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~15,000 K</span></div>
+                    <div class="modal-info-item">星座：<span>波江座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>水委一（Achernar），即波江座α星，是波江座中最亮的恒星，也是夜空中第九亮的恒星。它位于波江座的最南端，距离太阳约139光年。水委一的名字来源于阿拉伯语"Ākhir an-Nahr"，意为"河流的尽头"，因为它标志着波江座星流的最南端。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">极端扁球形</div>
+                    <p>水委一是已知自转最快的恒星之一，赤道自转速度约250 km/s，接近其解体速度。极高的自转速度使水委一呈现极端的扁球形：赤道半径约为极半径的1.5倍，是已知最扁的恒星之一。这意味着其赤道温度比两极低约1,800K，两极比赤道更亮。这种"引力暗化"效应是快速自转恒星的重要特征。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">双星系统</div>
+                    <p>水委一是一个双星系统，伴星水委一B是一颗质量约2倍太阳的A型主序星，轨道周期约14.5年。伴星的存在可能对主星的快速自转产生影响。水委一B的发现也帮助精确测定了主星的质量。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 马腹一弹窗 -->
+    <div class="modal-overlay" id="hadar-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeHadarModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Alpha%2C_Beta_and_Proxima_Centauri_%281%29.jpg/500px-Alpha%2C_Beta_and_Proxima_Centauri_%281%29.jpg" alt="马腹一">
+            <div class="modal-content">
+                <h2 class="modal-title">马腹一（Hadar）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>B1III</span></div>
+                    <div class="modal-info-item">距离：<span>~390 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.61</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-5.06</span></div>
+                    <div class="modal-info-item">质量：<span>~12.0 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~8.7 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~25,000 K</span></div>
+                    <div class="modal-info-item">星座：<span>半人马座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>马腹一（Hadar），即半人马座β星，是半人马座中第二亮的恒星，也是夜空中第11亮的恒星。它距离太阳约390光年，是一颗蓝巨星。马腹一与南门二（半人马座α星）共同构成著名的"南半球指针"，指向南十字座。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">三合星系统</div>
+                    <p>马腹一实际上是一个三合星系统。主星马腹一Aa是一颗蓝巨星，光谱类型B1III，质量约12倍太阳。马腹一Ab是一颗较暗的伴星，与Aa组成密近双星，轨道周期约357天。马腹一B是一颗6.7等的伴星，距离主星约1.3角秒，是一颗B型主序星。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 盾牌座UY弹窗 -->
+    <div class="modal-overlay" id="uyscuti-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeUYScutiModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/UY_Scuti_zoomed_in%2C_DSS2_survey%2C_2003.png/960px-UY_Scuti_zoomed_in%2C_DSS2_survey%2C_2003.png" alt="盾牌座UY">
+            <div class="modal-content">
+                <h2 class="modal-title">盾牌座UY（UY Scuti）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M4Ia</span></div>
+                    <div class="modal-info-item">距离：<span>~9,500 光年</span></div>
+                    <div class="modal-info-item">半径：<span>~1,708 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~3,365 K</span></div>
+                    <div class="modal-info-item">光度：<span>~340,000 L☉</span></div>
+                    <div class="modal-info-item">星座：<span>盾牌座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>盾牌座UY（UY Scuti）是一颗位于盾牌座的红超巨星，距离太阳约9,500光年。它曾被认为是已知体积最大的恒星，半径约为太阳的1,708倍。如果将其放在太阳位置，其表面将延伸到木星轨道之外。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">大小争议</div>
+                    <p>盾牌座UY的大小存在很大争议。2013年的研究将其半径估计为1,708倍太阳半径，但后续研究基于盖亚卫星的距离数据，认为其距离可能更近，半径可能更接近900-1,000倍太阳半径。红超巨星的大小测量本身就极其困难，因为它们的大气层边界模糊，且存在大规模的对流泡和物质抛射。尽管如此，盾牌座UY仍然是已知最大的恒星之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">变星特征</div>
+                    <p>盾牌座UY是一颗半规则变星，亮度变化周期约740天，还有更长的无规则变化。其变幅约0.5个星等。这种变化与红超巨星内部的对流运动和表面的大规模物质抛射有关。盾牌座UY每年损失大量质量，正在以强烈的恒星风将外层物质抛入太空。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 十字架二弹窗 -->
+    <div class="modal-overlay" id="acrux-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAcruxModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Acrux_kstars.png" alt="十字架二">
+            <div class="modal-content">
+                <h2 class="modal-title">十字架二（Acrux）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>B0.5IV / B1V</span></div>
+                    <div class="modal-info-item">距离：<span>~320 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.76</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-4.19</span></div>
+                    <div class="modal-info-item">星座：<span>南十字座</span></div>
+                    <div class="modal-info-item">赤经：<span>12h 26m 35.9s</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>十字架二（Acrux），即南十字座α星，是南十字座中最亮的恒星，也是夜空中第13亮的恒星。它位于南十字座的底部，是南半球重要的导航星。十字架二的名字Acrux是"α Crucis"的缩写，是少数几个使用缩写命名的亮星之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">多重星系统</div>
+                    <p>十字架二是一个多重星系统，至少包含三颗恒星。α1和α2组成光学双星，肉眼可见。α1本身是一个分光双星，两颗子星都是B型星，轨道周期约76天。α2也是一颗B型主序星。整个系统的总光度约为太阳的25,000倍。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">导航与文化</div>
+                    <p>十字架二是南半球导航的重要标志。将南十字座的长轴延伸约4.5倍，即可找到南天极方向。十字架二出现在多个南半球国家的国旗上，包括澳大利亚、新西兰、巴西和巴布亚新几内亚等。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 毕宿五弹窗 -->
+    <div class="modal-overlay" id="aldebaran-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAldebaranModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Iades_and_Pleiades_%2832446251210%29.jpg/500px-Iades_and_Pleiades_%2832446251210%29.jpg" alt="毕宿五">
+            <div class="modal-content">
+                <h2 class="modal-title">毕宿五（Aldebaran）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>K5III</span></div>
+                    <div class="modal-info-item">距离：<span>65.3 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.85</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-0.63</span></div>
+                    <div class="modal-info-item">质量：<span>~1.16 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~45.1 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>3,910 K</span></div>
+                    <div class="modal-info-item">光度：<span>~518 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>毕宿五（Aldebaran），即金牛座α星，是夜空中第14亮的恒星，视星等0.85。它位于金牛座，是毕星团方向上一颗明亮的橙巨星，距离太阳约65光年。毕宿五的名字来源于阿拉伯语"Al Dabarān"，意为"追随者"，因为它总是跟在昴星团后面升起。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>毕宿五是一颗K5III型橙巨星，质量约1.16倍太阳，半径约45倍太阳，光度约518倍太阳。虽然它看起来位于毕星团中，但实际上毕宿五距离比毕星团近得多，只是恰好投影在同一方向，并非毕星团的成员星。毕宿五已经离开主序，目前可能正处于红巨星分支阶段。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>1993年，天文学家通过径向速度法在毕宿五周围发现了一颗行星候选体——毕宿星b，质量约6.47倍木星，公转周期约629天。然而，2019年的后续研究对这一发现提出了质疑，认为该信号可能源于恒星自身的长周期活动，毕宿星b的存在仍有争议。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 角宿一弹窗 -->
+    <div class="modal-overlay" id="spica-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeSpicaModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Virgo_constellation_map.svg/960px-Virgo_constellation_map.svg.png" alt="角宿一">
+            <div class="modal-content">
+                <h2 class="modal-title">角宿一（Spica）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>B1III-IV / B2V</span></div>
+                    <div class="modal-info-item">距离：<span>~250 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>0.97</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-3.55</span></div>
+                    <div class="modal-info-item">A星质量：<span>~11.4 M☉</span></div>
+                    <div class="modal-info-item">B星质量：<span>~7.7 M☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~22,400 K</span></div>
+                    <div class="modal-info-item">星座：<span>室女座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>角宿一（Spica），即室女座α星，是夜空中第16亮的恒星，视星等0.97。它位于室女座，距离太阳约250光年。角宿一是一个密近双星系统，两颗恒星彼此非常接近，轨道周期仅约4天，相互引力使两星都呈椭圆形。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">密近双星</div>
+                    <p>角宿一A是一颗B1III-IV型蓝巨星，质量约11.4倍太阳；角宿一B是一颗B2V型主序星，质量约7.7倍太阳。两星距离极近，仅约0.12天文单位，相互潮汐锁定，都呈椭球形。这种密近双星系统是研究恒星间相互作用的重要对象。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">文化意义</div>
+                    <p>角宿一在古代文明中有重要地位。古埃及人利用角宿一的偕日升来预测尼罗河洪水。在中国古代二十八宿中，角宿一属于"角宿"，是青龙七宿之首，代表龙的角。古希腊人将角宿一与农业女神得墨忒耳联系在一起。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 心宿二弹窗 -->
+    <div class="modal-overlay" id="antares-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAntaresModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/VLTI_reconstructed_view_of_the_surface_of_Antares.jpg/500px-VLTI_reconstructed_view_of_the_surface_of_Antares.jpg" alt="心宿二">
+            <div class="modal-content">
+                <h2 class="modal-title">心宿二（Antares）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M1.5Iab-Ib</span></div>
+                    <div class="modal-info-item">距离：<span>~550 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.06</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-5.28</span></div>
+                    <div class="modal-info-item">质量：<span>~12 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~680 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~3,660 K</span></div>
+                    <div class="modal-info-item">光度：<span>~75,900 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>心宿二（Antares），即天蝎座α星，是天蝎座中最亮的恒星，位于蝎子的心脏位置，是一颗红超巨星。它距离太阳约550光年，半径约680倍太阳，是夜空中最大的恒星之一。心宿二的名字来源于希腊语"Anti-Ares"（火星的对手），因为其红色外观与火星相似。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>心宿二是一颗M1.5Iab型红超巨星，质量约12倍太阳，半径约680倍太阳。如果放在太阳位置，其表面将延伸到火星轨道和木星轨道之间。心宿二的光度约7.6万倍太阳，是银河系中最明亮的恒星之一。2017年，VLTI成功绘制了心宿二表面的对流泡地图，这是继参宿四之后第二颗被详细绘制表面图的红超巨星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">双星系统</div>
+                    <p>心宿二是一个双星系统，伴星心宿二B是一颗5.5等的蓝白色主序星，光谱类型B2.5V，距离主星约2.9角秒。由于主星的红色光芒，伴星在望远镜中呈现绿色，这种颜色对比非常独特。心宿二B的质量约7.2倍太阳，轨道周期可能超过1,000年。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 北河三弹窗 -->
+    <div class="modal-overlay" id="pollux-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePolluxModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Gemini_constellation_map.svg/500px-Gemini_constellation_map.svg.png" alt="北河三">
+            <div class="modal-content">
+                <h2 class="modal-title">北河三（Pollux）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>K0III</span></div>
+                    <div class="modal-info-item">距离：<span>33.8 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.14</span></div>
+                    <div class="modal-info-item">绝对星等：<span>1.09</span></div>
+                    <div class="modal-info-item">质量：<span>~1.91 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~9.06 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>4,586 K</span></div>
+                    <div class="modal-info-item">星座：<span>双子座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>北河三（Pollux），即双子座β星，是双子座中最亮的恒星，距离太阳约33.8光年。它是一颗橙巨星，与北河二（双子座α星）共同构成"双子"星对。在希腊神话中，北河三和北河二是孪生兄弟卡斯托尔和波吕丢刻斯。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>2006年，天文学家确认北河三拥有一颗系外行星——北河三b（Pollux b / Thestias），质量约2.3倍木星，公转周期约590天。这是少数几颗肉眼可见的恒星中确认拥有行星的恒星之一。北河三b的发现表明，演化离开主序的巨星周围仍然可以保留行星系统。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 北落师门弹窗 -->
+    <div class="modal-overlay" id="fomalhaut-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeFomalhautModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Wide-field_view_of_the_sky_around_the_bright_star_Fomalhaut_%28eso1216c%29.jpg/500px-Wide-field_view_of_the_sky_around_the_bright_star_Fomalhaut_%28eso1216c%29.jpg" alt="北落师门">
+            <div class="modal-content">
+                <h2 class="modal-title">北落师门（Fomalhaut）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>A3V</span></div>
+                    <div class="modal-info-item">距离：<span>25.1 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.16</span></div>
+                    <div class="modal-info-item">绝对星等：<span>1.72</span></div>
+                    <div class="modal-info-item">质量：<span>~1.92 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~1.84 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>8,590 K</span></div>
+                    <div class="modal-info-item">星座：<span>南鱼座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>北落师门（Fomalhaut），即南鱼座α星，是南鱼座中最亮的恒星，距离太阳约25光年。它是一颗A型主序星，周围拥有著名的碎屑盘。北落师门是"秋季孤独的一等星"，在北半球秋季夜空中独自闪耀于南方低空。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">碎屑盘与行星</div>
+                    <p>北落师门的碎屑盘是首批被直接成像的星周盘之一，哈勃太空望远镜在2004年拍摄到了其清晰的图像，碎屑盘呈现锐利的内边缘，暗示存在一颗行星。2008年，天文学家宣布直接探测到一颗行星候选体——大衮（Dagon / Fomalhaut b），这是首批被直接成像的系外行星之一。然而后续观测表明，大衮可能并非真正的行星，而是一团膨胀的尘埃云，其信号在2010年代逐渐减弱并最终消失。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 天津四弹窗 -->
+    <div class="modal-overlay" id="deneb-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeDenebModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Cygnus_constellation_map.png/500px-Cygnus_constellation_map.png" alt="天津四">
+            <div class="modal-content">
+                <h2 class="modal-title">天津四（Deneb）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>A2Ia</span></div>
+                    <div class="modal-info-item">距离：<span>~2,615 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.25</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-8.38</span></div>
+                    <div class="modal-info-item">质量：<span>~19 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~203 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>8,525 K</span></div>
+                    <div class="modal-info-item">光度：<span>~196,000 L☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>天津四（Deneb），即天鹅座α星，是天鹅座中最亮的恒星，也是夏季大三角的成员之一（与织女星和牛郎星组成）。它距离太阳约2,615光年，是已知最遥远的一等星。尽管距离遥远，天津四仍然是一等星，说明其真实光度极高，约为太阳的19.6万倍。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>天津四是一颗A2Ia型白超巨星，质量约19倍太阳，半径约203倍太阳。它是已知最明亮的A型超巨星之一，绝对星等约-8.38。天津四的巨大光度使其成为距离测量的重要标尺——如果能精确测定其距离，就能更好地约束其物理参数，反之亦然。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">夏季大三角</div>
+                    <p>天津四与织女星（天琴座α星）、牛郎星（天鹰座α星）共同构成夏季大三角，是北半球夏季夜空中最显著的星群。天津四位于天鹅座的尾部，"Deneb"一词在阿拉伯语中意为"尾巴"。在中国古代星官体系中，天津四是"天津"星官的第四星，"天津"意为天上的渡口。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 北极星弹窗 -->
+    <div class="modal-overlay" id="polaris-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePolarisModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Precession_N.gif/960px-Precession_N.gif" alt="北极星">
+            <div class="modal-content">
+                <h2 class="modal-title">北极星（Polaris）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>F7Ib</span></div>
+                    <div class="modal-info-item">距离：<span>~433 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.98</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-3.64</span></div>
+                    <div class="modal-info-item">质量：<span>~5.4 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~37.5 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>6,015 K</span></div>
+                    <div class="modal-info-item">星座：<span>小熊座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>北极星（Polaris），即小熊座α星，是当前最接近北天极的肉眼可见恒星，距北天极约0.7度，因此被用作北方的指示星。它距离太阳约433光年，是一个三合星系统。北极星也是一颗造父变星，是天文学中重要的距离标尺。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">三合星系统</div>
+                    <p>北极星Aa是一颗F7Ib型黄白超巨星，质量约5.4倍太阳，是系统中唯一肉眼可见的成员。北极星Ab是一颗F6V型主序星，距离Aa约18.5天文单位，轨道周期约29.6年，由于主星太亮，直到2006年才被哈勃太空望远镜直接拍摄到。北极星B是一颗F3V型主序星，距离Aa约2,400天文单位，轨道周期约数万年。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">造父变星</div>
+                    <p>北极星是一颗经典的造父变星（更准确地说是I型造父变星），亮度变化周期约3.97天，变幅约0.15个星等。造父变星的亮度与变化周期之间存在著名的"周光关系"，使它们成为测量宇宙距离的重要标尺。然而，北极星的变幅在过去一个世纪中逐渐减小，从约0.1等降至约0.02等，这种异常行为至今仍是天文学研究的热点。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">岁差与北极星更替</div>
+                    <p>由于地球自转轴的进动（岁差），北天极在天空中缓慢移动，不同时期有不同的"北极星"。约4,800年前，右枢（天龙座α星）是北极星；公元1,400年左右，天枢（小熊座β星）更接近北天极。目前的北极星将在约2,100年最接近北天极（约0.45度），之后将逐渐远离。约12,000年后，织女星将成为北极星。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 巨蟹座55弹窗 -->
+    <div class="modal-overlay" id="cancri55-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeCancri55Modal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Cancer_IAU.svg/500px-Cancer_IAU.svg.png" alt="巨蟹座55">
+            <div class="modal-content">
+                <h2 class="modal-title">巨蟹座55（55 Cancri）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>G8V / M3.5V</span></div>
+                    <div class="modal-info-item">距离：<span>41 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>5.95</span></div>
+                    <div class="modal-info-item">A星质量：<span>0.91 M☉</span></div>
+                    <div class="modal-info-item">A星温度：<span>5,196 K</span></div>
+                    <div class="modal-info-item">已知行星：<span>5 颗</span></div>
+                    <div class="modal-info-item">星座：<span>巨蟹座</span></div>
+                    <div class="modal-info-item">别名：<span>Copernicus</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>巨蟹座55（55 Cancri，别名Copernicus）是一个位于巨蟹座的双星系统，距离太阳约41光年。主星55 Cnc A是一颗G8V型黄矮星，略小于太阳；伴星55 Cnc B是一颗M3.5V型红矮星，距离主星约1,065天文单位。该系统以其丰富的行星系统而闻名。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">五颗行星</div>
+                    <p>巨蟹座55系统拥有5颗已确认的行星，是首批发现拥有5颗以上行星的系外行星系统之一。55 Cnc e是一颗超级地球（约2倍地球质量），公转周期仅18小时，是已知公转周期最短的系外行星之一，表面温度极高。55 Cnc b是一颗木星级行星，公转周期约14.7天。55 Cnc c、d、f分别位于不同轨道，其中55 Cnc d是一颗长周期木星级行星，公转周期约14年。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 大犬座VY弹窗 -->
+    <div class="modal-overlay" id="vycma-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeVYCmaModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Sun_and_VY_Canis_Majoris.svg/500px-Sun_and_VY_Canis_Majoris.svg.png" alt="大犬座VY">
+            <div class="modal-content">
+                <h2 class="modal-title">大犬座VY（VY Canis Majoris）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M2.5-5Ia</span></div>
+                    <div class="modal-info-item">距离：<span>~3,900 光年</span></div>
+                    <div class="modal-info-item">半径：<span>~1,420 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~3,490 K</span></div>
+                    <div class="modal-info-item">光度：<span>~270,000 L☉</span></div>
+                    <div class="modal-info-item">质量：<span>~17 M☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>大犬座VY（VY Canis Majoris，VY CMa）是一颗位于大犬座的红超巨星，距离太阳约3,900光年。它是已知最大和最明亮的恒星之一，半径约1,420倍太阳。如果将其放在太阳位置，其表面将延伸到木星轨道附近。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">极端物质损失</div>
+                    <p>大犬座VY正以极其剧烈的速度损失质量，每年损失约2×10⁻³倍太阳质量，是已知质量损失率最高的恒星之一。强烈的恒星风和物质抛射在其周围形成了巨大的星周包层，延伸范围达数千天文单位。哈勃和ALMA的观测揭示了大犬座VY周围复杂的尘埃结构，包括弧状物、结和丝状物。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">演化状态</div>
+                    <p>大犬座VY可能正处于红超巨星演化的晚期阶段，即将以超新星爆发结束生命。也有研究认为它可能已经经历了红超巨星阶段，正在返回蓝超巨星阶段（蓝回环）。无论哪种情况，大犬座VY都将在未来数十万年内以超新星爆发结束其壮丽的一生。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 天门增四弹窗 -->
+    <div class="modal-overlay" id="61vir-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="close61VirModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/61_Vir_as_seen_with_a_12.5%22_telescope_with_a_field_of_view_of_45.1_arcminutes.jpg/500px-61_Vir_as_seen_with_a_12.5%22_telescope_with_a_field_of_view_of_45.1_arcminutes.jpg" alt="天门增四">
+            <div class="modal-content">
+                <h2 class="modal-title">天门增四（61 Virginis）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>G5V</span></div>
+                    <div class="modal-info-item">距离：<span>27.9 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>4.74</span></div>
+                    <div class="modal-info-item">质量：<span>0.95 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>0.96 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>5,558 K</span></div>
+                    <div class="modal-info-item">已知行星：<span>3 颗</span></div>
+                    <div class="modal-info-item">星座：<span>室女座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>天门增四（61 Virginis），即室女座61，是一颗位于室女座的黄矮星，距离太阳约27.9光年。它的物理性质与太阳非常相似，是一颗类太阳恒星，因此一直是搜寻类地行星和地外生命的重点目标。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>2009年，天文学家宣布在天门增四周围发现三颗行星：61 Vir b（约5.1倍地球质量，公转周期4.2天）、61 Vir c（约18倍地球质量，公转周期38天）和61 Vir d（约22倍地球质量，公转周期124天）。此外，还检测到更远处的碎屑盘信号，暗示可能存在更多行星。天门增四系统是研究类太阳恒星行星系统形成和演化的重要样本。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 仙王座γ弹窗 -->
+    <div class="modal-overlay" id="gammacep-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeGammaCepModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Cepheus_constellation_map.png/500px-Cepheus_constellation_map.png" alt="仙王座γ">
+            <div class="modal-content">
+                <h2 class="modal-title">仙王座γ（Gamma Cephei）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>K1III-IV / M4V</span></div>
+                    <div class="modal-info-item">距离：<span>~45 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>3.21</span></div>
+                    <div class="modal-info-item">A星质量：<span>1.40 M☉</span></div>
+                    <div class="modal-info-item">A星温度：<span>4,760 K</span></div>
+                    <div class="modal-info-item">已知行星：<span>1 颗</span></div>
+                    <div class="modal-info-item">别名：<span>Errai</span></div>
+                    <div class="modal-info-item">星座：<span>仙王座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>仙王座γ（Gamma Cephei），别名Errai，是仙王座中第三亮的恒星，距离太阳约45光年。它是一个双星系统，主星是一颗K1III-IV型亚巨星，伴星是一颗M4V型红矮星，轨道周期约66年。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>仙王座γ Ab是一颗木星级行星，质量约1.85倍木星，公转周期约2.5年。该行星于1988年首次被检测到，但直到2002年才被确认，是首批在双星系统中发现的系外行星之一。它的存在表明双星系统也可以拥有稳定的行星轨道。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">未来的北极星</div>
+                    <p>由于地球自转轴的进动，仙王座γ将在约公元4,000年成为北极星，接替当前的北极星（小熊座α星）。这使得它在天文历史上具有特殊地位。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 仙女座υ弹窗 -->
+    <div class="modal-overlay" id="upsand-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeUpsAndModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/UAnd_planets.png/500px-UAnd_planets.png" alt="仙女座υ">
+            <div class="modal-content">
+                <h2 class="modal-title">仙女座υ（Upsilon Andromedae）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>F8V / M4.5V</span></div>
+                    <div class="modal-info-item">距离：<span>44 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>4.09</span></div>
+                    <div class="modal-info-item">A星质量：<span>1.27 M☉</span></div>
+                    <div class="modal-info-item">A星温度：<span>6,212 K</span></div>
+                    <div class="modal-info-item">已知行星：<span>3 颗</span></div>
+                    <div class="modal-info-item">星座：<span>仙女座</span></div>
+                    <div class="modal-info-item">别名：<span>Titawin</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>仙女座υ（Upsilon Andromedae），别名Titawin，是一个位于仙女座的双星系统，距离太阳约44光年。主星υ And A是一颗F8V型黄白矮星，比太阳略大略热；伴星υ And B是一颗M4.5V型红矮星，距离主星约750天文单位。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">三行星系统</div>
+                    <p>仙女座υ是最早发现多行星系统的恒星之一。υ And b（约0.69倍木星质量，公转周期4.6天）是典型的热木星。υ And c（约1.98倍木星质量，公转周期241天）和υ And d（约4.13倍木星质量，公转周期1,277天）位于更远的轨道。三颗行星的轨道存在显著的相互引力影响，是研究行星间动力学相互作用的重要系统。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手枪星弹窗 -->
+    <div class="modal-overlay" id="pistol-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePistolModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Pistol_star_and_nebula.jpg/500px-Pistol_star_and_nebula.jpg" alt="手枪星">
+            <div class="modal-content">
+                <h2 class="modal-title">手枪星（Pistol Star）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>蓝超巨星</span></div>
+                    <div class="modal-info-item">距离：<span>~25,000 光年</span></div>
+                    <div class="modal-info-item">质量：<span>~27.5 M☉</span></div>
+                    <div class="modal-info-item">光度：<span>~3,300,000 L☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~12,000 K</span></div>
+                    <div class="modal-info-item">星座：<span>人马座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>手枪星（Pistol Star）是位于银河系中心附近的一颗蓝色超巨星，距离太阳约25,000光年。它是已知最明亮的恒星之一，光度约为太阳的330万倍。手枪星因其周围的星云形状酷似手枪而得名，该星云是手枪星在早期抛出的大量物质形成的。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>手枪星是一颗极为罕见的蓝色超巨星，质量约27.5倍太阳，表面温度约12,000K。它可能在6,000至8,000年前经历了一次巨大的爆发，抛出了约10倍太阳质量的物质，形成了如今所见的"手枪星云"。这次爆发的光度可能达到了太阳的1,000万倍。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">演化前景</div>
+                    <p>作为一颗极端大质量的恒星，手枪星的寿命非常短暂，估计仅约300万年。它最终将以超新星或极超新星的形式爆发，可能留下一个黑洞。手枪星是研究大质量恒星演化和银河系中心环境的重要对象。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 鲸鱼座τ弹窗 -->
+    <div class="modal-overlay" id="tauceti-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeTauCetiModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/2/20/Compare_sun_tau_ceti.png" alt="鲸鱼座τ">
+            <div class="modal-content">
+                <h2 class="modal-title">鲸鱼座τ（Tau Ceti）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>G8.5V</span></div>
+                    <div class="modal-info-item">距离：<span>11.9 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>3.50</span></div>
+                    <div class="modal-info-item">质量：<span>0.78 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>0.79 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>5,344 K</span></div>
+                    <div class="modal-info-item">已知行星：<span>4 颗（候选）</span></div>
+                    <div class="modal-info-item">星座：<span>鲸鱼座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>鲸鱼座τ（Tau Ceti）是一颗位于鲸鱼座的黄矮星，距离太阳仅11.9光年，是距离太阳最近的类太阳恒星之一。它的光谱类型为G8.5V，质量约0.78倍太阳，比太阳略小略冷。鲸鱼座τ是搜寻地外智慧生命（SETI）的经典目标之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>2012年，天文学家宣布在鲸鱼座τ周围检测到5颗行星候选体，其中两颗（Tau Ceti e和f）位于宜居带内。然而，2017年的后续研究将确认的行星数修正为4颗，且信号较弱。Tau Ceti e和f是否真正存在仍有争议。如果它们确实存在，Tau Ceti e可能是一颗超级地球，表面温度可能适合液态水存在。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">碎屑盘</div>
+                    <p>鲸鱼座τ周围存在一个巨大的碎屑盘，质量约为太阳系柯伊伯带的10倍。这个碎屑盘意味着该系统可能有丰富的彗星和小行星活动，对行星表面的生命可能构成威胁，但也可能为行星输送水和有机物。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 白羊座α弹窗 -->
+    <div class="modal-overlay" id="hamal-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeHamalModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Aries_IAU.svg/500px-Aries_IAU.svg.png" alt="白羊座α">
+            <div class="modal-content">
+                <h2 class="modal-title">白羊座α（Hamal）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>K2III</span></div>
+                    <div class="modal-info-item">距离：<span>65.8 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>2.00</span></div>
+                    <div class="modal-info-item">绝对星等：<span>0.48</span></div>
+                    <div class="modal-info-item">质量：<span>~1.5 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~14.9 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>4,480 K</span></div>
+                    <div class="modal-info-item">星座：<span>白羊座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>白羊座α（Alpha Arietis），别名Hamal（阿拉伯语"绵羊"），是白羊座中最亮的恒星，距离太阳约65.8光年。它是一颗K2III型橙巨星，已经离开主序阶段。在古代，白羊座α是春分点的标记星，由于岁差，春分点现已移至双鱼座。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星候选</div>
+                    <p>2011年，天文学家通过径向速度法在白羊座α周围检测到一颗行星候选体，质量约1.8倍木星，公转周期约381天。如果确认，这将是又一颗围绕巨星运行的系外行星。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 英仙座α弹窗 -->
+    <div class="modal-overlay" id="mirfak-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeMirfakModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Perseus_constellation_map.png/500px-Perseus_constellation_map.png" alt="英仙座α">
+            <div class="modal-content">
+                <h2 class="modal-title">英仙座α（Mirfak）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>F5Ib</span></div>
+                    <div class="modal-info-item">距离：<span>~590 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>1.79</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-4.17</span></div>
+                    <div class="modal-info-item">质量：<span>~8.5 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~68 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>6,060 K</span></div>
+                    <div class="modal-info-item">星座：<span>英仙座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>英仙座α（Alpha Persei），别名Mirfak（阿拉伯语"肘部"）或Algenib，是英仙座中最亮的恒星，距离太阳约590光年。它是一颗F5Ib型黄白超巨星，光度约为太阳的5,000倍。Mirfak是英仙座α星团（Melotte 20）的成员，该星团是肉眼可见的疏散星团。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">英仙座α星团</div>
+                    <p>Mirfak位于英仙座α星团（又称Melotte 20或Collinder 39）的中心，该星团包含约50颗恒星，距离约590光年，年龄约5,100万年。星团中的其他成员包括多颗B型主序星，这些年轻的热星与Mirfak共同构成英仙座方向的明亮星群。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 海山二弹窗 -->
+    <div class="modal-overlay" id="etacar-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeEtaCarModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/EtaCarinae.jpg/500px-EtaCarinae.jpg" alt="海山二">
+            <div class="modal-content">
+                <h2 class="modal-title">海山二（Eta Carinae）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>特殊（LBV）</span></div>
+                    <div class="modal-info-item">距离：<span>~7,500 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>4.3（变）</span></div>
+                    <div class="modal-info-item">主星质量：<span>~100 M☉</span></div>
+                    <div class="modal-info-item">光度：<span>~4,600,000 L☉</span></div>
+                    <div class="modal-info-item">星座：<span>船底座</span></div>
+                    <div class="modal-info-item">类型：<span>高光度蓝变星</span></div>
+                    <div class="modal-info-item">伴星质量：<span>~30 M☉</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>海山二（Eta Carinae，η Car）是位于船底座的一颗极端大质量双星系统，距离太阳约7,500光年。它是已知最大质量、最高光度的恒星系统之一，主星质量约100倍太阳，系统总光度约460万倍太阳。海山二是银河系中最引人注目的天体之一，其剧烈的活动为研究大质量恒星演化提供了独特窗口。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">大爆发与 Homunculus 星云</div>
+                    <p>1840年代，海山二经历了一次被称为"大爆发"（Great Eruption）的剧烈事件，亮度一度达到-0.8等，成为当时夜空中第二亮的恒星。在约20年间，海山二抛出了约10倍太阳质量的物质，形成了壮观的Homunculus星云（意为"小人"星云），该星云至今仍在膨胀。哈勃和ALMA的观测揭示了Homunculus星云的精细结构，其双极形状表明物质主要沿两极方向抛射。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">双星系统</div>
+                    <p>海山二是一个双星系统，主星是一颗高光度蓝变星（LBV），伴星是一颗约30倍太阳质量的O型或沃尔夫-拉叶星。两星轨道周期约5.5年，每经过近星点时，伴星的风与主星的风碰撞产生X射线爆发。伴星直到2005年才被间接探测到，由于主星被厚厚的星云包裹，直接观测极为困难。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">演化前景</div>
+                    <p>海山二的主星是已知质量最大的恒星之一，其寿命极短，可能仅数百万年。它最终将以极超新星或假超新星的形式爆发，可能产生伽马射线暴。海山二目前处于极其不稳定的演化阶段，随时可能发生新的爆发。由于其距离相对较近（7,500光年），如果发生超新星爆发，对地球的影响仍在安全范围内，但将是一次壮观的天文事件。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 老人星弹窗 -->
+    <div class="modal-overlay" id="canopus-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeCanopusModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Canopus.jpg/500px-Canopus.jpg" alt="老人星">
+            <div class="modal-content">
+                <h2 class="modal-title">老人星（Canopus）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>A9II / F0Ib</span></div>
+                    <div class="modal-info-item">距离：<span>~310 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>-0.74</span></div>
+                    <div class="modal-info-item">绝对星等：<span>-5.53</span></div>
+                    <div class="modal-info-item">质量：<span>~8.0 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>~71 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>~7,400 K</span></div>
+                    <div class="modal-info-item">星座：<span>船底座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>老人星（Canopus），即船底座α星，是夜空中第二亮的恒星，视星等为-0.74，仅次于天狼星。它位于船底座，距离太阳约310光年（95秒差距），是一颗F型亮超巨星。老人星的光度约为太阳的10,700倍，是银河系附近最明亮的恒星之一。其名称来源于希腊神话中斯巴达国王墨涅拉俄斯的舵手卡诺普斯（Canopus）。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>老人星是一颗光谱类型为F0Ib的亮超巨星，质量约为太阳的8倍，半径约为太阳的71倍（约0.33天文单位），表面温度约7,400K。如果将老人星放在太阳的位置，它的表面将延伸到水星轨道之外。老人星的光度约为太阳的10,700倍，但由于其距离遥远（310光年），在地球上看仅比天狼星暗约1.5个星等，而天狼星距离仅8.6光年。老人星的光谱呈现出异常的金属线增强特征，特别是某些重元素如钡、锆和稀土元素的丰度偏高，这可能与恒星内部的核合成和对流混合有关。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">演化状态</div>
+                    <p>老人星目前处于超巨星阶段，已经离开了主序。其前身是一颗光谱类型为B3V的蓝白色主序星，在约数千万年前耗尽了核心的氢燃料后，开始膨胀冷却。目前老人星可能正处于蓝回环（blue loop）阶段——即红巨星阶段后重新升温的过程，或者在赫罗图上缓慢移动。作为一颗8倍太阳质量的恒星，老人星最终将以超新星爆发结束其生命，其核心可能坍缩为一颗中子星。不过，由于其质量接近超新星爆发的下限（约8倍太阳质量），也存在成为电子俘获超新星或甚至直接坍缩为白矮星的可能性。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">距离测量</div>
+                    <p>老人星的距离测定一直是天文学中的一个难题。依巴谷卫星（Hipparcos）最初给出的视差值为10.43毫角秒，对应距离约310光年，但误差范围较大。后来的重新分析给出了不同的结果，距离估计从约310光年到更大值不等。盖亚卫星（Gaia）的观测有望提供更精确的距离数据。距离的不确定性直接影响了老人星物理参数（如光度、半径）的精确确定。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">文化与历史</div>
+                    <p>老人星在世界各文明中都有重要地位。在中国传统文化中，老人星又称南极仙翁、寿星，是长寿和吉祥的象征。由于老人星位置偏南，中国北方大部分地区难以看到，因此古人认为见到老人星是祥瑞之兆。在古埃及，老人星与天狼星几乎同时偕日升，被视为丰收的预兆。在印度教传统中，老人星被称为Agastya，是一位神圣的智者。在阿拉伯天文传统中，老人星被称为Suhail，是南方天空的重要导航星。现代太空探索中，老人星也有特殊地位：多个航天器（包括旅行者号、先驱者号等）使用老人星作为星光导航的参考星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">科学意义</div>
+                    <p>老人星是研究大质量恒星演化的重要对象。其异常的化学丰度模式为理解恒星内部的核合成过程和对流混合机制提供了线索。作为夜空中最明亮的恒星之一，老人星也是天体测量学和光度校准的重要标准星。在航天领域，老人星因其高亮性和在南方天空的独特位置，被广泛用作航天器的星光导航参考，美国空军的CANOPUS传感器即以老人星命名。此外，老人星周围是否存在星周盘或行星系统尚不确定，但作为一颗演化中的超巨星，其原始行星系统可能已在膨胀过程中被吞噬。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 天狼星弹窗 -->
+    <div class="modal-overlay" id="sirius-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeSiriusModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Celestia_Sirius.jpg/500px-Celestia_Sirius.jpg" alt="天狼星">
+            <div class="modal-content">
+                <h2 class="modal-title">天狼星（Sirius）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>A1V / DA2</span></div>
+                    <div class="modal-info-item">距离：<span>8.6 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>-1.46</span></div>
+                    <div class="modal-info-item">绝对星等：<span>1.42</span></div>
+                    <div class="modal-info-item">A星质量：<span>2.063 M☉</span></div>
+                    <div class="modal-info-item">A星半径：<span>1.711 R☉</span></div>
+                    <div class="modal-info-item">A星温度：<span>9,940 K</span></div>
+                    <div class="modal-info-item">星座：<span>大犬座</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>天狼星（Sirius），即大犬座α星，是夜空中最亮的恒星，视星等为-1.46，几乎是第二亮恒星老人星的两倍亮。天狼星距离太阳约8.6光年（2.64秒差距），是一个双星系统，由主星天狼星A和伴星天狼星B组成。天狼星在古埃及文明中具有极其重要的地位，其偕日升标志着尼罗河洪水的到来，被古埃及人奉为女神索普德特的化身。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">双星系统</div>
+                    <p>天狼星A是一颗光谱类型为A1V的主序星，质量约为太阳的2.06倍，半径约为太阳的1.71倍，表面温度约9,940K，光度约为太阳的25.4倍。它发出耀眼的蓝白色光芒，是夜空中最明亮的单颗恒星。天狼星B是一颗白矮星，光谱类型DA2，质量约为太阳的1.02倍，但半径仅为太阳的0.0084倍（约地球大小），表面温度约25,200K，光度仅为太阳的0.056倍。两星轨道周期约50.1年，轨道半长轴约20天文单位，偏心率约0.592。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">天狼星B——白矮星的发现</div>
+                    <p>天狼星B是人类发现的第一颗白矮星。1844年，德国天文学家弗里德里希·贝塞尔通过观测天狼星自行运动中的摆动，推断其存在一颗不可见的伴星。1862年，美国望远镜制造商阿尔万·格雷厄姆·克拉克在测试新望远镜时首次直接观测到了天狼星B。天狼星B的发现对天体物理学具有革命性意义：它的质量与太阳相当，体积却只有地球大小，平均密度高达每立方厘米约3.5吨，这远超当时物理学家的想象，推动了简并态物质理论的发展。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">天狼星系统的演化</div>
+                    <p>天狼星系统提供了恒星双星演化的重要案例。天狼星B曾经是一颗质量约5倍太阳质量的蓝白色主序星，在约1.2亿年前耗尽核燃料后膨胀为红巨星，随后抛出外层气壳，核心坍缩为白矮星。在这一过程中，天狼星B将大量质量转移给了天狼星A，影响了A星的演化和当前状态。天狼星A目前仍处于主序阶段，预计将在约10亿年后开始离开主序，演化为红巨星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">文化与历史</div>
+                    <p>天狼星在世界各文明中都有重要地位。古埃及人称其为索普德特（Sopdet），其偕日升（与太阳同时升起）预告尼罗河泛滥和新年到来，是埃及历法的基础。古希腊人将天狼星的偕日升与炎热夏季联系，"犬日"（Dog Days）一词即来源于天狼星所属的大犬座。中国古籍中天狼星属于井宿，苏轼名句"会挽雕弓如满月，西北望，射天狼"即指此星。有趣的是，西非多贡人据称拥有关于天狼星伴星的古老知识，这一人类学争议至今仍被讨论。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">科学意义</div>
+                    <p>天狼星系统是天文学研究的重要对象。作为距离太阳最近的A型主序星，天狼星A为研究大质量主序星的物理性质提供了参考。天狼星B作为距离最近的白矮星之一，是验证白矮星冷却模型和广义相对论引力红移的重要目标。天狼星的高亮度也使其成为天文光谱学的标准校准源。此外，天狼星系统周围尚未发现行星，但理论研究表明在演化早期可能存在行星系统。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 南门二弹窗 -->
+    <div class="modal-overlay" id="alphacen-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAlphaCenModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Position_Alpha_Cen.png/500px-Position_Alpha_Cen.png" alt="南门二">
+            <div class="modal-content">
+                <h2 class="modal-title">南门二（Alpha Centauri）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>G2V / K1V / M5.5Ve</span></div>
+                    <div class="modal-info-item">距离：<span>4.37 光年</span></div>
+                    <div class="modal-info-item">视星等：<span>-0.27</span></div>
+                    <div class="modal-info-item">绝对星等：<span>4.38</span></div>
+                    <div class="modal-info-item">系统质量：<span>~2.01 M☉</span></div>
+                    <div class="modal-info-item">系统年龄：<span>~55 亿年</span></div>
+                    <div class="modal-info-item">星座：<span>半人马座</span></div>
+                    <div class="modal-info-item">赤经：<span>14h 39m 36.5s</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>南门二（Alpha Centauri），即半人马座α星，是半人马座中最亮的恒星，也是夜空中第三亮的恒星（仅次于天狼星和老人星），视星等为-0.27。它实际上是一个三合星系统，由三颗恒星组成：半人马座α星A（南门二A）、半人马座α星B（南门二B）和半人马座α星C（即比邻星）。该系统距离太阳约4.37光年，是距离太阳最近的恒星系统之一。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">三合星系统</div>
+                    <p>南门二A（α Cen A）是一颗光谱类型为G2V的黄矮星，与太阳极为相似，质量约为太阳的1.1倍，光度约为太阳的1.52倍，表面温度约5,790K。南门二B（α Cen B）是一颗光谱类型为K1V的橙矮星，质量约为太阳的0.91倍，光度约为太阳的0.5倍，表面温度约5,260K。A星和B星组成一个双星系统，轨道周期约79.91年，轨道半长轴约23.4天文单位，偏心率约0.518。比邻星（α Cen C）是一颗红矮星，距离AB双星约13,000天文单位，围绕AB双星的公转周期可能长达55万年。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">与太阳的对比</div>
+                    <p>南门二A是已知在物理性质上与太阳最相似的恒星之一，其质量、半径、温度和光谱类型都与太阳非常接近，因此常被用作太阳的"双胞胎"来研究。然而，南门二A的金属丰度约为太阳的1.5倍，这表明它可能比太阳更年轻或形成于金属含量更高的星际环境中。南门二B虽然比太阳稍小稍冷，但同样是一颗主序星，其金属丰度与A星相近。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>2012年，天文学家曾宣布在南门二B周围发现一颗地球大小的行星——半人马座α Bb，但后续研究未能确认其存在，该发现最终被撤回。目前唯一确认的行星是围绕比邻星运行的比邻星b（Proxima b），于2016年发现，质量约1.17倍地球，位于宜居带内。此外，比邻星c和比邻星d也先后被报告。由于南门二A和B的轨道环境复杂，在其周围探测行星的难度较大，但理论模型表明在AB双星各自的宜居带内可能存在稳定轨道上的类地行星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">观测历史</div>
+                    <p>南门二作为一颗明亮恒星，自古以来就被南半球的文明所观测。古埃及人可能已经知道这颗星，中国古籍中也有记载。1689年，耶稣会传教士让·里乔在南非观测到了南门二。1915年，罗伯特·因尼斯发现了比邻星，确认南门二是一个三合星系统。南门二是南半球导航的重要标志，与半人马座β星（马腹一）共同构成"南半球指针"，指向南十字座，帮助确定南方方向。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">科学意义与未来探索</div>
+                    <p>作为距离太阳最近的恒星系统，南门二是星际探测的首选目标。突破摄星计划（Breakthrough Starshot）旨在将微型探测器送往南门二系统，预计飞行时间约20年。南门二A与太阳的高度相似性使其成为研究恒星物理和搜寻类太阳系行星系统的理想对象。如果南门二A或B周围存在宜居行星，将是未来搜寻地外生命的最重要目标。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 巴纳德星弹窗 -->
+    <div class="modal-overlay" id="barnard-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeBarnardModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/1/18/Barnardstar2006.jpg" alt="巴纳德星">
+            <div class="modal-content">
+                <h2 class="modal-title">巴纳德星（Barnard's Star）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M4.0V</span></div>
+                    <div class="modal-info-item">距离：<span>5.962 光年</span></div>
+                    <div class="modal-info-item">质量：<span>0.144 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>0.196 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>3,134 K</span></div>
+                    <div class="modal-info-item">光度：<span>0.0035 L☉</span></div>
+                    <div class="modal-info-item">年龄：<span>~100-120 亿年</span></div>
+                    <div class="modal-info-item">自行速度：<span>10.3 角秒/年</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>巴纳德星（Barnard's Star），编号为V2500 Ophiuchi，是位于蛇夫座的一颗红矮星，距离太阳约5.962光年（1.828秒差距），是距离太阳第四近的恒星系统（仅次于半人马座α三合星系统的三颗成员星），也是距离太阳最近的单独恒星。它由美国天文学家爱德华·爱默生·巴纳德于1916年发现，以其惊人的自行速度而闻名于世。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">自行运动</div>
+                    <p>巴纳德星拥有已知恒星中最快的自行速度，每年在天球上移动约10.3角秒。这意味着它大约只需180年就能在天空中移动一个月亮的视直径。这种高速自行是因为它既距离太阳很近，又具有相对较高的切向速度（约140 km/s）。按照这个速度，巴纳德星大约在公元11,800年前后将最接近太阳，届时距离将缩短至约3.75光年，成为距离太阳最近的恒星。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>巴纳德星是一颗光谱类型为M4.0V的红矮星，质量约为太阳的14.4%，半径约为太阳的19.6%。其表面温度约3,134K，光度仅为太阳的0.35%，视星等为9.5等，需要望远镜才能观测。巴纳德星的年龄估计在100至120亿年之间，是银河系中最古老的恒星之一，属于银河系薄盘种群。其金属丰度较低，约为太阳的0.16至0.45倍，表明它形成于银河系早期金属含量较低的环境中。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星搜索</div>
+                    <p>巴纳德星一直是搜寻系外行星的重点目标。1960至1970年代，天文学家彼得·范德坎普曾声称通过天体测量法探测到一颗约1.6倍木星质量的行星，但这一发现后来被证实是由仪器系统误差导致的假信号。2018年，欧洲南方天文台利用径向速度法宣布探测到一颗超级地球——巴纳德星b（Barnard's Star b），质量约为地球的3.2倍，公转周期约233天，轨道位于雪线附近，表面温度估计约-170°C，不太可能存在液态水。然而，2021年的后续研究对该信号的真实性提出了质疑，认为可能源于恒星自身的活动周期，巴纳德星b的存在至今仍有争议。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">恒星活动</div>
+                    <p>巴纳德星是一颗活跃的耀星，偶尔会产生强烈的耀斑爆发。1998年观测到一次显著的耀斑事件，这是首次在巴纳德星上确认的耀斑活动。尽管其整体磁场活动比比邻星弱，但作为一颗古老的红矮星，其活动仍然值得关注。巴纳德星的自转周期约为130天，与其年龄相符——老年恒星的旋转通常已经减慢。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">科学意义与未来探索</div>
+                    <p>作为距离太阳最近的单独恒星，巴纳德星是星际探测的理想目标之一。突破摄星计划（Breakthrough Starshot）等概念方案将巴纳德星列为潜在目标。此外，由于巴纳德星极其古老，研究它有助于理解银河系早期的恒星形成和化学演化历史。如果最终确认其周围存在行星，将为我们了解红矮星行星系统的形成和演化提供重要线索。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 比邻星弹窗 -->
+    <div class="modal-overlay" id="proxima-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <img class="modal-image" src="https://upload.wikimedia.org/wikipedia/commons/9/95/New_shot_of_Proxima_Centauri%2C_our_nearest_neighbour.jpg" alt="比邻星">
+            <div class="modal-content">
+                <h2 class="modal-title">比邻星（Proxima Centauri）</h2>
+                <div class="modal-info-grid">
+                    <div class="modal-info-item">光谱类型：<span>M5.5Ve</span></div>
+                    <div class="modal-info-item">距离：<span>4.244 光年</span></div>
+                    <div class="modal-info-item">质量：<span>0.122 M☉</span></div>
+                    <div class="modal-info-item">半径：<span>0.1542 R☉</span></div>
+                    <div class="modal-info-item">表面温度：<span>3,042 K</span></div>
+                    <div class="modal-info-item">光度：<span>0.0017 L☉</span></div>
+                    <div class="modal-info-item">年龄：<span>~48.5 亿年</span></div>
+                    <div class="modal-info-item">赤经：<span>14h 29m 42.95s</span></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">概述</div>
+                    <p>比邻星（Proxima Centauri），即半人马座α星C，是距离太阳最近的恒星，位于半人马座，距离太阳约4.244光年（1.301秒差距）。它是半人马座α三合星系统的成员之一，另外两颗成员分别是半人马座α星A和半人马座α星B。比邻星于1915年由天文学家罗伯特·因尼斯发现。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">物理特征</div>
+                    <p>比邻星是一颗红矮星，光谱类型为M5.5Ve，质量仅为太阳的12.2%，半径约为太阳的15.4%。其表面温度约3,042K，远低于太阳的5,778K，因此发出的光以红外线为主，肉眼可见光非常微弱，视星等仅为11.13等，无法用裸眼直接观测。尽管如此，由于其耀斑活动，比邻星偶尔会突然增亮，2016年的一次超级耀斑使其亮度在短时间内增加了约1,000倍。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">行星系统</div>
+                    <p>2016年，欧洲南方天文台宣布在比邻星周围发现了一颗类地系外行星——比邻星b（Proxima Centauri b），其质量约为地球的1.17倍，公转周期约11.86天，轨道位于比邻星的宜居带内，表面可能存在液态水。2020年，天文学家又发现了第二颗行星——比邻星c（Proxima Centauri c），质量约为地球的7倍，公转周期约5.2年，轨道远离宜居带。此外，2022年还有信号暗示可能存在第三颗行星比邻星d，质量约0.26倍地球质量。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">恒星活动</div>
+                    <p>比邻星是一颗耀星，其磁场活动非常剧烈。它的自转周期约为82.6天，但磁场强度却达到约600高斯，是太阳磁场强度的两倍以上。这种强烈的磁场活动导致频繁的X射线耀斑爆发，对周围行星的大气层可能造成严重剥蚀，给比邻星b上潜在的生命存在带来了巨大挑战。尽管如此，科学家认为如果比邻星b拥有足够强的磁场或厚重的大气层，仍有可能维持表面液态水。</p>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">科学意义</div>
+                    <p>作为距离太阳最近的恒星，比邻星一直是天文学研究的重要目标。突破摄星计划（Breakthrough Starshot）旨在开发光帆技术，将微型探测器加速至光速的20%，在约20年内抵达比邻星系统，对其进行近距离观测。比邻星b的发现更是激发了人类对最近系外宜居世界的无限遐想，成为搜寻地外生命的首选目标之一。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 动态星空背景
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        // 初始化星空背景
+        function initStars() {
+            // 设置canvas尺寸与窗口大小一致
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            // 远景星星：小而暗，数量多，移动慢
+            for (let i = 0; i < 300; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 0.8 + 0.2,
+                    speed: Math.random() * 0.15,
+                    alpha: Math.random() * 0.5 + 0.3
+                });
+            }
+            // 中景星星：中等大小
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.2 + 0.5,
+                    speed: Math.random() * 0.3,
+                    alpha: Math.random() * 0.4 + 0.5
+                });
+            }
+            // 近景星星：大而亮，数量少，移动快
+            for (let i = 0; i < 30; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.8,
+                    speed: Math.random() * 0.5 + 0.2,
+                    alpha: Math.random() * 0.3 + 0.7
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            stars.forEach(star => {
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                star.y += star.speed;
+                if (star.y > canvas.height) star.y = 0;
+            });
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(drawStars);
+        }
+
+        initStars();
+        drawStars();
+
+        window.addEventListener('resize', initStars);
+
+        // 卡片切换功能
+        function showCard(cardId) {
+            // 隐藏所有卡片
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => card.classList.remove('active'));
+            
+            // 显示选中的卡片
+            const selectedCard = document.getElementById(cardId);
+            if (selectedCard) {
+                selectedCard.classList.add('active');
+            }
+            
+            // 移除所有导航链接的active类
+            const navLinks = document.querySelectorAll('.nav-links a');
+            navLinks.forEach(link => link.classList.remove('active'));
+            
+            // 为当前选中的导航链接添加active类
+            const activeLink = document.querySelector('.nav-links a[data-card="' + cardId + '"]');
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        }
+
+        // 默认显示第一个卡片（或根据URL参数显示对应页面）
+        document.addEventListener('DOMContentLoaded', function() {
+            // 解析URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageParam = urlParams.get('page');
+            if (pageParam) {
+                showCard(pageParam);
+            } else {
+                showCard('exoplanet');
+            }
+
+            // 比邻星卡片点击弹窗
+            const star1Card = document.getElementById('star-1');
+            if (star1Card) {
+                star1Card.style.cursor = 'pointer';
+                star1Card.addEventListener('click', function() {
+                    document.getElementById('proxima-modal').classList.add('active');
+                });
+            }
+
+            // 巴纳德星卡片点击弹窗
+            const star2Card = document.getElementById('star-2');
+            if (star2Card) {
+                star2Card.style.cursor = 'pointer';
+                star2Card.addEventListener('click', function() {
+                    document.getElementById('barnard-modal').classList.add('active');
+                });
+            }
+
+            // 南门二卡片点击弹窗
+            const star3Card = document.getElementById('star-3');
+            if (star3Card) {
+                star3Card.style.cursor = 'pointer';
+                star3Card.addEventListener('click', function() {
+                    document.getElementById('alphacen-modal').classList.add('active');
+                });
+            }
+
+            // 天狼星卡片点击弹窗
+            const star4Card = document.getElementById('star-4');
+            if (star4Card) {
+                star4Card.style.cursor = 'pointer';
+                star4Card.addEventListener('click', function() {
+                    document.getElementById('sirius-modal').classList.add('active');
+                });
+            }
+
+            // 老人星卡片点击弹窗
+            const star5Card = document.getElementById('star-5');
+            if (star5Card) {
+                star5Card.style.cursor = 'pointer';
+                star5Card.addEventListener('click', function() {
+                    document.getElementById('canopus-modal').classList.add('active');
+                });
+            }
+
+            // 大角星卡片点击弹窗
+            const star6Card = document.getElementById('star-6');
+            if (star6Card) { star6Card.style.cursor = 'pointer'; star6Card.addEventListener('click', function() { document.getElementById('arcturus-modal').classList.add('active'); }); }
+
+            // 史蒂文森2-18卡片点击弹窗
+            const star7Card = document.getElementById('star-7');
+            if (star7Card) { star7Card.style.cursor = 'pointer'; star7Card.addEventListener('click', function() { document.getElementById('stephenson-modal').classList.add('active'); }); }
+
+            // 五车二卡片点击弹窗
+            const star8Card = document.getElementById('star-8');
+            if (star8Card) { star8Card.style.cursor = 'pointer'; star8Card.addEventListener('click', function() { document.getElementById('capella-modal').classList.add('active'); }); }
+
+            // 参宿七卡片点击弹窗
+            const star9Card = document.getElementById('star-9');
+            if (star9Card) { star9Card.style.cursor = 'pointer'; star9Card.addEventListener('click', function() { document.getElementById('rigel-modal').classList.add('active'); }); }
+
+            // 南河三卡片点击弹窗
+            const star10Card = document.getElementById('star-10');
+            if (star10Card) { star10Card.style.cursor = 'pointer'; star10Card.addEventListener('click', function() { document.getElementById('procyon-modal').classList.add('active'); }); }
+
+            // 参宿四卡片点击弹窗
+            const star11Card = document.getElementById('star-11');
+            if (star11Card) { star11Card.style.cursor = 'pointer'; star11Card.addEventListener('click', function() { document.getElementById('betelgeuse-modal').classList.add('active'); }); }
+
+            // 水委一卡片点击弹窗
+            const star12Card = document.getElementById('star-12');
+            if (star12Card) { star12Card.style.cursor = 'pointer'; star12Card.addEventListener('click', function() { document.getElementById('achernar-modal').classList.add('active'); }); }
+
+            // 马腹一卡片点击弹窗
+            const star13Card = document.getElementById('star-13');
+            if (star13Card) { star13Card.style.cursor = 'pointer'; star13Card.addEventListener('click', function() { document.getElementById('hadar-modal').classList.add('active'); }); }
+
+            // 盾牌座UY卡片点击弹窗
+            const star14Card = document.getElementById('star-14');
+            if (star14Card) { star14Card.style.cursor = 'pointer'; star14Card.addEventListener('click', function() { document.getElementById('uyscuti-modal').classList.add('active'); }); }
+
+            // 十字架二卡片点击弹窗
+            const star15Card = document.getElementById('star-15');
+            if (star15Card) { star15Card.style.cursor = 'pointer'; star15Card.addEventListener('click', function() { document.getElementById('acrux-modal').classList.add('active'); }); }
+
+            // 毕宿五卡片点击弹窗
+            const star16Card = document.getElementById('star-16');
+            if (star16Card) { star16Card.style.cursor = 'pointer'; star16Card.addEventListener('click', function() { document.getElementById('aldebaran-modal').classList.add('active'); }); }
+
+            // 角宿一卡片点击弹窗
+            const star17Card = document.getElementById('star-17');
+            if (star17Card) { star17Card.style.cursor = 'pointer'; star17Card.addEventListener('click', function() { document.getElementById('spica-modal').classList.add('active'); }); }
+
+            // 心宿二卡片点击弹窗
+            const star18Card = document.getElementById('star-18');
+            if (star18Card) { star18Card.style.cursor = 'pointer'; star18Card.addEventListener('click', function() { document.getElementById('antares-modal').classList.add('active'); }); }
+
+            // 北河三卡片点击弹窗
+            const star19Card = document.getElementById('star-19');
+            if (star19Card) { star19Card.style.cursor = 'pointer'; star19Card.addEventListener('click', function() { document.getElementById('pollux-modal').classList.add('active'); }); }
+
+            // 北落师门卡片点击弹窗
+            const star20Card = document.getElementById('star-20');
+            if (star20Card) { star20Card.style.cursor = 'pointer'; star20Card.addEventListener('click', function() { document.getElementById('fomalhaut-modal').classList.add('active'); }); }
+
+            // 天津四卡片点击弹窗
+            const star21Card = document.getElementById('star-21');
+            if (star21Card) { star21Card.style.cursor = 'pointer'; star21Card.addEventListener('click', function() { document.getElementById('deneb-modal').classList.add('active'); }); }
+
+            // 北极星卡片点击弹窗
+            const star22Card = document.getElementById('star-22');
+            if (star22Card) { star22Card.style.cursor = 'pointer'; star22Card.addEventListener('click', function() { document.getElementById('polaris-modal').classList.add('active'); }); }
+
+            // 巨蟹座55卡片点击弹窗
+            const star23Card = document.getElementById('star-23');
+            if (star23Card) { star23Card.style.cursor = 'pointer'; star23Card.addEventListener('click', function() { document.getElementById('cancri-modal').classList.add('active'); }); }
+
+            // 大犬座VY卡片点击弹窗
+            const star24Card = document.getElementById('star-24');
+            if (star24Card) { star24Card.style.cursor = 'pointer'; star24Card.addEventListener('click', function() { document.getElementById('vycma-modal').classList.add('active'); }); }
+
+            // 天门增四卡片点击弹窗
+            const star25Card = document.getElementById('star-25');
+            if (star25Card) { star25Card.style.cursor = 'pointer'; star25Card.addEventListener('click', function() { document.getElementById('vir61-modal').classList.add('active'); }); }
+
+            // 仙王座γ卡片点击弹窗
+            const star26Card = document.getElementById('star-26');
+            if (star26Card) { star26Card.style.cursor = 'pointer'; star26Card.addEventListener('click', function() { document.getElementById('gammacep-modal').classList.add('active'); }); }
+
+            // 仙女座υ卡片点击弹窗
+            const star27Card = document.getElementById('star-27');
+            if (star27Card) { star27Card.style.cursor = 'pointer'; star27Card.addEventListener('click', function() { document.getElementById('upsand-modal').classList.add('active'); }); }
+
+            // 手枪星卡片点击弹窗
+            const star28Card = document.getElementById('star-28');
+            if (star28Card) { star28Card.style.cursor = 'pointer'; star28Card.addEventListener('click', function() { document.getElementById('pistol-modal').classList.add('active'); }); }
+
+            // 鲸鱼座τ卡片点击弹窗
+            const star29Card = document.getElementById('star-29');
+            if (star29Card) { star29Card.style.cursor = 'pointer'; star29Card.addEventListener('click', function() { document.getElementById('tauceti-modal').classList.add('active'); }); }
+
+            // 白羊座α卡片点击弹窗
+            const star30Card = document.getElementById('star-30');
+            if (star30Card) { star30Card.style.cursor = 'pointer'; star30Card.addEventListener('click', function() { document.getElementById('hamal-modal').classList.add('active'); }); }
+
+            // 英仙座α卡片点击弹窗
+            const star31Card = document.getElementById('star-31');
+            if (star31Card) { star31Card.style.cursor = 'pointer'; star31Card.addEventListener('click', function() { document.getElementById('mirfak-modal').classList.add('active'); }); }
+
+            // 海山二卡片点击弹窗
+            const star32Card = document.getElementById('star-32');
+            if (star32Card) { star32Card.style.cursor = 'pointer'; star32Card.addEventListener('click', function() { document.getElementById('etacar-modal').classList.add('active'); }); }
+        });
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('proxima-modal').classList.remove('active');
+        }
+
+        // 点击遮罩层关闭弹窗
+        document.getElementById('proxima-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // 关闭巴纳德星弹窗
+        function closeBarnardModal() {
+            document.getElementById('barnard-modal').classList.remove('active');
+        }
+
+        // 点击遮罩层关闭巴纳德星弹窗
+        document.getElementById('barnard-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBarnardModal();
+            }
+        });
+
+        // 关闭南门二弹窗
+        function closeAlphaCenModal() {
+            document.getElementById('alphacen-modal').classList.remove('active');
+        }
+
+        // 点击遮罩层关闭南门二弹窗
+        document.getElementById('alphacen-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAlphaCenModal();
+            }
+        });
+
+        // 关闭天狼星弹窗
+        function closeSiriusModal() {
+            document.getElementById('sirius-modal').classList.remove('active');
+        }
+
+        // 点击遮罩层关闭天狼星弹窗
+        document.getElementById('sirius-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSiriusModal();
+            }
+        });
+
+        // 关闭老人星弹窗
+        function closeCanopusModal() {
+            document.getElementById('canopus-modal').classList.remove('active');
+        }
+        document.getElementById('canopus-modal').addEventListener('click', function(e) { if (e.target === this) closeCanopusModal(); });
+
+        // 关闭大角星弹窗
+        function closeArcturusModal() { document.getElementById('arcturus-modal').classList.remove('active'); }
+        document.getElementById('arcturus-modal').addEventListener('click', function(e) { if (e.target === this) closeArcturusModal(); });
+
+        // 关闭史蒂文森2-18弹窗
+        function closeStephensonModal() { document.getElementById('stephenson-modal').classList.remove('active'); }
+        document.getElementById('stephenson-modal').addEventListener('click', function(e) { if (e.target === this) closeStephensonModal(); });
+
+        // 关闭五车二弹窗
+        function closeCapellaModal() { document.getElementById('capella-modal').classList.remove('active'); }
+        document.getElementById('capella-modal').addEventListener('click', function(e) { if (e.target === this) closeCapellaModal(); });
+
+        // 关闭参宿七弹窗
+        function closeRigelModal() { document.getElementById('rigel-modal').classList.remove('active'); }
+        document.getElementById('rigel-modal').addEventListener('click', function(e) { if (e.target === this) closeRigelModal(); });
+
+        // 关闭南河三弹窗
+        function closeProcyonModal() { document.getElementById('procyon-modal').classList.remove('active'); }
+        document.getElementById('procyon-modal').addEventListener('click', function(e) { if (e.target === this) closeProcyonModal(); });
+
+        // 关闭参宿四弹窗
+        function closeBetelgeuseModal() { document.getElementById('betelgeuse-modal').classList.remove('active'); }
+        document.getElementById('betelgeuse-modal').addEventListener('click', function(e) { if (e.target === this) closeBetelgeuseModal(); });
+
+        // 关闭水委一弹窗
+        function closeAchernarModal() { document.getElementById('achernar-modal').classList.remove('active'); }
+        document.getElementById('achernar-modal').addEventListener('click', function(e) { if (e.target === this) closeAchernarModal(); });
+
+        // 关闭马腹一弹窗
+        function closeHadarModal() { document.getElementById('hadar-modal').classList.remove('active'); }
+        document.getElementById('hadar-modal').addEventListener('click', function(e) { if (e.target === this) closeHadarModal(); });
+
+        // 关闭盾牌座UY弹窗
+        function closeUYScutiModal() { document.getElementById('uyscuti-modal').classList.remove('active'); }
+        document.getElementById('uyscuti-modal').addEventListener('click', function(e) { if (e.target === this) closeUYScutiModal(); });
+
+        // 关闭十字架二弹窗
+        function closeAcruxModal() { document.getElementById('acrux-modal').classList.remove('active'); }
+        document.getElementById('acrux-modal').addEventListener('click', function(e) { if (e.target === this) closeAcruxModal(); });
+
+        // 关闭毕宿五弹窗
+        function closeAldebaranModal() { document.getElementById('aldebaran-modal').classList.remove('active'); }
+        document.getElementById('aldebaran-modal').addEventListener('click', function(e) { if (e.target === this) closeAldebaranModal(); });
+
+        // 关闭角宿一弹窗
+        function closeSpicaModal() { document.getElementById('spica-modal').classList.remove('active'); }
+        document.getElementById('spica-modal').addEventListener('click', function(e) { if (e.target === this) closeSpicaModal(); });
+
+        // 关闭心宿二弹窗
+        function closeAntaresModal() { document.getElementById('antares-modal').classList.remove('active'); }
+        document.getElementById('antares-modal').addEventListener('click', function(e) { if (e.target === this) closeAntaresModal(); });
+
+        // 关闭北河三弹窗
+        function closePolluxModal() { document.getElementById('pollux-modal').classList.remove('active'); }
+        document.getElementById('pollux-modal').addEventListener('click', function(e) { if (e.target === this) closePolluxModal(); });
+
+        // 关闭北落师门弹窗
+        function closeFomalhautModal() { document.getElementById('fomalhaut-modal').classList.remove('active'); }
+        document.getElementById('fomalhaut-modal').addEventListener('click', function(e) { if (e.target === this) closeFomalhautModal(); });
+
+        // 关闭天津四弹窗
+        function closeDenebModal() { document.getElementById('deneb-modal').classList.remove('active'); }
+        document.getElementById('deneb-modal').addEventListener('click', function(e) { if (e.target === this) closeDenebModal(); });
+
+        // 关闭北极星弹窗
+        function closePolarisModal() { document.getElementById('polaris-modal').classList.remove('active'); }
+        document.getElementById('polaris-modal').addEventListener('click', function(e) { if (e.target === this) closePolarisModal(); });
+
+        // 关闭巨蟹座55弹窗
+        function closeCancriModal() { document.getElementById('cancri-modal').classList.remove('active'); }
+        document.getElementById('cancri-modal').addEventListener('click', function(e) { if (e.target === this) closeCancriModal(); });
+
+        // 关闭大犬座VY弹窗
+        function closeVYCmaModal() { document.getElementById('vycma-modal').classList.remove('active'); }
+        document.getElementById('vycma-modal').addEventListener('click', function(e) { if (e.target === this) closeVYCmaModal(); });
+
+        // 关闭天门增四弹窗
+        function closeVir61Modal() { document.getElementById('vir61-modal').classList.remove('active'); }
+        document.getElementById('vir61-modal').addEventListener('click', function(e) { if (e.target === this) closeVir61Modal(); });
+
+        // 关闭仙王座γ弹窗
+        function closeGammaCepModal() { document.getElementById('gammacep-modal').classList.remove('active'); }
+        document.getElementById('gammacep-modal').addEventListener('click', function(e) { if (e.target === this) closeGammaCepModal(); });
+
+        // 关闭仙女座υ弹窗
+        function closeUpsAndModal() { document.getElementById('upsand-modal').classList.remove('active'); }
+        document.getElementById('upsand-modal').addEventListener('click', function(e) { if (e.target === this) closeUpsAndModal(); });
+
+        // 关闭手枪星弹窗
+        function closePistolModal() { document.getElementById('pistol-modal').classList.remove('active'); }
+        document.getElementById('pistol-modal').addEventListener('click', function(e) { if (e.target === this) closePistolModal(); });
+
+        // 关闭鲸鱼座τ弹窗
+        function closeTauCetiModal() { document.getElementById('tauceti-modal').classList.remove('active'); }
+        document.getElementById('tauceti-modal').addEventListener('click', function(e) { if (e.target === this) closeTauCetiModal(); });
+
+        // 关闭白羊座α弹窗
+        function closeHamalModal() { document.getElementById('hamal-modal').classList.remove('active'); }
+        document.getElementById('hamal-modal').addEventListener('click', function(e) { if (e.target === this) closeHamalModal(); });
+
+        // 关闭英仙座α弹窗
+        function closeMirfakModal() { document.getElementById('mirfak-modal').classList.remove('active'); }
+        document.getElementById('mirfak-modal').addEventListener('click', function(e) { if (e.target === this) closeMirfakModal(); });
+
+        // 关闭海山二弹窗
+        function closeEtaCarModal() { document.getElementById('etacar-modal').classList.remove('active'); }
+        document.getElementById('etacar-modal').addEventListener('click', function(e) { if (e.target === this) closeEtaCarModal(); });
+    </script>
+</body>
+</html>
