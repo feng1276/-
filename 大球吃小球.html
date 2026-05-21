@@ -277,6 +277,83 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
 
+        #startScreen .more-modes-btn {
+            padding: 15px 50px;
+            font-size: 24px;
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        #startScreen .more-modes-btn:hover {
+            background: #3dbdb5;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        /* 模式选择弹窗样式 */
+        #modeSelection {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 400;
+            min-width: 400px;
+        }
+
+        #modeSelection h2 {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #4ecdc4;
+        }
+
+        #modeSelection .mode-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            margin: 10px;
+            min-width: 200px;
+        }
+
+        #modeSelection .mode-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        #modeSelection .close-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #modeSelection .close-btn:hover {
+            background: #555;
+        }
+
         /* 背景动画元素 */
         .floating-circle {
             position: absolute;
@@ -292,7 +369,7 @@
         }
     </style>
 </head>
-<body>
+<body onmousemove="handleGlobalMouseMove(event)">
 
     <div id="startScreen">
         <div class="floating-circle" style="width: 100px; height: 100px; background: #ff6b6b; top: 10%; left: 10%;"></div>
@@ -319,6 +396,21 @@
         </div>
 
         <button class="start-btn" onclick="startGame()">开始游戏</button>
+        <button class="more-modes-btn" onclick="showModeSelection()">更多模式</button>
+    </div>
+
+    <div id="modeSelection">
+        <h2>选择游戏模式</h2>
+        <div style="margin: 20px 0;">
+            <label for="growthMultiplier" style="font-size: 18px;">吃彩豆与扎刺体积倍率 (1-100):</label>
+            <br><br>
+            <input type="number" id="growthMultiplier" min="1" max="100" value="10" 
+                   style="padding: 10px; font-size: 16px; width: 150px; text-align: center; border-radius: 5px; border: none;"
+                   oninput="validateGrowthMultiplier(this)">
+        </div>
+        <button class="mode-btn" onclick="startFastGrowthMode()">加速增长</button>
+        <br>
+        <button class="close-btn" onclick="hideModeSelection()">关闭</button>
     </div>
 
     <div id="ui">
@@ -381,11 +473,95 @@
         <button onclick="restartGame()">再来一局</button>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" tabindex="0"></canvas>
+    <input id="hiddenInput" type="text" style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;" autocomplete="off" />
 
 <script>
+    // 先声明所有全局变量，避免暂时性死区问题
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var mouse = { x: 0, y: 0 };
+    var mouseMoveCount = 0;
+    var pointerMoveCount = 0;
+    var clickCount = 0;
+    var keyDownCount = 0;
+    var lastKey = '';
+    var keyState = {};
+    var splitRequested = false;
+    var ejectRequested = false;
+    var isPaused = false;
+    var isGameOver = false;
+
+    // 全局事件处理函数（供body内联事件使用）
+    function handleGlobalKeyDown(e) {
+        try {
+            keyDownCount++;
+            lastKey = e.code || e.key || 'unknown';
+            keyState[e.code || e.key] = true;
+            
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+            if (isGameOver || isPaused) return;
+
+            if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+                e.preventDefault();
+                splitRequested = true;
+            }
+            if (e.code === 'KeyW' || e.key === 'w' || e.key === 'W' || e.keyCode === 87) {
+                e.preventDefault();
+                ejectRequested = true;
+            }
+        } catch(err) {
+            keyDownCount = -1;
+            lastKey = 'err:' + err.message;
+        }
+    }
+    function handleGlobalMouseMove(e) {
+        mouse.x = e.clientX - width / 2;
+        mouse.y = e.clientY - height / 2;
+        mouseMoveCount++;
+    }
+    function handleGlobalKeyUp(e) {
+        keyState[e.code || e.key] = false;
+    }
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const hiddenInput = document.getElementById('hiddenInput');
+    
+    // 隐藏输入框的键盘事件监听
+    hiddenInput.addEventListener('keydown', (e) => {
+        keyDownCount++;
+        lastKey = e.code || e.key || 'unknown';
+        keyState[e.code || e.key] = true;
+        e.preventDefault();
+        
+        if (isGameOver || isPaused) return;
+
+        if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+            splitRequested = true;
+        }
+        if (e.code === 'KeyW' || e.key === 'w' || e.key === 'W' || e.keyCode === 87) {
+            ejectRequested = true;
+        }
+        // 清空输入框内容
+        hiddenInput.value = '';
+    });
+    hiddenInput.addEventListener('keyup', (e) => {
+        keyState[e.code || e.key] = false;
+    });
+    // 输入框的input事件作为备用
+    hiddenInput.addEventListener('input', (e) => {
+        const val = hiddenInput.value;
+        if (val.includes(' ')) {
+            splitRequested = true;
+        }
+        if (val.includes('w') || val.includes('W')) {
+            ejectRequested = true;
+        }
+        keyDownCount++;
+        lastKey = 'input:' + val;
+        hiddenInput.value = '';
+    });
     
     // UI Elements
     const scoreBoard = document.getElementById('scoreBoard');
@@ -403,8 +579,7 @@
     const minimapCtx = minimapCanvas.getContext('2d');
     let minimapSize = 150; // 小地图尺寸
 
-    // 游戏状态变量
-    let isPaused = false;
+    // isPaused已在前面用var声明
 
     // 初始化小地图画布大小
     function initMinimap() {
@@ -450,11 +625,8 @@
     const FOOD_COUNT = 4000;
     const BOT_COUNT = 30;
 
-    // 游戏状态变量
-    let width, height;
+    // 游戏状态变量（width, height, mouse, mouseMoveCount等已在前面用var声明）
     let camera = { x: 0, y: 0, scale: 1, targetScale: 1 };
-    let mouse = { x: 0, y: 0 };
-    let isGameOver = false;
     let animationId;
     let frameCount = 0;
 
@@ -579,11 +751,68 @@
     window.addEventListener('resize', resize);
     resize();
 
+    let eventsInitialized = true;
+    // 全局鼠标位置跟踪
+    let globalMouseX = 0, globalMouseY = 0;
+    
     // 鼠标移动监听 (记录相对于屏幕中心的坐标)
-    window.addEventListener('mousemove', (e) => {
+    function updateMouse(e) {
         mouse.x = e.clientX - width / 2;
         mouse.y = e.clientY - height / 2;
+        globalMouseX = e.clientX;
+        globalMouseY = e.clientY;
+        if (e.type === 'pointermove') pointerMoveCount++;
+        else mouseMoveCount++;
+    }
+    // 使用多种方式绑定鼠标事件，确保至少有一种能工作
+    window.addEventListener('mousemove', updateMouse);
+    window.addEventListener('pointermove', updateMouse);
+    document.addEventListener('mousemove', updateMouse);
+    document.addEventListener('pointermove', updateMouse);
+    canvas.addEventListener('mousemove', updateMouse);
+    canvas.addEventListener('pointermove', updateMouse);
+    // 也使用onmousemove属性方式
+    window.onmousemove = updateMouse;
+    document.onmousemove = updateMouse;
+    document.body.onmousemove = updateMouse;
+    
+    // 测试其他鼠标事件
+    window.addEventListener('mouseover', (e) => { mouseMoveCount += 100; });
+    window.addEventListener('mouseenter', (e) => { mouseMoveCount += 1000; });
+    window.addEventListener('click', (e) => { mouse.x = e.clientX - width / 2; mouse.y = e.clientY - height / 2; clickCount++; });
+    
+    // 点击canvas时聚焦，启用键盘控制
+    canvas.addEventListener('click', () => {
+        canvas.focus();
     });
+    
+    // 使用setInterval轮询鼠标位置作为备用方案
+    setInterval(() => {
+        if (mouseMoveCount === 0 && pointerMoveCount === 0) {
+            // 如果事件方式不工作，尝试通过其他方式获取鼠标位置
+            try {
+                // 使用Performance API检测鼠标活动
+                mouse.x = globalMouseX - width / 2;
+                mouse.y = globalMouseY - height / 2;
+            } catch(e) {}
+        }
+    }, 16);
+
+    // 触摸移动监听 (移动设备支持)
+    window.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        mouse.x = touch.clientX - width / 2;
+        mouse.y = touch.clientY - height / 2;
+    }, { passive: false });
+
+    // 触摸开始监听 (移动设备支持)
+    window.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        mouse.x = touch.clientX - width / 2;
+        mouse.y = touch.clientY - height / 2;
+    }, { passive: false });
 
     // 滚轮缩放监听
     window.addEventListener('wheel', (e) => {
@@ -622,21 +851,35 @@
     }, { passive: false });
 
     // 键盘事件监听
-    window.addEventListener('keydown', (e) => {
+    function handleKeyDown(e) {
+        keyDownCount++;
+        lastKey = e.code;
+        keyState[e.code] = true;
+        
+        // 如果焦点在输入框上，不处理游戏键盘事件
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+        
         if (isGameOver || isPaused) return;
 
         // 空格键分身
         if (e.code === 'Space') {
             e.preventDefault();
-            player.split();
+            splitRequested = true;
         }
 
         // W键吐孢子
         if (e.code === 'KeyW') {
             e.preventDefault();
-            player.ejectSpore();
+            ejectRequested = true;
         }
-    });
+    }
+    function handleKeyUp(e) {
+        keyState[e.code] = false;
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('keyup', handleKeyUp);
 
     // 实体基类
     class Entity {
@@ -849,6 +1092,15 @@
 
             // 更新所有分身
             this.cells.forEach(cell => {
+                // 限制最大直径为场地边长
+                const maxRadius = WORLD_SIZE / 2;
+                if (cell.targetRadius > maxRadius) {
+                    cell.targetRadius = maxRadius;
+                }
+                if (cell.radius > maxRadius) {
+                    cell.radius = maxRadius;
+                }
+
                 // 将鼠标屏幕坐标转换为世界坐标，考虑缩放比例
                 const scale = camera.scale || 1;
                 cell.targetX = mouse.x / scale + camera.x;
@@ -858,6 +1110,7 @@
                 let speed = 250 / cell.targetRadius;
                 if (speed > 12) speed = 12;
                 if (speed < 2) speed = 2;
+
 
                 // 应用速度倍率
                 speed *= this.speedMultiplier;
@@ -877,9 +1130,14 @@
                     let dy = cell.targetY - cell.y;
                     let dist = Math.hypot(dx, dy);
 
-                    if (dist > speed) {
-                        cell.x += (dx / dist) * speed;
-                        cell.y += (dy / dist) * speed;
+                    if (dist > 1) {
+                        if (dist > speed) {
+                            cell.x += (dx / dist) * speed;
+                            cell.y += (dy / dist) * speed;
+                        } else {
+                            cell.x = cell.targetX;
+                            cell.y = cell.targetY;
+                        }
                     }
                 }
             });
@@ -1502,6 +1760,15 @@
         }
 
         update() {
+            // 限制最大直径为场地边长
+            const maxRadius = WORLD_SIZE / 2;
+            if (this.targetRadius > maxRadius) {
+                this.targetRadius = maxRadius;
+            }
+            if (this.radius > maxRadius) {
+                this.radius = maxRadius;
+            }
+
             // 计算移动速度
             let speed = 250 / this.targetRadius;
             if (speed > 12) speed = 12;
@@ -1592,7 +1859,22 @@
                 for (let cell of p1Cells) {
                     let dist = Math.hypot(cell.x - f.x, cell.y - f.y);
                     if (dist < cell.radius) {
-                        cell.eat(f);
+                        // 如果开启了加速增长模式，使用玩家设置的倍率
+                        if (isFastGrowthMode) {
+                            // 倍率为100时，相当于吃100个彩豆
+                            // 计算单个彩豆的面积
+                            const foodArea = Math.PI * f.radius * f.radius;
+                            // 乘以倍率，得到相当于吃多个彩豆的总面积
+                            const addedArea = foodArea * growthMultiplier;
+                            // 计算当前面积
+                            const currentArea = Math.PI * cell.targetRadius * cell.targetRadius;
+                            // 新面积 = 当前面积 + 增加的面积
+                            const newArea = currentArea + addedArea;
+                            // 更新目标半径
+                            cell.targetRadius = Math.sqrt(newArea / Math.PI);
+                        } else {
+                            cell.eat(f);
+                        }
                         foods.splice(j, 1);
                         spawnFood(1); // 吃一个补一个
                         break;
@@ -1606,7 +1888,7 @@
                 for (let cell of p1Cells) {
                     let dist = Math.hypot(cell.x - spore.x, cell.y - spore.y);
                     if (dist < cell.radius) {
-                        // 吃孢子增加500体积
+                        // 吃孢子增加500体积（加速增长模式下保持不变）
                         let currentArea = Math.PI * cell.targetRadius * cell.targetRadius;
                         let newArea = currentArea + 500;
                         cell.targetRadius = Math.sqrt(newArea / Math.PI);
@@ -1700,7 +1982,7 @@
                             
                         } else {
                             // Bot 或 玩家分身数大于2，不再分裂，直接增加体积
-                            // 增加5000面积
+                            // 增加5000面积（不受倍率影响）
                             let addedArea = 5000;
                             let newCellArea = cellArea + addedArea;
                             let newRadius = Math.sqrt(newCellArea / Math.PI);
@@ -1766,7 +2048,15 @@
                                 if (p2 === player && isInvincible) {
                                     continue;
                                 }
-                                cell1.eat(cell2);
+                                // 如果开启了加速增长模式，获得3倍体积
+                                if (isFastGrowthMode) {
+                                    const area1 = Math.PI * cell1.targetRadius * cell1.targetRadius;
+                                    const area2 = Math.PI * cell2.radius * cell2.radius;
+                                    const newArea = area1 + area2 * 3; // 3倍增长
+                                    cell1.targetRadius = Math.sqrt(newArea / Math.PI);
+                                } else {
+                                    cell1.eat(cell2);
+                                }
                                 // 移除被吃掉的分身
                                 if (p2.cells) {
                                     p2.cells = p2.cells.filter(c => c !== cell2);
@@ -1805,7 +2095,15 @@
                                 if (p1 === player && isInvincible) {
                                     continue;
                                 }
-                                cell2.eat(cell1);
+                                // 如果开启了加速增长模式，获得3倍体积
+                                if (isFastGrowthMode) {
+                                    const area1 = Math.PI * cell2.targetRadius * cell2.targetRadius;
+                                    const area2 = Math.PI * cell1.radius * cell1.radius;
+                                    const newArea = area1 + area2 * 3; // 3倍增长
+                                    cell2.targetRadius = Math.sqrt(newArea / Math.PI);
+                                } else {
+                                    cell2.eat(cell1);
+                                }
                                 // 移除被吃掉的分身
                                 if (p1.cells) {
                                     p1.cells = p1.cells.filter(c => c !== cell1);
@@ -1974,6 +2272,13 @@
     // 游戏主循环
     function gameLoop() {
         if (isGameOver || isPaused) return;
+        
+        // 确保隐藏输入框保持焦点（用于捕获键盘事件）
+        // 但如果焦点在输入框（如作弊菜单）中，不抢焦点
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (document.activeElement !== hiddenInput && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+            hiddenInput.focus();
+        }
 
         // 平滑缩放：逐渐接近目标缩放比例
         const zoomSmoothness = 0.1; // 缩放平滑度，值越小越平滑
@@ -1990,6 +2295,23 @@
 
         // 再次检查游戏是否已经结束，避免在玩家被吃掉后继续执行
         if (isGameOver) return;
+
+        // 计算镜头位置 (让玩家始终在屏幕中心)
+        const playerPos = player.getMainPosition();
+
+        // 确保玩家始终位于屏幕中心
+        camera.x = playerPos.x;
+        camera.y = playerPos.y;
+
+        // 处理分身和吐孢子请求
+        if (splitRequested && player) {
+            player.split();
+            splitRequested = false;
+        }
+        if (ejectRequested && player) {
+            player.ejectSpore();
+            ejectRequested = false;
+        }
 
         // 更新玩家和Bot
         player.update();
@@ -2009,13 +2331,6 @@
             spike.processed = false; // 重置刺刺球的 processed 标志
             spike.update();
         });
-
-        // 计算镜头位置 (让玩家始终在屏幕中心)
-        const playerPos = player.getMainPosition();
-
-        // 确保玩家始终位于屏幕中心
-        camera.x = playerPos.x;
-        camera.y = playerPos.y;
 
         // 碰撞检测
         if (!isGameOver) {
@@ -2113,6 +2428,8 @@
     // 作弊相关变量
     let isInvincible = false;
     let isFlashRecombine = false;
+    let isFastGrowthMode = false;
+    let growthMultiplier = 10; // 吃彩豆和扎刺的体积倍率
 
     // 作弊菜单切换
     document.getElementById('cheatBtn').addEventListener('click', function() {
@@ -2284,6 +2601,7 @@
     function restartGame() {
         isGameOver = false;
         isPaused = false;
+        // 不重置isFastGrowthMode，保持用户选择的模式
         gameOverScreen.style.display = 'none';
         pauseScreen.style.display = 'none';
         
@@ -2301,14 +2619,80 @@
         
         mouse.x = 0;
         mouse.y = 0;
+        camera = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, scale: 1, targetScale: 1 };
 
         if (animationId) cancelAnimationFrame(animationId);
+        hiddenInput.focus();
         gameLoop();
     }
 
     // 开始游戏
     function startGame() {
         document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('modeSelection').style.display = 'none';
+        // 移除输入框焦点，确保键盘事件能被游戏捕获
+        if (document.activeElement) document.activeElement.blur();
+        document.body.focus();
+        canvas.focus();
+        hiddenInput.focus();
+        restartGame();
+    }
+
+    // 显示模式选择弹窗
+    function showModeSelection() {
+        document.getElementById('modeSelection').style.display = 'block';
+    }
+
+    // 隐藏模式选择弹窗
+    function hideModeSelection() {
+        document.getElementById('modeSelection').style.display = 'none';
+    }
+
+    // 验证倍率输入
+    function validateGrowthMultiplier(input) {
+        let value = input.value;
+
+        // 移除小数部分
+        if (value.includes('.')) {
+            value = value.split('.')[0];
+            input.value = value;
+        }
+
+        // 转换为整数
+        let numValue = parseInt(value);
+
+        // 自动纠正超出范围的值
+        if (!isNaN(numValue)) {
+            if (numValue < 1) {
+                input.value = 1;
+            } else if (numValue > 100) {
+                input.value = 100;
+            }
+        }
+    }
+
+    // 启动加速增长模式
+    function startFastGrowthMode() {
+        // 获取输入框的值
+        const multiplierInput = document.getElementById('growthMultiplier');
+        let multiplier = parseInt(multiplierInput.value);
+
+        // 验证倍率范围
+        if (isNaN(multiplier) || multiplier < 1 || multiplier > 100) {
+            alert('请输入1至100之间的有效数字！');
+            return;
+        }
+
+        // 设置倍率
+        growthMultiplier = multiplier;
+
+        document.getElementById('modeSelection').style.display = 'none';
+        document.getElementById('startScreen').style.display = 'none';
+
+        // 设置加速增长模式标志
+        isFastGrowthMode = true;
+
+        // 启动游戏
         restartGame();
     }
 
