@@ -222,22 +222,52 @@ s.parentNode.insertBefore(hm, s);
             margin-bottom: 12px;
         }
 
-        .progress-container {
+        .progress-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .progress-slider::-webkit-slider-runnable-track {
             background: rgba(150, 150, 150, 0.4);
             height: 6px;
             border-radius: 3px;
-            cursor: pointer;
             position: relative;
-            margin-bottom: 8px;
+            overflow: hidden;
         }
 
-        .progress-bar {
-            background: #ffffff;
-            height: 100%;
-            width: 0%;
+        .progress-slider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--progress-width, 0%);
+            background: var(--progress-gradient, linear-gradient(to right, #ffffff 0%, #48dbfb 25%, #2ecc71 50%, #feca57 75%, #ff6b6b 100%));
             border-radius: 3px;
-            position: relative;
-            transition: width 0.1s linear;
+            pointer-events: none;
+            z-index: 5;
+            transition: width 0.2s ease;
+        }
+
+        .progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 0;
+            height: 0;
+            cursor: pointer;
+        }
+
+        .progress-slider::-webkit-slider-thumb:hover {
+            width: 0;
+            height: 0;
         }
 
         .time-stamps {
@@ -703,9 +733,7 @@ s.parentNode.insertBefore(hm, s);
     <div class="bottom-controls">
         <!-- 进度条 -->
         <div class="progress-wrapper">
-            <div class="progress-container" id="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
+            <input type="range" class="progress-slider" id="progress-slider" min="0" max="100" value="0" step="0.1">
             <div class="time-stamps">
                 <span id="current-time">00:00</span>
                 <span id="total-duration">00:00</span>
@@ -849,8 +877,7 @@ s.parentNode.insertBefore(hm, s);
         const coverImg = document.getElementById('cover-img');
         const trackTitle = document.getElementById('track-title');
         const trackArtist = document.getElementById('track-artist');
-        const progressBar = document.getElementById('progress-bar');
-        const progressContainer = document.getElementById('progress-container');
+        const progressSlider = document.getElementById('progress-slider');
         const currentTimeEl = document.getElementById('current-time');
         const totalDurationEl = document.getElementById('total-duration');
         
@@ -901,7 +928,9 @@ s.parentNode.insertBefore(hm, s);
             coverImg.src = track.cover;
             
             // 重置进度条
-            progressBar.style.width = '0%';
+            progressSlider.value = 0;
+            progressSlider.style.setProperty('--progress-width', '0%');
+            progressSlider.style.setProperty('--progress-gradient', 'none');
             currentTimeEl.textContent = '00:00';
             totalDurationEl.textContent = '00:00';
 
@@ -972,23 +1001,132 @@ s.parentNode.insertBefore(hm, s);
             return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
+        // ===== 进度条动态渐变逻辑 =====
+        // 定义全局色彩映射 (基于整体进度条0~100%)
+        // 色标点: [位置百分比, 颜色值]
+        const COLOR_STOPS = [
+            { pos: 0,   color: '#ffffff' },  // 0% 白色
+            { pos: 25,  color: '#3b82f6' },  // 25% 明亮蓝
+            { pos: 50,  color: '#10b981' },  // 50% 翠绿
+            { pos: 75,  color: '#facc15' },  // 75% 金黄色
+            { pos: 100, color: '#ef4444' }   // 100% 红色
+        ];
+
+        // 根据给定的当前进度百分比 (0-100) 生成一个从0% 到 currentPercent% 的渐变字符串
+        function getGradientByProgress(currentPercent) {
+            if (currentPercent <= 0) {
+                return 'linear-gradient(90deg, #ffffff 0%, #ffffff 0%)';
+            }
+            if (currentPercent >= 100) {
+                return 'linear-gradient(90deg, #ffffff 0%, #3b82f6 25%, #10b981 50%, #facc15 75%, #ef4444 100%)';
+            }
+
+            // 1. 收集所有位置小于等于 currentPercent 的固定色标
+            let includedStops = COLOR_STOPS.filter(stop => stop.pos <= currentPercent);
+
+            // 2. 需要计算终点 currentPercent 处的精确颜色 (根据全局原始映射插值)
+            let endColor = getColorAtPosition(currentPercent);
+
+            // 构建新渐变字符串，起始点一定是0%位置颜色 (0% 白色)
+            // 色标需要映射到相对于渐变总长 [0, currentPercent] 的比例
+            let gradientStops = [];
+
+            // 添加所有已包含色标的相对位置转换
+            for (let stop of includedStops) {
+                let relativePos = (stop.pos / currentPercent) * 100;
+                // 避免边界过近出现精度问题，且相对位置必须在0~100之间
+                let safePos = Math.min(100, Math.max(0, relativePos));
+                gradientStops.push(`${stop.color} ${safePos}%`);
+            }
+
+            // 添加终点 (必须让终点颜色精确为插值颜色)
+            gradientStops.push(`${endColor} 100%`);
+
+            // 确保渐变方向从左至右
+            return `linear-gradient(90deg, ${gradientStops.join(', ')})`;
+        }
+
+        // 根据全局位置(0-100)获取精确插值颜色（基于COLOR_STOPS分段线性插值）
+        function getColorAtPosition(pos) {
+            if (pos <= 0) return COLOR_STOPS[0].color;
+            if (pos >= 100) return COLOR_STOPS[COLOR_STOPS.length-1].color;
+
+            // 找到前后区间
+            let lower = null, upper = null;
+            for (let i = 0; i < COLOR_STOPS.length - 1; i++) {
+                const p1 = COLOR_STOPS[i].pos;
+                const p2 = COLOR_STOPS[i+1].pos;
+                if (pos >= p1 && pos <= p2) {
+                    lower = COLOR_STOPS[i];
+                    upper = COLOR_STOPS[i+1];
+                    break;
+                }
+            }
+            if (!lower) return '#cccccc';
+
+            // 线性插值 RGB
+            const t = (pos - lower.pos) / (upper.pos - lower.pos);
+            const color1 = hexToRgb(lower.color);
+            const color2 = hexToRgb(upper.color);
+            if (!color1 || !color2) return lower.color;
+
+            const r = Math.round(color1.r + (color2.r - color1.r) * t);
+            const g = Math.round(color1.g + (color2.g - color1.g) * t);
+            const b = Math.round(color1.b + (color2.b - color1.b) * t);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // 辅助: 十六进制颜色转RGB对象 (支持简写#fff)
+        function hexToRgb(hex) {
+            let h = hex.trim();
+            if (h.startsWith('#')) {
+                h = h.slice(1);
+            }
+            if (h.length === 3) {
+                h = h.split('').map(c => c + c).join('');
+            }
+            if (h.length !== 6) return null;
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+            return { r, g, b };
+        }
+
         // 更新进度条与时间文本
         function updateProgress(e) {
             const { duration, currentTime } = e.target;
             if(!duration) return;
             const progressPercent = (currentTime / duration) * 100;
-            progressBar.style.width = `${progressPercent}%`;
+            progressSlider.value = progressPercent;
+            progressSlider.style.setProperty('--progress-width', `${progressPercent}%`);
+
+            // 应用动态渐变到::before伪元素
+            if (progressPercent === 0) {
+                progressSlider.style.setProperty('--progress-gradient', 'none');
+            } else {
+                const dynamicGradient = getGradientByProgress(progressPercent);
+                progressSlider.style.setProperty('--progress-gradient', dynamicGradient);
+            }
+
             currentTimeEl.textContent = formatTime(currentTime);
             totalDurationEl.textContent = formatTime(duration);
         }
 
         // 手动点击/拖动修改进度
         function setProgress(e) {
-            const width = this.clientWidth;
-            const clickX = e.offsetX;
+            const progressPercent = parseFloat(e.target.value);
             const duration = audio.duration;
             if(!duration) return;
-            audio.currentTime = (clickX / width) * duration;
+            audio.currentTime = (progressPercent / 100) * duration;
+
+            // 应用动态渐变到::before伪元素
+            if (progressPercent === 0) {
+                progressSlider.style.setProperty('--progress-gradient', 'none');
+            } else {
+                const dynamicGradient = getGradientByProgress(progressPercent);
+                progressSlider.style.setProperty('--progress-gradient', dynamicGradient);
+            }
         }
 
         // 切换播放模式
@@ -1111,8 +1249,8 @@ s.parentNode.insertBefore(hm, s);
                 totalDurationEl.textContent = formatTime(audio.duration);
             });
 
-            // 进度条点击控制
-            progressContainer.addEventListener('click', setProgress);
+            // 进度条拖动控制
+            progressSlider.addEventListener('input', setProgress);
 
             // 音量滑动调节
             volumeSlider.addEventListener('input', handleVolumeChange);
