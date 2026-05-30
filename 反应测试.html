@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>反应速度测试</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #10b981;
+            --accent2: #14b8a6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+        }
+        header {
+            text-align: center;
+            padding: 1.5rem 1rem 0.5rem;
+            width: 100%;
+        }
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #14b8a6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 0.25rem;
+            color: #10b981;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+        .back-link:hover { color: #14b8a6; }
+        .click-area {
+            width: min(85vw, 380px);
+            aspect-ratio: 1;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            margin: 1rem auto;
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            border: 3px solid transparent;
+        }
+        .click-area.waiting {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: #fff;
+        }
+        .click-area.ready {
+            background: #10b981;
+            border-color: #059669;
+            color: #fff;
+            box-shadow: 0 0 40px rgba(16,185,129,0.4);
+        }
+        .click-area.idle {
+            background: var(--surface);
+            border-color: #475569;
+            color: var(--text-secondary);
+        }
+        .click-area.clicked {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .click-area.too-early {
+            background: #f59e0b;
+            border-color: #d97706;
+            color: #fff;
+        }
+        .stats {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 0.5rem 1rem;
+        }
+        .stat-box {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 0.8rem 1.5rem;
+            text-align: center;
+            min-width: 90px;
+        }
+        .stat-box .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+        .stat-box .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .stat-box .value.best { color: #10b981; }
+        .stat-box .value.avg { color: #14b8a6; }
+        .round-info {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            padding: 0.5rem;
+        }
+        .results-list {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 0.5rem;
+            min-height: 2rem;
+        }
+        .result-chip {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .result-chip.fast { color: #10b981; }
+        .result-chip.medium { color: #eab308; }
+        .result-chip.slow { color: #ef4444; }
+        .btn {
+            padding: 0.7rem 1.8rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fff;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #14b8a6);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16,185,129,0.4);
+        }
+    </style>
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?43572d67ab5bd2cb80169add393b5373";
+    var s = document.getElementsByTagName("script")[0]; 
+    s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+</head>
+<body>
+    <header>
+        <h1>⚡ 反应速度测试</h1>
+        <p>测试您的反应有多快</p>
+        <a href="游戏页面.html" class="back-link">← 返回游戏中心</a>
+    </header>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="label">最快</div>
+            <div class="value best" id="bestTime">---</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">平均</div>
+            <div class="value avg" id="avgTime">---</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">上次</div>
+            <div class="value" id="lastTime" style="color:#94a3b8;">---</div>
+        </div>
+        <button class="btn btn-primary" id="restartBtn">重新测试</button>
+    </div>
+
+    <div class="round-info" id="roundInfo">第 1 / 5 轮</div>
+
+    <div class="click-area idle" id="clickArea">
+        点击此处开始
+    </div>
+
+    <div class="results-list" id="resultsList"></div>
+
+    <script>
+        const TOTAL_ROUNDS = 5;
+        const clickArea = document.getElementById('clickArea');
+        const roundInfo = document.getElementById('roundInfo');
+        const resultsList = document.getElementById('resultsList');
+
+        let state = 'idle'; // idle | waiting | ready | clicked | too-early
+        let results = [];
+        let round = 0;
+        let timeoutId = null;
+        let waitStart = 0;
+        let bestTime = null;
+        let personalBest = parseFloat(localStorage.getItem('reactionBest') || '0') || null;
+
+        function updateStats() {
+            document.getElementById('lastTime').textContent = results.length ? `${results[results.length-1]}ms` : '---';
+            document.getElementById('bestTime').textContent = bestTime !== null ? `${bestTime}ms` : (personalBest !== null ? `${personalBest}ms` : '---');
+            document.getElementById('avgTime').textContent = results.length ? `${Math.round(results.reduce((a,b)=>a+b,0)/results.length)}ms` : '---';
+            document.getElementById('roundInfo').textContent = `第 ${Math.min(round+1, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS} 轮`;
+        }
+
+        function renderResults() {
+            resultsList.innerHTML = results.map((t, i) => {
+                let cls = 'result-chip ';
+                if (t < 250) cls += 'fast';
+                else if (t < 400) cls += 'medium';
+                else cls += 'slow';
+                return `<span class="${cls}">#${i+1} ${t}ms</span>`;
+            }).join('');
+        }
+
+        function setArea(cls, text) {
+            clickArea.className = 'click-area ' + cls;
+            clickArea.textContent = text;
+        }
+
+        function startRound() {
+            if (round >= TOTAL_ROUNDS) { finish(); return; }
+            state = 'waiting';
+            setArea('waiting', '等待颜色变化...');
+            roundInfo.textContent = `第 ${round+1} / ${TOTAL_ROUNDS} 轮`;
+            const delay = 1000 + Math.random() * 2500;
+            timeoutId = setTimeout(() => {
+                state = 'ready';
+                waitStart = performance.now();
+                setArea('ready', '现在点击！');
+            }, delay);
+        }
+
+        function handleClick() {
+            if (state === 'idle') {
+                results = []; round = 0; bestTime = null;
+                renderResults();
+                updateStats();
+                startRound();
+                return;
+            }
+            if (state === 'waiting') {
+                clearTimeout(timeoutId);
+                state = 'too-early';
+                setArea('too-early', '太早了！等绿色再点击');
+                round++;
+                renderResults();
+                updateStats();
+                setTimeout(() => { if (round < TOTAL_ROUNDS) startRound(); else finish(); }, 1200);
+                return;
+            }
+            if (state === 'ready') {
+                const rt = Math.round(performance.now() - waitStart);
+                results.push(rt);
+                if (bestTime === null || rt < bestTime) bestTime = rt;
+                if (personalBest === null || rt < personalBest) {
+                    personalBest = rt;
+                    localStorage.setItem('reactionBest', personalBest);
+                }
+                round++;
+                state = 'clicked';
+                setArea('clicked', `${rt} ms`);
+                renderResults();
+                updateStats();
+                setTimeout(() => { if (round < TOTAL_ROUNDS) startRound(); else finish(); }, 800);
+                return;
+            }
+        }
+
+        function finish() {
+            state = 'idle';
+            if (results.length) {
+                const avg = Math.round(results.reduce((a,b)=>a+b,0) / results.length);
+                const min = Math.min(...results);
+                let rating = '';
+                if (min < 200) rating = '⚡ 闪电般的反应！';
+                else if (min < 300) rating = '👏 非常快！';
+                else if (min < 400) rating = '👍 不错的速度！';
+                else rating = '🐢 继续练习吧！';
+                setArea('idle', `${rating}\n最快: ${min}ms | 平均: ${avg}ms\n点击重新测试`);
+            } else {
+                setArea('idle', '点击此处开始');
+            }
+            roundInfo.textContent = '测试完成';
+            updateStats();
+        }
+
+        clickArea.addEventListener('click', handleClick);
+        clickArea.addEventListener('touchend', e => { e.preventDefault(); handleClick(); });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            clearTimeout(timeoutId);
+            results = []; round = 0; bestTime = null; state = 'idle';
+            setArea('idle', '点击此处开始');
+            roundInfo.textContent = `第 1 / ${TOTAL_ROUNDS} 轮`;
+            resultsList.innerHTML = '';
+            updateStats();
+        });
+
+        updateStats();
+    </script>
+</body>
+</html>
