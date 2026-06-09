@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品详情 — Amazon 仿制</title>
+    <link rel="icon" href="https://www.amazon.com/favicon.ico">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Amazon Ember',Arial,sans-serif;background:#E3E6E6;color:#0F1111;min-width:1000px;line-height:1.4}
+
+        /* Header */
+        #header{background:#131921;color:#fff;padding:10px 15px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+        .header-logo{flex-shrink:0;padding:5px 8px;border:1px solid transparent;border-radius:3px;cursor:pointer;display:flex;align-items:center}
+        .header-logo:hover{border-color:#fff}
+        .header-search{flex:1;min-width:300px;display:flex;height:42px;border-radius:6px;overflow:hidden}
+        .search-input{flex:1;border:none;padding:0 12px;font-size:15px;outline:none}
+        .search-btn{background:#FEBD69;border:none;width:45px;cursor:pointer;border-radius:0 6px 6px 0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .search-btn:hover{background:#F3A847}
+        .header-cart{flex-shrink:0;padding:6px 10px;border:1px solid transparent;border-radius:3px;cursor:pointer;display:flex;align-items:flex-end;gap:4px;color:#fff;text-decoration:none}
+        .header-cart:hover{border-color:#fff}
+        .cart-count{color:#F90;font-size:16px;font-weight:700;min-width:19px;text-align:center}
+        .cart-text{font-size:14px;font-weight:700;margin-bottom:4px;color:#fff}
+
+        /* Subnav */
+        #subnav{background:#232F3E;color:#fff;padding:0 15px;display:flex;align-items:center;font-size:14px;height:39px}
+        .back-link{color:#ccc;padding:8px 10px;text-decoration:none;font-size:13px;border:1px solid transparent;border-radius:3px}
+        .back-link:hover{color:#fff;border-color:#fff}
+
+        /* Breadcrumb */
+        .breadcrumb{max-width:1500px;margin:0 auto;padding:12px 20px;font-size:13px;color:#565959}
+        .breadcrumb a{color:#007185;text-decoration:none}
+        .breadcrumb a:hover{color:#C7511F;text-decoration:underline}
+
+        /* Main */
+        #main-content{max-width:1500px;margin:0 auto;padding:20px 10px}
+        .product-detail{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:30px}
+        .product-gallery{position:sticky;top:80px;align-self:start}
+        .product-gallery .main-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+        .product-info{background:#fff;padding:28px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .product-info h1{font-size:26px;font-weight:700;line-height:1.3;margin-bottom:8px}
+        .product-info .brand{font-size:14px;color:#007185;margin-bottom:8px}
+        .product-info .brand a{color:#007185;text-decoration:none}
+        .product-info .brand a:hover{color:#C7511F;text-decoration:underline}
+        .product-info .rating-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px}
+        .product-info .stars{color:#DD8C2F;font-size:18px}
+        .product-info .rating-link{color:#007185;text-decoration:none;font-size:14px}
+        .product-info .rating-link:hover{color:#C7511F}
+        .product-info .divider{height:1px;background:#DDD;margin:16px 0}
+        .product-info .price-block{margin-bottom:16px}
+        .product-info .deal-badge{display:inline-block;background:#CC0C39;color:#fff;font-size:12px;padding:3px 8px;border-radius:3px;font-weight:700;margin-bottom:6px}
+        .product-info .list-price{font-size:14px;color:#565959;text-decoration:line-through}
+        .product-info .current-price{font-size:32px;font-weight:700;color:#B12704}
+        .product-info .current-price .currency{font-size:18px;vertical-align:super}
+        .product-info .current-price .cents{font-size:18px;vertical-align:super}
+        .product-info .savings{font-size:14px;color:#0F1111;margin-top:4px}
+        .product-info .prime-badge{display:inline-flex;align-items:center;gap:4px;background:#232F3E;color:#fff;font-size:12px;padding:4px 10px;border-radius:3px;margin:8px 0}
+        .product-info .stock-status{color:#007600;font-size:16px;font-weight:500;margin:8px 0}
+        .product-info .stock-status.out{color:#CC0C39}
+        .product-info .qty-row{display:flex;align-items:center;gap:10px;margin:16px 0}
+        .product-info .qty-row label{font-size:14px;font-weight:700}
+        .product-info .qty-row select{padding:6px 12px;border:1px solid #DDD;border-radius:8px;font-size:14px;outline:none;background:#F0F2F2;cursor:pointer}
+        .btn-add-cart{display:block;width:100%;padding:12px;background:#FFD814;border:1px solid #FCD200;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:8px;transition:background .2s}
+        .btn-add-cart:hover{background:#F7CA00}
+        .btn-add-cart:active{background:#F0B800;transform:scale(.98)}
+        .btn-buy-now{display:block;width:100%;padding:12px;background:#FFA41C;border:1px solid #FF8F00;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:8px;transition:background .2s}
+        .btn-buy-now:hover{background:#FA8900}
+        .btn-buy-now:active{background:#F08800;transform:scale(.98)}
+        .btn-wishlist{display:block;width:100%;padding:10px;background:#fff;border:1px solid #DDD;border-radius:20px;font-size:14px;cursor:pointer;transition:background .2s}
+        .btn-wishlist:hover{background:#F7FAFA}
+        .secure-note{font-size:12px;color:#565959;margin-top:12px;display:flex;align-items:center;gap:4px}
+
+        /* Description */
+        .product-description{background:#fff;padding:24px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:20px}
+        .product-description h3{font-size:18px;font-weight:700;margin-bottom:12px}
+        .product-description p{font-size:14px;line-height:1.7;color:#333;margin-bottom:8px}
+        .product-description ul{padding-left:20px;margin:8px 0}
+        .product-description li{font-size:14px;line-height:1.8;color:#333}
+
+        /* Related */
+        .related-section{margin:20px 0}
+        .related-section h3{font-size:21px;margin-bottom:14px}
+        .related-row{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;-ms-overflow-style:none;scrollbar-width:none}
+        .related-row::-webkit-scrollbar{display:none}
+        .related-item{flex-shrink:0;width:180px;background:#fff;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .2s,transform .2s;text-decoration:none;color:inherit;display:block}
+        .related-item:hover{box-shadow:0 4px 12px rgba(0,0,0,.12);transform:translateY(-2px)}
+        .related-item img{width:100%;height:160px;object-fit:cover}
+        .related-item .rel-info{padding:10px}
+        .related-item .rel-name{font-size:13px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
+        .related-item .rel-price{font-size:16px;font-weight:700;margin-top:4px}
+
+        /* Toast */
+        .toast-container{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+        .toast{background:#232F3E;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:auto;animation:toast-in .35s ease-out,toast-out .3s ease-in forwards;animation-delay:0s,1.8s;opacity:0}
+        @keyframes toast-in{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes toast-out{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
+
+        /* Added to cart animation */
+        .cart-pop{animation:cart-pop .4s ease-out}
+        @keyframes cart-pop{0%{transform:scale(1)}40%{transform:scale(1.35);color:#F90}100%{transform:scale(1)}}
+
+        /* Success modal */
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+        .modal-overlay.show{opacity:1;visibility:visible}
+        .modal-box{background:#fff;border-radius:8px;padding:28px;max-width:420px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+        .modal-box .check-icon{font-size:48px;margin-bottom:12px}
+        .modal-box h4{font-size:18px;margin-bottom:8px}
+        .modal-box p{font-size:14px;color:#565959;margin-bottom:16px}
+        .modal-box .btn-go-cart{display:inline-block;padding:10px 32px;background:#FFD814;border:1px solid #FCD200;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;color:#111;margin:4px;transition:background .2s}
+        .modal-box .btn-go-cart:hover{background:#F7CA00}
+        .modal-box .btn-continue{display:inline-block;padding:10px 32px;background:#fff;border:1px solid #DDD;border-radius:20px;font-size:14px;cursor:pointer;text-decoration:none;color:#111;margin:4px;transition:background .2s}
+        .modal-box .btn-continue:hover{background:#F7FAFA}
+
+        /* Footer */
+        footer{background:#232F3E;color:#fff;margin-top:40px}
+        .footer-legal{background:#131A22;padding:30px 20px;text-align:center}
+        .footer-legal p{font-size:12px;color:#999}
+
+        @media (max-width:900px){
+            body{min-width:320px}
+            .product-detail{grid-template-columns:1fr;gap:20px}
+            .product-gallery{position:static}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="header">
+        <a href="yamax.html" class="header-logo" title="Amazon Home">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97 30" fill="none" width="97" height="30">
+                <path d="M71.5 19.8c-.8 0-1.4-.2-1.9-.6-.5-.4-.8-1-.8-1.7 0-.8.3-1.4.8-1.8.5-.4 1.2-.6 2-.6.6 0 1.1.1 1.5.3.4.2.6.4.6.6 0 .2-.1.4-.3.5-.2.1-.4.2-.7.2-.2 0-.3-.1-.5-.2-.1-.1-.3-.1-.5-.1-.4 0-.7.1-.9.3-.2.2-.3.5-.3.9 0 .4.1.7.3.9.2.2.5.3.9.3.3 0 .5 0 .7-.1.2-.1.3-.1.3-.2v-.6h-.9c-.2 0-.4-.1-.5-.2-.1-.1-.2-.3-.2-.5 0-.2.1-.4.2-.5.2-.1.4-.2.6-.2h1.3c.3 0 .5.1.6.2.1.1.2.3.2.5v1.2c0 .5-.1.8-.4 1-.2.3-.9.5-1.8.5zM76.3 19.7h-.7l-2-5.8c0-.1-.1-.2-.1-.4 0-.2 0-.3.1-.4.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.2.3.3.5l1.5 4.6h.1l1.5-4.6c.1-.2.2-.4.3-.5.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.1.3.1.5 0 .1 0 .3-.1.4l-2.1 5.7zM79.6 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5zM86.2 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5z" fill="#fff"/>
+                <path d="M2.4 24V6.2h3.7l4.9 7.6c.4.7.8 1.5 1.1 2.3h.1c-.1-.9-.2-1.8-.2-2.8V6.2h3.5V24h-3.4L7.1 16.2c-.5-.8-.9-1.6-1.2-2.4h-.1c.1.9.2 1.8.2 2.8V24H2.4zM21.1 24V6.2h9v2.8h-5.4v4.8h4.8v2.8h-4.8v4.6h5.5V24h-9.1zM32.3 24V6.2h9.1v2.8h-5.5v4.8h4.8v2.8H36v4.6h5.5V24h-9.1zM49.7 24l-1.3-3.5h-5.1L42 24h-3.8l5.7-17.8h2.7L52.5 24h-2.8zm-2.5-6.2l-1.5-4.2c-.2-.6-.4-1.3-.5-2h-.1c-.1.7-.3 1.4-.5 2l-1.5 4.2h4.1zM57.3 24V9h-3.3V6.2h10.2V9h-3.3v15h-3.6zM65.1 24V6.2h3.6V24h-3.6z" fill="#fff"/>
+                <path d="M84.5 29.3c-4.8 3.5-11.7 5.4-17.6 5.4-8.3 0-15.8-3.1-21.5-8.2-.4-.4 0-1 .5-.7 6.1 3.6 13.7 5.7 21.5 5.7 5.3 0 11.1-1.1 16.4-3.4.8-.3 1.5.5.7 1.2z" fill="#F90"/>
+                <path d="M86.1 27.5c-.6-.8-4-0.4-5.5-.2-.5.1-.5-.3-.1-.6 2.7-1.9 7.1-1.4 7.6-.7.5.6-.1 5.2-2.7 7.4-.4.3-.8.2-.6-.3.6-1.5 1.9-4.9 1.3-5.6z" fill="#F90"/>
+            </svg>
+        </a>
+        <div class="header-search">
+            <input type="text" class="search-input" placeholder="搜索 Amazon" id="searchInput">
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24" fill="#333" width="22" height="22"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </button>
+        </div>
+        <a href="yamax-cart.html" class="header-cart">
+            <svg viewBox="0 0 38 38" fill="none" width="38" height="38"><path d="M14 29c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM9.3 10l2.4 5h14.5l2.5-5H9.3z" fill="#fff"/><path d="M27 16H9.8l-.5-1H7v-2h3.1l3.5 7.2L12 24h15v2H11.2l-.4-1.3L8 16H4v-2h3l2.3 4h17.7v2zm-7 13c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#fff"/></svg>
+            <span class="cart-count" id="cartCount">0</span>
+            <span class="cart-text">购物车</span>
+        </a>
+    </header>
+
+    <!-- Subnav -->
+    <nav id="subnav">
+        <a href="yamax.html" class="back-link">← 返回首页</a>
+        <a href="yamax-category.html" class="back-link">← 继续购物</a>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" id="breadcrumb">
+        <a href="yamax.html">首页</a> › <a href="yamax-category.html" id="breadCatLink">分类</a> › <span id="breadProduct">商品详情</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <div class="product-detail">
+            <!-- Gallery -->
+            <div class="product-gallery">
+                <img class="main-img" id="mainImg" src="" alt="Product Image">
+            </div>
+
+            <!-- Info -->
+            <div class="product-info">
+                <div class="brand">品牌: <a href="#" id="brandLink">Amazon Basics</a></div>
+                <h1 id="prodTitle">商品名称</h1>
+                <div class="rating-row">
+                    <span class="stars" id="prodStars">★★★★☆</span>
+                    <a href="#" class="rating-link" id="ratingLink">12,847 条评价</a>
+                </div>
+                <div class="divider"></div>
+                <div class="price-block">
+                    <div class="deal-badge" id="dealBadge" style="display:none">优惠 40%</div>
+                    <div class="list-price" id="listPrice" style="display:none">$99.99</div>
+                    <div class="current-price" id="currentPrice"><span class="currency">$</span>59<span class="cents">.99</span></div>
+                    <div class="savings" id="savings" style="display:none">节省 $40.00</div>
+                </div>
+                <div class="prime-badge"><span style="color:#00A8E1">◈</span> Prime 会员专享 — 免费配送</div>
+                <div class="stock-status" id="stockStatus">✓ 有货</div>
+                <div class="qty-row">
+                    <label for="qtySelect">数量:</label>
+                    <select id="qtySelect">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+                <button class="btn-add-cart" id="btnAddCart">🛒 加入购物车</button>
+                <button class="btn-buy-now" id="btnBuyNow">⚡ 立即购买</button>
+                <button class="btn-wishlist" id="btnWishlist">♡ 添加到心愿单</button>
+                <div class="secure-note">🔒 安全交易 · 30天退货保证</div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="product-description" id="productDesc">
+            <h3>商品描述</h3>
+            <p>Loading...</p>
+        </div>
+
+        <!-- Related Products -->
+        <div class="related-section">
+            <h3>✨ 猜你喜欢</h3>
+            <div class="related-row" id="relatedRow"></div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <div class="check-icon">✅</div>
+            <h4>已添加到购物车！</h4>
+            <p id="modalCartInfo">1 件商品，小计 $59.99</p>
+            <a href="yamax-cart.html" class="btn-go-cart">🛒 查看购物车</a>
+            <button class="btn-continue" id="btnContinue">继续购物</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-legal">
+            <p>© 1996-2026, Amazon.com, Inc. 或其附属公司 — 仿制网页，仅供学习参考</p>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        // ===== Product Data Pool (same as category page) =====
+        const allProducts = [
+            {name:'无线降噪蓝牙耳机 Pro',price:59.99,listPrice:99.99,rating:'★★★★☆',ratingNum:12847,deal:40,prime:true,img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop',bestseller:true,cats:['electronics','all'],brand:'AudioPro',desc:'这款无线降噪蓝牙耳机采用最新的主动降噪技术，能有效过滤环境噪音。30小时超长续航，高品质音频解码，支持AAC和aptX。柔软的记忆海绵耳罩，长时间佩戴依旧舒适。折叠便携设计，附赠收纳盒。',features:['主动降噪 (ANC) 技术','30小时电池续航','蓝牙 5.3 连接','高保真 40mm 驱动单元','内置麦克风，支持通话','折叠便携设计']},
+            {name:'智能手表 Ultra - 健康监测',price:139.99,listPrice:199.99,rating:'★★★★★',ratingNum:8932,deal:30,prime:true,img:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop',bestseller:true,cats:['electronics','fashion','all'],brand:'TechWear',desc:'智能手表 Ultra 是您的全天候健康伙伴。内置心率监测、血氧检测、睡眠分析等多种健康功能。GPS精准定位，50米防水等级，支持100+运动模式。AMOLED屏幕，常亮显示，14天超长续航。',features:['心率 & 血氧监测','GPS 定位追踪','50米防水','100+ 运动模式','AMOLED 常亮屏','14天电池续航']},
+            {name:'全自动咖啡机 12杯容量',price:84.99,listPrice:129.99,rating:'★★★★☆',ratingNum:6521,deal:35,prime:true,img:'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=600&fit=crop',bestseller:false,cats:['home','all'],brand:'BrewMaster',desc:'BrewMaster全自动咖啡机内置锥形研磨器，可研磨新鲜咖啡豆。12杯大容量玻璃壶，保温底盘保持咖啡温度。可编程定时功能，24小时预设。可调节浓度选择，满足不同口味。可拆卸部件，清洗方便。',features:['内置锥形研磨器','12杯玻璃壶','24小时可编程定时','可调节浓度','保温底盘','可拆卸清洗']},
+            {name:'Nike Air Max 270 运动鞋',price:112.49,listPrice:149.99,rating:'★★★★☆',ratingNum:15203,deal:25,prime:true,img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop',bestseller:true,cats:['fashion','sports','all'],brand:'Nike',desc:'Nike Air Max 270 采用大型Air气垫，提供卓越的后跟缓冲。弹性网面鞋面，透气舒适。橡胶外底提供良好的抓地力。潮流设计，适合日常穿着和轻度运动。男女同款，多色可选。',features:['大型Air Max气垫','弹性网面鞋面','橡胶外底','后跟缓冲','透气舒适','男女同款']},
+            {name:'扫地机器人 LiDAR导航',price:219.99,listPrice:399.99,rating:'★★★★★',ratingNum:3876,deal:45,prime:true,img:'https://images.unsplash.com/photo-1605647540644-25e2e56ed9cc?w=600&h=600&fit=crop',bestseller:false,cats:['home','electronics','all'],brand:'CleanBot',desc:'CleanBot Pro 采用LiDAR激光导航，精准绘制房间地图。5000Pa超强吸力，深层清洁地毯和地板。智能避障，自动识别家具和障碍物。APP远程控制，支持分区清扫和禁区设置。自动回充，续航180分钟。',features:['LiDAR 激光导航','5000Pa 超强吸力','智能避障','APP 远程控制','分区清扫','180分钟续航']},
+            {name:'旅行背包 40L 防水',price:34.99,listPrice:69.99,rating:'★★★★☆',ratingNum:9118,deal:50,prime:true,img:'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=600&h=600&fit=crop',bestseller:false,cats:['fashion','sports','all'],brand:'TravelGear',desc:'40L大容量旅行背包，采用防水抗撕裂面料。多个分隔口袋，可放15.6寸笔记本电脑。背部透气网垫，S型肩带减轻负重。防盗后开拉链设计，USB充电口。适合旅行、徒步、日常通勤。',features:['40L 大容量','防水抗撕裂面料','15.6寸笔记本仓','防盗后开拉链','USB 充电口','透气背垫']},
+            {name:'铝合金笔记本支架',price:29.99,listPrice:null,rating:'★★★★☆',ratingNum:3452,deal:0,prime:true,img:'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600&h=600&fit=crop',bestseller:false,cats:['computers','electronics','all'],brand:'ErgoStand',desc:'铝合金笔记本支架，采用优质铝合金打造，稳固耐用。可调节高度和角度，改善坐姿，减轻颈椎压力。镂空设计利于散热，硅胶防滑垫保护设备。兼容10-17寸笔记本和平板。',features:['铝合金材质','高度角度可调','镂空散热设计','硅胶防滑垫','兼容10-17寸设备','折叠便携']},
+            {name:'真无线降噪耳机 蓝牙5.3',price:49.99,listPrice:null,rating:'★★★★★',ratingNum:7891,deal:0,prime:true,img:'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&h=600&fit=crop',bestseller:false,cats:['electronics','all'],brand:'AudioPro',desc:'真无线降噪耳机，蓝牙5.3稳定连接。混合降噪技术，三档模式切换。8小时单次续航，充电盒额外32小时。IPX5防水防汗，适合运动。触控操作，支持语音助手。',features:['蓝牙 5.3','混合降噪','8+32小时续航','IPX5 防水','触控操作','语音助手']}
+        ];
+
+        // ===== Parse URL =====
+        const params = new URLSearchParams(window.location.search);
+        const productId = parseInt(params.get('id')) || 0;
+        const cat = params.get('cat') || 'all';
+        const product = allProducts[productId] || allProducts[0];
+
+        // ===== Category names =====
+        const catNames = {electronics:'电子设备',computers:'电脑及配件',home:'家居与厨房',books:'书籍',toys:'玩具与游戏',fashion:'时尚服饰',beauty:'美妆护肤',sports:'运动与户外',all:'全部商品'};
+        const catName = catNames[cat] || '分类';
+
+        // ===== Render product =====
+        document.title = product.name + ' — Amazon';
+        document.getElementById('mainImg').src = product.img;
+        document.getElementById('mainImg').alt = product.name;
+        document.getElementById('prodTitle').textContent = product.name;
+        document.getElementById('prodStars').textContent = product.rating;
+        document.getElementById('ratingLink').textContent = product.ratingNum.toLocaleString() + ' 条评价';
+        document.getElementById('brandLink').textContent = product.brand;
+        document.getElementById('breadCatLink').textContent = catName;
+        document.getElementById('breadCatLink').href = 'yamax-category.html?cat=' + cat;
+        document.getElementById('breadProduct').textContent = product.name;
+
+        // Price
+        const priceWhole = Math.floor(product.price);
+        const priceCents = String(product.price.toFixed(2)).split('.')[1];
+        document.getElementById('currentPrice').innerHTML = '<span class="currency">$</span>' + priceWhole + '<span class="cents">.' + priceCents + '</span>';
+
+        if (product.listPrice) {
+            document.getElementById('listPrice').style.display = 'block';
+            document.getElementById('listPrice').textContent = '$' + product.listPrice.toFixed(2);
+            document.getElementById('savings').style.display = 'block';
+            document.getElementById('savings').textContent = '节省 $' + (product.listPrice - product.price).toFixed(2) + ' (' + product.deal + '%)';
+        }
+
+        if (product.deal > 0) {
+            document.getElementById('dealBadge').style.display = 'inline-block';
+            document.getElementById('dealBadge').textContent = '优惠 ' + product.deal + '%';
+        }
+
+        // Status
+        if (Math.random() > 0.9) {
+            document.getElementById('stockStatus').textContent = '✗ 暂时缺货';
+            document.getElementById('stockStatus').classList.add('out');
+        }
+
+        // Description
+        let descHtml = '<h3>商品描述</h3><p>' + product.desc + '</p>';
+        descHtml += '<h3 style="margin-top:16px">产品特点</h3><ul>';
+        product.features.forEach(f => { descHtml += '<li>' + f + '</li>'; });
+        descHtml += '</ul>';
+        document.getElementById('productDesc').innerHTML = descHtml;
+
+        // Related products
+        const related = allProducts.filter((_, i) => i !== productId).slice(0, 6);
+        document.getElementById('relatedRow').innerHTML = related.map((p, i) => {
+            const realIndex = allProducts.indexOf(p);
+            return `
+            <a href="yamax-product.html?id=${realIndex}&cat=${cat}" class="related-item">
+                <img src="${p.img.replace('600','400')}" alt="${p.name}" loading="lazy">
+                <div class="rel-info">
+                    <div class="rel-name">${p.name}</div>
+                    <div class="rel-price">$${p.price.toFixed(2)}</div>
+                </div>
+            </a>`;
+        }).join('');
+
+        // ===== Cart functionality =====
+        const savedCart = localStorage.getItem('yamaxCart');
+        let cartItems = savedCart ? JSON.parse(savedCart) : [];
+        updateCartCount();
+
+        function updateCartCount() {
+            document.getElementById('cartCount').textContent = cartItems.length;
+        }
+
+        function saveCart() {
+            localStorage.setItem('yamaxCart', JSON.stringify(cartItems));
+            updateCartCount();
+        }
+
+        function addToCart() {
+            const qty = parseInt(document.getElementById('qtySelect').value);
+            const existing = cartItems.find(item => item.productId === productId);
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                cartItems.push({
+                    productId: productId,
+                    name: product.name,
+                    price: product.price,
+                    img: product.img,
+                    qty: qty,
+                    prime: product.prime
+                });
+            }
+            saveCart();
+
+            // Animate cart icon
+            const countEl = document.getElementById('cartCount');
+            countEl.classList.add('cart-pop');
+            setTimeout(() => countEl.classList.remove('cart-pop'), 400);
+
+            // Show modal
+            const total = (product.price * qty).toFixed(2);
+            document.getElementById('modalCartInfo').textContent = qty + ' 件商品，小计 $' + total;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+
+        document.getElementById('btnAddCart').addEventListener('click', addToCart);
+        document.getElementById('btnBuyNow').addEventListener('click', function() {
+            addToCart();
+            showToast('⚡ 正在跳转到结算页面…');
+            setTimeout(() => { window.location.href = 'yamax-cart.html'; }, 1500);
+        });
+        document.getElementById('btnWishlist').addEventListener('click', function() {
+            this.textContent = '❤ 已添加到心愿单！';
+            this.style.color = '#CC0C39';
+            showToast('❤ 已添加到心愿单！');
+            setTimeout(() => { this.textContent = '♡ 添加到心愿单'; this.style.color = ''; }, 2500);
+        });
+
+        // Modal
+        document.getElementById('btnContinue').addEventListener('click', function() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        });
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('show');
+        });
+
+        // ===== Search =====
+        function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (q) showToast('🔍 搜索: ' + q + ' — 演示页面，仅供展示');
+        }
+        document.getElementById('searchBtn').addEventListener('click', doSearch);
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // ===== Toast =====
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.getElementById('toastContainer').appendChild(t);
+            setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+        }
+
+        console.log('🛍️ 商品详情页就绪: ' + product.name);
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon 分类浏览</title>
+    <link rel="icon" href="https://www.amazon.com/favicon.ico">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Amazon Ember',Arial,sans-serif;background:#E3E6E6;color:#0F1111;min-width:1000px;line-height:1.4}
+
+        /* Header */
+        #header{background:#131921;color:#fff;padding:10px 15px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+        .header-logo{flex-shrink:0;padding:5px 8px;border:1px solid transparent;border-radius:3px;cursor:pointer;display:flex;align-items:center}
+        .header-logo:hover{border-color:#fff}
+        .header-search{flex:1;min-width:300px;display:flex;height:42px;border-radius:6px;overflow:hidden}
+        .search-input{flex:1;border:none;padding:0 12px;font-size:15px;outline:none}
+        .search-btn{background:#FEBD69;border:none;width:45px;cursor:pointer;border-radius:0 6px 6px 0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .search-btn:hover{background:#F3A847}
+        .header-cart{flex-shrink:0;padding:6px 10px;border:1px solid transparent;border-radius:3px;cursor:pointer;display:flex;align-items:flex-end;gap:4px;color:#fff;text-decoration:none}
+        .header-cart:hover{border-color:#fff}
+        .cart-count{color:#F90;font-size:16px;font-weight:700;min-width:19px;text-align:center}
+        .cart-text{font-size:14px;font-weight:700;margin-bottom:4px;color:#fff}
+
+        /* Subnav */
+        #subnav{background:#232F3E;color:#fff;padding:0 15px;display:flex;align-items:center;font-size:14px;height:39px}
+        .subnav-links{display:flex;align-items:center;gap:4px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+        .subnav-links::-webkit-scrollbar{display:none}
+        .subnav-links a{color:#fff;padding:8px 10px;border:1px solid transparent;border-radius:3px;white-space:nowrap;font-size:14px;text-decoration:none}
+        .subnav-links a:hover,.subnav-links a.active{text-decoration:none;border-color:#fff}
+        .subnav-links a.active{color:#FEBD69;border-color:#FEBD69}
+        .back-link{color:#ccc;padding:8px 10px;text-decoration:none;font-size:13px;margin-right:8px;border:1px solid transparent;border-radius:3px}
+        .back-link:hover{color:#fff;border-color:#fff}
+
+        /* Breadcrumb */
+        .breadcrumb{max-width:1500px;margin:0 auto;padding:12px 20px;font-size:13px;color:#565959}
+        .breadcrumb a{color:#007185;text-decoration:none}
+        .breadcrumb a:hover{color:#C7511F;text-decoration:underline}
+        .breadcrumb span{color:#0F1111;font-weight:700}
+
+        /* Main */
+        #main-content{max-width:1500px;margin:0 auto;padding:0 10px}
+        .category-header{background:#fff;padding:20px 20px 16px;margin-bottom:16px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .category-header h1{font-size:28px;font-weight:700;margin-bottom:4px}
+        .category-header .result-count{font-size:14px;color:#565959}
+
+        /* Filters bar */
+        .filter-bar{display:flex;align-items:center;gap:12px;padding:10px 0;font-size:14px;flex-wrap:wrap}
+        .filter-chip{background:#fff;border:1px solid #D5D9D9;border-radius:16px;padding:6px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .15s}
+        .filter-chip:hover{background:#F7FAFA;border-color:#999}
+        .filter-chip.active{background:#232F3E;color:#fff;border-color:#232F3E}
+        .sort-dropdown{background:#fff;border:1px solid #D5D9D9;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;outline:none;margin-left:auto}
+        .sort-dropdown:hover{border-color:#999}
+
+        /* Product Grid */
+        .product-grid-cat{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px}
+        .product-item{background:#fff;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .2s,transform .2s;text-decoration:none;color:inherit;display:block}
+        .product-item:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(-3px)}
+        .product-item img{width:100%;height:200px;object-fit:cover}
+        .prod-info{padding:14px}
+        .prod-name{font-size:14px;line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .prod-rating{color:#DD8C2F;font-size:13px;margin-bottom:4px}
+        .prod-rating .rating-num{color:#007185;margin-left:4px}
+        .prod-deal{font-size:11px;color:#C7511F;margin-bottom:4px;font-weight:700}
+        .prod-price{font-size:20px;font-weight:700}
+        .prod-price .currency{font-size:13px;vertical-align:super}
+        .prod-price .cents{font-size:13px;vertical-align:super}
+        .prod-list-price{font-size:12px;color:#565959;text-decoration:line-through;margin-left:4px}
+        .prod-shipping{font-size:12px;color:#565959;margin-top:4px}
+        .prime-badge{display:inline-flex;align-items:center;gap:2px;font-size:11px;color:#fff;background:#232F3E;padding:2px 6px;border-radius:3px;margin-top:4px}
+        .badge-best-seller{display:inline-block;background:#C7511F;color:#fff;font-size:11px;padding:2px 6px;border-radius:2px;font-weight:600;margin-bottom:4px}
+        .badge-limited{display:inline-block;background:#CC0C39;color:#fff;font-size:10px;padding:2px 6px;border-radius:2px;font-weight:600;margin-bottom:4px}
+        .badge-amazon-choice{display:inline-flex;align-items:center;gap:4px;background:#232F3E;color:#fff;font-size:11px;padding:2px 6px;border-radius:2px;font-weight:600;margin-bottom:4px}
+
+        /* Pagination */
+        .pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:20px 0 40px}
+        .page-btn{background:#fff;border:1px solid #D5D9D9;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;text-decoration:none;color:#0F1111;transition:all .15s}
+        .page-btn:hover{background:#F7FAFA;border-color:#999}
+        .page-btn.active{background:#232F3E;color:#fff;border-color:#232F3E;cursor:default}
+        .page-btn.disabled{color:#CCC;cursor:default;pointer-events:none}
+
+        /* Footer */
+        .back-to-top{background:#37475A;color:#fff;text-align:center;padding:15px;font-size:13px;cursor:pointer;text-decoration:none;display:block}
+        .back-to-top:hover{background:#485769}
+        footer{background:#232F3E;color:#fff;margin-top:20px}
+        .footer-links{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:1200px;margin:0 auto;padding:40px 20px}
+        .footer-col h4{font-size:16px;font-weight:700;margin-bottom:12px}
+        .footer-col a{display:block;font-size:14px;color:#DDD;padding:3px 0;text-decoration:none}
+        .footer-col a:hover{color:#fff;text-decoration:underline}
+        .footer-legal{background:#131A22;padding:30px 20px;text-align:center}
+        .footer-legal p{font-size:12px;color:#999;margin-top:6px}
+
+        /* Toast */
+        .toast-container{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+        .toast{background:#232F3E;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:auto;animation:toast-in .35s ease-out,toast-out .3s ease-in forwards;animation-delay:0s,1.8s;opacity:0}
+        @keyframes toast-in{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes toast-out{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
+
+        @media (max-width:1200px){.product-grid-cat{grid-template-columns:repeat(3,1fr)}}
+        @media (max-width:900px){body{min-width:320px}.product-grid-cat{grid-template-columns:repeat(2,1fr)}.footer-links{grid-template-columns:repeat(2,1fr)}}
+        @media (max-width:600px){.product-grid-cat{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="header">
+        <a href="yamax.html" class="header-logo" title="Amazon Home">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97 30" fill="none" width="97" height="30">
+                <path d="M71.5 19.8c-.8 0-1.4-.2-1.9-.6-.5-.4-.8-1-.8-1.7 0-.8.3-1.4.8-1.8.5-.4 1.2-.6 2-.6.6 0 1.1.1 1.5.3.4.2.6.4.6.6 0 .2-.1.4-.3.5-.2.1-.4.2-.7.2-.2 0-.3-.1-.5-.2-.1-.1-.3-.1-.5-.1-.4 0-.7.1-.9.3-.2.2-.3.5-.3.9 0 .4.1.7.3.9.2.2.5.3.9.3.3 0 .5 0 .7-.1.2-.1.3-.1.3-.2v-.6h-.9c-.2 0-.4-.1-.5-.2-.1-.1-.2-.3-.2-.5 0-.2.1-.4.2-.5.2-.1.4-.2.6-.2h1.3c.3 0 .5.1.6.2.1.1.2.3.2.5v1.2c0 .5-.1.8-.4 1-.2.3-.9.5-1.8.5zM76.3 19.7h-.7l-2-5.8c0-.1-.1-.2-.1-.4 0-.2 0-.3.1-.4.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.2.3.3.5l1.5 4.6h.1l1.5-4.6c.1-.2.2-.4.3-.5.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.1.3.1.5 0 .1 0 .3-.1.4l-2.1 5.7zM79.6 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5zM86.2 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5z" fill="#fff"/>
+                <path d="M2.4 24V6.2h3.7l4.9 7.6c.4.7.8 1.5 1.1 2.3h.1c-.1-.9-.2-1.8-.2-2.8V6.2h3.5V24h-3.4L7.1 16.2c-.5-.8-.9-1.6-1.2-2.4h-.1c.1.9.2 1.8.2 2.8V24H2.4zM21.1 24V6.2h9v2.8h-5.4v4.8h4.8v2.8h-4.8v4.6h5.5V24h-9.1zM32.3 24V6.2h9.1v2.8h-5.5v4.8h4.8v2.8H36v4.6h5.5V24h-9.1zM49.7 24l-1.3-3.5h-5.1L42 24h-3.8l5.7-17.8h2.7L52.5 24h-2.8zm-2.5-6.2l-1.5-4.2c-.2-.6-.4-1.3-.5-2h-.1c-.1.7-.3 1.4-.5 2l-1.5 4.2h4.1zM57.3 24V9h-3.3V6.2h10.2V9h-3.3v15h-3.6zM65.1 24V6.2h3.6V24h-3.6z" fill="#fff"/>
+                <path d="M84.5 29.3c-4.8 3.5-11.7 5.4-17.6 5.4-8.3 0-15.8-3.1-21.5-8.2-.4-.4 0-1 .5-.7 6.1 3.6 13.7 5.7 21.5 5.7 5.3 0 11.1-1.1 16.4-3.4.8-.3 1.5.5.7 1.2z" fill="#F90"/>
+                <path d="M86.1 27.5c-.6-.8-4-0.4-5.5-.2-.5.1-.5-.3-.1-.6 2.7-1.9 7.1-1.4 7.6-.7.5.6-.1 5.2-2.7 7.4-.4.3-.8.2-.6-.3.6-1.5 1.9-4.9 1.3-5.6z" fill="#F90"/>
+            </svg>
+        </a>
+        <div class="header-search">
+            <input type="text" class="search-input" placeholder="搜索 Amazon" id="searchInput">
+            <button class="search-btn" aria-label="搜索" id="searchBtn">
+                <svg viewBox="0 0 24 24" fill="#333" width="22" height="22"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </button>
+        </div>
+        <a href="yamax-cart.html" class="header-cart">
+            <svg viewBox="0 0 38 38" fill="none" width="38" height="38"><path d="M14 29c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM9.3 10l2.4 5h14.5l2.5-5H9.3z" fill="#fff"/><path d="M27 16H9.8l-.5-1H7v-2h3.1l3.5 7.2L12 24h15v2H11.2l-.4-1.3L8 16H4v-2h3l2.3 4h17.7v2zm-7 13c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#fff"/></svg>
+            <span class="cart-count" id="cartCount">0</span>
+            <span class="cart-text">购物车</span>
+        </a>
+    </header>
+
+    <!-- Subnav -->
+    <nav id="subnav">
+        <a href="yamax.html" class="back-link">← 返回首页</a>
+        <div class="subnav-links">
+            <a href="yamax-category.html?cat=electronics">电子设备</a>
+            <a href="yamax-category.html?cat=computers">电脑</a>
+            <a href="yamax-category.html?cat=home">家居与厨房</a>
+            <a href="yamax-category.html?cat=books">书籍</a>
+            <a href="yamax-category.html?cat=toys">玩具与游戏</a>
+            <a href="yamax-category.html?cat=fashion">时尚服饰</a>
+            <a href="yamax-category.html?cat=beauty">美妆护肤</a>
+            <a href="yamax-category.html?cat=sports">运动户外</a>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" id="breadcrumb">
+        <a href="yamax.html">首页</a> › <span id="breadcrumbCat">分类</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <div class="category-header">
+            <h1 id="categoryTitle">分类商品</h1>
+            <div class="result-count" id="resultCount">共 48 件商品</div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <span style="font-weight:700;margin-right:4px">筛选：</span>
+            <div class="filter-chip active" data-filter="all">全部</div>
+            <div class="filter-chip" data-filter="prime">✓ Prime</div>
+            <div class="filter-chip" data-filter="deal">优惠中</div>
+            <div class="filter-chip" data-filter="bestseller">热销</div>
+            <select class="sort-dropdown" id="sortSelect">
+                <option value="featured">精选推荐</option>
+                <option value="price-low">价格从低到高</option>
+                <option value="price-high">价格从高到低</option>
+                <option value="rating">评分最高</option>
+                <option value="newest">最新上架</option>
+            </select>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="product-grid-cat" id="productGrid"></div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+            <span class="page-btn disabled">← 上一页</span>
+            <span class="page-btn active">1</span>
+            <a href="#" class="page-btn">2</a>
+            <a href="#" class="page-btn">3</a>
+            <a href="#" class="page-btn">下一页 →</a>
+        </div>
+    </div>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">回到顶部</a>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <div class="footer-col">
+                <h4>了解我们</h4>
+                <a href="yamax-category.html?cat=about">关于亚马逊</a>
+            </div>
+            <div class="footer-col">
+                <h4>帮助与支持</h4>
+                <a href="yamax-category.html?cat=help">客户服务</a>
+            </div>
+        </div>
+        <div class="footer-legal">
+            <p>© 1996-2026, Amazon.com, Inc. 或其附属公司 — 仿制网页，仅供学习参考</p>
+        </div>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    (function() {
+        // ===== Parse URL params =====
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('cat') || 'all';
+
+        // ===== Category data =====
+        const categories = {
+            electronics: { name: '电子设备', icon: '📱', desc: '手机、平板、笔记本电脑等' },
+            computers: { name: '电脑及配件', icon: '💻', desc: '笔记本、台式机、外设' },
+            home: { name: '家居与厨房', icon: '🏠', desc: '家具、厨具、装饰' },
+            books: { name: '书籍', icon: '📚', desc: '小说、教科书、电子书' },
+            toys: { name: '玩具与游戏', icon: '🎮', desc: '积木、桌游、遥控玩具' },
+            fashion: { name: '时尚服饰', icon: '👗', desc: '衣服、鞋、配饰' },
+            beauty: { name: '美妆护肤', icon: '💄', desc: '护肤品、化妆品、香水' },
+            sports: { name: '运动与户外', icon: '⚽', desc: '运动器材、户外装备' },
+            automotive: { name: '汽车用品', icon: '🚗', desc: '汽车配件、工具' },
+            grocery: { name: '食品与杂货', icon: '🛒', desc: '食品、饮料、日用品' },
+            music: { name: '乐器', icon: '🎵', desc: '吉他、钢琴、配件' },
+            all: { name: '全部商品', icon: '📦', desc: '浏览所有分类' }
+        };
+
+        const info = categories[cat] || categories['all'];
+        document.getElementById('categoryTitle').textContent = info.icon + ' ' + info.name;
+        document.getElementById('breadcrumbCat').textContent = info.name;
+        document.title = info.name + ' — Amazon 分类浏览';
+
+        // ===== Product data pool =====
+        const allProducts = [
+            {name:'无线降噪蓝牙耳机 Pro',price:59.99,listPrice:99.99,rating:'★★★★☆',ratingNum:12847,deal:40,prime:true,img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=360&fit=crop',bestseller:true,cats:['electronics','all']},
+            {name:'智能手表 Ultra - 健康监测',price:139.99,listPrice:199.99,rating:'★★★★★',ratingNum:8932,deal:30,prime:true,img:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=360&fit=crop',bestseller:true,cats:['electronics','fashion','all']},
+            {name:'全自动咖啡机 12杯容量',price:84.99,listPrice:129.99,rating:'★★★★☆',ratingNum:6521,deal:35,prime:true,img:'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&h=360&fit=crop',bestseller:false,cats:['home','all']},
+            {name:'Nike Air Max 270 运动鞋',price:112.49,listPrice:149.99,rating:'★★★★☆',ratingNum:15203,deal:25,prime:true,img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=360&fit=crop',bestseller:true,cats:['fashion','sports','all']},
+            {name:'扫地机器人 LiDAR导航',price:219.99,listPrice:399.99,rating:'★★★★★',ratingNum:3876,deal:45,prime:true,img:'https://images.unsplash.com/photo-1605647540644-25e2e56ed9cc?w=400&h=360&fit=crop',bestseller:false,cats:['home','electronics','all']},
+            {name:'旅行背包 40L 防水',price:34.99,listPrice:69.99,rating:'★★★★☆',ratingNum:9118,deal:50,prime:true,img:'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=360&fit=crop',bestseller:false,cats:['fashion','sports','all']},
+            {name:'铝合金笔记本支架',price:29.99,listPrice:null,rating:'★★★★☆',ratingNum:3452,deal:0,prime:true,img:'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=360&fit=crop',bestseller:false,cats:['computers','electronics','all']},
+            {name:'真无线降噪耳机 蓝牙5.3',price:49.99,listPrice:null,rating:'★★★★★',ratingNum:7891,deal:0,prime:true,img:'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=360&fit=crop',bestseller:false,cats:['electronics','all']},
+            {name:'不锈钢保温水瓶 750ml',price:24.99,listPrice:null,rating:'★★★★☆',ratingNum:12305,deal:0,prime:true,img:'https://images.unsplash.com/photo-1615529182904-14819c35db37?w=400&h=360&fit=crop',bestseller:false,cats:['home','sports','all']},
+            {name:'LED 护眼台灯 触控调光',price:39.99,listPrice:null,rating:'★★★★☆',ratingNum:5678,deal:0,prime:true,img:'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&h=360&fit=crop',bestseller:false,cats:['home','computers','all']},
+            {name:'MagSafe 磁吸手机壳',price:19.99,listPrice:null,rating:'★★★★☆',ratingNum:2134,deal:0,prime:false,img:'https://images.unsplash.com/photo-1600080972464-8e5f35f63a8f?w=400&h=360&fit=crop',bestseller:false,cats:['electronics','fashion','all']},
+            {name:'4K 超高清智能电视 55寸',price:449.99,listPrice:599.99,rating:'★★★★★',ratingNum:4521,deal:25,prime:true,img:'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=400&h=360&fit=crop',bestseller:true,cats:['electronics','home','all']},
+            {name:'机械键盘 RGB背光',price:89.99,listPrice:129.99,rating:'★★★★☆',ratingNum:6210,deal:31,prime:true,img:'https://images.unsplash.com/photo-1613141411244-0e4ac259d217?w=400&h=360&fit=crop',bestseller:false,cats:['computers','electronics','all']},
+            {name:'护肤精华液 30ml',price:28.99,listPrice:null,rating:'★★★★★',ratingNum:8912,deal:0,prime:true,img:'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=360&fit=crop',bestseller:true,cats:['beauty','all']},
+            {name:'化妆品套装 12色眼影',price:34.99,listPrice:49.99,rating:'★★★★☆',ratingNum:3456,deal:30,prime:true,img:'https://images.unsplash.com/photo-1583248359095-daff1bf8ee4b?w=400&h=360&fit=crop',bestseller:false,cats:['beauty','all']},
+            {name:'法国进口香水 50ml',price:79.99,listPrice:109.99,rating:'★★★★★',ratingNum:2345,deal:27,prime:false,img:'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=360&fit=crop',bestseller:false,cats:['beauty','all']},
+            {name:'积木城堡 1200片',price:45.99,listPrice:null,rating:'★★★★☆',ratingNum:7890,deal:0,prime:true,img:'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=400&h=360&fit=crop',bestseller:true,cats:['toys','all']},
+            {name:'遥控赛车 高速越野',price:59.99,listPrice:79.99,rating:'★★★★☆',ratingNum:4567,deal:25,prime:true,img:'https://images.unsplash.com/photo-1618842676088-c4d48a6a7c9d?w=400&h=360&fit=crop',bestseller:false,cats:['toys','all']},
+            {name:'经典桌游套装',price:29.99,listPrice:null,rating:'★★★★★',ratingNum:5678,deal:0,prime:false,img:'https://images.unsplash.com/photo-1608848461950-0fe51dfc41cb?w=400&h=360&fit=crop',bestseller:false,cats:['toys','all']},
+            {name:'瑜伽垫 加厚防滑',price:25.99,listPrice:null,rating:'★★★★☆',ratingNum:9012,deal:0,prime:true,img:'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=360&fit=crop',bestseller:true,cats:['sports','all']},
+            {name:'折叠跑步机 家用静音',price:599.99,listPrice:799.99,rating:'★★★★☆',ratingNum:1234,deal:25,prime:true,img:'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=400&h=360&fit=crop',bestseller:false,cats:['sports','home','all']},
+            {name:'硬壳行李箱 28寸',price:129.99,listPrice:179.99,rating:'★★★★★',ratingNum:3456,deal:28,prime:true,img:'https://images.unsplash.com/photo-1553530250-8dcaa8f137b1?w=400&h=360&fit=crop',bestseller:false,cats:['fashion','all']},
+            {name:'电吉他套装 入门',price:199.99,listPrice:299.99,rating:'★★★★☆',ratingNum:1230,deal:33,prime:true,img:'https://images.unsplash.com/photo-1550985543-f47f38aee65d?w=400&h=360&fit=crop',bestseller:false,cats:['music','all']},
+            {name:'电子琴 61键',price:159.99,listPrice:219.99,rating:'★★★★★',ratingNum:890,deal:27,prime:true,img:'https://images.unsplash.com/photo-1598657336535-1a671a3ee60f?w=400&h=360&fit=crop',bestseller:false,cats:['music','toys','all']},
+            {name:'车载手机支架',price:12.99,listPrice:null,rating:'★★★★☆',ratingNum:23456,deal:0,prime:true,img:'https://images.unsplash.com/photo-1610016302534-6f2b2cf1f816?w=400&h=360&fit=crop',bestseller:true,cats:['automotive','electronics','all']},
+            {name:'有机咖啡豆 1kg',price:22.99,listPrice:null,rating:'★★★★★',ratingNum:6789,deal:0,prime:true,img:'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&h=360&fit=crop',bestseller:false,cats:['grocery','home','all']},
+            {name:'毛绒玩具熊 大号',price:32.99,listPrice:null,rating:'★★★★☆',ratingNum:4567,deal:0,prime:true,img:'https://images.unsplash.com/photo-1559454403-b8fb5f067e5e?w=400&h=360&fit=crop',bestseller:false,cats:['toys','all']},
+            {name:'4K 电脑显示器 27寸',price:299.99,listPrice:399.99,rating:'★★★★★',ratingNum:2345,deal:25,prime:true,img:'https://images.unsplash.com/photo-1527443224154-c4a3942d32ac?w=400&h=360&fit=crop',bestseller:false,cats:['computers','electronics','all']},
+            {name:'连衣裙 碎花夏季',price:39.99,listPrice:null,rating:'★★★★☆',ratingNum:5678,deal:0,prime:true,img:'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=360&fit=crop',bestseller:false,cats:['fashion','all']},
+            {name:'男士衬衫 商务休闲',price:44.99,listPrice:64.99,rating:'★★★★☆',ratingNum:3456,deal:31,prime:true,img:'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=360&fit=crop',bestseller:false,cats:['fashion','all']},
+            {name:'牛仔裤 经典直筒',price:54.99,listPrice:null,rating:'★★★★☆',ratingNum:8901,deal:0,prime:false,img:'https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=400&h=360&fit=crop',bestseller:false,cats:['fashion','all']},
+            {name:'床上四件套 纯棉',price:49.99,listPrice:69.99,rating:'★★★★★',ratingNum:12345,deal:29,prime:true,img:'https://images.unsplash.com/photo-1616627561950-9f746e330187?w=400&h=360&fit=crop',bestseller:true,cats:['home','all']}
+        ];
+
+        // ===== Filter & render =====
+        let currentFilter = 'all';
+        let currentSort = 'featured';
+        let currentPage = 1;
+        const perPage = 12;
+
+        // Filter products by category
+        function getFilteredProducts() {
+            let prods = cat === 'all'
+                ? allProducts
+                : allProducts.filter(p => p.cats.includes(cat));
+            if (prods.length === 0) prods = allProducts; // fallback
+
+            // Apply chip filter
+            if (currentFilter === 'prime') prods = prods.filter(p => p.prime);
+            if (currentFilter === 'deal') prods = prods.filter(p => p.deal > 0);
+            if (currentFilter === 'bestseller') prods = prods.filter(p => p.bestseller);
+
+            // Apply sort
+            if (currentSort === 'price-low') prods.sort((a,b) => a.price - b.price);
+            if (currentSort === 'price-high') prods.sort((a,b) => b.price - a.price);
+            if (currentSort === 'rating') prods.sort((a,b) => b.ratingNum - a.ratingNum);
+
+            return prods;
+        }
+
+        function renderProducts() {
+            const prods = getFilteredProducts();
+            document.getElementById('resultCount').textContent = '共 ' + prods.length + ' 件商品';
+
+            const totalPages = Math.ceil(prods.length / perPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+
+            const start = (currentPage - 1) * perPage;
+            const pageProds = prods.slice(start, start + perPage);
+
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = pageProds.map(p => {
+                const dealHtml = p.deal > 0 ? '<div class="prod-deal">优惠 ' + p.deal + '%</div>' : '';
+                const listPriceHtml = p.listPrice ? '<span class="prod-list-price">$' + p.listPrice.toFixed(2) + '</span>' : '';
+                const primeHtml = p.prime ? '<div class="prime-badge"><span style="color:#00A8E1">◈</span> Prime</div>' : '';
+                const badgeHtml = p.bestseller
+                    ? '<div class="badge-best-seller">🔥 Best Seller</div>'
+                    : (p.deal > 30 ? '<div class="badge-limited">⏱ 限时特惠</div>' : '');
+                return `
+                <a href="yamax-product.html?id=${allProducts.indexOf(p)}&cat=${cat}" class="product-item">
+                    <img src="${p.img}" alt="${p.name}" loading="lazy">
+                    <div class="prod-info">
+                        ${badgeHtml}
+                        <div class="prod-name">${p.name}</div>
+                        <div class="prod-rating">${p.rating} <span class="rating-num">${p.ratingNum.toLocaleString()}</span></div>
+                        ${dealHtml}
+                        <span class="prod-price"><span class="currency">$</span>${Math.floor(p.price)}<span class="cents">.${String(p.price.toFixed(2)).split('.')[1]}</span></span>${listPriceHtml}
+                        <div class="prod-shipping">${p.prime ? '✓ Prime 免费配送' : '免费配送'}</div>
+                        ${primeHtml}
+                    </div>
+                </a>`;
+            }).join('');
+
+            // Pagination
+            const pag = document.getElementById('pagination');
+            let pagHtml = '';
+            pagHtml += currentPage <= 1
+                ? '<span class="page-btn disabled">← 上一页</span>'
+                : '<a href="#" class="page-btn" data-page="' + (currentPage - 1) + '">← 上一页</a>';
+            for (let i = 1; i <= totalPages; i++) {
+                pagHtml += i === currentPage
+                    ? '<span class="page-btn active">' + i + '</span>'
+                    : '<a href="#" class="page-btn" data-page="' + i + '">' + i + '</a>';
+            }
+            pagHtml += currentPage >= totalPages
+                ? '<span class="page-btn disabled">下一页 →</span>'
+                : '<a href="#" class="page-btn" data-page="' + (currentPage + 1) + '">下一页 →</a>';
+            pag.innerHTML = pagHtml;
+
+            // Wire pagination clicks
+            pag.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage = parseInt(this.dataset.page);
+                    renderProducts();
+                    window.scrollTo({top: 250, behavior: 'smooth'});
+                });
+            });
+        }
+
+        renderProducts();
+
+        // ===== Filter chips =====
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                currentPage = 1;
+                renderProducts();
+            });
+        });
+
+        // ===== Sort =====
+        document.getElementById('sortSelect').addEventListener('change', function() {
+            currentSort = this.value;
+            currentPage = 1;
+            renderProducts();
+        });
+
+        // ===== Subnav active =====
+        document.querySelectorAll('#subnav .subnav-links a').forEach(link => {
+            if (link.href.includes('cat=' + cat)) link.classList.add('active');
+        });
+
+        // ===== Search =====
+        function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (q) {
+                showToast('🔍 搜索: ' + q + ' — 演示页面，仅供展示');
+            }
+        }
+        document.getElementById('searchBtn').addEventListener('click', doSearch);
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // ===== Cart from localStorage =====
+        const savedCart = localStorage.getItem('yamaxCart');
+        const cartItems = savedCart ? JSON.parse(savedCart) : [];
+        document.getElementById('cartCount').textContent = cartItems.length;
+
+        // ===== Toast =====
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.getElementById('toastContainer').appendChild(t);
+            setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+        }
+
+        console.log('📂 分类页就绪: ' + info.name);
+    })();
+    </script>
+</body>
+</html>

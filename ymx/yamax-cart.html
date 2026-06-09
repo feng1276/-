@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon 购物车</title>
+    <link rel="icon" href="https://www.amazon.com/favicon.ico">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Amazon Ember',Arial,sans-serif;background:#E3E6E6;color:#0F1111;min-width:1000px;line-height:1.4}
+
+        /* Header */
+        #header{background:#131921;color:#fff;padding:10px 15px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+        .header-logo{flex-shrink:0;padding:5px 8px;border:1px solid transparent;border-radius:3px;cursor:pointer;display:flex;align-items:center}
+        .header-logo:hover{border-color:#fff}
+        .header-search{flex:1;min-width:300px;display:flex;height:42px;border-radius:6px;overflow:hidden}
+        .search-input{flex:1;border:none;padding:0 12px;font-size:15px;outline:none}
+        .search-btn{background:#FEBD69;border:none;width:45px;cursor:pointer;border-radius:0 6px 6px 0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .search-btn:hover{background:#F3A847}
+        .header-cart{flex-shrink:0;padding:6px 10px;border:1px solid #fff;border-radius:3px;cursor:pointer;display:flex;align-items:flex-end;gap:4px;color:#fff;text-decoration:none;background:rgba(255,255,255,.1)}
+        .cart-count{color:#F90;font-size:16px;font-weight:700;min-width:19px;text-align:center}
+        .cart-text{font-size:14px;font-weight:700;margin-bottom:4px;color:#fff}
+
+        /* Subnav */
+        #subnav{background:#232F3E;color:#fff;padding:0 15px;display:flex;align-items:center;font-size:14px;height:39px}
+        .back-link{color:#ccc;padding:8px 10px;text-decoration:none;font-size:13px;border:1px solid transparent;border-radius:3px}
+        .back-link:hover{color:#fff;border-color:#fff}
+
+        /* Main */
+        #main-content{max-width:1200px;margin:0 auto;padding:20px 10px}
+        .cart-container{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+        .cart-main{background:#fff;padding:20px 24px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .cart-main h1{font-size:28px;font-weight:400;margin-bottom:4px}
+        .cart-main .cart-subtitle{font-size:14px;color:#565959;margin-bottom:16px}
+        .cart-main .price-hint{font-size:12px;color:#565959;text-align:right;margin-bottom:8px}
+        .cart-divider{height:1px;background:#DDD;margin:12px 0}
+
+        /* Cart items */
+        .cart-item{display:grid;grid-template-columns:180px 1fr auto;gap:16px;padding:16px 0;border-bottom:1px solid #EEE;align-items:start}
+        .cart-item img{width:180px;height:180px;object-fit:cover;border-radius:4px;background:#f8f8f8}
+        .cart-item-info h3{font-size:18px;font-weight:400;margin-bottom:4px}
+        .cart-item-info .in-stock{color:#007600;font-size:13px;margin-bottom:4px}
+        .cart-item-info .prime-tag{display:inline-flex;align-items:center;gap:2px;font-size:11px;color:#fff;background:#232F3E;padding:2px 6px;border-radius:3px;margin-bottom:6px}
+        .cart-item-info .qty-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+        .cart-item-info .qty-row select{padding:4px 8px;border:1px solid #DDD;border-radius:6px;background:#F0F2F2;font-size:13px;cursor:pointer;outline:none}
+        .cart-item-info .qty-row .divider-pipe{color:#DDD}
+        .cart-item-info .action-links{display:flex;gap:12px;font-size:13px}
+        .cart-item-info .action-links a{color:#007185;text-decoration:none;cursor:pointer}
+        .cart-item-info .action-links a:hover{color:#C7511F;text-decoration:underline}
+        .cart-item-price{text-align:right}
+        .cart-item-price .item-price{font-size:18px;font-weight:700}
+
+        /* Sidebar */
+        .cart-sidebar{background:#fff;padding:20px 24px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:sticky;top:80px}
+        .cart-sidebar .subtotal{font-size:18px;margin-bottom:4px}
+        .cart-sidebar .subtotal .amount{font-weight:700}
+        .cart-sidebar .gift-check{display:flex;align-items:center;gap:6px;font-size:13px;margin:12px 0}
+        .cart-sidebar .btn-checkout{display:block;width:100%;padding:10px;background:#FFD814;border:1px solid #FCD200;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;text-align:center;text-decoration:none;color:#111;transition:background .2s}
+        .cart-sidebar .btn-checkout:hover{background:#F7CA00}
+        .cart-sidebar .secure-note{font-size:12px;color:#565959;text-align:center;margin-top:10px}
+
+        /* Empty cart */
+        .empty-cart{text-align:center;padding:60px 20px;display:none}
+        .empty-cart .empty-icon{font-size:64px;margin-bottom:16px}
+        .empty-cart h2{font-size:24px;font-weight:400;margin-bottom:8px}
+        .empty-cart p{font-size:14px;color:#565959;margin-bottom:20px}
+        .empty-cart a{display:inline-block;padding:10px 28px;background:#FFD814;border:1px solid #FCD200;border-radius:20px;font-size:14px;font-weight:500;text-decoration:none;color:#111;transition:background .2s}
+        .empty-cart a:hover{background:#F7CA00}
+
+        /* Toast */
+        .toast-container{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+        .toast{background:#232F3E;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:auto;animation:toast-in .35s ease-out,toast-out .3s ease-in forwards;animation-delay:0s,1.8s;opacity:0}
+        @keyframes toast-in{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes toast-out{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
+
+        /* Footer */
+        footer{background:#232F3E;color:#fff;margin-top:40px}
+        .footer-legal{background:#131A22;padding:30px 20px;text-align:center}
+        .footer-legal p{font-size:12px;color:#999}
+
+        @media (max-width:900px){
+            body{min-width:320px}
+            .cart-container{grid-template-columns:1fr}
+            .cart-item{grid-template-columns:100px 1fr}
+            .cart-item img{width:100px;height:100px}
+            .cart-item-price{grid-column:1/-1;text-align:left}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="header">
+        <a href="yamax.html" class="header-logo" title="Amazon Home">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97 30" fill="none" width="97" height="30">
+                <path d="M71.5 19.8c-.8 0-1.4-.2-1.9-.6-.5-.4-.8-1-.8-1.7 0-.8.3-1.4.8-1.8.5-.4 1.2-.6 2-.6.6 0 1.1.1 1.5.3.4.2.6.4.6.6 0 .2-.1.4-.3.5-.2.1-.4.2-.7.2-.2 0-.3-.1-.5-.2-.1-.1-.3-.1-.5-.1-.4 0-.7.1-.9.3-.2.2-.3.5-.3.9 0 .4.1.7.3.9.2.2.5.3.9.3.3 0 .5 0 .7-.1.2-.1.3-.1.3-.2v-.6h-.9c-.2 0-.4-.1-.5-.2-.1-.1-.2-.3-.2-.5 0-.2.1-.4.2-.5.2-.1.4-.2.6-.2h1.3c.3 0 .5.1.6.2.1.1.2.3.2.5v1.2c0 .5-.1.8-.4 1-.2.3-.9.5-1.8.5zM76.3 19.7h-.7l-2-5.8c0-.1-.1-.2-.1-.4 0-.2 0-.3.1-.4.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.2.3.3.5l1.5 4.6h.1l1.5-4.6c.1-.2.2-.4.3-.5.1-.1.3-.2.5-.2.2 0 .4.1.5.2.1.1.1.3.1.5 0 .1 0 .3-.1.4l-2.1 5.7zM79.6 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5zM86.2 17c0-1 .3-1.8.8-2.3.5-.5 1.2-.8 2-.8.8 0 1.5.3 1.9.8.4.5.7 1.3.7 2.3 0 1-.3 1.8-.8 2.3-.5.5-1.1.7-1.9.7-.8 0-1.4-.2-1.9-.7-.5-.5-.8-1.3-.8-2.3zm1.4 0c0 .6.1 1.1.4 1.5.2.3.6.5 1 .5.4 0 .7-.2.9-.5.3-.4.4-.9.4-1.5 0-.6-.1-1.1-.4-1.5-.2-.3-.6-.5-.9-.5-.4 0-.7.2-.9.5-.3.4-.5.9-.5 1.5z" fill="#fff"/>
+                <path d="M2.4 24V6.2h3.7l4.9 7.6c.4.7.8 1.5 1.1 2.3h.1c-.1-.9-.2-1.8-.2-2.8V6.2h3.5V24h-3.4L7.1 16.2c-.5-.8-.9-1.6-1.2-2.4h-.1c.1.9.2 1.8.2 2.8V24H2.4zM21.1 24V6.2h9v2.8h-5.4v4.8h4.8v2.8h-4.8v4.6h5.5V24h-9.1zM32.3 24V6.2h9.1v2.8h-5.5v4.8h4.8v2.8H36v4.6h5.5V24h-9.1zM49.7 24l-1.3-3.5h-5.1L42 24h-3.8l5.7-17.8h2.7L52.5 24h-2.8zm-2.5-6.2l-1.5-4.2c-.2-.6-.4-1.3-.5-2h-.1c-.1.7-.3 1.4-.5 2l-1.5 4.2h4.1zM57.3 24V9h-3.3V6.2h10.2V9h-3.3v15h-3.6zM65.1 24V6.2h3.6V24h-3.6z" fill="#fff"/>
+                <path d="M84.5 29.3c-4.8 3.5-11.7 5.4-17.6 5.4-8.3 0-15.8-3.1-21.5-8.2-.4-.4 0-1 .5-.7 6.1 3.6 13.7 5.7 21.5 5.7 5.3 0 11.1-1.1 16.4-3.4.8-.3 1.5.5.7 1.2z" fill="#F90"/>
+                <path d="M86.1 27.5c-.6-.8-4-0.4-5.5-.2-.5.1-.5-.3-.1-.6 2.7-1.9 7.1-1.4 7.6-.7.5.6-.1 5.2-2.7 7.4-.4.3-.8.2-.6-.3.6-1.5 1.9-4.9 1.3-5.6z" fill="#F90"/>
+            </svg>
+        </a>
+        <div class="header-search">
+            <input type="text" class="search-input" placeholder="搜索 Amazon" id="searchInput">
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24" fill="#333" width="22" height="22"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </button>
+        </div>
+        <a href="yamax-cart.html" class="header-cart">
+            <svg viewBox="0 0 38 38" fill="none" width="38" height="38"><path d="M14 29c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM9.3 10l2.4 5h14.5l2.5-5H9.3z" fill="#fff"/><path d="M27 16H9.8l-.5-1H7v-2h3.1l3.5 7.2L12 24h15v2H11.2l-.4-1.3L8 16H4v-2h3l2.3 4h17.7v2zm-7 13c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#fff"/></svg>
+            <span class="cart-count" id="cartCount">0</span>
+            <span class="cart-text">购物车</span>
+        </a>
+    </header>
+
+    <!-- Subnav -->
+    <nav id="subnav">
+        <a href="yamax.html" class="back-link">← 返回首页</a>
+        <a href="yamax-category.html" class="back-link">← 继续购物</a>
+    </nav>
+
+    <!-- Main -->
+    <div id="main-content">
+        <!-- Empty Cart State -->
+        <div class="empty-cart" id="emptyCart">
+            <div class="empty-icon">🛒</div>
+            <h2>您的购物车是空的</h2>
+            <p>快去发现心仪的商品吧！</p>
+            <a href="yamax-category.html">开始购物</a>
+        </div>
+
+        <!-- Cart Content -->
+        <div class="cart-container" id="cartContainer">
+            <div class="cart-main">
+                <h1>购物车</h1>
+                <div class="cart-subtitle" id="cartSubtotal">0 件商品</div>
+                <div class="price-hint">单价</div>
+                <div class="cart-divider"></div>
+                <div id="cartItems"></div>
+            </div>
+            <div class="cart-sidebar" id="cartSidebar">
+                <div class="subtotal">小计 (<span id="sidebarCount">0</span> 件商品): <span class="amount" id="sidebarAmount">$0.00</span></div>
+                <label class="gift-check">
+                    <input type="checkbox" id="giftCheck"> 此订单包含礼品
+                </label>
+                <a href="yamax-signin.html" class="btn-checkout" id="btnCheckout">结算</a>
+                <div class="secure-note">🔒 安全交易保障</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-legal">
+            <p>© 1996-2026, Amazon.com, Inc. 或其附属公司 — 仿制网页，仅供学习参考</p>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        // ===== Load cart from localStorage =====
+        const savedCart = localStorage.getItem('yamaxCart');
+        let cartItems = savedCart ? JSON.parse(savedCart) : [];
+
+        function saveCart() {
+            localStorage.setItem('yamaxCart', JSON.stringify(cartItems));
+        }
+
+        function updateCartCount() {
+            const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cartCount').textContent = totalItems;
+        }
+
+        function renderCart() {
+            const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
+            const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+            updateCartCount();
+
+            if (cartItems.length === 0) {
+                document.getElementById('emptyCart').style.display = 'block';
+                document.getElementById('cartContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('emptyCart').style.display = 'none';
+            document.getElementById('cartContainer').style.display = 'grid';
+
+            document.getElementById('cartSubtotal').textContent = totalItems + ' 件商品';
+            document.getElementById('sidebarCount').textContent = totalItems;
+            document.getElementById('sidebarAmount').textContent = '$' + subtotal.toFixed(2);
+
+            // Render items
+            document.getElementById('cartItems').innerHTML = cartItems.map((item, index) => `
+                <div class="cart-item">
+                    <img src="${item.img.replace('600','400')}" alt="${item.name}" loading="lazy">
+                    <div class="cart-item-info">
+                        <h3>${item.name}</h3>
+                        <div class="in-stock">✓ 有货</div>
+                        ${item.prime ? '<div class="prime-tag"><span style="color:#00A8E1">◈</span> Prime 免费配送</div>' : ''}
+                        <div class="qty-row">
+                            <select class="qty-select" data-index="${index}" aria-label="数量">
+                                ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${n === item.qty ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                            <span class="divider-pipe">|</span>
+                        </div>
+                        <div class="action-links">
+                            <a class="link-delete" data-index="${index}">删除</a>
+                            <a class="link-save">保存备用</a>
+                            <a class="link-wishlist">添加到心愿单</a>
+                        </div>
+                    </div>
+                    <div class="cart-item-price">
+                        <div class="item-price">$${item.price.toFixed(2)}</div>
+                        ${item.qty > 1 ? '<div style="font-size:12px;color:#565959">单价: $' + item.price.toFixed(2) + '</div>' : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Wire qty changes
+            document.querySelectorAll('.qty-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const idx = parseInt(this.dataset.index);
+                    cartItems[idx].qty = parseInt(this.value);
+                    saveCart();
+                    renderCart();
+                });
+            });
+
+            // Wire delete
+            document.querySelectorAll('.link-delete').forEach(link => {
+                link.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    const name = cartItems[idx].name;
+                    cartItems.splice(idx, 1);
+                    saveCart();
+                    renderCart();
+                    showToast('🗑️ 已从购物车中移除: ' + name);
+                });
+            });
+
+            // Save / wishlist
+            document.querySelectorAll('.link-save, .link-wishlist').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showToast('📝 演示页面，仅供展示');
+                });
+            });
+        }
+
+        renderCart();
+
+        // ===== Checkout =====
+        document.getElementById('btnCheckout').addEventListener('click', function(e) {
+            if (cartItems.length === 0) {
+                e.preventDefault();
+                showToast('🛒 购物车为空，请先添加商品');
+            }
+        });
+
+        // ===== Gift checkbox =====
+        document.getElementById('giftCheck').addEventListener('change', function() {
+            if (this.checked) {
+                showToast('🎁 已标识为礼品订单');
+            }
+        });
+
+        // ===== Search =====
+        function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (q) showToast('🔍 搜索: ' + q + ' — 演示页面，仅供展示');
+        }
+        document.getElementById('searchBtn').addEventListener('click', doSearch);
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // ===== Toast =====
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.getElementById('toastContainer').appendChild(t);
+            setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+        }
+
+        console.log('🛒 购物车页就绪: ' + cartItems.length + ' 件商品');
+    })();
+    </script>
+</body>
+</html>
