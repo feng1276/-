@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼图游戏</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  color: #e94560;
+  font-size: 2.5em;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+  letter-spacing: 4px;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  color: #c8d6e5;
+  font-size: 1.1em;
+}
+
+.stat span { 
+  color: #e94560;
+  font-weight: bold;
+  font-size: 1.3em;
+}
+
+.game-area {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.puzzle-wrapper {
+  display: inline-block;
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 0 2px #2d3561;
+}
+
+.preview-container {
+  display: none;
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 0 2px #2d3561;
+  animation: fadeIn 0.3s ease;
+}
+
+.preview-container.show {
+  display: inline-block;
+}
+
+.preview-container img {
+  display: block;
+  border-radius: 8px;
+  image-rendering: auto;
+}
+
+.preview-label {
+  color: #5a6388;
+  font-size: 0.85em;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.puzzle {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  width: 400px;
+  height: 400px;
+}
+
+.tile {
+  border-radius: 6px;
+  cursor: pointer;
+  background-size: 400px 400px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+}
+
+.tile:not(.empty):hover {
+  transform: scale(0.96);
+  box-shadow: inset 0 0 0 2px rgba(233, 69, 96, 0.7);
+  z-index: 2;
+}
+
+.tile.empty {
+  background: #151930;
+  cursor: default;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+}
+
+.controls {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.btn-primary {
+  background: #e94560;
+  color: white;
+}
+.btn-primary:hover {
+  background: #ff6b81;
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+}
+
+.btn-secondary {
+  background: #2d3561;
+  color: #c8d6e5;
+}
+.btn-secondary:hover {
+  background: #3d4581;
+}
+
+.difficulty {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.diff-btn {
+  padding: 6px 16px;
+  background: transparent;
+  color: #5a6388;
+  border: 1px solid #2d3561;
+  border-radius: 20px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.diff-btn.active {
+  background: #2d3561;
+  color: #e94560;
+  border-color: #e94560;
+}
+.diff-btn:hover {
+  color: #c8d6e5;
+}
+
+.win-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.win-overlay.show {
+  display: flex;
+}
+
+.win-box {
+  background: #1a1a2e;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(233, 69, 96, 0.3);
+  border: 2px solid #e94560;
+  animation: popIn 0.4s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.win-box h2 {
+  color: #e94560;
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+.win-box p {
+  color: #c8d6e5;
+  margin: 6px 0;
+  font-size: 1.1em;
+}
+.win-box button {
+  margin-top: 18px;
+}
+</style>
+</head>
+<body>
+<a href="游戏页面.html" style="position: absolute; top: 20px; left: 20px; padding: 10px 20px; background-color: #95a5a6; color: white; text-decoration: none; border-radius: 5px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; z-index: 100;">返回</a>
+
+<div class="container">
+  <h1>拼图游戏</h1>
+
+  <div class="stats">
+    <div class="stat">步数 <span id="moves">0</span></div>
+    <div class="stat">时间 <span id="timer">00:00</span></div>
+  </div>
+
+  <div class="game-area">
+    <div class="puzzle-wrapper">
+      <div class="puzzle" id="puzzle"></div>
+    </div>
+    <div class="preview-container" id="previewContainer">
+      <div class="preview-label">原图参考</div>
+      <img id="previewImg" src="" alt="原图" />
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" onclick="shuffle()">打乱</button>
+    <button class="btn-secondary" onclick="resetGame()">重置</button>
+    <button class="btn-secondary" id="previewBtn" onclick="togglePreview()">查看原图</button>
+    <button class="btn-secondary" id="hintBtn" onclick="showHint()">提示</button>
+  </div>
+
+  <div class="difficulty">
+    <button class="diff-btn" onclick="setSize(3)">3x3</button>
+    <button class="diff-btn active" onclick="setSize(4)">4x4</button>
+    <button class="diff-btn" onclick="setSize(5)">5x5</button>
+  </div>
+</div>
+
+<div class="win-overlay" id="winOverlay">
+  <div class="win-box">
+    <h2>恭喜完成!</h2>
+    <p>步数: <strong id="winMoves"></strong></p>
+    <p>用时: <strong id="winTime"></strong></p>
+    <button class="btn-primary" onclick="closeWin(); shuffle();">再来一局</button>
+  </div>
+</div>
+
+<script>
+let size = 4;
+let tiles = [];
+let emptyIndex;
+let moves = 0;
+let seconds = 0;
+let timerInterval = null;
+let hintTimeout = null;
+let puzzleImage = null;
+
+const puzzleEl = document.getElementById('puzzle');
+const movesEl = document.getElementById('moves');
+const timerEl = document.getElementById('timer');
+
+// 获取随机拼图图片
+function createPuzzleImage(s) {
+  // 使用Picsum Photos API获取随机图片
+  // 添加随机参数确保每次获取不同的图片
+  const randomId = Math.floor(Math.random() * 1000);
+  return `https://picsum.photos/600/600?random=${randomId}`;
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR, color) {
+  let rot = Math.PI / 2 * 3;
+  let step = Math.PI / spikes;
+  ctx.beginPath();
+  for (let i = 0; i < spikes; i++) {
+    let x = cx + Math.cos(rot) * outerR;
+    let y = cy + Math.sin(rot) * outerR;
+    ctx.lineTo(x, y);
+    rot += step;
+    x = cx + Math.cos(rot) * innerR;
+    y = cy + Math.sin(rot) * innerR;
+    ctx.lineTo(x, y);
+    rot += step;
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// 初始化拼图
+function initPuzzle() {
+  puzzleImage = createPuzzleImage(size);
+  const total = size * size;
+  tiles = Array.from({ length: total }, (_, i) => i);
+  emptyIndex = total - 1;
+
+  puzzleEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+  puzzleEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+  const puzzleSize = size <= 3 ? 360 : size <= 4 ? 400 : 420;
+  puzzleEl.style.width = puzzleSize + 'px';
+  puzzleEl.style.height = puzzleSize + 'px';
+  puzzleEl.style.backgroundSize = `${puzzleSize}px ${puzzleSize}px`;
+
+  render();
+}
+
+function render() {
+  const puzzleSize = size <= 3 ? 360 : size <= 4 ? 400 : 420;
+  const tileSize = puzzleSize / size;
+
+  puzzleEl.innerHTML = '';
+
+  for (let i = 0; i < tiles.length; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    if (tiles[i] === size * size - 1) {
+      tile.classList.add('empty');
+    } else {
+      const origRow = Math.floor(tiles[i] / size);
+      const origCol = tiles[i] % size;
+      tile.style.backgroundImage = `url(${puzzleImage})`;
+      tile.style.backgroundSize = `${puzzleSize}px ${puzzleSize}px`;
+      tile.style.backgroundPosition = `-${origCol * tileSize}px -${origRow * tileSize}px`;
+      tile.addEventListener('click', () => handleClick(i));
+    }
+    puzzleEl.appendChild(tile);
+  }
+}
+
+function handleClick(index) {
+  // 找到相邻的空格
+  const row = Math.floor(index / size);
+  const col = index % size;
+  const emptyRow = Math.floor(emptyIndex / size);
+  const emptyCol = emptyIndex % size;
+
+  const isAdjacent =
+    (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
+    (Math.abs(col - emptyCol) === 1 && row === emptyRow);
+
+  if (!isAdjacent) return;
+
+  // 交换
+  [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+  emptyIndex = index;
+  moves++;
+  movesEl.textContent = moves;
+
+  if (!timerInterval) startTimer();
+
+  // 清除提示
+  if (hintTimeout) {
+    clearTimeout(hintTimeout);
+    clearHints();
+  }
+
+  render();
+
+  if (checkWin()) {
+    win();
+  }
+}
+
+function checkWin() {
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] !== i) return false;
+  }
+  return true;
+}
+
+function win() {
+  stopTimer();
+  document.getElementById('winMoves').textContent = moves;
+  document.getElementById('winTime').textContent = timerEl.textContent;
+  document.getElementById('winOverlay').classList.add('show');
+}
+
+function closeWin() {
+  document.getElementById('winOverlay').classList.remove('show');
+}
+
+// 洗牌（保证有解：通过合法移动来打乱）
+function shuffle() {
+  stopTimer();
+  moves = 0;
+  seconds = 0;
+  movesEl.textContent = '0';
+  timerEl.textContent = '00:00';
+
+  // 从已解决状态出发，通过模拟合法移动打乱
+  const total = size * size;
+  tiles = Array.from({ length: total }, (_, i) => i);
+  emptyIndex = total - 1;
+
+  const steps = size * size * 30;
+  let lastMove = -1;
+
+  for (let s = 0; s < steps; s++) {
+    const row = Math.floor(emptyIndex / size);
+    const col = emptyIndex % size;
+    const neighbors = [];
+
+    if (row > 0) neighbors.push(emptyIndex - size);
+    if (row < size - 1) neighbors.push(emptyIndex + size);
+    if (col > 0) neighbors.push(emptyIndex - 1);
+    if (col < size - 1) neighbors.push(emptyIndex + 1);
+
+    // 避免来回移动
+    const valid = neighbors.filter(n => n !== lastMove);
+    const pick = valid[Math.floor(Math.random() * valid.length)];
+
+    [tiles[emptyIndex], tiles[pick]] = [tiles[pick], tiles[emptyIndex]];
+    lastMove = emptyIndex;
+    emptyIndex = pick;
+  }
+
+  // 如果碰巧已经完成，重新打乱（用循环避免递归栈溢出）
+  while (checkWin()) {
+    // 重新打乱
+    tiles = Array.from({ length: total }, (_, i) => i);
+    emptyIndex = total - 1;
+    lastMove = -1;
+    for (let s = 0; s < steps; s++) {
+      const row = Math.floor(emptyIndex / size);
+      const col = emptyIndex % size;
+      const neighbors = [];
+      if (row > 0) neighbors.push(emptyIndex - size);
+      if (row < size - 1) neighbors.push(emptyIndex + size);
+      if (col > 0) neighbors.push(emptyIndex - 1);
+      if (col < size - 1) neighbors.push(emptyIndex + 1);
+      const valid = neighbors.filter(n => n !== lastMove);
+      const pick = valid[Math.floor(Math.random() * valid.length)];
+      [tiles[emptyIndex], tiles[pick]] = [tiles[pick], tiles[emptyIndex]];
+      lastMove = emptyIndex;
+      emptyIndex = pick;
+    }
+  }
+
+  render();
+}
+
+function resetGame() {
+  stopTimer();
+  moves = 0;
+  seconds = 0;
+  movesEl.textContent = '0';
+  timerEl.textContent = '00:00';
+
+  const total = size * size;
+  tiles = Array.from({ length: total }, (_, i) => i);
+  emptyIndex = total - 1;
+  render();
+}
+
+function setSize(s) {
+  size = s;
+  document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', [3, 4, 5][i] === s);
+  });
+  stopTimer();
+  moves = 0;
+  seconds = 0;
+  movesEl.textContent = '0';
+  timerEl.textContent = '00:00';
+  // 关闭原图预览
+  const container = document.getElementById('previewContainer');
+  const btn = document.getElementById('previewBtn');
+  container.classList.remove('show');
+  btn.textContent = '查看原图';
+  initPuzzle();
+  shuffle();
+}
+
+function showHint() {
+  // 高亮所有错位方块（闪烁一次）
+  const tileEls = puzzleEl.querySelectorAll('.tile');
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] !== i) {
+      tileEls[i].style.boxShadow = 'inset 0 0 0 3px rgba(255, 215, 0, 0.8)';
+    }
+  }
+  hintTimeout = setTimeout(clearHints, 1200);
+}
+
+function clearHints() {
+  const tileEls = puzzleEl.querySelectorAll('.tile');
+  tileEls.forEach(t => t.style.boxShadow = '');
+  hintTimeout = null;
+}
+
+function togglePreview() {
+  const container = document.getElementById('previewContainer');
+  const img = document.getElementById('previewImg');
+  const btn = document.getElementById('previewBtn');
+  const isShown = container.classList.contains('show');
+
+  if (isShown) {
+    container.classList.remove('show');
+    btn.textContent = '查看原图';
+  } else {
+    const puzzleSize = size <= 3 ? 360 : size <= 4 ? 400 : 420;
+    img.src = puzzleImage;
+    img.style.width = puzzleSize + 'px';
+    img.style.height = puzzleSize + 'px';
+    container.classList.add('show');
+    btn.textContent = '隐藏原图';
+  }
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    seconds++;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    timerEl.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+// 键盘操作
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('winOverlay').classList.contains('show')) return;
+
+  const row = Math.floor(emptyIndex / size);
+  const col = emptyIndex % size;
+  let target = -1;
+
+  switch (e.key) {
+    case 'ArrowUp': if (row < size - 1) target = emptyIndex + size; break;
+    case 'ArrowDown': if (row > 0) target = emptyIndex - size; break;
+    case 'ArrowLeft': if (col < size - 1) target = emptyIndex + 1; break;
+    case 'ArrowRight': if (col > 0) target = emptyIndex - 1; break;
+  }
+
+  if (target >= 0 && target < tiles.length) {
+    e.preventDefault();
+    [tiles[emptyIndex], tiles[target]] = [tiles[target], tiles[emptyIndex]];
+    emptyIndex = target;
+    moves++;
+    movesEl.textContent = moves;
+    if (!timerInterval) startTimer();
+    render();
+    if (checkWin()) win();
+  }
+});
+
+// 启动
+initPuzzle();
+shuffle();
+</script>
+</body>
+</html>
