@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务管理 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); color:var(--text); }
+  .btn-outline:hover { background:#f8fafc; }
+  .btn-sm { padding:5px 10px; font-size:11px; border-radius:6px; }
+  .btn-danger { background:var(--danger); color:white; }
+  .btn-success { background:var(--success); color:white; }
+
+  .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .kanban-col {
+    background:#f8fafc; border-radius:var(--radius); padding:16px;
+    min-height:400px;
+  }
+  .kanban-col h3 {
+    font-size:14px; font-weight:600; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .kanban-col h3 .count {
+    background:var(--border); font-size:11px; padding:2px 8px;
+    border-radius:10px; font-weight:500;
+  }
+  .task-card {
+    background:var(--card); border-radius:10px; padding:14px;
+    margin-bottom:10px; box-shadow:var(--shadow); cursor:grab;
+    transition:.2s; border-left:3px solid transparent;
+  }
+  .task-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-1px); }
+  .task-card.priority-high { border-left-color:var(--danger); }
+  .task-card.priority-medium { border-left-color:var(--warning); }
+  .task-card.priority-low { border-left-color:var(--success); }
+  .task-card .task-title { font-size:14px; font-weight:600; margin-bottom:6px; }
+  .task-card .task-desc { font-size:12px; color:var(--text-muted); margin-bottom:10px; line-height:1.5; }
+  .task-card .task-meta {
+    display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-muted);
+    flex-wrap:wrap;
+  }
+  .task-card .task-meta .tag {
+    padding:2px 8px; border-radius:4px; font-weight:600; font-size:10px;
+  }
+  .tag-red { background:#fee2e2; color:#dc2626; }
+  .tag-yellow { background:#ffedd5; color:#ea580c; }
+  .tag-green { background:#dcfce7; color:#16a34a; }
+  .tag-blue { background:#dbeafe; color:#2563eb; }
+  .tag-purple { background:#ede9fe; color:#7c3aed; }
+  .avatar-stack { display:flex; margin-left:auto; }
+  .avatar-stack .av {
+    width:22px; height:22px; border-radius:50%; font-size:9px;
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:700; margin-left:-6px; border:2px solid white;
+  }
+  .av:nth-child(1) { background:#4f46e5; z-index:3; margin-left:0; }
+  .av:nth-child(2) { background:#7c3aed; z-index:2; }
+  .av:nth-child(3) { background:#a78bfa; z-index:1; }
+
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    display:none; align-items:center; justify-content:center; z-index:1000;
+  }
+  .modal-overlay.show { display:flex; }
+  .modal {
+    background:white; border-radius:16px; padding:28px; width:100%;
+    max-width:500px; box-shadow:0 20px 60px rgba(0,0,0,.2);
+  }
+  .modal h2 { margin-bottom:20px; font-size:20px; }
+  .modal .form-group { margin-bottom:16px; }
+  .modal label {
+    display:block; font-size:13px; font-weight:600; margin-bottom:6px;
+  }
+  .modal input, .modal textarea, .modal select {
+    width:100%; padding:10px 14px; border:1.5px solid var(--border);
+    border-radius:8px; font-size:13px; outline:none; font-family:inherit;
+  }
+  .modal input:focus, .modal textarea:focus, .modal select:focus {
+    border-color:var(--primary);
+  }
+  .modal textarea { resize:vertical; min-height:80px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+  @media (max-width:1024px) {
+    .kanban { grid-template-columns:1fr; }
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html" class="active">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>✅ 任务管理</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">拖拽卡片以更改任务状态</p>
+    </div>
+    <div class="btn-group" style="display:flex;gap:8px;">
+      <button class="btn btn-outline">🔍 筛选</button>
+      <button class="btn btn-outline">📊 看板</button>
+      <button class="btn btn-primary" onclick="openModal()">+ 新建任务</button>
+    </div>
+  </div>
+
+  <div class="kanban" id="kanban">
+    <!-- 待处理 -->
+    <div class="kanban-col" id="col-todo" ondragover="allowDrop(event)" ondrop="drop(event,'todo')">
+      <h3>📋 待处理 <span class="count" id="count-todo">3</span></h3>
+      <div id="tasks-todo"></div>
+    </div>
+    <!-- 进行中 -->
+    <div class="kanban-col" id="col-progress" ondragover="allowDrop(event)" ondrop="drop(event,'progress')">
+      <h3>🔄 进行中 <span class="count" id="count-progress">2</span></h3>
+      <div id="tasks-progress"></div>
+    </div>
+    <!-- 已完成 -->
+    <div class="kanban-col" id="col-done" ondragover="allowDrop(event)" ondrop="drop(event,'done')">
+      <h3>🎉 已完成 <span class="count" id="count-done">2</span></h3>
+      <div id="tasks-done"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>📝 新建任务</h2>
+    <form id="taskForm" onsubmit="addTask(event)">
+      <div class="form-group">
+        <label>任务名称</label>
+        <input type="text" id="taskTitle" placeholder="输入任务名称" required>
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <textarea id="taskDesc" placeholder="输入任务描述（可选）"></textarea>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label>优先级</label>
+          <select id="taskPriority">
+            <option value="high">🔴 紧急</option>
+            <option value="medium" selected>🟡 一般</option>
+            <option value="low">🟢 低优</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>标签</label>
+          <select id="taskTag">
+            <option value="blue">功能开发</option>
+            <option value="red">Bug修复</option>
+            <option value="purple">设计</option>
+            <option value="yellow">文档</option>
+            <option value="green">优化</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">取消</button>
+        <button type="submit" class="btn btn-primary">创建任务</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const initialTasks = {
+  todo: [
+    { id:1, title:'用户认证模块开发', desc:'实现 JWT 登录注册，支持 OAuth2.0 第三方登录', priority:'high', tag:'blue', tagLabel:'功能开发', assignees:['张','王'] },
+    { id:2, title:'数据库性能优化', desc:'优化慢查询，添加索引，调整连接池配置', priority:'medium', tag:'green', tagLabel:'优化', assignees:['刘'] },
+    { id:3, title:'编写 API 文档', desc:'使用 Swagger 生成 RESTful API 文档', priority:'low', tag:'yellow', tagLabel:'文档', assignees:['陈','赵'] },
+  ],
+  progress: [
+    { id:4, title:'修复支付回调 Bug', desc:'微信支付回调签名验证失败，需排查参数编码问题', priority:'high', tag:'red', tagLabel:'Bug修复', assignees:['张'] },
+    { id:5, title:'设计系统 2.0', desc:'重构设计系统，统一组件规范和色彩体系', priority:'medium', tag:'purple', tagLabel:'设计', assignees:['王','李','周'] },
+  ],
+  done: [
+    { id:6, title:'项目初始化', desc:'搭建项目脚手架，配置 CI/CD 流水线', priority:'high', tag:'blue', tagLabel:'功能开发', assignees:['张'] },
+    { id:7, title:'环境部署', desc:'配置开发、测试、生产三套环境', priority:'medium', tag:'green', tagLabel:'优化', assignees:['刘'] },
+  ],
+};
+let taskIdCounter = 8;
+
+function renderTasks() {
+  ['todo','progress','done'].forEach(col => {
+    const container = document.getElementById('tasks-'+col);
+    container.innerHTML = '';
+    initialTasks[col].forEach(t => {
+      const card = document.createElement('div');
+      card.className = `task-card priority-${t.priority}`;
+      card.draggable = true;
+      card.id = 'task-'+t.id;
+      card.ondragstart = function(e){ e.dataTransfer.setData('text/plain', t.id.toString()); };
+      const avatars = t.assignees.map(a =>
+        `<span class="av">${a}</span>`
+      ).join('');
+      card.innerHTML = `
+        <div class="task-title">${t.title}</div>
+        <div class="task-desc">${t.desc}</div>
+        <div class="task-meta">
+          <span class="tag tag-${t.tag}">${t.tagLabel}</span>
+          <span>📅 6月${t.id+3}日</span>
+          <div class="avatar-stack">${avatars}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    document.getElementById('count-'+col).textContent = initialTasks[col].length;
+  });
+}
+
+function allowDrop(e) { e.preventDefault(); }
+
+function drop(e, targetCol) {
+  e.preventDefault();
+  const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+  let taskData = null;
+  // Find and remove from source
+  for (const col of ['todo','progress','done']) {
+    const idx = initialTasks[col].findIndex(t => t.id === taskId);
+    if (idx !== -1) {
+      taskData = initialTasks[col].splice(idx, 1)[0];
+      break;
+    }
+  }
+  if (taskData) {
+    initialTasks[targetCol].push(taskData);
+    renderTasks();
+  }
+}
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('taskTitle').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.getElementById('taskForm').reset();
+}
+
+function addTask(e) {
+  e.preventDefault();
+  const title = document.getElementById('taskTitle').value.trim();
+  const desc = document.getElementById('taskDesc').value.trim();
+  const priority = document.getElementById('taskPriority').value;
+  const tag = document.getElementById('taskTag').value;
+  const tagLabels = {blue:'功能开发',red:'Bug修复',purple:'设计',yellow:'文档',green:'优化'};
+  if (!title) return;
+  initialTasks.todo.push({
+    id: taskIdCounter++,
+    title,
+    desc: desc || '暂无描述',
+    priority,
+    tag,
+    tagLabel: tagLabels[tag],
+    assignees: ['李'],
+  });
+  closeModal();
+  renderTasks();
+}
+
+renderTasks();
+</script>
+</body>
+</html>

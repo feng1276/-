@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>集成中心 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --success:#22c55e; --warning:#f59e0b; --radius:12px;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h2 { font-size:16px; font-weight:600; }
+  .card-body { padding:20px; }
+  .integrations-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:16px; margin-bottom:24px;
+  }
+  .integration-card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:20px; display:flex; gap:16px; align-items:flex-start;
+    transition:.2s; cursor:pointer;
+  }
+  .integration-card:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.1); }
+  .integration-icon {
+    width:48px; height:48px; border-radius:12px; display:flex;
+    align-items:center; justify-content:center; font-size:24px; flex-shrink:0;
+  }
+  .integration-info { flex:1; }
+  .integration-info h3 { font-size:14px; font-weight:600; margin-bottom:4px; }
+  .integration-info p { font-size:12px; color:var(--text-muted); line-height:1.5; }
+  .integration-info .tags { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
+  .tag {
+    font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600;
+  }
+  .tag-connected { background:#dcfce7; color:#16a34a; }
+  .tag-available { background:#dbeafe; color:#2563eb; }
+  .tag-popular { background:#ffedd5; color:#ea580c; }
+  .toggle {
+    width:40px; height:22px; background:#cbd5e1; border-radius:11px;
+    cursor:pointer; position:relative; transition:.3s; flex-shrink:0;
+  }
+  .toggle.on { background:var(--success); }
+  .toggle::after {
+    content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
+    background:white; border-radius:50%; transition:.3s; box-shadow:0 1px 3px rgba(0,0,0,.2);
+  }
+  .toggle.on::after { left:20px; }
+
+  .api-key-section { margin-top:24px; }
+  .api-key-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px; border:1px solid var(--border); border-radius:8px;
+    margin-bottom:8px; background:#f8fafc;
+  }
+  .api-key-item .key-name { font-size:14px; font-weight:600; }
+  .api-key-item .key-meta { font-size:11px; color:var(--text-muted); }
+  .api-key-item .key-preview {
+    font-family:'Fira Code',monospace; font-size:12px; color:var(--text-muted);
+  }
+  .btn {
+    padding:8px 16px; border-radius:6px; font-size:12px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+  .btn-danger { background:#fee2e2; color:#dc2626; border:none; }
+  .btn-danger:hover { background:#fecaca; }
+
+  .webhook-list { margin-top:24px; }
+  .webhook-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; border:1px solid var(--border); border-radius:8px;
+    margin-bottom:6px;
+  }
+  .webhook-item .url {
+    font-family:'Fira Code',monospace; font-size:12px; color:var(--text);
+  }
+  .webhook-item .events {
+    display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;
+  }
+  .event-tag {
+    font-size:10px; padding:2px 6px; background:var(--primary-light);
+    color:var(--primary); border-radius:3px; font-weight:500;
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理</a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="billing.html">💳 计费管理</a>
+    <a href="integrations.html" class="active">🔌 集成中心</a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>🔌 集成中心</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">连接第三方服务，扩展平台能力</p>
+    </div>
+  </div>
+
+  <!-- Connected Integrations -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header"><h2>🔗 已连接服务</h2></div>
+    <div class="card-body">
+      <div class="integrations-grid">
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#dbeafe;">🔷</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>GitHub</h3>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>代码仓库托管和 CI/CD 集成</p>
+            <div class="tags"><span class="tag tag-connected">已连接</span><span class="tag tag-popular">热门</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#dbeafe;">💬</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>Slack</h3>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>团队即时通讯和通知推送</p>
+            <div class="tags"><span class="tag tag-connected">已连接</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#fee2e2;">📧</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>SendGrid</h3>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>事务邮件发送和模板管理</p>
+            <div class="tags"><span class="tag tag-connected">已连接</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Integrations -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header"><h2>🛒 可用集成</h2></div>
+    <div class="card-body">
+      <div class="integrations-grid">
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#dcfce7;">💚</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>微信支付</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>微信支付收款和退款接口</p>
+            <div class="tags"><span class="tag tag-available">可用</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#dbeafe;">🔵</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>支付宝</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>支付宝支付集成，支持扫码、H5</p>
+            <div class="tags"><span class="tag tag-available">可用</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#ede9fe;">💜</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>企业微信</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>企业微信消息推送和OA集成</p>
+            <div class="tags"><span class="tag tag-available">可用</span><span class="tag tag-popular">推荐</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#ffedd5;">🐳</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>Docker Hub</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>容器镜像仓库和自动化构建</p>
+            <div class="tags"><span class="tag tag-available">可用</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#fce7f3;">📊</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>Google Analytics</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>网站流量分析和用户行为追踪</p>
+            <div class="tags"><span class="tag tag-available">可用</span></div>
+          </div>
+        </div>
+        <div class="integration-card">
+          <div class="integration-icon" style="background:#e5e7eb;">☁️</div>
+          <div class="integration-info">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3>阿里云 OSS</h3>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <p>对象存储服务，文件上传和管理</p>
+            <div class="tags"><span class="tag tag-available">可用</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Keys -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <h2>🔑 API 密钥</h2>
+      <button class="btn btn-primary">+ 生成新密钥</button>
+    </div>
+    <div class="card-body">
+      <div class="api-key-section">
+        <div class="api-key-item">
+          <div>
+            <div class="key-name">生产环境密钥</div>
+            <div class="key-meta">创建于 2024-03-15 · 最后使用: 2小时前</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="key-preview">sk-live-****a1b2</span>
+            <button class="btn btn-outline">复制</button>
+            <button class="btn btn-danger">撤销</button>
+          </div>
+        </div>
+        <div class="api-key-item">
+          <div>
+            <div class="key-name">开发环境密钥</div>
+            <div class="key-meta">创建于 2024-05-20 · 最后使用: 昨天</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="key-preview">sk-test-****c3d4</span>
+            <button class="btn btn-outline">复制</button>
+            <button class="btn btn-danger">撤销</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Webhooks -->
+  <div class="card">
+    <div class="card-header">
+      <h2>🪝 Webhooks</h2>
+      <button class="btn btn-primary">+ 添加 Webhook</button>
+    </div>
+    <div class="card-body">
+      <div class="webhook-list">
+        <div class="webhook-item">
+          <div>
+            <div class="url">https://api.example.com/webhook/deploy</div>
+            <div class="events">
+              <span class="event-tag">deployment.success</span>
+              <span class="event-tag">deployment.failed</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:11px;color:#22c55e;font-weight:600;">活跃</span>
+            <button class="btn btn-outline">编辑</button>
+            <button class="btn btn-danger">删除</button>
+          </div>
+        </div>
+        <div class="webhook-item">
+          <div>
+            <div class="url">https://hooks.slack.com/services/T00/B00/xxx</div>
+            <div class="events">
+              <span class="event-tag">notification.all</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:11px;color:#22c55e;font-weight:600;">活跃</span>
+            <button class="btn btn-outline">编辑</button>
+            <button class="btn btn-danger">删除</button>
+          </div>
+        </div>
+        <div class="webhook-item">
+          <div>
+            <div class="url">https://my-server.com/hooks/data-sync</div>
+            <div class="events">
+              <span class="event-tag">task.created</span>
+              <span class="event-tag">task.completed</span>
+              <span class="event-tag">project.updated</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:11px;color:#f59e0b;font-weight:600;">暂停</span>
+            <button class="btn btn-outline">编辑</button>
+            <button class="btn btn-danger">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

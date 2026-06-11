@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>团队协作 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --success:#22c55e; --warning:#f59e0b; --radius:12px;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h2 { font-size:16px; font-weight:600; }
+  .card-body { padding:20px; }
+
+  .team-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:20px; margin-bottom:24px;
+  }
+  .member-card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px; text-align:center; transition:.2s;
+  }
+  .member-card:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.1); }
+  .member-avatar {
+    width:64px; height:64px; border-radius:50%; margin:0 auto 12px;
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-size:22px; font-weight:700;
+  }
+  .member-card h3 { font-size:15px; font-weight:600; margin-bottom:2px; }
+  .member-card .role { font-size:12px; color:var(--text-muted); margin-bottom:10px; }
+  .member-card .skills { display:flex; gap:5px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; }
+  .skill-tag {
+    font-size:10px; padding:3px 8px; border-radius:4px;
+    background:var(--primary-light); color:var(--primary); font-weight:600;
+  }
+  .member-card .stats {
+    display:flex; justify-content:center; gap:20px;
+    font-size:11px; color:var(--text-muted);
+  }
+  .member-card .stats b { color:var(--text); }
+  .status-indicator {
+    display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px;
+  }
+  .online { background:#22c55e; }
+  .offline { background:#cbd5e1; }
+  .busy { background:#f59e0b; }
+
+  .org-chart {
+    display:flex; flex-direction:column; align-items:center; gap:30px;
+  }
+  .org-level { display:flex; gap:30px; justify-content:center; flex-wrap:wrap; }
+  .org-node {
+    background:var(--card); border-radius:12px; padding:16px 20px;
+    box-shadow:var(--shadow); text-align:center; min-width:140px;
+    border:2px solid transparent; transition:.2s;
+  }
+  .org-node:hover { border-color:var(--primary); }
+  .org-node.leader { border-color:var(--primary); background:var(--primary-light); }
+  .org-node .name { font-size:14px; font-weight:600; }
+  .org-node .title { font-size:11px; color:var(--text-muted); }
+  .org-connector {
+    width:2px; height:30px; background:var(--border); margin:0 auto;
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理</a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心</a>
+    <a href="docs.html">📚 知识库</a>
+    <a href="reports.html">📋 报告中心</a>
+    <a href="team.html" class="active">👥 团队协作</a>
+    <a href="help.html">🆘 帮助中心</a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>👥 团队协作</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">共 12 位团队成员</p>
+    </div>
+    <button class="btn btn-primary">+ 邀请成员</button>
+  </div>
+
+  <!-- Team Grid -->
+  <div class="team-grid" id="teamGrid"></div>
+
+  <!-- Org Chart -->
+  <div class="card">
+    <div class="card-header"><h2>🏢 组织架构</h2></div>
+    <div class="card-body">
+      <div class="org-chart" id="orgChart"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const members = [
+  { name:'李明远', role:'技术负责人', avatar:'李', color:'#4f46e5', skills:['全栈','架构','管理'], tasks:28, projects:5, status:'online' },
+  { name:'张伟', role:'高级前端', avatar:'张', color:'#7c3aed', skills:['React','Vue','CSS'], tasks:16, projects:3, status:'online' },
+  { name:'王芳', role:'产品经理', avatar:'王', color:'#db2777', skills:['产品','UX','数据分析'], tasks:12, projects:4, status:'busy' },
+  { name:'刘强', role:'后端工程师', avatar:'刘', color:'#2563eb', skills:['Node.js','Go','数据库'], tasks:20, projects:3, status:'online' },
+  { name:'陈静', role:'UI 设计师', avatar:'陈', color:'#ea580c', skills:['Figma','插画','动效'], tasks:9, projects:4, status:'offline' },
+  { name:'赵丽', role:'测试工程师', avatar:'赵', color:'#16a34a', skills:['自动化','性能','安全'], tasks:14, projects:3, status:'online' },
+  { name:'孙七', role:'前端开发', avatar:'孙', color:'#8b5cf6', skills:['Vue','TS','Tailwind'], tasks:11, projects:2, status:'busy' },
+  { name:'周八', role:'DevOps', avatar:'周', color:'#dc2626', skills:['Docker','K8s','CI/CD'], tasks:8, projects:5, status:'online' },
+  { name:'吴九', role:'后端开发', avatar:'吴', color:'#0891b2', skills:['Python','Java','API'], tasks:18, projects:2, status:'offline' },
+  { name:'郑十', role:'数据分析师', avatar:'郑', color:'#a21caf', skills:['SQL','Python','BI'], tasks:7, projects:3, status:'online' },
+  { name:'冯十一', role:'实习生', avatar:'冯', color:'#65a30d', skills:['前端','学习'], tasks:5, projects:1, status:'online' },
+  { name:'褚十二', role:'技术写作', avatar:'褚', color:'#b45309', skills:['文档','翻译','SEO'], tasks:6, projects:2, status:'offline' },
+];
+
+// Render Team Grid
+(function() {
+  const grid = document.getElementById('teamGrid');
+  const statusLabels = {online:'在线',offline:'离线',busy:'忙碌'};
+  const statusDots = {online:'online',offline:'offline',busy:'busy'};
+  grid.innerHTML = members.map(m => `
+    <div class="member-card">
+      <div class="member-avatar" style="background:${m.color};">${m.avatar}</div>
+      <h3><span class="status-indicator ${statusDots[m.status]}"></span>${m.name}</h3>
+      <div class="role">${m.role}</div>
+      <div class="skills">
+        ${m.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+      </div>
+      <div class="stats">
+        <span>📋 <b>${m.tasks}</b> 任务</span>
+        <span>📁 <b>${m.projects}</b> 项目</span>
+        <span style="color:${m.status==='online'?'#22c55e':m.status==='busy'?'#f59e0b':'#94a3b8'}">● ${statusLabels[m.status]}</span>
+      </div>
+    </div>
+  `).join('');
+})();
+
+// Render Org Chart
+(function() {
+  const org = document.getElementById('orgChart');
+  org.innerHTML = `
+    <div class="org-node leader">
+      <div class="name">👑 李明远</div>
+      <div class="title">技术负责人</div>
+    </div>
+    <div class="org-connector"></div>
+    <div class="org-level">
+      <div class="org-node">
+        <div class="name">张伟</div>
+        <div class="title">前端组长</div>
+      </div>
+      <div class="org-node">
+        <div class="name">王芳</div>
+        <div class="title">产品组长</div>
+      </div>
+      <div class="org-node">
+        <div class="name">刘强</div>
+        <div class="title">后端组长</div>
+      </div>
+    </div>
+    <div class="org-connector"></div>
+    <div class="org-level">
+      <div class="org-node"><div class="name">孙七</div><div class="title">前端开发</div></div>
+      <div class="org-node"><div class="name">陈静</div><div class="title">UI 设计师</div></div>
+      <div class="org-node"><div class="name">赵丽</div><div class="title">测试工程师</div></div>
+      <div class="org-node"><div class="name">吴九</div><div class="title">后端开发</div></div>
+      <div class="org-node"><div class="name">周八</div><div class="title">DevOps</div></div>
+    </div>
+    <div class="org-connector"></div>
+    <div class="org-level">
+      <div class="org-node"><div class="name">冯十一</div><div class="title">实习生</div></div>
+      <div class="org-node"><div class="name">郑十</div><div class="title">数据分析师</div></div>
+      <div class="org-node"><div class="name">褚十二</div><div class="title">技术写作</div></div>
+    </div>
+  `;
+})();
+</script>
+</body>
+</html>

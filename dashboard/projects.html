@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目管理 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+  .filter-tabs {
+    display:flex; gap:8px; margin-bottom:20px;
+  }
+  .filter-tab {
+    padding:7px 16px; border-radius:20px; font-size:12px; font-weight:500;
+    cursor:pointer; border:1.5px solid var(--border); background:white;
+    transition:.2s;
+  }
+  .filter-tab:hover { background:#f8fafc; }
+  .filter-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+  .projects-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+    gap:20px;
+  }
+  .project-card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px; transition:.2s; cursor:pointer;
+  }
+  .project-card:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.1); }
+  .project-card .card-top { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+  .project-icon {
+    width:44px; height:44px; border-radius:12px; display:flex;
+    align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
+  }
+  .project-info { flex:1; }
+  .project-info h3 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  .project-info p { font-size:12px; color:var(--text-muted); line-height:1.5; }
+  .project-status {
+    font-size:10px; padding:3px 8px; border-radius:4px; font-weight:600;
+    white-space:nowrap; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .status-active { background:#dcfce7; color:#16a34a; }
+  .status-review { background:#ffedd5; color:#ea580c; }
+  .status-paused { background:#fee2e2; color:#dc2626; }
+  .status-planning { background:#dbeafe; color:#2563eb; }
+  .progress-section { margin-bottom:14px; }
+  .progress-header {
+    display:flex; justify-content:space-between; font-size:11px;
+    color:var(--text-muted); margin-bottom:6px;
+  }
+  .progress-bar {
+    height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; border-radius:3px; transition:.5s;
+  }
+  .progress-fill.blue { background:linear-gradient(90deg,#4f46e5,#818cf8); }
+  .progress-fill.green { background:linear-gradient(90deg,#22c55e,#4ade80); }
+  .progress-fill.orange { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+  .card-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:14px; border-top:1px solid var(--border);
+  }
+  .team-avatars { display:flex; }
+  .team-av {
+    width:28px; height:28px; border-radius:50%; font-size:10px;
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:700; margin-left:-8px; border:2px solid white;
+  }
+  .team-av:first-child { margin-left:0; }
+  .card-meta { font-size:11px; color:var(--text-muted); display:flex; gap:10px; }
+  .card-meta span { display:flex; align-items:center; gap:3px; }
+
+  .detail-panel {
+    position:fixed; right:-420px; top:0; bottom:0; width:400px;
+    background:white; box-shadow:-4px 0 20px rgba(0,0,0,.15);
+    z-index:200; transition:.3s; padding:28px; overflow-y:auto;
+  }
+  .detail-panel.open { right:0; }
+  .detail-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:199;
+    display:none;
+  }
+  .detail-overlay.show { display:block; }
+  .close-btn {
+    position:absolute; top:16px; right:16px; background:none; border:none;
+    font-size:22px; cursor:pointer; color:var(--text-muted);
+    width:32px; height:32px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center;
+  }
+  .close-btn:hover { background:var(--bg); }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html" class="active">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>📁 项目管理</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">共 6 个活跃项目</p>
+    </div>
+    <button class="btn btn-primary" onclick="createProject()">+ 新建项目</button>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterProjects('all',this)">全部</button>
+    <button class="filter-tab" onclick="filterProjects('active',this)">进行中</button>
+    <button class="filter-tab" onclick="filterProjects('review',this)">审查中</button>
+    <button class="filter-tab" onclick="filterProjects('planning',this)">规划中</button>
+    <button class="filter-tab" onclick="filterProjects('paused',this)">已暂停</button>
+  </div>
+
+  <div class="projects-grid" id="projectsGrid"></div>
+</main>
+
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <button class="close-btn" onclick="closeDetail()">✕</button>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+const projects = [
+  {
+    id:1, name:'订单系统重构', icon:'🛒', iconBg:'#dbeafe',
+    desc:'重构现有订单系统，支持批量处理和实时状态追踪，提升用户体验和系统稳定性。',
+    status:'active', statusLabel:'进行中', progress:68, progressColor:'blue',
+    team:['张','王','刘','陈'], tasks:24, done:16, dueDate:'2024-08-15',
+    tags:['核心系统','高优先级'],
+    milestones:[
+      {name:'需求分析完成',done:true},{name:'原型设计',done:true},
+      {name:'核心开发',done:false},{name:'集成测试',done:false},{name:'上线部署',done:false}
+    ]
+  },
+  {
+    id:2, name:'用户中心 2.0', icon:'👤', iconBg:'#dcfce7',
+    desc:'全新用户中心，整合个人信息、安全设置、会员体系，提供个性化推荐。',
+    status:'active', statusLabel:'进行中', progress:42, progressColor:'green',
+    team:['赵','孙','周'], tasks:18, done:7, dueDate:'2024-09-01',
+    tags:['用户体验'],
+    milestones:[
+      {name:'UI设计',done:true},{name:'前端开发',done:false},
+      {name:'后端API',done:false},{name:'测试上线',done:false}
+    ]
+  },
+  {
+    id:3, name:'数据分析平台', icon:'📊', iconBg:'#ede9fe',
+    desc:'构建统一的数据分析平台，支持实时数据看板、自定义报表和智能预警。',
+    status:'active', statusLabel:'进行中', progress:85, progressColor:'blue',
+    team:['吴','郑','钱','李'], tasks:30, done:26, dueDate:'2024-07-20',
+    tags:['数据平台','战略项目'],
+    milestones:[
+      {name:'数据接入',done:true},{name:'看板开发',done:true},
+      {name:'报表引擎',done:true},{name:'预警系统',done:false},{name:'性能优化',done:false}
+    ]
+  },
+  {
+    id:4, name:'移动端适配', icon:'📱', iconBg:'#ffedd5',
+    desc:'对现有 Web 应用进行移动端适配，支持 PWA 离线访问和原生应用体验。',
+    status:'review', statusLabel:'审查中', progress:90, progressColor:'orange',
+    team:['冯','陈'], tasks:14, done:12, dueDate:'2024-07-05',
+    tags:['移动端'],
+    milestones:[
+      {name:'响应式布局',done:true},{name:'PWA支持',done:true},
+      {name:'性能优化',done:true},{name:'测试修复',done:false}
+    ]
+  },
+  {
+    id:5, name:'第三方集成', icon:'🔗', iconBg:'#fce7f3',
+    desc:'集成微信支付、支付宝、企业微信等第三方服务，丰富产品生态。',
+    status:'planning', statusLabel:'规划中', progress:10, progressColor:'green',
+    team:['褚','卫'], tasks:12, done:1, dueDate:'2024-10-01',
+    tags:['集成','生态'],
+    milestones:[
+      {name:'技术调研',done:true},{name:'方案设计',done:false},
+      {name:'接口开发',done:false},{name:'联调测试',done:false}
+    ]
+  },
+  {
+    id:6, name:'安全合规升级', icon:'🔒', iconBg:'#e5e7eb',
+    desc:'完成等保三级认证，实施数据加密、访问控制和审计日志系统。',
+    status:'paused', statusLabel:'已暂停', progress:35, progressColor:'green',
+    team:['蒋','沈','韩','杨'], tasks:20, done:7, dueDate:'2024-11-30',
+    tags:['安全','合规'],
+    milestones:[
+      {name:'安全评估',done:true},{name:'方案制定',done:true},
+      {name:'实施部署',done:false},{name:'审计认证',done:false}
+    ]
+  },
+];
+
+function renderProjects(filter='all') {
+  const filtered = filter === 'all' ? projects : projects.filter(p => p.status === filter);
+  const grid = document.getElementById('projectsGrid');
+  const statusClass = {active:'status-active',review:'status-review',planning:'status-planning',paused:'status-paused'};
+  grid.innerHTML = filtered.map(p => `
+    <div class="project-card" onclick="openDetail(${p.id})">
+      <div class="card-top">
+        <div class="project-icon" style="background:${p.iconBg};">${p.icon}</div>
+        <div class="project-info">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h3>${p.name}</h3>
+            <span class="project-status ${statusClass[p.status]}">${p.statusLabel}</span>
+          </div>
+          <p>${p.desc}</p>
+        </div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-header">
+          <span>进度</span><span>${p.progress}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${p.progressColor}" style="width:${p.progress}%;"></div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="team-avatars">
+          ${p.team.map((t,i) => {
+            const colors = ['#4f46e5','#7c3aed','#a78bfa','#c4b5fd'];
+            return `<span class="team-av" style="background:${colors[i%4]};">${t}</span>`;
+          }).join('')}
+        </div>
+        <div class="card-meta">
+          <span>📋 ${p.done}/${p.tasks}</span>
+          <span>📅 ${p.dueDate}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterProjects(filter, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderProjects(filter);
+}
+
+function openDetail(id) {
+  const p = projects.find(pr => pr.id === id);
+  if (!p) return;
+  const content = document.getElementById('detailContent');
+  content.innerHTML = `
+    <div style="font-size:36px;margin-bottom:4px;">${p.icon}</div>
+    <h2 style="font-size:22px;margin-bottom:4px;">${p.name}</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">${p.desc}</p>
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+      ${p.tags.map(t => `<span style="padding:4px 10px;background:var(--primary-light);color:var(--primary);border-radius:6px;font-size:11px;font-weight:600;">${t}</span>`).join('')}
+    </div>
+    <div class="progress-section">
+      <div class="progress-header"><span>总体进度</span><span>${p.progress}%</span></div>
+      <div class="progress-bar"><div class="progress-fill ${p.progressColor}" style="width:${p.progress}%;"></div></div>
+    </div>
+    <h4 style="margin:20px 0 12px;">🎯 里程碑</h4>
+    ${p.milestones.map((m,i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;">
+        <span style="font-size:16px;">${m.done?'✅':'⏳'}</span>
+        <span style="${m.done?'text-decoration:line-through;color:var(--text-muted)':'font-weight:500;'}">${m.name}</span>
+      </div>
+    `).join('')}
+    <h4 style="margin:20px 0 12px;">👥 团队成员</h4>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${p.team.map(t => `<span style="padding:6px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:500;">${t}</span>`).join('')}
+    </div>
+  `;
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailOverlay').classList.add('show');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('detailOverlay').classList.remove('show');
+}
+
+function createProject() {
+  alert('📁 新建项目：在此打开项目创建表单');
+}
+
+renderProjects();
+</script>
+</body>
+</html>

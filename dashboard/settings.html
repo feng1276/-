@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设置 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .settings-layout { display:grid; grid-template-columns:200px 1fr; gap:20px; }
+  .settings-sidebar {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:8px; align-self:start;
+  }
+  .settings-tab {
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
+    transition:.15s; color:var(--text); margin:2px 0;
+  }
+  .settings-tab:hover { background:var(--bg); }
+  .settings-tab.active { background:var(--primary-light); color:var(--primary); font-weight:600; }
+  .settings-content {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:28px;
+  }
+  .settings-content h2 { font-size:20px; font-weight:600; margin-bottom:6px; }
+  .settings-content .desc { color:var(--text-muted); font-size:13px; margin-bottom:24px; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  .form-section { margin-bottom:28px; }
+  .form-section h3 { font-size:15px; font-weight:600; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .form-group { margin-bottom:16px; }
+  .form-group label {
+    display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text);
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:10px 14px; border:1.5px solid var(--border);
+    border-radius:8px; font-size:13px; outline:none; font-family:inherit;
+    transition:.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.08);
+  }
+  .form-group textarea { resize:vertical; min-height:80px; }
+  .form-row { display:flex; gap:12px; }
+  .form-row .form-group { flex:1; }
+  .form-hint { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+  .toggle-group {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 0; border-bottom:1px solid var(--border);
+  }
+  .toggle-group:last-child { border-bottom:none; }
+  .toggle-info h4 { font-size:14px; font-weight:600; }
+  .toggle-info p { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .toggle {
+    width:44px; height:24px; background:#cbd5e1; border-radius:12px;
+    cursor:pointer; position:relative; transition:.3s; flex-shrink:0;
+  }
+  .toggle.on { background:var(--primary); }
+  .toggle::after {
+    content:''; position:absolute; top:2px; left:2px; width:20px; height:20px;
+    background:white; border-radius:50%; transition:.3s; box-shadow:0 1px 3px rgba(0,0,0,.2);
+  }
+  .toggle.on::after { left:22px; }
+
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; transition:.2s; border:none;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+  .btn-danger { background:var(--danger); color:white; }
+  .btn-save {
+    margin-top:20px; padding:12px 28px; background:var(--primary);
+    color:white; border:none; border-radius:10px; font-size:14px;
+    font-weight:600; cursor:pointer; transition:.2s;
+  }
+  .btn-save:hover { background:#4338ca; }
+
+  .avatar-upload {
+    display:flex; align-items:center; gap:16px; margin-bottom:20px;
+  }
+  .avatar-preview {
+    width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white;
+    font-size:28px; font-weight:700;
+  }
+  .avatar-actions { display:flex; gap:8px; flex-direction:column; }
+
+  .color-options { display:flex; gap:8px; }
+  .color-option {
+    width:28px; height:28px; border-radius:50%; cursor:pointer;
+    border:3px solid transparent; transition:.2s;
+  }
+  .color-option:hover { transform:scale(1.1); }
+  .color-option.selected { border-color:var(--text); }
+
+  .session-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;
+  }
+  .session-item .device { font-size:13px; font-weight:500; }
+  .session-item .meta { font-size:11px; color:var(--text-muted); }
+  .session-item.current { border-color:var(--primary); background:var(--primary-light); }
+
+  .toast {
+    position:fixed; bottom:24px; right:24px; padding:12px 20px;
+    background:#1e293b; color:white; border-radius:8px; font-size:13px;
+    font-weight:500; opacity:0; transition:.3s; z-index:1000;
+    pointer-events:none;
+  }
+  .toast.show { opacity:1; }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html" class="active">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>⚙️ 设置</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">管理您的账户和应用偏好</p>
+    </div>
+  </div>
+
+  <div class="settings-layout">
+    <div class="settings-sidebar">
+      <div class="settings-tab active" onclick="switchSettings('profile',this)">👤 个人资料</div>
+      <div class="settings-tab" onclick="switchSettings('security',this)">🔐 安全设置</div>
+      <div class="settings-tab" onclick="switchSettings('notifications',this)">🔔 通知偏好</div>
+      <div class="settings-tab" onclick="switchSettings('appearance',this)">🎨 外观主题</div>
+      <div class="settings-tab" onclick="switchSettings('sessions',this)">📱 设备管理</div>
+      <div class="settings-tab" onclick="switchSettings('danger',this)">⚠️ 危险区域</div>
+    </div>
+
+    <div class="settings-content">
+      <!-- 个人资料 -->
+      <div id="panel-profile" class="panel active">
+        <h2>👤 个人资料</h2>
+        <p class="desc">更新您的个人信息和联系方式</p>
+        <div class="avatar-upload">
+          <div class="avatar-preview">李</div>
+          <div class="avatar-actions">
+            <button class="btn btn-outline" style="font-size:12px;">📷 更换头像</button>
+            <button class="btn btn-outline" style="font-size:12px;">🗑 移除</button>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>基本信息</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>名字</label>
+              <input type="text" value="明远" placeholder="名字">
+            </div>
+            <div class="form-group">
+              <label>姓氏</label>
+              <input type="text" value="李" placeholder="姓氏">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>显示名称</label>
+            <input type="text" value="李明远" placeholder="显示名称">
+            <div class="form-hint">此名称将在系统中公开显示</div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>联系方式</h3>
+          <div class="form-group">
+            <label>邮箱地址</label>
+            <input type="email" value="limingyuan@example.com">
+          </div>
+          <div class="form-group">
+            <label>手机号码</label>
+            <input type="tel" value="+86 138****8888">
+          </div>
+          <div class="form-group">
+            <label>个人简介</label>
+            <textarea placeholder="介绍一下你自己...">全栈工程师，热爱技术和设计，专注于用户体验和产品创新。</textarea>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveSettings('profile')">💾 保存更改</button>
+      </div>
+
+      <!-- 安全设置 -->
+      <div id="panel-security" class="panel">
+        <h2>🔐 安全设置</h2>
+        <p class="desc">管理密码和双因素认证</p>
+        <div class="form-section">
+          <h3>更改密码</h3>
+          <div class="form-group">
+            <label>当前密码</label>
+            <input type="password" placeholder="输入当前密码">
+          </div>
+          <div class="form-group">
+            <label>新密码</label>
+            <input type="password" placeholder="至少8个字符">
+            <div class="form-hint">密码需包含大小写字母、数字和特殊字符</div>
+          </div>
+          <div class="form-group">
+            <label>确认新密码</label>
+            <input type="password" placeholder="再次输入新密码">
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>双因素认证 (2FA)</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+            添加额外的安全层以保护您的账户
+          </p>
+          <button class="btn btn-outline">📱 启用 Google Authenticator</button>
+        </div>
+        <button class="btn-save" onclick="saveSettings('security')">💾 保存更改</button>
+      </div>
+
+      <!-- 通知偏好 -->
+      <div id="panel-notifications" class="panel">
+        <h2>🔔 通知偏好</h2>
+        <p class="desc">选择您希望接收的通知类型和方式</p>
+        <div class="form-section">
+          <h3>邮件通知</h3>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>项目更新</h4><p>当项目状态发生变化时通知</p>
+            </div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>任务分配</h4><p>当有新任务分配给您时通知</p>
+            </div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>评论提及</h4><p>当有人在评论中 @ 您时通知</p>
+            </div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>周报摘要</h4><p>每周一发送项目进展摘要</p>
+            </div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>产品更新</h4><p>产品新功能和版本发布通知</p>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>推送通知</h3>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>浏览器推送</h4><p>通过浏览器接收实时通知</p>
+            </div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-info">
+              <h4>桌面通知</h4><p>接收桌面弹窗通知</p>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveSettings('notifications')">💾 保存更改</button>
+      </div>
+
+      <!-- 外观主题 -->
+      <div id="panel-appearance" class="panel">
+        <h2>🎨 外观主题</h2>
+        <p class="desc">自定义界面外观和主题</p>
+        <div class="form-section">
+          <h3>主题模式</h3>
+          <div class="form-group">
+            <label>颜色模式</label>
+            <select>
+              <option>跟随系统</option>
+              <option selected>浅色模式</option>
+              <option>深色模式</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>主题色</label>
+            <div class="color-options">
+              <span class="color-option selected" style="background:#4f46e5;" onclick="selectColor(this)" title="靛蓝"></span>
+              <span class="color-option" style="background:#2563eb;" onclick="selectColor(this)" title="蓝色"></span>
+              <span class="color-option" style="background:#16a34a;" onclick="selectColor(this)" title="绿色"></span>
+              <span class="color-option" style="background:#ea580c;" onclick="selectColor(this)" title="橙色"></span>
+              <span class="color-option" style="background:#dc2626;" onclick="selectColor(this)" title="红色"></span>
+              <span class="color-option" style="background:#7c3aed;" onclick="selectColor(this)" title="紫色"></span>
+              <span class="color-option" style="background:#db2777;" onclick="selectColor(this)" title="粉色"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>字体大小</label>
+            <select>
+              <option>小</option>
+              <option selected>中</option>
+              <option>大</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveSettings('appearance')">💾 保存更改</button>
+      </div>
+
+      <!-- 设备管理 -->
+      <div id="panel-sessions" class="panel">
+        <h2>📱 设备管理</h2>
+        <p class="desc">管理已登录的设备</p>
+        <div class="session-item current">
+          <div>
+            <div class="device">💻 Windows — Chrome 浏览器</div>
+            <div class="meta">当前设备 · 北京, 中国 · 活跃</div>
+          </div>
+          <span style="font-size:11px;color:var(--primary);font-weight:600;">当前</span>
+        </div>
+        <div class="session-item">
+          <div>
+            <div class="device">📱 iPhone 15 — Safari</div>
+            <div class="meta">上次活跃: 2小时前 · 北京, 中国</div>
+          </div>
+          <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;">登出</button>
+        </div>
+        <div class="session-item">
+          <div>
+            <div class="device">💻 MacBook Pro — Firefox</div>
+            <div class="meta">上次活跃: 2天前 · 上海, 中国</div>
+          </div>
+          <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;">登出</button>
+        </div>
+      </div>
+
+      <!-- 危险区域 -->
+      <div id="panel-danger" class="panel">
+        <h2>⚠️ 危险区域</h2>
+        <p class="desc">不可逆操作，请谨慎执行</p>
+        <div class="form-section" style="border:1px solid #fecaca;border-radius:8px;padding:16px;">
+          <h3 style="color:#dc2626;">删除账户</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+            一旦删除，所有数据将被永久清除且无法恢复。
+          </p>
+          <button class="btn btn-danger" onclick="if(confirm('确定要删除账户吗？此操作不可撤销！'))alert('账户已标记删除');">
+            🗑 删除我的账户
+          </button>
+        </div>
+        <div class="form-section" style="border:1px solid #fecaca;border-radius:8px;padding:16px;margin-top:16px;">
+          <h3 style="color:#dc2626;">导出所有数据</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+            下载包含您所有项目、任务和消息的完整数据归档。
+          </p>
+          <button class="btn btn-outline">📥 请求数据导出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function switchSettings(tab, el) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function selectColor(el) {
+  document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function saveSettings(section) {
+  const toast = document.getElementById('toast');
+  const messages = {
+    profile:'个人资料已更新',
+    security:'安全设置已保存',
+    notifications:'通知偏好已更新',
+    appearance:'外观主题已应用',
+  };
+  toast.textContent = '✅ ' + (messages[section] || '设置已保存');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

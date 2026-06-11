@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报告中心 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h2 { font-size:16px; font-weight:600; }
+  .card-body { padding:20px; }
+
+  .report-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; margin-bottom:24px; }
+  .report-card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:20px; transition:.2s; cursor:pointer; position:relative;
+  }
+  .report-card:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.1); }
+  .report-card .icon { font-size:32px; margin-bottom:12px; }
+  .report-card h3 { font-size:15px; font-weight:600; margin-bottom:6px; }
+  .report-card p { font-size:12px; color:var(--text-muted); line-height:1.6; }
+  .report-card .meta { display:flex; gap:16px; margin-top:16px; font-size:11px; color:var(--text-muted); }
+  .report-card .badge {
+    position:absolute; top:16px; right:16px; font-size:10px; padding:2px 8px;
+    border-radius:4px; font-weight:600;
+  }
+  .badge-new { background:#dcfce7; color:#16a34a; }
+  .badge-draft { background:#ffedd5; color:#ea580c; }
+
+  .schedule-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .schedule-table th {
+    text-align:left; padding:10px 14px; background:#f8fafc;
+    font-weight:600; color:var(--text-muted); font-size:11px;
+    text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid var(--border);
+  }
+  .schedule-table td {
+    padding:10px 14px; border-bottom:1px solid var(--border);
+  }
+  .schedule-table tbody tr:hover { background:#f8fafc; }
+  .status-dot {
+    display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px;
+  }
+  .dot-success { background:#22c55e; }
+  .dot-pending { background:#f59e0b; }
+
+  .actions-dropdown {
+    position:relative; display:inline-block;
+  }
+  .actions-dropdown button {
+    background:none; border:none; font-size:16px; cursor:pointer; padding:2px 6px;
+  }
+  .dropdown-menu {
+    display:none; position:absolute; right:0; top:24px; background:white;
+    border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.1);
+    z-index:50; min-width:120px; overflow:hidden;
+  }
+  .dropdown-menu a {
+    display:block; padding:8px 14px; font-size:12px; color:var(--text);
+    text-decoration:none; transition:.15s;
+  }
+  .dropdown-menu a:hover { background:var(--bg); }
+  .actions-dropdown:hover .dropdown-menu { display:block; }
+
+  @media (max-width:1024px) {
+    .report-grid { grid-template-columns:1fr; }
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理</a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心</a>
+    <a href="docs.html">📚 知识库</a>
+    <a href="reports.html" class="active">📋 报告中心</a>
+    <a href="team.html">👥 团队协作</a>
+    <a href="help.html">🆘 帮助中心</a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>📋 报告中心</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">生成和管理各类业务报告</p>
+    </div>
+    <button class="btn btn-primary">+ 新建报告</button>
+  </div>
+
+  <!-- 报告模板 -->
+  <div class="report-grid">
+    <div class="report-card" onclick="generateReport('weekly')">
+      <span class="badge badge-new">热门</span>
+      <div class="icon">📊</div>
+      <h3>周度进展报告</h3>
+      <p>汇总本周项目进展、任务完成情况和团队绩效数据，自动生成图表。</p>
+      <div class="meta">
+        <span>📅 每周一自动生成</span>
+        <span>⏱ 预计 2 分钟</span>
+      </div>
+    </div>
+    <div class="report-card" onclick="generateReport('monthly')">
+      <span class="badge badge-new">推荐</span>
+      <div class="icon">📈</div>
+      <h3>月度经营分析</h3>
+      <p>深度分析月度营收、用户增长、转化漏斗，提供同比环比对比。</p>
+      <div class="meta">
+        <span>📅 每月 1 号生成</span>
+        <span>⏱ 预计 5 分钟</span>
+      </div>
+    </div>
+    <div class="report-card" onclick="generateReport('quarterly')">
+      <div class="icon">🎯</div>
+      <h3>季度战略回顾</h3>
+      <p>回顾季度 OKR 完成情况，分析市场趋势，规划下一季度目标。</p>
+      <div class="meta">
+        <span>📅 每季度初生成</span>
+        <span>⏱ 预计 10 分钟</span>
+      </div>
+    </div>
+    <div class="report-card" onclick="generateReport('performance')">
+      <span class="badge badge-draft">草稿</span>
+      <div class="icon">👥</div>
+      <h3>团队绩效报告</h3>
+      <p>团队成员工作量统计、任务完成率、代码贡献度等多维度分析。</p>
+      <div class="meta">
+        <span>📅 按需生成</span>
+        <span>⏱ 预计 3 分钟</span>
+      </div>
+    </div>
+    <div class="report-card" onclick="generateReport('revenue')">
+      <div class="icon">💰</div>
+      <h3>收入分析报告</h3>
+      <p>按产品线、渠道、地区拆解收入构成，预测未来收入趋势。</p>
+      <div class="meta">
+        <span>📅 每月中旬</span>
+        <span>⏱ 预计 4 分钟</span>
+      </div>
+    </div>
+    <div class="report-card" onclick="generateReport('custom')">
+      <div class="icon">🔧</div>
+      <h3>自定义报告</h3>
+      <p>灵活配置数据源、指标和展示方式，创建满足特定需求的报告。</p>
+      <div class="meta">
+        <span>📅 随时生成</span>
+        <span>⏱ 灵活配置</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最近报告 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>📑 最近生成的报告</h2>
+      <button class="btn btn-outline" style="font-size:12px;padding:4px 12px;">查看全部</button>
+    </div>
+    <div class="card-body" style="overflow-x:auto;">
+      <table class="schedule-table">
+        <thead>
+          <tr>
+            <th>报告名称</th>
+            <th>类型</th>
+            <th>生成时间</th>
+            <th>创建者</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">2024年6月第2周进展报告</td>
+            <td>周度报告</td>
+            <td>2024-06-10 09:00</td>
+            <td>系统自动</td>
+            <td><span class="status-dot dot-success"></span>已完成</td>
+            <td>
+              <div class="actions-dropdown">
+                <button>⋯</button>
+                <div class="dropdown-menu">
+                  <a href="#">📥 下载 PDF</a>
+                  <a href="#">📊 查看详情</a>
+                  <a href="#">📧 邮件发送</a>
+                  <a href="#" style="color:#dc2626;">🗑 删除</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">2024年5月经营分析报告</td>
+            <td>月度报告</td>
+            <td>2024-06-01 08:00</td>
+            <td>系统自动</td>
+            <td><span class="status-dot dot-success"></span>已完成</td>
+            <td>
+              <div class="actions-dropdown">
+                <button>⋯</button>
+                <div class="dropdown-menu">
+                  <a href="#">📥 下载 PDF</a>
+                  <a href="#">📊 查看详情</a>
+                  <a href="#">📧 邮件发送</a>
+                  <a href="#" style="color:#dc2626;">🗑 删除</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Q2 OKR 完成度中期评估</td>
+            <td>季度报告</td>
+            <td>2024-05-15 14:30</td>
+            <td>李明远</td>
+            <td><span class="status-dot dot-success"></span>已完成</td>
+            <td>
+              <div class="actions-dropdown">
+                <button>⋯</button>
+                <div class="dropdown-menu">
+                  <a href="#">📥 下载 PDF</a>
+                  <a href="#">📊 查看详情</a>
+                  <a href="#">📧 邮件发送</a>
+                  <a href="#" style="color:#dc2626;">🗑 删除</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">团队5月绩效评估</td>
+            <td>绩效报告</td>
+            <td>2024-06-03 10:15</td>
+            <td>王芳</td>
+            <td><span class="status-dot dot-pending"></span>审核中</td>
+            <td>
+              <div class="actions-dropdown">
+                <button>⋯</button>
+                <div class="dropdown-menu">
+                  <a href="#">📥 下载 PDF</a>
+                  <a href="#">📊 查看详情</a>
+                  <a href="#">✅ 审核通过</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">渠道收入拆解分析</td>
+            <td>收入报告</td>
+            <td>2024-05-28 16:45</td>
+            <td>刘强</td>
+            <td><span class="status-dot dot-success"></span>已完成</td>
+            <td>
+              <div class="actions-dropdown">
+                <button>⋯</button>
+                <div class="dropdown-menu">
+                  <a href="#">📥 下载 PDF</a>
+                  <a href="#">📊 查看详情</a>
+                  <a href="#">📧 邮件发送</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+function generateReport(type) {
+  const names = {
+    weekly:'周度进展报告',monthly:'月度经营分析',
+    quarterly:'季度战略回顾',performance:'团队绩效报告',
+    revenue:'收入分析报告',custom:'自定义报告',
+  };
+  alert(`📋 正在生成「${names[type]||type}」...\n\n系统将根据最新数据自动生成报告，请稍候。`);
+}
+</script>
+</body>
+</html>

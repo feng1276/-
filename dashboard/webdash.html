@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebDash — 仪表板</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #cbd5e1;
+    --sidebar-active: #4f46e5;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100; transition:.3s;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active {
+    background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary);
+  }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white;
+    font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  /* Main */
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .header-actions { display:flex; gap:10px; align-items:center; }
+  .header-actions button {
+    padding:9px 18px; border:1.5px solid var(--border); background:white;
+    border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
+    transition:.2s; display:flex; align-items:center; gap:6px;
+  }
+  .header-actions button:hover { background:#f8fafc; }
+  .header-actions button.primary {
+    background:var(--primary); color:white; border-color:var(--primary);
+  }
+  .header-actions button.primary:hover { background:#4338ca; }
+  .search-box {
+    padding:9px 14px; border:1.5px solid var(--border); border-radius:8px;
+    font-size:13px; outline:none; width:220px; transition:.2s;
+  }
+  .search-box:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.08); }
+
+  /* Stats Grid */
+  .stats-grid {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:20px;
+    margin-bottom:28px;
+  }
+  .stat-card {
+    background:var(--card); border-radius:var(--radius); padding:22px;
+    box-shadow:var(--shadow); display:flex; align-items:flex-start; gap:16px;
+    transition:.2s; cursor:pointer;
+  }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+  .stat-icon {
+    width:48px; height:48px; border-radius:12px; display:flex;
+    align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+  }
+  .stat-icon.blue { background:#dbeafe; color:#2563eb; }
+  .stat-icon.green { background:#dcfce7; color:#16a34a; }
+  .stat-icon.orange { background:#ffedd5; color:#ea580c; }
+  .stat-icon.purple { background:#ede9fe; color:#7c3aed; }
+  .stat-info h3 { font-size:26px; font-weight:700; }
+  .stat-info p { font-size:13px; color:var(--text-muted); margin-top:2px; }
+  .stat-change { font-size:12px; font-weight:600; margin-top:4px; }
+  .stat-change.up { color:var(--success); }
+  .stat-change.down { color:var(--danger); }
+
+  /* Content Grid */
+  .content-grid {
+    display:grid; grid-template-columns:2fr 1fr; gap:20px;
+  }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card-header {
+    padding:18px 22px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h2 { font-size:16px; font-weight:600; }
+  .card-header a { color:var(--primary); font-size:13px; font-weight:500; text-decoration:none; }
+  .card-body { padding:18px 22px; }
+
+  /* Chart placeholder */
+  .chart-area {
+    height:260px; display:flex; align-items:flex-end; gap:16px; padding:8px 0;
+  }
+  .chart-bar {
+    flex:1; background:linear-gradient(180deg,var(--primary),#818cf8);
+    border-radius:6px 6px 0 0; position:relative; transition:.3s; min-width:20px;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  .chart-bar:hover { opacity:.85; transform:scaleY(1.02); }
+  .chart-bar .label {
+    position:absolute; top:-22px; font-size:11px; font-weight:600; color:var(--text-muted);
+  }
+  .chart-labels {
+    display:flex; gap:16px; margin-top:10px;
+  }
+  .chart-labels span {
+    flex:1; text-align:center; font-size:11px; color:var(--text-muted);
+  }
+
+  /* Activity list */
+  .activity-item {
+    display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border);
+    align-items:flex-start;
+  }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-dot {
+    width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px;
+  }
+  .activity-dot.blue { background:var(--info); }
+  .activity-dot.green { background:var(--success); }
+  .activity-dot.orange { background:var(--warning); }
+  .activity-content { flex:1; }
+  .activity-content p { font-size:13px; line-height:1.5; }
+  .activity-content .time { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  /* Quick tasks */
+  .quick-task {
+    display:flex; align-items:center; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .quick-task:last-child { border-bottom:none; }
+  .quick-task input[type="checkbox"] { accent-color:var(--primary); width:16px; height:16px; }
+  .quick-task label { font-size:13px; cursor:pointer; }
+  .quick-task label.done { text-decoration:line-through; color:var(--text-muted); }
+  .quick-task .tag {
+    margin-left:auto; font-size:10px; padding:2px 8px; border-radius:4px;
+    font-weight:600; white-space:nowrap;
+  }
+  .tag.high { background:#fee2e2; color:#dc2626; }
+  .tag.medium { background:#ffedd5; color:#ea580c; }
+  .tag.low { background:#dcfce7; color:#16a34a; }
+
+  @media (max-width:1024px) {
+    .stats-grid { grid-template-columns:repeat(2,1fr); }
+    .content-grid { grid-template-columns:1fr; }
+  }
+  @media (max-width:768px) {
+    .sidebar { width:0; overflow:hidden; }
+    .main { margin-left:0; }
+    .stats-grid { grid-template-columns:1fr; }
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon">📊</span> WebDash
+  </div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html" class="active">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info">
+      <div class="name">李明远</div>
+      <div class="role">管理员</div>
+    </div>
+    <span style="cursor:pointer;" title="退出" onclick="location.href='login.html'">🚪</span>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>仪表板概览</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">欢迎回来，李明远 👋</p>
+    </div>
+    <div class="header-actions">
+      <input type="text" class="search-box" placeholder="🔍 搜索...">
+      <button>📥 导出</button>
+      <button class="primary">+ 新建</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue">👥</div>
+      <div class="stat-info">
+        <p>总用户数</p>
+        <h3>24,891</h3>
+        <div class="stat-change up">↑ 12.5%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">💰</div>
+      <div class="stat-info">
+        <p>本月收入</p>
+        <h3>¥128,430</h3>
+        <div class="stat-change up">↑ 8.2%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">📦</div>
+      <div class="stat-info">
+        <p>待处理订单</p>
+        <h3>1,204</h3>
+        <div class="stat-change down">↓ 3.1%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple">⭐</div>
+      <div class="stat-info">
+        <p>转化率</p>
+        <h3>3.24%</h3>
+        <div class="stat-change up">↑ 4.7%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid">
+    <!-- Chart -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📊 月度收入趋势</h2>
+        <a href="analytics.html">查看详情 →</a>
+      </div>
+      <div class="card-body">
+        <div class="chart-area" id="revenueChart"></div>
+        <div class="chart-labels" id="chartLabels"></div>
+      </div>
+    </div>
+
+    <!-- Quick Tasks -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📋 待办事项</h2>
+        <a href="tasks.html">全部 →</a>
+      </div>
+      <div class="card-body" id="quickTasks"></div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card" style="grid-column:1/-1;">
+      <div class="card-header">
+        <h2>🕐 最近动态</h2>
+        <a href="#">查看全部 →</a>
+      </div>
+      <div class="card-body" id="activityFeed"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Revenue Chart
+(function() {
+  const data = [42,58,35,68,55,82,47,73,62,89,76,95];
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const max = Math.max(...data);
+  const chartArea = document.getElementById('revenueChart');
+  const labelsArea = document.getElementById('chartLabels');
+
+  data.forEach((val, i) => {
+    const height = (val / max) * 220;
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = height + 'px';
+    bar.innerHTML = `<span class="label">¥${val}k</span>`;
+    bar.title = `${months[i]}: ¥${val},000`;
+    chartArea.appendChild(bar);
+  });
+
+  months.forEach(m => {
+    const span = document.createElement('span');
+    span.textContent = m;
+    labelsArea.appendChild(span);
+  });
+})();
+
+// Quick Tasks
+(function() {
+  const tasks = [
+    { text:'完成季度报告', tag:'high', done:false },
+    { text:'审核新版本发布', tag:'high', done:false },
+    { text:'回复客户邮件', tag:'medium', done:true },
+    { text:'更新项目文档', tag:'medium', done:false },
+    { text:'团队周会准备', tag:'low', done:true },
+    { text:'备份数据库', tag:'low', done:false },
+  ];
+  const container = document.getElementById('quickTasks');
+  tasks.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'quick-task';
+    div.innerHTML = `
+      <input type="checkbox" ${t.done?'checked':''} onchange="this.nextElementSibling.classList.toggle('done')">
+      <label class="${t.done?'done':''}">${t.text}</label>
+      <span class="tag ${t.tag}">${t.tag==='high'?'紧急':t.tag==='medium'?'一般':'低优'}</span>
+    `;
+    container.appendChild(div);
+  });
+})();
+
+// Activity Feed
+(function() {
+  const activities = [
+    { dot:'blue', text:'<b>张伟</b> 提交了 <b>订单系统 v2.3</b> 的代码审查请求', time:'5 分钟前' },
+    { dot:'green', text:'<b>系统</b> 自动部署 <b>生产环境</b> 完成', time:'23 分钟前' },
+    { dot:'orange', text:'<b>王芳</b> 创建了新的 <b>营销活动方案</b>', time:'1 小时前' },
+    { dot:'blue', text:'<b>陈静</b> 更新了 <b>用户手册</b> 第 3 章节', time:'2 小时前' },
+    { dot:'green', text:'<b>系统</b> 完成了 <b>每日数据备份</b>', time:'3 小时前' },
+    { dot:'blue', text:'<b>刘强</b> 在 <b>设计评审</b> 中添加了 8 条评论', time:'5 小时前' },
+    { dot:'orange', text:'<b>赵丽</b> 将 <b>支付集成</b> 任务标记为完成', time:'昨天 16:30' },
+  ];
+  const container = document.getElementById('activityFeed');
+  activities.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    div.innerHTML = `
+      <div class="activity-dot ${a.dot}"></div>
+      <div class="activity-content">
+        <p>${a.text}</p>
+        <div class="time">${a.time}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+})();
+</script>
+</body>
+</html>

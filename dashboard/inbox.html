@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消息中心 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+
+  .inbox-layout { display:grid; grid-template-columns:280px 1fr; gap:0; }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .inbox-sidebar {
+    background:var(--card); border-radius:var(--radius) 0 0 var(--radius);
+    box-shadow:var(--shadow); border-right:1px solid var(--border);
+    overflow:hidden;
+  }
+  .inbox-main {
+    background:var(--card); border-radius:0 var(--radius) var(--radius) 0;
+    box-shadow:var(--shadow);
+  }
+  .compose-btn {
+    margin:16px; width:calc(100% - 32px); padding:11px; background:var(--primary);
+    color:white; border:none; border-radius:8px; font-size:14px; font-weight:600;
+    cursor:pointer; transition:.2s;
+  }
+  .compose-btn:hover { background:#4338ca; }
+  .folder-list { padding:0 8px; }
+  .folder-item {
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
+    transition:.15s; margin:2px 0; color:var(--text);
+  }
+  .folder-item:hover { background:var(--bg); }
+  .folder-item.active { background:var(--primary-light); color:var(--primary); font-weight:600; }
+  .folder-item .count {
+    margin-left:auto; font-size:11px; background:var(--border); padding:2px 8px;
+    border-radius:10px; font-weight:500; color:var(--text-muted);
+  }
+  .folder-item.active .count { background:var(--primary); color:white; }
+
+  .search-box {
+    margin:12px 16px; width:calc(100% - 32px); padding:10px 14px;
+    border:1.5px solid var(--border); border-radius:8px; font-size:13px;
+    outline:none; transition:.2s;
+  }
+  .search-box:focus { border-color:var(--primary); }
+
+  .message-list { max-height:600px; overflow-y:auto; }
+  .message-item {
+    display:flex; gap:14px; padding:14px 20px; border-bottom:1px solid var(--border);
+    cursor:pointer; transition:.15s; align-items:flex-start;
+  }
+  .message-item:hover { background:#f8fafc; }
+  .message-item.unread { background:var(--primary-light); }
+  .message-item.selected { background:#eef2ff; outline:1px solid var(--primary); }
+  .msg-avatar {
+    width:40px; height:40px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:700; font-size:15px;
+  }
+  .msg-content { flex:1; min-width:0; }
+  .msg-header { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+  .msg-sender { font-size:13px; font-weight:600; }
+  .msg-time { margin-left:auto; font-size:11px; color:var(--text-muted); white-space:nowrap; }
+  .msg-subject { font-size:14px; font-weight:600; margin-bottom:3px; }
+  .msg-preview {
+    font-size:12px; color:var(--text-muted); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; max-width:400px;
+  }
+  .unread-dot {
+    width:8px; height:8px; border-radius:50%; background:var(--primary);
+    flex-shrink:0; margin-top:6px;
+  }
+  .star { color:#f59e0b; cursor:pointer; font-size:14px; }
+  .star.inactive { color:#cbd5e1; }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html" class="active">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>💬 消息中心</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">3 条未读消息</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline">🔄 刷新</button>
+      <button class="btn btn-outline">🗑 清空已读</button>
+    </div>
+  </div>
+
+  <div class="inbox-layout">
+    <div class="inbox-sidebar">
+      <button class="compose-btn" onclick="composeNew()">✏️ 写新消息</button>
+      <div class="folder-list">
+        <div class="folder-item active" onclick="filterMessages('all',this)">
+          📥 全部消息 <span class="count">12</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('unread',this)">
+          🔵 未读 <span class="count">3</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('starred',this)">
+          ⭐ 星标 <span class="count">2</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('system',this)">
+          🤖 系统通知 <span class="count">4</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('team',this)">
+          👥 团队消息 <span class="count">5</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('sent',this)">
+          📤 已发送 <span class="count">8</span>
+        </div>
+        <div class="folder-item" onclick="filterMessages('trash',this)">
+          🗑 回收站 <span class="count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="inbox-main">
+      <input type="text" class="search-box" placeholder="🔍 搜索消息..." oninput="searchMessages(this.value)">
+      <div class="message-list" id="messageList"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const messages = [
+  { id:1, sender:'张伟', avatar:'张', avatarBg:'#4f46e5', subject:'关于订单系统 V2.3 的代码审查', preview:'我已经完成了对订单模块的代码审查，发现了几处需要优化的地方...', time:'10:32', unread:true, starred:false, category:'team' },
+  { id:2, sender:'系统通知', avatar:'系', avatarBg:'#22c55e', subject:'生产环境部署完成', preview:'订单系统 v2.3 已成功部署到生产环境，所有服务运行正常...', time:'09:15', unread:true, starred:true, category:'system' },
+  { id:3, sender:'王芳', avatar:'王', avatarBg:'#7c3aed', subject:'Q2 营销活动方案草稿', preview:'附件是第二季度营销活动的初步方案，请大家在周五前提意见...', time:'昨天', unread:true, starred:false, category:'team' },
+  { id:4, sender:'陈静', avatar:'陈', avatarBg:'#f59e0b', subject:'用户手册更新完毕', preview:'第3章节的用户手册已更新，新增了批量操作和权限管理的说明...', time:'昨天', unread:false, starred:true, category:'team' },
+  { id:5, sender:'系统通知', avatar:'系', avatarBg:'#22c55e', subject:'每日数据备份完成', preview:'2024年6月9日的数据备份任务已成功完成，备份大小：2.4GB...', time:'6月9日', unread:false, starred:false, category:'system' },
+  { id:6, sender:'刘强', avatar:'刘', avatarBg:'#ef4444', subject:'设计评审反馈汇总', preview:'本次设计评审共收到 12 条建议，其中 8 条已采纳，4 条待讨论...', time:'6月9日', unread:false, starred:false, category:'team' },
+  { id:7, sender:'赵丽', avatar:'赵', avatarBg:'#8b5cf6', subject:'支付集成测试报告', preview:'支付模块集成测试已完成，覆盖支付宝、微信支付、银联三种渠道...', time:'6月8日', unread:false, starred:false, category:'team' },
+  { id:8, sender:'系统通知', avatar:'系', avatarBg:'#22c55e', subject:'SSL证书即将到期提醒', preview:'您的 SSL 证书将在 30 天后到期，请及时续期以避免服务中断...', time:'6月8日', unread:false, starred:false, category:'system' },
+  { id:9, sender:'系统通知', avatar:'系', avatarBg:'#22c55e', subject:'新用户注册通知', preview:'本周新增 128 位注册用户，较上周增长 15.3%...', time:'6月7日', unread:false, starred:false, category:'system' },
+  { id:10, sender:'张伟', avatar:'张', avatarBg:'#4f46e5', subject:'下周技术分享主题征集', preview:'下周三的技术分享会需要确定主题，大家有什么想分享的吗？...', time:'6月7日', unread:false, starred:false, category:'team' },
+  { id:11, sender:'吴九', avatar:'吴', avatarBg:'#06b6d4', subject:'API 接口文档更新', preview:'根据最新需求，更新了用户模块和订单模块的 API 接口文档...', time:'6月6日', unread:false, starred:false, category:'sent' },
+  { id:12, sender:'郑十', avatar:'郑', avatarBg:'#ec4899', subject:'客户反馈汇总', preview:'本月收集了 45 条客户反馈，主要涉及性能和易用性两方面...', time:'6月5日', unread:false, starred:false, category:'team' },
+];
+
+let currentFilter = 'all';
+
+function renderMessages(filter='all', search='') {
+  let filtered = messages;
+  if (filter === 'unread') filtered = messages.filter(m => m.unread);
+  else if (filter === 'starred') filtered = messages.filter(m => m.starred);
+  else if (filter !== 'all') filtered = messages.filter(m => m.category === filter);
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(m =>
+      m.subject.toLowerCase().includes(q) ||
+      m.preview.toLowerCase().includes(q) ||
+      m.sender.toLowerCase().includes(q)
+    );
+  }
+  const container = document.getElementById('messageList');
+  container.innerHTML = filtered.map(m => `
+    <div class="message-item ${m.unread?'unread':''}" onclick="selectMessage(${m.id})" id="msg-${m.id}">
+      <div class="msg-avatar" style="background:${m.avatarBg};">${m.avatar}</div>
+      <div class="msg-content">
+        <div class="msg-header">
+          <span class="msg-sender">${m.sender}</span>
+          <span class="msg-time">${m.time}</span>
+        </div>
+        <div class="msg-subject">${m.subject}</div>
+        <div class="msg-preview">${m.preview}</div>
+      </div>
+      ${m.unread ? '<div class="unread-dot"></div>' : ''}
+      <span class="star ${m.starred?'':'inactive'}" onclick="event.stopPropagation();toggleStar(${m.id})">${m.starred?'⭐':'☆'}</span>
+    </div>
+  `).join('');
+}
+
+function filterMessages(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
+  el.classList.add('active');
+  renderMessages(filter);
+}
+
+function searchMessages(query) {
+  renderMessages(currentFilter, query);
+}
+
+function selectMessage(id) {
+  document.querySelectorAll('.message-item').forEach(m => m.classList.remove('selected'));
+  const el = document.getElementById('msg-'+id);
+  if (el) {
+    el.classList.add('selected');
+    el.classList.remove('unread');
+    const msg = messages.find(m => m.id === id);
+    if (msg) msg.unread = false;
+    // Update sidebar badge
+    const unreadCount = messages.filter(m => m.unread).length;
+    const badge = document.querySelector('.sidebar-nav a[href="inbox.html"] .badge');
+    if (badge) badge.textContent = unreadCount || '';
+    renderMessages(currentFilter);
+  }
+}
+
+function toggleStar(id) {
+  const msg = messages.find(m => m.id === id);
+  if (msg) {
+    msg.starred = !msg.starred;
+    renderMessages(currentFilter);
+  }
+}
+
+function composeNew() {
+  alert('📝 新消息功能：在此打开撰写窗口');
+}
+
+renderMessages();
+</script>
+</body>
+</html>

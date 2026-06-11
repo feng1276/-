@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识库 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .search-box {
+    width:100%; padding:12px 16px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:14px; outline:none; margin-bottom:24px; transition:.2s;
+  }
+  .search-box:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.08); }
+  .docs-layout { display:grid; grid-template-columns:280px 1fr; gap:20px; }
+  .docs-sidebar {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; align-self:start; position:sticky; top:28px;
+  }
+  .docs-sidebar h3 { font-size:14px; font-weight:600; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .doc-category { margin-bottom:16px; }
+  .doc-category h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:6px; }
+  .doc-link {
+    display:block; padding:7px 10px; border-radius:6px; font-size:13px;
+    color:var(--text); text-decoration:none; cursor:pointer; transition:.15s;
+  }
+  .doc-link:hover { background:var(--bg); }
+  .doc-link.active { background:var(--primary-light); color:var(--primary); font-weight:600; }
+  .doc-content {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:28px; min-height:500px;
+  }
+  .doc-content h2 { font-size:22px; margin-bottom:16px; }
+  .doc-content h3 { font-size:17px; margin:24px 0 12px; color:var(--primary); }
+  .doc-content p { font-size:14px; line-height:1.8; color:var(--text-muted); margin-bottom:12px; }
+  .doc-content ul, .doc-content ol { margin:12px 0 12px 20px; line-height:1.8; }
+  .doc-content ul li, .doc-content ol li { font-size:14px; color:var(--text-muted); margin-bottom:6px; }
+  .doc-content code {
+    background:#f1f5f9; padding:2px 8px; border-radius:4px;
+    font-size:13px; color:#e11d48; font-family:'Fira Code','Cascadia Code',monospace;
+  }
+  .doc-content pre {
+    background:#1e293b; color:#e2e8f0; padding:16px 20px; border-radius:8px;
+    overflow-x:auto; font-size:13px; line-height:1.7; margin:12px 0;
+  }
+  .doc-content .note {
+    background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px;
+    border-radius:0 8px 8px 0; font-size:13px; margin:16px 0; color:#92400e;
+  }
+  .doc-content .tip {
+    background:#dcfce7; border-left:4px solid #22c55e; padding:12px 16px;
+    border-radius:0 8px 8px 0; font-size:13px; margin:16px 0; color:#166534;
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理</a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心</a>
+    <a href="docs.html" class="active">📚 知识库</a>
+    <a href="reports.html">📋 报告中心</a>
+    <a href="team.html">👥 团队协作</a>
+    <a href="help.html">🆘 帮助中心</a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>📚 知识库</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">团队文档、规范和最佳实践</p>
+    </div>
+    <button class="btn btn-primary">+ 新建文档</button>
+  </div>
+  <input type="text" class="search-box" placeholder="🔍 搜索文档...">
+  <div class="docs-layout">
+    <div class="docs-sidebar">
+      <h3>📑 目录</h3>
+      <div class="doc-category">
+        <h4>🚀 快速开始</h4>
+        <a class="doc-link active" onclick="showDoc('intro',this)">项目介绍</a>
+        <a class="doc-link" onclick="showDoc('quickstart',this)">快速上手</a>
+        <a class="doc-link" onclick="showDoc('setup',this)">环境搭建</a>
+      </div>
+      <div class="doc-category">
+        <h4>📐 开发规范</h4>
+        <a class="doc-link" onclick="showDoc('coding',this)">编码规范</a>
+        <a class="doc-link" onclick="showDoc('git',this)">Git 工作流</a>
+        <a class="doc-link" onclick="showDoc('review',this)">代码审查</a>
+      </div>
+      <div class="doc-category">
+        <h4>🏗 架构设计</h4>
+        <a class="doc-link" onclick="showDoc('architecture',this)">系统架构</a>
+        <a class="doc-link" onclick="showDoc('api',this)">API 设计</a>
+        <a class="doc-link" onclick="showDoc('database',this)">数据库设计</a>
+      </div>
+      <div class="doc-category">
+        <h4>📦 部署运维</h4>
+        <a class="doc-link" onclick="showDoc('deploy',this)">部署流程</a>
+        <a class="doc-link" onclick="showDoc('monitor',this)">监控告警</a>
+      </div>
+    </div>
+
+    <div class="doc-content" id="docViewer">
+      <h2>📖 项目介绍</h2>
+      <p>WebDash 是一套现代化的企业级仪表板系统，集成了项目管理、数据分析、团队协作等核心功能模块。本文档将帮助您快速了解系统架构和核心概念。</p>
+      <h3>🎯 核心目标</h3>
+      <p>为企业团队提供一站式的项目管理和数据分析解决方案，提高团队协作效率，降低管理成本。</p>
+      <ul>
+        <li><b>统一管理：</b>将分散的工具整合到单一平台，减少工具切换成本</li>
+        <li><b>数据驱动：</b>基于实时数据提供可视化洞察，辅助决策</li>
+        <li><b>高效协作：</b>内置消息、任务、日历模块，团队沟通无缝衔接</li>
+        <li><b>安全合规：</b>支持等保三级认证，数据加密存储和传输</li>
+      </ul>
+      <h3>🏗 技术栈</h3>
+      <p>系统采用纯前端 SPA 架构，后端 API 采用 RESTful 设计：</p>
+      <pre>前端技术栈：
+├── HTML5 + CSS3 (原生)
+├── JavaScript ES6+
+├── Canvas API (图表渲染)
+└── Web Storage API (本地缓存)
+
+后端技术栈：
+├── Node.js + Express
+├── PostgreSQL (主数据库)
+├── Redis (缓存层)
+└── Docker + K8s (容器编排)</pre>
+      <div class="note">
+        <b>⚠️ 注意：</b>本系统要求浏览器支持 ES6+ 语法和 Canvas API。推荐使用 Chrome 90+、Edge 90+ 或 Firefox 88+ 浏览器。
+      </div>
+      <h3>📦 模块概览</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);">模块名称</th>
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);">功能描述</th>
+            <th style="padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);">状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;">仪表板</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">全局数据概览、趋势图表、快捷操作</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">✅ 已完成</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;">数据分析</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">深度分析、自定义报表、多维度统计</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">✅ 已完成</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;">任务管理</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">看板视图、拖拽排序、优先级管理</td>
+            <td style="padding:10px 14px;border-bottom:1px solid var(--border);">✅ 已完成</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;font-weight:600;">项目管理</td>
+            <td style="padding:10px 14px;">进度追踪、里程碑管理、资源分配</td>
+            <td style="padding:10px 14px;">✅ 已完成</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="tip">
+        <b>💡 提示：</b>点击左侧目录可浏览更多文档。推荐新成员先阅读「快速上手」和「编码规范」。
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function showDoc(doc, el) {
+  document.querySelectorAll('.doc-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  const viewer = document.getElementById('docViewer');
+  const docs = {
+    intro: `<h2>📖 项目介绍</h2><p>WebDash 是一套现代化的企业级仪表板系统...</p><h3>🎯 核心目标</h3><p>为企业团队提供一站式的项目管理和数据分析解决方案。</p><ul><li><b>统一管理：</b>将分散的工具整合到单一平台</li><li><b>数据驱动：</b>基于实时数据提供可视化洞察</li><li><b>高效协作：</b>内置消息、任务、日历模块</li></ul>`,
+    quickstart: `<h2>🚀 快速上手</h2><p>本指南帮助您在 5 分钟内熟悉 WebDash 的基本操作。</p><h3>第一步：创建项目</h3><p>进入「项目管理」页面，点击右上角「+ 新建项目」按钮，填写项目名称、描述和截止日期。</p><h3>第二步：添加任务</h3><p>在「任务管理」中，使用看板视图管理任务。支持拖拽更改任务状态。</p><h3>第三步：查看报表</h3><p>在「数据分析」页面查看项目进度和团队绩效的可视化报表。</p><div class="tip"><b>💡 提示：</b>所有页面都支持键盘快捷键，按 <code>?</code> 查看完整列表。</div>`,
+    setup: `<h2>⚙️ 环境搭建</h2><p>本地开发环境配置指南。</p><h3>前置要求</h3><ul><li>Node.js 18+</li><li>Git 2.30+</li><li>VS Code (推荐)</li></ul><h3>安装步骤</h3><pre># 克隆仓库\ngit clone https://github.com/example/webdash.git\ncd webdash\n\n# 安装依赖\nnpm install\n\n# 启动开发服务器\nnpm run dev</pre><p>服务启动后访问 <code>http://localhost:3000</code> 即可看到仪表板。</p>`,
+    coding: `<h2>📐 编码规范</h2><p>团队统一的编码风格指南。</p><h3>命名规范</h3><ul><li><b>文件命名：</b>使用小写字母和连字符，如 <code>user-profile.html</code></li><li><b>CSS 类名：</b>使用 BEM 命名法，如 <code>.card__title--active</code></li><li><b>JS 变量：</b>使用 camelCase，如 <code>const userName = 'John'</code></li><li><b>常量：</b>使用 UPPER_SNAKE_CASE，如 <code>const MAX_RETRY = 3</code></li></ul><h3>格式要求</h3><ul><li>缩进使用 2 个空格</li><li>行宽不超过 120 字符</li><li>文件末尾保留一个空行</li></ul>`,
+    git: `<h2>🔀 Git 工作流</h2><p>基于 Git Flow 的分支管理策略。</p><h3>分支规范</h3><pre>main        ← 生产环境，只接受来自 release 的合并\n  └── develop   ← 开发主线\n       ├── feature/xxx  ← 功能分支\n       ├── bugfix/xxx   ← 修复分支\n       └── hotfix/xxx   ← 紧急修复</pre><h3>Commit 规范</h3><p>遵循 Conventional Commits：</p><pre>feat: 新增用户认证模块\nfix: 修复支付回调签名验证\nchore: 更新依赖版本\nrefactor: 重构订单查询逻辑</pre>`,
+    review: `<h2>👀 代码审查</h2><p>所有代码合并前必须通过 Code Review。</p><h3>审查清单</h3><ol><li>代码逻辑是否正确？</li><li>是否有潜在的性能问题？</li><li>是否有安全漏洞？</li><li>测试覆盖是否充分？</li><li>文档是否同步更新？</li></ol><div class="note"><b>⚠️ 注意：</b>每个 PR 至少需要一位 Senior 工程师的 Approve 才能合并。</div>`,
+    architecture: `<h2>🏗 系统架构</h2><p>WebDash 采用前后端分离架构。</p><h3>整体架构图</h3><pre>┌──────────────────────────────┐
+│        Browser (SPA)         │
+│   HTML5 + CSS3 + Vanilla JS  │
+└──────────┬───────────────────┘
+           │ HTTPS / WSS
+┌──────────▼───────────────────┐
+│      API Gateway (Nginx)     │
+└──────────┬───────────────────┘
+           │
+┌──────────▼───────────────────┐
+│     Application Server       │
+│     Node.js + Express        │
+└──┬────────┬────────┬─────────┘
+   │        │        │
+┌──▼──┐ ┌──▼──┐ ┌──▼──────┐
+│ PG  │ │Redis│ │  OSS    │
+└─────┘ └─────┘ └─────────┘</pre>`,
+    api: `<h2>🔌 API 设计</h2><p>RESTful API 设计规范。</p><h3>基础 URL</h3><pre>开发环境: http://localhost:3000/api/v1
+生产环境: https://api.webdash.com/v1</pre><h3>认证方式</h3><p>所有 API 请求需携带 JWT Token：</p><pre>Authorization: Bearer eyJhbGciOiJIUzI1NiIs...</pre><h3>响应格式</h3><pre>{
+  "code": 200,
+  "message": "success",
+  "data": { ... },
+  "timestamp": 1718000000
+}</pre>`,
+    database: `<h2>🗄 数据库设计</h2><p>核心数据表结构说明。</p><h3>ER 图概览</h3><pre>users (用户表)
+  ├── id (PK)
+  ├── email (UNIQUE)
+  ├── password_hash
+  └── created_at
+
+projects (项目表)
+  ├── id (PK)
+  ├── owner_id (FK → users.id)
+  ├── name
+  └── status
+
+tasks (任务表)
+  ├── id (PK)
+  ├── project_id (FK → projects.id)
+  ├── assignee_id (FK → users.id)
+  └── priority</pre>`,
+    deploy: `<h2>🚢 部署流程</h2><p>自动化 CI/CD 部署流程。</p><h3>部署流水线</h3><pre>Git Push → GitHub Actions → Build → Test → Deploy
+                                    │
+                          ┌─────────┼─────────┐
+                    开发环境    测试环境    生产环境</pre><div class="tip"><b>💡 提示：</b>生产部署前会自动运行全量测试套件和安全性扫描。</div>`,
+    monitor: `<h2>📡 监控告警</h2><p>系统监控和告警配置。</p><h3>监控指标</h3><ul><li><b>服务可用性：</b>HTTP 状态码、响应时间</li><li><b>资源使用：</b>CPU、内存、磁盘</li><li><b>业务指标：</b>PV/UV、转化率、订单量</li><li><b>错误追踪：</b>JS Error、API 异常</li></ul><h3>告警规则</h3><p>当出现以下情况时自动触发告警：</p><ul><li>API 错误率超过 5%</li><li>响应时间超过 3 秒</li><li>磁盘使用率超过 85%</li></ul>`,
+  };
+  viewer.innerHTML = docs[doc] || `<h2>📄 文档</h2><p>文档内容正在编辑中...</p>`;
+}
+</script>
+</body>
+</html>

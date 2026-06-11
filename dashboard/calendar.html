@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日历排程 — WebDash</title>
+<style>
+  :root {
+    --primary:#4f46e5; --primary-light:#eef2ff; --sidebar-bg:#1e293b;
+    --sidebar-text:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --text:#1e293b; --text-muted:#64748b; --border:#e2e8f0;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); display:flex; min-height:100vh; color:var(--text);
+  }
+  .sidebar {
+    width:250px; background:var(--sidebar-bg); color:var(--sidebar-text);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:100;
+  }
+  .sidebar-logo {
+    padding:24px 20px; font-size:20px; font-weight:700; color:white;
+    display:flex; align-items:center; gap:10px; border-bottom:1px solid #334155;
+  }
+  .sidebar-logo .icon {
+    width:36px; height:36px; background:var(--primary); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+  .sidebar-nav a {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); text-decoration:none; font-size:14px;
+    font-weight:500; transition:.15s; border-left:3px solid transparent;
+    margin:2px 0;
+  }
+  .sidebar-nav a:hover { background:rgba(255,255,255,.05); color:white; }
+  .sidebar-nav a.active { background:rgba(79,70,229,.2); color:white; border-left-color:var(--primary); }
+  .sidebar-nav a .badge {
+    margin-left:auto; background:var(--danger); color:white; font-size:11px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .sidebar-user {
+    padding:16px 20px; border-top:1px solid #334155;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sidebar-user .avatar {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;
+  }
+  .sidebar-user .info { flex:1; }
+  .sidebar-user .name { font-size:13px; color:white; font-weight:600; }
+  .sidebar-user .role { font-size:11px; color:#94a3b8; }
+
+  .main { margin-left:250px; flex:1; padding:28px 32px; }
+  .page-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+  }
+  .page-header h1 { font-size:26px; font-weight:700; }
+  .btn {
+    padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
+    cursor:pointer; border:none; transition:.2s; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-outline { background:white; border:1.5px solid var(--border); }
+
+  .calendar-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; }
+  .card {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h2 { font-size:16px; font-weight:600; }
+  .card-body { padding:20px; }
+
+  .calendar-nav {
+    display:flex; align-items:center; justify-content:center; gap:16px;
+    margin-bottom:16px;
+  }
+  .calendar-nav button {
+    background:none; border:none; cursor:pointer; font-size:18px;
+    padding:4px 8px; border-radius:6px; transition:.2s;
+  }
+  .calendar-nav button:hover { background:var(--bg); }
+  .calendar-nav .month-label { font-size:16px; font-weight:600; min-width:140px; text-align:center; }
+
+  .calendar-grid {
+    display:grid; grid-template-columns:repeat(7,1fr); text-align:center;
+  }
+  .calendar-grid .day-header {
+    font-size:11px; font-weight:600; color:var(--text-muted);
+    padding:8px 0; text-transform:uppercase;
+  }
+  .calendar-grid .day-cell {
+    padding:8px 4px; min-height:80px; border:1px solid #f1f5f9;
+    cursor:pointer; transition:.15s; text-align:right; vertical-align:top;
+  }
+  .calendar-grid .day-cell:hover { background:var(--primary-light); }
+  .calendar-grid .day-cell.other-month { color:#cbd5e1; }
+  .calendar-grid .day-cell.today {
+    background:var(--primary-light); font-weight:700;
+  }
+  .calendar-grid .day-cell.today .day-num {
+    background:var(--primary); color:white; width:26px; height:26px;
+    border-radius:50%; display:inline-flex; align-items:center;
+    justify-content:center; font-size:12px;
+  }
+  .calendar-grid .day-num { font-size:12px; display:inline-block; }
+  .event-dot {
+    display:block; width:6px; height:6px; border-radius:50%; margin:2px 0 0 auto;
+  }
+  .event-dot.blue { background:var(--primary); }
+  .event-dot.green { background:#22c55e; }
+  .event-dot.orange { background:#f59e0b; }
+  .event-dot.red { background:#ef4444; }
+
+  /* Events sidebar */
+  .event-item {
+    padding:12px; border-radius:8px; margin-bottom:8px;
+    border-left:3px solid var(--primary); background:#f8fafc;
+    cursor:pointer; transition:.2s;
+  }
+  .event-item:hover { background:#f1f5f9; }
+  .event-item.green { border-left-color:#22c55e; }
+  .event-item.orange { border-left-color:#f59e0b; }
+  .event-item.red { border-left-color:#ef4444; }
+  .event-item .event-time { font-size:11px; color:var(--text-muted); font-weight:600; }
+  .event-item .event-title { font-size:13px; font-weight:600; margin:2px 0; }
+  .event-item .event-loc { font-size:11px; color:var(--text-muted); }
+
+  @media (max-width:1024px) {
+    .calendar-layout { grid-template-columns:1fr; }
+  }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><span class="icon">📊</span> WebDash</div>
+  <nav class="sidebar-nav">
+    <a href="webdash.html">🏠 仪表板</a>
+    <a href="analytics.html">📈 数据分析</a>
+    <a href="tasks.html">✅ 任务管理 <span class="badge">5</span></a>
+    <a href="projects.html">📁 项目管理</a>
+    <a href="calendar.html" class="active">📅 日历排程</a>
+    <a href="inbox.html">💬 消息中心 <span class="badge">3</span></a>
+    <a href="settings.html">⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">李</div>
+    <div class="info"><div class="name">李明远</div><div class="role">管理员</div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>📅 日历排程</h1>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">管理和查看所有日程安排</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline">📥 导入</button>
+      <button class="btn btn-primary">+ 新建日程</button>
+    </div>
+  </div>
+
+  <div class="calendar-layout">
+    <div class="card">
+      <div class="card-header">
+        <div class="calendar-nav">
+          <button onclick="prevMonth()">◀</button>
+          <span class="month-label" id="monthLabel">2024年 6月</span>
+          <button onclick="nextMonth()">▶</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:4px 10px;" onclick="goToday()">今天</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><h2>📌 今日日程</h2></div>
+        <div class="card-body" id="todayEvents"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>🔜 即将到来</h2></div>
+        <div class="card-body" id="upcomingEvents"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const events = [
+  { date:'2024-06-10', time:'09:00', title:'团队晨会', location:'3F 会议室A', color:'blue', type:'meeting' },
+  { date:'2024-06-10', time:'14:00', title:'产品评审', location:'线上 Zoom', color:'green', type:'review' },
+  { date:'2024-06-10', time:'16:30', title:'客户演示', location:'5F 演示厅', color:'orange', type:'demo' },
+  { date:'2024-06-12', time:'10:00', title:'技术分享', location:'4F 大讲堂', color:'blue', type:'meeting' },
+  { date:'2024-06-12', time:'15:00', title:'1-on-1 面谈', location:'2F 小会议室', color:'green', type:'meeting' },
+  { date:'2024-06-15', time:'09:30', title:'季度规划会', location:'3F 大会议室', color:'red', type:'planning' },
+  { date:'2024-06-18', time:'11:00', title:'设计评审', location:'线上 Figma', color:'orange', type:'review' },
+  { date:'2024-06-20', time:'14:00', title:'团建活动', location:'户外拓展基地', color:'green', type:'event' },
+  { date:'2024-06-22', time:'10:00', title:'月度总结', location:'3F 大会议室', color:'blue', type:'meeting' },
+  { date:'2024-06-25', time:'16:00', title:'版本发布会', location:'5F 演示厅', color:'red', type:'release' },
+];
+
+let currentYear = 2024, currentMonth = 6;
+
+function getEventsForDate(dateStr) {
+  return events.filter(e => e.date === dateStr);
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
+
+  // Day headers
+  const dayHeaders = ['日','一','二','三','四','五','六'];
+  dayHeaders.forEach(d => {
+    const dh = document.createElement('div');
+    dh.className = 'day-header';
+    dh.textContent = d;
+    grid.appendChild(dh);
+  });
+
+  // First day of month and last day
+  const firstDay = new Date(currentYear, currentMonth-1, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const daysInPrevMonth = new Date(currentYear, currentMonth-1, 0).getDate();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // Previous month days
+  for (let i = firstDay-1; i >= 0; i--) {
+    const day = daysInPrevMonth - i;
+    const cell = createDayCell(day, true, null);
+    grid.appendChild(cell);
+  }
+
+  // Current month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const dayEvents = getEventsForDate(dateStr);
+    const cell = createDayCell(day, false, isToday ? 'today' : null);
+    dayEvents.forEach(e => {
+      const dot = document.createElement('span');
+      dot.className = `event-dot ${e.color}`;
+      cell.appendChild(dot);
+    });
+    cell.onclick = function() {
+      document.querySelectorAll('.day-cell').forEach(c => c.style.outline='none');
+      cell.style.outline = '2px solid var(--primary)';
+      renderDayEvents(dateStr);
+    };
+    grid.appendChild(cell);
+  }
+
+  // Remaining cells
+  const totalCells = firstDay + daysInMonth;
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let day = 1; day <= remaining; day++) {
+    const cell = createDayCell(day, true, null);
+    grid.appendChild(cell);
+  }
+
+  // Render today's events
+  renderDayEvents(todayStr);
+  renderUpcoming();
+}
+
+function createDayCell(day, isOtherMonth, extraClass) {
+  const cell = document.createElement('div');
+  cell.className = 'day-cell';
+  if (isOtherMonth) cell.classList.add('other-month');
+  if (extraClass) cell.classList.add(extraClass);
+  const numSpan = document.createElement('span');
+  numSpan.className = 'day-num';
+  numSpan.textContent = day;
+  cell.appendChild(numSpan);
+  return cell;
+}
+
+function renderDayEvents(dateStr) {
+  const container = document.getElementById('todayEvents');
+  const dayEvents = getEventsForDate(dateStr);
+  if (dayEvents.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:10px;">暂无日程</p>';
+    return;
+  }
+  container.innerHTML = dayEvents.map(e => `
+    <div class="event-item ${e.color}">
+      <div class="event-time">⏰ ${e.time}</div>
+      <div class="event-title">${e.title}</div>
+      <div class="event-loc">📍 ${e.location}</div>
+    </div>
+  `).join('');
+}
+
+function renderUpcoming() {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const upcoming = events.filter(e => e.date > todayStr).slice(0, 5);
+  const container = document.getElementById('upcomingEvents');
+  if (upcoming.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;">暂无即将到来的日程</p>';
+    return;
+  }
+  container.innerHTML = upcoming.map(e => `
+    <div class="event-item ${e.color}">
+      <div class="event-time">📅 ${e.date} ⏰ ${e.time}</div>
+      <div class="event-title">${e.title}</div>
+      <div class="event-loc">📍 ${e.location}</div>
+    </div>
+  `).join('');
+}
+
+function prevMonth() {
+  if (currentMonth === 1) { currentMonth = 12; currentYear--; }
+  else { currentMonth--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  if (currentMonth === 12) { currentMonth = 1; currentYear++; }
+  else { currentMonth++; }
+  renderCalendar();
+}
+
+function goToday() {
+  const today = new Date();
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth() + 1;
+  renderCalendar();
+}
+
+renderCalendar();
+</script>
+</body>
+</html>
