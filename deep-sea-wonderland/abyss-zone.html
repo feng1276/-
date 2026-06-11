@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深渊之境 — Abyss Zone | 深海奇境 Deep Sea Wonderland</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a1628;
+    --surface: #0d2137;
+    --card: #112240;
+    --border: #1a4a6b;
+    --highlight: #2d89b5;
+    --aqua: #4ec3e0;
+    --coral: #ff6b6b;
+    --gold: #f0c060;
+    --text: #e0e8f0;
+    --text-dim: #8899aa;
+    --abyss-dark: #050d18;
+    --biolume-blue: #00e5ff;
+    --biolume-green: #76ff03;
+    --biolume-purple: #b388ff;
+    --biolume-red: #ff1744;
+    --vent-smoke: #444;
+  }
+
+  body {
+    background: var(--abyss-dark);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Bioluminescent particle field ── */
+  .particle-layer {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: particleFloat linear infinite;
+    box-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+  }
+  @keyframes particleFloat {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    10% { opacity: 0.9; }
+    90% { opacity: 0.7; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(0.2); opacity: 0; }
+  }
+
+  /* ── Navigation ── */
+  .nav-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background: rgba(5, 13, 24, 0.8);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(26, 74, 107, 0.45);
+    padding: 0 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .nav-logo { font-size: 1rem; font-weight: 700; color: var(--biolume-blue); letter-spacing: 0.04em; white-space: nowrap; }
+  .nav-links { display: flex; list-style: none; gap: 0; flex-wrap: nowrap; justify-content: flex-end; }
+  .nav-links a { display: block; padding: 0.25rem 0.28rem; font-size: 0.6rem; color: var(--text-dim); text-decoration: none; border-radius: 6px; transition: all 0.25s; white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: var(--biolume-blue); background: rgba(0,229,255,0.08); }
+  .nav-links a.active { border-bottom: 2px solid var(--biolume-blue); }
+  .nav-toggle { display: none; background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; }
+  @media (max-width: 1100px) {
+    .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: rgba(5,13,24,0.95); backdrop-filter: blur(18px); padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    .nav-links.open { display: flex; }
+    .nav-toggle { display: block; }
+  }
+
+  /* ── Hero ── */
+  .abyss-hero {
+    position: relative;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: radial-gradient(ellipse at center bottom, #061525 0%, #030810 60%);
+  }
+  .hero-glow-circle {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,229,255,0.06), transparent 70%);
+    animation: glowBreath 4s ease-in-out infinite;
+  }
+  @keyframes glowBreath {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+    50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.9; }
+  }
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 800;
+    color: var(--biolume-blue);
+    text-shadow: 0 0 40px rgba(0,229,255,0.4), 0 0 80px rgba(0,229,255,0.15);
+  }
+  .hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin: 1rem auto 2rem;
+  }
+
+  /* ── Section Title ── */
+  .section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    color: var(--biolume-blue);
+    position: relative;
+    text-shadow: 0 0 20px rgba(0,229,255,0.25);
+  }
+  .section-title::after {
+    content: '';
+    display: block;
+    width: 100px; height: 2px;
+    background: linear-gradient(90deg, var(--biolume-blue), var(--biolume-purple), var(--biolume-green));
+    margin: 0.5rem auto 0;
+    border-radius: 2px;
+  }
+
+  /* ── Depth Meter ── */
+  .depth-meter {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .depth-scale {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .depth-layer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+    cursor: default;
+  }
+  .depth-layer:hover {
+    border-color: var(--biolume-blue);
+    box-shadow: 0 0 20px rgba(0,229,255,0.08);
+  }
+  .depth-badge {
+    flex: 0 0 100px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.6rem;
+    border-radius: 20px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .depth-layer:nth-child(1) .depth-badge { background: rgba(78,195,224,0.2); color: var(--aqua); }
+  .depth-layer:nth-child(2) .depth-badge { background: rgba(78,195,224,0.15); color: #7dd8f0; }
+  .depth-layer:nth-child(3) .depth-badge { background: rgba(0,229,255,0.15); color: var(--biolume-blue); }
+  .depth-layer:nth-child(4) .depth-badge { background: rgba(179,136,255,0.15); color: var(--biolume-purple); }
+  .depth-layer:nth-child(5) .depth-badge { background: rgba(118,255,3,0.1); color: var(--biolume-green); }
+  .depth-info { flex: 1; }
+  .depth-info strong { display: block; color: var(--text); }
+  .depth-info span { font-size: 0.82rem; color: var(--text-dim); }
+
+  /* ── Anglerfish ── */
+  .anglerfish-section {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+  }
+  .angler-display {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .angler-svg { flex: 0 0 280px; }
+  .angler-info { flex: 1; min-width: 280px; }
+  .angler-info h3 { color: var(--biolume-blue); font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .angler-info .latin { font-style: italic; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem; }
+  .angler-info p { color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+  /* ── Giant Squid ── */
+  .giant-squid {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+  }
+  .squid-display {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-direction: row-reverse;
+  }
+  .squid-svg { flex: 0 0 280px; }
+  .squid-info { flex: 1; min-width: 280px; }
+  .squid-info h3 { color: var(--biolume-purple); font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .squid-info p { color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+  /* ── Bioluminescent Gallery ── */
+  .bio-gallery {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1100px;
+    margin: 2rem auto;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  .bio-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.35s;
+    position: relative;
+    overflow: hidden;
+  }
+  .bio-card::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(0,229,255,0.04), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .bio-card:hover::after { opacity: 1; }
+  .bio-card:hover {
+    border-color: var(--biolume-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 35px rgba(0,229,255,0.1);
+  }
+  .bio-card svg { width: 100%; max-height: 100px; margin-bottom: 1rem; }
+  .bio-card h4 { color: var(--biolume-blue); font-size: 1rem; margin-bottom: 0.3rem; }
+  .bio-card .latin { font-style: italic; color: var(--text-dim); font-size: 0.78rem; margin-bottom: 0.5rem; }
+  .bio-card p { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* ── Hydrothermal Vent ── */
+  .vent-section {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: linear-gradient(180deg, var(--card), #0c1518);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    text-align: center;
+  }
+  .vent-chimney {
+    position: relative;
+    width: 200px; height: 200px;
+    margin: 0 auto 2rem;
+  }
+  .vent-smoke-layer {
+    position: absolute;
+    bottom: 80px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  .smoke-particle {
+    width: 8px;
+    background: var(--vent-smoke);
+    border-radius: 4px;
+    animation: smokeRise 2.5s ease-in infinite;
+    opacity: 0;
+  }
+  @keyframes smokeRise {
+    0% { transform: translateY(0) scaleX(1); opacity: 0.6; }
+    100% { transform: translateY(-80px) scaleX(2.5) rotate(5deg); opacity: 0; }
+  }
+  .vent-section h3 { color: var(--gold); font-size: 1.4rem; margin-bottom: 0.8rem; }
+  .vent-section p { color: var(--text-dim); max-width: 700px; margin: 0 auto 0.6rem; font-size: 0.9rem; }
+
+  /* ── Submersible ── */
+  .submersible {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+  }
+  .sub-display {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sub-svg { flex: 0 0 240px; }
+  .sub-info { flex: 1; min-width: 280px; }
+  .sub-info h3 { color: var(--gold); font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .sub-info p { color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .sub-stats { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 1rem; }
+  .sub-stat { text-align: center; padding: 0.5rem 1rem; background: rgba(240,192,96,0.08); border-radius: 10px; border: 1px solid rgba(240,192,96,0.2); }
+  .sub-stat .val { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
+  .sub-stat .lbl { font-size: 0.7rem; color: var(--text-dim); }
+
+  /* ── Pressure Comparison ── */
+  .pressure-section {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 1100px;
+    margin: 2rem auto;
+  }
+  .pressure-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    justify-content: center;
+    height: 220px;
+    padding-top: 1rem;
+  }
+  .pressure-bar {
+    flex: 0 0 70px;
+    background: linear-gradient(180deg, var(--biolume-blue), var(--highlight));
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s;
+    position: relative;
+    opacity: 0.85;
+  }
+  .pressure-bar:hover {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(0,229,255,0.3);
+  }
+  .pressure-bar .bar-label {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .pressure-bar .bar-value {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: var(--biolume-blue);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Creatures Carousel ── */
+  .carousel {
+    position: relative;
+    z-index: 1;
+    padding: 4rem 2rem;
+    max-width: 960px;
+    margin: 2rem auto;
+    overflow: hidden;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.5s ease;
+  }
+  .carousel-slide {
+    flex: 0 0 100%;
+    padding: 2rem;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    transition: all 0.4s;
+  }
+  .carousel-slide h4 { color: var(--biolume-green); font-size: 1.2rem; margin: 1rem 0 0.5rem; }
+  .carousel-slide .latin { font-style: italic; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 0.6rem; }
+  .carousel-slide p { color: var(--text-dim); font-size: 0.85rem; max-width: 500px; margin: 0 auto; }
+  .carousel-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .carousel-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--biolume-blue);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .carousel-btn:hover {
+    border-color: var(--biolume-blue);
+    box-shadow: 0 0 15px rgba(0,229,255,0.2);
+    background: rgba(0,229,255,0.1);
+  }
+  .carousel-dots { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+  .carousel-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .carousel-dot.active { background: var(--biolume-blue); box-shadow: 0 0 10px rgba(0,229,255,0.5); }
+
+  /* ── Footer ── */
+  .footer {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem 1.5rem;
+    text-align: center;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    text-align: left;
+  }
+  .footer h5 { color: var(--biolume-blue); margin-bottom: 0.6rem; font-size: 0.95rem; }
+  .footer p, .footer li { font-size: 0.8rem; color: var(--text-dim); list-style: none; margin-bottom: 0.25rem; }
+  .footer-bottom { font-size: 0.78rem; color: var(--text-dim); border-top: 1px solid rgba(26,74,107,0.4); padding-top: 1rem; }
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<!-- Bioluminescent particles -->
+<div class="particle-layer" id="particleLayer"></div>
+
+<!-- Navigation -->
+<nav class="nav-bar">
+  <span class="nav-logo">深海奇境 Deep Sea Wonderland</span>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  <ul class="nav-links">
+    <li><a href="aquarium-entrance.html">Entrance / 入口</a></li>
+    <li><a href="coral-garden.html">Coral Garden / 珊瑚花园</a></li>
+    <li><a href="abyss-zone.html" class="active">Abyss Zone / 深渊区</a></li>
+    <li><a href="polar-waters.html">Polar Waters / 极地水域</a></li>
+    <li><a href="tropical-lagoon.html">Tropical Lagoon / 热带泻湖</a></li>
+    <li><a href="freshwater-basin.html">Freshwater Basin / 淡水盆地</a></li>
+    <li><a href="predator-passage.html">Predator Passage / 捕食者通道</a></li>
+    <li><a href="medusa-gallery.html">Medusa Gallery / 水母馆</a></li>
+    <li><a href="turtle-sanctuary.html">Turtle Sanctuary / 海龟保护区</a></li>
+    <li><a href="ocean-conservation.html">Ocean Conservation / 海洋保护</a></li>
+    <li><a href="aqua-boutique.html">Aqua Boutique / 水族精品店</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="abyss-hero">
+  <div class="hero-glow-circle"></div>
+  <h1 class="hero-title">Abyss Zone / 深渊区</h1>
+  <p class="hero-subtitle">Descend into the darkest reaches of the ocean — where light never reaches, pressure crushes steel, and life glows with its own light.<br>下降到海洋最黑暗的深处——阳光永远无法到达，压力足以压碎钢铁，生命以自身的光芒闪耀。</p>
+</section>
+
+<!-- Depth Meter -->
+<section class="depth-meter">
+  <h2 class="section-title">Ocean Depth Layers / 海洋深度层</h2>
+  <div class="depth-scale">
+    <div class="depth-layer">
+      <div class="depth-badge">0&ndash;200 m</div>
+      <div class="depth-info"><strong>Epipelagic Zone / 上层带</strong><span>Sunlight zone. Phytoplankton bloom, tuna hunt, and 90% of ocean life lives here. / 阳光带。浮游植物繁茂，金枪鱼捕猎，90%的海洋生物生活在这里。</span></div>
+    </div>
+    <div class="depth-layer">
+      <div class="depth-badge">200&ndash;1,000 m</div>
+      <div class="depth-info"><strong>Mesopelagic Zone / 中层带</strong><span>Twilight zone. Only 1% of sunlight penetrates. Lanternfish and bristlemouths dominate. / 暮光带。只有1%的阳光能够穿透。灯笼鱼和圆罩鱼占主导。</span></div>
+    </div>
+    <div class="depth-layer">
+      <div class="depth-badge">1,000&ndash;4,000 m</div>
+      <div class="depth-info"><strong>Bathypelagic Zone / 深层带</strong><span>Midnight zone. Complete darkness. Anglerfish, giant squid, and vampire squid dwell here. / 午夜带。完全的黑暗。鮟鱇鱼、巨型乌贼和吸血乌贼栖息于此。</span></div>
+    </div>
+    <div class="depth-layer">
+      <div class="depth-badge">4,000&ndash;6,000 m</div>
+      <div class="depth-info"><strong>Abyssopelagic Zone / 深渊带</strong><span>The abyss. Near freezing, immense pressure. Sea cucumbers and tripod fish thrive. / 深渊。接近冰点，巨大压力。海参和三脚鱼在此繁衍生息。</span></div>
+    </div>
+    <div class="depth-layer">
+      <div class="depth-badge">6,000&ndash;11,000 m</div>
+      <div class="depth-info"><strong>Hadalpelagic Zone / 超深渊带</strong><span>The trenches. Named after Hades. Home to snailfish, amphipods, and other extreme survivors. / 海沟。以冥王哈迪斯命名。栖息着狮子鱼、片脚类动物和其他极端生存者。</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Anglerfish -->
+<section class="anglerfish-section">
+  <h2 class="section-title">The Anglerfish / 鮟鱇鱼</h2>
+  <div class="angler-display">
+    <div class="angler-svg">
+      <!-- Anglerfish SVG with glowing lure -->
+      <svg viewBox="0 0 280 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="glowLure">
+            <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.9"/>
+            <stop offset="50%" stop-color="#00e5ff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <!-- Lure glow -->
+        <circle cx="100" cy="55" r="20" fill="url(#glowLure)">
+          <animate attributeName="r" values="16;22;16" dur="1.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="100" cy="55" r="5" fill="#00e5ff" opacity="0.9">
+          <animate attributeName="opacity" values="0.7;1;0.7" dur="1s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Esca stalks -->
+        <path d="M100 55 Q108 85 115 100" stroke="#4a4a5a" fill="none" stroke-width="2.5"/>
+        <!-- Body -->
+        <ellipse cx="155" cy="110" rx="55" ry="35" fill="#1a1a30" stroke="#333355" stroke-width="1.5"/>
+        <ellipse cx="155" cy="108" rx="50" ry="32" fill="#222240"/>
+        <!-- Mouth with teeth -->
+        <path d="M105 90 Q100 100 100 115 Q105 130 120 135" stroke="#555570" fill="none" stroke-width="1.5"/>
+        <line x1="102" y1="98" x2="110" y2="105" stroke="#aaaacc" stroke-width="1.5"/>
+        <line x1="100" y1="108" x2="108" y2="115" stroke="#aaaacc" stroke-width="1.5"/>
+        <line x1="102" y1="118" x2="110" y2="125" stroke="#aaaacc" stroke-width="1.5"/>
+        <path d="M205 95 Q210 105 208 118 Q200 130 195 130" stroke="#555570" fill="none" stroke-width="1.5"/>
+        <line x1="208" y1="100" x2="200" y2="107" stroke="#aaaacc" stroke-width="1.5"/>
+        <line x1="210" y1="110" x2="202" y2="117" stroke="#aaaacc" stroke-width="1.5"/>
+        <!-- Eye -->
+        <circle cx="120" cy="95" r="7" fill="#333"/>
+        <circle cx="120" cy="95" r="4" fill="#00e5ff" opacity="0.6"/>
+        <circle cx="119" cy="94" r="1.5" fill="#fff"/>
+        <!-- Fin -->
+        <ellipse cx="170" cy="140" rx="18" ry="6" fill="#2a2a40" transform="rotate(-15,170,140)"/>
+        <!-- Small photophores on body -->
+        <circle cx="135" cy="100" r="1.2" fill="#00e5ff" opacity="0.5"><animate attributeName="opacity" values="0.2;0.6;0.2" dur="2s" repeatCount="indefinite"/></circle>
+        <circle cx="175" cy="105" r="1" fill="#00e5ff" opacity="0.4"><animate attributeName="opacity" values="0.3;0.7;0.3" dur="2.3s" repeatCount="indefinite"/></circle>
+        <circle cx="150" cy="115" r="0.8" fill="#00e5ff" opacity="0.5"><animate attributeName="opacity" values="0.4;0.8;0.4" dur="1.8s" repeatCount="indefinite"/></circle>
+        <circle cx="180" cy="95" r="1" fill="#00e5ff" opacity="0.3"><animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.7s" repeatCount="indefinite"/></circle>
+        <!-- Tail -->
+        <path d="M205 110 L235 100 L228 110 L242 115 L230 118 L238 125 L205 120 Z" fill="#2a2a40"/>
+        <!-- Pectoral fin -->
+        <ellipse cx="140" cy="130" rx="14" ry="5" fill="#2a2a40" transform="rotate(20,140,130)"/>
+        <ellipse cx="170" cy="85" rx="10" ry="4" fill="#2a2a40" transform="rotate(-30,170,85)"/>
+      </svg>
+    </div>
+    <div class="angler-info">
+      <h3>Humpback Anglerfish / 驼背鮟鱇鱼</h3>
+      <p class="latin">Melanocetus johnsonii</p>
+      <p>One of the most iconic deep-sea predators. The female's bioluminescent lure — produced by symbiotic bacteria — dangles above her enormous fanged mouth, drawing unsuspecting prey in the eternal darkness.<br>最具标志性的深海捕食者之一。雌性由共生细菌产生的生物发光诱饵悬挂在她巨大獠牙嘴边，在永恒的黑暗中吸引毫无防备的猎物。</p>
+      <p>Females can reach 18 cm, while males are dramatically smaller (3 cm) and live as permanent parasites attached to the female's body, fusing their circulatory systems together.<br>雌性可达18厘米，而雄性极其微小（3厘米），作为永久寄生虫附着在雌性身体上，将两者的循环系统融合在一起。</p>
+      <p>Found at depths of <strong style="color:#00e5ff;">500 to 4,500 meters / 500至4,500米</strong>, where pressure reaches over 5,800 psi / 压力超过5,800 psi。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Giant Squid -->
+<section class="giant-squid">
+  <h2 class="section-title">The Giant Squid / 巨型乌贼</h2>
+  <div class="squid-display">
+    <div class="squid-svg">
+      <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Mantle -->
+        <ellipse cx="130" cy="70" rx="30" ry="45" fill="#3a1a3a" stroke="#6a4a6a" stroke-width="1.5"/>
+        <!-- Eye -->
+        <circle cx="148" cy="60" r="12" fill="#222"/>
+        <circle cx="148" cy="60" r="8" fill="#b388ff" opacity="0.5"/>
+        <ellipse cx="148" cy="60" rx="5" ry="8" fill="#111"/>
+        <!-- Fins -->
+        <ellipse cx="130" cy="20" rx="20" ry="8" fill="#4a2a4a"/>
+        <ellipse cx="130" cy="25" rx="15" ry="5" fill="#3a1a3a" opacity="0.6"/>
+        <!-- Tentacles -->
+        <path d="M115 110 Q100 150 85 180" stroke="#4a3a4a" fill="none" stroke-width="3"/>
+        <path d="M125 112 Q120 155 115 185" stroke="#4a3a4a" fill="none" stroke-width="2.5"/>
+        <path d="M135 112 Q140 158 138 188" stroke="#4a3a4a" fill="none" stroke-width="2.5"/>
+        <path d="M145 108 Q160 145 170 178" stroke="#4a3a4a" fill="none" stroke-width="3"/>
+        <!-- Arms (shorter, around mouth) -->
+        <path d="M110 100 Q100 120 95 135" stroke="#5a4a5a" fill="none" stroke-width="2"/>
+        <path d="M120 105 Q118 125 115 140" stroke="#5a4a5a" fill="none" stroke-width="2"/>
+        <path d="M130 106 Q130 128 130 142" stroke="#5a4a5a" fill="none" stroke-width="2"/>
+        <path d="M140 105 Q142 125 145 140" stroke="#5a4a5a" fill="none" stroke-width="2"/>
+        <path d="M150 100 Q160 118 165 135" stroke="#5a4a5a" fill="none" stroke-width="2"/>
+        <!-- Sucker dots -->
+        <circle cx="85" cy="180" r="1" fill="#b388ff" opacity="0.5"/>
+        <circle cx="115" cy="185" r="1" fill="#b388ff" opacity="0.5"/>
+        <circle cx="138" cy="188" r="1" fill="#b388ff" opacity="0.5"/>
+        <circle cx="170" cy="178" r="1" fill="#b388ff" opacity="0.5"/>
+        <!-- Siphon -->
+        <path d="M140 100 Q145 98 150 100 Q155 103 150 108 Q145 105 140 108 Z" fill="#3a2a4a"/>
+      </svg>
+    </div>
+    <div class="squid-info">
+      <h3>Giant Squid / 巨型乌贼</h3>
+      <p class="latin" style="display:block;margin-bottom:0.6rem;">Architeuthis dux</p>
+      <p>For centuries, the giant squid was considered a myth — the kraken of sailor's tales. Only in 2004 was the first live giant squid photographed in its natural habitat.<br>几个世纪以来，巨型乌贼一直被视为神话——水手传说中的海妖。直到2004年，第一只活着的巨型乌贼才在其自然栖息地中被拍摄到。</p>
+      <p>With eyes the size of dinner plates (<strong style="color:#b388ff;">up to 27 cm in diameter / 直径可达27厘米</strong>), these cephalopods possess the largest eyes of any animal on Earth, allowing them to detect the faintest bioluminescent glimmers in the abyssal dark.<br>这些头足类动物的眼睛有餐盘那么大（直径可达27厘米），是地球上所有动物中最大的眼睛，使它们能在深渊黑暗中探测到最微弱的生物发光。</p>
+      <p>Giant squid can reach <strong style="color:#b388ff;">13 meters in length / 长达13米</strong> and engage in epic battles with sperm whales — scars from giant squid suckers are commonly found on whales hauled to the surface.<br>巨型乌贼可达13米长，并与抹香鲸展开史诗般的战斗——巨型乌贼吸盘的疤痕常见于被拖上水面的鲸鱼身上。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Bioluminescent Gallery -->
+<section class="bio-gallery">
+  <h2 class="section-title">Bioluminescent Gallery / 生物发光馆</h2>
+  <div class="gallery-grid">
+
+    <div class="bio-card">
+      <svg viewBox="0 0 180 100">
+        <ellipse cx="90" cy="50" rx="22" ry="30" fill="none" stroke="#76ff03" stroke-width="1.5"/>
+        <path d="M78 35 Q82 20 86 10 M90 30 Q92 18 94 8 M102 35 Q98 22 94 12" stroke="#76ff03" fill="none" stroke-width="0.8"/>
+        <line x1="68" y1="40" x2="68" y2="60" stroke="#76ff03" stroke-width="0.6" opacity="0.5"/>
+        <line x1="112" y1="40" x2="112" y2="60" stroke="#76ff03" stroke-width="0.6" opacity="0.5"/>
+      </svg>
+      <h4>Comb Jelly / 栉水母</h4>
+      <p class="latin">Ctenophora</p>
+      <p>Unlike jellyfish, comb jellies use rows of cilia that diffract light into shimmering rainbow patterns as they move.<br>与水母不同，栉水母用一排排纤毛移动，纤毛将光线衍射成闪烁的彩虹图案。</p>
+    </div>
+
+    <div class="bio-card">
+      <svg viewBox="0 0 180 100">
+        <ellipse cx="90" cy="50" rx="14" ry="25" fill="#ff1744" opacity="0.4"/>
+        <ellipse cx="90" cy="48" rx="12" ry="23" fill="#ff1744" opacity="0.25"/>
+        <circle cx="84" cy="45" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="96" cy="45" r="2.5" fill="#fff" opacity="0.5"/>
+        <polygon points="90,70 84,80 96,80" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.3"/>
+        <circle cx="80" cy="48" r="1" fill="#ff1744" opacity="0.9"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+        <circle cx="100" cy="52" r="1" fill="#ff1744" opacity="0.9"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.8s" repeatCount="indefinite"/></circle>
+        <circle cx="90" cy="55" r="0.8" fill="#ff1744" opacity="0.9"><animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/></circle>
+      </svg>
+      <h4>Firefly Squid / 萤火鱿</h4>
+      <p class="latin">Watasenia scintillans</p>
+      <p>Each year, billions gather in Toyama Bay, Japan. Their blue photophores create a dazzling light show in the shallows.<br>每年，数以亿计的萤火鱿聚集在日本富山湾。它们的蓝色发光器在浅水区创造出令人眼花缭乱的光影秀。</p>
+    </div>
+
+    <div class="bio-card">
+      <svg viewBox="0 0 180 100">
+        <path d="M60 60 Q75 30 90 60 Q105 30 120 60" stroke="#00e5ff" fill="none" stroke-width="2"/>
+        <circle cx="90" cy="50" r="3" fill="#00e5ff" opacity="0.9"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/></circle>
+        <circle cx="75" cy="45" r="1.5" fill="#00e5ff" opacity="0.6"><animate attributeName="opacity" values="0.2;0.8;0.2" dur="2s" repeatCount="indefinite"/></circle>
+        <circle cx="105" cy="45" r="1.5" fill="#00e5ff" opacity="0.6"><animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.7s" repeatCount="indefinite"/></circle>
+        <line x1="70" y1="65" x2="60" y2="80" stroke="#00e5ff" stroke-width="0.8" opacity="0.4"/>
+        <line x1="110" y1="65" x2="120" y2="80" stroke="#00e5ff" stroke-width="0.8" opacity="0.4"/>
+      </svg>
+      <h4>Dragonfish / 巨口鱼</h4>
+      <p class="latin">Stomiidae</p>
+      <p>Produces red bioluminescence — invisible to most deep-sea creatures — giving it a stealthy hunting advantage.<br>产生红色生物发光——大多数深海生物看不见——使其具有隐秘的狩猎优势。</p>
+    </div>
+
+    <div class="bio-card">
+      <svg viewBox="0 0 180 100">
+        <path d="M50 80 Q65 30 90 50 Q115 30 130 80" stroke="#b388ff" fill="none" stroke-width="1.5"/>
+        <ellipse cx="90" cy="55" rx="10" ry="20" fill="none" stroke="#b388ff" stroke-width="1"/>
+        <circle cx="90" cy="45" r="2.5" fill="#b388ff" opacity="0.8"/>
+        <circle cx="85" cy="55" r="1" fill="#b388ff" opacity="0.5"><animate attributeName="opacity" values="0.2;0.7;0.2" dur="2s" repeatCount="indefinite"/></circle>
+        <circle cx="95" cy="55" r="1" fill="#b388ff" opacity="0.5"><animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.3s" repeatCount="indefinite"/></circle>
+        <circle cx="90" cy="65" r="0.8" fill="#b388ff" opacity="0.4"><animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.8s" repeatCount="indefinite"/></circle>
+        <path d="M60 70 L50 85 M120 70 L130 85" stroke="#b388ff" stroke-width="0.5" opacity="0.3"/>
+      </svg>
+      <h4>Vampire Squid / 吸血乌贼</h4>
+      <p class="latin">Vampyroteuthis infernalis</p>
+      <p>Literally "vampire squid from hell." When threatened, it turns inside out, exposing spiny arms and glowing blue spots.<br>字面意思是"来自地狱的吸血乌贼"。受到威胁时，它会翻转身体，露出带刺的腕臂和发光的蓝点。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- Hydrothermal Vents -->
+<section class="vent-section">
+  <h2 class="section-title">Hydrothermal Vent Ecosystem / 深海热液喷口生态系统</h2>
+  <!-- Smoking chimney SVG -->
+  <div class="vent-chimney">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:200px;height:200px;">
+      <path d="M85 170 L80 90 Q82 70 100 60 Q118 70 120 90 L115 170" fill="#3a3a3a" stroke="#555" stroke-width="1.5"/>
+      <path d="M88 165 L85 95 Q88 78 100 68 Q112 78 115 95 L112 165" fill="#4a4a4a" stroke="#666" stroke-width="1"/>
+      <ellipse cx="100" cy="65" rx="12" ry="6" fill="#2a2a2a" stroke="#555" stroke-width="1"/>
+      <ellipse cx="100" cy="62" rx="9" ry="4" fill="#1a1a1a"/>
+    </svg>
+    <div class="vent-smoke-layer">
+      <div class="smoke-particle" style="left:30%;animation-delay:0s;"></div>
+      <div class="smoke-particle" style="left:38%;animation-delay:0.4s;"></div>
+      <div class="smoke-particle" style="left:46%;animation-delay:0.8s;"></div>
+      <div class="smoke-particle" style="left:54%;animation-delay:1.2s;"></div>
+      <div class="smoke-particle" style="left:62%;animation-delay:1.6s;"></div>
+      <div class="smoke-particle" style="left:70%;animation-delay:0.3s;"></div>
+      <div class="smoke-particle" style="left:42%;animation-delay:1.0s;"></div>
+      <div class="smoke-particle" style="left:58%;animation-delay:1.5s;"></div>
+    </div>
+  </div>
+  <h3>Black Smokers: Life Without Sunlight / 黑烟囱：没有阳光的生命</h3>
+  <p>At 2,500+ meters deep, superheated water (up to <strong style="color:#f0c060;">400 degrees Celsius / 400摄氏度</strong>) erupts from mineral chimneys. Instead of photosynthesis, entire ecosystems are powered by <strong style="color:#f0c060;">chemosynthesis / 化学合成</strong> — bacteria convert hydrogen sulfide into energy.<br>在2500米以上的深度，过热的水（高达400摄氏度）从矿物烟囱中喷涌而出。整个生态系统不依赖光合作用，而是由化学合成提供动力——细菌将硫化氢转化为能量。</p>
+  <p>Giant tube worms (Riftia pachyptila) — growing up to 2.4 meters — have no mouth, gut, or anus. They rely entirely on symbiotic bacteria living inside them to produce nutrients from vent chemicals.<br>巨型管蠕虫（Riftia pachyptila）——可生长至2.4米——没有口、肠或肛门。它们完全依靠体内的共生细菌从喷口化学物质中产生营养物质。</p>
+</section>
+
+<!-- Deep Sea Submersibles -->
+<section class="submersible">
+  <h2 class="section-title">Deep Sea Submersibles / 深海潜水器</h2>
+  <div class="sub-display">
+    <div class="sub-svg">
+      <svg viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg">
+        <!-- Alvin submersible -->
+        <ellipse cx="100" cy="80" rx="50" ry="25" fill="#e0e8f0" stroke="#8899aa" stroke-width="2"/>
+        <ellipse cx="95" cy="78" rx="18" ry="14" fill="#b0c0d0" stroke="#8899aa" stroke-width="1.5"/>
+        <circle cx="90" cy="75" r="8" fill="#4ec3e0" opacity="0.6"/>
+        <rect x="125" y="65" width="15" height="30" rx="3" fill="#c0ccd8" stroke="#8899aa" stroke-width="1"/>
+        <line x1="100" y1="55" x2="100" y2="48" stroke="#8899aa" stroke-width="1.5"/>
+        <ellipse cx="140" cy="85" rx="15" ry="6" fill="#b0c0d0" stroke="#8899aa" stroke-width="1"/>
+        <rect x="100" y="48" width="8" height="12" rx="2" fill="#c0d0d8" stroke="#8899aa" stroke-width="1"/>
+        <!-- Bottom arm -->
+        <path d="M75 100 L50 115 L45 125" stroke="#8899aa" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="45" cy="125" r="3" fill="#e0e8f0" stroke="#8899aa" stroke-width="1"/>
+        <!-- Light beam -->
+        <polygon points="82,75 20,50 20,100" fill="#00e5ff" opacity="0.06"/>
+      </svg>
+    </div>
+    <div class="sub-info">
+      <h3>DSV Alvin / 阿尔文号深海潜水器</h3>
+      <p>Commissioned in 1964, Alvin has completed over 5,000 dives. It explored the Titanic wreck in 1986 and discovered hydrothermal vents in 1977 — wholly transforming our understanding of where life can exist.<br>阿尔文号于1964年服役，已完成超过5,000次潜水。它于1986年探索了泰坦尼克号残骸，并于1977年发现了深海热液喷口——彻底改变了我们对生命存在之处的理解。</p>
+      <div class="sub-stats">
+        <div class="sub-stat"><span class="val">4,500 m</span><span class="lbl">Max Depth / 最大深度</span></div>
+        <div class="sub-stat"><span class="val">3</span><span class="lbl">Crew / 乘员</span></div>
+        <div class="sub-stat"><span class="val">6&ndash;10 h</span><span class="lbl">Dive Duration / 潜水时长</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pressure Comparison -->
+<section class="pressure-section">
+  <h2 class="section-title">Pressure at Depth / 深水压力</h2>
+  <p style="text-align:center;color:var(--text-dim);margin-bottom:1rem;">At the bottom of the Mariana Trench (11,000 m), pressure is equivalent to <strong style="color:var(--biolume-blue);">1,086 atmospheres / 1,086个大气压</strong> — over 1,000 times sea-level pressure / 超过海平面压力的1,000倍.</p>
+  <div class="pressure-bars">
+    <div class="pressure-bar" style="height:20px;"><span class="bar-value">1 atm</span><span class="bar-label">Surface / 海面</span></div>
+    <div class="pressure-bar" style="height:55px;"><span class="bar-value">20 atm</span><span class="bar-label">200 m</span></div>
+    <div class="pressure-bar" style="height:90px;"><span class="bar-value">100 atm</span><span class="bar-label">1,000 m</span></div>
+    <div class="pressure-bar" style="height:140px;"><span class="bar-value">400 atm</span><span class="bar-label">4,000 m</span></div>
+    <div class="pressure-bar" style="height:175px;"><span class="bar-value">600 atm</span><span class="bar-label">6,000 m</span></div>
+    <div class="pressure-bar" style="height:210px;background:linear-gradient(180deg,var(--biolume-green),var(--biolume-blue));"><span class="bar-value" style="color:var(--biolume-green);">1,086 atm</span><span class="bar-label">11,000 m</span></div>
+  </div>
+</section>
+
+<!-- Creatures Carousel -->
+<section class="carousel">
+  <h2 class="section-title">Creatures of the Deep / 深海生物</h2>
+  <div class="carousel-track" id="carouselTrack">
+    <div class="carousel-slide">
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <ellipse cx="50" cy="55" rx="20" ry="14" fill="#222" stroke="#00e5ff" stroke-width="1.5"/>
+        <circle cx="42" cy="50" r="3" fill="#00e5ff" opacity="0.7"/>
+        <path d="M30 50 Q20 45 10 50" stroke="#00e5ff" fill="none" stroke-width="1.5"/>
+        <path d="M30 55 Q20 58 10 60" stroke="#00e5ff" fill="none" stroke-width="1.5"/>
+        <path d="M30 60 Q22 65 15 70" stroke="#00e5ff" fill="none" stroke-width="1.5"/>
+        <line x1="70" y1="55" x2="85" y2="50" stroke="#00e5ff" stroke-width="2"/>
+      </svg>
+      <h4>Barreleye Fish / 管眼鱼</h4>
+      <p class="latin">Macropinna microstoma</p>
+      <p>Has a transparent, fluid-filled dome on its head through which its barrel-shaped tubular eyes can rotate to look directly upward. Discovered in 1939, it was only filmed alive in 2004.<br>头部有一个透明的、充满液体的圆顶，其桶状管眼可在其中旋转直接向上看。1939年被发现，直到2004年才被拍摄到活体影像。</p>
+    </div>
+    <div class="carousel-slide">
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <ellipse cx="50" cy="50" rx="18" ry="25" fill="none" stroke="#b388ff" stroke-width="1.5"/>
+        <path d="M40 35 Q32 20 30 10" stroke="#b388ff" fill="none" stroke-width="1"/>
+        <path d="M50 32 Q50 15 50 8" stroke="#b388ff" fill="none" stroke-width="1"/>
+        <path d="M60 35 Q68 20 70 10" stroke="#b388ff" fill="none" stroke-width="1"/>
+        <circle cx="44" cy="44" r="2" fill="#b388ff" opacity="0.6"/>
+        <circle cx="56" cy="44" r="2" fill="#b388ff" opacity="0.6"/>
+      </svg>
+      <h4>Dumbo Octopus / 小飞象章鱼</h4>
+      <p class="latin">Grimpoteuthis</p>
+      <p>Named for its ear-like fins that resemble Disney's Dumbo. Lives at 3,000-4,000 m, hovering just above the seafloor as it searches for worms and crustaceans.<br>因其类似迪士尼小飞象的耳状鳍而得名。生活在3,000-4,000米深度，在海底上方盘旋，寻找蠕虫和甲壳类动物。</p>
+    </div>
+    <div class="carousel-slide">
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <ellipse cx="50" cy="55" rx="16" ry="10" fill="#333" stroke="#76ff03" stroke-width="1.5"/>
+        <path d="M35 50 Q30 40 25 30" stroke="#76ff03" fill="none" stroke-width="1.5"/>
+        <circle cx="25" cy="28" r="3" fill="#76ff03" opacity="0.8"><animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/></circle>
+        <line x1="38" y1="60" x2="30" y2="75" stroke="#76ff03" stroke-width="1" opacity="0.5"/>
+        <line x1="50" y1="62" x2="50" y2="78" stroke="#76ff03" stroke-width="1" opacity="0.5"/>
+        <line x1="62" y1="60" x2="70" y2="75" stroke="#76ff03" stroke-width="1" opacity="0.5"/>
+        <circle cx="44" cy="54" r="2" fill="#fff" opacity="0.4"/>
+        <circle cx="56" cy="54" r="2" fill="#fff" opacity="0.4"/>
+      </svg>
+      <h4>Black Seadevil / 黑海魔鬼</h4>
+      <p class="latin">Melanocetus</p>
+      <p>A deep-sea anglerfish featured in nature documentaries. Only females have the famous glowing lure; males are tiny parasites fused to the female.<br>一种在自然纪录片中出镜的深海鮟鱇鱼。只有雌性拥有著名的发光诱饵；雄性是与雌性融合的微小寄生虫。</p>
+    </div>
+    <div class="carousel-slide">
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <path d="M30 60 Q50 30 70 60" stroke="#00e5ff" fill="none" stroke-width="1.5"/>
+        <path d="M25 55 Q50 25 75 55" stroke="#00e5ff" fill="none" stroke-width="1" opacity="0.5"/>
+        <ellipse cx="50" cy="60" rx="20" ry="8" fill="#112240" stroke="#00e5ff" stroke-width="0.8"/>
+        <circle cx="50" cy="55" r="2" fill="#00e5ff" opacity="0.6">
+          <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <line x1="40" y1="70" x2="35" y2="85" stroke="#00e5ff" stroke-width="1" opacity="0.4"/>
+        <line x1="50" y1="72" x2="50" y2="88" stroke="#00e5ff" stroke-width="1" opacity="0.4"/>
+        <line x1="60" y1="70" x2="65" y2="85" stroke="#00e5ff" stroke-width="1" opacity="0.4"/>
+      </svg>
+      <h4>Glass Squid / 玻璃乌贼</h4>
+      <p class="latin">Cranchiidae</p>
+      <p>Almost entirely transparent except for its cigar-shaped digestive gland and eyes. Uses ammonium chloride in its body for buoyancy in the deep.<br>全身几乎完全透明，除了雪茄形的消化腺和眼睛外。利用体内的氯化铵在深海中保持浮力。</p>
+    </div>
+    <div class="carousel-slide">
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <ellipse cx="50" cy="55" rx="15" ry="10" fill="#222" stroke="#ff1744" stroke-width="1.5"/>
+        <ellipse cx="50" cy="52" rx="13" ry="8" fill="#2a2a3a"/>
+        <path d="M40 50 Q30 30 20 25" stroke="#ff1744" fill="none" stroke-width="1.2"/>
+        <circle cx="20" cy="24" r="2.5" fill="#ff1744" opacity="0.8">
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="0.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="42" cy="50" r="1.5" fill="#ff1744" opacity="0.7">
+          <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="58" cy="50" r="1.5" fill="#ff1744" opacity="0.7">
+          <animate attributeName="opacity" values="0.5;0.9;0.5" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <polygon points="65,55 78,50 80,60" fill="#333" stroke="#ff1744" stroke-width="0.8"/>
+        <line x1="42" y1="63" x2="38" y2="78" stroke="#ff1744" stroke-width="0.5" opacity="0.4"/>
+        <line x1="50" y1="64" x2="50" y2="80" stroke="#ff1744" stroke-width="0.5" opacity="0.4"/>
+        <line x1="58" y1="63" x2="62" y2="78" stroke="#ff1744" stroke-width="0.5" opacity="0.4"/>
+      </svg>
+      <h4>Stoplight Loosejaw / 红绿灯鱼</h4>
+      <p class="latin">Malacosteus niger</p>
+      <p>Produces both red and blue-green light. It can see red, giving it an enormous advantage — most deep-sea creatures cannot perceive red wavelengths.<br>能产生红光和蓝绿光。它可以看见红光，这给它带来了巨大的优势——大多数深海生物无法感知红色波长。</p>
+    </div>
+  </div>
+  <div class="carousel-controls">
+    <button class="carousel-btn" onclick="moveCarousel(-1)" aria-label="Previous">&#10094;</button>
+    <button class="carousel-btn" onclick="moveCarousel(1)" aria-label="Next">&#10095;</button>
+  </div>
+  <div class="carousel-dots" id="carouselDots"></div>
+</section>
+
+<!-- Whale Fall Ecosystems -->
+<section style="max-width:1200px;margin:0 auto 60px;padding:0 24px;">
+  <h2 class="section-title">Whale Fall Ecosystems / 鲸落生态系统</h2>
+  <p style="text-align:center;color:#a0b8d0;max-width:800px;margin:0 auto 24px;">When a whale dies and sinks to the deep sea floor, its body becomes a feast that sustains an entire ecosystem for decades — one of the most remarkable food webs in the ocean.<br>当鲸鱼死亡并沉入深海海底时，它的身体成为一场盛宴，维持整个生态系统数十年——这是海洋中最非凡的食物网之一。</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;">
+    <div class="glass-card" style="padding:20px;border-left:3px solid #81c784;">
+      <h3 style="color:#81c784;font-size:1.15rem;margin-bottom:10px;">Phase 1: Mobile Scavengers / 第一阶段：移动清道夫</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">For the first 1-2 years, large scavengers descend upon the carcass. Hagfish, sleeper sharks, and deep-sea crabs strip away up to 90% of the soft tissue. A single whale fall can sustain over 100 hagfish feeding simultaneously.<br>最初1-2年，大型清道夫聚集在尸体上。盲鳗、睡鲨和深海蟹剥离高达90%的软组织。一个鲸落可同时支持超过100条盲鳗进食。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;border-left:3px solid #ffb74d;">
+      <h3 style="color:#ffb74d;font-size:1.15rem;margin-bottom:10px;">Phase 2: Enrichment Opportunists / 第二阶段：富集机会主义者</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">Over the next 2-3 years, worms, crustaceans, and mollusks colonize the skeleton and surrounding sediment. Density of organisms can reach 45,000 per square meter — compared to just 50 in adjacent seafloor.<br>接下来的2-3年，蠕虫、甲壳类和软体动物在骨骼和周围沉积物中定居。生物密度可达每平方米45,000个——而相邻海床仅有50个。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;border-left:3px solid #e57373;">
+      <h3 style="color:#e57373;font-size:1.15rem;margin-bottom:10px;">Phase 3: Sulfophilic Stage / 第三阶段：嗜硫阶段</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">For 10-50+ years, bacteria break down lipids in the bones, releasing sulfides that fuel chemosynthetic communities. Tube worms, mussels, and clams — relatives of hydrothermal vent species — thrive here.<br>10-50年以上的时间里，细菌分解骨骼中的脂质，释放硫化物为化学合成群落提供能量。管蠕虫、贻贝和蛤——热液喷口物种的近亲——在此繁衍生息。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;border-left:3px solid #64b5f6;">
+      <h3 style="color:#64b5f6;font-size:1.15rem;margin-bottom:10px;">🌊 Natural Stepping Stones / 自然踏脚石</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">Whale falls act as evolutionary stepping stones between hydrothermal vents and cold seeps. Over 30 species have been discovered exclusively on whale falls, including the bizarre bone-eating worm Osedax.<br>鲸落充当热液喷口和冷泉之间的进化踏脚石。超过30个物种仅在鲸落上被发现，包括奇异的食骨蠕虫Osedax。</p>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:24px;">
+    <svg width="500" height="100" viewBox="0 0 500 100" aria-label="Whale fall phases timeline">
+      <line x1="30" y1="50" x2="470" y2="50" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <circle cx="60" cy="50" r="6" fill="#81c784"/><text x="60" y="75" fill="#81c784" font-size="10" text-anchor="middle">Year 0-2 / 0-2年</text>
+      <circle cx="190" cy="50" r="6" fill="#ffb74d"/><text x="190" y="75" fill="#ffb74d" font-size="10" text-anchor="middle">Year 2-5 / 2-5年</text>
+      <circle cx="320" cy="50" r="6" fill="#e57373"/><text x="320" y="75" fill="#e57373" font-size="10" text-anchor="middle">Year 5-50+ / 5-50+年</text>
+      <circle cx="445" cy="50" r="4" fill="#78909c"/><text x="445" y="75" fill="#78909c" font-size="10" text-anchor="middle">Scattered Bones / 散落骨骼</text>
+    </svg>
+  </div>
+</section>
+
+<!-- Deep Sea Gigantism -->
+<section style="max-width:1200px;margin:0 auto 80px;padding:0 24px;">
+  <h2 class="section-title">Deep Sea Gigantism / 深海巨型化</h2>
+  <p style="text-align:center;color:#a0b8d0;max-width:800px;margin:0 auto 24px;">Why do some deep-sea creatures grow far larger than their shallow-water relatives? This phenomenon, known as abyssal gigantism, has puzzled scientists for over a century.<br>为什么一些深海生物长得比它们的浅水近亲大得多？这一被称为深渊巨型化的现象，困扰了科学家一个多世纪。</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="color:var(--aqua);font-size:1.15rem;margin-bottom:10px;">🦑 Giant Isopod / 巨型等足虫</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">While common pill bugs reach 1-2 cm, the deep-sea giant isopod (Bathynomus giganteus) grows up to 50 cm long and weighs 1.7 kg. It can survive over 5 years without eating thanks to an extremely slow metabolism.<br>普通鼠妇只有1-2厘米长，而深海巨型等足虫（Bathynomus giganteus）可长达50厘米，重1.7公斤。得益于极其缓慢的新陈代谢，它可以在不进食的情况下存活超过5年。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="color:var(--aqua);font-size:1.15rem;margin-bottom:10px;">🕷 Sea Spider Colossus / 巨型海蜘蛛</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">Most sea spiders are tiny — a few millimeters. Yet in Antarctic and deep waters, species like Colossendeis reach leg spans of 75 cm. The cold, oxygen-rich water supports their primitive respiratory system.<br>大多数海蜘蛛都很小——只有几毫米。然而在南极和深海水域，像Colossendeis这样的物种的腿展可达75厘米。寒冷、富氧的水域支持了它们原始的呼吸系统。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="color:var(--aqua);font-size:1.15rem;margin-bottom:10px;">📏 Bergmann's Rule / 伯格曼法则</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">Colder environments favor larger body sizes due to a lower surface-to-volume ratio, which improves heat retention. In the ocean's cold depths (2-4°C), this physiological principle favors gigantism.<br>较冷的环境由于较低的体表面积-体积比（有利于保温）而倾向于较大的体型。在海洋寒冷的深水中（2-4°C），这一生理原理有利于巨型化。</p>
+    </div>
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="color:var(--aqua);font-size:1.15rem;margin-bottom:10px;">🍽 Scarce Food Adaptation / 稀缺食物适应</h3>
+      <p style="color:#9db8d0;font-size:0.9rem;line-height:1.6;">Larger organisms store more energy and survive longer between meals. The colossal squid grows to 500 kg partly because its size allows it to hunt large prey and endure long fasting periods in the deep.<br>较大的生物储存更多的能量，在两次进食之间存活更久。大王乌贼能长到500公斤，部分原因是其体型使其能够捕猎大型猎物并忍受深海中的长时间禁食。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <h5>Deep Sea Wonderland / 深海奇境</h5>
+      <p>Over 80% of the ocean remains unmapped, unobserved, and unexplored. The abyss holds more mysteries than the surface of the Moon.<br>超过80%的海洋仍未被测绘、未被观察和未探索。深渊所蕴含的谜团比月球表面还多。</p>
+    </div>
+    <div>
+      <h5>Exhibits / 展区</h5>
+      <ul><li>Abyss Zone / 深渊区</li><li>Coral Garden / 珊瑚花园</li><li>Medusa Gallery / 水母馆</li><li>Polar Waters / 极地水域</li></ul>
+    </div>
+    <div>
+      <h5>Research / 研究</h5>
+      <ul><li>Deep Sea Exploration / 深海探索</li><li>Bioluminescence Lab / 生物发光实验室</li><li>Vent Biology / 热液喷口生物学</li><li>Hadadepth Studies / 超深渊研究</li></ul>
+    </div>
+    <div>
+      <h5>Contact / 联系方式</h5>
+      <ul><li>info@deepseawonderland.org</li><li>+1 (555) 123-DEEP</li><li>Ocean Blvd 42</li></ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 Deep Sea Wonderland / 深海奇境。All illustrations are artistic representations of marine life. / 所有插图均为海洋生物的艺术表现。</div>
+</footer>
+
+<!-- Audio -->
+<!--
+<audio id="abyssAmbient" loop>
+  <source src="assets/audio/deep-ocean-ambient.mp3" type="audio/mpeg">
+</audio>
+-->
+
+<script>
+// ── Bioluminescent particles ──
+(function() {
+  const layer = document.getElementById('particleLayer');
+  const colors = ['#00e5ff', '#76ff03', '#b388ff', '#ff1744', '#4ec3e0'];
+  for (let i = 0; i < 50; i++) {
+    const particle = document.createElement('div');
+    particle.classList.add('particle');
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = Math.random() * 4 + 2;
+    particle.style.width = size + 'px';
+    particle.style.height = size + 'px';
+    particle.style.color = color;
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDuration = (Math.random() * 12 + 8) + 's';
+    particle.style.animationDelay = (Math.random() * 12) + 's';
+    layer.appendChild(particle);
+  }
+})();
+
+// ── Carousel ──
+let carouselIndex = 0;
+const totalSlides = 5;
+
+function buildDots() {
+  const dotsContainer = document.getElementById('carouselDots');
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('button');
+    dot.classList.add('carousel-dot');
+    if (i === 0) dot.classList.add('active');
+    dot.addEventListener('click', () => goToSlide(i));
+    dotsContainer.appendChild(dot);
+  }
+}
+buildDots();
+
+function moveCarousel(direction) {
+  carouselIndex = (carouselIndex + direction + totalSlides) % totalSlides;
+  goToSlide(carouselIndex);
+}
+
+function goToSlide(index) {
+  carouselIndex = index;
+  const track = document.getElementById('carouselTrack');
+  track.style.transform = 'translateX(' + (-index * 100) + '%)';
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === index);
+  });
+}
+
+// ── Smoke regeneration for vents ──
+(function replenishSmoke() {
+  const container = document.querySelector('.vent-smoke-layer');
+  if (!container) return;
+  const particle = document.createElement('div');
+  particle.classList.add('smoke-particle');
+  particle.style.left = (Math.random() * 60 + 30) + '%';
+  particle.style.animation = 'smokeRise ' + (Math.random() * 2 + 2) + 's ease-in forwards';
+  particle.style.animationDelay = '0s';
+  container.appendChild(particle);
+  setTimeout(() => particle.remove(), 3000);
+  setTimeout(replenishSmoke, 400);
+})();
+
+// ── Attempt audio on interaction ──
+let audioStarted = false;
+document.addEventListener('click', function initAudio() {
+  if (audioStarted) return;
+  const audio = document.getElementById('abyssAmbient');
+  if (audio) {
+    audio.volume = 0.2;
+    audio.play().catch(() => {});
+    audioStarted = true;
+  }
+}, { once: true });
+</script>
+
+</body>
+</html>
