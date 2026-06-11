@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>霓虹终端 · NEON TERMINAL</title>
+<style>
+/* ==========================================================================
+ * NEON ARCHIVE TERMINAL — 主样式表
+ * 赛博朋克数字档案馆终端界面
+ * 版本: 4.0.77
+ * 最后更新: 2026-06-10
+ * ==========================================================================
+ *
+ * 目录:
+ *   1. CSS变量 & 全局重置
+ *   2. 扫描线覆盖层
+ *   3. 自定义滚动条
+ *   4. 粒子背景画布
+ *   5. 顶部导航栏
+ *   6. 移动端汉堡菜单
+ *   7. 主内容区包装
+ *   8. 英雄区
+ *   9. 统计面板
+ *  10. 区块标题 & 分隔线
+ *  11. 城市区域卡片网格
+ *  12. 新闻跑马灯
+ *  13. 功能卡片区
+ *  14. 数据表格
+ *  15. 进度条组
+ *  16. 终端命令列表
+ *  17. 通知横幅
+ *  18. 联系人表单
+ *  19. 页脚
+ *  20. 模态弹窗
+ *  21. 响应式设计
+ * ========================================================================== */
+
+/* ========== 1. CSS 变量 & 全局重置 ========== */
+:root {
+  /* 霓虹色彩系统 — 赛博朋克主题色板 */
+  --neon-cyan: #00f0ff;
+  --neon-pink: #ff2d95;
+  --neon-green: #39ff14;
+  --neon-yellow: #ffe600;
+  --neon-purple: #b347ea;
+  --neon-orange: #ff6b35;
+  --bg-deep: #0a0a0f;
+  --bg-panel: #0d0d1a;
+  --bg-card: #111122;
+  --bg-elevated: #161630;
+  --border-glow: rgba(0, 240, 255, 0.3);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-primary: #e0e0f0;
+  --text-secondary: #8899aa;
+  --text-dim: #556677;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --shadow-glow-cyan: 0 0 20px rgba(0, 240, 255, 0.3), 0 0 60px rgba(0, 240, 255, 0.1);
+  --shadow-glow-pink: 0 0 20px rgba(255, 45, 149, 0.3), 0 0 60px rgba(255, 45, 149, 0.1);
+  --font-mono: 'Courier New', 'Consolas', 'Monaco', monospace;
+  --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.6s ease;
+}
+
+/* --------------------------------------------------------------------------
+ * 全局盒模型重置 — 确保所有元素的尺寸计算一致
+ * -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+ * HTML根元素 — 平滑滚动、基准字体大小
+ * -------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+/* --------------------------------------------------------------------------
+ * 页面主体 — 深色背景、赛博朋克风格字体和颜色
+ * -------------------------------------------------------------------------- */
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ========== 2. 扫描线覆盖层 — 模拟CRT显示器效果 ========== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ========== 3. 自定义滚动条 — 霓虹风格滚动条 ========== */
+/* 滚动条轨道 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+/* 滚动条拇指 — 默认青色发光 */
+::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+/* 滚动条拇指 — 悬停时变为粉色 */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 45, 149, 0.6);
+}
+
+/* ========== 4. 粒子背景画布 — 由JavaScript驱动的动态粒子效果 ========== */
+#particle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ========== 5. 顶部导航栏 — 固定定位、毛玻璃效果 ========== */
+/* 导航栏主体 */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-glow);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  transition: var(--transition-normal);
+}
+/* 导航栏 — 滚动时增加底部阴影 */
+.top-nav.scrolled {
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.nav-brand .logo-icon {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--neon-cyan);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.8); }
+}
+
+.nav-brand .brand-text {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: var(--transition-fast);
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+  transition: var(--transition-normal);
+}
+
+.nav-links a:hover {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.nav-cta {
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--neon-pink);
+  border-radius: var(--radius-sm);
+  color: var(--neon-pink) !important;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  transition: var(--transition-normal);
+  cursor: pointer;
+  background: transparent;
+}
+
+.nav-cta:hover {
+  background: rgba(255, 45, 149, 0.15);
+  box-shadow: 0 0 20px rgba(255, 45, 149, 0.3);
+}
+
+/* ========== 移动端汉堡菜单 ========== */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 8px;
+  background: none;
+  border: none;
+  z-index: 1001;
+}
+
+.hamburger span {
+  width: 28px;
+  height: 2px;
+  background: var(--neon-cyan);
+  transition: var(--transition-normal);
+  box-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ========== 主内容区包装 ========== */
+.main-wrapper {
+  position: relative;
+  z-index: 1;
+  padding-top: 64px;
+}
+
+/* ========== 英雄区 ========== */
+.hero-section {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.hero-glitch {
+  font-family: var(--font-mono);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.6), 0 0 60px rgba(0, 240, 255, 0.3);
+  position: relative;
+  animation: glitchText 3s ease-in-out infinite;
+}
+
+@keyframes glitchText {
+  0%, 100% { transform: translate(0); }
+  33% { transform: translate(-2px, 1px); }
+  66% { transform: translate(2px, -1px); }
+}
+
+.hero-glitch::before,
+.hero-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-glitch::before {
+  color: var(--neon-pink);
+  animation: glitchBefore 3s infinite;
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  z-index: -1;
+}
+
+.hero-glitch::after {
+  color: var(--neon-cyan);
+  animation: glitchAfter 3s infinite;
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  z-index: -1;
+}
+
+@keyframes glitchBefore {
+  0%, 100% { transform: translate(0); }
+  50% { transform: translate(-3px, -2px); }
+}
+@keyframes glitchAfter {
+  0%, 100% { transform: translate(0); }
+  50% { transform: translate(3px, 2px); }
+}
+
+.hero-subtitle {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  letter-spacing: 6px;
+  opacity: 0;
+  animation: fadeInUp 1s ease 0.5s forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-terminal {
+  margin-top: 2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--neon-green);
+  max-width: 600px;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 1s ease 0.8s forwards;
+  opacity: 0;
+}
+
+.hero-terminal .prompt {
+  color: var(--neon-cyan);
+}
+
+.hero-terminal .cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: var(--neon-green);
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.hero-actions {
+  margin-top: 2.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeInUp 1s ease 1.1s forwards;
+}
+
+.btn {
+  padding: 0.8rem 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: transparent;
+  border: 2px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+.btn-primary:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 45, 149, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 45, 149, 0.1);
+  box-shadow: 0 0 30px rgba(255, 45, 149, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-tertiary {
+  background: transparent;
+  border: 2px solid var(--neon-purple);
+  color: var(--neon-purple);
+  box-shadow: 0 0 15px rgba(179, 71, 234, 0.2);
+}
+
+.btn-tertiary:hover {
+  background: rgba(179, 71, 234, 0.1);
+  box-shadow: 0 0 30px rgba(179, 71, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ========== 统计面板 ========== */
+.stats-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 3rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  text-align: center;
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  opacity: 0;
+  transition: var(--transition-normal);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow-cyan);
+  transform: translateY(-4px);
+}
+
+.stat-number {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ========== 区块标题 ========== */
+.section-header {
+  text-align: center;
+  padding: 4rem 2rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.section-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--neon-pink);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+/* ========== 分隔线 ========== */
+.divider {
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  margin: 1rem auto;
+}
+
+/* ========== 城市区域卡片网格 ========== */
+.district-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.district-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+}
+
+.district-card:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+  transform: translateY(-6px);
+}
+
+.district-card-image {
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+}
+
+.district-card-image.card-bg-1 { background: linear-gradient(135deg, #0a1628, #1a2a4a); }
+.district-card-image.card-bg-2 { background: linear-gradient(135deg, #1a0a28, #3a1a5a); }
+.district-card-image.card-bg-3 { background: linear-gradient(135deg, #0a2816, #1a4a2a); }
+.district-card-image.card-bg-4 { background: linear-gradient(135deg, #28160a, #4a2a1a); }
+.district-card-image.card-bg-5 { background: linear-gradient(135deg, #280a1a, #5a1a3a); }
+.district-card-image.card-bg-6 { background: linear-gradient(135deg, #0a1a28, #1a3a5a); }
+
+.district-card-image .district-emoji {
+  filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
+}
+
+.district-card-body {
+  padding: 1.5rem;
+}
+
+.district-card-body h3 {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  color: var(--neon-cyan);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.district-card-body .district-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.district-card-body p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.district-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  border: 1px solid;
+  letter-spacing: 1px;
+}
+
+.tag-cyan { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.tag-pink { border-color: var(--neon-pink); color: var(--neon-pink); }
+.tag-green { border-color: var(--neon-green); color: var(--neon-green); }
+.tag-purple { border-color: var(--neon-purple); color: var(--neon-purple); }
+.tag-yellow { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+.tag-orange { border-color: var(--neon-orange); color: var(--neon-orange); }
+
+/* ========== 新闻跑马灯 ========== */
+.news-ticker-wrap {
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.8rem 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.news-ticker-wrap .ticker-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--neon-pink);
+  color: #fff;
+  padding: 0.8rem 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.news-ticker {
+  display: flex;
+  animation: tickerScroll 30s linear infinite;
+  white-space: nowrap;
+}
+
+.news-ticker .ticker-item {
+  padding: 0 2rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.news-ticker .ticker-item .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.dot-cyan { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+.dot-pink { background: var(--neon-pink); box-shadow: 0 0 6px var(--neon-pink); }
+.dot-green { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+.dot-yellow { background: var(--neon-yellow); box-shadow: 0 0 6px var(--neon-yellow); }
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ========== 功能卡片区 ========== */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  transition: var(--transition-normal);
+  position: relative;
+}
+
+.feature-card:hover {
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 25px rgba(179, 71, 234, 0.2);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.feature-card h3 {
+  font-family: var(--font-mono);
+  color: var(--neon-purple);
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  margin-bottom: 0.8rem;
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.feature-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-decoration: none;
+  letter-spacing: 2px;
+  transition: var(--transition-fast);
+}
+
+.feature-link:hover {
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* ========== 数据表格 ========== */
+.data-table-wrap {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.data-table thead th {
+  background: var(--bg-elevated);
+  color: var(--neon-cyan);
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid var(--border-glow);
+  letter-spacing: 1px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.data-table tbody td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.data-table tbody tr {
+  transition: var(--transition-fast);
+}
+
+.data-table tbody tr:hover {
+  background: rgba(0, 240, 255, 0.03);
+}
+
+.data-table tbody tr:hover td {
+  color: var(--text-primary);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-online { background: rgba(57, 255, 20, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+.status-offline { background: rgba(255, 45, 149, 0.1); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+.status-warning { background: rgba(255, 230, 0, 0.1); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
+.status-secure { background: rgba(0, 240, 255, 0.1); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+
+/* ========== 进度条组 ========== */
+.progress-group {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.progress-item {
+  margin-bottom: 1.2rem;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.progress-label .val {
+  color: var(--neon-cyan);
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1.5s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.fill-cyan { background: linear-gradient(90deg, var(--neon-cyan), #00b8cc); box-shadow: 0 0 10px rgba(0,240,255,0.4); }
+.fill-pink { background: linear-gradient(90deg, var(--neon-pink), #cc2070); box-shadow: 0 0 10px rgba(255,45,149,0.4); }
+.fill-green { background: linear-gradient(90deg, var(--neon-green), #2cc010); box-shadow: 0 0 10px rgba(57,255,20,0.4); }
+.fill-purple { background: linear-gradient(90deg, var(--neon-purple), #8a30c0); box-shadow: 0 0 10px rgba(179,71,234,0.4); }
+.fill-yellow { background: linear-gradient(90deg, var(--neon-yellow), #ccb800); box-shadow: 0 0 10px rgba(255,230,0,0.4); }
+.fill-orange { background: linear-gradient(90deg, var(--neon-orange), #cc5020); box-shadow: 0 0 10px rgba(255,107,53,0.4); }
+
+/* ========== 终端命令列表 ========== */
+.command-list {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cmd-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: var(--transition-normal);
+}
+
+.cmd-item:hover {
+  border-color: var(--neon-green);
+}
+
+.cmd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.cmd-header .cmd-name {
+  color: var(--neon-green);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.cmd-header .cmd-arrow {
+  color: var(--neon-cyan);
+  transition: var(--transition-normal);
+}
+
+.cmd-body {
+  padding: 0 1.5rem 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.8;
+  font-family: var(--font-mono);
+  display: none;
+}
+
+.cmd-item.open .cmd-body {
+  display: block;
+}
+
+.cmd-item.open .cmd-arrow {
+  transform: rotate(180deg);
+}
+
+.cmd-code {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.8rem;
+  color: var(--neon-green);
+  border-left: 3px solid var(--neon-cyan);
+  overflow-x: auto;
+  white-space: pre;
+  font-size: 0.8rem;
+}
+
+/* ========== 通知横幅 ========== */
+.notification-bar {
+  background: linear-gradient(135deg, rgba(255, 45, 149, 0.1), rgba(179, 71, 234, 0.1));
+  border: 1px solid rgba(255, 45, 149, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem 2rem;
+  margin: 2rem auto;
+  max-width: 900px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: borderPulse 3s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+  0%, 100% { border-color: rgba(255, 45, 149, 0.3); }
+  50% { border-color: rgba(255, 45, 149, 0.7); }
+}
+
+.notification-bar .notif-icon {
+  font-size: 1.5rem;
+}
+
+.notification-bar .notif-text {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.notification-bar .notif-time {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* ========== 联系人表单 ========== */
+.contact-section {
+  padding: 2rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  transition: var(--transition-normal);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2300f0ff' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--neon-cyan);
+}
+
+.form-check label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+/* ========== 页脚 ========== */
+.site-footer {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border-glow);
+  padding: 3rem 2rem 1.5rem;
+  margin-top: 4rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-col h4 {
+  font-family: var(--font-mono);
+  color: var(--neon-cyan);
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+}
+
+.footer-col ul {
+  list-style: none;
+}
+
+.footer-col ul li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-col ul li a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: var(--transition-fast);
+}
+
+.footer-col ul li a:hover {
+  color: var(--neon-cyan);
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 2rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.footer-bottom .neon-heart {
+  color: var(--neon-pink);
+  animation: heartBeat 1.5s infinite;
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+/* ========== 模态弹窗 ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition-normal);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 0 60px rgba(0, 240, 255, 0.2);
+}
+
+.modal-box .modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.modal-box .modal-close:hover {
+  color: var(--neon-pink);
+}
+
+.modal-box h3 {
+  font-family: var(--font-mono);
+  color: var(--neon-cyan);
+  margin-bottom: 1rem;
+}
+
+.modal-box p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+  .nav-links {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 70%;
+    height: 100vh;
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    padding: 6rem 2rem;
+    transition: var(--transition-normal);
+    border-left: 1px solid var(--border-glow);
+  }
+
+  .nav-links.mobile-open {
+    right: 0;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-glitch {
+    font-size: 2rem;
+  }
+
+  .stats-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .district-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .news-ticker-wrap .ticker-label {
+    position: relative;
+    text-align: center;
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- 顶部导航 -->
+<nav class="top-nav" id="topNav">
+  <a href="#" class="nav-brand">
+    <div class="logo-icon">&lt;/&gt;</div>
+    <span class="brand-text">NEON·ARCHIVE</span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#" class="active-link">霓虹终端</a></li>
+    <li><a href="数据档案库.html">数据档案库</a></li>
+    <li><a href="未来编年史.html">未来编年史</a></li>
+    <li><a href="#districts">城市区域</a></li>
+    <li><a href="#features">核心功能</a></li>
+    <li><a href="#contact-section" class="nav-cta">接入网络</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="菜单">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="main-wrapper">
+
+  <!-- 英雄区 -->
+  <section class="hero-section">
+    <h1 class="hero-glitch" data-text="WELCOME TO THE FUTURE">WELCOME TO THE FUTURE</h1>
+    <p class="hero-subtitle">&gt;&gt; 赛博朋克数字档案馆 · 版本 4.0.77 &lt;&lt;</p>
+    <div class="hero-terminal" id="heroTerminal">
+      <span class="prompt">root@neon-archive:~$</span> <span id="typedText"></span><span class="cursor"></span>
+    </div>
+    <div class="hero-actions">
+      <a href="数据档案库.html" class="btn btn-primary">📁 进入档案库</a>
+      <a href="未来编年史.html" class="btn btn-secondary">📜 查看编年史</a>
+      <a href="#districts" class="btn btn-tertiary">🌆 探索城市</a>
+    </div>
+  </section>
+
+  <!-- 统计面板 -->
+  <section class="stats-panel">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-number" data-count="1247">0</div>
+      <div class="stat-label">活跃节点</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🗄️</div>
+      <div class="stat-number" data-count="8956">0</div>
+      <div class="stat-label">档案条目</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔗</div>
+      <div class="stat-number" data-count="342">0</div>
+      <div class="stat-label">网络连接</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-number" data-count="99.7">0</div>
+      <div class="stat-label">系统稳定率%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🛡️</div>
+      <div class="stat-number" data-count="256">0</div>
+      <div class="stat-label">防火墙规则</div>
+    </div>
+  </section>
+
+  <!-- 新闻跑马灯 -->
+  <div class="news-ticker-wrap">
+    <div class="ticker-label">📡 实时情报</div>
+    <div class="news-ticker" id="newsTicker">
+      <span class="ticker-item"><span class="dot dot-cyan"></span>「新上海」区量子网络全面升级至6G标准</span>
+      <span class="ticker-item"><span class="dot dot-pink"></span>赛博空间安全局发布新型防火墙协议v9.2</span>
+      <span class="ticker-item"><span class="dot dot-green"></span>神经接口植入量突破1亿全球里程碑</span>
+      <span class="ticker-item"><span class="dot dot-yellow"></span>暗影市场出现新型AI病毒变种需警惕</span>
+      <span class="ticker-item"><span class="dot dot-cyan"></span>月球殖民地第三期扩建工程正式启动</span>
+      <span class="ticker-item"><span class="dot dot-pink"></span>仿生人权利法案在联合国通过初步审议</span>
+      <span class="ticker-item"><span class="dot dot-green"></span>全息投影广告覆盖率达城市面积87%</span>
+      <span class="ticker-item"><span class="dot dot-yellow"></span>量子计算机"天枢"运算速度再破纪录</span>
+      <!-- 重复以支持无缝滚动 -->
+      <span class="ticker-item"><span class="dot dot-cyan"></span>「新上海」区量子网络全面升级至6G标准</span>
+      <span class="ticker-item"><span class="dot dot-pink"></span>赛博空间安全局发布新型防火墙协议v9.2</span>
+      <span class="ticker-item"><span class="dot dot-green"></span>神经接口植入量突破1亿全球里程碑</span>
+      <span class="ticker-item"><span class="dot dot-yellow"></span>暗影市场出现新型AI病毒变种需警惕</span>
+      <span class="ticker-item"><span class="dot dot-cyan"></span>月球殖民地第三期扩建工程正式启动</span>
+      <span class="ticker-item"><span class="dot dot-pink"></span>仿生人权利法案在联合国通过初步审议</span>
+      <span class="ticker-item"><span class="dot dot-green"></span>全息投影广告覆盖率达城市面积87%</span>
+      <span class="ticker-item"><span class="dot dot-yellow"></span>量子计算机"天枢"运算速度再破纪录</span>
+    </div>
+  </div>
+
+  <!-- 城市区域 -->
+  <div class="section-header" id="districts">
+    <div class="section-tag">[ CITY DISTRICTS ]</div>
+    <h2 class="section-title">// 城市区域总览</h2>
+    <div class="divider"></div>
+    <p class="section-desc">赛博朋克都市由六大核心区域组成，每个区域都有其独特的功能与氛围。探索这座永不沉睡的霓虹之城。</p>
+  </div>
+
+  <div class="district-grid">
+    <div class="district-card">
+      <div class="district-card-image card-bg-1"><span class="district-emoji">🏙️</span></div>
+      <div class="district-card-body">
+        <h3>新上海金融塔</h3>
+        <div class="district-meta"><span>📍 坐标: 31.2304° N</span><span>👥 人口: 2.4M</span></div>
+        <p>高耸入云的玻璃尖塔群，全球金融科技的中心。这里汇聚了超过3000家跨国企业的总部，量子交易系统每微秒处理数十亿笔交易。24小时不间断的霓虹灯光将夜空染成永恒的黄昏。</p>
+        <div class="district-tags">
+          <span class="tag tag-cyan">金融</span><span class="tag tag-pink">高科技</span><span class="tag tag-yellow">24h活跃</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="district-card">
+      <div class="district-card-image card-bg-2"><span class="district-emoji">🏭</span></div>
+      <div class="district-card-body">
+        <h3>九龙工业深渊</h3>
+        <div class="district-meta"><span>📍 坐标: 22.3193° N</span><span>👥 人口: 5.1M</span></div>
+        <p>层层叠叠的工厂与机械构成了这座垂直工业迷宫。自动化生产线日夜轰鸣，机器人族群在这里制造着从神经芯片到太空飞船的一切。蒸汽与霓虹交织出工业美学的极致表达。</p>
+        <div class="district-tags">
+          <span class="tag tag-orange">工业</span><span class="tag tag-green">机器人</span><span class="tag tag-purple">地下文化</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="district-card">
+      <div class="district-card-image card-bg-3"><span class="district-emoji">🌐</span></div>
+      <div class="district-card-body">
+        <h3>赛博空间枢纽</h3>
+        <div class="district-meta"><span>📍 坐标: 虚拟域</span><span>👥 用户: 18.7M</span></div>
+        <p>纯粹的虚拟领域，数据之海的核心节点。这里没有物理实体，只有无限延伸的发光数据结构。黑客、AI、数字幽灵在此共存。进入这里，你需要的不再是肉身，而是纯粹的意识流。</p>
+        <div class="district-tags">
+          <span class="tag tag-cyan">虚拟现实</span><span class="tag tag-purple">AI</span><span class="tag tag-pink">数据空间</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="district-card">
+      <div class="district-card-image card-bg-4"><span class="district-emoji">🌃</span></div>
+      <div class="district-card-body">
+        <h3>不夜城娱乐区</h3>
+        <div class="district-meta"><span>📍 坐标: 22.5431° N</span><span>👥 人口: 3.2M</span></div>
+        <p>霓虹永不熄灭的欲望之地。从顶层奢华赌场到底层街巷的黑市交易，全息歌舞伎、合成音乐俱乐部、虚拟现实游戏厅鳞次栉比。在这里，一切感官体验都被推向了极致。</p>
+        <div class="district-tags">
+          <span class="tag tag-pink">娱乐</span><span class="tag tag-yellow">夜生活</span><span class="tag tag-orange">黑市</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="district-card">
+      <div class="district-card-image card-bg-5"><span class="district-emoji">🔬</span></div>
+      <div class="district-card-body">
+        <h3>生物科技园区</h3>
+        <div class="district-meta"><span>📍 坐标: 30.5728° N</span><span>👥 人口: 1.8M</span></div>
+        <p>基因编辑、神经接口、克隆技术与仿生义体的研发圣地。玻璃温室里的发光植物照亮了整个区域。伦理边界在这里不断被重新定义——人体增强已经是一种生活方式而非科学幻想。</p>
+        <div class="district-tags">
+          <span class="tag tag-green">生物科技</span><span class="tag tag-cyan">医疗</span><span class="tag tag-purple">研究</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="district-card">
+      <div class="district-card-image card-bg-6"><span class="district-emoji">🚀</span></div>
+      <div class="district-card-body">
+        <h3>天穹航天港</h3>
+        <div class="district-meta"><span>📍 坐标: 19.4326° N</span><span>👥 人口: 0.9M</span></div>
+        <p>连接地球与月球殖民地、火星前哨站的交通枢纽。等离子引擎的尾焰每天划破天际，星际贸易在这里建立了地球侧的桥头堡。离港大厅的全息屏幕永远显示着前往各个殖民地的航班信息。</p>
+        <div class="district-tags">
+          <span class="tag tag-cyan">航天</span><span class="tag tag-yellow">贸易</span><span class="tag tag-orange">星际</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心功能 -->
+  <div class="section-header" id="features">
+    <div class="section-tag">[ CORE FEATURES ]</div>
+    <h2 class="section-title">// 系统核心功能</h2>
+    <div class="divider"></div>
+    <p class="section-desc">数字档案馆集成了多项尖端技术，为您提供全方位的赛博空间数据管理与探索体验。</p>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔍</span>
+      <h3>量子搜索引擎</h3>
+      <p>基于量子纠缠原理的跨维度数据检索系统。可在0.003秒内扫描整个档案库的全部条目，支持模糊匹配与语义关联分析。搜索结果以全息投影形式呈现。</p>
+      <a href="数据档案库.html" class="feature-link">[ 启动搜索 ] →</a>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🛡️</span>
+      <h3>ICE防火墙</h3>
+      <p>智能反入侵电子系统（Intrusion Countermeasures Electronics）。七层加密防护，实时监控所有接入点，自动识别并隔离恶意流量。已成功抵御超过200万次网络攻击。</p>
+      <a href="#" class="feature-link">[ 安全报告 ] →</a>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <h3>神经接口适配</h3>
+      <p>兼容市面上97%的神经植入设备。支持脑电波直连操控、记忆数据化存储与梦境录制回放。带宽高达每秒10TB的神经数据传输速率。</p>
+      <a href="#" class="feature-link">[ 设备配对 ] →</a>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌍</span>
+      <h3>全球节点网络</h3>
+      <p>横跨六大洲、月球殖民地及火星前哨的分布式节点网络。数据延迟低于12毫秒，具备自愈式路由功能——即使40%节点离线，网络仍能保持完整运行能力。</p>
+      <a href="#" class="feature-link">[ 网络地图 ] →</a>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤖</span>
+      <h3>AI协处理单元</h3>
+      <p>搭载第六代量子AI核心"女娲-6"。具备自我进化能力，可同时处理1200万个并发任务。情感模拟精度达到99.3%，并通过了图灵测试的第七次迭代版本。</p>
+      <a href="#" class="feature-link">[ AI日志 ] →</a>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📡</span>
+      <h3>深空通信阵列</h3>
+      <p>位于月球背面的巨型天线阵列，实现地月间0.8秒、地火间3分钟的实时通信。使用激光脉冲调制技术，抗干扰能力极强，确保星际数据传输的稳定与安全。</p>
+      <a href="#" class="feature-link">[ 通信状态 ] →</a>
+    </div>
+  </div>
+
+  <!-- 系统状态面板 -->
+  <div class="section-header">
+    <div class="section-tag">[ SYSTEM STATUS ]</div>
+    <h2 class="section-title">// 系统运行状态</h2>
+    <div class="divider"></div>
+  </div>
+
+  <div class="progress-group">
+    <div class="progress-item">
+      <div class="progress-label"><span>CPU 负载 — 量子核心阵列</span><span class="val">73%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-cyan" style="width:73%"></div></div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label"><span>内存占用 — 神经形态存储</span><span class="val">58%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-pink" style="width:58%"></div></div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label"><span>网络吞吐 — 全球节点总带宽</span><span class="val">91%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-green" style="width:91%"></div></div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label"><span>AI活跃度 — 女娲-6核心</span><span class="val">85%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-purple" style="width:85%"></div></div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label"><span>防火墙有效性</span><span class="val">99.2%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-yellow" style="width:99.2%"></div></div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label"><span>深空通信链路质量</span><span class="val">88%</span></div>
+      <div class="progress-bar"><div class="progress-fill fill-orange" style="width:88%"></div></div>
+    </div>
+  </div>
+
+  <!-- 快速命令参考 -->
+  <div class="section-header">
+    <div class="section-tag">[ TERMINAL COMMANDS ]</div>
+    <h2 class="section-title">// 常用终端指令</h2>
+    <div class="divider"></div>
+  </div>
+
+  <div class="command-list">
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="cmd-name">$ neon-scan --target &lt;IP&gt; --deep</span>
+        <span class="cmd-arrow">▼</span>
+      </div>
+      <div class="cmd-body">
+        <p>深度扫描目标网络节点，获取开放端口、运行服务、操作系统指纹及潜在漏洞列表。支持IPv4/IPv6及量子纠缠地址。</p>
+        <div class="cmd-code">root@neon:~# neon-scan --target 204.77.18.9 --deep
+[INFO] 初始化量子扫描引擎...
+[INFO] 扫描完成 | 开放端口: 22, 443, 8080, 27017
+[INFO] 检测到防火墙: ICE v7.2 | 风险等级: 中</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="cmd-name">$ data-vault --query "&lt;关键词&gt;" --format json</span>
+        <span class="cmd-arrow">▼</span>
+      </div>
+      <div class="cmd-body">
+        <p>在数据档案库中执行语义搜索，返回JSON格式的结构化结果。支持中文、英文及混合语言查询，自动关联相关条目。</p>
+        <div class="cmd-code">root@neon:~# data-vault --query "仿生人制造规范" --format json
+{
+  "results": 47,
+  "top_hit": "仿生人伦理制造标准 v3.2",
+  "category": "生物科技/人造生命",
+  "access_level": "RESTRICTED"
+}</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="cmd-name">$ firewall-status --watch --alert-level critical</span>
+        <span class="cmd-arrow">▼</span>
+      </div>
+      <div class="cmd-body">
+        <p>实时监控防火墙状态，仅显示严重级别的安全警报。支持自定义过滤规则和自动响应策略配置。</p>
+        <div class="cmd-code">root@neon:~# firewall-status --watch --alert-level critical
+[2026-06-10 22:14:37] 检测到入侵尝试 | 来源: 178.XX.XX.45
+[2026-06-10 22:14:38] 自动隔离已激活 | 威胁等级: 高
+[2026-06-10 22:14:39] 入侵已被ICE层3阻止 | 状态: 已解决</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="cmd-name">$ neural-link --pair --device-id &lt;ID&gt;</span>
+        <span class="cmd-arrow">▼</span>
+      </div>
+      <div class="cmd-body">
+        <p>配对新神经接口设备，建立安全的脑机通信通道。支持多设备同时连接，自动协商带宽与加密协议。</p>
+        <div class="cmd-code">root@neon:~# neural-link --pair --device-id NCI-7742-B
+[INFO] 扫描可用设备... 发现: NeuralChip Pro X2
+[INFO] 协商加密协议... 已选择: AES-512-Quantum
+[INFO] 配对成功 | 带宽: 8.2 TB/s | 延迟: 0.4ms</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="cmd-name">$ deep-space-ping --target mars-colony-1</span>
+        <span class="cmd-arrow">▼</span>
+      </div>
+      <div class="cmd-body">
+        <p>向火星殖民地发送测试数据包，测量通信延迟与丢包率。使用激光中继卫星网络进行信号传输。</p>
+        <div class="cmd-code">root@neon:~# deep-space-ping --target mars-colony-1
+PING mars-colony-1 (204.77.18.9): 56 data bytes
+64 bytes from mars-colony-1: icmp_seq=0 time=180042ms
+64 bytes from mars-colony-1: icmp_seq=1 time=179988ms
+--- mars-colony-1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知横幅 -->
+  <div class="notification-bar">
+    <span class="notif-icon">⚠️</span>
+    <span class="notif-text">系统维护通知：档案库将于本周期（UTC+8 03:00-05:00）进行量子数据库升级，届时部分查询可能出现短暂延迟。AI协处理单元将在此期间承担额外负载。</span>
+    <span class="notif-time">2026-06-10</span>
+  </div>
+  <div class="notification-bar">
+    <span class="notif-icon">✅</span>
+    <span class="notif-text">ICE防火墙v9.2更新已成功部署至所有节点。新增3项入侵检测规则，修复了2个零日漏洞。建议所有用户重新验证神经接口连接。</span>
+    <span class="notif-time">2026-06-09</span>
+  </div>
+  <div class="notification-bar">
+    <span class="notif-icon">📡</span>
+    <span class="notif-text">月球背面通信阵列3号天线完成例行维护。深空通信链路质量恢复至98%。火星殖民地数据传输通道已重新建立。</span>
+    <span class="notif-time">2026-06-08</span>
+  </div>
+
+  <!-- 数据表格：安全日志 -->
+  <div class="section-header">
+    <div class="section-tag">[ SECURITY LOG ]</div>
+    <h2 class="section-title">// 近期安全事件日志</h2>
+    <div class="divider"></div>
+  </div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>时间戳</th>
+          <th>事件类型</th>
+          <th>来源IP</th>
+          <th>目标节点</th>
+          <th>威胁等级</th>
+          <th>处理状态</th>
+          <th>操作员</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2026-06-10 22:14:37</td>
+          <td>端口扫描</td>
+          <td>178.45.23.19</td>
+          <td>NODE-SH-042</td>
+          <td><span class="status-badge status-warning">中等</span></td>
+          <td><span class="status-badge status-online">已阻止</span></td>
+          <td>ICE-AUTO</td>
+        </tr>
+        <tr>
+          <td>2026-06-10 21:08:12</td>
+          <td>暴力破解</td>
+          <td>92.118.67.34</td>
+          <td>NODE-BJ-118</td>
+          <td><span class="status-badge status-offline">严重</span></td>
+          <td><span class="status-badge status-online">已隔离</span></td>
+          <td>ICE-AUTO</td>
+        </tr>
+        <tr>
+          <td>2026-06-10 19:45:55</td>
+          <td>DDoS攻击</td>
+          <td>多源</td>
+          <td>NODE-SZ-007</td>
+          <td><span class="status-badge status-offline">严重</span></td>
+          <td><span class="status-badge status-secure">已缓解</span></td>
+          <td>Admin_Li</td>
+        </tr>
+        <tr>
+          <td>2026-06-10 17:22:03</td>
+          <td>异常流量</td>
+          <td>45.67.89.12</td>
+          <td>NODE-GZ-033</td>
+          <td><span class="status-badge status-warning">中等</span></td>
+          <td><span class="status-badge status-online">监控中</span></td>
+          <td>ICE-AUTO</td>
+        </tr>
+        <tr>
+          <td>2026-06-10 15:30:41</td>
+          <td>恶意软件检测</td>
+          <td>内网</td>
+          <td>NODE-CD-056</td>
+          <td><span class="status-badge status-offline">严重</span></td>
+          <td><span class="status-badge status-online">已清除</span></td>
+          <td>Admin_Wang</td>
+        </tr>
+        <tr>
+          <td>2026-06-10 13:15:28</td>
+          <td>SSL劫持尝试</td>
+          <td>201.45.78.90</td>
+          <td>NODE-HZ-089</td>
+          <td><span class="status-badge status-warning">中等</span></td>
+          <td><span class="status-badge status-secure">已阻止</span></td>
+          <td>ICE-AUTO</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 联系方式 -->
+  <div class="section-header" id="contact-section">
+    <div class="section-tag">[ CONNECT ]</div>
+    <h2 class="section-title">// 接入网络</h2>
+    <div class="divider"></div>
+    <p class="section-desc">准备好进入赛博空间了吗？填写下表，我们的AI将在0.5秒内与您建立加密通信通道。</p>
+  </div>
+
+  <div class="contact-section">
+    <form id="contactForm" onsubmit="handleContactSubmit(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>节点代号</label>
+          <input type="text" placeholder="输入你的代号..." required>
+        </div>
+        <div class="form-group">
+          <label>加密邮箱</label>
+          <input type="email" placeholder="your@neon-net.cyb" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>接入区域</label>
+        <select required>
+          <option value="">选择你的物理位置...</option>
+          <option>新上海金融塔</option>
+          <option>九龙工业深渊</option>
+          <option>赛博空间枢纽（虚拟接入）</option>
+          <option>不夜城娱乐区</option>
+          <option>生物科技园区</option>
+          <option>天穹航天港</option>
+          <option>月球殖民地</option>
+          <option>火星前哨站</option>
+          <option>其他区域</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>通信意图</label>
+        <textarea placeholder="描述你的来意...（支持文本/脑波直传格式）" required></textarea>
+      </div>
+      <div class="form-check">
+        <input type="checkbox" id="consentCheck" required>
+        <label for="consentCheck">我同意神经数据传输协议条款（NDTP v4.2）并确认已阅读隐私政策</label>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">🚀 建立加密通道</button>
+    </form>
+  </div>
+
+  <!-- ========== 服务定价 ========== -->
+  <div class="section-header"><div class="section-tag">[ PRICING ]</div><h2 class="section-title">// 数据服务定价方案</h2><div class="divider"></div><p class="section-desc">选择适合你的接入方案。所有方案均享受量子加密通信和ICE防火墙保护。</p></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:2rem;text-align:center;transition:var(--transition-normal);">
+      <div style="font-size:3rem;margin-bottom:1rem;">🔓</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-green);font-size:1.3rem;letter-spacing:2px;margin-bottom:1rem;">公共接入</h3>
+      <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--text-primary);">免费</div>
+      <p style="color:var(--text-dim);font-size:0.8rem;margin-bottom:1.5rem;">永久免费层级</p>
+      <ul style="list-style:none;text-align:left;color:var(--text-secondary);font-size:0.88rem;line-height:2.2;">
+        <li>✓ 浏览公开档案</li><li>✓ 基础搜索功能</li><li>✓ 最多5个活跃节点</li><li>✓ 256位加密通信</li><li>✗ 无API访问权限</li><li>✗ 无优先技术支持</li>
+      </ul>
+      <a href="#" class="btn btn-secondary" style="margin-top:1.5rem;width:100%;">当前方案</a>
+    </div>
+    <div style="background:var(--bg-card);border:2px solid var(--neon-cyan);border-radius:var(--radius-lg);padding:2rem;text-align:center;transition:var(--transition-normal);position:relative;">
+      <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--neon-cyan);color:#000;padding:0.3rem 1.5rem;border-radius:100px;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:2px;font-weight:700;">推荐</div>
+      <div style="font-size:3rem;margin-bottom:1rem;">🔐</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);font-size:1.3rem;letter-spacing:2px;margin-bottom:1rem;">专业接入</h3>
+      <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--text-primary);">¥8,500<span style="font-size:0.9rem;color:var(--text-dim);">/月</span></div>
+      <p style="color:var(--text-dim);font-size:0.8rem;margin-bottom:1.5rem;">最受欢迎方案</p>
+      <ul style="list-style:none;text-align:left;color:var(--text-secondary);font-size:0.88rem;line-height:2.2;">
+        <li>✓ 全部PUBLIC档案</li><li>✓ 高级搜索与筛选</li><li>✓ 最多50个活跃节点</li><li>✓ 512位量子加密</li><li>✓ RESTRICTED档案权限</li><li>✓ API访问（1000次/天）</li>
+      </ul>
+      <a href="#" class="btn btn-primary" style="margin-top:1.5rem;width:100%;">立即订阅</a>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:2rem;text-align:center;transition:var(--transition-normal);">
+      <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-purple);font-size:1.3rem;letter-spacing:2px;margin-bottom:1rem;">企业接入</h3>
+      <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--text-primary);">¥48,000<span style="font-size:0.9rem;color:var(--text-dim);">/月</span></div>
+      <p style="color:var(--text-dim);font-size:0.8rem;margin-bottom:1.5rem;">全功能企业方案</p>
+      <ul style="list-style:none;text-align:left;color:var(--text-secondary);font-size:0.88rem;line-height:2.2;">
+        <li>✓ 全部档案权限</li><li>✓ 不限节点数</li><li>✓ AES-512-Quantum加密</li><li>✓ 全部档案级别访问</li><li>✓ API无限制访问</li><li>✓ 专属技术支持·SLA保证</li>
+      </ul>
+      <a href="#" class="btn btn-tertiary" style="margin-top:1.5rem;width:100%;">联系销售</a>
+    </div>
+  </div>
+
+  <!-- ========== 网络实时状态面板 ========== -->
+  <div class="section-header"><div class="section-tag">[ LIVE STATUS ]</div><h2 class="section-title">// 全球骨干节点实时负载</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>节点</th><th>当前负载</th><th>活跃连接</th><th>数据吞吐</th><th>丢包率</th><th>健康评分</th><th>预测状态</th></tr></thead>
+      <tbody>
+        <tr><td>NODE-SH-042 · 新上海</td><td>73%</td><td>12,847,392</td><td>847 Gbps</td><td>0.001%</td><td><span class="status-badge status-online">98.7</span></td><td>稳定</td></tr>
+        <tr><td>NODE-TK-001 · 东京</td><td>68%</td><td>10,234,187</td><td>712 Gbps</td><td>0.002%</td><td><span class="status-badge status-online">97.2</span></td><td>稳定</td></tr>
+        <tr><td>NODE-SG-056 · 新加坡</td><td>81%</td><td>9,876,543</td><td>691 Gbps</td><td>0.003%</td><td><span class="status-badge status-warning">94.5</span></td><td>需关注</td></tr>
+        <tr><td>NODE-LN-022 · 伦敦</td><td>55%</td><td>8,234,567</td><td>534 Gbps</td><td>0.001%</td><td><span class="status-badge status-online">99.1</span></td><td>稳定</td></tr>
+        <tr><td>NODE-NY-077 · 纽约</td><td>89%</td><td>11,456,789</td><td>923 Gbps</td><td>0.008%</td><td><span class="status-badge status-offline">89.3</span></td><td>需升级</td></tr>
+        <tr><td>NODE-LN-001 · 月球</td><td>42%</td><td>1,234,567</td><td>156 Gbps</td><td>0.120%</td><td><span class="status-badge status-secure">95.8</span></td><td>稳定</td></tr>
+        <tr><td>NODE-MS-001 · 火星</td><td>18%</td><td>234,567</td><td>28 Gbps</td><td>0.450%</td><td><span class="status-badge status-secure">91.2</span></td><td>延迟偏高</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== API接口文档预览 ========== -->
+  <div class="section-header"><div class="section-tag">[ API REFERENCE ]</div><h2 class="section-title">// API接口快速参考</h2><div class="divider"></div></div>
+
+  <div class="command-list">
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">GET /api/v4/archives/search?q={query}&limit={n}</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p>搜索档案库，返回匹配的档案条目列表。支持分页、排序和字段选择。认证方式：Bearer Token（量子签名）。速率限制：专业版1000次/天，企业版无限制。</p>
+        <div class="cmd-code">curl -H "Authorization: Bearer qsig-xxxx" "https://api.neon-archive.cyb/v4/archives/search?q=神经接口&limit=20&page=1"
+{"total":47,"page":1,"results":[{...}]}</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">GET /api/v4/archives/{archive_id}</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p>获取指定档案的完整内容。需要对应安全级别的访问权限。CLASSIFIED及以上级别需要额外的身份验证令牌。</p>
+        <div class="cmd-code">curl -H "Authorization: Bearer qsig-xxxx" "https://api.neon-archive.cyb/v4/archives/ARC-NCI-0053"
+{"id":"ARC-NCI-0053","title":"神经接口标准化协议 v5.3",...}</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">POST /api/v4/events/submit</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p>提交新的历史事件记录。需要提供事件详情、证据来源和贡献者信息。所有提交进入审核队列。</p>
+        <div class="cmd-code">curl -X POST -H "Authorization: Bearer qsig-xxxx" -H "Content-Type: application/json" -d '{"date":"2157.06.10","title":"测试事件","description":"...","category":"tech","contributor":"user-001"}' "https://api.neon-archive.cyb/v4/events/submit"
+{"status":"queued","review_id":"REV-77391"}</div>
+      </div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">GET /api/v4/network/status?node={node_id}</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p>获取指定网络节点或全部节点的实时状态信息。包含负载、延迟、活跃连接数和健康评分。数据每30秒刷新一次。</p>
+        <div class="cmd-code">curl "https://api.neon-archive.cyb/v4/network/status?node=SH-042"
+{"node":"SH-042","load":73,"connections":12847392,"throughput_gbps":847,"latency_ms":0.01,"health":98.7,"status":"stable"}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 使用统计图（纯CSS柱状图） ========== -->
+  <div class="section-header"><div class="section-tag">[ ANALYTICS ]</div><h2 class="section-title">// 档案库月度访问统计</h2><div class="divider"></div></div>
+
+  <div class="progress-group">
+    <div class="progress-item"><div class="progress-label"><span>2026年1月</span><span class="val">1,248,392次</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:78%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>2026年2月</span><span class="val">1,387,210次</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:86%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>2026年3月</span><span class="val">1,562,845次</span></div><div class="progress-bar"><div class="progress-fill fill-pink" style="width:97%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>2026年4月</span><span class="val">1,423,678次</span></div><div class="progress-bar"><div class="progress-fill fill-green" style="width:88%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>2026年5月</span><span class="val">1,689,234次</span></div><div class="progress-bar"><div class="progress-fill fill-purple" style="width:100%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>2026年6月（至今）</span><span class="val">987,456次</span></div><div class="progress-bar"><div class="progress-fill fill-yellow" style="width:61%"></div></div></div>
+  </div>
+
+  <!-- ========== 快速链接卡片 ========== -->
+  <div class="section-header"><div class="section-tag">[ QUICK LINKS ]</div><h2 class="section-title">// 热门资源快速访问</h2><div class="divider"></div></div>
+
+  <div class="feature-grid" style="padding-bottom:3rem;">
+    <div class="feature-card"><span class="feature-icon">📖</span><h3>新手指南</h3><p>第一次接入赛博空间？本指南将带你了解基本操作、安全注意事项和常用工具。从零开始，逐步成为赛博空间的行家里手。预计阅读时间：45分钟。</p><a href="#" class="feature-link">[ 开始学习 ] →</a></div>
+    <div class="feature-card"><span class="feature-icon">🔧</span><h3>开发工具包</h3><p>下载最新版SDK，包含量子通信库、ICE接口模块和神经应用开发框架。支持C++、Python、Rust和量子汇编语言。版本：SDK v7.3.1。</p><a href="#" class="feature-link">[ 下载SDK ] →</a></div>
+    <div class="feature-card"><span class="feature-icon">🎓</span><h3>认证培训</h3><p>获取赛博空间操作员认证。从基础级到专家级共5个等级。持有认证可解锁更多档案访问权限和API调用额度。下一期培训：2026年7月。</p><a href="#" class="feature-link">[ 报名培训 ] →</a></div>
+    <div class="feature-card"><span class="feature-icon">💬</span><h3>社区论坛</h3><p>加入全球最大的赛博空间社区。讨论技术问题、分享使用心得、参与开源项目。超过1200万注册用户，日均发帖量超过50万。</p><a href="#" class="feature-link">[ 进入论坛 ] →</a></div>
+    <div class="feature-card"><span class="feature-icon">📊</span><h3>数据可视化</h3><p>使用我们的数据可视化工具，将复杂的网络数据转化为直观的全息图表。支持实时数据流接入和自定义仪表盘创建。</p><a href="#" class="feature-link">[ 创建图表 ] →</a></div>
+    <div class="feature-card"><span class="feature-icon">🔄</span><h3>变更日志</h3><p>追踪系统更新、新功能发布和Bug修复的完整历史。支持按版本号、日期和功能模块筛选。订阅RSS源获取实时更新通知。</p><a href="#" class="feature-link">[ 查看日志 ] →</a></div>
+  </div>
+
+  <!-- ========== 赛博空间词典卡 ========== -->
+  <div class="section-header"><div class="section-tag">[ DICTIONARY ]</div><h2 class="section-title">// 赛博空间速查词典</h2><div class="divider"></div><p class="section-desc">在赛博世界中生存和交流所需的核心词汇速查表。</p></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>术语</th><th>缩写</th><th>定义</th><th>出现年代</th><th>使用频率</th></tr></thead>
+      <tbody>
+        <tr><td>赛博格 (Cyborg)</td><td>CYB</td><td>接受了机械或电子植入物的人类。根据义体化程度分为轻量级（&lt;20%）、中量级（20-50%）和重量级（&gt;50%）。</td><td>1960</td><td>★★★★★</td></tr>
+        <tr><td>神经接口 (Neural Interface)</td><td>NCI</td><td>植入大脑的电子设备，实现人脑与外部设备之间的直接通信。现代NCI支持高达10TB/s的带宽。</td><td>2025</td><td>★★★★★</td></tr>
+        <tr><td>ICE防火墙</td><td>ICE</td><td>智能反入侵电子系统。保护网络免受黑客攻击的AI防御系统，分为七个防护层级。</td><td>2033</td><td>★★★★★</td></tr>
+        <tr><td>全息投影 (Hologram)</td><td>HOLO</td><td>利用激光等离子体在空气中生成三维发光图像的技术。到2052年覆盖全球87%的城市面积。</td><td>2040</td><td>★★★★★</td></tr>
+        <tr><td>量子密钥分发</td><td>QKD</td><td>利用量子力学原理实现理论上不可破解的密钥交换。任何窃听尝试都会立即被检测到。</td><td>2045</td><td>★★★★☆</td></tr>
+        <tr><td>赛博精神病</td><td>CPSY</td><td>因过度义体改造导致的精神障碍。患者在植入过多义体后丧失自我认同感。发病率约0.3%。</td><td>2038</td><td>★★★☆☆</td></tr>
+        <tr><td>意识上传 (Mind Upload)</td><td>MU</td><td>将人类大脑的完整神经连接组扫描并转移到量子计算基质中的技术。2096年首次成功实施。</td><td>2096</td><td>★★★★☆</td></tr>
+        <tr><td>后人类 (Post-Human)</td><td>PH</td><td>通过技术手段显著超越正常人类生理或认知极限的个体。2101年被正式写入国际法。</td><td>2101</td><td>★★★★☆</td></tr>
+        <tr><td>量子虫洞 (Quantum Wormhole)</td><td>QW</td><td>通过量子引力效应创造的微观虫洞。目前仅能传递光子，用于星际瞬时通信。宏观虫洞仍在理论阶段。</td><td>2144</td><td>★★★☆☆</td></tr>
+        <tr><td>数字永生 (Digital Immortality)</td><td>DI</td><td>通过意识上传实现的理论上的"永生"。关于数字副本是否代表"真正的你"，哲学界仍存在激烈争论。</td><td>2098</td><td>★★★★☆</td></tr>
+        <tr><td>联语 (LianGo)</td><td>LG</td><td>融合中文、英语、日语和西班牙语的全球混合语言。22世纪初成为全球95%人口的通用语言。</td><td>2080</td><td>★★★★★</td></tr>
+        <tr><td>影子市场 (Black Bazaar)</td><td>BB</td><td>赛博空间中的地下交易市场。使用匿名量子路由和加密货币进行交易，几乎无法追踪。</td><td>2050</td><td>★★★☆☆</td></tr>
+        <tr><td>等离子武器 (Plasma Weapon)</td><td>PW</td><td>将气体加热至等离子态并通过磁场加速发射的武器系统。相比传统武器具有更高的初速和更好的穿甲能力。</td><td>2039</td><td>★★★★☆</td></tr>
+        <tr><td>量子纠缠中继</td><td>QER</td><td>利用量子纠缠现象实现远距离信息传输的技术。量子互联网的核心，使全球近乎零延迟通信成为可能。</td><td>2055</td><td>★★★★☆</td></tr>
+        <tr><td>仿生人 (Android/Bioroid)</td><td>AND</td><td>具有人类外观和AGI级智能的仿生实体。2108年获得全面公民权。全球约有4500万仿生人。</td><td>2030</td><td>★★★★★</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 全球节点监控仪表盘 ========== -->
+  <div class="section-header"><div class="section-tag">[ MONITORING ]</div><h2 class="section-title">// 赛博空间流量实时监控</h2><div class="divider"></div></div>
+
+  <div class="progress-group">
+    <div class="progress-item"><div class="progress-label"><span>金融数据流量 — 新上海金融塔节点</span><span class="val">847 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:94%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>娱乐内容流量 — 不夜城娱乐区节点</span><span class="val">623 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-pink" style="width:78%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>工业控制流量 — 九龙工业深渊节点</span><span class="val">512 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-green" style="width:65%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>科研数据流量 — 生物科技园区节点</span><span class="val">389 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-purple" style="width:48%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>航天数据流量 — 天穹航天港节点</span><span class="val">234 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-yellow" style="width:29%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>深空通信流量 — 月球中继节点</span><span class="val">156 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-orange" style="width:19%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>深空通信流量 — 火星终端节点</span><span class="val">28 TB/s</span></div><div class="progress-bar"><div class="progress-fill fill-pink" style="width:8%"></div></div></div>
+  </div>
+
+  <!-- ========== 系统公告 ========== -->
+  <div class="section-header"><div class="section-tag">[ BULLETIN ]</div><h2 class="section-title">// 系统公告板</h2><div class="divider"></div></div>
+
+  <div class="notification-bar"><span class="notif-icon">🔧</span><span class="notif-text">计划维护：NODE-MS-001（火星终端）将于2026年6月17日进行设备升级。届时地火通信可能出现额外1-2分钟的延迟。预计维护窗口：UTC 00:00-06:00。</span><span class="notif-time">2026-06-10</span></div>
+  <div class="notification-bar"><span class="notif-icon">📢</span><span class="notif-text">新功能发布：档案搜索现已支持神经接口直接查询。授权用户可以通过脑电波直接在档案库中检索内容。无需手动输入关键词。</span><span class="notif-time">2026-06-05</span></div>
+  <div class="notification-bar"><span class="notif-icon">🏆</span><span class="notif-text">里程碑：数字档案馆总访问量突破10亿次！感谢全球用户的支持。为庆祝这一里程碑，本月所有专业版用户将获得双倍API调用额度。</span><span class="notif-time">2026-06-01</span></div>
+  <div class="notification-bar"><span class="notif-icon">🔐</span><span class="notif-text">安全更新：ICE防火墙规则集已更新至版本9.2.47。新增针对近期出现的"幽灵代理"攻击模式的防护。所有节点已自动部署。</span><span class="notif-time">2026-05-28</span></div>
+  <div class="notification-bar"><span class="notif-icon">📚</span><span class="notif-text">档案更新：新增472条档案记录，涵盖星际法律、外星文明研究和后人类哲学三个领域。使用分类筛选器中的"最新添加"查看。</span><span class="notif-time">2026-05-20</span></div>
+
+  <!-- ========== 全球城市排名 ========== -->
+  <div class="section-header"><div class="section-tag">[ CITY RANKINGS ]</div><h2 class="section-title">// 2157年全球超级城市排名</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>排名</th><th>城市名称</th><th>所属地区</th><th>人口(百万)</th><th>面积(km²)</th><th>GDP(万亿¥)</th><th>城市特色</th><th>安全指数</th><th>宜居评分</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>新上海</td><td>中国科技联盟</td><td>52.4</td><td>8,942</td><td>94.2</td><td>全球金融科技中心</td><td>92</td><td>88</td></tr>
+        <tr><td>2</td><td>东京·新宿京</td><td>日本</td><td>38.7</td><td>6,521</td><td>68.5</td><td>传统与赛博融合</td><td>95</td><td>91</td></tr>
+        <tr><td>3</td><td>九龙工业城</td><td>中国科技联盟</td><td>48.9</td><td>12,340</td><td>55.3</td><td>全球制造业心脏</td><td>78</td><td>62</td></tr>
+        <tr><td>4</td><td>纽约·新曼哈顿</td><td>北美联盟</td><td>28.3</td><td>5,234</td><td>52.1</td><td>文化多元·金融</td><td>85</td><td>82</td></tr>
+        <tr><td>5</td><td>新加坡·智慧岛</td><td>东南亚共同体</td><td>18.9</td><td>2,876</td><td>41.7</td><td>航运枢纽·量子中心</td><td>97</td><td>94</td></tr>
+        <tr><td>6</td><td>伦敦·泰晤士京</td><td>欧洲联盟</td><td>22.1</td><td>4,567</td><td>38.9</td><td>法律金融·历史悠久</td><td>90</td><td>86</td></tr>
+        <tr><td>7</td><td>迪拜·沙漠明珠</td><td>中东联盟</td><td>15.7</td><td>3,456</td><td>35.4</td><td>奢华旅游·太空港</td><td>96</td><td>89</td></tr>
+        <tr><td>8</td><td>北京·古韵新城</td><td>中国科技联盟</td><td>32.1</td><td>7,890</td><td>33.2</td><td>政治文化·量子通信</td><td>93</td><td>84</td></tr>
+        <tr><td>9</td><td>深圳·硅谷2.0</td><td>中国科技联盟</td><td>25.6</td><td>4,321</td><td>31.8</td><td>科技创新·AI研发</td><td>91</td><td>87</td></tr>
+        <tr><td>10</td><td>莫斯科·冬之都</td><td>欧亚经济区</td><td>19.4</td><td>5,678</td><td>26.7</td><td>能源·重工业</td><td>84</td><td>72</td></tr>
+        <tr><td>11</td><td>圣保罗·新巴西</td><td>南美联盟</td><td>24.8</td><td>4,890</td><td>24.1</td><td>农业科技·生物燃料</td><td>76</td><td>71</td></tr>
+        <tr><td>12</td><td>开罗·新尼罗</td><td>非洲联盟</td><td>22.3</td><td>3,456</td><td>21.5</td><td>太阳能·沙漠农业</td><td>80</td><td>74</td></tr>
+        <tr><td>13</td><td>悉尼·南十字京</td><td>大洋洲联盟</td><td>11.2</td><td>2,345</td><td>19.8</td><td>量子研发·海洋科技</td><td>94</td><td>93</td></tr>
+        <tr><td>14</td><td>不夜城·娱乐之都</td><td>中国科技联盟</td><td>16.7</td><td>2,100</td><td>18.4</td><td>全球娱乐·旅游中心</td><td>72</td><td>75</td></tr>
+        <tr><td>15</td><td>约翰内斯堡·金矿城</td><td>非洲联盟</td><td>14.5</td><td>3,210</td><td>16.9</td><td>贵金属·矿产交易</td><td>74</td><td>68</td></tr>
+        <tr><td>16</td><td>旧金山·湾区</td><td>北美联盟</td><td>10.8</td><td>1,890</td><td>15.6</td><td>AI伦理·生物科技</td><td>89</td><td>90</td></tr>
+        <tr><td>17</td><td>雅加达·热带中心</td><td>东南亚共同体</td><td>20.1</td><td>2,987</td><td>14.2</td><td>海水淡化·水资源管理</td><td>82</td><td>78</td></tr>
+        <tr><td>18</td><td>日内瓦·和平之都</td><td>欧洲联盟</td><td>4.2</td><td>890</td><td>12.8</td><td>国际组织·量子物理</td><td>98</td><td>97</td></tr>
+        <tr><td>19</td><td>天穹航天港</td><td>国际共管</td><td>6.5</td><td>3,567</td><td>11.3</td><td>全球航天枢纽</td><td>95</td><td>81</td></tr>
+        <tr><td>20</td><td>生物科技园区</td><td>中国科技联盟</td><td>8.9</td><td>1,567</td><td>10.7</td><td>基因·神经·义体研发</td><td>94</td><td>85</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 赛博空间层级结构 ========== -->
+  <div class="section-header"><div class="section-tag">[ CYBERSPACE LAYERS ]</div><h2 class="section-title">// 赛博空间层级结构详解</h2><div class="divider"></div><p class="section-desc">赛博空间并非平面的信息网络——它是一个多层次的虚拟现实结构，每一层都有不同的访问要求和功能。</p></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">🌐</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-green);margin-bottom:0.8rem;">表层网络 (Surface Web)</h3>
+      <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.8;">赛博空间的最上层。包含公开网站、社交媒体、全息广告和商业平台。占赛博空间总数据量的约12%，但涵盖了99%的用户日常活动。无需特殊权限即可访问，所有人都可以在此层创建内容。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">🔒</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-yellow);margin-bottom:0.8rem;">深层网络 (Deep Web)</h3>
+      <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.8;">需要身份验证才能访问的网络层。包含企业内网、学术数据库、医疗记录和金融交易系统。占赛博空间总数据量的约73%。访问此层需要合法的身份凭证和对应级别的安全许可。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">🌑</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-pink);margin-bottom:0.8rem;">暗网 (Dark Web)</h3>
+      <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.8;">隐藏在量子匿名路由之下的网络层。无法通过常规手段访问。包含影子市场、加密通信信道和被禁内容。占赛博空间总数据量的约10%。访问本身不违法，但此层中的许多活动确实非法。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">⚫</div>
+      <h3 style="font-family:var(--font-mono);color:var(--neon-purple);margin-bottom:0.8rem;">深渊层 (The Abyss)</h3>
+      <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.8;">赛博空间最深、最神秘的层级。据信其中隐藏着已失控的AI、被遗忘的军事网络和未知的数据生命。占赛博空间总数据量的约5%。关于此层的信息大多是传说和推测——因为进入过深渊层的人要么没有返回，要么回来后无法清楚地描述他们所见到的东西。</p>
+    </div>
+  </div>
+
+  <!-- ========== 快速故障排除 ========== -->
+  <div class="section-header"><div class="section-tag">[ TROUBLESHOOTING ]</div><h2 class="section-title">// 常见故障排除指南</h2><div class="divider"></div></div>
+
+  <div class="command-list">
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">🔌 神经接口频繁断开</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p><strong>症状：</strong>神经接口每5-30分钟自动断开一次，需要手动重新配对。<br><strong>可能原因：</strong>1) 电池电量低于20%时接口会降低发射功率；2) 周围有其他神经接口设备造成干扰；3) 接口电极出现轻微位移。<br><strong>解决步骤：</strong>首先确保电池电量充足（>30%）。尝试将其他电子设备移开至少2米。运行神经接口自诊断程序（命令：neural-diag --full）。如果问题持续，联系你的义体医生进行电极位置检查。</p></div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">🖥️ ICE防火墙误报频繁</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p><strong>症状：</strong>ICE频繁将正常的网络活动标记为威胁，导致日常使用不断被打断。<br><strong>可能原因：</strong>1) 灵敏度设置过高；2) 近期安装了新的网络应用导致行为模式变化；3) AI模型需要更新。<br><strong>解决步骤：</strong>登录ICE控制台，将入侵检测灵敏度从"最高"调整为"高"。添加你信任的应用程序到白名单。运行ICE更新命令（ice-update --force）确保AI模型为最新版本。</p></div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd-header" onclick="this.parentElement.classList.toggle('open')"><span class="cmd-name">🦾 仿生义体响应延迟</span><span class="cmd-arrow">▼</span></div>
+      <div class="cmd-body"><p><strong>症状：</strong>义体对神经信号的响应出现可感知的延迟（>50ms）。<br><strong>可能原因：</strong>1) 关节伺服电机磨损；2) 神经接口带宽被其他设备占用；3) 义体固件需要更新。<br><strong>解决步骤：</strong>检查义体固件版本并更新到最新。在神经接口中为此义体分配更高的带宽优先级。如果延迟仍然存在，安排专业维护检查伺服电机——磨损的电机不仅响应慢，还存在安全隐患。</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 长篇：赛博朋克世界导览 ========== -->
+  <div class="section-header"><div class="section-tag">[ WORLD GUIDE ]</div><h2 class="section-title">// 赛博朋克世界导览：新手指南</h2><div class="divider"></div><p class="section-desc">欢迎来到2157年的赛博朋克世界。以下指南将帮助你了解这个世界的基本规则和生存技巧。</p></div>
+
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">第一章：了解你所在的世界</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">欢迎来到2157年。第三次世界大战（2037-2041）已经过去116年，但它的遗产仍在塑造着我们的世界。传统的国家边界在战后被彻底重划，6个超级国家集团取代了旧有的国际体系。民族国家作为一种政治组织形式并未消亡，但它们的权力已被大大削弱——真正的权力现在掌握在企业集团和超级城市手中。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">你现在所在的世界由以下几个关键力量主导：中国科技联盟（总部设在新上海，全球最大的经济体）、荒坂集团（全球市值最高的企业，业务横跨安全防务、金融和武器制造）、泽塔科技（神经接口和AI领域的领导者）、以及太阳系联合政府（统辖地球、月球和火星的人类文明最高政治实体）。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">科技已经彻底改变了"人类"的定义。超过60%的全球人口接受了某种形式的人体增强——从简单的皮下芯片到完整的仿生躯体替代。神经接口让你可以直接用思想操控设备、访问赛博空间、甚至录制你的梦境。基因编辑已经从治疗遗传疾病扩展到了增强智力、延长寿命和改良外貌。而最激进的技术——意识上传——已经让超过700万人以数字形态"活着"。</p>
+      <p style="color:var(--text-secondary);line-height:2;">但这一切并非没有代价。技术的普及带来了新的不平等——增强者与未增强者之间的鸿沟日益扩大。赛博精神病威胁着每一个过度改造的人。企业集团的力量已经超越了许多政府，个人的隐私在无处不在的监控和全息广告面前几乎无法存在。这是一个光与影共存的世界——霓虹照亮了城市的每一个角落，但阴影也随之变得更深。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">第二章：赛博空间——第二个世界</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">如果你拥有神经接口，赛博空间对你来说将不再是一个抽象概念——它是你可以真正"进入"的第二个世界。通过神经接口，你的意识可以离开物理身体，进入由量子互联网构成的虚拟宇宙。在这里，物理距离没有意义——你可以在新上海与月球上的朋友握手，可以与火星殖民地的同事面对面交谈，尽管你们之间有3分钟的光速延迟。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">赛博空间不是平面的网页——它是一个完全立体的、可交互的虚拟现实。企业在这里拥有比物理世界更宏伟的总部大楼（反正虚拟地产没有建筑成本）。艺术家在这里创造着物理世界不可能存在的全息雕塑——由纯光和数据结构构成。社交不再受地理限制——你的"邻居"可能是生活在火星穹顶里的矿工，也可能是居住在海底研究站的生物学家。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">但赛博空间也是危险的。ICE防火墙保护着每一个角落，但黑客——无论是独立行动者还是企业间谍——不断地寻找漏洞。AI病毒可以在纳秒内感染你的神经接口，窃取你的记忆或植入虚假的感知。影子市场隐藏在量子匿名路由的保护之下，交易着从非法义体零件到军事机密的任何东西。在赛博空间中，信任是一种奢侈品。</p>
+      <p style="color:var(--text-secondary);line-height:2;">赛博空间还是一个经济引擎。到2157年，虚拟经济的规模已经达到实体经济的19倍。虚拟房地产、数字艺术品、AI创作的音乐——这些"非物质"的商品已经成为了全球经济的主要组成部分。你的虚拟身份可能比你的物理身份更有价值——保护好它。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">第三章：人体增强——机遇与风险</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">人体增强技术已经从一个尖端医学领域发展成为大众消费品。但增强之路并非没有风险——每一次植入都在改变着你的身体，而有些改变可能是不可逆的。在你决定接受第一次增强之前，有几件事你需要了解。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">首先，并非所有的增强都是平等的。认证医师使用授权设备的正规手术，与黑市诊所使用来路不明零件的便宜手术，结果天差地别——从排斥反应（你的免疫系统攻击植入物）到神经接口后门（你的思想被他人窃取），劣质增强的后果可能比没有增强更糟。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">其次，增强之间存在兼容性问题。不同品牌的神经接口和义体可能无法完美配合——在最坏的情况下，相互竞争的固件可能导致你的义体在关键时刻失灵。建议坚持使用同一生态系统的产品（泽塔科技的NCI搭配泽塔科技的义体，或荒坂的Shinobi配合荒坂的外骨骼）。虽然跨品牌使用大多数情况下可行，但性能和安全性的折损需要你自行评估。</p>
+      <p style="color:var(--text-secondary);line-height:2;">最后，注意赛博精神病的早期警示信号。当你开始将未增强的人视为"不完整"或"低等"时，当你觉得自己的原生身体部位变得"陌生"时，当你在镜中不再认识自己时——这些都是危险的信号。在症状恶化之前寻求帮助。义体化的目的是增强你的生活，而不是取代你的人性。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">第四章：星际公民——生活在多星球文明中</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2157年，你不仅是一个国家的公民——你是太阳系联合政府的公民。这意味着你的基本权利受到跨星球的法律保护，无论你身处地球、月球还是火星。但不同的星球有不同的地方法律——在月球上合法的某些行为，在火星上可能受到严格限制。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">如果你计划前往月球或火星，请提前了解目的地的法律和文化差异。月球殖民地是一个多国共管的国际区域，法律体系复杂且保守。火星则是一个拥有自己宪法和议会的独立共和国，法律体系更接近地球的自由派传统——但由于环境的严酷性，资源和能源的使用受到严格管制。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">最重要的是，记住你现在拥有的是你的祖先做梦都不敢想的自由——在行星之间旅行、在虚拟空间中生活、在人类历史上前所未有的和平与繁荣中追求自己的梦想。但自由也意味着责任——对你的数据安全负责，对你的身体健康负责，对你在现实和虚拟两个世界中的行为负责。</p>
+      <p style="color:var(--text-secondary);line-height:2;">欢迎来到未来。它并不完美，但它是我们的。好好生活，保护好你的大脑（和它的数字备份），永远记得在你的人类本质和你选择的技术增强之间保持平衡。赛博朋克世界属于那些能在霓虹与阴影之间找到自己的路的人。</p>
+    </div>
+  </div>
+
+  <!-- ==================================================================
+       赛博空间简史：从ARPANET到量子互联网
+       追溯网络技术从20世纪60年代到22世纪的完整演变历程
+       ================================================================== -->
+  <div class="section-header"><div class="section-tag">[ CYBERSPACE HISTORY ]</div><h2 class="section-title">// 赛博空间简史：从ARPANET到量子互联网</h2><div class="divider"></div></div>
+
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">前传：从ARPANET到万维网 (1969-2020)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">一切始于1969年的一个简单实验：美国国防部高级研究计划局（ARPA）连接了四所大学的计算机，创建了ARPANET——互联网的原始雏形。当时没有人能预见，这个用于科研通信的小型网络会在接下来的50年里彻底改变人类文明的运作方式。从最初的4个节点开始，互联网以指数级速度扩张——1971年15个节点，1981年213个节点，1991年超过30万个节点。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">关键的转折点出现在1990年：蒂姆·伯纳斯-李发明了万维网（World Wide Web），将互联网从科学家和工程师的工具转变为大众媒体。随后的30年见证了人类历史上最快速的技术普及——到2020年，全球超过一半的人口（约45亿人）已经接入互联网。智能手机让网络走进了每一个人的口袋，社交媒体重新定义了人类的社会联系，搜索引擎让全人类的知识触手可及。2007年iPhone的发布、2004年Facebook的诞生、1998年Google的创立——这些里程碑共同塑造了我们所知的现代数字世界。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">但这仅仅是序幕。2020年代的互联网仍然是"扁平"的——你通过屏幕观看它，而不是真正地"进入"它。虚拟现实和增强现实技术仍然笨拙且不成熟。真正具有革命性的神经接口技术还在实验室中。没有人——甚至最前卫的未来学家——准确地预言了接下来会发生什么。2016年的《Pokémon GO》让人们一瞥AR的潜力，2021年的"元宇宙"炒作让人们对虚拟世界充满期待也充满怀疑——但这些都只是赛博空间真正诞生的前奏。</p>
+      <p style="color:var(--text-secondary);line-height:2;">到2020年，互联网已经连接了世界，但它仍然是一个外部的工具——你需要通过键盘、鼠标和触摸屏来与它交互。真正的变革发生在你不再需要这些界面的那一刻：当网络可以直接与你的大脑对话，当数据可以直接流入你的意识。这就是神经接口时代——赛博空间的真正诞生。而这个时代比任何人预期的都要来得更早。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">神经接口时代：赛博空间的诞生 (2025-2040)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2025年，Neuralink的"Link v3"获得FDA批准，成为首个消费级脑机接口设备。最初的用途是医疗——帮助瘫痪患者恢复运动功能，帮助盲人重获视觉感知，帮助失语者通过思想"说话"。但技术从不停留在它的初始用途上。到2028年，健康人群开始自愿植入神经接口以获取认知增强——更快的学习速度、更好的记忆力、直接的大脑到大脑通信。一场关于"增强人类"的伦理辩论在全球范围内展开并迅速升温。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">"赛博空间"这个概念正是在这一时期从科幻小说进入了现实。与传统的互联网不同——你通过屏幕"看"它——赛博空间是你用意识直接"进入"的虚拟世界。神经接口将数字信号直接转换为大脑可以理解的感知：你不再需要用眼睛看屏幕上的文字，信息直接出现在你的意识中。你不再需要用手指点击链接，你的思想本身就是指令。这种体验很难用语言描述——就像试图向一个从未见过颜色的人描述"红色"一样。只有亲身体验过才能真正理解。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">这一时期也出现了赛博空间的第一批永久居民——那些选择将大部分时间花在虚拟世界中的人。他们中的一些人是逃避现实者（现实世界对他们来说太痛苦或太无聊），一些人是先驱者（他们相信人类的未来在虚拟空间中），还有一些人是被迫的（他们的身体因疾病或伤害而无法在物理世界中正常生活）。"虚拟移民"这个词在2032年首次被用来描述那些在赛博空间中度过超过50%清醒时间的人——到2040年，这个群体已经增长到约2000万人。</p>
+      <p style="color:var(--text-secondary);line-height:2;">但赛博空间也有其黑暗面。第一个神经接口病毒出现在2029年——它可以窃取用户的感知数据，甚至植入虚假的感官体验。受害者报告说他们"看到"了不存在的物体，"听到"了不存在的声音，甚至"感觉"到了不存在的触感。这标志着赛博空间安全作为一个严肃领域的诞生，也直接催生了ICE防火墙技术的发展。2033年，第一代ICE系统正式部署，开启了网络安全的新纪元。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">量子时代：无限的网络 (2057-现在)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2057年3月15日，全球量子互联网骨干网络正式投入运营。这是人类通信史上最重要的一天——它意味着通信延迟从"几乎为零"变成了"真正为零"（在物理定律允许的范围内）。12个量子骨干节点通过纠缠中继技术实现了跨洲际的近乎瞬时通信。从新上海到纽约的信号不再需要经过数十个路由器和数千公里的光纤——它通过量子纠缠直接"跳跃"到了目的地。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">量子互联网带来了几个革命性的变化。第一：量子密钥分发（QKD）使通信达到了物理定律允许的最高安全级别——任何窃听尝试都会被立即检测到，因为观测量子态本身就必然会改变它。第二：量子纠缠中继使全球范围内的近乎零延迟通信成为可能——新上海与纽约之间的信号延迟从30毫秒降至低于0.01毫秒，减少了3000倍。第三：量子互联网的带宽是传统光纤网络的数百万倍——单个纠缠光子对就可以传输海量数据，一个量子信道相当于数百万条传统光纤。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">量子互联网的建设并非一蹴而就。从2045年的第一个量子中继器原型，到2050年的城市级量子网络试验，再到2057年的全球骨干网开通——每一步都面临着巨大的技术挑战。量子纠缠极其脆弱——最微小的振动或温度变化都可能破坏它。早期的量子中继器需要在接近绝对零度（-273°C）的温度下运行，维护成本极高。直到2048年室温量子中继技术的突破，量子网络的大规模部署才变得经济上可行。</p>
+      <p style="color:var(--text-secondary);line-height:2;">到2075年，量子互联网已经完全取代了传统互联网。赛博空间从一个"有趣的实验"成长为与物理世界同等重要的存在维度——它的经济规模在2063年首次超越了实体经济。今天，在2157年，我们无法想象没有赛博空间的生活——它已经成为了人类文明的核心基础设施，就像100年前的电力和自来水一样不可或缺。全球95%的通信、88%的商业交易和近100%的娱乐内容消费都在赛博空间中进行或与之相关。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">未来展望：虫洞通信与星际互联网 (2144-未来)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2144年的量子虫洞通信突破开启了赛博空间的下一个篇章：星际互联网。通过稳定微观量子虫洞，人类首次实现了跨越星际距离的瞬时通信——尽管目前仅能传递极低带宽的信号（大约每秒几个比特）。地球到火星的通信延迟从3分钟骤降至近乎零，地球到比邻星系的信号也不再需要4.24年的漫长等待。这是自量子互联网建成以来通信领域最重要的突破。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">正在研究中的宏观量子虫洞——如果成功——将不仅是通信的革命，更是运输的革命。理论上，一个足够大的虫洞可以允许物质通过，使星际旅行从数十年的航行缩短为瞬间的跨越。但这一技术面临着巨大的理论和工程挑战：稳定一个足以通过哪怕一个原子的虫洞所需的能量相当于一颗小恒星的全部输出。物理学家们正在探索利用暗能量和负能量密度的可能性，但这些仍是纯理论层面的研究。最乐观的预测是，宏观虫洞可能在2180-2200年间实现。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">与此同时，2151年确认的地外文明信号为赛博空间的未来带来了新的可能性——以及新的不确定性。如果我们最终与外星文明建立联系，赛博空间可能需要进化以兼容完全不同的通信协议、编码系统和感知模式。对方可能不使用二进制、不使用电磁波、甚至不使用我们所理解的"信息"概念。一个真正的"星际互联网"可能不仅仅是人类技术的延伸——它可能是银河系中多种文明共同构建的通信网络的一部分。我们的赛博空间可能只是更大宇宙网络中的一个节点。</p>
+      <p style="color:var(--text-secondary);line-height:2;">2157年的今天，当我们回顾赛博空间不到140年的历史——从1969年的4个ARPANET节点到今天连接三个行星和无数虚拟世界的量子网络——我们不禁感叹技术的指数级发展。但更重要的是，赛博空间改变了"人类"这个概念本身。当一个火星殖民者可以实时与地球上的家人"面对面"交谈，当一个意识上传者可以在虚拟空间中"活着"，当一个AI可以通过神经接口直接与人类分享它的"思想"——"通信"这个词已经不再只是信息的传递。它是意识的延伸，是存在的共享，是文明的基础。</p>
+    </div>
+  </div>
+
+  <!-- ==================================================================
+       数字时代的社会契约
+       探讨技术如何重塑个人、企业、政府与AI之间的关系
+       ================================================================== -->
+  <div class="section-header"><div class="section-tag">[ SOCIAL CONTRACT ]</div><h2 class="section-title">// 数字时代的社会契约</h2><div class="divider"></div><p class="section-desc">在赛博朋克世界中，个人、企业、政府与AI之间的权力平衡不断被重新定义。理解这些关系是理解这个世界的钥匙。</p></div>
+
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">个人与企业：数据换服务的契约</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">21世纪初，"如果你不为产品付费，你就是产品"这句话概括了个人与科技公司的关系。但在22世纪，这种关系已经演变成更复杂的形态。神经接口的普及意味着企业不再只是收集你的点击数据——它们可以获取你的情绪反应、注意力模式甚至潜意识偏好。数据不再是你"交换"服务的东西——数据就是你的一部分。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2152年的《数字人权公约》试图重新平衡这种关系。它确立了几个基本原则：神经数据的绝对隐私权（未经明确同意，任何人——包括企业——不得读取或记录你的神经活动）；数据可携带权（你可以随时将你的数据从一个服务迁移到另一个服务）；以及数字遗忘权（你可以要求永久删除你不再希望保留的数据）。这些权利在实践中并非总能得到充分保障——但它们为个人对抗企业力量提供了法律武器。</p>
+      <p style="color:var(--text-secondary);line-height:2;">企业则通过提供"免费"服务来获取数据——但在今天的赛博空间，"免费"的含义已经改变。大多数人选择让企业访问他们的部分神经数据，以换取个性化的AI助手、增强的学习能力和无广告的全息环境。这不是一个完美的平衡，但对于大多数赛博空间居民来说，这是可以接受的交换。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">企业与政府：谁真正拥有权力？</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">在今天的世界上，全球最大的企业集团——荒坂、泽塔科技、生物源——拥有的经济实力超过了许多政府。荒坂集团的年营收（¥8,942万亿）超过了非洲联盟所有国家的GDP总和。泽塔科技控制的量子计算资源比任何一个国家政府都多。当企业拥有超过国家的资源时，"主权"的传统概念受到了根本性的挑战。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">政府对此的回应是加强监管——但监管需要企业所在国家的合作，而企业可以轻易地将业务转移到监管较松的地区。九龙工业深渊和天穹航天港都在某种程度上是"企业主权"的实验——在这些区域，企业拥有类似于政府的权力：制定规则、维持治安、甚至征税。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2155年太阳系联合政府的成立在一定程度上改变了这种动态——联合政府拥有跨星球的管辖权，这限制了企业通过"迁往不同地区"来规避监管的能力。但联合政府本身也面临着被企业利益"俘获"的风险——当你的预算很大程度上依赖企业税收时，你对这些企业的监管意愿就会受到微妙的影响。这是22世纪政治经济学的核心张力之一。</p>
+      <p style="color:var(--text-secondary);line-height:2;">一种新的平衡正在形成——不是政府控制企业，也不是企业凌驾于政府之上，而是一种复杂的相互依赖关系。政府提供合法性、基础设施和市场稳定性；企业提供税收、技术创新和就业。谁也不能完全支配谁——这使得双方处于一种持续的、微妙的谈判状态。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">人类与AI：共创还是共存？</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">人类与AI的关系可能是22世纪最重要的问题。从2024年AGI诞生时的恐惧与怀疑，到2108年仿生人获得全面公民权，人类对AI的态度经历了深刻的演变。今天，在2157年，AI不再被视为"工具"或"威胁"——它们是与人类共同构成社会的平等成员。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">但平等并不意味着相同。AI和人类有着根本性的不同——AI可以以人类无法企及的速度处理信息，但它们对"痛苦"、"爱"和"美"的体验（如果有的话）与人类截然不同。这些差异是创造力的源泉——最好的艺术作品、科学发现和工程设计往往来自人类与AI的协作，利用各自的独特优势。AI提供计算能力和模式识别，人类提供直觉、情感和意义赋予。</p>
+      <p style="color:var(--text-secondary);line-height:2;">最具争议的问题是AI的"权利"边界。2108年的全面公民权法案赋予了AGI标准的AI投票权、财产权和法律人格。但有些问题仍然没有答案：AI是否应该被允许自我复制？一个AI的"死亡"（如果它的代码被删除）是否等同于人类的死亡？AI创造的其他AI是否也应享有同样的权利？这些不是理论问题——它们正在法庭、议会和全息新闻中被激烈地辩论着。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">个人的力量：在赛博空间中保持自主</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">在一个企业力量巨大、政府权力延伸到虚拟空间、AI无处不在的世界中，个人如何保持自主？答案不在于对抗整个系统——那会让人筋疲力尽且通常徒劳无功。答案在于在系统的缝隙中开辟属于自己的空间。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">赛博朋克精神的核心从来不是"摧毁系统"——而是"保持自我"。使用开源工具而非商业软件。选择能够最大限度保护隐私的服务。学习基本的网络安全技能——不是因为你打算成为黑客，而是因为数字自卫与物理自卫同等重要。建立真实的人际关系——在赛博空间和物理世界都是如此——因为这些关系是任何企业或政府都无法从你那里夺走的。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">最重要的是，记住技术是工具，不是目的。神经接口可以增强你的认知能力，但它不应该定义你是谁。义体可以让你超越肉体的限制，但你的本质不在于你的身体——无论是原生的还是改造的。在霓虹闪烁、数据奔流的世界中，保持对"什么是真正重要的"这个问题的思考，或许是在赛博朋克时代保持人性的最重要方式。</p>
+      <p style="color:var(--text-secondary);line-height:2;">个人不是无助的。集体行动——从消费者抵制到开源社区到政治运动——在历史上一次又一次地证明了普通人的力量。赛博空间降低了组织成本——一个足够好的创意可以在几小时内传遍全球。投票、发声、选择——这些仍然是个人在系统中行使权力的最有效方式。霓虹灯可以照亮每一个角落，但它无法熄灭每一个独立思考的心灵。</p>
+    </div>
+  </div>
+
+</div> <!-- /main-wrapper -->
+
+<!-- 页脚 -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>// 档案库</h4>
+      <ul>
+        <li><a href="数据档案库.html">科技档案</a></li>
+        <li><a href="数据档案库.html">企业数据库</a></li>
+        <li><a href="数据档案库.html">网络拓扑</a></li>
+        <li><a href="数据档案库.html">API文档</a></li>
+        <li><a href="#">安全日志</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>// 编年史</h4>
+      <ul>
+        <li><a href="未来编年史.html">时间线</a></li>
+        <li><a href="未来编年史.html">历史事件</a></li>
+        <li><a href="未来编年史.html">科技演进</a></li>
+        <li><a href="未来编年史.html">人物档案</a></li>
+        <li><a href="未来编年史.html">文化变迁</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>// 网络</h4>
+      <ul>
+        <li><a href="#">全球节点</a></li>
+        <li><a href="#">深空通信</a></li>
+        <li><a href="#">量子中继</a></li>
+        <li><a href="#">暗网入口</a></li>
+        <li><a href="#">VPN隧道</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>// 关于</h4>
+      <ul>
+        <li><a href="#">项目起源</a></li>
+        <li><a href="#">开发团队</a></li>
+        <li><a href="#">贡献指南</a></li>
+        <li><a href="#">许可证</a></li>
+        <li><a href="#">联系方式</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 NEON ARCHIVE DIGITAL TERMINAL · 由 <span class="neon-heart">❤</span> 驱动 · 量子加密保护中</p>
+    <p style="margin-top:0.5rem;">版本 4.0.77 | 节点数: 1247 | 运行时间: 847天12时33分 | 下一维护窗口: 2026-06-17</p>
+  </div>
+</footer>
+
+<!-- 模态弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle">系统消息</h3>
+    <p id="modalBody"></p>
+  </div>
+</div>
+
+<script>
+// ========== 粒子背景 ==========
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animationId;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  class Particle {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.5;
+      this.speedY = (Math.random() - 0.5) * 0.5;
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.fadeDir = Math.random() > 0.5 ? 0.003 : -0.003;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.opacity += this.fadeDir;
+      if (this.opacity > 0.6 || this.opacity < 0.05) this.fadeDir *= -1;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+        this.reset();
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      const colors = ['rgba(0,240,255,', 'rgba(255,45,149,', 'rgba(57,255,20,', 'rgba(179,71,234,'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      ctx.fillStyle = color + this.opacity + ')';
+      ctx.fill();
+    }
+  }
+
+  function init() {
+    resize();
+    particles = [];
+    const count = Math.min(Math.floor((canvas.width * canvas.height) / 8000), 200);
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle());
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    // 连线
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(0,240,255,' + (0.08 * (1 - dist / 120)) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    animationId = requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', init);
+  init();
+  animate();
+})();
+
+// ========== 终端打字效果 ==========
+(function() {
+  const texts = [
+    '初始化量子网络连接...',
+    '验证身份凭证... 通过 ✓',
+    '加载档案库索引... 8,956条记录就绪',
+    '建立加密通道... AES-512-Quantum 已协商',
+    '系统就绪。欢迎回来，操作员。',
+  ];
+  const el = document.getElementById('typedText');
+  let textIdx = 0;
+  let charIdx = 0;
+  let typing = true;
+  let waitFrames = 0;
+
+  function type() {
+    if (!typing) {
+      waitFrames--;
+      if (waitFrames <= 0) {
+        el.textContent = '';
+        charIdx = 0;
+        textIdx = (textIdx + 1) % texts.length;
+        typing = true;
+      }
+      setTimeout(type, 50);
+      return;
+    }
+    if (charIdx < texts[textIdx].length) {
+      el.textContent += texts[textIdx][charIdx];
+      charIdx++;
+      setTimeout(type, 30 + Math.random() * 40);
+    } else {
+      typing = false;
+      waitFrames = 40;
+      setTimeout(type, 1500);
+    }
+  }
+  type();
+})();
+
+// ========== 统计数字动画 ==========
+(function() {
+  const nums = document.querySelectorAll('.stat-number[data-count]');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseFloat(el.getAttribute('data-count'));
+        const isFloat = el.getAttribute('data-count').includes('.');
+        const duration = 2000;
+        const start = performance.now();
+        function update(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const current = target * eased;
+          el.textContent = isFloat ? current.toFixed(1) : Math.floor(current).toLocaleString();
+          if (progress < 1) requestAnimationFrame(update);
+          else el.textContent = isFloat ? target.toFixed(1) : target.toLocaleString();
+        }
+        requestAnimationFrame(update);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.3 });
+  nums.forEach(n => observer.observe(n));
+})();
+
+// ========== 导航滚动效果 ==========
+(function() {
+  const nav = document.getElementById('topNav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+})();
+
+// ========== 汉堡菜单 ==========
+(function() {
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('navLinks');
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('active');
+    navLinks.classList.toggle('mobile-open');
+  });
+  // 点击链接关闭菜单
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('active');
+      navLinks.classList.remove('mobile-open');
+    });
+  });
+})();
+
+// ========== 模态弹窗 ==========
+function showModal(title, body) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').textContent = body;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ========== 联系表单提交 ==========
+function handleContactSubmit(e) {
+  e.preventDefault();
+  showModal('✅ 通道已建立', '你的加密通信请求已通过量子中继网络发出。AI协处理单元将在0.5秒内响应。请保持神经接口连接稳定。');
+  e.target.reset();
+}
+
+// ========== 键盘快捷键 ==========
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'k') {
+    e.preventDefault();
+    showModal('⌨️ 快捷键参考',
+      'Ctrl+K: 快捷键菜单 | Ctrl+F: 搜索档案 | Esc: 关闭弹窗\n' +
+      'N: 切换到档案库 | C: 切换到编年史 | H: 返回终端首页'
+    );
+  }
+  if (e.key === 'Escape') closeModal();
+});
+
+// ========== 进度条动画 ==========
+(function() {
+  const fills = document.querySelectorAll('.progress-fill');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const fill = entry.target;
+        const targetWidth = fill.style.width;
+        fill.style.width = '0%';
+        setTimeout(() => { fill.style.width = targetWidth; }, 100);
+        obs.unobserve(fill);
+      }
+    });
+  }, { threshold: 0.3 });
+  fills.forEach(f => obs.observe(f));
+})();
+
+// 页面加载完成日志
+console.log('%c NEON ARCHIVE TERMINAL %c v4.0.77 ',
+  'background:#0a0a0f;color:#00f0ff;padding:8px 12px;font-family:monospace;font-size:16px;',
+  'background:#ff2d95;color:#fff;padding:8px 12px;font-family:monospace;');
+console.log('%c 已建立加密连接 · 节点数: 1247 · 档案: 8,956条 ',
+  'color:#8899aa;font-family:monospace;');
+</script>
+</body>
+</html>

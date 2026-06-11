@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星际探索 · SPACE EXPLORATION</title>
+<style>
+/* ==========================================================================
+ * SPACE EXPLORATION LOG — 主样式表
+ * 星际探索日志界面
+ * 版本: 1.5.0
+ * ==========================================================================
+ * 目录: 1.CSS变量 2.全局重置 3.扫描线 4.滚动条 5.粒子背景
+ * 6.导航栏 7.主区域 8.页面英雄 9.区块标题 10.统计面板 11.数据表
+ * 12.星球卡片 13.手风琴 14.通知横幅 15.进度条 16.按钮 17.表单
+ * 18.页脚 19.模态弹窗 20.响应式
+ * ========================================================================== */
+:root {
+  --neon-cyan: #00f0ff; --neon-pink: #ff2d95; --neon-green: #39ff14;
+  --neon-yellow: #ffe600; --neon-purple: #b347ea; --neon-orange: #ff6b35;
+  --neon-blue: #4488ff; --bg-deep: #0a0a0f; --bg-panel: #0d0d1a;
+  --bg-card: #111122; --bg-elevated: #161630; --bg-input: #0f0f1a;
+  --border-glow: rgba(68,136,255,0.3); --border-subtle: rgba(255,255,255,0.08);
+  --text-primary: #e0e0f0; --text-secondary: #8899aa; --text-dim: #556677;
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 16px;
+  --font-mono: 'Courier New','Consolas','Monaco',monospace;
+  --font-sans: 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  --transition-fast: 0.15s ease; --transition-normal: 0.3s ease;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden;line-height:1.6;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:var(--bg-deep);}
+::-webkit-scrollbar-thumb{background:var(--neon-blue);border-radius:4px;box-shadow:0 0 10px rgba(68,136,255,0.5);}
+
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+/* ========================================
+   5. 顶部导航栏 — 固定定位·毛玻璃效果·滚动阴影
+   ======================================== */
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-glow);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;transition:var(--transition-normal);}
+.top-nav.scrolled{box-shadow:0 0 30px rgba(68,136,255,0.15);}
+.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.nav-brand .logo-icon{width:40px;height:40px;border:2px solid var(--neon-blue);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:1.2rem;color:var(--neon-blue);box-shadow:0 0 10px rgba(68,136,255,0.4);animation:logoPulse 2s infinite;}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 10px rgba(68,136,255,0.4);}50%{box-shadow:0 0 25px rgba(68,136,255,0.8);}}
+.nav-brand .brand-text{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--neon-blue);letter-spacing:2px;text-shadow:0 0 10px rgba(68,136,255,0.5);}
+.nav-links{display:flex;list-style:none;gap:2rem;align-items:center;}
+.nav-links a{color:var(--text-secondary);text-decoration:none;font-size:0.95rem;font-family:var(--font-mono);letter-spacing:1px;padding:0.5rem 0;position:relative;transition:var(--transition-fast);}
+.nav-links a::after{content:'';position:absolute;bottom:0;left:0;width:0;height:2px;background:var(--neon-blue);box-shadow:0 0 8px var(--neon-blue);transition:var(--transition-normal);}
+.nav-links a:hover{color:var(--neon-blue);text-shadow:0 0 8px rgba(68,136,255,0.5);}
+.nav-links a:hover::after{width:100%;}
+.nav-links a.active-link{color:var(--neon-blue);}
+.nav-links a.active-link::after{width:100%;}
+.nav-cta{padding:0.5rem 1.2rem;border:1px solid var(--neon-pink);border-radius:var(--radius-sm);color:var(--neon-pink)!important;}
+.nav-cta:hover{background:rgba(255,45,149,0.15);box-shadow:0 0 20px rgba(255,45,149,0.3);}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none;z-index:1001;}
+.hamburger span{width:28px;height:2px;background:var(--neon-blue);transition:var(--transition-normal);box-shadow:0 0 5px rgba(68,136,255,0.5);}
+.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
+.hamburger.active span:nth-child(2){opacity:0;}
+.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
+
+.main-wrapper{position:relative;z-index:1;padding-top:64px;}
+
+/* ========================================
+   8. 页面英雄区 — 居中·全宽·底部霓虹边框
+   ======================================== */
+.page-hero{padding:4rem 2rem 2rem;text-align:center;border-bottom:1px solid var(--border-subtle);position:relative;}
+.page-hero::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:200px;height:1px;background:var(--neon-blue);box-shadow:0 0 15px rgba(68,136,255,0.6);}
+.page-hero .hero-icon{font-size:4rem;display:block;margin-bottom:1rem;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+.page-hero h1{font-family:var(--font-mono);font-size:clamp(2rem,5vw,3.5rem);color:var(--neon-blue);letter-spacing:3px;text-shadow:0 0 20px rgba(68,136,255,0.5);}
+.page-hero .subtitle{font-family:var(--font-mono);color:var(--text-secondary);font-size:1rem;letter-spacing:4px;margin-top:0.5rem;}
+
+/* ========================================
+   9. 区块标题 — 等宽字体·霓虹色·分隔线
+   ======================================== */
+.section-header{text-align:center;padding:3rem 2rem 1.5rem;max-width:800px;margin:0 auto;}
+.section-tag{font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-yellow);letter-spacing:4px;text-transform:uppercase;margin-bottom:0.5rem;}
+.section-title{font-family:var(--font-mono);font-size:2rem;color:var(--neon-blue);letter-spacing:2px;text-shadow:0 0 10px rgba(68,136,255,0.3);}
+.divider{width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--neon-blue),transparent);margin:1rem auto;}
+.section-desc{color:var(--text-secondary);font-size:0.95rem;line-height:1.8;}
+
+/* ========================================
+  10. 统计面板 — 网格布局·悬停边框发光
+   ======================================== */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;}
+.stat-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:1.5rem;text-align:center;transition:var(--transition-normal);}
+.stat-item:hover{border-color:var(--neon-blue);box-shadow:0 0 20px rgba(68,136,255,0.1);}
+.stat-item .s-icon{font-size:2.5rem;display:block;margin-bottom:0.5rem;}
+.stat-item .s-value{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--neon-blue);text-shadow:0 0 10px rgba(68,136,255,0.3);}
+.stat-item .s-label{font-size:0.8rem;color:var(--text-secondary);margin-top:0.3rem;letter-spacing:1px;}
+
+/* ========================================
+  11. 数据表格 — 等宽字体·悬停行高亮·斑马纹
+   ======================================== */
+.data-table-wrap{padding:2rem;max-width:1300px;margin:0 auto;overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:0.85rem;}
+.data-table thead th{background:var(--bg-elevated);color:var(--neon-blue);padding:1rem;text-align:left;border-bottom:2px solid var(--border-glow);letter-spacing:1px;font-weight:600;text-transform:uppercase;white-space:nowrap;}
+.data-table tbody td{padding:0.9rem 1rem;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);}
+.data-table tbody tr{transition:var(--transition-fast);}
+.data-table tbody tr:hover{background:rgba(68,136,255,0.03);}
+.data-table tbody tr:hover td{color:var(--text-primary);}
+.badge{display:inline-block;padding:0.2rem 0.7rem;border-radius:100px;font-size:0.7rem;font-weight:600;white-space:nowrap;}
+.badge-green{background:rgba(57,255,20,0.12);color:var(--neon-green);border:1px solid var(--neon-green);}
+.badge-pink{background:rgba(255,45,149,0.1);color:var(--neon-pink);border:1px solid var(--neon-pink);}
+.badge-yellow{background:rgba(255,230,0,0.1);color:var(--neon-yellow);border:1px solid var(--neon-yellow);}
+.badge-cyan{background:rgba(0,240,255,0.1);color:var(--neon-cyan);border:1px solid var(--neon-cyan);}
+.badge-blue{background:rgba(68,136,255,0.1);color:var(--neon-blue);border:1px solid var(--neon-blue);}
+
+/* 卡片 */
+.planet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;padding:2rem;max-width:1300px;margin:0 auto;}
+.planet-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;transition:var(--transition-normal);}
+.planet-card:hover{border-color:var(--neon-blue);box-shadow:0 0 25px rgba(68,136,255,0.12);transform:translateY(-4px);}
+.planet-card-image{height:160px;display:flex;align-items:center;justify-content:center;font-size:4rem;}
+.pbg-1{background:linear-gradient(135deg,#001a33,#003366,#004d99);}
+.pbg-2{background:linear-gradient(135deg,#1a0033,#330066,#4d0099);}
+.pbg-3{background:linear-gradient(135deg,#331a00,#663300,#994d00);}
+.pbg-4{background:linear-gradient(135deg,#00331a,#006633,#00994d);}
+.pbg-5{background:linear-gradient(135deg,#33001a,#660033,#99004d);}
+.pbg-6{background:linear-gradient(135deg,#1a1a33,#333366,#4d4d99);}
+.pbg-7{background:linear-gradient(135deg,#0a0a1a,#1a1a33,#26264d);}
+.pbg-8{background:linear-gradient(135deg,#1a0a0a,#331a1a,#4d2626);}
+.planet-card-body{padding:1.5rem;}
+.planet-card-body h3{font-family:var(--font-mono);font-size:1.1rem;color:var(--neon-blue);margin-bottom:0.5rem;}
+.planet-card-body p{color:var(--text-secondary);font-size:0.88rem;line-height:1.8;}
+.planet-specs{display:flex;flex-wrap:wrap;gap:0.8rem;margin-top:1rem;font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);}
+.planet-specs span{display:flex;align-items:center;gap:4px;}
+
+/* 手风琴 */
+.accordion-section{padding:2rem;max-width:900px;margin:0 auto;}
+.acc-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);margin-bottom:0.8rem;overflow:hidden;transition:var(--transition-normal);}
+.acc-item:hover{border-color:var(--neon-blue);}
+.acc-header{padding:1.2rem 1.5rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:0.95rem;color:var(--text-primary);letter-spacing:1px;}
+.acc-arrow{color:var(--neon-blue);transition:var(--transition-normal);font-size:0.8rem;}
+.acc-item.open .acc-arrow{transform:rotate(180deg);}
+.acc-body{padding:0 1.5rem 1.2rem;color:var(--text-secondary);font-size:0.88rem;line-height:1.9;display:none;}
+.acc-item.open .acc-body{display:block;}
+
+/* ========================================
+  14. 通知横幅 — 多种类型·左侧图标·等宽字体
+   ======================================== */
+.alert-banner{padding:1rem 2rem;margin:1.5rem auto;max-width:1000px;border-radius:var(--radius-md);display:flex;align-items:center;gap:1rem;font-family:var(--font-mono);font-size:0.85rem;}
+.alert-info{background:rgba(68,136,255,0.08);border:1px solid rgba(68,136,255,0.3);color:var(--neon-blue);}
+.alert-warn{background:rgba(255,230,0,0.08);border:1px solid rgba(255,230,0,0.3);color:var(--neon-yellow);}
+
+/* ========================================
+  17. 进度条组 — 渐变填充·闪光动画·百分比标签
+   ======================================== */
+.progress-group{padding:2rem;max-width:800px;margin:0 auto;}
+.progress-item{margin-bottom:1.2rem;}
+.progress-label{display:flex;justify-content:space-between;margin-bottom:0.4rem;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-secondary);letter-spacing:1px;}
+.progress-label .val{color:var(--neon-blue);}
+.progress-bar{height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width 1.5s ease;position:relative;}
+.progress-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.fill-blue{background:linear-gradient(90deg,var(--neon-blue),#3366cc);box-shadow:0 0 10px rgba(68,136,255,0.4);}
+.fill-cyan{background:linear-gradient(90deg,var(--neon-cyan),#00b8cc);box-shadow:0 0 10px rgba(0,240,255,0.4);}
+.fill-green{background:linear-gradient(90deg,var(--neon-green),#2cc010);box-shadow:0 0 10px rgba(57,255,20,0.4);}
+
+/* ========================================
+  15. 按钮系统 — 多种配色·悬停提升·过渡动画
+   ======================================== */
+.btn{padding:0.8rem 2rem;font-family:var(--font-mono);font-size:0.9rem;letter-spacing:2px;text-decoration:none;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition-normal);display:inline-flex;align-items:center;gap:8px;background:transparent;}
+.btn-primary{border:2px solid var(--neon-blue);color:var(--neon-blue);box-shadow:0 0 15px rgba(68,136,255,0.2);}
+.btn-primary:hover{background:rgba(68,136,255,0.1);box-shadow:0 0 30px rgba(68,136,255,0.4);transform:translateY(-2px);}
+
+/* ========================================
+  16. 表单控件 — 深色输入框·聚焦发光·响应式
+   ======================================== */
+.form-section{padding:2rem;max-width:700px;margin:0 auto;}
+.form-group{margin-bottom:1.5rem;}
+.form-group label{display:block;font-family:var(--font-mono);font-size:0.8rem;color:var(--neon-blue);letter-spacing:2px;margin-bottom:0.5rem;text-transform:uppercase;}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:0.8rem 1rem;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:0.9rem;transition:var(--transition-normal);outline:none;}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--neon-blue);box-shadow:0 0 15px rgba(68,136,255,0.15);}
+.form-group textarea{min-height:120px;resize:vertical;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.form-check{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.5rem;}
+.form-check input[type="checkbox"]{width:18px;height:18px;accent-color:var(--neon-blue);}
+
+/* ========================================
+  18. 页脚 — 深色面板·多列网格·版权信息
+   ======================================== */
+.site-footer{background:var(--bg-panel);border-top:1px solid var(--border-glow);padding:3rem 2rem 1.5rem;margin-top:4rem;}
+.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;max-width:1200px;margin:0 auto;}
+.footer-col h4{font-family:var(--font-mono);color:var(--neon-blue);font-size:0.9rem;letter-spacing:2px;margin-bottom:1rem;}
+.footer-col ul{list-style:none;}
+.footer-col ul li{margin-bottom:0.5rem;}
+.footer-col ul li a{color:var(--text-secondary);text-decoration:none;font-size:0.85rem;transition:var(--transition-fast);}
+.footer-col ul li a:hover{color:var(--neon-blue);}
+.footer-bottom{max-width:1200px;margin:2rem auto 0;padding-top:1.5rem;border-top:1px solid var(--border-subtle);text-align:center;color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem;letter-spacing:1px;}
+
+/* ========================================
+  19. 模态弹窗 — 固定定位·半透明背景·入场动画
+   ======================================== */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:5000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:var(--transition-normal);}
+.modal-overlay.active{opacity:1;pointer-events:all;}
+.modal-box{background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius-lg);padding:2.5rem;max-width:600px;width:90%;position:relative;box-shadow:0 0 60px rgba(68,136,255,0.15);}
+.modal-close{position:absolute;top:1rem;right:1.5rem;background:none;border:none;color:var(--text-secondary);font-size:1.8rem;cursor:pointer;transition:var(--transition-fast);}
+.modal-close:hover{color:var(--neon-pink);}
+.modal-box h3{font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;font-size:1.3rem;}
+.modal-box .modal-content{color:var(--text-secondary);font-size:0.9rem;line-height:1.9;}
+
+@media(max-width:768px){
+  .nav-links{position:fixed;top:0;right:-100%;width:70%;height:100vh;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);flex-direction:column;padding:6rem 2rem;transition:var(--transition-normal);border-left:1px solid var(--border-glow);}
+  .nav-links.mobile-open{right:0;}
+  .hamburger{display:flex;}
+  .planet-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr;}
+}
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<!-- 导航 -->
+<nav class="top-nav" id="topNav">
+  <a href="霓虹终端.html" class="nav-brand">
+    <div class="logo-icon">🌌</div>
+    <span class="brand-text">SPACE·EXPLORE</span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="霓虹终端.html">霓虹终端</a></li>
+    <li><a href="数据档案库.html">数据档案库</a></li>
+    <li><a href="未来编年史.html">未来编年史</a></li>
+    <li><a href="赛博装备录.html">装备手册</a></li>
+    <li><a href="#" class="active-link">星际探索</a></li>
+    <li><a href="#mission-form" class="nav-cta">报名任务</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="菜单"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="main-wrapper">
+
+  <!-- 英雄 -->
+  <div class="page-hero">
+    <span class="hero-icon">🌌</span>
+    <h1>SPACE EXPLORATION LOG</h1>
+    <p class="subtitle">&gt;&gt; 星际探索日志 · 从月球到比邻星 &lt;&lt;</p>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats-row">
+    <div class="stat-item"><span class="s-icon">🌍</span><div class="s-value">3</div><div class="s-label">已殖民星球</div></div>
+    <div class="stat-item"><span class="s-icon">🛰️</span><div class="s-value">87</div><div class="s-label">活跃探测器</div></div>
+    <div class="stat-item"><span class="s-icon">🚀</span><div class="s-value">12</div><div class="s-label">星际飞船</div></div>
+    <div class="stat-item"><span class="s-icon">👨‍🚀</span><div class="s-value">3.2M</div><div class="s-label">太空人口</div></div>
+    <div class="stat-item"><span class="s-icon">⭐</span><div class="s-value">1</div><div class="s-label">已访问恒星系</div></div>
+  </div>
+
+  <!-- 通知 -->
+  <div class="alert-banner alert-info">🌌 探索者号已成功抵达比邻星系！首批高分辨率图像正通过量子虫洞通信传回地球。数据分析预计需要数月时间。</div>
+  <div class="alert-banner alert-warn">⚠️ 火星沙尘暴季节（5-9月）期间，祝融站将实施室外活动限制。所有火星旅行计划请预留额外时间。</div>
+
+  <!-- 太阳系天体目录 -->
+  <div class="section-header"><div class="section-tag">[ SOLAR SYSTEM ]</div><h2 class="section-title">// 太阳系天体探索目录</h2><div class="divider"></div></div>
+
+  <div class="planet-grid">
+    <div class="planet-card">
+      <div class="planet-card-image pbg-1">🌍</div>
+      <div class="planet-card-body">
+        <h3>地球 · 人类摇篮</h3>
+        <p>太阳系中唯一已知拥有丰富生命的天体。101亿人口分布在六大超级国家集团中。全球量子互联网的骨干节点所在地。尽管太空殖民已开始，地球仍是人类文明无可争议的政治经济核心。</p>
+        <div class="planet-specs"><span>🪐 类型: 岩石行星</span><span>👥 人口: 101亿</span><span>🌡️ 均温: 16°C</span><span>📡 通信: 即时</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-2">🌙</div>
+      <div class="planet-card-body">
+        <h3>月球 · 人类第一个地外家园</h3>
+        <p>2074年建立永久殖民地"嫦娥城"，现有人口53万。月球背面的深空通信阵列是星际通信的中继枢纽。月球轨道上的工业园制造着地球上无法生产的高精度量子元件。</p>
+        <div class="planet-specs"><span>🪐 类型: 天然卫星</span><span>👥 人口: 53万</span><span>🌡️ 均温: -20°C</span><span>📡 通信: 0.8秒</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-3">🔴</div>
+      <div class="planet-card-body">
+        <h3>火星 · 独立的红色星球</h3>
+        <p>2079年建立"祝融站"，现有人口210万，2135年宣布独立。拥有自己的宪法、议会和司法系统。火星经济的支柱是稀有矿产开采和科研旅游。正在努力进行大气改造工程。</p>
+        <div class="planet-specs"><span>🪐 类型: 岩石行星</span><span>👥 人口: 210万</span><span>🌡️ 均温: -55°C</span><span>📡 通信: 3分钟</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-4">🪐</div>
+      <div class="planet-card-body">
+        <h3>木星系统 · 气态巨行星</h3>
+        <p>木星本身无法登陆，但其79颗卫星中的欧罗巴（Europa）是太阳系内最可能存在地外生命的地点之一。2098年欧罗巴探测器成功着陆，在冰壳下探测到了液态水海洋中的有机分子。</p>
+        <div class="planet-specs"><span>🪐 类型: 气态巨行星</span><span>🌙 卫星: 79颗</span><span>🔬 探测: 欧罗巴着陆</span><span>📡 通信: 35分钟</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-5">💫</div>
+      <div class="planet-card-body">
+        <h3>小行星带 · 资源宝库</h3>
+        <p>位于火星和木星之间的数百万颗小行星含有丰富的铂族金属、稀土元素和水冰。2084年首次商业采矿成功返回地球。目前有5家企业在带内运营着12个自动采矿站。</p>
+        <div class="planet-specs"><span>🪐 类型: 小行星带</span><span>⛏️ 采矿站: 12</span><span>💰 年产值: ¥18万亿</span><span>📡 通信: 8-20分钟</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-6">🪐</div>
+      <div class="planet-card-body">
+        <h3>土星系统 · 环之奇迹</h3>
+        <p>土星壮丽的光环使其成为太空旅游的首选目的地。2105年在土星环附近建立了常驻研究站——这是人类距离地球最远的永久设施。土卫六（Titan）的甲烷海洋是未来资源开发的重点目标。</p>
+        <div class="planet-specs"><span>🪐 类型: 气态巨行星</span><span>🛰️ 研究站: 1</span><span>🔬 焦点: 土卫六</span><span>📡 通信: 75分钟</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-7">🌊</div>
+      <div class="planet-card-body">
+        <h3>海王星 · 太阳系边疆</h3>
+        <p>太阳系最后一颗行星。2112年核聚变推进的探测器抵达海王星轨道，完成了人类对太阳系所有行星的近距离探测。海王星的卫星海卫一（Triton）是太阳系中最寒冷的天体之一。</p>
+        <div class="planet-specs"><span>🪐 类型: 冰巨行星</span><span>🔬 探测: 2112年</span><span>🌡️ 温度: -218°C</span><span>📡 通信: 4小时</span></div>
+      </div>
+    </div>
+    <div class="planet-card">
+      <div class="planet-card-image pbg-8">⭐</div>
+      <div class="planet-card-body">
+        <h3>比邻星系 · 人类新边疆</h3>
+        <p>距地球4.24光年，人类首个星际目的地。2157年3月探索者号抵达比邻星b。该行星位于宜居带内，已探测到液态水和有机分子。正在评估建立人类首个系外殖民地的可行性。</p>
+        <div class="planet-specs"><span>🪐 距离: 4.24光年</span><span>🚀 航程: 34年</span><span>🔬 状态: 探测中</span><span>📡 通信: 4.24年</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 地外任务详细记录 -->
+  <div class="section-header"><div class="section-tag">[ MISSION LOG ]</div><h2 class="section-title">// 重大太空任务详细记录</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>任务代号</th><th>发射日期</th><th>目的</th><th>目标天体</th><th>航行时间</th><th>任务状态</th><th>关键发现</th><th>执行机构</th></tr></thead>
+      <tbody>
+        <tr><td>嫦娥-9</td><td>2072-03-15</td><td>载人登陆·永久基地建设</td><td>月球</td><td>4小时</td><td><span class="badge badge-green">已完成</span></td><td>嫦娥城建立</td><td>中国航天局</td></tr>
+        <tr><td>祝融-1</td><td>2078-07-12</td><td>载人登陆·前哨站建立</td><td>火星</td><td>7个月</td><td><span class="badge badge-green">已完成</span></td><td>祝融站建立</td><td>中国科技联盟</td></tr>
+        <tr><td>采矿者-1</td><td>2083-02-08</td><td>首次商业小行星采矿</td><td>小行星带</td><td>18个月往返</td><td><span class="badge badge-green">已完成</span></td><td>500吨铂族金属运回</td><td>凤凰重工</td></tr>
+        <tr><td>欧罗巴潜航者</td><td>2096-11-22</td><td>冰下海洋探测</td><td>木卫二·欧罗巴</td><td>5年</td><td><span class="badge badge-green">已完成</span></td><td>液态水·有机分子</td><td>太阳系科学联盟</td></tr>
+        <tr><td>土星环站-1</td><td>2103-06-01</td><td>常驻研究站建设</td><td>土星环</td><td>8年</td><td><span class="badge badge-green">已完成</span></td><td>环物质采样·土卫六观测</td><td>深空联合体</td></tr>
+        <tr><td>海王星之眼</td><td>2104-05-18</td><td>飞越探测</td><td>海王星</td><td>8年</td><td><span class="badge badge-green">已完成</span></td><td>太阳系最后一行星探测</td><td>深空联合体</td></tr>
+        <tr><td>探索者号</td><td>2123-01-15</td><td>星际殖民</td><td>比邻星系</td><td>34年</td><td><span class="badge badge-cyan">已抵达</span></td><td>系外行星·液态水·有机分子</td><td>太阳系联合体</td></tr>
+        <tr><td>虫洞通信-1</td><td>2144-04-03</td><td>量子虫洞通信实验</td><td>地月系</td><td>N/A</td><td><span class="badge badge-green">已完成</span></td><td>首次星际瞬时通信</td><td>虫洞通信公司</td></tr>
+        <tr><td>开拓者号</td><td>2150-06-15</td><td>第二艘星际飞船</td><td>天狼星系</td><td>预计38年</td><td><span class="badge badge-yellow">航行中</span></td><td>-</td><td>太阳系联合体</td></tr>
+        <tr><td>SETI-应答</td><td>2155-10-10</td><td>地外文明回应信号</td><td>猎户座方向</td><td>N/A</td><td><span class="badge badge-cyan">已发送</span></td><td>人类首次星际通信尝试</td><td>太阳系联合政府</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 殖民地建设进度 -->
+  <div class="section-header"><div class="section-tag">[ COLONY STATUS ]</div><h2 class="section-title">// 地外殖民地建设进度</h2><div class="divider"></div></div>
+
+  <div class="progress-group">
+    <div class="progress-item"><div class="progress-label"><span>月球·嫦娥城 — 自给自足率</span><span class="val">95%</span></div><div class="progress-bar"><div class="progress-fill fill-blue" style="width:95%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>火星·祝融城 — 自给自足率</span><span class="val">72%</span></div><div class="progress-bar"><div class="progress-fill fill-blue" style="width:72%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>火星·第二殖民地（规划中）</span><span class="val">15%</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:15%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>比邻星b·前哨站（评估中）</span><span class="val">5%</span></div><div class="progress-bar"><div class="progress-fill fill-green" style="width:5%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>月球·第二穹顶扩建</span><span class="val">60%</span></div><div class="progress-bar"><div class="progress-fill fill-blue" style="width:60%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>火星·大气改造工程（世纪项目）</span><span class="val">3%</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:3%"></div></div></div>
+  </div>
+
+  <!-- 星际旅行方式 -->
+  <div class="section-header"><div class="section-tag">[ TRAVEL METHODS ]</div><h2 class="section-title">// 星际旅行方式比较</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>旅行方式</th><th>目的地</th><th>航行时间</th><th>单程费用(¥)</th><th>技术成熟度</th><th>舒适度</th><th>安全性</th></tr></thead>
+      <tbody>
+        <tr><td>等离子引擎飞船</td><td>月球</td><td>4小时</td><td>45,000</td><td>非常成熟</td><td>高</td><td>99.999%</td></tr>
+        <tr><td>等离子引擎飞船</td><td>火星</td><td>45天</td><td>850,000</td><td>成熟</td><td>中高</td><td>99.99%</td></tr>
+        <tr><td>核聚变推进飞船</td><td>火星</td><td>28天</td><td>1,500,000</td><td>较新</td><td>中</td><td>99.95%</td></tr>
+        <tr><td>星际飞船（冬眠）</td><td>比邻星系</td><td>34年</td><td>120,000,000</td><td>实验性</td><td>冬眠(无感)</td><td>98.5%</td></tr>
+        <tr><td>量子虫洞通信</td><td>火星（信息）</td><td>即时</td><td>500/次</td><td>早期</td><td>N/A</td><td>99.9%</td></tr>
+        <tr><td>量子虫洞通信</td><td>比邻星（信息）</td><td>即时</td><td>50,000/次</td><td>实验性</td><td>N/A</td><td>95%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 星际探索 FAQ -->
+  <div class="section-header"><div class="section-tag">[ FAQ ]</div><h2 class="section-title">// 星际旅行常见问题</h2><div class="divider"></div></div>
+
+  <div class="accordion-section">
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>普通人可以去月球旅行吗？</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>可以！月球旅行已是一个成熟的旅游产业。从地球到月球的航班每天有12班，航行时间约4小时。你不需要是宇航员——现代等离子飞船的操作高度自动化，乘客只需正常乘坐即可。但需要提前进行简单的健康检查（主要确保你能适应起飞时的加速度和月球的低重力环境）。月球表面有3家酒店可供选择，建议提前至少2个月预订。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>火星旅行需要什么准备？</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>火星旅行比月球旅行要求高得多。你需要：1）通过严格的身体检查（包括心理评估）；2）完成一个为期2周的行前培训；3）接受必要的疫苗接种（火星环境对免疫系统有额外要求）；4）购买包含紧急医疗撤离的旅行保险。单程航行45天（新式核聚变飞船可缩短至28天），在此期间你将处于微重力环境中。火星的引力仅为地球的38%，大多数人需要数天适应。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>星际飞船上的冬眠是什么体验？</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>冬眠技术使长达数十年的星际航行成为可能。过程是：你进入冬眠舱，体温被逐渐降低至约5°C，新陈代谢降至正常水平的0.1%。从你的主观体验来看，你"入睡"然后"立即醒来"——整个34年的航程对你来说只是一瞬间。但醒来后的身体恢复需要约3-5天，期间可能会感到极度疲劳和肌肉酸痛。冬眠技术的长期安全性已通过数十年测试，但仍有一些无法预测的个体差异。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>如何成为殖民者前往火星或更远的地方？</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>殖民者选拔是一个竞争激烈的过程。火星殖民地每年接受约5000名新移民，但申请者通常超过20万。你需要：1）拥有殖民地需要的技能（工程、医学、农业等）；2）通过严格的身体和心理测试；3）承诺至少在殖民地居住5年。成功的申请者将获得免费的运输和初始安置支持。比邻星殖民计划仍在规划中——第一批殖民者可能从火星现有的居民中选拔，因为他们已经适应了地外生活。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>太空旅行对人体有什么长期影响？</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>长期太空生活的主要影响包括：1）骨密度流失——在微重力环境中每月流失约1%，但现代的防骨松药物和强制性锻炼已能将此降至0.2%；2）肌肉萎缩——同样通过强制性锻炼控制；3）辐射暴露——宇宙射线对DNA的损伤比地球表面高约20倍，增加了癌症风险；4）视力变化——部分宇航员出现视神经肿胀。月球和火星殖民地的孩子出生在部分重力环境中，他们的身体发育与地球儿童略有不同——这是正在进行的长期研究课题。</p></div></div>
+  </div>
+
+  <!-- 星际探索志愿者报名 -->
+  <div class="section-header" id="mission-form"><div class="section-tag">[ VOLUNTEER ]</div><h2 class="section-title">// 星际任务志愿者报名</h2><div class="divider"></div><p class="section-desc">你准备好成为星际探索的一部分了吗？填写下表，加入人类伟大探险的志愿者数据库。</p></div>
+
+  <div class="form-section">
+    <form id="volunteerForm" onsubmit="handleVolunteerSubmit(event)">
+      <div class="form-row">
+        <div class="form-group"><label>全名</label><input type="text" placeholder="你的合法全名" required></div>
+        <div class="form-group"><label>年龄</label><input type="number" min="18" max="120" placeholder="18-120" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>专业领域</label><select required><option value="">选择你的专业...</option><option>航天工程</option><option>医学生物</option><option>计算机科学·AI</option><option>地质学·行星科学</option><option>农业·生态学</option><option>机械工程</option><option>物理学</option><option>其他科学领域</option><option>非科学背景</option></select></div>
+        <div class="form-group"><label>有意向的目的地</label><select required><option value="">选择目的地...</option><option>月球·嫦娥城</option><option>火星·祝融城</option><option>土星环研究站</option><option>比邻星殖民计划（远期）</option><option>任何目的地</option></select></div>
+      </div>
+      <div class="form-group"><label>个人陈述</label><textarea placeholder="请简要说明你为什么想参与星际探索，以及你能为任务做出什么贡献..." required></textarea></div>
+      <div class="form-check"><input type="checkbox" id="volCheck" required><label for="volCheck">我理解星际探索的风险，包括但不限于极端环境、长期与家人分离和未知的健康影响。我自愿提交此申请。</label></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">🚀 提交申请</button>
+    </form>
+  </div>
+
+  <!-- 通知 -->
+  <div class="alert-banner alert-info" style="margin-bottom:3rem;">🔭 下一批火星殖民者选拔将在2026年9月开始。有意向者建议提前6个月开始体能训练。选拔委员会优先考虑拥有多种技能和团队协作经验的申请人。</div>
+
+  <!-- ========== 太空探测器完整名录 ========== -->
+  <div class="section-header"><div class="section-tag">[ PROBE DIRECTORY ]</div><h2 class="section-title">// 附录：在役深空探测器完整名录</h2><div class="divider"></div><p class="section-desc">截至2157年6月，共有87个活跃探测器在太阳系各处运行。以下是完整名录。</p></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>探测器名称</th><th>发射年份</th><th>当前位置</th><th>任务类型</th><th>距地球</th><th>信号延迟</th><th>状态</th><th>运营方</th></tr></thead>
+      <tbody>
+        <tr><td>旅行者1号 (Voyager 1)</td><td>1977</td><td>星际空间·日球层顶外</td><td>飞越·持续传输</td><td>245亿km</td><td>22.7小时</td><td><span class="badge badge-yellow">弱信号</span></td><td>NASA</td></tr>
+        <tr><td>旅行者2号 (Voyager 2)</td><td>1977</td><td>星际空间</td><td>飞越·持续传输</td><td>204亿km</td><td>18.9小时</td><td><span class="badge badge-yellow">弱信号</span></td><td>NASA</td></tr>
+        <tr><td>新视野号 (New Horizons)</td><td>2006</td><td>柯伊伯带</td><td>飞越·柯伊伯带探测</td><td>85亿km</td><td>7.9小时</td><td><span class="badge badge-green">正常运行</span></td><td>NASA</td></tr>
+        <tr><td>朱诺号 (Juno)</td><td>2011</td><td>木星轨道</td><td>轨道器·木星研究</td><td>7.8亿km</td><td>43分钟</td><td><span class="badge badge-green">正常运行</span></td><td>NASA</td></tr>
+        <tr><td>日曜-1 (Solar Observer)</td><td>2035</td><td>太阳轨道</td><td>太阳观测</td><td>1.5亿km</td><td>8.3分钟</td><td><span class="badge badge-green">正常运行</span></td><td>中国科技联盟</td></tr>
+        <tr><td>水星使者-3 (Mercury Messenger-3)</td><td>2042</td><td>水星轨道</td><td>轨道器·水星地质</td><td>1.2亿km</td><td>6.7分钟</td><td><span class="badge badge-green">正常运行</span></td><td>欧洲航天局</td></tr>
+        <tr><td>金星气象站 (Venus Climate)</td><td>2047</td><td>金星大气</td><td>浮空器·大气研究</td><td>0.6亿km</td><td>3.3分钟</td><td><span class="badge badge-green">正常运行</span></td><td>泽塔科技</td></tr>
+        <tr><td>火星网-1至8 (MarsNet 1-8)</td><td>2080-2095</td><td>火星轨道</td><td>通信·导航·气象</td><td>2.25亿km(均)</td><td>12.5分钟</td><td><span class="badge badge-green">正常运行</span></td><td>火星殖民地</td></tr>
+        <tr><td>谷神星钻探者 (Ceres Driller)</td><td>2087</td><td>谷神星表面</td><td>着陆器·地质钻探</td><td>4.2亿km</td><td>23分钟</td><td><span class="badge badge-green">正常运行</span></td><td>新联合矿业</td></tr>
+        <tr><td>欧罗巴潜航者-2 (Europa Diver-2)</td><td>2112</td><td>木卫二表面</td><td>冰下海洋探测</td><td>7.8亿km</td><td>43分钟</td><td><span class="badge badge-green">正常运行</span></td><td>太阳系科学联盟</td></tr>
+        <tr><td>土星环采样器 (Ring Sampler)</td><td>2106</td><td>土星环</td><td>环物质分析</td><td>14亿km</td><td>78分钟</td><td><span class="badge badge-green">正常运行</span></td><td>深空联合体</td></tr>
+        <tr><td>天王星轨道器 (Uranus Orbiter)</td><td>2128</td><td>天王星轨道</td><td>轨道器·冰巨行星研究</td><td>28亿km</td><td>2.6小时</td><td><span class="badge badge-green">正常运行</span></td><td>深空联合体</td></tr>
+        <tr><td>柯伊伯带勘探者 (Kuiper Explorer)</td><td>2135</td><td>柯伊伯带</td><td>飞越·矮行星探测</td><td>65亿km</td><td>6小时</td><td><span class="badge badge-green">正常运行</span></td><td>太阳系科学联盟</td></tr>
+        <tr><td>日球层顶哨兵 (Heliopause Sentinel)</td><td>2140</td><td>日球层顶</td><td>边界探测·星际介质</td><td>180亿km</td><td>16.7小时</td><td><span class="badge badge-green">正常运行</span></td><td>太阳系联合体</td></tr>
+        <tr><td>比邻星中继 (Proxima Relay)</td><td>2157</td><td>比邻星系</td><td>信号中继·数据回传</td><td>40万亿km</td><td>4.24年</td><td><span class="badge badge-cyan">已部署</span></td><td>太阳系联合体</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 太空资源分布图 ========== -->
+  <div class="section-header"><div class="section-tag">[ RESOURCES ]</div><h2 class="section-title">// 太阳系重要资源分布</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>天体</th><th>主要资源</th><th>预估储量</th><th>年开采量</th><th>经济价值(¥/年)</th><th>开采难度</th><th>主权归属</th></tr></thead>
+      <tbody>
+        <tr><td>月球·静海区域</td><td>氦-3·稀土元素·钛</td><td>100万吨(氦-3)</td><td>5,000吨</td><td>8.5万亿</td><td>中等</td><td>国际共管</td></tr>
+        <tr><td>月球·南极</td><td>水冰·挥发物</td><td>60亿吨(水冰)</td><td>200万吨</td><td>1.2万亿</td><td>低</td><td>国际共管</td></tr>
+        <tr><td>火星·赤道区域</td><td>铁矿·硅酸盐·高氯酸盐</td><td>极丰富</td><td>50万吨(铁)</td><td>0.8万亿</td><td>低-中</td><td>火星独立共和国</td></tr>
+        <tr><td>小行星·16 Psyche</td><td>铁·镍·铂族金属·金</td><td>2.7×10^19 kg</td><td>8,000吨</td><td>12万亿</td><td>高</td><td>国际公域</td></tr>
+        <tr><td>小行星·Ryugu类</td><td>碳·水·有机化合物</td><td>数亿吨级</td><td>12,000吨</td><td>3.5万亿</td><td>中</td><td>国际公域</td></tr>
+        <tr><td>木卫二·冰壳</td><td>水·有机分子</td><td>未知(巨量)</td><td>0(保护状态)</td><td>N/A</td><td>极高</td><td>国际保护区域</td></tr>
+        <tr><td>土卫六·甲烷湖</td><td>液态甲烷·乙烷·有机化合物</td><td>地球油气储量的数百倍</td><td>0(未开发)</td><td>N/A</td><td>极高</td><td>国际公域</td></tr>
+        <tr><td>小行星带(整体)</td><td>铂·钯·铑·铱·稀土</td><td>远超地球储量</td><td>35,000吨</td><td>18万亿</td><td>中-高</td><td>国际公域</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 太空站长篇介绍 ==================== -->
+  <div class="section-header"><div class="section-tag">[ DEEP DIVE ]</div><h2 class="section-title">// 深度专题：生活在火星</h2><div class="divider"></div></div>
+
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">火星的一天：从日出到日落</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">火星的一天被称为"Sol"，持续24小时37分钟——与地球非常接近，这使得人类的昼夜节律能够相对容易地适应。在祝融城，你的一天从穹顶内的模拟日出开始。LED照明系统精确模拟了地球日出的色温变化——从暖橙到亮白，帮助你的大脑自然地进入清醒状态。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">早餐时你会吃水培种植的蔬菜和从地球进口的蛋白质。火星的土壤经过处理后可以种植大多数地球作物，但目前本地产量仍只能满足70%的需求。咖啡是奢侈品——它必须从地球运来，一小杯的价格约为地球上的50倍。大多数火星居民已经习惯了替代品——一种由当地培育的微生物发酵制成的温热饮料。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">你的工作可能涉及维护穹顶的生命维持系统、管理水循环设备、在实验室中分析地质样本，或通过量子虫洞通信与地球上的同事进行实时协作——尽管有3分钟的延迟。如果你是一名工程师，你可能需要定期穿上压力服前往穹顶外部，检查太阳能电池板或维修暴露在火星恶劣环境中的设备。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">傍晚时分，穹顶的灯光逐渐变为暖色调的"日落模式"。你可以在社区中心与朋友们相聚——这里有全息娱乐系统、健身房和一个小型图书馆。火星的低重力（地球的38%）让体育活动变得有趣——跳远记录是地球上的2.5倍。但低重力也意味着你的骨骼和肌肉需要持续维护——每天至少1小时的强制锻炼是医学要求，不是建议。</p>
+      <p style="color:var(--text-secondary);line-height:2;">夜晚，透过穹顶的强化玻璃，你可以看到火星的粉红色天空和两颗小卫星——火卫一（Phobos）和火卫二（Deimos）。星星比地球上看到的更加明亮和锐利——因为几乎没有大气层的干扰。当你躺在床上，你会意识到自己正生活在人类历史上最冒险的实验之中：在一个不欢迎人类的星球上，建立一个属于人类的新家园。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">火星的政治：一个独立星球的诞生</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2135年8月19日，火星殖民地议会以压倒性多数票通过了《火星独立宣言》。这一天被火星居民称为"红日"——每年都会举行盛大的庆祝活动。独立并非一夜之间实现的——它经过了数十年的酝酿和谈判。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">独立运动的核心诉求很简单：生活在火星上的人应该决定火星的事务。地球与火星之间3分钟的通信延迟使得地球的实时管理根本不切实际——每一次重大决策都需要等待6分钟（往返信号延迟）才能得到地球的回应。在一个紧急情况下——比如穹顶失压——6分钟意味着生与死的区别。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">经济因素同样重要。火星殖民地贡献了小行星采矿产业的大部分劳动力，但利润的大部分流回了地球的企业总部。火星人认为，他们应该保留更多的财富用于自己的基础设施和社会发展。独立后的火星制定了本土税收政策，要求所有在火星运营的企业将至少40%的利润重新投资于火星经济。</p>
+      <p style="color:var(--text-secondary);line-height:2;">今天的火星是一个议会制共和国。议会由200名民选议员组成，每5年选举一次。总统由全民直选产生。火星的司法体系建立在"环境优先"原则之上——由于火星环境极端脆弱，任何可能危害生态系统的行为都受到最严格的法律限制。这也意味着火星社会在某些方面比地球更加"专制"——比如资源使用受到严格配额，生育需要事先批准（以控制人口增长不超过生命维持系统的承载能力）。</p>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">在火星上长大：第一代火星人的故事</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">截至2157年，火星上已有超过210万居民——其中有约35万是出生在火星上的"第一代火星人"。这些在部分重力环境中长大的孩子与地球上的同龄人有一些有趣的差异。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">由于火星的低重力，火星孩子的身高普遍比地球同龄人高出约5-8%。他们的骨骼密度略低于地球人——这是身体适应低重力环境的自然结果。更重要的是心理层面：第一代火星人对地球没有直接的归属感。在一次调查中，78%的火星出生青少年表示他们认为自己首先是"火星人"，其次才是"地球人后裔"。15%的人表示他们对地球"毫无感觉"。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">火星的教育系统强调生存技能——每个火星孩子在12岁前就必须学会穿戴压力服、进行基本的设备维修以及在紧急情况下的生存程序。地球上的孩子可能在公园里玩耍，而火星孩子则在模拟的"穹顶失压演习"中度过他们的一部分学校时光。这不是恐惧——这是现实。在火星上，环境永远是你需要认真对待的伙伴。</p>
+      <p style="color:var(--text-secondary);line-height:2;">关于第一代火星人能否安全返回地球生活，医学界仍存在争论。初步研究表明，在火星长大的人如果返回地球，可能面临骨骼承重不足、心血管系统难以适应地球重力等健康风险。这意味着火星出生的孩子可能永远无法在地球上"正常"生活——他们已经是另一种人类了。有人将此视为人类演化的自然一步，有人则为此感到忧虑。</p>
+    </div>
+  </div>
+
+  <!-- ========== 太空探索技术详解 ========== -->
+  <div class="section-header"><div class="section-tag">[ TECHNOLOGY ]</div><h2 class="section-title">// 附录C：太空探索核心技术详解</h2><div class="divider"></div><p class="section-desc">支撑人类星际探索的五大核心技术体系，每一项都经历了数十年的研究和发展。</p></div>
+
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">1. 等离子推进系统 (VASIMR)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">可变比冲磁等离子体火箭（Variable Specific Impulse Magnetoplasma Rocket）是当前主流的深空推进技术。它使用无线电波将气体（通常是氩气或氢气）加热到等离子态，然后通过强磁场将等离子体高速喷射出去产生推力。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">VASIMR的核心优势在于其可调节的比冲（推力的"效率"指标）：低比冲模式下推力更大（适合快速加速），高比冲模式下推力更小但燃料效率极高（适合长时间的巡航阶段）。这使得同一台引擎可以同时胜任行星际航行中的加速和巡航两个阶段——传统化学火箭做不到这一点。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">目前最先进的VASIMR引擎（型号：VX-300-SP）能够将地球到火星的航程从传统的9个月缩短至45天，地球到月球仅需4小时。它的唯一缺点是巨大的电力需求——需要配套的核聚变反应堆或超大型太阳能电池阵列才能满功率运行。</p>
+      <p style="color:var(--text-secondary);line-height:2;">开发和制造商：凤凰重工（主要部件）、泽塔科技（控制系统）。当前应用：所有地月定期航班、火星运输舰、小行星采矿飞船。下一代产品（VX-500）预计在2165年投入使用，有望将地火航程进一步缩短至28天。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">2. 封闭生态生命维持系统 (CELSS)</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">封闭生态生命维持系统（Closed Ecological Life Support System）是地外长期居住的基石。简单来说，它是一个微型化的地球生态系统——植物通过光合作用将二氧化碳转化为氧气，微生物处理废物，水通过蒸发-冷凝循环回收。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">现代CELSS的效率极高：水循环回收率达到99.7%，氧气回收率95%，食物自给率在月球为85%，火星为70%。剩下的缺口通过定期的补给任务来填补。系统由AI精确监控和调节——任何一个参数的微小偏差都可能在封闭环境中被放大成灾难性的后果。</p>
+      <p style="color:var(--text-secondary);line-height:2;">CELSS也是人类星际飞行的关键技术。"探索者号"上的生命维持系统需要在完全没有外部补给的情况下支持500名冬眠殖民者长达34年的航程——这是人类历史上最极端的工程挑战之一。目前的数据显示系统表现良好，所有关键指标都在设计范围内。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">3. 深空通信技术</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">深空通信面临的最大挑战是光速限制带来的巨大延迟。地月通信延迟0.8秒尚可接受，但地球到火星的单程信号需要3-22分钟（取决于两者在轨道上的位置），地球到海王星需要约4小时，而地球到比邻星系需要4.24年。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">为了应对这些挑战，深空通信采用了多层策略。近距离（地月系统内）使用激光脉冲调制技术，提供高带宽低延迟的连接。中距离（行星际）使用量子纠缠辅助通信，可以将火星的通信延迟从光速决定的12.5分钟压缩至约3分钟。远距离（星际）目前唯一的选择是2144年突破的量子虫洞通信——这是唯一能够突破光速限制的通信方式，但目前仅能传递极低带宽的信号。</p>
+      <p style="color:var(--text-secondary);line-height:2;">深空通信网络由部署在太阳系各处的通信中继站维护。位于月球背面的主阵列是网络的枢纽——因为月球的背面永远背对地球，完全不受地球电磁干扰的影响。这一得天独厚的位置使其成为深空通信的理想节点。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">4. 太空辐射防护</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">地球的磁场和大气层为我们屏蔽了绝大多数宇宙射线和太阳辐射。一旦离开近地轨道，人类就暴露在比地球表面高20-100倍的辐射环境中。对长期太空任务来说，辐射防护是仅次于生命维持的第二大挑战。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">目前的防护策略是多层复合的：外层使用高密度聚乙烯（富含氢原子，能有效阻挡高能粒子）作为被动防护层；中间层是水储备——水是极好的辐射屏蔽材料，且它本身就需要被存储，一举两得；最内层是主动电磁防护——通过产生局部磁场来偏转带电粒子，类似于缩微版的地球磁场。</p>
+      <p style="color:var(--text-secondary);line-height:2;">火星殖民地使用天然熔岩管作为辐射庇护所——覆盖在头顶的数米厚的岩石提供了极佳的天然防护。月球殖民地在穹顶外层使用了含硼聚乙烯复合材料，在月球的低重力环境中这种材料比在地球上更有效。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-cyan);margin-bottom:1rem;">5. 冬眠与生物停滞技术</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">对于航程超过数月的深空任务，让船员保持清醒在经济上是不现实的——每个人每天需要约2kg的食物、水和氧气，长期任务的后勤需求将呈指数级增长。冬眠技术通过将宇航员的新陈代谢降低至正常的0.1%，使34年航程中的资源消耗降至与数月航程相当的水平。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">冬眠过程：宇航员进入专门的冬眠舱，体温被逐渐降低至约5°C。特殊配方的防冻剂被注入循环系统以防止细胞在低温下受损。心跳降至每分钟约3次，呼吸几乎不可察觉。整个过程由AI监控——任何异常的生理指标都会触发自动唤醒程序。</p>
+      <p style="color:var(--text-secondary);line-height:2;">从宇航员的主观体验来看，34年的航程只是一次深度睡眠。醒来后通常需要3-5天才能完全恢复身体功能。长期的冬眠确实存在一些健康风险——骨密度流失、肌肉萎缩和免疫系统抑制——但这些都在可管理的范围内。冬眠技术的下一个突破点是"可逆生物停滞"——在不降低体温的情况下暂停生命活动，这将大大降低技术复杂度和风险。</p>
+    </div>
+  </div>
+
+  <!-- ========== 月球殖民地详解 ========== -->
+  <div class="section-header"><div class="section-tag">[ LUNAR COLONY ]</div><h2 class="section-title">// 深度专题：月球殖民地生活</h2><div class="divider"></div></div>
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">嫦娥城：人类第一个地外家园</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">嫦娥城位于月球南极的沙克尔顿环形山边缘，选择这个位置经过了数十年的研究。月球南极的独特优势在于"永恒光照"——某些高地几乎全年都能接收到阳光，为太阳能发电提供了稳定的能源。同时，环形山底部的永久阴影区储存着数十亿吨的水冰——这不仅是饮用水的来源，也是制造火箭燃料（通过电解水获得氢和氧）和呼吸氧气的关键资源。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">嫦娥城的核心是一个直径约200米的中央穹顶，内部维持着地球标准的大气压和氧气浓度。穹顶由三层复合材料构成：最外层是防微陨石冲击的铝合金蜂窝板，中间层是防辐射的高密度含硼聚乙烯，最内层是密封的加压膜。穹顶内部是一个精心设计的生态系统——公园、住宅区、商业街和水培农场共同构成了一个微缩的地球。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">生活在这里的人们遵循严格的资源配额制度。水是循环使用的——每一滴水都会经过七层过滤和净化，最终回到系统中。食品主要依靠水培农业，蔬菜和水果在LED灯光下生长，蛋白质来自培养肉和昆虫养殖。牛肉是奢侈品——一份200克的牛排售价约为地球上的100倍，而且通常只在重大节日才能享用。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">月球的重力仅为地球的六分之一，这对日常生活产生了深远影响。走路变成了一种"弹跳"运动——每一步都可以轻松跨越数米。液体在低重力环境下的行为也与地球不同——水花溅起后会飞得更高更远。睡眠需要特殊固定（低重力下身体不会自然地"沉入"床垫），大多数居民使用带有轻柔束缚带的床铺。</p>
+      <p style="color:var(--text-secondary);line-height:2;">月球社会的文化也在逐渐形成自己的特色。"月球人"（Lunarians）——那些在月球出生或长期居住的人——发展出了独特的文化认同。低重力舞蹈是一种在地球上无法复制的艺术形式。月球出生的孩子往往比地球上的同龄人更高更瘦——低重力让脊柱得以更自由地伸展。一些社会学家认为，如果这种趋势持续几代人，月球人可能会成为一个在生理上明显区别于地球人的新人类亚种。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">月球经济：从采矿到旅游</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">月球经济的支柱产业经历了从单一采矿到多元化的演变。早期（2074-2090年）的主要收入来源是氦-3开采——这种地球上极为稀有的同位素是核聚变反应堆的理想燃料。月球表面的氦-3储量估计超过100万吨，而全球每年的需求仅为数千吨——因此从理论上说，月球可以供应地球的聚变能源需求数百年。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2090年代后，月球经济开始多元化。第一个重要变化是太空旅游的兴起——随着等离子引擎技术将地月航行时间缩短至4小时，月球从一个遥远的科研前哨变成了富裕游客可以"周末游"的目的地。月球表面的低重力酒店、地球升起观景台和环形山徒步旅行成为了热门旅游项目。到2157年，月球每年接待超过100万名游客。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">第二个经济支柱是制造业。月球轨道的微重力工厂生产着地球上无法制造的精密产品——从完美球形的轴承到超大尺寸的半导体晶体。月球表面的真空环境也为某些工业过程提供了天然的优势——超高真空在地球上需要昂贵的设备维持，而在月球上则是免费的。</p>
+      <p style="color:var(--text-secondary);line-height:2;">第三个增长领域是深空通信服务。月球背面——永远背对地球的一面——完全不受地球电磁干扰的影响。这使得它成为深空通信阵列的理想地点。月球背面的通信枢纽处理着地球与火星、小行星带以及所有深空探测器之间的数据中继——这一服务每年为月球殖民地带来数万亿日元的收入。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">月球治理：多国共管的挑战</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">与火星不同，月球从未成为一个独立的政治实体。它由多国共同管理——目前有6个国家集团在月球上拥有领土和管辖权。月球治理的最高机构是月球理事会（Lunar Council），由各成员国代表组成，负责协调跨境事务如交通管制、资源分配和环境标准。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">多国共管带来了独特的挑战。不同区域的交通规则不同（比如"交通靠左"还是"交通靠右"在月球的不同区域答案不同），法律体系也各异（从中国科技联盟的成文法到欧洲联盟的案例法传统）。对于在月球出生的孩子来说，公民权问题也相当复杂——如果你在月球上出生，你的国籍取决于你所在区域的管理国，而不是你出生的星球。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">近年来，部分月球殖民地居民发起了一场"月球自治运动"，呼吁建立一个统一的月球政府，减少对地球各国政府的依赖。支持者认为，月球殖民地的成熟度已经足够进行自我管理；反对者则担心这可能导致与地球的冲突，类似于火星独立前的地火紧张关系。这一运动的未来走向仍然不确定，但它反映了月球社会日益增长的独立意识和自我认同。</p>
+      <p style="color:var(--text-secondary);line-height:2;">随着2155年太阳系联合政府的成立，月球治理迎来了新的可能性。作为联合政府的创始成员，月球在跨星球政治中拥有正式的代表权——它的声音现在可以与地球各国和火星共和国平等地参与全太阳系的决策。这是月球从"殖民地"走向"成熟政治实体"的重要一步。</p>
+    </div>
+  </div>
+
+  <!-- ========== 星际航线时刻表 ========== -->
+  <div class="section-header"><div class="section-tag">[ FLIGHT SCHEDULE ]</div><h2 class="section-title">// 附录D：地月火定期航线时刻表</h2><div class="divider"></div></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>航线</th><th>航班号</th><th>出发时间(UTC)</th><th>航行时间</th><th>飞船型号</th><th>票价(¥起)</th><th>班次</th><th>运营方</th></tr></thead>
+      <tbody>
+        <tr><td>新上海 → 月球·嫦娥城</td><td>LUN-SH-001</td><td>每日 06:00</td><td>4小时</td><td>VX-300-SP 嫦娥级</td><td>45,000</td><td>每日3班</td><td>天穹航天</td></tr>
+        <tr><td>月球·嫦娥城 → 新上海</td><td>LUN-SH-002</td><td>每日 12:00</td><td>4小时</td><td>VX-300-SP 嫦娥级</td><td>45,000</td><td>每日3班</td><td>天穹航天</td></tr>
+        <tr><td>新上海 → 火星·祝融城</td><td>MAR-SH-101</td><td>每周一 08:00</td><td>45天</td><td>VX-300-SP 祝融级</td><td>850,000</td><td>每周1班</td><td>深空联合体</td></tr>
+        <tr><td>火星·祝融城 → 新上海</td><td>MAR-SH-102</td><td>每周四 08:00</td><td>45天</td><td>VX-300-SP 祝融级</td><td>850,000</td><td>每周1班</td><td>深空联合体</td></tr>
+        <tr><td>月球 → 火星（直通）</td><td>MAR-LUN-201</td><td>每月1日、15日</td><td>42天</td><td>VX-300-SP 祝融级</td><td>720,000</td><td>每月2班</td><td>深空联合体</td></tr>
+        <tr><td>新上海 → 月球（快线）</td><td>LUN-EXP-301</td><td>每日 18:00</td><td>3.5小时</td><td>VX-500-X 实验型</td><td>120,000</td><td>每日1班</td><td>泽塔航天</td></tr>
+        <tr><td>地球 → 小行星带（采矿专线）</td><td>AST-MIN-401</td><td>根据任务窗口</td><td>4-8个月</td><td>VX-300-HV 重型</td><td>2,800,000</td><td>按需发船</td><td>凤凰重工</td></tr>
+        <tr><td>火星 → 小行星带（采矿专线）</td><td>AST-MAR-402</td><td>根据任务窗口</td><td>2-4个月</td><td>VX-300-HV 重型</td><td>1,900,000</td><td>按需发船</td><td>凤凰重工</td></tr>
+        <tr><td>月球轨道酒店（接驳）</td><td>ORB-SHT-501</td><td>每2小时一班</td><td>30分钟</td><td>ORB-100 摆渡级</td><td>8,500</td><td>每日12班</td><td>天穹航天</td></tr>
+        <tr><td>比邻星系（星际探索船）</td><td>PRX-EXP-601</td><td>下一次窗口: 2180年</td><td>约34年</td><td>探索者II级</td><td>120,000,000</td><td>不定期</td><td>太阳系联合体</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 附录E：太空灾难与应急响应 ========== -->
+  <div class="section-header"><div class="section-tag">[ SPACE SAFETY ]</div><h2 class="section-title">// 附录E：重大太空事故与安全改进</h2><div class="divider"></div></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>日期</th><th>事故名称</th><th>地点</th><th>事故类型</th><th>伤亡</th><th>根本原因</th><th>后续改进</th></tr></thead>
+      <tbody>
+        <tr><td>2072-08-12</td><td>嫦娥城氧气危机</td><td>月球·嫦娥城</td><td>生命维持系统故障</td><td>124人遇难</td><td>氧气循环系统单点故障·备份系统启动失败</td><td>三重冗余生命维持系统·独立备份电源</td></tr>
+        <tr><td>2089-03-05</td><td>火星沙尘暴穹顶事故</td><td>火星·祝融站</td><td>结构损坏</td><td>损失3个穹顶</td><td>沙尘暴强度超出设计标准·穹顶固定锚失效</td><td>穹顶锚固深度加倍·风暴预警提前至72小时</td></tr>
+        <tr><td>2099-11-22</td><td>意识上传数据损坏事件</td><td>数字永生中心</td><td>数据损坏</td><td>47位数位人类意识受损</td><td>量子存储单元级联故障·备份未及时更新</td><td>强制冗余存储·实时备份·损坏自动修复协议</td></tr>
+        <tr><td>2102-07-15</td><td>采矿者-3号失联事件</td><td>小行星带</td><td>飞船失踪</td><td>12名船员失踪</td><td>推测为微陨石撞击导致通信系统损坏</td><td>飞船三重通信系统·自动紧急信标</td></tr>
+        <tr><td>2112-04-08</td><td>地月通信中断危机</td><td>地月系统</td><td>通信中断</td><td>无直接伤亡</td><td>月球背面中继阵列电源故障·备用阵列维护中</td><td>三重通信备份·维护窗口不得重叠</td></tr>
+        <tr><td>2118-09-30</td><td>火星穹顶火灾</td><td>火星·祝融城·第3穹顶</td><td>火灾</td><td>8人遇难·52人受伤</td><td>电气线路短路·富氧环境加剧火势</td><td>防火隔离区·富氧区电气设备特殊标准</td></tr>
+        <tr><td>2125-06-18</td><td>月球轨道碰撞预警</td><td>月球轨道</td><td>碰撞风险（成功避免）</td><td>无</td><td>太空碎片追踪系统漏报·手动干预避免碰撞</td><td>AI碎片追踪·自动规避·国际碎片清理计划</td></tr>
+        <tr><td>2138-02-14</td><td>"探索者号"通信丢失</td><td>星际空间</td><td>通信中断</td><td>无（8个月后恢复）</td><td>主天线指向偏差·太阳风暴干扰</td><td>自动天线校准·多重频率备份</td></tr>
+        <tr><td>2147-10-03</td><td>太阳风暴灾害</td><td>全太阳系</td><td>天文灾害</td><td>电子设备大规模损坏</td><td>太阳活动强度超出预警模型</td><td>深空太阳观测网·抗辐射电子标准</td></tr>
+        <tr><td>2155-01-20</td><td>土星环站气闸故障</td><td>土星环研究站</td><td>气压失控</td><td>2人遇难</td><td>气闸密封圈老化·检测程序遗漏</td><td>气闸密封自动检测·每月强制更换</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 太空殖民伦理学 ========== -->
+  <div class="section-header"><div class="section-tag">[ SPACE ETHICS ]</div><h2 class="section-title">// 太空殖民伦理探讨</h2><div class="divider"></div></div>
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">我们有权殖民其他星球吗？</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">随着人类足迹从地球扩展到月球、火星并最终到达比邻星系，一个根本性的伦理问题变得越来越紧迫：我们有权这样做吗？这不是一个学术问题——它关乎我们作为一个物种的自我认知和道德责任。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">支持星际殖民的人提出几个论点：第一，人类作为一个物种，有内在的探索和扩张驱动力——这不是道德选择，而是生物本能。第二，将人类文明分散到多个星球是确保物种长期生存的最佳策略——把所有的鸡蛋放在一个篮子里（地球）在面临小行星撞击、气候变化或未知灾难时是一种极不明智的策略。第三，如果我们在其他星球上发现了原始生命形式，我们有责任研究它们并保护它们——但殖民不一定意味着破坏。</p>
+      <p style="color:var(--text-secondary);line-height:2;">反对者则强调：当我们殖民火星时，我们可能正在不可逆转地改变一个可能拥有自己生命形式的星球——即使这些生命形式只是微生物。在欧罗巴冰下海洋的探测中，"污染"是一个非常真实的担忧——地球的微生物可能通过探测器被带到欧罗巴，从而混淆或摧毁那里的本土生命。即使在没有生命的星球上，我们也有责任保持太阳系的自然状态，而不是将每个可到达的天体都变成人类的殖民地。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">星际殖民与后殖民伦理</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">历史学家指出，星际殖民的修辞有时与地球上的殖民主义有着令人不安的相似之处——"我们带来了文明"、"这是一片无人之地"（Terra Nullius）、"我们有权利扩张"。这些在地球殖民历史中被用来为殖民暴力辩护的言论，如今以新的形式出现在星际殖民的讨论中。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">最重要的区别在于——至少目前——在火星和其他太阳系天体上不存在具有自我意识的土著文明。这使得星际殖民在道德上不同于地球上的殖民主义。但"无人"不代表"无价值"——许多伦理学家主张，未被人类触及的自然环境（无论是地球上的还是火星上的）具有内在价值，这种价值不依赖于其对人类的用途。</p>
+      <p style="color:var(--text-secondary);line-height:2;">2155年太阳系联合政府通过的《星际环境伦理宪章》试图在发展与保护之间找到平衡。它确立了"最小干预"原则——在可能的情况下，人类活动应尽量减少对地外环境的影响。它也要求所有新的殖民计划必须经过独立的环境伦理审查——不是由开发该计划的企业或政府，而是由一个包括伦理学家、科学家和公众代表在内的独立委员会。</p>
+    </div>
+  </div>
+
+  <!-- ========== 太空天气与航行安全 ========== -->
+  <div class="section-header"><div class="section-tag">[ SPACE WEATHER ]</div><h2 class="section-title">// 附录F：太空天气预报与航行安全</h2><div class="divider"></div></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>太阳活动级别</th><th>发生频率</th><th>对地球影响</th><th>对月球影响</th><th>对火星影响</th><th>对深空航行影响</th><th>建议措施</th></tr></thead>
+      <tbody>
+        <tr><td>G1·轻微</td><td>每年约200天</td><td>极光增强·电网微小波动</td><td>无显著影响</td><td>无显著影响</td><td>无显著影响</td><td>正常航行</td></tr>
+        <tr><td>G2·中等</td><td>每年约60天</td><td>高纬度通信干扰·卫星轨道微调</td><td>表面辐射微增</td><td>基本无影响</td><td>轻微通信干扰</td><td>关注预报·正常航行</td></tr>
+        <tr><td>G3·强烈</td><td>每年约10天</td><td>通信中断·电网需调整·卫星需保护模式</td><td>建议室内活动·辐射增加3-5倍</td><td>通信延迟增加·表面辐射增加</td><td>通信质量下降·建议推迟非关键操作</td><td>月球居民减少出舱·火星注意通信</td></tr>
+        <tr><td>G4·严重</td><td>每年约2-3天</td><td>通信大面积中断·电网严重波动·卫星可能受损</td><td>禁止出舱·穹顶自动增强屏蔽</td><td>通信中断风险·表面辐射显著增加</td><td>通信可能中断·导航系统风险</td><td>暂停所有地外活动·进入防护状态</td></tr>
+        <tr><td>G5·极端</td><td>每11年约4-5天(太阳活动峰年)</td><td>通信完全中断·电网可能崩溃·卫星大规模保护</td><td>全员进入辐射避难所·穹顶额外防护</td><td>通信完全中断·全员避难</td><td>紧急暂停所有航行·飞船进入防护模式</td><td>全面紧急状态·等待太阳活动平息</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 未来太空探索计划 ========== -->
+  <div class="section-header"><div class="section-tag">[ FUTURE PLANS ]</div><h2 class="section-title">// 未来太空探索计划（2158-2200）</h2><div class="divider"></div></div>
+  <div class="accordion-section">
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>比邻星b殖民计划（2160-2180）</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>随着2157年探索者号成功抵达比邻星系，太阳系联合体已启动了比邻星b殖民可行性评估。初步数据显示该行星位于宜居带内，拥有液态水和有机分子。如果评估结果积极，计划在2175年前发送第一批殖民者（预计500人），利用改良的冬眠技术。这将是有史以来最远的殖民任务——单程34年，且殖民者将无法在可预见的未来返回太阳系。伦理委员会正在审议"不可逆殖民"的伦理问题——殖民者将永久离开太阳系，他们的后代将成为第一个真正的"系外人类亚种"。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>木卫二冰下海洋探测计划（2165）</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>在2098年首次着陆探测成功的基础上，新的木卫二任务（Europa Deep-3）计划在2165年发射。该任务将首次尝试钻透欧罗巴厚达15-25公里的冰壳，到达下方的液态水海洋。探测器将携带微型潜水器，在海洋中寻找生命迹象。技术挑战巨大——冰壳的厚度和硬度远超地球上的任何冰层，而穿过冰壳后如何防止地球微生物污染下方海洋是一个重大的行星保护难题。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>火星大气改造工程（世纪项目）</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>火星大气改造——将火星从寒冷干燥的沙漠星球转变为适合人类居住的世界——是人类有史以来最宏大的工程项目。当前进展：3%（已开始在火星表面部署温室气体工厂以增厚大气层）。预计时间线：2157-2250（约93年）。主要阶段：第一阶——增厚大气层至0.3个地球大气压（2157-2200）；第二阶——引入经过基因工程改造的微生物和植物开始产生氧气（2200-2250）；第三阶——大气达到可呼吸水平（2250+）。总成本估算超过1,000万亿日元，是人类历史上最昂贵的单一项目。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>天狼星系探索任务（2185）</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>继比邻星任务之后的下一个星际探索目标。天狼星（距地球8.6光年）是夜空中最亮的恒星。2150年发射的"开拓者号"飞船目前正在航行中（预计2188年抵达）。天狼星系是一个双星系统，天狼星A是一颗比太阳亮25倍的主序星，天狼星B是一颗白矮星。科学家对于在双星系统中是否存在宜居行星存在争议——这正是这次任务希望回答的问题之一。如果发现宜居行星，天狼星系可能成为继比邻星系之后人类的下一个殖民目标。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>量子虫洞宏观化研究（持续进行）</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>这是人类太空探索的"圣杯"——如果宏观量子虫洞能够稳定存在，星际旅行将从数十年的航行缩短为瞬间的跨越。当前状态：微观虫洞（仅能通过光子）已在2144年实现并用于通信。宏观虫洞的研究面临着巨大的理论和工程挑战。最乐观的预测是2180-2200年间实现第一个足以通过基本粒子的虫洞，而足以通过宏观物体（如人类）的虫洞可能要到2250年以后。如果成功，这将彻底改变人类在宇宙中的存在方式——从局限于太阳系的物种转变为真正的银河文明。</p></div></div>
+  </div>
+
+  <!-- ========== 航天员训练体系 ========== -->
+  <div class="section-header"><div class="section-tag">[ ASTRONAUT TRAINING ]</div><h2 class="section-title">// 附录G：航天员选拔与训练体系</h2><div class="divider"></div></div>
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">选拔标准与流程</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">2157年的航天员选拔标准比100年前更加多样化，但核心要求不变。候选人必须：持有认可的工程、科学或医学学位（硕士以上优先）；通过三级体能测试（包括在模拟3G加速度下保持清醒操作1小时）；通过严格的心理评估（包括在隔离环境中保持心理稳定30天）；证明团队协作能力（通过为期2周的小组评估）。特殊岗位（如火星登陆任务指挥官）需要额外的领导力评估和至少5年的相关经验。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">与20世纪不同，今天的航天员不需要是完美的生理标本——义体技术已经弥补了许多生理限制。但义体化程度也需要评估：过度义体化（>50%身体替代）的候选人需要额外的可靠性测试，因为义体故障在深空环境中可能比生理疾病更难处理。</p>
+      <p style="color:var(--text-secondary);line-height:2;">选拔过程竞争激烈。每年约有20万人申请各种航天任务岗位（从月球旅游导游到深空任务指挥官），但最终仅有约2,000人被选中进入训练阶段。录取率约1%——比100年前的顶尖大学录取率还低。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">训练阶段（12-24个月）</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;"><strong>第一阶段·基础训练（3个月）：</strong>在月球训练中心进行。适应低重力环境、压力服操作、基础太空生存技能。所有候选人必须完成至少10次舱外活动（EVA）模拟训练和3次真实月球表面EVA。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;"><strong>第二阶段·专业训练（6-12个月）：</strong>根据任务类型定制。深空任务候选人需要在封闭环境中连续生活90天；火星任务候选人需要在火星模拟站中完成所有预定任务；飞船驾驶员需要完成500小时的模拟飞行训练。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;"><strong>第三阶段·任务训练（3-9个月）：</strong>针对具体任务的强化训练。包括任务流程演练、紧急情况模拟和团队协作优化。在此阶段，任务团队将一起完成至少3次完整的任务模拟——从发射到返回（如果是往返任务）或从发射到殖民着陆（如果是单向殖民任务）。</p>
+      <p style="color:var(--text-secondary);line-height:2;"><strong>最终评估：</strong>训练结束后，候选人需要通过最终评估——包括书面考试、实际操作评估和心理适应性面试。通过率约85%。未通过的候选人可以重新申请参加下一次选拔。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-blue);margin-bottom:1rem;">特殊训练：星际航行冬眠适应</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">对于参加星际航行任务（如前往比邻星系）的航天员，冬眠适应训练是训练中最独特也最重要的部分。候选人需要经历至少3次"短冬眠"——每次持续约一周——以测试他们对冬眠过程的生理和心理反应。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">冬眠训练的主要挑战是心理上的——你在冬眠中失去的时间，醒来后不会感觉"过去了"。从你的主观体验来看，你闭眼然后立即睁眼——但一周已经过去，你身边的一切都可能已经改变。这种"时间跳跃"体验对某些人来说极其不安。约5%的候选人在第一次短冬眠后选择退出——他们无法适应这种"时间丢失"的感觉。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">长期冬眠（超过一年）对身体的影响仍在研究中——目前最长的人类冬眠记录是8年（一位因绝症选择冬眠等待治疗方案的患者）。探索者号船员34年的冬眠是人类历史上最长的连续冬眠——他们的健康数据对于未来更远程的星际任务（如计划中的天狼星任务，航行38年）至关重要。</p>
+      <p style="color:var(--text-secondary);line-height:2;">此外，冬眠训练还包括"醒来后的应急响应"——模拟飞船在冬眠期间出现故障，船员被紧急唤醒，需要立即处理危机。这种训练的目的是确保船员在经历长期冬眠后，身体机能尚未完全恢复的情况下，仍能执行关键任务。</p>
+    </div>
+  </div>
+
+</div> <!-- /main-wrapper -->
+
+<!-- 页脚 -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>// 天体</h4><ul><li><a href="#">地球</a></li><li><a href="#">月球</a></li><li><a href="#">火星</a></li><li><a href="#">小行星带</a></li><li><a href="#">木星系统</a></li><li><a href="#">比邻星系</a></li></ul></div>
+    <div class="footer-col"><h4>// 快速导航</h4><ul><li><a href="霓虹终端.html">霓虹终端</a></li><li><a href="数据档案库.html">数据档案库</a></li><li><a href="未来编年史.html">未来编年史</a></li><li><a href="赛博装备录.html">装备手册</a></li><li><a href="星际探索.html">星际探索</a></li></ul></div>
+    <div class="footer-col"><h4>// 任务</h4><ul><li><a href="#">当前任务</a></li><li><a href="#">历史任务</a></li><li><a href="#">未来计划</a></li><li><a href="#">志愿者计划</a></li><li><a href="#">探测器追踪</a></li></ul></div>
+    <div class="footer-col"><h4>// 资源</h4><ul><li><a href="#">太空天气预报</a></li><li><a href="#">航线查询</a></li><li><a href="#">船票预订</a></li><li><a href="#">安全指南</a></li><li><a href="#">联系我们</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><p>&copy; 2026-2157 SPACE EXPLORATION LOG · 太阳系联合体航天局 · 版本: 1.5.0 · 最后更新: 2157-06-10</p></div>
+</footer>
+
+<!-- 模态 -->
+<div class="modal-overlay" id="modalOverlay"><div class="modal-box"><button class="modal-close" onclick="closeModal()">&times;</button><h3 id="modalTitle"></h3><div class="modal-content" id="modalContent"></div></div></div>
+
+<script>
+(function(){const c=document.getElementById('particle-canvas'),ctx=c.getContext('2d');let p=[];function r(){c.width=window.innerWidth;c.height=window.innerHeight;}class P{constructor(){this.reset();}reset(){this.x=Math.random()*c.width;this.y=Math.random()*c.height;this.size=Math.random()*2+0.5;this.sx=(Math.random()-0.5)*0.4;this.sy=(Math.random()-0.5)*0.4;this.op=Math.random()*0.4+0.08;}update(){this.x+=this.sx;this.y+=this.sy;if(this.x<0||this.x>c.width||this.y<0||this.y>c.height){this.reset();if(this.x<0)this.x=c.width;if(this.x>c.width)this.x=0;if(this.y<0)this.y=c.height;if(this.y>c.height)this.y=0;}}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle='rgba(68,136,255,'+this.op+')';ctx.fill();}}function init(){r();p=[];const n=Math.min(Math.floor((c.width*c.height)/8000),180);for(let i=0;i<n;i++)p.push(new P());}function anim(){ctx.clearRect(0,0,c.width,c.height);p.forEach(x=>{x.update();x.draw();});requestAnimationFrame(anim);}window.addEventListener('resize',init);init();anim();})();
+
+window.addEventListener('scroll',()=>{document.getElementById('topNav').classList.toggle('scrolled',window.scrollY>50);});
+const hb=document.getElementById('hamburger'),nl=document.getElementById('navLinks');hb.addEventListener('click',()=>{hb.classList.toggle('active');nl.classList.toggle('mobile-open');});nl.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');nl.classList.remove('mobile-open');}));
+
+function showModal(title,content){document.getElementById('modalTitle').textContent=title;document.getElementById('modalContent').innerHTML='<p>'+content+'</p>';document.getElementById('modalOverlay').classList.add('active');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
+function handleVolunteerSubmit(e){e.preventDefault();showModal('✅ 申请已提交','你的星际任务志愿者申请已进入审核队列。由于申请量大，审核过程可能需要3-6个月。如果通过初选，你将收到前往最近航天中心进行体能评估的邀请。祝你好运，未来的太空探索者！');e.target.reset();}
+
+(function(){const fills=document.querySelectorAll('.progress-fill');const obs=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const fill=entry.target;const tw=fill.style.width;fill.style.width='0%';setTimeout(()=>{fill.style.width=tw;},100);obs.unobserve(fill);}});},{threshold:0.3});fills.forEach(f=>obs.observe(f));})();
+
+console.log('%c SPACE EXPLORATION LOG %c v1.5.0 ','background:#0a0a0f;color:#4488ff;padding:8px 12px;font-family:monospace;font-size:16px;','background:#ff2d95;color:#fff;padding:8px 12px;font-family:monospace;');
+</script>
+</body>
+</html>

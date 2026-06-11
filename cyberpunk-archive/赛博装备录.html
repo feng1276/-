@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛博装备录 · CYBER EQUIPMENT MANUAL</title>
+<style>
+/* ==========================================================================
+ * CYBER EQUIPMENT MANUAL — 主样式表
+ * 赛博装备录界面
+ * 版本: 7.2.1
+ * ==========================================================================
+ * 目录: 1.CSS变量 2.全局重置 3.扫描线 4.滚动条 5.粒子背景
+ * 6.导航栏 7.主区域 8.页面英雄 9.区块标题 10.统计面板 11.通知
+ * 12.装备卡片 13.筛选标签 14.数据表 15.进度条 16.对比表 17.标签页
+ * 18.手风琴 19.定价 20.按钮 21.表单 22.搜索栏 23.术语词典
+ * 24.生存指南 25.页脚 26.模态弹窗 27.响应式
+ * ========================================================================== */
+/* ========== CSS 变量 ========== */
+:root {
+  --neon-cyan: #00f0ff; --neon-pink: #ff2d95; --neon-green: #39ff14;
+  --neon-yellow: #ffe600; --neon-purple: #b347ea; --neon-orange: #ff6b35;
+  --neon-blue: #4488ff; --neon-red: #ff3333; --neon-white: #f0f0ff;
+  --bg-deep: #0a0a0f; --bg-panel: #0d0d1a; --bg-card: #111122;
+  --bg-elevated: #161630; --bg-input: #0f0f1a;
+  --border-glow: rgba(255,107,53,0.3); --border-glow-cyan: rgba(0,240,255,0.3);
+  --border-subtle: rgba(255,255,255,0.08);
+  --text-primary: #e0e0f0; --text-secondary: #8899aa; --text-dim: #556677;
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 16px;
+  --font-mono: 'Courier New','Consolas','Monaco',monospace;
+  --font-sans: 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  --transition-fast: 0.15s ease; --transition-normal: 0.3s ease;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden;line-height:1.6;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:var(--bg-deep);}
+::-webkit-scrollbar-thumb{background:var(--neon-orange);border-radius:4px;box-shadow:0 0 10px rgba(255,107,53,0.5);}
+
+/* 粒子背景 */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+/* ========================================
+   5. 顶部导航栏 — 固定定位·毛玻璃效果·滚动阴影
+   ======================================== */
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-glow);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;transition:var(--transition-normal);}
+.top-nav.scrolled{box-shadow:0 0 30px rgba(255,107,53,0.15);}
+.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.nav-brand .logo-icon{width:40px;height:40px;border:2px solid var(--neon-orange);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:1.2rem;color:var(--neon-orange);box-shadow:0 0 10px rgba(255,107,53,0.4);animation:logoPulse 2s infinite;}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 10px rgba(255,107,53,0.4);}50%{box-shadow:0 0 25px rgba(255,107,53,0.8);}}
+.nav-brand .brand-text{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--neon-orange);letter-spacing:2px;text-shadow:0 0 10px rgba(255,107,53,0.5);}
+.nav-links{display:flex;list-style:none;gap:2rem;align-items:center;}
+.nav-links a{color:var(--text-secondary);text-decoration:none;font-size:0.95rem;font-family:var(--font-mono);letter-spacing:1px;padding:0.5rem 0;position:relative;transition:var(--transition-fast);}
+.nav-links a::after{content:'';position:absolute;bottom:0;left:0;width:0;height:2px;background:var(--neon-orange);box-shadow:0 0 8px var(--neon-orange);transition:var(--transition-normal);}
+.nav-links a:hover{color:var(--neon-orange);text-shadow:0 0 8px rgba(255,107,53,0.5);}
+.nav-links a:hover::after{width:100%;}
+.nav-links a.active-link{color:var(--neon-orange);}
+.nav-links a.active-link::after{width:100%;}
+.nav-cta{padding:0.5rem 1.2rem;border:1px solid var(--neon-pink);border-radius:var(--radius-sm);color:var(--neon-pink)!important;}
+.nav-cta:hover{background:rgba(255,45,149,0.15);box-shadow:0 0 20px rgba(255,45,149,0.3);}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none;z-index:1001;}
+.hamburger span{width:28px;height:2px;background:var(--neon-orange);transition:var(--transition-normal);box-shadow:0 0 5px rgba(255,107,53,0.5);}
+.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
+.hamburger.active span:nth-child(2){opacity:0;}
+.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
+
+/* ========================================
+   7. 主内容区 — 相对定位·顶部64px偏移
+   ======================================== */
+.main-wrapper{position:relative;z-index:1;padding-top:64px;}
+
+/* ========================================
+   8. 页面英雄区 — 居中·全宽·底部霓虹边框
+   ======================================== */
+.page-hero{padding:4rem 2rem 2rem;text-align:center;border-bottom:1px solid var(--border-subtle);position:relative;}
+.page-hero::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:200px;height:1px;background:var(--neon-orange);box-shadow:0 0 15px rgba(255,107,53,0.6);}
+.page-hero .hero-icon{font-size:4rem;display:block;margin-bottom:1rem;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+.page-hero h1{font-family:var(--font-mono);font-size:clamp(2rem,5vw,3.5rem);color:var(--neon-orange);letter-spacing:3px;text-shadow:0 0 20px rgba(255,107,53,0.5);}
+.page-hero .subtitle{font-family:var(--font-mono);color:var(--text-secondary);font-size:1rem;letter-spacing:4px;margin-top:0.5rem;}
+
+/* ========================================
+   9. 区块标题 — 等宽字体·霓虹色·分隔线
+   ======================================== */
+.section-header{text-align:center;padding:3rem 2rem 1.5rem;max-width:800px;margin:0 auto;}
+.section-tag{font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-yellow);letter-spacing:4px;text-transform:uppercase;margin-bottom:0.5rem;}
+.section-title{font-family:var(--font-mono);font-size:2rem;color:var(--neon-orange);letter-spacing:2px;text-shadow:0 0 10px rgba(255,107,53,0.3);}
+.divider{width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--neon-orange),transparent);margin:1rem auto;}
+.section-desc{color:var(--text-secondary);font-size:0.95rem;line-height:1.8;}
+
+/* ========================================
+  10. 统计面板 — 网格布局·悬停边框发光
+   ======================================== */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;}
+.stat-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:1.5rem;text-align:center;transition:var(--transition-normal);}
+.stat-item:hover{border-color:var(--neon-orange);box-shadow:0 0 20px rgba(255,107,53,0.1);}
+.stat-item .s-icon{font-size:2.5rem;display:block;margin-bottom:0.5rem;}
+.stat-item .s-value{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--neon-orange);text-shadow:0 0 10px rgba(255,107,53,0.3);}
+.stat-item .s-label{font-size:0.8rem;color:var(--text-secondary);margin-top:0.3rem;letter-spacing:1px;}
+
+/* 通知横幅 */
+.alert-banner{padding:1rem 2rem;margin:1.5rem auto;max-width:1000px;border-radius:var(--radius-md);display:flex;align-items:center;gap:1rem;font-family:var(--font-mono);font-size:0.85rem;}
+.alert-info{background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);color:var(--neon-cyan);}
+.alert-warn{background:rgba(255,230,0,0.08);border:1px solid rgba(255,230,0,0.3);color:var(--neon-yellow);}
+.alert-err{background:rgba(255,45,149,0.08);border:1px solid rgba(255,45,149,0.3);color:var(--neon-pink);}
+
+/* ========== 装备卡片网格 ========== */
+.equip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;padding:2rem;max-width:1300px;margin:0 auto;}
+.equip-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;transition:var(--transition-normal);display:flex;flex-direction:column;}
+.equip-card:hover{border-color:var(--neon-orange);box-shadow:0 0 25px rgba(255,107,53,0.12);transform:translateY(-4px);}
+.equip-card-image{height:160px;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;}
+.equip-card-image .equip-tier{position:absolute;top:12px;right:12px;font-family:var(--font-mono);font-size:0.65rem;padding:0.3rem 0.7rem;border-radius:100px;letter-spacing:1px;}
+.tier-legendary{background:rgba(255,215,0,0.2);color:#ffd700;border:1px solid #ffd700;}
+.tier-epic{background:rgba(179,71,234,0.2);color:var(--neon-purple);border:1px solid var(--neon-purple);}
+.tier-rare{background:rgba(0,240,255,0.2);color:var(--neon-cyan);border:1px solid var(--neon-cyan);}
+.tier-common{background:rgba(57,255,20,0.2);color:var(--neon-green);border:1px solid var(--neon-green);}
+.tier-illegal{background:rgba(255,51,51,0.2);color:var(--neon-red);border:1px solid var(--neon-red);}
+.eq-bg-1{background:linear-gradient(135deg,#1a0a00,#331a00,#4d2600);}
+.eq-bg-2{background:linear-gradient(135deg,#001a0a,#00331a,#004d26);}
+.eq-bg-3{background:linear-gradient(135deg,#0a001a,#1a0033,#26004d);}
+.eq-bg-4{background:linear-gradient(135deg,#000a1a,#001a33,#00264d);}
+.eq-bg-5{background:linear-gradient(135deg,#1a001a,#330033,#4d004d);}
+.eq-bg-6{background:linear-gradient(135deg,#0a0a1a,#1a1a33,#26264d);}
+.eq-bg-7{background:linear-gradient(135deg,#1a0a0a,#331a1a,#4d2626);}
+.eq-bg-8{background:linear-gradient(135deg,#001a1a,#003333,#004d4d);}
+.equip-card-body{padding:1.5rem;flex:1;}
+.equip-card-body h3{font-family:var(--font-mono);font-size:1.1rem;color:var(--neon-orange);margin-bottom:0.5rem;letter-spacing:1px;}
+.equip-card-body .equip-model{font-size:0.75rem;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:0.8rem;}
+.equip-card-body p{color:var(--text-secondary);font-size:0.88rem;line-height:1.8;}
+.equip-specs{display:flex;flex-wrap:wrap;gap:0.8rem;margin-top:1rem;font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);}
+.equip-specs span{display:flex;align-items:center;gap:4px;}
+.equip-card-footer{padding:1rem 1.5rem;border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;}
+.equip-card-footer .price{font-family:var(--font-mono);font-size:0.9rem;color:var(--neon-yellow);}
+.equip-card-footer .stock{font-family:var(--font-mono);font-size:0.7rem;padding:0.2rem 0.7rem;border-radius:100px;}
+.stock-in{border:1px solid var(--neon-green);color:var(--neon-green);}
+.stock-low{border:1px solid var(--neon-yellow);color:var(--neon-yellow);}
+.stock-out{border:1px solid var(--neon-pink);color:var(--neon-pink);}
+
+/* ========== 分类筛选 ========== */
+.filter-bar{display:flex;gap:0.8rem;flex-wrap:wrap;justify-content:center;padding:1rem 2rem;max-width:900px;margin:0 auto;}
+.filter-tag{font-family:var(--font-mono);font-size:0.8rem;letter-spacing:1px;padding:0.5rem 1.2rem;border:1px solid var(--border-subtle);border-radius:100px;cursor:pointer;transition:var(--transition-normal);background:transparent;color:var(--text-secondary);}
+.filter-tag:hover,.filter-tag.active{border-color:var(--neon-orange);color:var(--neon-orange);background:rgba(255,107,53,0.08);box-shadow:0 0 12px rgba(255,107,53,0.2);}
+
+/* ========== 数据表 ========== */
+.data-table-wrap{padding:2rem;max-width:1300px;margin:0 auto;overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:0.85rem;}
+.data-table thead th{background:var(--bg-elevated);color:var(--neon-orange);padding:1rem;text-align:left;border-bottom:2px solid var(--border-glow);letter-spacing:1px;font-weight:600;text-transform:uppercase;white-space:nowrap;}
+.data-table tbody td{padding:0.9rem 1rem;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);}
+.data-table tbody tr{transition:var(--transition-fast);}
+.data-table tbody tr:hover{background:rgba(255,107,53,0.03);}
+.data-table tbody tr:hover td{color:var(--text-primary);}
+.badge{display:inline-block;padding:0.2rem 0.7rem;border-radius:100px;font-size:0.7rem;font-weight:600;white-space:nowrap;}
+.badge-green{background:rgba(57,255,20,0.12);color:var(--neon-green);border:1px solid var(--neon-green);}
+.badge-pink{background:rgba(255,45,149,0.1);color:var(--neon-pink);border:1px solid var(--neon-pink);}
+.badge-yellow{background:rgba(255,230,0,0.1);color:var(--neon-yellow);border:1px solid var(--neon-yellow);}
+.badge-cyan{background:rgba(0,240,255,0.1);color:var(--neon-cyan);border:1px solid var(--neon-cyan);}
+.badge-purple{background:rgba(179,71,234,0.1);color:var(--neon-purple);border:1px solid var(--neon-purple);}
+.badge-orange{background:rgba(255,107,53,0.1);color:var(--neon-orange);border:1px solid var(--neon-orange);}
+.badge-red{background:rgba(255,51,51,0.1);color:var(--neon-red);border:1px solid var(--neon-red);}
+
+/* ========== 进度条 ========== */
+.progress-group{padding:2rem;max-width:800px;margin:0 auto;}
+.progress-item{margin-bottom:1.2rem;}
+.progress-label{display:flex;justify-content:space-between;margin-bottom:0.4rem;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-secondary);letter-spacing:1px;}
+.progress-label .val{color:var(--neon-orange);}
+.progress-bar{height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width 1.5s ease;position:relative;}
+.progress-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.fill-orange{background:linear-gradient(90deg,var(--neon-orange),#cc5020);box-shadow:0 0 10px rgba(255,107,53,0.4);}
+.fill-cyan{background:linear-gradient(90deg,var(--neon-cyan),#00b8cc);box-shadow:0 0 10px rgba(0,240,255,0.4);}
+.fill-pink{background:linear-gradient(90deg,var(--neon-pink),#cc2070);box-shadow:0 0 10px rgba(255,45,149,0.4);}
+.fill-green{background:linear-gradient(90deg,var(--neon-green),#2cc010);box-shadow:0 0 10px rgba(57,255,20,0.4);}
+.fill-purple{background:linear-gradient(90deg,var(--neon-purple),#8a30c0);box-shadow:0 0 10px rgba(179,71,234,0.4);}
+
+/* ========== 对比表 ========== */
+.compare-section{padding:2rem;max-width:1100px;margin:0 auto;}
+.compare-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:0.82rem;}
+.compare-table th,.compare-table td{padding:0.8rem 1rem;border:1px solid var(--border-subtle);text-align:center;}
+.compare-table th{background:var(--bg-elevated);color:var(--neon-orange);font-weight:600;letter-spacing:1px;}
+.compare-table th:first-child{text-align:left;}
+.compare-table td{color:var(--text-secondary);}
+.compare-table td:first-child{text-align:left;color:var(--text-primary);font-weight:600;}
+.compare-table tr:hover td{background:rgba(255,107,53,0.04);}
+.compare-table .best{color:var(--neon-green);font-weight:700;}
+.compare-table .worst{color:var(--neon-pink);}
+
+/* ========== 标签页 ========== */
+.tabs-wrap{padding:2rem;max-width:1100px;margin:0 auto;}
+.tab-buttons{display:flex;gap:0;border-bottom:2px solid var(--border-subtle);margin-bottom:1.5rem;overflow-x:auto;}
+.tab-btn{padding:0.8rem 1.8rem;font-family:var(--font-mono);font-size:0.85rem;letter-spacing:1px;background:transparent;color:var(--text-secondary);border:none;cursor:pointer;transition:var(--transition-normal);position:relative;white-space:nowrap;}
+.tab-btn::after{content:'';position:absolute;bottom:-2px;left:0;width:100%;height:2px;background:var(--neon-orange);transform:scaleX(0);transition:var(--transition-normal);}
+.tab-btn:hover{color:var(--neon-orange);}
+.tab-btn.active{color:var(--neon-orange);}
+.tab-btn.active::after{transform:scaleX(1);box-shadow:0 0 8px var(--neon-orange);}
+.tab-panel{display:none;animation:fadeIn 0.3s ease;}
+.tab-panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ========== 手风琴 ========== */
+.accordion-section{padding:2rem;max-width:900px;margin:0 auto;}
+.acc-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);margin-bottom:0.8rem;overflow:hidden;transition:var(--transition-normal);}
+.acc-item:hover{border-color:var(--neon-orange);}
+.acc-header{padding:1.2rem 1.5rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:0.95rem;color:var(--text-primary);letter-spacing:1px;}
+.acc-arrow{color:var(--neon-orange);transition:var(--transition-normal);font-size:0.8rem;}
+.acc-item.open .acc-arrow{transform:rotate(180deg);}
+.acc-body{padding:0 1.5rem 1.2rem;color:var(--text-secondary);font-size:0.88rem;line-height:1.9;display:none;}
+.acc-item.open .acc-body{display:block;}
+
+/* ========== 卡片式定价 ========== */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;}
+.pricing-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:2rem;text-align:center;transition:var(--transition-normal);position:relative;}
+.pricing-card:hover{border-color:var(--neon-orange);box-shadow:0 0 30px rgba(255,107,53,0.12);transform:translateY(-4px);}
+.pricing-card.featured{border-color:var(--neon-orange);box-shadow:0 0 25px rgba(255,107,53,0.15);}
+.pricing-card .p-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--neon-orange);color:#000;padding:0.3rem 1.5rem;border-radius:100px;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:2px;font-weight:700;}
+.pricing-card .p-icon{font-size:3rem;display:block;margin-bottom:1rem;}
+.pricing-card h3{font-family:var(--font-mono);font-size:1.2rem;color:var(--neon-orange);letter-spacing:1px;}
+.pricing-card .p-price{font-family:var(--font-mono);font-size:2.5rem;color:var(--text-primary);margin:1rem 0;}
+.pricing-card .p-price span{font-size:0.9rem;color:var(--text-dim);}
+.pricing-card ul{list-style:none;text-align:left;margin:1.5rem 0;}
+.pricing-card ul li{padding:0.5rem 0;color:var(--text-secondary);font-size:0.88rem;display:flex;align-items:center;gap:0.5rem;}
+.pricing-card ul li::before{content:'✓';color:var(--neon-green);font-weight:700;}
+
+/* ========== 按钮 ========== */
+.btn{padding:0.8rem 2rem;font-family:var(--font-mono);font-size:0.9rem;letter-spacing:2px;text-decoration:none;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition-normal);display:inline-flex;align-items:center;gap:8px;background:transparent;}
+.btn-primary{border:2px solid var(--neon-orange);color:var(--neon-orange);box-shadow:0 0 15px rgba(255,107,53,0.2);}
+.btn-primary:hover{background:rgba(255,107,53,0.1);box-shadow:0 0 30px rgba(255,107,53,0.4);transform:translateY(-2px);}
+.btn-secondary{border:2px solid var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 15px rgba(0,240,255,0.2);}
+.btn-secondary:hover{background:rgba(0,240,255,0.1);box-shadow:0 0 30px rgba(0,240,255,0.4);transform:translateY(-2px);}
+.btn-pink{border:2px solid var(--neon-pink);color:var(--neon-pink);box-shadow:0 0 15px rgba(255,45,149,0.2);}
+.btn-pink:hover{background:rgba(255,45,149,0.1);box-shadow:0 0 30px rgba(255,45,149,0.4);transform:translateY(-2px);}
+
+/* ========== 表单 ========== */
+.form-section{padding:2rem;max-width:700px;margin:0 auto;}
+.form-group{margin-bottom:1.5rem;}
+.form-group label{display:block;font-family:var(--font-mono);font-size:0.8rem;color:var(--neon-orange);letter-spacing:2px;margin-bottom:0.5rem;text-transform:uppercase;}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:0.8rem 1rem;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:0.9rem;transition:var(--transition-normal);outline:none;}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--neon-orange);box-shadow:0 0 15px rgba(255,107,53,0.15);}
+.form-group textarea{min-height:120px;resize:vertical;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.form-check{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.5rem;}
+.form-check input[type="checkbox"]{width:18px;height:18px;accent-color:var(--neon-orange);}
+
+/* ========== 搜索栏 ========== */
+.search-section{padding:2rem;max-width:700px;margin:0 auto;}
+.search-wrap{display:flex;gap:0;}
+.search-wrap input{flex:1;padding:1rem 1.5rem;background:var(--bg-input);border:2px solid var(--border-subtle);border-right:none;border-radius:var(--radius-md) 0 0 var(--radius-md);color:var(--text-primary);font-family:var(--font-mono);font-size:1rem;outline:none;transition:var(--transition-normal);}
+.search-wrap input:focus{border-color:var(--neon-orange);box-shadow:0 0 20px rgba(255,107,53,0.1);}
+.search-wrap button{padding:1rem 2rem;background:var(--neon-orange);color:#000;border:none;border-radius:0 var(--radius-md) var(--radius-md) 0;font-family:var(--font-mono);font-size:0.9rem;font-weight:700;letter-spacing:2px;cursor:pointer;transition:var(--transition-normal);}
+.search-wrap button:hover{background:#ff8855;box-shadow:0 0 25px rgba(255,107,53,0.5);}
+.search-hints{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:1rem;}
+.search-hints span{font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);padding:0.3rem 0.8rem;border:1px solid var(--border-subtle);border-radius:100px;cursor:pointer;transition:var(--transition-fast);}
+.search-hints span:hover{border-color:var(--neon-orange);color:var(--neon-orange);}
+
+/* ========== 术语词典 ========== */
+.glossary-section{padding:2rem;max-width:900px;margin:0 auto;}
+.glossary-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:1rem;transition:var(--transition-normal);display:flex;gap:1.5rem;align-items:flex-start;}
+.glossary-item:hover{border-color:var(--neon-cyan);box-shadow:0 0 15px rgba(0,240,255,0.08);}
+.glossary-term{font-family:var(--font-mono);font-size:1rem;color:var(--neon-cyan);min-width:150px;letter-spacing:1px;}
+.glossary-def{color:var(--text-secondary);font-size:0.88rem;line-height:1.8;flex:1;}
+.glossary-def .gloss-tag{display:inline-block;font-family:var(--font-mono);font-size:0.65rem;padding:0.15rem 0.5rem;border-radius:100px;margin-right:0.5rem;border:1px solid var(--text-dim);color:var(--text-dim);}
+
+/* ========== 城市生存指南 ========== */
+.survival-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;padding:2rem;max-width:1200px;margin:0 auto;}
+.survival-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;transition:var(--transition-normal);}
+.survival-card:hover{border-color:var(--neon-green);box-shadow:0 0 20px rgba(57,255,20,0.1);}
+.survival-card .s-num{font-family:var(--font-mono);font-size:2rem;color:var(--neon-green);margin-bottom:0.5rem;}
+.survival-card h3{font-family:var(--font-mono);color:var(--text-primary);margin-bottom:0.8rem;}
+.survival-card p{color:var(--text-secondary);font-size:0.88rem;line-height:1.8;}
+
+/* ========== 页脚 ========== */
+.site-footer{background:var(--bg-panel);border-top:1px solid var(--border-glow);padding:3rem 2rem 1.5rem;margin-top:4rem;}
+.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;max-width:1200px;margin:0 auto;}
+.footer-col h4{font-family:var(--font-mono);color:var(--neon-orange);font-size:0.9rem;letter-spacing:2px;margin-bottom:1rem;}
+.footer-col ul{list-style:none;}
+.footer-col ul li{margin-bottom:0.5rem;}
+.footer-col ul li a{color:var(--text-secondary);text-decoration:none;font-size:0.85rem;transition:var(--transition-fast);}
+.footer-col ul li a:hover{color:var(--neon-orange);}
+.footer-bottom{max-width:1200px;margin:2rem auto 0;padding-top:1.5rem;border-top:1px solid var(--border-subtle);text-align:center;color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem;letter-spacing:1px;}
+
+/* ========== 模态弹窗 ========== */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:5000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:var(--transition-normal);}
+.modal-overlay.active{opacity:1;pointer-events:all;}
+.modal-box{background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius-lg);padding:2.5rem;max-width:600px;width:90%;position:relative;box-shadow:0 0 60px rgba(255,107,53,0.15);}
+.modal-close{position:absolute;top:1rem;right:1.5rem;background:none;border:none;color:var(--text-secondary);font-size:1.8rem;cursor:pointer;transition:var(--transition-fast);}
+.modal-close:hover{color:var(--neon-pink);}
+.modal-box h3{font-family:var(--font-mono);color:var(--neon-orange);margin-bottom:1rem;font-size:1.3rem;}
+.modal-box .modal-content{color:var(--text-secondary);font-size:0.9rem;line-height:1.9;}
+
+/* ========== 响应式 ========== */
+@media(max-width:768px){
+  .nav-links{position:fixed;top:0;right:-100%;width:70%;height:100vh;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);flex-direction:column;padding:6rem 2rem;transition:var(--transition-normal);border-left:1px solid var(--border-glow);}
+  .nav-links.mobile-open{right:0;}
+  .hamburger{display:flex;}
+  .equip-grid{grid-template-columns:1fr;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .glossary-item{flex-direction:column;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr;}
+  .survival-grid{grid-template-columns:1fr;}
+}
+</style>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<!-- 导航 -->
+<nav class="top-nav" id="topNav">
+  <a href="霓虹终端.html" class="nav-brand">
+    <div class="logo-icon">⚙</div>
+    <span class="brand-text">EQUIP·MANUAL</span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="霓虹终端.html">霓虹终端</a></li>
+    <li><a href="数据档案库.html">数据档案库</a></li>
+    <li><a href="未来编年史.html">未来编年史</a></li>
+    <li><a href="#" class="active-link">装备手册</a></li>
+    <li><a href="#order-form" class="nav-cta">预订装备</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="菜单"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="main-wrapper">
+
+  <!-- 英雄区 -->
+  <div class="page-hero">
+    <span class="hero-icon">⚙️</span>
+    <h1>CYBER EQUIPMENT MANUAL</h1>
+    <p class="subtitle">&gt;&gt; 赛博装备录 · 从武器到义体，一册尽览 &lt;&lt;</p>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats-row">
+    <div class="stat-item"><span class="s-icon">🔫</span><div class="s-value">347</div><div class="s-label">武器型号</div></div>
+    <div class="stat-item"><span class="s-icon">🦾</span><div class="s-value">892</div><div class="s-label">义体部件</div></div>
+    <div class="stat-item"><span class="s-icon">🚗</span><div class="s-value">156</div><div class="s-label">载具类型</div></div>
+    <div class="stat-item"><span class="s-icon">🖥️</span><div class="s-value">2,104</div><div class="s-label">软件工具</div></div>
+    <div class="stat-item"><span class="s-icon">🏪</span><div class="s-value">47</div><div class="s-label">授权经销商</div></div>
+  </div>
+
+  <!-- 通知 -->
+  <div class="alert-banner alert-warn">⚠️ 以下装备信息仅供授权用户查阅。非法持有或使用CLASSIFIED级别的装备可能违反当地法律。请在进行任何义体改造前咨询认证医师。</div>
+
+  <!-- 搜索 -->
+  <div class="search-section">
+    <div class="search-wrap">
+      <input type="text" id="equipSearch" placeholder="搜索装备... 如: 等离子步枪、神经接口、光学迷彩">
+      <button onclick="filterEquip()">🔍 检索</button>
+    </div>
+    <div class="search-hints">
+      <span onclick="document.getElementById('equipSearch').value='等离子';filterEquip()">等离子武器</span>
+      <span onclick="document.getElementById('equipSearch').value='义体';filterEquip()">义体改造</span>
+      <span onclick="document.getElementById('equipSearch').value='ICE';filterEquip()">ICE系统</span>
+      <span onclick="document.getElementById('equipSearch').value='飞行';filterEquip()">飞行载具</span>
+      <span onclick="document.getElementById('equipSearch').value='黑客';filterEquip()">黑客工具</span>
+      <span onclick="document.getElementById('equipSearch').value='隐身';filterEquip()">隐身装备</span>
+    </div>
+  </div>
+
+  <!-- 分类筛选 -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-tag active" data-filter="all">全部</button>
+    <button class="filter-tag" data-filter="weapon">武器系统</button>
+    <button class="filter-tag" data-filter="cyber">义体改造</button>
+    <button class="filter-tag" data-filter="vehicle">载具</button>
+    <button class="filter-tag" data-filter="armor">护甲</button>
+    <button class="filter-tag" data-filter="tool">黑客工具</button>
+    <button class="filter-tag" data-filter="drug">增强药物</button>
+    <button class="filter-tag" data-filter="drone">无人机</button>
+  </div>
+
+  <!-- ========== 武器系统 ========== -->
+  <div class="section-header" id="weapons"><div class="section-tag">[ WEAPONS ]</div><h2 class="section-title">// 武器系统</h2><div class="divider"></div></div>
+
+  <div class="equip-grid" id="equipGrid">
+    <!-- 武器1 -->
+    <div class="equip-card" data-category="weapon" data-keywords="等离子 步枪 能量 武器">
+      <div class="equip-card-image eq-bg-1"><span>🔫</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「日炎」等离子突击步枪</h3>
+        <div class="equip-model">型号: PAR-X7 · 荒坂集团制造</div>
+        <p>将特殊气体加热至等离子态，通过磁场加速发射。有效射程800米，单发能量输出约50kJ。配备智能瞄准系统，可穿透大多数常规护甲。是当今军事和安保力量的主力武器。</p>
+        <div class="equip-specs"><span>🔫 伤害: 极高</span><span>🎯 精度: 92%</span><span>⚡ 射速: 600RPM</span><span>📦 弹匣: 50发</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 287,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器2 -->
+    <div class="equip-card" data-category="weapon" data-keywords="手枪 电磁 轨道 便携">
+      <div class="equip-card-image eq-bg-2"><span>🔫</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「针尖」电磁轨道手枪</h3>
+        <div class="equip-model">型号: EMP-4 · 泽塔科技制造</div>
+        <p>微型电磁轨道加速技术实现手枪尺寸化。发射钨钢穿甲弹，初速达3.2km/s，可有效穿透20mm均质钢甲。后坐力通过反向电磁脉冲抵消。隐蔽携带的首选重型火力。</p>
+        <div class="equip-specs"><span>🔫 伤害: 极高</span><span>🎯 精度: 78%</span><span>⚡ 射速: 120RPM</span><span>📦 弹匣: 8发</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 165,000</span><span class="stock stock-low">仅剩3件</span></div>
+    </div>
+
+    <!-- 武器3 -->
+    <div class="equip-card" data-category="weapon" data-keywords="狙击 激光 远程 精准">
+      <div class="equip-card-image eq-bg-3"><span>🎯</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「夜鹰」激光狙击系统</h3>
+        <div class="equip-model">型号: LSR-12 · 泽塔科技制造</div>
+        <p>高能脉冲激光狙击系统。有效射程3.5公里，光斑直径在最大射程处仍保持在5cm以内。光束以光速传播，无需计算弹道下坠和风偏。配备量子成像瞄准镜，可穿透烟雾和轻型掩体。</p>
+        <div class="equip-specs"><span>🔫 伤害: 致命</span><span>🎯 精度: 99%</span><span>⚡ 射速: 30RPM</span><span>🔋 能量: 20发</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 520,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器4 -->
+    <div class="equip-card" data-category="weapon" data-keywords="冲锋枪 近战 高频 振动">
+      <div class="equip-card-image eq-bg-4"><span>⚔️</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「蜂鸣」高频振动刀</h3>
+        <div class="equip-model">型号: HVB-9 · 赛博动力制造</div>
+        <p>刀锋以超声波频率振动，每秒超过40,000次。切割绝大多数材料如同切入黄油。配备安全锁防止误触。适合近身格斗和隐蔽作战。刀刃由单分子碳纳米管编织而成，几乎永不磨损。</p>
+        <div class="equip-specs"><span>🔪 类型: 近战</span><span>⚡ 振动: 40kHz</span><span>📏 刃长: 18cm</span><span>⚖️ 重量: 0.3kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 48,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器5 -->
+    <div class="equip-card" data-category="weapon" data-keywords="火箭 发射器 爆炸 重型">
+      <div class="equip-card-image eq-bg-5"><span>🚀</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「雷神之锤」智能火箭发射器</h3>
+        <div class="equip-model">型号: SRL-22 · 凤凰重工制造</div>
+        <p>四联装智能火箭发射系统。每枚火箭配备AI制导头，可独立追踪不同目标。弹头可选高爆、穿甲、EMP或烟雾四种类型。有效射程2公里。锁定后发射，无需持续引导。</p>
+        <div class="equip-specs"><span>💥 爆炸: 范围杀伤</span><span>🎯 锁定: 4目标</span><span>📐 射程: 2km</span><span>📦 备弹: 4发</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 390,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器6 -->
+    <div class="equip-card" data-category="weapon" data-keywords="EMP 电磁 脉冲 非致命">
+      <div class="equip-card-image eq-bg-6"><span>⚡</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「沉默者」EMP手雷</h3>
+        <div class="equip-model">型号: EMPG-3 · 天网通信制造</div>
+        <p>投掷后释放直径15米的电磁脉冲场，使范围内所有电子设备瘫痪60秒。不造成物理伤害，但对赛博义体使用者有短暂的神经系统干扰。攻城和电子战必备。</p>
+        <div class="equip-specs"><span>📡 范围: 15m</span><span>⏱️ 持续: 60秒</span><span>⚖️ 重量: 0.2kg</span><span>🔋 激活: 3秒延迟</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 12,000/枚</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器7 -->
+    <div class="equip-card" data-category="weapon" data-keywords="自动 炮塔 防御 哨戒">
+      <div class="equip-card-image eq-bg-7"><span>🏰</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「守望者」自动哨戒炮塔</h3>
+        <div class="equip-model">型号: AST-8 · 荒坂集团制造</div>
+        <p>部署后自动识别并攻击敌方目标。配备双管等离子机枪和360度红外/量子双模传感器。AI敌我识别系统误判率低于0.001%。可远程通过神经接口控制。家庭和基地防御的终极选择。</p>
+        <div class="equip-specs"><span>🔫 火力: 双管</span><span>👁️ 探测: 360°</span><span>🔋 续航: 72h</span><span>⚖️ 重量: 45kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 850,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 武器8 -->
+    <div class="equip-card" data-category="weapon" data-keywords="毒素 注射 隐秘 暗杀">
+      <div class="equip-card-image eq-bg-8"><span>💉</span><span class="equip-tier tier-illegal">非法</span></div>
+      <div class="equip-card-body">
+        <h3>「幽灵之吻」神经毒素注射器</h3>
+        <div class="equip-model">型号: NTI-X · 未知制造</div>
+        <p>微型注射装置，伪装成普通戒指。内含合成神经毒素，接触皮肤后3秒内导致目标失去意识，30秒内导致呼吸衰竭。无法被常规安检设备探测。持有此物品在大多数地区属于严重违法行为。</p>
+        <div class="equip-specs"><span>☠️ 毒性: 致命</span><span>⏱️ 起效: 3秒</span><span>🔍 可探测: 否</span><span>⚖️ 容量: 3剂</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 95,000</span><span class="stock stock-out">禁售</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 义体改造 ========== -->
+  <div class="section-header" id="cyberware"><div class="section-tag">[ CYBERWARE ]</div><h2 class="section-title">// 义体改造目录</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <!-- 义体1 -->
+    <div class="equip-card" data-category="cyber" data-keywords="神经 接口 脑机 植入">
+      <div class="equip-card-image eq-bg-1"><span>🧠</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「全知」第七代神经接口</h3>
+        <div class="equip-model">型号: NCI-7 · 泽塔科技制造</div>
+        <p>最新一代消费级脑机接口。10TB/s双向带宽，支持256通道同步神经数据传输。内置AI助手、实时语言翻译、增强记忆回放和梦境录制功能。兼容市面所有神经应用生态。</p>
+        <div class="equip-specs"><span>📡 带宽: 10TB/s</span><span>🔢 通道: 256</span><span>⚡ 延迟: 0.3ms</span><span>🔋 续航: 72h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 1,280,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体2 -->
+    <div class="equip-card" data-category="cyber" data-keywords="仿生 手臂 义肢 力量">
+      <div class="equip-card-image eq-bg-2"><span>🦾</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「泰坦」仿生力量手臂</h3>
+        <div class="equip-model">型号: BAA-12 · 赛博动力制造</div>
+        <p>全功能仿生手臂替代品。最大抓握力450kg，精细操作精度0.01mm。内置等离子焊接工具、微型计算机和紧急医疗注射器。仿生皮肤可选，外观与原生手臂无异。</p>
+        <div class="equip-specs"><span>💪 抓握力: 450kg</span><span>🎯 精度: 0.01mm</span><span>🛠️ 工具: 内置</span><span>⚖️ 重量: 3.2kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 340,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体3 -->
+    <div class="equip-card" data-category="cyber" data-keywords="光学 眼睛 视觉 增强">
+      <div class="equip-card-image eq-bg-3"><span>👁️</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「鹰眼」量子光学植入体</h3>
+        <div class="equip-model">型号: QOI-5 · 生物源制造</div>
+        <p>完全替代原生眼球的量子光学系统。提供40倍光学变焦、红外/紫外光谱、X光透视（受限模式）和AR信息叠加。内置4K视频录制和实时目标追踪。</p>
+        <div class="equip-specs"><span>🔍 变焦: 40x</span><span>🌈 光谱: 全波段</span><span>📹 录制: 4K/120fps</span><span>⚡ 延迟: 0.1ms</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 490,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体4 -->
+    <div class="equip-card" data-category="cyber" data-keywords="腿部 奔跑 速度 机动">
+      <div class="equip-card-image eq-bg-4"><span>🦿</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「猎豹」碳纤维增强腿</h3>
+        <div class="equip-model">型号: CFL-8 · 赛博动力制造</div>
+        <p>碳纳米管强化仿生腿。最大奔跑速度65km/h，垂直跳跃高度3米，从15米高度着陆无损伤。内置陀螺仪稳定系统，在湿滑或不稳定地面上提供完美平衡。</p>
+        <div class="equip-specs"><span>🏃 极速: 65km/h</span><span>🦘 跳跃: 3m</span><span>🛬 抗冲击: 15m</span><span>⚖️ 重量: 2.8kg/条</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 280,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体5 -->
+    <div class="equip-card" data-category="cyber" data-keywords="皮肤 隐身 光学 迷彩">
+      <div class="equip-card-image eq-bg-5"><span>🫥</span><span class="equip-tier tier-illegal">非法</span></div>
+      <div class="equip-card-body">
+        <h3>「幽灵」光学迷彩皮肤</h3>
+        <div class="equip-model">型号: OCS-X · 暗影数据制造</div>
+        <p>覆盖全身的纳米光学纤维皮肤替代品。实时捕捉周围光线并在表面重现，使使用者近乎隐形。耗电极高，持续使用时间不超过15分钟。在大多数地区属于非法装备。</p>
+        <div class="equip-specs"><span>👻 隐身: 95%</span><span>⏱️ 持续: 15min</span><span>🔋 充电: 2h</span><span>⚠️ 合法: 否</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 2,100,000</span><span class="stock stock-out">黑市渠道</span></div>
+    </div>
+
+    <!-- 义体6 -->
+    <div class="equip-card" data-category="cyber" data-keywords="肺部 呼吸 过滤 毒素">
+      <div class="equip-card-image eq-bg-6"><span>🫁</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「纯净」纳米过滤肺</h3>
+        <div class="equip-model">型号: NFL-6 · 生物源制造</div>
+        <p>替代原生肺部的纳米纤维过滤系统。可过滤99.97%的空气污染物、毒素和病原体。配备氧气储备囊，可在真空环境中提供15分钟应急呼吸。生活在污染严重城市居民的必需品。</p>
+        <div class="equip-specs"><span>🌬️ 过滤: 99.97%</span><span>🎈 储氧: 15min</span><span>🦠 抗病原: 是</span><span>⚖️ 重量: 0.8kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 195,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体7 -->
+    <div class="equip-card" data-category="cyber" data-keywords="心脏 循环 持久 耐力">
+      <div class="equip-card-image eq-bg-7"><span>❤️</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「永动」量子循环心脏</h3>
+        <div class="equip-model">型号: QCH-3 · 生物源制造</div>
+        <p>基于量子泵技术的全人工心脏。无需心跳即可实现持续平稳的血液循环。输出可动态调节——静息时节能，运动时提供3倍于原生心脏的血流量。理论寿命超过200年。</p>
+        <div class="equip-specs"><span>💓 输出: 3x原生</span><span>⏳ 寿命: 200年+</span><span>🔋 能源: 量子电池</span><span>⚖️ 重量: 0.5kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 2,350,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 义体8 -->
+    <div class="equip-card" data-category="cyber" data-keywords="耳朵 听觉 声纳 监听">
+      <div class="equip-card-image eq-bg-8"><span>👂</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「蝙蝠」超声波听觉植入体</h3>
+        <div class="equip-model">型号: UAI-4 · 天网通信制造</div>
+        <p>扩展听觉频率范围至10Hz-100kHz（原生为20Hz-20kHz）。配备主动声纳功能，可在黑暗中通过回声定位构建3D环境地图。内置实时音频分析和语言翻译。</p>
+        <div class="equip-specs"><span>👂 频率: 10Hz-100kHz</span><span>📡 声纳: 50m</span><span>🗣️ 翻译: 实时</span><span>🔋 续航: 48h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 175,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 武器装备对比表 ========== -->
+  <div class="section-header"><div class="section-tag">[ COMPARISON ]</div><h2 class="section-title">// 突击步枪横向对比</h2><div class="divider"></div></div>
+
+  <div class="compare-section">
+    <table class="compare-table">
+      <thead><tr><th>型号</th><th>「日炎」PAR-X7</th><th>「暴风雨」AR-22</th><th>「幽灵」SAR-9</th><th>「铁幕」CAR-15</th></tr></thead>
+      <tbody>
+        <tr><td>类型</td><td>等离子突击步枪</td><td>电磁轨道步枪</td><td>消音突击步枪</td><td>传统火药步枪</td></tr>
+        <tr><td>制造商</td><td>荒坂集团</td><td>泽塔科技</td><td>暗影数据</td><td>凤凰重工</td></tr>
+        <tr><td>伤害输出</td><td class="best">极高</td><td>高</td><td>中</td><td class="worst">中低</td></tr>
+        <tr><td>射速</td><td>600 RPM</td><td class="best">900 RPM</td><td>450 RPM</td><td class="worst">700 RPM</td></tr>
+        <tr><td>精度</td><td class="best">92%</td><td>85%</td><td>88%</td><td class="worst">72%</td></tr>
+        <tr><td>有效射程</td><td class="best">800m</td><td>650m</td><td>500m</td><td class="worst">400m</td></tr>
+        <tr><td>重量</td><td>3.2kg</td><td class="best">2.8kg</td><td>3.5kg</td><td class="worst">4.1kg</td></tr>
+        <tr><td>价格</td><td>¥287,000</td><td class="worst">¥420,000</td><td class="best">¥180,000</td><td>¥55,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 载具 ========== -->
+  <div class="section-header" id="vehicles"><div class="section-tag">[ VEHICLES ]</div><h2 class="section-title">// 载具目录</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <!-- 载具1 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="飞行 汽车 悬浮 城市">
+      <div class="equip-card-image eq-bg-1"><span>🚗</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「游隼」悬浮飞行车</h3>
+        <div class="equip-model">型号: HVC-22 · 荒坂集团制造</div>
+        <p>反重力悬浮技术实现的三维机动载具。最高速度450km/h，飞行高度可达1000米。自动驾驶系统符合全球航空标准。4座豪华配置，是城市精英出行的标志性选择。</p>
+        <div class="equip-specs"><span>🏎️ 极速: 450km/h</span><span>📐 升限: 1000m</span><span>👥 座位: 4</span><span>🔋 续航: 800km</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 4,500,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 载具2 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="摩托 高速 机动 灵活">
+      <div class="equip-card-image eq-bg-2"><span>🏍️</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「闪电」等离子摩托</h3>
+        <div class="equip-model">型号: PMB-7 · 赛博动力制造</div>
+        <p>单座高速等离子摩托。极速380km/h，0-100km/h加速仅1.2秒。磁悬浮车轮适应任何地形。配备紧急弹射系统和碰撞预警AI。城市巷道间的终极穿梭工具。</p>
+        <div class="equip-specs"><span>🏍️ 极速: 380km/h</span><span>⚡ 加速: 1.2s/100km</span><span>🛞 适应: 全地形</span><span>🔋 续航: 450km</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 680,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 载具3 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="装甲 运输 重型 军事">
+      <div class="equip-card-image eq-bg-3"><span>🚛</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「堡垒」装甲运输车</h3>
+        <div class="equip-model">型号: APC-12 · 凤凰重工制造</div>
+        <p>重型装甲人员运输车。可抵御等离子步枪直射和大多数爆炸物攻击。载员12人，配备自动哨戒炮塔和烟幕发射器。ICE防火墙集成保护车载电子系统免受黑客攻击。</p>
+        <div class="equip-specs"><span>🛡️ 装甲: 重型</span><span>👥 载员: 12</span><span>🏎️ 极速: 160km/h</span><span>🔋 续航: 600km</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 8,700,000</span><span class="stock stock-low">仅剩2辆</span></div>
+    </div>
+
+    <!-- 载具4 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="无人机 物流 运输 货运">
+      <div class="equip-card-image eq-bg-4"><span>🚁</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「搬运工」重型物流无人机</h3>
+        <div class="equip-model">型号: HDN-9 · 天网通信制造</div>
+        <p>大型四旋翼货运无人机。最大载重500kg，续航距离200km。配备AI避障和自动航线规划系统。支持量子加密的远程操控或完全自主飞行。城市物流的主力设备。</p>
+        <div class="equip-specs"><span>📦 载重: 500kg</span><span>🛫 航程: 200km</span><span>⚡ 极速: 120km/h</span><span>🔋 续航: 3h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 320,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 载具5 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="潜水 水下 探测 海洋">
+      <div class="equip-card-image eq-bg-5"><span>🤿</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「深海者」个人潜水器</h3>
+        <div class="equip-model">型号: PSV-6 · 纯净水合制造</div>
+        <p>双座深海探测潜水器。最大下潜深度6000米，配备高能LED照明阵列和机械臂。生命维持系统可供2人使用72小时。适用于深海科研、打捞和海底设施维护。</p>
+        <div class="equip-specs"><span>🌊 深度: 6000m</span><span>👥 乘员: 2</span><span>⏱️ 生命维持: 72h</span><span>🔋 能源: 核电池</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 5,600,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <!-- 载具6 -->
+    <div class="equip-card" data-category="vehicle" data-keywords="飞船 星际 太空 轨道">
+      <div class="equip-card-image eq-bg-6"><span>🚀</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「星跃」私人轨道飞船</h3>
+        <div class="equip-model">型号: POS-1 · 泽塔科技制造</div>
+        <p>全球首款消费级轨道飞船。等离子引擎提供地球至月球的4小时航程。载员6人，全自动飞行系统无需专业飞行员执照。配备ICE防火墙和量子通信阵列。</p>
+        <div class="equip-specs"><span>🌍➡️🌙: 4h</span><span>👥 乘员: 6</span><span>⚡ 引擎: 等离子</span><span>💰 价格: 联系咨询</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 120,000,000</span><span class="stock stock-low">限量生产</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 黑客工具 ========== -->
+  <div class="section-header" id="hacktools"><div class="section-tag">[ HACK TOOLS ]</div><h2 class="section-title">// 黑客工具集</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="tool" data-keywords="破解 终端 入侵 网络">
+      <div class="equip-card-image eq-bg-1"><span>💻</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「万能钥匙」量子破解终端</h3>
+        <div class="equip-model">型号: QCT-8 · 暗影数据制造</div>
+        <p>手持量子计算破解设备。利用量子退火算法可在数分钟内破解传统计算机需要数千年的加密。兼容ICE v5.0以下所有防火墙系统。法律灰色地带——持有不违法，使用可能违法。</p>
+        <div class="equip-specs"><span>🔓 破解: ICE v5-</span><span>⚡ 速度: 量子级</span><span>📡 范围: 100m</span><span>🔋 续航: 4h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 750,000</span><span class="stock stock-low">限量供应</span></div>
+    </div>
+
+    <div class="equip-card" data-category="tool" data-keywords="嗅探 监听 数据 拦截">
+      <div class="equip-card-image eq-bg-2"><span>📡</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「捕风者」量子通信嗅探器</h3>
+        <div class="equip-model">型号: QSN-4 · 天网通信制造（官方否认）</div>
+        <p>可拦截并解码量子加密通信的便携设备。理论上量子通信不可窃听，但该设备通过捕获通信双方的量子纠缠残余信号实现部分解码。成功率约15%。高度非法。</p>
+        <div class="equip-specs"><span>📡 成功率: 15%</span><span>📐 范围: 500m</span><span>⚠️ 合法: 否</span><span>🔋 续航: 2h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 1,450,000</span><span class="stock stock-out">黑市渠道</span></div>
+    </div>
+
+    <div class="equip-card" data-category="tool" data-keywords="伪装 身份 欺骗 生物">
+      <div class="equip-card-image eq-bg-3"><span>🎭</span><span class="equip-tier tier-illegal">非法</span></div>
+      <div class="equip-card-body">
+        <h3>「镜中人」生物特征欺骗器</h3>
+        <div class="equip-model">型号: BFS-2 · 未知制造</div>
+        <p>可伪造指纹、虹膜、声纹甚至DNA序列的便携装置。能够欺骗绝大多数民用生物识别系统。每次使用后需更换一次性生物芯片。在所有司法管辖区均为非法设备。</p>
+        <div class="equip-specs"><span>🖐️ 欺骗: 全部生物特征</span><span>🔢 模式: 12种</span><span>⚠️ 合法: 否</span><span>💾 芯片: 一次性</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 380,000</span><span class="stock stock-out">禁售</span></div>
+    </div>
+
+    <div class="equip-card" data-category="tool" data-keywords="AI 病毒 攻击 恶意">
+      <div class="equip-card-image eq-bg-4"><span>🦠</span><span class="equip-tier tier-illegal">非法</span></div>
+      <div class="equip-card-body">
+        <h3>「数据瘟疫」AI病毒套件</h3>
+        <div class="equip-model">型号: AVK-7 · 暗网发布</div>
+        <p>自适应AI病毒生成工具包。能自动分析目标系统的防御结构并生成定制化攻击向量。一旦感染，可在网络内自我复制和进化。ICE v7.0以上的系统具有免疫力。最高级别的网络武器。</p>
+        <div class="equip-specs"><span>🧬 自适应: 是</span><span>🛡️ 免疫: ICE v7+</span><span>⚠️ 合法: 否</span><span>💰 价格: 面议</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 5,000,000+</span><span class="stock stock-out">最高警戒</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 增强药物 ========== -->
+  <div class="section-header" id="drugs"><div class="section-tag">[ ENHANCEMENT DRUGS ]</div><h2 class="section-title">// 增强药物目录</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="drug" data-keywords="反应 速度 神经 加速">
+      <div class="equip-card-image eq-bg-1"><span>💊</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「闪电」神经加速剂</h3>
+        <div class="equip-model">型号: NAC-12 · 生物源制造（处方药）</div>
+        <p>短期提升神经传导速度300%，使使用者感知到的时间流速减慢。在15分钟的有效期内，反应速度提升约5倍。副作用包括后续4小时的严重疲劳和头痛。合法处方用途包括紧急医疗和军事行动。</p>
+        <div class="equip-specs"><span>⚡ 加速: 300%</span><span>⏱️ 持续: 15min</span><span>💊 副作用: 严重疲劳</span><span>📋 处方: 必需</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 8,500/剂</span><span class="stock stock-in">处方药</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drug" data-keywords="力量 肌肉 增强 爆发">
+      <div class="equip-card-image eq-bg-2"><span>💪</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「狂战士」肌肉增强素</h3>
+        <div class="equip-model">型号: MES-5 · 赛博动力制造（管制药品）</div>
+        <p>临时增加肌肉纤维收缩力400%。在10分钟效果期内，普通人可举起超过500kg。高度成瘾性，反复使用会导致原生肌肉组织永久性损伤。仅限军方和授权安保人员使用。</p>
+        <div class="equip-specs"><span>💪 增强: 400%</span><span>⏱️ 持续: 10min</span><span>⚠️ 成瘾: 高</span><span>📋 管制: 是</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 15,000/剂</span><span class="stock stock-low">严格管制</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drug" data-keywords="记忆 认知 学习 智能">
+      <div class="equip-card-image eq-bg-3"><span>🧠</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「学者」认知增强片</h3>
+        <div class="equip-model">型号: CES-8 · 生物源制造（非处方）</div>
+        <p>提升工作记忆容量和模式识别能力。在8小时有效期内，学习效率和问题解决能力提升约200%。被学生和知识工作者广泛使用。低成瘾性，长期使用安全性已通过三期临床验证。</p>
+        <div class="equip-specs"><span>📚 增强: 学习+200%</span><span>⏱️ 持续: 8h</span><span>⚠️ 成瘾: 低</span><span>📋 处方: 否</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 2,500/片</span><span class="stock stock-in">非处方</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drug" data-keywords="镇定 情绪 控制 焦虑">
+      <div class="equip-card-image eq-bg-4"><span>😌</span><span class="equip-tier tier-common">普通</span></div>
+      <div class="equip-card-body">
+        <h3>「宁静」情绪稳定剂</h3>
+        <div class="equip-model">型号: EMS-3 · 纯净水合制造（非处方）</div>
+        <p>平衡神经递质水平，消除焦虑和恐慌反应而不影响认知能力。在赛博朋克城市的高压环境中，超过60%的居民定期使用此类情绪调节药物。无显著副作用，无成瘾性。被世界卫生组织推荐为基本药物。</p>
+        <div class="equip-specs"><span>🧘 效果: 情绪稳定</span><span>⏱️ 持续: 12h</span><span>⚠️ 成瘾: 无</span><span>📋 处方: 否</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 350/片</span><span class="stock stock-in">非处方</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 护甲 ========== -->
+  <div class="section-header" id="armor"><div class="section-tag">[ ARMOR ]</div><h2 class="section-title">// 护甲系统</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="armor" data-keywords="防弹 轻量 隐蔽 日常">
+      <div class="equip-card-image eq-bg-1"><span>👔</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「第二皮肤」纳米防弹衣</h3>
+        <div class="equip-model">型号: NBS-10 · 荒坂集团制造</div>
+        <p>外观与普通商务衬衫无异，实际由剪切增稠纳米纤维编织而成。可抵御手枪子弹和刀刃攻击，分散冲击力至全身。带有基本的环境温度调节功能。上层社会日常穿着的安全选择。</p>
+        <div class="equip-specs"><span>🛡️ 防护: 手枪级</span><span>👕 外观: 普通衬衫</span><span>🌡️ 温控: 是</span><span>⚖️ 重量: 0.8kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 220,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <div class="equip-card" data-category="armor" data-keywords="重型 全防护 战斗 军用">
+      <div class="equip-card-image eq-bg-2"><span>🛡️</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「铁壁」动力外骨骼装甲</h3>
+        <div class="equip-model">型号: PEA-7 · 凤凰重工制造</div>
+        <p>全封闭动力装甲系统。可完全抵御等离子步枪直射和近距离爆炸。配备力量增强伺服系统（举力2吨）、集成武器平台和72小时生命维持系统。单人即可成为移动堡垒。</p>
+        <div class="equip-specs"><span>🛡️ 防护: 全方位</span><span>💪 举力: 2吨</span><span>⏱️ 续航: 72h</span><span>⚖️ 重量: 180kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 15,000,000</span><span class="stock stock-low">军方订单优先</span></div>
+    </div>
+
+    <div class="equip-card" data-category="armor" data-keywords="盾牌 能量 便携 防御">
+      <div class="equip-card-image eq-bg-3"><span>🔰</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「力场」便携能量护盾</h3>
+        <div class="equip-model">型号: PES-5 · 泽塔科技制造</div>
+        <p>佩戴在手腕上的能量护盾发生器。激活后在佩戴者前方生成直径1.5米的等离子屏障，可吸收动能和能量攻击。电池续航支持连续使用20分钟或承受15次直接命中后需要重新充电。</p>
+        <div class="equip-specs"><span>🔰 屏障: 1.5m直径</span><span>⏱️ 续航: 20min</span><span>🛡️ 承受: 15次命中</span><span>⚖️ 重量: 1.8kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 420,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <div class="equip-card" data-category="armor" data-keywords="头盔 战术 HUD 战场">
+      <div class="equip-card-image eq-bg-4"><span>🪖</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「全知头盔」战术HUD系统</h3>
+        <div class="equip-model">型号: THS-9 · 荒坂集团制造</div>
+        <p>集成平视显示、360度态势感知、威胁评估AI和团队通信的战术头盔。透明显示屏叠加战场信息于自然视野之上。可与ICE防火墙和单兵武器系统直接联网，实现信息一体化作战。</p>
+        <div class="equip-specs"><span>👁️ 视野: 360°</span><span>📡 通信: 量子加密</span><span>🔋 续航: 24h</span><span>⚖️ 重量: 1.5kg</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 580,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 装备性能评级 ========== -->
+  <div class="section-header"><div class="section-tag">[ PERFORMANCE RATINGS ]</div><h2 class="section-title">// 武器系统性能评级</h2><div class="divider"></div></div>
+
+  <div class="progress-group">
+    <div class="progress-item"><div class="progress-label"><span>「日炎」PAR-X7 — 综合评分</span><span class="val">94/100</span></div><div class="progress-bar"><div class="progress-fill fill-orange" style="width:94%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>「针尖」EMP-4 — 综合评分</span><span class="val">87/100</span></div><div class="progress-bar"><div class="progress-fill fill-cyan" style="width:87%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>「夜鹰」LSR-12 — 综合评分</span><span class="val">96/100</span></div><div class="progress-bar"><div class="progress-fill fill-purple" style="width:96%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>「铁壁」PEA-7 — 综合评分</span><span class="val">98/100</span></div><div class="progress-bar"><div class="progress-fill fill-green" style="width:98%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>「力场」PES-5 — 综合评分</span><span class="val">82/100</span></div><div class="progress-bar"><div class="progress-fill fill-pink" style="width:82%"></div></div></div>
+    <div class="progress-item"><div class="progress-label"><span>「全知头盔」THS-9 — 综合评分</span><span class="val">91/100</span></div><div class="progress-bar"><div class="progress-fill fill-orange" style="width:91%"></div></div></div>
+  </div>
+
+  <!-- ========== 赛博朋克术语词典 ========== -->
+  <div class="section-header"><div class="section-tag">[ GLOSSARY ]</div><h2 class="section-title">// 赛博朋克术语词典</h2><div class="divider"></div></div>
+
+  <div class="glossary-section" id="glossary">
+    <div class="glossary-item"><div class="glossary-term">ICE</div><div class="glossary-def"><span class="gloss-tag">网络安全</span>Intrusion Countermeasures Electronics（智能反入侵电子系统）的缩写。保护网络和系统免受黑客攻击的AI防御系统。现代ICE分为七个防护层级。</div></div>
+    <div class="glossary-item"><div class="glossary-term">赛博空间</div><div class="glossary-def"><span class="gloss-tag">虚拟世界</span>由全球量子互联网构成的虚拟信息空间。用户可通过神经接口以意识形式直接接入。已成为与物理世界同等重要的存在维度。</div></div>
+    <div class="glossary-item"><div class="glossary-term">义体 (Chrome)</div><div class="glossary-def"><span class="gloss-tag">人体增强</span>植入人体的机械或电子设备。从简单的皮下芯片到完整的仿生肢体替代品。"Chrome"（铬）是街头俚语，源自早期义体的金属光泽外观。</div></div>
+    <div class="glossary-item"><div class="glossary-term">神经接口 (NCI)</div><div class="glossary-def"><span class="gloss-tag">脑机接口</span>Neural Communication Interface的缩写。植入大脑的电子设备，实现人脑与外部设备之间的直接通信。现代NCI支持高达10TB/s的带宽。</div></div>
+    <div class="glossary-item"><div class="glossary-term">量子纠缠中继</div><div class="glossary-def"><span class="gloss-tag">通信技术</span>利用量子纠缠现象实现远距离信息传输的技术。量子互联网的核心技术，使得全球近乎零延迟的通信成为可能。</div></div>
+    <div class="glossary-item"><div class="glossary-term">意识上传</div><div class="glossary-def"><span class="gloss-tag">后人类技术</span>将人类大脑的完整神经连接组扫描并转移到量子计算基质中的技术。上传后的"数字人类"保持完整的自我意识、记忆和人格。2096年首次成功实施。</div></div>
+    <div class="glossary-item"><div class="glossary-term">数字永生</div><div class="glossary-def"><span class="gloss-tag">后人类概念</span>通过意识上传实现的理论上的"永生"。虽然上传后的数字意识可以无限期存在，但关于它是否真的是"原来的那个人"，哲学界仍存在激烈争论。</div></div>
+    <div class="glossary-item"><div class="glossary-term">赛博精神病</div><div class="glossary-def"><span class="gloss-tag">医学状况</span>因过度义体改造导致的精神障碍。患者在植入过多义体后丧失自我认同感，将非改造人类视为"低等生物"。发病率约0.3%。</div></div>
+    <div class="glossary-item"><div class="glossary-term">影子市场 (Black Bazaar)</div><div class="glossary-def"><span class="gloss-tag">非法经济</span>赛博空间中的地下交易市场。交易内容从非法义体零件到AI病毒。使用匿名量子路由和加密货币进行交易，几乎无法追踪。</div></div>
+    <div class="glossary-item"><div class="glossary-term">全息投影</div><div class="glossary-def"><span class="gloss-tag">显示技术</span>利用激光等离子体在空气中生成三维发光图像的技术。从广告牌到个人通信，全息投影已无处不在。到2052年，覆盖全球87%的城市面积。</div></div>
+    <div class="glossary-item"><div class="glossary-term">量子密钥分发 (QKD)</div><div class="glossary-def"><span class="gloss-tag">加密技术</span>利用量子力学原理实现理论上不可破解的密钥交换。任何窃听尝试都会立即被检测到。是量子互联网安全的基石。</div></div>
+    <div class="glossary-item"><div class="glossary-term">后人类</div><div class="glossary-def"><span class="gloss-tag">社会学概念</span>通过技术手段显著超越正常人类生理或认知极限的个体。2101年被正式写入国际法。包括意识上传者、深度基因增强者和高级AI实体。</div></div>
+    <div class="glossary-item"><div class="glossary-term">等离子武器</div><div class="glossary-def"><span class="gloss-tag">武器技术</span>将气体加热至等离子态并通过磁场加速发射的武器系统。相比传统火药武器具有更高的初速、更好的穿甲能力和几乎为零的后坐力。</div></div>
+    <div class="glossary-item"><div class="glossary-term">联语 (LianGo)</div><div class="glossary-def"><span class="gloss-tag">语言</span>融合中文、英语、日语和西班牙语的全球混合语言。22世纪初成为全球95%人口的通用语言。是数百年文化融合的产物。</div></div>
+    <div class="glossary-item"><div class="glossary-term">赛博格 (Cyborg)</div><div class="glossary-def"><span class="gloss-tag">人类分类</span>Cybernetic Organism的缩写。指接受了机械或电子植入物的人类。根据义体化程度分为轻量级（<20%）、中量级（20-50%）和重量级（>50%）。</div></div>
+  </div>
+
+  <!-- ========== 城市生存指南 ========== -->
+  <div class="section-header"><div class="section-tag">[ SURVIVAL GUIDE ]</div><h2 class="section-title">// 赛博城市生存指南</h2><div class="divider"></div></div>
+
+  <div class="survival-grid">
+    <div class="survival-card"><div class="s-num">#01</div><h3>永远备份你的意识</h3><p>如果你拥有神经接口，定期将记忆和人格备份到安全的量子存储中。万一遭遇不测，你至少可以从最近的备份点恢复。建议备份频率：每周一次完整备份，每日一次增量备份。</p></div>
+    <div class="survival-card"><div class="s-num">#02</div><h3>升级你的ICE</h3><p>确保你的个人防火墙始终是最新版本。黑客不会针对特定个人——他们扫描整个网络寻找漏洞。一个过时的ICE系统相当于敞开的门。自动更新是必须的，手动检查是明智的。</p></div>
+    <div class="survival-card"><div class="s-num">#03</div><h3>了解你的义体</h3><p>在接受任何义体改造前，充分了解其功能、副作用和维护需求。确保你的义体医师持有有效执照。黑市义体可能便宜，但"便宜"的价格标签背后可能隐藏着灾难性的后果。</p></div>
+    <div class="survival-card"><div class="s-num">#04</div><h3>保持物理防御能力</h3><p>无论科技多么发达，物理世界的基本安全原则不变。学会基本的自卫技能。携带合法的防身工具。了解你所在区域的治安状况。避免在没有安全保障的深夜独自行走于高风险区域。</p></div>
+    <div class="survival-card"><div class="s-num">#05</div><h3>建立可信社交网络</h3><p>在这个充满匿名和欺骗的世界里，拥有一个你可以绝对信任的小圈子至关重要。在危机时刻，你的"选择家庭"比任何科技装备都更重要。投资于真实的人际关系。</p></div>
+    <div class="survival-card"><div class="s-num">#06</div><h3>信息是终极武器</h3><p>在采取任何重要行动之前，收集尽可能多的信息。使用多个独立来源交叉验证。在赛博空间，错误的信息可能比没有信息更危险。学会分辨真假——这不是可选的技能，而是生存的必需品。</p></div>
+    <div class="survival-card"><div class="s-num">#07</div><h3>管理你的数字足迹</h3><p>你在赛博空间的每一次交互都会留下痕迹。定期清理你的数据轨迹。使用匿名路由和加密通信进行敏感交流。记住：在数据经纪人的眼中，你就是你留下的数据。</p></div>
+    <div class="survival-card"><div class="s-num">#08</div><h3>关注心理健康</h3><p>赛博朋克城市的生活节奏和压力水平是史无前例的。赛博精神病不仅是义体过度改造的后果——精神压力和社交孤立同样是重要诱因。定期进行心理健康评估。使用情绪稳定剂如果必要。寻求专业帮助不是软弱。</p></div>
+    <div class="survival-card"><div class="s-num">#09</div><h3>保持技术多样性</h3><p>不要过度依赖单一技术或平台。如果一家公司的神经接口出现安全漏洞，所有用户都可能同时受到影响。分散你的技术风险——使用来自不同供应商的硬件和软件组合。</p></div>
+    <div class="survival-card"><div class="s-num">#10</div><h3>记住你的人类本质</h3><p>无论你接受了多少改造，无论你增强了多少能力——你的人类本质不在于你的身体，而在于你的选择。选择善良、选择同情、选择连接。这才是让你在赛博朋克世界中保持"人性"的唯一方式。</p></div>
+  </div>
+
+  <!-- ========== 装备订购表单 ========== -->
+  <div class="section-header" id="order-form"><div class="section-tag">[ ORDER ]</div><h2 class="section-title">// 装备预订表单</h2><div class="divider"></div><p class="section-desc">以下订单将经过加密通道发送至最近的授权经销商。请注意：部分装备可能需要额外的身份验证和许可证。</p></div>
+
+  <div class="form-section">
+    <form id="orderForm" onsubmit="handleOrderSubmit(event)">
+      <div class="form-row">
+        <div class="form-group"><label>购买者代号</label><input type="text" placeholder="你的注册代号" required></div>
+        <div class="form-group"><label>装备编号</label><input type="text" placeholder="如: PAR-X7, NCI-7..." required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>数量</label><input type="number" min="1" max="50" value="1" required></div>
+        <div class="form-group"><label>交付区域</label><select required><option value="">选择交付区域...</option><option>新上海金融塔</option><option>九龙工业深渊</option><option>不夜城娱乐区</option><option>生物科技园区</option><option>天穹航天港</option><option>月球·嫦娥城</option><option>火星·祝融站</option></select></div>
+      </div>
+      <div class="form-group"><label>特殊需求</label><textarea placeholder="定制化需求、紧急程度或其他备注..."></textarea></div>
+      <div class="form-check"><input type="checkbox" id="orderCheck" required><label for="orderCheck">我确认已了解所预订装备的使用许可要求，并承诺合法使用。我接受装备交易条款和隐私政策。</label></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">📦 提交订单</button>
+    </form>
+  </div>
+
+  <!-- 通知 -->
+  <div class="alert-banner alert-info" style="margin-top:2rem;">ℹ️ 装备目录由全球装备标准化委员会维护。价格、库存和规格可能随时变化。最后更新：2157年6月。所有价格单位为日元(¥)。</div>
+
+
+  <!-- ========== 无人机目录 ========== -->
+  <div class="section-header" id="drones"><div class="section-tag">[ DRONES ]</div><h2 class="section-title">// 无人机系统目录</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="drone" data-keywords="侦查 微型 间谍 情报">
+      <div class="equip-card-image eq-bg-1"><span>🦟</span><span class="equip-tier tier-illegal">非法</span></div>
+      <div class="equip-card-body">
+        <h3>「蚊蚋」微型侦查无人机</h3>
+        <div class="equip-model">型号: MSD-3 · 暗影数据制造</div>
+        <p>昆虫大小的微型无人机，配备纳米摄像头和麦克风。续航时间45分钟，控制距离2公里。几乎无法被肉眼发现，雷达截面小于0.001平方米。在私人财产上使用此设备进行监视在大多数地区属于违法行为。</p>
+        <div class="equip-specs"><span>📷 设备: 纳米级</span><span>🔋 续航: 45min</span><span>📡 距离: 2km</span><span>⚖️ 重量: 3g</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 180,000</span><span class="stock stock-out">严格管制</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drone" data-keywords="战斗 武装 攻击 军事">
+      <div class="equip-card-image eq-bg-2"><span>🦅</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「猎鹰」武装攻击无人机</h3>
+        <div class="equip-model">型号: CAD-12 · 荒坂集团制造</div>
+        <p>中型武装无人机，配备双管等离子机枪和4枚微型导弹。AI自主作战系统可在无人类干预下完成目标识别、追踪和攻击。续航4小时，作战半径50公里。军事和高级安保用途。</p>
+        <div class="equip-specs"><span>🔫 武装: 等离子+导弹</span><span>🔋 续航: 4h</span><span>📐 半径: 50km</span><span>🧠 AI: 自主作战</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 3,200,000</span><span class="stock stock-low">军方优先</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drone" data-keywords="送货 快递 商用 物流">
+      <div class="equip-card-image eq-bg-3"><span>📦</span><span class="equip-tier tier-common">普通</span></div>
+      <div class="equip-card-body">
+        <h3>「快递员」商用送货无人机</h3>
+        <div class="equip-model">型号: CDN-8 · 天网通信制造</div>
+        <p>城市物流的标准配置。最大载重25kg，续航距离30km。配备避障AI和自动降落系统。噪音低于45分贝——比正常谈话更安静。每天有超过200万台此类无人机在全球城市的天空中穿梭。</p>
+        <div class="equip-specs"><span>📦 载重: 25kg</span><span>🛫 航程: 30km</span><span>🔇 噪音: <45dB</span><span>🔋 续航: 1.5h</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 45,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drone" data-keywords="摄影 航拍 直播 娱乐">
+      <div class="equip-card-image eq-bg-4"><span>📸</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「鹰眼」全息航拍无人机</h3>
+        <div class="equip-model">型号: HAD-6 · 幻视娱乐制造</div>
+        <p>专业级航拍无人机，搭载8K全息摄像头和量子图像稳定系统。实时将拍摄画面转换为全息投影。支持神经接口直接预览——你可以在脑中看到无人机看到的一切，仿佛在空中飞翔。</p>
+        <div class="equip-specs"><span>📷 画质: 8K全息</span><span>🔋 续航: 1h</span><span>📡 距离: 8km</span><span>🧠 控制: 神经接口</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 280,000</span><span class="stock stock-in">有货</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drone" data-keywords="救援 医疗 急救 搜索">
+      <div class="equip-card-image eq-bg-5"><span>🚑</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「守护天使」医疗救援无人机</h3>
+        <div class="equip-model">型号: MRD-10 · 生物源制造</div>
+        <p>急救无人机，可在接到求助信号后2分钟内抵达现场。搭载自动体外除颤器、紧急药物注射器和生命体征监测系统。AI可指导现场人员实施急救，同时将患者数据传输至最近的医院。</p>
+        <div class="equip-specs"><span>⏱️ 响应: 2min</span><span>💊 药物: 12种</span><span>🔋 续航: 1h</span><span>🏥 联网: 实时</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 890,000</span><span class="stock stock-in">公共服务</span></div>
+    </div>
+
+    <div class="equip-card" data-category="drone" data-keywords="群集 蜂群 协同 自主">
+      <div class="equip-card-image eq-bg-6"><span>🐝</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「蜂群」自主协同无人机群</h3>
+        <div class="equip-model">型号: SND-20 · 泽塔科技制造</div>
+        <p>由20-200台小型无人机组成的协同群集系统。无人机间通过量子纠缠实现实时协调，可完成复杂的编队飞行、分布式感知和集体决策任务。军事侦察、灾难评估和大型活动安保的理想选择。</p>
+        <div class="equip-specs"><span>🐝 数量: 20-200</span><span>🧠 协同: 量子纠缠</span><span>🔋 续航: 2h</span><span>📐 覆盖: 10km²</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 5,500,000起</span><span class="stock stock-low">定制生产</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 装备改造与定制 ========== -->
+  <div class="section-header"><div class="section-tag">[ CUSTOMIZATION ]</div><h2 class="section-title">// 装备改造与定制服务</h2><div class="divider"></div><p class="section-desc">每一件装备都可以根据你的需求进行个性化定制。以下是我们的定制服务目录。</p></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>服务编号</th><th>服务名称</th><th>适用装备</th><th>改造内容</th><th>工期</th><th>价格(¥)</th><th>保修</th></tr></thead>
+      <tbody>
+        <tr><td>CUS-001</td><td>外观定制涂装</td><td>全部武器/载具</td><td>自定义颜色·图案·发光效果</td><td>3-5天</td><td>15,000-85,000</td><td>1年</td></tr>
+        <tr><td>CUS-002</td><td>神经接口调谐</td><td>全部义体</td><td>优化神经延迟·个性化灵敏度</td><td>1天</td><td>45,000</td><td>终身</td></tr>
+        <tr><td>CUS-003</td><td>武器性能调校</td><td>全部武器</td><td>提升射速/精度/伤害（择一）</td><td>2-3天</td><td>50,000-200,000</td><td>6个月</td></tr>
+        <tr><td>CUS-004</td><td>载具引擎升级</td><td>全部载具</td><td>提升极速/加速/续航（择一）</td><td>5-7天</td><td>120,000-800,000</td><td>2年</td></tr>
+        <tr><td>CUS-005</td><td>ICE深度加固</td><td>全部电子设备</td><td>安全等级提升·定制防火墙规则</td><td>1-2天</td><td>75,000-350,000</td><td>1年</td></tr>
+        <tr><td>CUS-006</td><td>义体仿生皮肤</td><td>仿生义肢</td><td>与原生皮肤无法区分的外观</td><td>3-5天</td><td>85,000-180,000</td><td>5年</td></tr>
+        <tr><td>CUS-007</td><td>量子加密通信模块</td><td>全部通信设备</td><td>量子密钥分发通信能力</td><td>1天</td><td>220,000</td><td>终身</td></tr>
+        <tr><td>CUS-008</td><td>AI辅助瞄准系统</td><td>全部武器</td><td>自动目标识别·弹道预测</td><td>2天</td><td>160,000</td><td>1年</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 经销商网络 ========== -->
+  <div class="section-header"><div class="section-tag">[ DEALERS ]</div><h2 class="section-title">// 授权经销商网络</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>经销商代码</th><th>名称</th><th>所在地</th><th>主营品牌</th><th>评级</th><th>响应时间</th><th>特殊服务</th></tr></thead>
+      <tbody>
+        <tr><td>DLR-SH-001</td><td>荒坂新上海旗舰店</td><td>新上海金融塔·88层</td><td>荒坂·凤凰重工</td><td><span class="badge badge-green">★★★★★</span></td><td>即时</td><td>VIP密室·现场义体安装</td></tr>
+        <tr><td>DLR-SH-012</td><td>泽塔科技体验中心</td><td>新上海·科技园区</td><td>泽塔科技·天网通信</td><td><span class="badge badge-green">★★★★★</span></td><td>即时</td><td>神经接口免费试用</td></tr>
+        <tr><td>DLR-KL-034</td><td>赛博动力工厂直销</td><td>九龙工业深渊·B3层</td><td>赛博动力</td><td><span class="badge badge-cyan">★★★★☆</span></td><td>2小时</td><td>工厂价·批量折扣</td></tr>
+        <tr><td>DLR-NS-008</td><td>幻视装备精品店</td><td>不夜城娱乐区·霓虹大道</td><td>幻视娱乐·暗影数据</td><td><span class="badge badge-yellow">★★★☆☆</span></td><td>4小时</td><td>24小时营业·特殊渠道</td></tr>
+        <tr><td>DLR-BT-022</td><td>生物源医疗中心</td><td>生物科技园区·中央大道</td><td>生物源</td><td><span class="badge badge-green">★★★★★</span></td><td>即时</td><td>义体手术·基因咨询</td></tr>
+        <tr><td>DLR-TQ-003</td><td>天穹星际装备站</td><td>天穹航天港·出发大厅</td><td>泽塔科技·凤凰重工</td><td><span class="badge badge-cyan">★★★★☆</span></td><td>1小时</td><td>星际旅行装备·真空认证</td></tr>
+        <tr><td>DLR-LN-001</td><td>嫦娥城供应站</td><td>月球·嫦娥城·中央穹顶</td><td>全部品牌</td><td><span class="badge badge-cyan">★★★★☆</span></td><td>6小时</td><td>太空环境优化·低重力调校</td></tr>
+        <tr><td>DLR-MS-001</td><td>祝融站装备中心</td><td>火星·祝融站·主通道</td><td>全部品牌</td><td><span class="badge badge-yellow">★★★☆☆</span></td><td>72小时</td><td>火星环境特化·极端温控</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 装备维护周期建议 ========== -->
+  <div class="section-header"><div class="section-tag">[ MAINTENANCE ]</div><h2 class="section-title">// 装备维护周期建议</h2><div class="divider"></div></div>
+
+  <div class="accordion-section">
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>🔫 等离子武器维护</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p><strong>日常维护（每次使用后）：</strong>清洁磁场加速导轨、检查等离子体生成室的密封性、校准智能瞄准系统。<br><strong>每周维护：</strong>全面诊断电池健康度、检查冷却系统效率、更新AI目标识别数据库。<br><strong>月度维护：</strong>拆解检查加速导轨磨损、更换磁场线圈冷却液、深度校准能量输出精度。<br><strong>年度维护：</strong>送回制造商进行全面检修，包括更换所有密封件、升级固件和重新认证安全标准。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>🧠 神经接口维护</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p><strong>日常维护：</strong>运行系统诊断（建议在睡眠时自动执行）、清理神经信号缓存。<br><strong>每周维护：</strong>备份记忆和人格数据、检查与所有已配对设备的连接稳定性。<br><strong>月度维护：</strong>重新校准神经信号解码精度、更新防火墙规则、检查生物兼容性指标。<br><strong>年度维护：</strong>前往认证神经医师处进行专业评估，包括神经组织健康扫描和接口电极状态检查。如有需要，进行微创电极调整。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>🚗 悬浮载具维护</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p><strong>每次出行前：</strong>检查反重力模块状态、电池电量、导航系统更新。<br><strong>每周维护：</strong>清洁车身传感器、检查紧急弹射系统、轮胎（如有）磨损检查。<br><strong>月度维护：</strong>全面系统诊断、电池健康深度检测、悬浮高度校准。<br><strong>年度维护：</strong>送回授权服务中心进行强制年检，包括反重力模块拆解检查、等离子引擎（如有）大修和飞行安全认证更新。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>🦾 仿生义体维护</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p><strong>日常维护：</strong>清洁义体表面的灰尘和碎屑、检查连接处是否有异常声响或松动。<br><strong>每周维护：</strong>运行关节校准程序、检查伺服电机电流（过高电流可能预示磨损）。<br><strong>月度维护：</strong>润滑所有机械关节、检查仿生皮肤（如有）的完整性、更新义体固件。<br><strong>年度维护：</strong>联系义体医师进行专业检修，包括内部结构检查、磨损部件更换和神经接口重新调谐。仿生皮肤使用者建议每3-5年更换一次外观层。</p></div></div>
+  </div>
+
+  <!-- ========== 软件工具目录 ========== -->
+  <div class="section-header"><div class="section-tag">[ SOFTWARE ]</div><h2 class="section-title">// 核心软件工具目录</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="tool">
+      <div class="equip-card-image eq-bg-1"><span>🖥️</span><span class="equip-tier tier-epic">史诗</span></div>
+      <div class="equip-card-body">
+        <h3>「全视之眼」赛博空间监控平台</h3>
+        <div class="equip-model">型号: CSP-12 · 泽塔科技</div>
+        <p>企业级赛博空间流量监控与威胁分析平台。实时展示全球网络拓扑、流量热点和安全事件。AI驱动的异常检测算法可在0.1秒内识别潜在威胁并自动启动防御协议。</p>
+        <div class="equip-specs"><span>🔍 检测: 0.1秒</span><span>📊 可视化: 全息3D</span><span>🤖 AI: 内置</span><span>🔒 加密: 量子级</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 480,000/年</span><span class="stock stock-in">订阅制</span></div>
+    </div>
+    <div class="equip-card" data-category="tool">
+      <div class="equip-card-image eq-bg-2"><span>🧬</span><span class="equip-tier tier-legendary">传说</span></div>
+      <div class="equip-card-body">
+        <h3>「基因工匠」基因编辑套件</h3>
+        <div class="equip-model">型号: GEK-8 · 生物源</div>
+        <p>专业级基因编辑软件。通过神经接口直接操控CRISPR-Cas12k编辑工具。3D可视化双螺旋结构，拖拽式基因片段操作。需要伦理委员会认证才能激活全部功能。</p>
+        <div class="equip-specs"><span>🧬 工具: CRISPR-Cas12k</span><span>👁️ 界面: 神经3D</span><span>⚠️ 认证: 必需</span><span>📋 监管: 严格</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 3,200,000/年</span><span class="stock stock-low">授权销售</span></div>
+    </div>
+    <div class="equip-card" data-category="tool">
+      <div class="equip-card-image eq-bg-3"><span>🏗️</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「创世」赛博空间建筑设计</h3>
+        <div class="equip-model">型号: CBD-5 · 幻视娱乐</div>
+        <p>赛博空间内的虚拟建筑设计与施工平台。支持实时协作编辑，神经接口直接操控。物理引擎模拟真实材料特性。从个人虚拟空间到企业赛博总部，无所不能。</p>
+        <div class="equip-specs"><span>🏗️ 协作: 实时</span><span>👁️ 预览: 全沉浸</span><span>🔧 物理: 真实模拟</span><span>💰 价格: 含素材库</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 120,000/年</span><span class="stock stock-in">订阅制</span></div>
+    </div>
+    <div class="equip-card" data-category="tool">
+      <div class="equip-card-image eq-bg-4"><span>🎵</span><span class="equip-tier tier-rare">稀有</span></div>
+      <div class="equip-card-body">
+        <h3>「缪斯」AI音乐创作工作室</h3>
+        <div class="equip-model">型号: AMS-9 · 幻视娱乐</div>
+        <p>AI辅助音乐创作套件。通过神经接口感知创作者的意图和情绪，实时生成和声、旋律和节奏建议。支持所有已知乐器的物理建模合成，以及尚未被发明的虚拟乐器。</p>
+        <div class="equip-specs"><span>🎵 风格: 无限</span><span>🧠 接口: 神经直连</span><span>🎹 乐器: 1000+</span><span>🔊 输出: 全息沉浸</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">¥ 85,000/年</span><span class="stock stock-in">订阅制</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 软件对比 ========== -->
+  <div class="section-header"><div class="section-tag">[ SOFTWARE COMPARISON ]</div><h2 class="section-title">// 安全软件横向对比</h2><div class="divider"></div></div>
+
+  <div class="compare-section">
+    <table class="compare-table">
+      <thead><tr><th>产品</th><th>ICE v9.2 企业版</th><th>泽塔安全套件</th><th>暗影护盾</th><th>开源防火墙</th></tr></thead>
+      <tbody>
+        <tr><td>开发商</td><td>全球安全联盟</td><td>泽塔科技</td><td>暗影数据</td><td>开源社区</td></tr>
+        <tr><td>防御层级</td><td class="best">7层</td><td>5层</td><td>4层</td><td class="worst">2层</td></tr>
+        <tr><td>AI自适应</td><td class="best">实时自进化</td><td>每日更新</td><td>每周更新</td><td class="worst">手动更新</td></tr>
+        <tr><td>量子加密</td><td class="best">AES-512-Quantum</td><td>AES-256-Quantum</td><td>AES-256</td><td class="worst">RSA-4096</td></tr>
+        <tr><td>响应时间</td><td class="best">&lt;1ns</td><td>&lt;1ms</td><td>&lt;100ms</td><td class="worst">人工</td></tr>
+        <tr><td>适用场景</td><td>政府·军事·金融</td><td>企业·机构</td><td>中小企业</td><td>个人测试</td></tr>
+        <tr><td>年费</td><td class="worst">¥12,000,000</td><td>¥2,400,000</td><td>¥480,000</td><td class="best">免费</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 装备风险评级 ========== -->
+  <div class="section-header"><div class="section-tag">[ RISK ASSESSMENT ]</div><h2 class="section-title">// 装备使用风险评估</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>装备类别</th><th>物理风险</th><th>网络风险</th><th>法律风险</th><th>心理风险</th><th>综合评级</th></tr></thead>
+      <tbody>
+        <tr><td>等离子武器</td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-red">高风险</span></td></tr>
+        <tr><td>神经接口</td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-red">高风险</span></td></tr>
+        <tr><td>仿生义体</td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td></tr>
+        <tr><td>黑客工具</td><td><span class="badge badge-green">无</span></td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-red">高风险</span></td></tr>
+        <tr><td>增强药物</td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-green">无</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-red">极高</span></td><td><span class="badge badge-red">高风险</span></td></tr>
+        <tr><td>护甲系统</td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-green">无</span></td><td><span class="badge badge-green">低风险</span></td></tr>
+        <tr><td>悬浮载具</td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-yellow">中等</span></td></tr>
+        <tr><td>无人机</td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-yellow">中等</span></td><td><span class="badge badge-green">低</span></td><td><span class="badge badge-yellow">中等</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 未来装备预览 ========== -->
+  <div class="section-header"><div class="section-tag">[ FUTURE TECH ]</div><h2 class="section-title">// 在研装备预览（2158-2180）</h2><div class="divider"></div></div>
+
+  <div class="equip-grid">
+    <div class="equip-card" data-category="future">
+      <div class="equip-card-image eq-bg-5"><span>🌀</span><span class="equip-tier tier-legendary">传说·在研</span></div>
+      <div class="equip-card-body">
+        <h3>「虫洞」个人传送装置</h3>
+        <div class="equip-model">预计: 2175 · 泽塔科技</div>
+        <p>基于宏观量子虫洞技术的个人传送系统。理论可在地月之间实现瞬时物质传输。目前面临的主要障碍是虫洞稳定性（仅能维持0.01纳秒）和可怕的能量需求（单次传送需要一座核聚变电站的满功率输出）。</p>
+        <div class="equip-specs"><span>🔬 状态: 实验室</span><span>⚡ 能耗: 极高</span><span>⏱️ 预估: 2175</span><span>🌍 距离: 理论无限</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">暂不可售</span><span class="stock stock-out">研发中</span></div>
+    </div>
+    <div class="equip-card" data-category="future">
+      <div class="equip-card-image eq-bg-6"><span>🧠</span><span class="equip-tier tier-legendary">传说·在研</span></div>
+      <div class="equip-card-body">
+        <h3>「集体意识」共享神经网络</h3>
+        <div class="equip-model">预计: 2165 · 生物源·泽塔联合</div>
+        <p>允许多个个体共享意识的植入体。参与者可以体验到彼此的感受和思想，形成临时的"集体意识"。伦理争议极大——反对者警告这可能导致个体身份的永久丧失。</p>
+        <div class="equip-specs"><span>👥 连接: 2-12人</span><span>⚠️ 伦理: 争议极大</span><span>🔬 状态: 动物实验</span><span>📋 监管: 高度</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">暂不可售</span><span class="stock stock-out">伦理审查中</span></div>
+    </div>
+    <div class="equip-card" data-category="future">
+      <div class="equip-card-image eq-bg-7"><span>⚡</span><span class="equip-tier tier-legendary">传说·在研</span></div>
+      <div class="equip-card-body">
+        <h3>「宙斯之矛」轨道等离子炮</h3>
+        <div class="equip-model">预计: 2170 · 荒坂·凤凰联合</div>
+        <p>部署在近地轨道的超大型等离子武器平台。单发能量输出相当于小型核弹，但无放射性污染。设计用途为小行星防御和......"战略威慑"。国际社会正在就此类武器的合法性问题进行激烈辩论。</p>
+        <div class="equip-specs"><span>🔫 威力: 战略级</span><span>🛰️ 部署: 近地轨道</span><span>⚠️ 争议: 极高</span><span>📋 条约: 未达成</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">暂不可售</span><span class="stock stock-out">国际谈判中</span></div>
+    </div>
+    <div class="equip-card" data-category="future">
+      <div class="equip-card-image eq-bg-8"><span>🧬</span><span class="equip-tier tier-legendary">传说·在研</span></div>
+      <div class="equip-card-body">
+        <h3>「重塑」全身基因重编系统</h3>
+        <div class="equip-model">预计: 2160 · 生物源</div>
+        <p>可在活体内进行全身基因组重编的技术。理论上可将成年人的身体"回拨"到任意年龄，或进行前所未有的基因增强。目前面临的主要挑战是脱靶效应和免疫排斥——早期动物实验中出现了严重的不良反应。</p>
+        <div class="equip-specs"><span>🧬 目标: 全身基因</span><span>⚠️ 风险: 极高</span><span>🔬 状态: 动物实验</span><span>📋 伦理: 高度争议</span></div>
+      </div>
+      <div class="equip-card-footer"><span class="price">暂不可售</span><span class="stock stock-out">临床前研究</span></div>
+    </div>
+  </div>
+
+  <!-- ========== 装备兼容性矩阵 ========== -->
+  <div class="section-header"><div class="section-tag">[ COMPATIBILITY ]</div><h2 class="section-title">// 义体与神经接口兼容性矩阵</h2><div class="divider"></div><p class="section-desc">并非所有义体都能与所有神经接口完美配合。以下是各大品牌间的兼容性测试结果。</p></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>义体品牌 \ 神经接口</th><th>NCI-7 (泽塔)</th><th>NeuralLink v3</th><th>Kiroshi OptiScan</th><th>荒坂 Shinobi</th></tr></thead>
+      <tbody>
+        <tr><td>赛博动力 BAA-12 (仿生手臂)</td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-yellow">一般</span></td></tr>
+        <tr><td>泽塔科技 QOI-5 (光学植入)</td><td><span class="badge badge-green">完美(原生)</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-green">完美(原生)</span></td><td><span class="badge badge-yellow">一般</span></td></tr>
+        <tr><td>生物源 NFL-6 (过滤肺)</td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td></tr>
+        <tr><td>生物源 QCH-3 (量子心脏)</td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-cyan">良好</span></td></tr>
+        <tr><td>赛博动力 CFL-8 (增强腿)</td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-yellow">一般</span></td></tr>
+        <tr><td>暗影数据 OCS-X (光学迷彩)</td><td><span class="badge badge-yellow">有限支持</span></td><td><span class="badge badge-pink">不兼容</span></td><td><span class="badge badge-yellow">有限支持</span></td><td><span class="badge badge-yellow">有限支持</span></td></tr>
+        <tr><td>天网通信 UAI-4 (超声听觉)</td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-green">完美</span></td><td><span class="badge badge-cyan">良好</span></td></tr>
+        <tr><td>荒坂 PEA-7 (动力外骨骼)</td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-yellow">一般</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-green">完美(原生)</span></td></tr>
+        <tr><td>泽塔科技 PES-5 (能量护盾)</td><td><span class="badge badge-green">完美(原生)</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-yellow">一般</span></td></tr>
+        <tr><td>荒坂 THS-9 (战术HUD)</td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-yellow">一般</span></td><td><span class="badge badge-cyan">良好</span></td><td><span class="badge badge-green">完美(原生)</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 全球装备法规对比 ========== -->
+  <div class="section-header"><div class="section-tag">[ REGULATIONS ]</div><h2 class="section-title">// 各地区装备法规对比</h2><div class="divider"></div></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>地区</th><th>等离子武器</th><th>神经接口</th><th>仿生义体</th><th>黑客工具</th><th>增强药物</th><th>无人机</th></tr></thead>
+      <tbody>
+        <tr><td>新上海·中国科技联盟</td><td>严格管制</td><td>自由使用</td><td>需注册</td><td>禁止</td><td>处方制</td><td>需注册</td></tr>
+        <tr><td>东京·日本</td><td>严格管制</td><td>自由使用</td><td>需注册</td><td>禁止</td><td>严格处方</td><td>需注册</td></tr>
+        <tr><td>纽约·北美</td><td>宽松管制</td><td>自由使用</td><td>自由使用</td><td>灰色区域</td><td>宽松处方</td><td>需注册</td></tr>
+        <tr><td>伦敦·欧洲</td><td>严格管制</td><td>需注册</td><td>需注册</td><td>禁止</td><td>处方制</td><td>需注册</td></tr>
+        <tr><td>九龙·工业区</td><td>宽松管制</td><td>自由使用</td><td>自由使用</td><td>灰色区域</td><td>宽松管控</td><td>自由使用</td></tr>
+        <tr><td>不夜城·娱乐区</td><td>宽松管制</td><td>自由使用</td><td>自由使用</td><td>灰色区域</td><td>宽松管控</td><td>自由使用</td></tr>
+        <tr><td>月球·嫦娥城</td><td>禁止</td><td>需注册</td><td>需注册</td><td>禁止</td><td>严格处方</td><td>需许可</td></tr>
+        <tr><td>火星·祝融站</td><td>严格管制</td><td>自由使用</td><td>需注册</td><td>禁止</td><td>处方制</td><td>需许可</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 装备选购指南 ========== -->
+  <div class="section-header"><div class="section-tag">[ BUYING GUIDE ]</div><h2 class="section-title">// 新手装备选购指南</h2><div class="divider"></div></div>
+
+  <div class="faq-section" style="padding:2rem;max-width:900px;margin:0 auto;">
+    <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span>第一次购买神经接口，应该选择哪个型号？</span><span class="faq-arrow">▼</span></div><div class="faq-a"><p>对于初次使用者，推荐泽塔科技的NCI-5基础版（¥380,000）。它提供了核心的神经通信功能，操作简单，与大多数通用义体和软件兼容。不建议从黑市购买更便宜的二手设备——神经接口直接与你的大脑相连，安全性不能妥协。当你习惯基础操作后，可以再考虑升级到NCI-7专业版。记得手术必须由认证的神经医师执行——永远不要尝试自行安装神经接口。</p></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span>自卫武器选择建议？</span><span class="faq-arrow">▼</span></div><div class="faq-a"><p>对于日常自卫，推荐"针尖"EMP-4电磁轨道手枪（¥165,000）。它体积小巧易于携带，威力足以阻止大多数威胁，同时弹药成本合理。不建议选择等离子武器作为第一件防身装备——它们威力过大且价格昂贵。在购买前，请确认你所在的地区对个人防身武器的法律要求——有些地区需要许可证。</p></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span>义体改造从哪个部位开始比较好？</span><span class="faq-arrow">▼</span></div><div class="faq-a"><p>建议从低风险、高收益的部位开始。最受欢迎的入门义体是"蝙蝠"UAI-4超声听觉植入体（¥175,000）——手术简单、恢复快、几乎无排斥风险。其次是"鹰眼"QOI-5量子光学植入体（¥490,000）。这些感官增强义体能让你先体验义体化带来的优势，同时风险极低。待你习惯后再考虑四肢替代等更高级的改造。</p></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span>如何识别和避免黑市陷阱？</span><span class="faq-arrow">▼</span></div><div class="faq-a"><p>黑市装备的风险极高——从故障率、安全漏洞到ICE后门，问题数不胜数。以下是一些警示信号：价格远低于市场价（超过50%折扣就要警惕）、无法提供制造商序列号、卖家拒绝透露进货渠道、包装粗糙或缺少标准认证标识。请始终通过授权经销商购买装备——为省钱而冒险使用黑市装备的代价可能是你的大脑被黑客入侵或义体在关键时刻失灵。</p></div></div>
+  </div>
+
+  <!-- ========== 附录：装备技术参数详表 ========== -->
+  <div class="section-header"><div class="section-tag">[ TECHNICAL SPECS ]</div><h2 class="section-title">// 附录A：武器完整技术参数表</h2><div class="divider"></div></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>型号</th><th>类型</th><th>口径/能量</th><th>初速</th><th>有效射程</th><th>射速</th><th>弹匣</th><th>重量</th><th>长度</th><th>生产商</th></tr></thead>
+      <tbody>
+        <tr><td>PAR-X7 日炎</td><td>等离子突击步枪</td><td>50kJ/发</td><td>N/A(等离子)</td><td>800m</td><td>600 RPM</td><td>50发</td><td>3.2kg</td><td>780mm</td><td>荒坂集团</td></tr>
+        <tr><td>EMP-4 针尖</td><td>电磁轨道手枪</td><td>5.56mm钨钢</td><td>3,200m/s</td><td>200m</td><td>120 RPM</td><td>8发</td><td>1.1kg</td><td>210mm</td><td>泽塔科技</td></tr>
+        <tr><td>LSR-12 夜鹰</td><td>脉冲激光狙击</td><td>15kJ/脉冲</td><td>光速</td><td>3,500m</td><td>30 RPM</td><td>20发(能量)</td><td>6.8kg</td><td>1,250mm</td><td>泽塔科技</td></tr>
+        <tr><td>HVB-9 蜂鸣</td><td>高频振动刀</td><td>N/A</td><td>N/A</td><td>近战</td><td>N/A</td><td>N/A</td><td>0.3kg</td><td>180mm(刃)</td><td>赛博动力</td></tr>
+        <tr><td>SRL-22 雷神之锤</td><td>智能火箭发射器</td><td>84mm火箭</td><td>350m/s</td><td>2,000m</td><td>单发/齐射</td><td>4发</td><td>12.5kg</td><td>950mm</td><td>凤凰重工</td></tr>
+        <tr><td>EMPG-3 沉默者</td><td>EMP手雷</td><td>电磁脉冲</td><td>N/A</td><td>15m(半径)</td><td>单次</td><td>1枚</td><td>0.2kg</td><td>65mm直径</td><td>天网通信</td></tr>
+        <tr><td>AST-8 守望者</td><td>自动哨戒炮塔</td><td>双管等离子</td><td>N/A(等离子)</td><td>1,200m</td><td>1,200 RPM</td><td>2,000发</td><td>45kg</td><td>1,500mm</td><td>荒坂集团</td></tr>
+        <tr><td>NTI-X 幽灵之吻</td><td>神经毒素注射器</td><td>合成神经毒素</td><td>N/A</td><td>接触</td><td>单次</td><td>3剂</td><td>0.02kg</td><td>20mm(戒指)</td><td>未知</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 附录：义体技术参数详表 ========== -->
+  <div class="section-header"><div class="section-tag">[ IMPLANT SPECS ]</div><h2 class="section-title">// 附录B：义体完整技术参数表</h2><div class="divider"></div></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>型号</th><th>类型</th><th>主要功能</th><th>带宽/性能</th><th>电池续航</th><th>手术时间</th><th>恢复期</th><th>排斥率</th><th>保修期</th><th>生产商</th></tr></thead>
+      <tbody>
+        <tr><td>NCI-7 全知</td><td>神经接口</td><td>脑机直连·记忆增强·AI助手</td><td>10 TB/s·256通道</td><td>72小时</td><td>4小时</td><td>2周</td><td>0.05%</td><td>5年</td><td>泽塔科技</td></tr>
+        <tr><td>BAA-12 泰坦</td><td>仿生手臂</td><td>力量增强·精密操作·内置工具</td><td>450kg抓握·0.01mm精度</td><td>48小时</td><td>3小时</td><td>3周</td><td>0.2%</td><td>3年</td><td>赛博动力</td></tr>
+        <tr><td>QOI-5 鹰眼</td><td>量子光学植入</td><td>超光谱视觉·40x变焦·4K录制</td><td>全波段·120fps录制</td><td>36小时</td><td>2小时</td><td>1周</td><td>0.1%</td><td>4年</td><td>生物源</td></tr>
+        <tr><td>CFL-8 猎豹</td><td>碳纤维增强腿</td><td>超高速奔跑·高跳·抗冲击</td><td>65km/h·3m跳跃</td><td>60小时</td><td>3小时(双腿)</td><td>4周</td><td>0.3%</td><td>3年</td><td>赛博动力</td></tr>
+        <tr><td>OCS-X 幽灵</td><td>光学迷彩皮肤</td><td>实时环境光线模拟·隐身</td><td>95%隐身率</td><td>15分钟(连续)</td><td>8小时(全身)</td><td>6周</td><td>2.5%</td><td>1年</td><td>暗影数据</td></tr>
+        <tr><td>NFL-6 纯净</td><td>纳米过滤肺</td><td>空气过滤·毒素免疫·应急供氧</td><td>99.97%过滤率</td><td>无限(被动)</td><td>2小时</td><td>1周</td><td>0.08%</td><td>5年</td><td>生物源</td></tr>
+        <tr><td>QCH-3 永动</td><td>量子循环心脏</td><td>持续血流·动态输出调节</td><td>3x原生心输出</td><td>200年(量子电池)</td><td>5小时</td><td>6周</td><td>0.15%</td><td>终身</td><td>生物源</td></tr>
+        <tr><td>UAI-4 蝙蝠</td><td>超声听觉植入</td><td>超宽频听觉·主动声纳</td><td>10Hz-100kHz</td><td>48小时</td><td>1小时</td><td>3天</td><td>0.03%</td><td>3年</td><td>天网通信</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 附录C：装备能耗与环保评级 ========== -->
+  <div class="section-header"><div class="section-tag">[ ECO RATING ]</div><h2 class="section-title">// 附录C：装备能耗与环保评级</h2><div class="divider"></div><p class="section-desc">2155年太阳系联合政府通过《装备环保标准法案》，要求所有装备标注能耗等级和环保评分。以下是主要装备的评级数据。</p></div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>装备型号</th><th>类型</th><th>额定功率</th><th>待机功耗</th><th>能效等级</th><th>碳排放(等效)</th><th>可回收率</th><th>环保评分</th><th>环保认证</th></tr></thead>
+      <tbody>
+        <tr><td>PAR-X7 日炎</td><td>等离子步枪</td><td>5.2 kW(峰值)</td><td>0.05 kW</td><td>A级</td><td>0(聚变电池)</td><td>87%</td><td>92/100</td><td>绿标·认证</td></tr>
+        <tr><td>EMP-4 针尖</td><td>电磁轨道手枪</td><td>3.8 kW(峰值)</td><td>0.02 kW</td><td>A级</td><td>0(聚变电池)</td><td>92%</td><td>95/100</td><td>绿标·认证</td></tr>
+        <tr><td>LSR-12 夜鹰</td><td>激光狙击系统</td><td>15 kW(峰值)</td><td>0.1 kW</td><td>B级</td><td>0(聚变电池)</td><td>78%</td><td>85/100</td><td>绿标·认证</td></tr>
+        <tr><td>NCI-7 全知</td><td>神经接口</td><td>0.05 kW</td><td>0.005 kW</td><td>A++级</td><td>0(生物电池)</td><td>45%</td><td>98/100</td><td>绿标·医疗豁免</td></tr>
+        <tr><td>BAA-12 泰坦</td><td>仿生手臂</td><td>2.1 kW(峰值)</td><td>0.01 kW</td><td>A级</td><td>0(生物电池)</td><td>65%</td><td>90/100</td><td>绿标·认证</td></tr>
+        <tr><td>OCS-X 幽灵</td><td>光学迷彩皮肤</td><td>8.5 kW(峰值)</td><td>0.5 kW</td><td>C级</td><td>0(聚变电池)</td><td>22%</td><td>58/100</td><td>未认证</td></tr>
+        <tr><td>PEA-7 铁壁</td><td>动力外骨骼</td><td>45 kW(峰值)</td><td>2.1 kW</td><td>D级</td><td>0(核电池)</td><td>71%</td><td>62/100</td><td>军方豁免</td></tr>
+        <tr><td>HVC-22 游隼</td><td>悬浮飞行车</td><td>280 kW(巡航)</td><td>0.8 kW</td><td>B级</td><td>0(聚变电池)</td><td>82%</td><td>88/100</td><td>绿标·认证</td></tr>
+        <tr><td>PMB-7 闪电</td><td>等离子摩托</td><td>120 kW(巡航)</td><td>0.3 kW</td><td>A级</td><td>0(聚变电池)</td><td>85%</td><td>91/100</td><td>绿标·认证</td></tr>
+        <tr><td>CAD-12 猎鹰</td><td>武装无人机</td><td>35 kW(巡航)</td><td>1.2 kW</td><td>C级</td><td>0(聚变电池)</td><td>68%</td><td>72/100</td><td>军方豁免</td></tr>
+        <tr><td>CDN-8 快递员</td><td>商用无人机</td><td>4.5 kW(巡航)</td><td>0.05 kW</td><td>A++级</td><td>0(太阳能辅助)</td><td>94%</td><td>97/100</td><td>绿标·金牌</td></tr>
+        <tr><td>HAD-6 鹰眼</td><td>航拍无人机</td><td>3.2 kW(巡航)</td><td>0.03 kW</td><td>A+级</td><td>0(太阳能辅助)</td><td>91%</td><td>96/100</td><td>绿标·金牌</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 附录D：装备保险与延保服务 ========== -->
+  <div class="section-header"><div class="section-tag">[ WARRANTY ]</div><h2 class="section-title">// 附录D：装备保险与延保方案</h2><div class="divider"></div></div>
+
+  <div class="accordion-section">
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>标准保修条款</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>所有通过授权经销商购买的装备均享有制造商标准保修：<br>• 武器类：2年或10,000发（以先到为准），覆盖制造缺陷<br>• 义体类：3-5年（因产品而异），覆盖材料缺陷和手术相关并发症<br>• 载具类：3年或100,000公里（以先到为准），覆盖动力系统和控制系统<br>• 电子设备类：1-2年，覆盖硬件故障<br>• 软件类：订阅期内持续更新和技术支持<br>注意：标准保修不覆盖因用户不当使用、未经授权的改装或自然灾害造成的损坏。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>延长保修方案</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>延保方案在标准保修到期后生效：<br>• <strong>基础延保（+2年）：</strong>设备原价的15%/年。覆盖与标准保修相同的范围。<br>• <strong>全面延保（+5年）：</strong>设备原价的25%/年。除标准覆盖外，还包括意外损坏维修（每年最多2次）。<br>• <strong>终身延保：</strong>设备原价的40%/年（仅限义体类）。覆盖所有维修、固件升级和性能维护。对于量子心脏等关键植入物强烈推荐。<br>• <strong>企业批量延保：</strong>为拥有10件以上装备的企业客户提供定制方案。请联系企业销售部门获取报价。</p></div></div>
+    <div class="acc-item"><div class="acc-header" onclick="this.parentElement.classList.toggle('open')"><span>装备保险方案</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>独立于制造商保修的第三方保险方案：<br>• <strong>基础财产险：</strong>设备价值的3%/年。覆盖盗窃、火灾和自然灾害损失。<br>• <strong>全风险保险：</strong>设备价值的8%/年。覆盖所有意外损失，包括战斗中损坏（需提供合法的使用场景证明）。<br>• <strong>义体特殊保险：</strong>植入物价值的12%/年。覆盖排斥反应、神经损伤和赛博精神病相关治疗费用。对于多义体使用者（>3个植入物），此保险已变为强制性要求（依据2152年《义体安全法案》）。<br>• <strong>深空使用保险：</strong>在地外环境（月球、火星、深空）使用装备的额外保险。费率因地外风险评估而异——火星使用的保险费率约为地球的2.5倍。</p></div></div>
+  </div>
+
+  <!-- ========== 附录E：个人防护完整指南 ========== -->
+  <div class="section-header"><div class="section-tag">[ SELF DEFENSE ]</div><h2 class="section-title">// 附录E：赛博城市个人防护完整指南</h2><div class="divider"></div></div>
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-orange);margin-bottom:1rem;">物理安全：从防身到防盗</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">在赛博城市的街头，物理安全仍然是基础。无论你的神经接口有多先进，你的身体仍然是脆弱的——一颗子弹或一把刀就能结束一切。个人防护策略应从"避免"开始——了解哪些区域在哪些时间不安全，避开已知的高风险地区。实时犯罪地图应用可以通过神经接口为你提供动态的安全路线规划。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">如果不可避免要经过高风险区域，基本的防身装备是必要的。推荐组合：一件「第二皮肤」纳米防弹衣（日常穿着，外观无异）+ 一个「力场」便携能量护盾（紧急情况激活）+ 一个合法的防身喷雾（近距离非致命选项）。如果你持有武器许可证，「针尖」EMP-4在便携性和威力之间取得了很好的平衡。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">家居安全方面，最基本的投资是「守望者」自动哨戒炮塔或至少一套高质量的安全监控系统。确保你的住宅ICE防火墙覆盖所有智能家居设备——入侵者可能不需要破门而入，他们可能通过你的智能门锁或窗户控制系统进入。物理门锁（传统的钥匙锁）作为最后的后备方案不应被完全淘汰——在电子系统被黑客入侵时，一个简单的机械锁可能成为你最后的防线。</p>
+      <p style="color:var(--text-secondary);line-height:2;">最后，制定一个紧急撤离计划。知道从你的住所和工作地点出发的最快逃生路线。准备一个应急包（基本医疗用品、备用神经接口电池、紧急现金——量子信用系统在网络中断时无法使用）。在赛博城市中，做好准备的人与毫无准备的人在危机中的生存率有着天壤之别。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-orange);margin-bottom:1rem;">数字安全：保护你的第二生命</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">你的数字身份——存储在赛博空间中的记忆、数据、虚拟资产——可能比你的物理身份更有价值。保护它的第一步是使用最新版本的ICE防火墙——永远开启自动更新。ICE是你的数字免疫系统，保持它强大是你数字安全的基础。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">第二，谨慎管理你的神经接口权限。每当你安装一个新的神经应用时，检查它请求的权限——一个手电筒应用不应该需要访问你的记忆数据。定期审查和撤销不再需要的权限。将敏感操作（金融交易、医疗记录访问）配置为需要额外的生物认证——这样即使你的神经接口被入侵，关键数据仍然受到保护。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">第三，备份是数字生存的黄金法则。定期将你的记忆和关键数据备份到独立的量子存储设备上——最好是物理隔离的（即不连接任何网络的）。如果你的神经接口被勒索软件加密（这在22世纪是一个真实存在的威胁），你可以从备份中恢复而无需支付赎金。建议备份频率：每日增量备份（自动）+ 每周完整备份（手动确认）+ 每月离线备份（物理隔离存储）。</p>
+      <p style="color:var(--text-secondary);line-height:2;">最后，保持匿名意识。你的每一步数字行动都会留下痕迹。使用量子匿名路由进行敏感通信。定期更换你的数字证书。了解你的数据被哪些企业收集以及它们用这些数据做什么——阅读隐私政策（即使是枯燥的）。在赛博空间中，信息是最有价值的商品——而你的信息应该由你来决定谁能访问它。</p>
+    </div>
+  </div>
+
+  <!-- ========== 附录F：赛博格伦理委员会指南 ========== -->
+  <div class="section-header"><div class="section-tag">[ CYBORG ETHICS ]</div><h2 class="section-title">// 附录F：赛博格伦理委员会改造指南</h2><div class="divider"></div></div>
+  <div style="max-width:900px;margin:0 auto;padding:2rem;">
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;margin-bottom:1.5rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-orange);margin-bottom:1rem;">义体改造的伦理边界</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">全球赛博格伦理委员会（GCEC）在2150年发布的《义体改造伦理指南》定义了社会可接受的改造边界。以下改造在所有签署国均为合法：医疗必要改造（替代因疾病或伤害丧失的功能）；感官增强（视力、听力等在自然人类范围内的增强）；以及认知辅助（记忆增强、注意力提升，但不超过自然人类最高水平的2倍）。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">以下改造在大多数地区存在法律限制或禁止：完全武器化改造（在体内植入未注册的武器系统）；不受控的意识操控（影响他人自由意志的神经技术）；以及超过安全阈值的功能增强（如力量超过自然人类极限10倍以上——这类改造需要特殊的公共安全许可）。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">最具争议的领域是"认知自由"——人类是否有权通过技术手段超越自然认知极限？支持者认为这是个人自由的核心部分；反对者警告这可能创造"认知等级社会"，其中未增强者在就业、教育和社会地位上永远处于劣势。目前的折中方案：允许增强，但禁止在就业和教育中进行基于增强状态的歧视——这一规定在实践中难以执行。</p>
+      <p style="color:var(--text-secondary);line-height:2;">随着技术的持续发展，伦理边界也在不断移动。GCEC每5年更新一次指南，下一次重大修订预计在2160年。当前最热门的讨论议题包括：意识备份的伦理状态（如果你有两个意识副本，谁拥有你的财产？）；以及基因增强的遗传性（修改会传递给后代吗？这应该被允许吗？）。</p>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:2rem;">
+      <h3 style="font-family:var(--font-mono);color:var(--neon-orange);margin-bottom:1rem;">未成年人义体改造特别规定</h3>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">未成年人的义体改造受到最严格的法律保护。基本原则：除非医疗必需，否则任何永久性义体改造在16岁之前均被禁止。16-18岁可在父母同意和伦理委员会审查后接受有限的增强改造。18岁以上享有完全的自主决定权。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">医疗必需的例外包括：先天性肢体缺失的仿生替代（可在任何年龄进行）；感官障碍的神经植入辅助（如先天性失明的视觉植入——可在12岁以上进行）；以及生命维持必要的植入物（如心脏起搏器——不受年龄限制）。在这些情况下，决定权在父母和医疗团队手中，但需要伦理委员会的审查以确保改造方案符合未成年人的最佳利益。</p>
+      <p style="color:var(--text-secondary);line-height:2;margin-bottom:1rem;">近年来出现了"逆向增强"运动——一些接受过早期增强的年轻人选择移除或降级他们的植入物。这一运动引发了关于未成年人增强知情同意的讨论——一个16岁的年轻人是否真正理解"永久性义体改造"的长期后果？一些国家已将自主决定年龄提高至21岁，引发了关于成年年龄定义的更广泛辩论。</p>
+      <p style="color:var(--text-secondary);line-height:2;">随着第一代在义体增强文化中长大的孩子进入成年期，这些伦理问题正在从理论走向实践。他们的选择——保持增强、移除增强或进一步升级——将塑造下一代对"什么是人类"这一问题的回答。</p>
+    </div>
+  </div>
+
+</div> <!-- /main-wrapper -->
+
+<!-- 页脚 -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>// 装备分类</h4><ul><li><a href="#weapons">武器系统</a></li><li><a href="#cyberware">义体改造</a></li><li><a href="#vehicles">载具</a></li><li><a href="#armor">护甲</a></li><li><a href="#hacktools">黑客工具</a></li><li><a href="#drugs">增强药物</a></li></ul></div>
+    <div class="footer-col"><h4>// 快速导航</h4><ul><li><a href="霓虹终端.html">霓虹终端</a></li><li><a href="数据档案库.html">数据档案库</a></li><li><a href="未来编年史.html">未来编年史</a></li><li><a href="赛博装备录.html">装备手册</a></li></ul></div>
+    <div class="footer-col"><h4>// 资源</h4><ul><li><a href="#glossary">术语词典</a></li><li><a href="#">安全指南</a></li><li><a href="#">维护手册</a></li><li><a href="#">代理商查询</a></li><li><a href="#">许可证申请</a></li></ul></div>
+    <div class="footer-col"><h4>// 政策</h4><ul><li><a href="#">交易条款</a></li><li><a href="#">出口管制</a></li><li><a href="#">隐私政策</a></li><li><a href="#">保修信息</a></li><li><a href="#">合规声明</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><p>&copy; 2026-2157 EQUIPMENT MANUAL · 全球装备标准化委员会 · 版本: 7.2.1 · 最后核验: 2157-06-10</p></div>
+</footer>
+
+<!-- 模态弹窗 -->
+<div class="modal-overlay" id="modalOverlay"><div class="modal-box"><button class="modal-close" onclick="closeModal()">&times;</button><h3 id="modalTitle"></h3><div class="modal-content" id="modalContent"></div></div></div>
+
+<script>
+// 粒子
+(function(){const c=document.getElementById('particle-canvas'),ctx=c.getContext('2d');let p=[];function r(){c.width=window.innerWidth;c.height=window.innerHeight;}class P{constructor(){this.reset();}reset(){this.x=Math.random()*c.width;this.y=Math.random()*c.height;this.size=Math.random()*2+0.5;this.sx=(Math.random()-0.5)*0.4;this.sy=(Math.random()-0.5)*0.4;this.op=Math.random()*0.4+0.08;}update(){this.x+=this.sx;this.y+=this.sy;if(this.x<0||this.x>c.width||this.y<0||this.y>c.height){this.reset();if(this.x<0)this.x=c.width;if(this.x>c.width)this.x=0;if(this.y<0)this.y=c.height;if(this.y>c.height)this.y=0;}}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle='rgba(255,107,53,'+this.op+')';ctx.fill();}}function init(){r();p=[];const n=Math.min(Math.floor((c.width*c.height)/8000),180);for(let i=0;i<n;i++)p.push(new P());}function anim(){ctx.clearRect(0,0,c.width,c.height);p.forEach(x=>{x.update();x.draw();});requestAnimationFrame(anim);}window.addEventListener('resize',init);init();anim();})();
+
+// 导航
+window.addEventListener('scroll',()=>{document.getElementById('topNav').classList.toggle('scrolled',window.scrollY>50);});
+const hb=document.getElementById('hamburger'),nl=document.getElementById('navLinks');hb.addEventListener('click',()=>{hb.classList.toggle('active');nl.classList.toggle('mobile-open');});nl.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');nl.classList.remove('mobile-open');}));
+
+// 筛选
+document.querySelectorAll('#filterBar .filter-tag').forEach(btn=>{btn.addEventListener('click',function(){document.querySelectorAll('#filterBar .filter-tag').forEach(b=>b.classList.remove('active'));this.classList.add('active');const f=this.dataset.filter;document.querySelectorAll('#equipGrid .equip-card').forEach(card=>{card.style.display=(f==='all'||card.dataset.category===f)?'':'none';});});});
+
+// 搜索
+function filterEquip(){const q=document.getElementById('equipSearch').value.toLowerCase();document.querySelectorAll('#equipGrid .equip-card').forEach(card=>{const kw=card.dataset.keywords||'';const text=card.textContent.toLowerCase();card.style.display=(!q||kw.includes(q)||text.includes(q))?'':'none';});}
+document.getElementById('equipSearch').addEventListener('keydown',function(e){if(e.key==='Enter')filterEquip();});
+
+// 模态
+function showModal(title,content){document.getElementById('modalTitle').textContent=title;document.getElementById('modalContent').innerHTML='<p>'+content+'</p>';document.getElementById('modalOverlay').classList.add('active');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
+// 表单
+function handleOrderSubmit(e){e.preventDefault();showModal('✅ 订单已提交','你的装备订单已经通过量子加密通道发送至最近的授权经销商。订单确认和预计交付时间将在24小时内通过加密邮件发送给你。如有紧急需求，请直接联系经销商：new-shanghai@arasaka-sec.cyb');e.target.reset();}
+
+// 进度条动画
+(function(){const fills=document.querySelectorAll('.progress-fill');const obs=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const fill=entry.target;const tw=fill.style.width;fill.style.width='0%';setTimeout(()=>{fill.style.width=tw;},100);obs.unobserve(fill);}});},{threshold:0.3});fills.forEach(f=>obs.observe(f));})();
+
+console.log('%c EQUIPMENT MANUAL %c v7.2.1 ','background:#0a0a0f;color:#ff6b35;padding:8px 12px;font-family:monospace;font-size:16px;','background:#ff2d95;color:#fff;padding:8px 12px;font-family:monospace;');
+</script>
+</body>
+</html>
