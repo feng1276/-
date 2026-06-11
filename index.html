@@ -1766,6 +1766,130 @@ var _hmt = _hmt || [];
             box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
         }
 
+        /* 背景选择弹窗（首次访问） */
+        .bg-choice-overlay,
+        .bg-tip-overlay {
+            visibility: hidden;
+            opacity: 0;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 10001;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .bg-choice-overlay.show,
+        .bg-tip-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .bg-choice-modal,
+        .bg-tip-modal {
+            visibility: hidden;
+            opacity: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e1e30;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 2.5rem 2rem 2rem;
+            text-align: center;
+            z-index: 10002;
+            width: 380px;
+            max-width: 90vw;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        [data-theme="dark"] .bg-choice-modal,
+        [data-theme="dark"] .bg-tip-modal {
+            background: #18182a;
+        }
+
+        .bg-choice-modal.show,
+        .bg-tip-modal.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .bg-choice-title {
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .bg-choice-subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .bg-choice-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .bg-choice-btn {
+            flex: 1;
+            max-width: 140px;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .bg-choice-yes {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+        }
+
+        .bg-choice-yes:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+        }
+
+        .bg-choice-no {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bg-choice-no:hover {
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #ffffff;
+        }
+
+        .bg-tip-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .bg-tip-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            padding: 0.6rem 2rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .bg-tip-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+        }
+
         /* 时间显示 */
         .time-display {
             font-size: 18px;
@@ -2696,6 +2820,24 @@ var _hmt = _hmt || [];
         </div>
     </footer>
 
+    <!-- 首次访问背景选择弹窗 -->
+    <div class="bg-choice-overlay" id="bgChoiceOverlay"></div>
+    <div class="bg-choice-modal" id="bgChoiceModal">
+        <h3 class="bg-choice-title">是否加载新背景</h3>
+        <p class="bg-choice-subtitle">该功能不影响页面内容</p>
+        <div class="bg-choice-actions">
+            <button class="bg-choice-btn bg-choice-yes" id="bgChoiceYes">是</button>
+            <button class="bg-choice-btn bg-choice-no" id="bgChoiceNo">否</button>
+        </div>
+    </div>
+
+    <!-- 选择后提示弹窗 -->
+    <div class="bg-tip-overlay" id="bgTipOverlay"></div>
+    <div class="bg-tip-modal" id="bgTipModal">
+        <p class="bg-tip-title">可通过导航栏的🎨调色板更换背景</p>
+        <button class="bg-tip-btn" id="bgTipDismiss">我知道了</button>
+    </div>
+
     <script>
         // 保存滚动位置
         window.addEventListener('beforeunload', () => {
@@ -2804,12 +2946,64 @@ var _hmt = _hmt || [];
             skinToggleBtn.classList.toggle('active', skin && skin !== 'default');
         }
 
-        if (savedSkin) {
-            applySkin(savedSkin);
-        } else {
-            // 首次访问默认使用上杉绘梨衣
-            applySkin('uesugi');
+        // 首次访问背景选择弹窗
+        const bgChoice = localStorage.getItem('bg_choice');
+
+        function showBgChoiceModal() {
+            document.getElementById('bgChoiceOverlay').classList.add('show');
+            document.getElementById('bgChoiceModal').classList.add('show');
         }
+
+        function hideBgChoiceModal() {
+            document.getElementById('bgChoiceOverlay').classList.remove('show');
+            document.getElementById('bgChoiceModal').classList.remove('show');
+        }
+
+        function showBgTipModal() {
+            document.getElementById('bgTipOverlay').classList.add('show');
+            document.getElementById('bgTipModal').classList.add('show');
+        }
+
+        function hideBgTipModal() {
+            document.getElementById('bgTipOverlay').classList.remove('show');
+            document.getElementById('bgTipModal').classList.remove('show');
+        }
+
+        function initBackground() {
+            if (bgChoice === 'default') {
+                // 用户上次选了否 → 默认背景
+                applySkin('default');
+                return;
+            }
+            if (bgChoice === 'dynamic') {
+                // 用户上次选了是 → 直接加载动态背景
+                applySkin(savedSkin || 'uesugi');
+                return;
+            }
+            // 真正的首次访问 → 显示选择弹窗
+            // 视频已在 HTML 中 autoplay 预加载，等待用户选择期间持续缓冲
+            showBgChoiceModal();
+
+            document.getElementById('bgChoiceYes').addEventListener('click', function () {
+                localStorage.setItem('bg_choice', 'dynamic');
+                hideBgChoiceModal();
+                applySkin('uesugi');
+                showBgTipModal();
+            });
+
+            document.getElementById('bgChoiceNo').addEventListener('click', function () {
+                localStorage.setItem('bg_choice', 'default');
+                hideBgChoiceModal();
+                applySkin('default');
+                showBgTipModal();
+            });
+        }
+
+        // 提示弹窗关闭（点击我知道了 / 点击遮罩）
+        document.getElementById('bgTipDismiss').addEventListener('click', hideBgTipModal);
+        document.getElementById('bgTipOverlay').addEventListener('click', hideBgTipModal);
+
+        initBackground();
 
         // 切换弹窗显示
         skinToggleBtn.addEventListener('click', (e) => {
@@ -2848,6 +3042,8 @@ var _hmt = _hmt || [];
                 } else {
                     applySkin(skin);
                     localStorage.setItem('skin', skin);
+                    // 手动选择 → 同步更新背景偏好
+                    localStorage.setItem('bg_choice', skin === 'default' ? 'default' : 'dynamic');
                     skinPopup.classList.remove('show');
                 }
             });
@@ -3173,5 +3369,6 @@ var _hmt = _hmt || [];
             <button class="logout-btn-confirm" onclick="confirmLogout()">确认退出</button>
         </div>
     </div>
+
 </body>
 </html>
