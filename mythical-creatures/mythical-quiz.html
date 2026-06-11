@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="神兽知识问答 - 测试你的神话生物知识">
+    <title>神兽知识问答 | 世界神兽档案馆</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        :root {
+            --bg-primary: #0a0a14;
+            --bg-secondary: #12122a;
+            --bg-card: #1a1a3e;
+            --text-primary: #e8e6f0;
+            --text-secondary: #b0aec8;
+            --text-muted: #7a7898;
+            --gold: #d4a94e;
+            --gold-light: #f0d878;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --blue: #3498db;
+            --card-radius: 16px;
+            --transition-speed: 0.3s;
+            --font-heading: 'Georgia', 'Noto Serif SC', serif;
+            --font-body: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-body); line-height: 1.7; min-height: 100vh; overflow-x: hidden; }
+        .bg-stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle var(--dur) ease-in-out infinite; animation-delay: var(--delay); opacity: 0; }
+        @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 0.9; } }
+        .site-header { position: sticky; top: 0; z-index: 1000; background: rgba(10,10,20,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(212,169,78,0.2); }
+        .header-inner { max-width: 1300px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .site-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); }
+        .site-logo .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #8b6914, #f0d878); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 20px rgba(212,169,78,0.3); }
+        .site-logo .logo-text { font-family: var(--font-heading); font-size: 1.3rem; font-weight: bold; letter-spacing: 1px; }
+        .main-nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .main-nav a { color: var(--text-secondary); text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; transition: all var(--transition-speed); white-space: nowrap; position: relative; }
+        .main-nav a:hover, .main-nav a.active { color: var(--gold-light); background: rgba(212,169,78,0.1); }
+        .main-nav a.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 2px; background: var(--gold); border-radius: 2px; }
+        .nav-toggle { display: none; background: none; border: 1px solid rgba(212,169,78,0.3); color: var(--gold); font-size: 1.5rem; cursor: pointer; padding: 6px 12px; border-radius: 8px; }
+        .page-hero { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .page-hero h1 { font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3.5rem); background: linear-gradient(135deg, var(--gold-light), #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; }
+        .page-hero .subtitle { color: var(--text-secondary); font-size: 1.1rem; max-width: 650px; margin: 0 auto 24px; }
+        .breadcrumb { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); }
+        .breadcrumb a { color: var(--gold); text-decoration: none; }
+        /* Quiz */
+        .quiz-container { position: relative; z-index: 1; max-width: 750px; margin: 0 auto; padding: 0 24px 60px; }
+        .quiz-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--card-radius); padding: 32px; margin-bottom: 24px; display: none; }
+        .quiz-card.active { display: block; }
+        .quiz-card .q-num { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+        .quiz-card .q-text { font-family: var(--font-heading); font-size: 1.15rem; color: var(--text-primary); margin-bottom: 24px; line-height: 1.5; }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+        .quiz-option { padding: 14px 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer; transition: all var(--transition-speed); font-size: 0.9rem; color: var(--text-secondary); }
+        .quiz-option:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+        .quiz-option.correct { background: rgba(46,204,113,0.15); border-color: #2ecc71; color: #2ecc71; }
+        .quiz-option.incorrect { background: rgba(231,76,60,0.15); border-color: #e74c3c; color: #e74c3c; }
+        .quiz-option.disabled { pointer-events: none; }
+        .quiz-feedback { margin-top: 16px; padding: 16px; border-radius: 10px; font-size: 0.85rem; display: none; }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct-fb { background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.2); color: #2ecc71; }
+        .quiz-feedback.incorrect-fb { background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.2); color: #e74c3c; }
+        .quiz-next { display: inline-block; margin-top: 16px; padding: 10px 24px; background: var(--gold-dark); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.9rem; transition: all var(--transition-speed); }
+        .quiz-next:hover { background: var(--gold); }
+        .result-card { background: var(--bg-card); border: 1px solid rgba(212,169,78,0.2); border-radius: var(--card-radius); padding: 40px 32px; text-align: center; display: none; }
+        .result-card.show { display: block; }
+        .result-card .score { font-family: var(--font-heading); font-size: 4rem; color: var(--gold-light); }
+        .result-card .grade { font-size: 1.2rem; color: var(--text-secondary); margin: 12px 0; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-bottom: 24px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s ease; }
+        .site-footer { position: relative; z-index: 1; background: var(--bg-secondary); border-top: 1px solid rgba(212,169,78,0.15); padding: 40px 24px; text-align: center; }
+        .footer-inner { max-width: 800px; margin: 0 auto; }
+        .footer-inner .footer-title { font-family: var(--font-heading); color: var(--gold); font-size: 1.2rem; margin-bottom: 8px; }
+        .footer-inner p { color: var(--text-muted); font-size: 0.85rem; }
+        .footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin: 16px 0; }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: color var(--transition-speed); }
+        .footer-links a:hover { color: var(--gold-light); }
+        @media (max-width: 768px) { .main-nav { display: none; flex-direction: column; width: 100%; background: var(--bg-secondary); border-radius: 12px; padding: 12px; } .main-nav.open { display: flex; } .nav-toggle { display: block; } }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--bg-primary); } ::-webkit-scrollbar-thumb { background: var(--bg-card); border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #8b6914; }
+    </style>
+</head>
+<body>
+    <div class="bg-stars" id="bgStars"></div>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="home.html" class="site-logo"><div class="logo-icon">🐉</div><div><div class="logo-text">神兽档案馆</div></div></a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="home.html">🏠 首页</a>
+                <a href="eastern-dragons.html">🐉 东方神龙</a>
+                <a href="western-dragons.html">🐲 西方巨龙</a>
+                <a href="greek-bestiary.html">🏛️ 希腊神兽</a>
+                <a href="norse-legends.html">⚔️ 北欧传说</a>
+                <a href="chinese-beasts.html">📜 中华异兽</a>
+                <a href="japanese-yokai.html">👹 日本妖怪</a>
+                <a href="egyptian-myths.html">🔺 埃及神兽</a>
+                <a href="world-cryptids.html">👣 世界未解之谜</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-hero">
+        <div class="hero-emoji" style="font-size:80px;">🧠</div>
+        <h1>神兽知识问答</h1>
+        <p class="subtitle">测试你对世界神话生物的了解程度 — — 共20道题目，涵盖8大文化体系。</p>
+        <div class="breadcrumb"><a href="home.html">首页</a> <span>/</span> <span>知识问答</span></div>
+    </section>
+
+    <div class="quiz-container">
+        <div class="progress-bar"><div class="fill" id="progressBar" style="width:0%;"></div></div>
+        <div id="quizArea"></div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-title">🐉 世界神兽档案馆</div>
+            <p>探索人类想象力创造的每一个神奇生物 · Mythical Creatures Archive &copy; 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        (function(){const c=document.getElementById('bgStars');let h='';for(let i=0;i<100;i++){const s=Math.random()*2.5+0.8,x=Math.random()*100,y=Math.random()*100,d=Math.random()*4+2,dl=Math.random()*5;h+=`<div class="star" style="width:${s}px;height:${s}px;left:${x}%;top:${y}%;--dur:${d}s;--delay:${dl}s;"></div>`;}c.innerHTML=h;})();
+        document.getElementById('navToggle').addEventListener('click',function(){const n=document.getElementById('mainNav');n.classList.toggle('open');this.textContent=n.classList.contains('open')?'✕':'☰';});
+    </script>
+    <script>
+        const quizData = [
+            {q:'东方青龙在"四象"中代表哪个方位？',opts:['东方','南方','西方','北方'],ans:0,exp:'青龙代表东方与春季，在五行中属木。四象的说法最早见于《礼记·曲礼上》："行前朱鸟而后玄武，左青龙而右白虎。"'},
+            {q:'希腊神话中，美杜莎的头发是什么？',opts:['火焰','毒蛇','荆棘','海藻'],ans:1,exp:'美杜莎因在雅典娜神殿中被波塞冬玷污，被雅典娜的惩罚变为蛇发女妖。直视她双眼的人会变成石头。'},
+            {q:'北欧神话中，谁将手放入魔狼芬里尔嘴中作为担保？',opts:['奥丁','托尔','提尔','洛基'],ans:2,exp:'战神提尔主动将右手放入芬里尔嘴中作为担保。芬里尔被格莱普尼尔锁链束缚后，咬断了提尔的手。'},
+            {q:'日本神话中，八岐大蛇的尾巴中藏着什么？',opts:['八咫镜','天丛云剑','八尺琼勾玉','雷神之锤'],ans:1,exp:'素戋呜尊斩杀八岐大蛇后，在蛇尾中发现了天丛云剑（草薙剑），这把剑后来成为日本三大神器之一。'},
+            {q:'《山海经》中，"其状如狐而九尾"描述的是哪种异兽？',opts:['饕餮','穷奇','九尾狐','麒麟'],ans:2,exp:'九尾狐最早记载于《山海经·南山经》："青丘之山……有兽焉，其状如狐而九尾，其音如婴儿，能食人，食者不蛊。"'},
+            {q:'古埃及的"心脏审判"中，什么怪物会吞噬罪人的心脏？',opts:['斯芬克斯','阿佩普','索贝克','阿米特'],ans:3,exp:'阿米特是鳄鱼头、狮身、河马臀的合体怪物，在冥界玛阿特大厅中等待吞噬心重于真理之羽的罪人。'},
+            {q:'哪一部作品创造了"史矛革"这一文学巨龙形象？',opts:['《魔戒》','《霍比特人》','《冰与火之歌》','《纳尼亚传奇》'],ans:1,exp:'史矛革出自J.R.R.托尔金1937年的《霍比特人》，是孤山上守护矮人宝藏的赤金色火龙，腹部有宝石铠甲但左胸有弱点。'},
+            {q:'日本"百鬼夜行"妖怪画的作者是谁？',opts:['葛饰北斋','鸟山石燕','歌川广重','水木茂'],ans:1,exp:'鸟山石燕（1712-1788）在江户时代创作了《画图百鬼夜行》《今昔画图续百鬼》《今昔百鬼拾遗》三大妖怪画集。'},
+            {q:'希腊神话中，弥诺陶洛斯被囚禁在什么建筑中？',opts:['巴别塔','金字塔','克里特迷宫','空中花园'],ans:2,exp:'弥诺斯王命代达罗斯在克里特岛上建造了一座极其复杂的迷宫来囚禁半人半牛的弥诺陶洛斯。'},
+            {q:'《山海经》中"人面蛇身，身长千里"描述的是哪位神祇级存在？',opts:['相柳','烛龙','应龙','九头蛇'],ans:1,exp:'烛龙（烛阴）居住在极北的钟山之上，"人面蛇身，赤色，身长千里"。它睁眼为白昼、闭眼为黑夜，具有创世神格。'},
+            {q:'哪一只狼在北欧神话中会在诸神黄昏时吞噬奥丁？',opts:['哈提','斯库尔','芬里尔','加姆'],ans:2,exp:'魔狼芬里尔在诸神黄昏时挣脱格莱普尼尔锁链，吞噬了众神之父奥丁，随后被奥丁之子维达尔撕裂下颌而亡。'},
+            {q:'中国商周青铜器上最典型的神兽纹饰是什么？',opts:['云纹','夔龙纹','饕餮纹','雷纹'],ans:2,exp:'饕餮纹（兽面纹）是商周青铜礼器的核心装饰母题，大眼、巨角、对称展开的面孔充满了威严与神秘。'},
+            {q:'古埃及的"阿匹斯神牛"是什么？',opts:['神话虚构生物','一头真实存在被崇拜的公牛','一种已灭绝的动物','法老的象征雕塑'],ans:1,exp:'阿匹斯牛是一头真实存在的公牛，具有特定标记（额上白三角等），被埃及人当作创世神卜塔在地上的化身在神庙中供养。'},
+            {q:'日本妖怪中，"雪女"最著名故事由谁记录并介绍给西方？',opts:['川端康成','芥川龙之介','小泉八云','夏目漱石'],ans:2,exp:'小泉八云（Lafcadio Hearn，1850-1904）在《怪谈》（Kwaidan）中记录了雪女的故事，将日本妖怪文化介绍给了西方世界。'},
+            {q:'西方神话中的"利维坦"（Leviathan）出自哪部经典？',opts:['《伊利亚特》','《神谱》','《圣经·约伯记》','《埃涅阿斯纪》'],ans:2,exp:'利维坦是《圣经·约伯记》第41章中详细描述的巨型海怪。"它从口中发出烧着的火把与飞迸的火星。"'},
+            {q:'大禹治水时斩杀了哪种九头蛇怪？',opts:['八岐大蛇','许德拉','阿佩普','相柳'],ans:3,exp:'相柳是共工的臣子，九首蛇身，其血污染大地。大禹将其斩杀后，被污染的土地三次填平皆塌陷，最终筑"众帝之台"才镇压住。'},
+            {q:'麒麟在中华文化中被称为什么？',opts:['百鸟之王','百兽之王','仁兽','神兽之首'],ans:2,exp:'麒麟被尊为"仁兽"，性格温和，"不履生虫、不折生草"。传说孔子出生前有麒麟"口吐玉书"，是圣人的祥瑞。'},
+            {q:'2017年的DNA研究证实，喜马拉雅"雪人"样本实际来自什么动物？',opts:['未知灵长类','古代北极熊','喜马拉雅棕熊','藏羚羊'],ans:2,exp:'牛津大学和布法罗大学的研究团队分析了24份"雪人"样本，所有样本均被鉴定为喜马拉雅棕熊和亚洲黑熊。'},
+            {q:'"饕餮"在中文中的引申义是什么？',opts:['勇敢的人','贪吃的人','智慧的人','懒惰的人'],ans:1,exp:'饕餮因"贪于饮食"而被列为四凶之一。传说饕餮过于贪吃，最后把自己的身体也吃掉了，只剩下一个头。后世用"饕餮"指代贪食者。'},
+            {q:'古埃及的"贝努鸟"在西方文化中演变成了什么？',opts:['狮鹫','美人鱼','凤凰','独角兽'],ans:2,exp:'埃及贝努鸟（Bennu）→希腊Phoenix→现代"凤凰涅槃"。希腊历史学家希罗多德在公元前5世纪将埃及的贝努鸟传说翻译为希腊语的"phoenix"。'}
+        ];
+
+        let currentQ = 0, score = 0, qOrder = [];
+        // Shuffle
+        qOrder = Array.from({length:quizData.length},(_,i)=>i);
+        for(let i=qOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qOrder[i],qOrder[j]]=[qOrder[j],qOrder[i]];}
+
+        const quizArea = document.getElementById('quizArea');
+
+        function renderQuestion(idx) {
+            if (idx >= quizData.length) {
+                showResult();
+                return;
+            }
+            const qi = qOrder[idx];
+            const data = quizData[qi];
+            const pct = Math.round((idx/quizData.length)*100);
+            document.getElementById('progressBar').style.width = pct+'%';
+
+            let html = `<div class="quiz-card active" id="qCard${idx}">`;
+            html += `<div class="q-num">第 ${idx+1} / ${quizData.length} 题</div>`;
+            html += `<div class="q-text">${data.q}</div>`;
+            html += `<div class="quiz-options" id="opts${idx}">`;
+            data.opts.forEach((opt, oi) => {
+                html +=
+                    `<div class="quiz-option" data-oi="${oi}" onclick="answerQuestion(${idx}, ${oi}, ${qi})">${String.fromCharCode(65+oi)}. ${opt}</div>`;
+            });
+            html += `</div>`;
+            html += `<div class="quiz-feedback" id="fb${idx}"></div>`;
+            html +=
+                `<button class="quiz-next" id="nextBtn${idx}" style="display:none;" onclick="nextQuestion(${idx})">下一题 →</button>`;
+            html += `</div>`;
+            quizArea.innerHTML = html;
+        }
+
+        function answerQuestion(qIdx, optIdx, quizDataIdx) {
+            const data = quizData[quizDataIdx];
+            const optsContainer = document.getElementById('opts'+qIdx);
+            const fb = document.getElementById('fb'+qIdx);
+            const nextBtn = document.getElementById('nextBtn'+qIdx);
+            const allOpts = optsContainer.querySelectorAll('.quiz-option');
+
+            allOpts.forEach(o => o.classList.add('disabled'));
+
+            if (optIdx === data.ans) {
+                allOpts[optIdx].classList.add('correct');
+                fb.className = 'quiz-feedback correct-fb show';
+                fb.innerHTML = '✅ 回答正确！' + data.exp;
+                score++;
+                // 隐藏错误选项
+                for(let i=0;i<allOpts.length;i++) {
+                    if(i!==data.ans) allOpts[i].style.opacity='0.3';
+                }
+            } else {
+                allOpts[optIdx].classList.add('incorrect');
+                allOpts[data.ans].classList.add('correct');
+                fb.className = 'quiz-feedback incorrect-fb show';
+                fb.innerHTML = '❌ 回答错误。正确答案是 ' + String.fromCharCode(65+data.ans) + '。' + data.exp;
+            }
+
+            nextBtn.style.display = 'inline-block';
+            document.getElementById('progressBar').style.width = Math.round(((qIdx+1)/quizData.length)*100)+'%';
+        }
+
+        function nextQuestion(qIdx) {
+            currentQ = qIdx + 1;
+            renderQuestion(currentQ);
+        }
+
+        function showResult() {
+            document.getElementById('progressBar').style.width = '100%';
+            const pct = Math.round((score/quizData.length)*100);
+            let grade, emoji;
+            if (pct >= 90) { grade = '🏆 神话大师！你对世界神兽的了解令人惊叹！';
+                emoji = '🏆'; } else if (pct >= 70) { grade = '📚 知识渊博！你对神话生物有很好的了解。';
+                emoji = '📚'; } else if (pct >= 50) { grade = '🤔 中级水平。多逛逛档案馆吧，还有更多精彩等你发现。';
+                emoji = '🤔'; } else { grade = '🌱 神话新手！别灰心，每一次探索都是一次学习。';
+                emoji = '🌱'; }
+
+            quizArea.innerHTML = `
+            <div class="result-card show">
+                <div style="font-size:60px;">${emoji}</div>
+                <div class="score">${score}/${quizData.length}</div>
+                <div class="grade">${grade}</div>
+                <p style="color:var(--text-muted);margin-top:8px;">正确率 ${pct}%</p>
+                <button class="quiz-next" style="margin-top:20px;" onclick="restartQuiz()">🔄 重新挑战</button>
+                <a href="home.html" style="display:inline-block;margin-top:12px;margin-left:8px;padding:10px 24px;background:var(--bg-card);border:1px solid rgba(212,169,78,0.3);border-radius:8px;color:var(--gold);text-decoration:none;font-size:0.9rem;">🏠 返回首页</a>
+            </div>`;
+        }
+
+        function restartQuiz() {
+            score = 0;
+            currentQ = 0;
+            for(let i=qOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qOrder[i],qOrder[j]]=[qOrder[j],qOrder[i]];}
+            renderQuestion(0);
+        }
+
+        // Start
+        renderQuestion(0);
+    </script>
+</body>
+</html>

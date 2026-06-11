@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="世界神话地图 - 交互式全球神兽地理分布">
+    <title>世界神话地图 | 世界神兽档案馆</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        :root {
+            --bg-primary: #0a0a14;
+            --bg-secondary: #12122a;
+            --bg-card: #1a1a3e;
+            --text-primary: #e8e6f0;
+            --text-secondary: #b0aec8;
+            --text-muted: #7a7898;
+            --gold: #d4a94e;
+            --gold-light: #f0d878;
+            --card-radius: 16px;
+            --transition-speed: 0.3s;
+            --font-heading: 'Georgia', 'Noto Serif SC', serif;
+            --font-body: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-body); line-height: 1.7; min-height: 100vh; overflow-x: hidden; }
+        .bg-stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle var(--dur) ease-in-out infinite; animation-delay: var(--delay); opacity: 0; }
+        @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 0.9; } }
+        .site-header { position: sticky; top: 0; z-index: 1000; background: rgba(10,10,20,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(212,169,78,0.2); }
+        .header-inner { max-width: 1300px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .site-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); }
+        .site-logo .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #8b6914, #f0d878); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 20px rgba(212,169,78,0.3); }
+        .site-logo .logo-text { font-family: var(--font-heading); font-size: 1.3rem; font-weight: bold; letter-spacing: 1px; }
+        .main-nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .main-nav a { color: var(--text-secondary); text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; transition: all var(--transition-speed); white-space: nowrap; position: relative; }
+        .main-nav a:hover, .main-nav a.active { color: var(--gold-light); background: rgba(212,169,78,0.1); }
+        .main-nav a.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 2px; background: var(--gold); border-radius: 2px; }
+        .nav-toggle { display: none; background: none; border: 1px solid rgba(212,169,78,0.3); color: var(--gold); font-size: 1.5rem; cursor: pointer; padding: 6px 12px; border-radius: 8px; }
+        .page-hero { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .page-hero h1 { font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3.5rem); background: linear-gradient(135deg, var(--gold-light), #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; }
+        .page-hero .subtitle { color: var(--text-secondary); font-size: 1.1rem; max-width: 650px; margin: 0 auto 24px; }
+        .breadcrumb { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); }
+        .breadcrumb a { color: var(--gold); text-decoration: none; }
+        .content-section { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
+        .map-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .region-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--card-radius); padding: 24px; cursor: pointer; transition: all var(--transition-speed); position: relative; overflow: hidden; }
+        .region-card:hover { transform: translateY(-4px); border-color: var(--region-color, var(--gold)); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .region-card .region-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .region-card .region-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .region-card .region-name { font-family: var(--font-heading); font-size: 1.1rem; }
+        .region-card .creature-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+        .region-card .creature-list span { padding: 2px 8px; border-radius: 8px; font-size: 0.72rem; background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        .region-card .region-stats { display: flex; gap: 12px; margin-top: 12px; font-size: 0.78rem; color: var(--text-muted); }
+        .region-card:nth-child(1) { --region-color: #e74c3c; }
+        .region-card:nth-child(2) { --region-color: #3498db; }
+        .region-card:nth-child(3) { --region-color: #f39c12; }
+        .region-card:nth-child(4) { --region-color: #2ecc71; }
+        .region-card:nth-child(5) { --region-color: #9b59b6; }
+        .region-card:nth-child(6) { --region-color: #1abc9c; }
+        .region-card:nth-child(7) { --region-color: #e91e63; }
+        .region-card:nth-child(8) { --region-color: #ff9800; }
+        .region-card:nth-child(9) { --region-color: #00bcd4; }
+        .region-card:nth-child(10) { --region-color: #8bc34a; }
+        .region-card:nth-child(11) { --region-color: #ff5722; }
+        .region-card:nth-child(12) { --region-color: #607d8b; }
+        .detail-panel { display: none; margin-top: 32px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--card-radius); padding: 32px; }
+        .detail-panel.show { display: block; }
+        .detail-panel h3 { font-family: var(--font-heading); color: var(--gold-light); margin-bottom: 16px; }
+        .detail-panel p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 10px; }
+        .site-footer { position: relative; z-index: 1; background: var(--bg-secondary); border-top: 1px solid rgba(212,169,78,0.15); padding: 40px 24px; text-align: center; }
+        .footer-inner { max-width: 800px; margin: 0 auto; }
+        .footer-inner .footer-title { font-family: var(--font-heading); color: var(--gold); font-size: 1.2rem; margin-bottom: 8px; }
+        .footer-inner p { color: var(--text-muted); font-size: 0.85rem; }
+        .footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin: 16px 0; }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: color var(--transition-speed); }
+        .footer-links a:hover { color: var(--gold-light); }
+        @media (max-width: 900px) { .map-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .map-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .main-nav { display: none; flex-direction: column; width: 100%; background: var(--bg-secondary); border-radius: 12px; padding: 12px; } .main-nav.open { display: flex; } .nav-toggle { display: block; } }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--bg-primary); } ::-webkit-scrollbar-thumb { background: var(--bg-card); border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #8b6914; }
+    </style>
+</head>
+<body>
+    <div class="bg-stars" id="bgStars"></div>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="home.html" class="site-logo"><div class="logo-icon">🐉</div><div><div class="logo-text">神兽档案馆</div></div></a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="home.html">🏠 首页</a>
+                <a href="eastern-dragons.html">🐉 东方神龙</a>
+                <a href="western-dragons.html">🐲 西方巨龙</a>
+                <a href="greek-bestiary.html">🏛️ 希腊神兽</a>
+                <a href="norse-legends.html">⚔️ 北欧传说</a>
+                <a href="chinese-beasts.html">📜 中华异兽</a>
+                <a href="japanese-yokai.html">👹 日本妖怪</a>
+                <a href="egyptian-myths.html">🔺 埃及神兽</a>
+                <a href="world-cryptids.html">👣 世界未解之谜</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-hero">
+        <div class="hero-emoji" style="font-size:80px;">🗺️</div>
+        <h1>世界神话地图</h1>
+        <p class="subtitle">点击各地区探索其独特的神兽传说 — — 12个文明区域，128种收录神兽的全球分布。</p>
+        <div class="breadcrumb"><a href="home.html">首页</a> <span>/</span> <span>世界神话地图</span></div>
+    </section>
+
+    <section class="content-section">
+        <div class="map-grid">
+            <div class="region-card" onclick="showDetail('east-asia')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(231,76,60,0.12);">🐉</div>
+                    <div class="region-name">东亚·中国</div>
+                </div>
+                <div class="creature-list"><span>青龙</span><span>应龙</span><span>烛龙</span><span>九尾狐</span><span>麒麟</span><span>饕餮</span><span>凤凰</span><span>相柳</span></div>
+                <div class="region-stats"><span>📊 15种</span><span>📜 先秦至今</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('japan')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(155,89,182,0.12);">👹</div>
+                    <div class="region-name">东亚·日本</div>
+                </div>
+                <div class="creature-list"><span>八岐大蛇</span><span>酒吞童子</span><span>天狗</span><span>雪女</span><span>河童</span><span>玉藻前</span></div>
+                <div class="region-stats"><span>📊 12种</span><span>⛩️ 平安至今</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('greece')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(243,156,18,0.12);">🏛️</div>
+                    <div class="region-name">南欧·希腊</div>
+                </div>
+                <div class="creature-list"><span>美杜莎</span><span>弥诺陶洛斯</span><span>奇美拉</span><span>刻耳柏洛斯</span><span>许德拉</span></div>
+                <div class="region-stats"><span>📊 14种</span><span>🏺 公元前8世纪</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('norse')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(46,204,113,0.12);">⚔️</div>
+                    <div class="region-name">北欧·斯堪的纳维亚</div>
+                </div>
+                <div class="creature-list"><span>芬里尔</span><span>耶梦加得</span><span>尼德霍格</span><span>斯雷普尼尔</span></div>
+                <div class="region-stats"><span>📊 10种</span><span>🪓 维京时代</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('egypt')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(243,156,18,0.12);">🔺</div>
+                    <div class="region-name">北非·古埃及</div>
+                </div>
+                <div class="creature-list"><span>斯芬克斯</span><span>阿米特</span><span>阿佩普</span><span>贝努鸟</span><span>阿匹斯牛</span></div>
+                <div class="region-stats"><span>📊 12种</span><span>🏛️ 公元前3000年</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('mesopotamia')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(26,188,156,0.12);">🏺</div>
+                    <div class="region-name">中东·美索不达米亚</div>
+                </div>
+                <div class="creature-list"><span>提亚马特</span><span>穆什胡什</span><span>蝎人</span><span>拉哈穆</span></div>
+                <div class="region-stats"><span>📊 8种</span><span>📜 公元前3500年</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('india')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(233,30,99,0.12);">🕉️</div>
+                    <div class="region-name">南亚·印度</div>
+                </div>
+                <div class="creature-list"><span>那伽</span><span>伽楼罗</span><span>罗刹</span><span>阿修罗</span><span>金翅鸟</span></div>
+                <div class="region-stats"><span>📊 10种</span><span>🕉️ 吠陀时代</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('persia')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(255,152,0,0.12);">🦅</div>
+                    <div class="region-name">中亚·波斯</div>
+                </div>
+                <div class="creature-list"><span>狮鹫</span><span>西摩尔格</span><span>巨灵</span><span>帕祖祖</span></div>
+                <div class="region-stats"><span>📊 7种</span><span>🔆 琐罗亚斯德</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('celtic')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(0,188,212,0.12);">🍀</div>
+                    <div class="region-name">西欧·凯尔特</div>
+                </div>
+                <div class="creature-list"><span>报丧女妖</span><span>无头骑士</span><span>水驹</span><span>塞尔克</span></div>
+                <div class="region-stats"><span>📊 8种</span><span>🌿 铁器时代</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('americas')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(139,195,74,0.12);">🌎</div>
+                    <div class="region-name">美洲原住民</div>
+                </div>
+                <div class="creature-list"><span>温迪戈</span><span>雷鸟</span><span>羽蛇神</span><span>皮亚萨</span></div>
+                <div class="region-stats"><span>📊 8种</span><span>🏹 前哥伦布</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('africa')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(255,87,34,0.12);">🌍</div>
+                    <div class="region-name">撒哈拉以南非洲</div>
+                </div>
+                <div class="creature-list"><span>阿南西</span><span>因卡尼姆巴</span><span>基利马</span><span>摩克拉-姆邦贝</span></div>
+                <div class="region-stats"><span>📊 6种</span><span>🥁 口述传统</span></div>
+            </div>
+            <div class="region-card" onclick="showDetail('modern')">
+                <div class="region-header">
+                    <div class="region-icon" style="background:rgba(96,125,139,0.12);">👣</div>
+                    <div class="region-name">全球·现代隐生动物</div>
+                </div>
+                <div class="creature-list"><span>尼斯湖水怪</span><span>大脚怪</span><span>雪人</span><span>卓柏卡布拉</span></div>
+                <div class="region-stats"><span>📊 8种</span><span>🔬 20世纪至今</span></div>
+            </div>
+        </div>
+
+        <div class="detail-panel" id="detailPanel">
+            <h3 id="detailTitle">点击一个区域查看详情</h3>
+            <div id="detailContent"><p>选择上方地图中的任一个地区，查看该文明的神兽详细资料。</p></div>
+            <button onclick="closeDetail()" style="margin-top:16px;padding:8px 20px;background:var(--bg-card);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-secondary);cursor:pointer;">✕ 关闭</button>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-title">🐉 世界神兽档案馆</div>
+            <p>探索人类想象力创造的每一个神奇生物 · Mythical Creatures Archive &copy; 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        (function(){const c=document.getElementById('bgStars');let h='';for(let i=0;i<100;i++){const s=Math.random()*2.5+0.8,x=Math.random()*100,y=Math.random()*100,d=Math.random()*4+2,dl=Math.random()*5;h+=`<div class="star" style="width:${s}px;height:${s}px;left:${x}%;top:${y}%;--dur:${d}s;--delay:${dl}s;"></div>`;}c.innerHTML=h;})();
+        document.getElementById('navToggle').addEventListener('click',function(){const n=document.getElementById('mainNav');n.classList.toggle('open');this.textContent=n.classList.contains('open')?'✕':'☰';});
+
+        const regionData = {
+            'east-asia':{title:'🐉 东亚·中国神话圈',content:'中华神话体系是世界上连续发展时间最长的神话传统之一。以《山海经》为核心文献，以龙、凤、麒麟为祥瑞代表。中国神兽的特点是"祥瑞/预兆"功能——其出现或消失预示天下的治乱兴衰。四象（青龙、白虎、朱雀、玄武）构成了空间与时间的完整象征体系。道教的神仙体系和民间的狐仙崇拜为中国神兽文化增加了丰富的层次。<br><br><strong>核心文献：</strong>《山海经》《楚辞》《淮南子》《搜神记》《西游记》《聊斋志异》'},
+            'japan':{title:'👹 东亚·日本妖怪文化圈',content:'日本妖怪文化以"万物有灵"的泛灵论为基础，任何物品（付丧神）和自然现象中都可能寄宿着灵性。日本妖怪的特征是"可畏而可亲"——妖怪不全是邪恶的，许多是中性甚至幽默的存在。从平安时代的零散记录到江户时代鸟山石燕的系统图像化，日本妖怪文化经历了从"恐惧对象"到"文化符号"的转化。<br><br><strong>核心文献：</strong>《古事记》《今昔物语集》《画图百鬼夜行》《怪谈》（小泉八云）'},
+            'greece':{title:'🏛️ 南欧·希腊神话圈',content:'希腊神话构建了西方文化中最系统化的怪物谱系。赫西俄德的《神谱》为怪物建立了"谱系学"——堤丰与厄喀德那是众怪的父母，他们的后代构成了希腊英雄需要面对的全部挑战。希腊神兽的特征是"混种"——打破物种界限的怪物象征了自然秩序的扰乱。英雄屠怪是恢复秩序的行为。<br><br><strong>核心文献：</strong>赫西俄德《神谱》、荷马《伊利亚特》《奥德赛》、奥维德《变形记》'},
+            'norse':{title:'⚔️ 北欧·斯堪的纳维亚神话圈',content:'北欧神话中的怪物与宇宙的命运直接绑定。芬里尔注定吞噬奥丁、耶梦加得注定与托尔同归于尽——这些命运不可逆转，连众神也无法改变。北欧神话的"宿命论"色彩在世界神话中独一无二。北欧怪物的另一特点是它们往往是"内部威胁"——洛基的孩子们最终毁灭了阿斯加德。<br><br><strong>核心文献：</strong>《诗体埃达》《散文埃达》（斯诺里·斯图鲁松）'},
+            'egypt':{title:'🔺 北非·古埃及神话圈',content:'古埃及的神兽文化是世界神话中最独特的——埃及人将真实的动物作为神祇的化身来崇拜。阿匹斯神牛是一头真实存在的公牛，有专属祭司团队和葬礼。埃及神兽的核心功能是维护"玛阿特"（宇宙秩序）——阿米特吞噬罪人之心是道德审判的工具，阿佩普代表永恒被击败的混沌。<br><br><strong>核心文献：</strong>《亡灵书》、金字塔铭文、纸草本神话'},
+            'mesopotamia':{title:'🏺 中东·美索不达米亚神话圈',content:'美索不达米亚（苏美尔-巴比伦-亚述）是人类已知最早的神话体系。创世史诗《埃努玛·埃利什》中的混沌女神提亚马特是人类历史上第一个"屠龙创世"叙事。巴比伦的伊什塔尔城门上装饰的穆什胡什龙（蛇头狮身鹰爪蝎尾）是最早被系统图像化的神话怪兽之一。<br><br><strong>核心文献：</strong>《埃努玛·埃利什》《吉尔伽美什史诗》'},
+            'india':{title:'🕉️ 南亚·印度神话圈',content:'印度神话拥有世界上最庞大的神兽和半神体系。那伽（蛇神）、伽楼罗（金翅鸟）、罗刹、阿修罗等生物在印度教和佛教中扮演重要角色。印度神兽的独特之处在于"轮回"与"果报"的概念——许多神兽是前世业力的结果。印度的神兽体系通过佛教深刻影响了中国、日本和东南亚。<br><br><strong>核心文献：</strong>《吠陀》《摩诃婆罗多》《罗摩衍那》《往世书》'},
+            'persia':{title:'🦅 中亚·波斯神话圈',content:'古波斯（伊朗）神话以琐罗亚斯德教的善恶二元论为框架。狮鹫（Griffin）和西摩尔格（Simurgh）是波斯最著名的神兽。西摩尔格是一只巨大的智慧之鸟，拥有治愈能力，在菲尔多西的《列王纪》中扮演着关键角色——它抚养了英雄扎尔。波斯神话通过丝绸之路深刻影响了中亚、南亚和欧洲的神兽文化。<br><br><strong>核心文献：</strong>《阿维斯塔》《列王纪》（菲尔多西）'},
+            'celtic':{title:'🍀 西欧·凯尔特神话圈',content:'凯尔特神话（爱尔兰、苏格兰、威尔士、布列塔尼）中充满了与水、变形和另一个世界相关的神秘生物。报丧女妖（Banshee）的哀号预示着死亡，水驹（Kelpie）引诱骑手上背后冲入水中，无头骑士（Dullahan）在夜间游荡。凯尔特神兽的一个显著特点是与自然景观的深度融合。<br><br><strong>核心文献：</strong>《入侵记》《马比诺吉昂》、爱尔兰神话诸循环'},
+            'americas':{title:'🌎 美洲原住民神话圈',content:'美洲原住民的神兽文化极为多元。阿尔冈昆族的温迪戈是冬季饥饿与贪婪的象征，雷鸟是天空中最强大的精灵，中美洲的羽蛇神（Quetzalcoatl）是智慧与风的化身。美洲神兽的独特之处在于与自然力量和部落伦理的深度绑定——它们既是超自然存在，也是道德教育的载体。<br><br><strong>核心文献：</strong>口述传统、早期传教士记录、民族志研究'},
+            'africa':{title:'🌍 撒哈拉以南非洲神话圈',content:'非洲传统神话中的神兽代表了世界上最古老的连续口述传统。西非的阿南西（蜘蛛神）是智慧与诡计的原型。中非的摩克拉-姆邦贝是刚果盆地"活恐龙"传说。非洲神兽的特点是强烈的道德教化功能和与部落仪式的紧密关联。<br><br><strong>核心文献：</strong>口述传统、民族志记录'},
+            'modern':{title:'👣 全球·现代隐生动物',content:'现代隐生动物（Cryptids）代表了神话思维的当代延续。与古代神兽不同，这些"现代神话"以模糊的照片、声纳信号和目击报告为基础，隐生动物学试图用科学方法研究它们。其中一些已被科学解密（雪人=棕熊、卓柏卡布拉=患疥癣的郊狼），另一些（如尼斯湖水怪、大脚怪）至今成谜。<br><br><strong>核心来源：</strong>目击报告数据库、DNA分析、声纳探测、业余研究者社区'}
+        };
+
+        function showDetail(region) {
+            const data = regionData[region];
+            if (!data) return;
+            document.getElementById('detailTitle').textContent = data.title;
+            document.getElementById('detailContent').innerHTML = '<p>' + data.content + '</p>';
+            document.getElementById('detailPanel').classList.add('show');
+            document.getElementById('detailPanel').scrollIntoView({behavior:'smooth'});
+        }
+
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
