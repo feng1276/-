@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>井字棋</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --x-color: #6366f1;
+            --o-color: #f59e0b;
+            --win-color: #10b981;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        header {
+            text-align: center;
+            padding: 1.2rem;
+            width: 100%;
+            background: var(--surface);
+        }
+        header h1 { font-size: 1.8rem; }
+        header p { color: var(--text-secondary); font-size: 0.9rem; }
+        .turn-indicator {
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .turn-indicator span { color: var(--x-color); }
+        .turn-indicator span.o-turn { color: var(--o-color); }
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 0.5rem 0 1rem;
+        }
+        .stat {
+            text-align: center;
+            background: var(--surface);
+            padding: 0.4rem 1.2rem;
+            border-radius: 10px;
+            min-width: 70px;
+        }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); }
+        .stat-value { font-size: 1.3rem; font-weight: 700; }
+        .stat-x .stat-value { color: var(--x-color); }
+        .stat-o .stat-value { color: var(--o-color); }
+        .stat-tie .stat-value { color: var(--text-secondary); }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-width: 320px;
+            width: 85%;
+            margin: 0 auto;
+            background: transparent;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: var(--surface);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .cell:hover:not(.taken) {
+            background: #253350;
+            transform: scale(1.03);
+        }
+        .cell.taken { cursor: default; }
+        .cell.x-cell { color: var(--x-color); }
+        .cell.o-cell { color: var(--o-color); }
+        .cell.win-cell {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid var(--win-color);
+            animation: winPulse 0.6s ease infinite alternate;
+        }
+        @keyframes winPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-restart { background: #6366f1; color: #fff; }
+        .btn-restart:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(99,102,241,0.5); }
+        .btn-reset { background: var(--surface); color: var(--text); }
+        .btn-reset:hover { background: #334155; }
+        .mode-select {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .mode-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--text-secondary);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-btn:hover { border-color: var(--x-color); color: var(--x-color); }
+        .mode-btn.active { background: var(--x-color); color: #fff; border-color: var(--x-color); }
+        .result-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .result-overlay.show { display: flex; }
+        .result-box {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .result-box h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .result-box .win-text-x { color: var(--x-color); }
+        .result-box .win-text-o { color: var(--o-color); }
+        .result-box .tie-text { color: var(--text-secondary); }
+        .result-box p { color: var(--text-secondary); margin-bottom: 1.5rem; }
+        .btn-play-again { background: var(--x-color); color: #fff; padding: 0.7rem 2rem; border: none; border-radius: 10px; font-size: 1.1rem; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .btn-play-again:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(99,102,241,0.5); }
+        .win-line {
+            position: absolute;
+            background: var(--win-color);
+            z-index: 5;
+            border-radius: 4px;
+        }
+        .win-line.h { height: 4px; width: 90%; left: 5%; }
+        .win-line.v { width: 4px; height: 90%; top: 5%; }
+        .win-line.d1 { height: 4px; width: 120%; left: -10%; top: 50%; transform: rotate(45deg); }
+        .win-line.d2 { height: 4px; width: 120%; left: -10%; top: 50%; transform: rotate(-45deg); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎮 井字棋</h1>
+        <p>经典三连棋，你能赢过电脑吗？</p>
+        <a href="../游戏页面.html" style="display:inline-block;margin-top:0.5rem;color:var(--x-color);text-decoration:none;font-size:0.9rem;">← 返回游戏中心</a>
+    </header>
+    <div class="turn-indicator" id="turnIndicator">轮到 <span id="turnSymbol">X</span> 落子</div>
+    <div class="stats">
+        <div class="stat stat-x"><div class="stat-label">X 胜</div><div class="stat-value" id="xWins">0</div></div>
+        <div class="stat stat-tie"><div class="stat-label">平局</div><div class="stat-value" id="ties">0</div></div>
+        <div class="stat stat-o"><div class="stat-label">O 胜</div><div class="stat-value" id="oWins">0</div></div>
+    </div>
+    <div class="mode-select">
+        <button class="mode-btn active" data-mode="pve">人机对战</button>
+        <button class="mode-btn" data-mode="pvp">双人对战</button>
+    </div>
+    <div class="board" id="board">
+        <div class="cell" data-idx="0"></div>
+        <div class="cell" data-idx="1"></div>
+        <div class="cell" data-idx="2"></div>
+        <div class="cell" data-idx="3"></div>
+        <div class="cell" data-idx="4"></div>
+        <div class="cell" data-idx="5"></div>
+        <div class="cell" data-idx="6"></div>
+        <div class="cell" data-idx="7"></div>
+        <div class="cell" data-idx="8"></div>
+    </div>
+    <div class="controls">
+        <button class="btn-restart" onclick="restartGame()">🔄 新游戏</button>
+        <button class="btn-reset" onclick="resetScore()">🗑 重置分数</button>
+    </div>
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-box">
+            <h2 id="resultTitle"></h2>
+            <p id="resultMsg"></p>
+            <button class="btn-play-again" onclick="restartGame(); document.getElementById('resultOverlay').classList.remove('show');">🔄 再来一局</button>
+        </div>
+    </div>
+    <script>
+        const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        let board = Array(9).fill(null);
+        let currentPlayer = 'X', gameOver = false, mode = 'pve';
+        let scores = { X: 0, O: 0, tie: 0 };
+
+        const cells = document.querySelectorAll('.cell');
+
+        cells.forEach(cell => {
+            cell.addEventListener('click', () => {
+                const idx = parseInt(cell.dataset.idx);
+                if (gameOver || board[idx]) return;
+                makeMove(idx, currentPlayer);
+                if (!gameOver && mode === 'pve' && currentPlayer === 'O') {
+                    setTimeout(computerMove, 300);
+                }
+            });
+        });
+
+        function makeMove(idx, player) {
+            board[idx] = player;
+            cells[idx].textContent = player;
+            cells[idx].classList.add('taken', player === 'X' ? 'x-cell' : 'o-cell');
+
+            const winLine = checkWin(player);
+            if (winLine) {
+                gameOver = true;
+                winLine.forEach(i => cells[i].classList.add('win-cell'));
+                scores[player]++;
+                updateScore();
+                document.getElementById('turnIndicator').textContent = `🎉 ${player} 获胜！`;
+                setTimeout(() => {
+                    document.getElementById('resultTitle').textContent = `🎉 ${player} 获胜！`;
+                    document.getElementById('resultTitle').className = player === 'X' ? 'win-text-x' : 'win-text-o';
+                    document.getElementById('resultMsg').textContent = mode === 'pve' && player === 'O' ? '电脑赢了，再接再厉！' : '恭喜！你赢得了比赛！';
+                    document.getElementById('resultOverlay').classList.add('show');
+                }, 500);
+                return;
+            }
+            if (board.every(c => c !== null)) {
+                gameOver = true;
+                scores.tie++;
+                updateScore();
+                document.getElementById('turnIndicator').textContent = '🤝 平局！';
+                setTimeout(() => {
+                    document.getElementById('resultTitle').textContent = '🤝 平局！';
+                    document.getElementById('resultTitle').className = 'tie-text';
+                    document.getElementById('resultMsg').textContent = '势均力敌，不分胜负！';
+                    document.getElementById('resultOverlay').classList.add('show');
+                }, 500);
+                return;
+            }
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateTurn();
+        }
+
+        function checkWin(player) {
+            for (const line of WIN_LINES) {
+                if (line.every(i => board[i] === player)) return line;
+            }
+            return null;
+        }
+
+        function computerMove() {
+            if (gameOver) return;
+
+            let bestScore = -Infinity, bestMove = -1;
+            for (let i = 0; i < 9; i++) {
+                if (!board[i]) {
+                    board[i] = 'O';
+                    const score = minimax(board, 0, false);
+                    board[i] = null;
+                    if (score > bestScore) { bestScore = score; bestMove = i; }
+                }
+            }
+            if (bestMove !== -1) makeMove(bestMove, 'O');
+        }
+
+        function minimax(b, depth, isMaximizing) {
+            // 使用正确的带 player 参数的 checkWin
+            if (winCheck('O', b)) return 10 - depth;
+            if (winCheck('X', b)) return depth - 10;
+            if (b.every(c => c !== null)) return 0;
+
+            if (isMaximizing) {
+                let best = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (!b[i]) { b[i] = 'O'; best = Math.max(best, minimax(b, depth + 1, false)); b[i] = null; }
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (!b[i]) { b[i] = 'X'; best = Math.min(best, minimax(b, depth + 1, true)); b[i] = null; }
+                }
+                return best;
+            }
+        }
+
+        function winCheck(player, b) {
+            for (const line of WIN_LINES) {
+                if (line.every(i => b[i] === player)) return true;
+            }
+            return false;
+        }
+
+        function updateTurn() {
+            document.getElementById('turnSymbol').textContent = currentPlayer;
+            document.getElementById('turnSymbol').className = currentPlayer === 'O' ? 'o-turn' : '';
+        }
+
+        function updateScore() {
+            document.getElementById('xWins').textContent = scores.X;
+            document.getElementById('oWins').textContent = scores.O;
+            document.getElementById('ties').textContent = scores.tie;
+        }
+
+        function restartGame() {
+            board = Array(9).fill(null);
+            currentPlayer = 'X'; gameOver = false;
+            // 确保 mode 与按钮状态一致
+            const activeBtn = document.querySelector('.mode-btn.active');
+            if (activeBtn) mode = activeBtn.dataset.mode;
+            cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
+            document.getElementById('turnIndicator').innerHTML = '轮到 <span id="turnSymbol">X</span> 落子';
+        }
+
+        function resetScore() {
+            scores = { X: 0, O: 0, tie: 0 };
+            updateScore();
+            restartGame();
+        }
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                restartGame();
+            });
+        });
+    </script>
+</body>
+</html>

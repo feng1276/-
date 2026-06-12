@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>打地鼠</title>
+    <style>
+        :root {
+            --bg: #2d1b00;
+            --surface: #5c3d0e;
+            --text: #fef3c7;
+            --text-secondary: #d4a574;
+            --accent: #f97316;
+            --hole-bg: #3b2104;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        header {
+            text-align: center;
+            padding: 1.2rem;
+            width: 100%;
+            background: var(--surface);
+        }
+        header h1 { font-size: 1.8rem; }
+        header p { color: var(--text-secondary); font-size: 0.9rem; }
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        .stat {
+            text-align: center;
+            background: var(--surface);
+            padding: 0.5rem 1.2rem;
+            border-radius: 12px;
+            min-width: 80px;
+        }
+        .stat-label { font-size: 0.75rem; color: var(--text-secondary); }
+        .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+        .field {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 380px;
+            width: 90%;
+            padding: 1.5rem;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 20px;
+        }
+        .hole {
+            aspect-ratio: 1;
+            background: var(--hole-bg);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: inset 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .mole {
+            position: absolute;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            transition: bottom 0.15s ease;
+            pointer-events: none;
+        }
+        .hole.active .mole { bottom: 15%; }
+        .hole.active { cursor: pointer; }
+        .hole.whacked .mole { bottom: -100%; }
+        .hole.whacked {
+            animation: hitFlash 0.2s ease;
+        }
+        @keyframes hitFlash {
+            0% { box-shadow: inset 0 8px 20px rgba(0,0,0,0.5), 0 0 30px rgba(239,68,68,0.8); }
+            100% { box-shadow: inset 0 8px 20px rgba(0,0,0,0.5); }
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-start { background: var(--accent); color: #fff; }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(249,115,22,0.5); }
+        .btn-diff { background: var(--surface); color: var(--text); border: 1px solid var(--text-secondary); }
+        .btn-diff:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-diff.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .game-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .game-overlay.show { display: flex; }
+        .overlay-box {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .overlay-box h2 { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; }
+        .overlay-box p { color: var(--text-secondary); margin-bottom: 1.5rem; }
+        .combo-text {
+            position: fixed;
+            pointer-events: none;
+            font-size: 2rem;
+            font-weight: 700;
+            z-index: 50;
+            animation: floatUp 0.8s ease forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔨 打地鼠</h1>
+        <p>眼疾手快，点击冒出的地鼠得分</p>
+        <a href="../游戏页面.html" style="display:inline-block;margin-top:0.5rem;color:var(--accent);text-decoration:none;font-size:0.9rem;">← 返回游戏中心</a>
+    </header>
+    <div class="stats">
+        <div class="stat"><div class="stat-label">得分</div><div class="stat-value" id="score">0</div></div>
+        <div class="stat"><div class="stat-label">连击</div><div class="stat-value" id="combo">0</div></div>
+        <div class="stat"><div class="stat-label">剩余</div><div class="stat-value" id="timeLeft">30s</div></div>
+    </div>
+    <div class="field" id="field">
+        <div class="hole" data-idx="0"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="1"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="2"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="3"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="4"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="5"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="6"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="7"><span class="mole">🐹</span></div>
+        <div class="hole" data-idx="8"><span class="mole">🐹</span></div>
+    </div>
+    <div class="controls">
+        <span style="color:var(--text-secondary);font-size:0.85rem;">难度：</span>
+        <button class="btn-diff active" data-level="easy">🐢 简单</button>
+        <button class="btn-diff" data-level="normal">🐹 普通</button>
+        <button class="btn-diff" data-level="hard">⚡ 困难</button>
+    </div>
+    <div class="controls">
+        <button class="btn-start" onclick="startGame()">▶ 开始游戏</button>
+    </div>
+    <div class="game-overlay" id="endOverlay">
+        <div class="overlay-box">
+            <h2>⏰ 时间到！</h2>
+            <p>最终得分：<strong id="finalScore">0</strong></p>
+            <button class="btn-start" onclick="startGame()">再来一局</button>
+        </div>
+    </div>
+    <script>
+        let score = 0, combo = 0, timeLeft = 30, gameRunning = false;
+        let moleTimers = [], countdownInterval;
+        let difficulty = 'easy';
+        const diffSettings = { easy: { baseInterval: 1800, moleDuration: 2200, speedUp: 0.2 }, normal: { baseInterval: 1200, moleDuration: 1500, speedUp: 0.4 }, hard: { baseInterval: 800, moleDuration: 1000, speedUp: 0.6 } };
+
+        const holes = document.querySelectorAll('.hole');
+        const moleEmojis = ['🐹','🐭','🐿️','🦫'];
+
+        holes.forEach(hole => {
+            hole.addEventListener('click', () => {
+                if (!gameRunning) return;
+                if (hole.classList.contains('active')) {
+                    score += 10 + combo * 5;
+                    combo++;
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('combo').textContent = combo;
+                    hole.classList.remove('active');
+                    hole.classList.add('whacked');
+                    hole.querySelector('.mole').textContent = '💥';
+                    setTimeout(() => {
+                        hole.classList.remove('whacked');
+                        hole.querySelector('.mole').textContent = moleEmojis[Math.floor(Math.random() * moleEmojis.length)];
+                    }, 200);
+                    spawnComboText(hole);
+                }
+            });
+        });
+
+        function spawnComboText(hole) {
+            const rect = hole.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.className = 'combo-text';
+            el.style.left = rect.left + rect.width/2 - 20 + 'px';
+            el.style.top = rect.top + 'px';
+            el.style.color = combo >= 10 ? '#facc15' : combo >= 5 ? '#f97316' : '#ef4444';
+            el.textContent = combo > 1 ? `x${combo}` : '+10';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function popMole() {
+            if (!gameRunning) return;
+            const idx = Math.floor(Math.random() * 9);
+            const hole = holes[idx];
+            const ds = diffSettings[difficulty];
+            if (!hole.classList.contains('active') && !hole.classList.contains('whacked')) {
+                hole.classList.add('active');
+                const duration = ds.moleDuration - Math.floor(score / 50) * ds.speedUp * 40;
+                setTimeout(() => {
+                    if (hole.classList.contains('active')) {
+                        hole.classList.remove('active');
+                        combo = 0;
+                        document.getElementById('combo').textContent = combo;
+                    }
+                }, Math.max(400, duration));
+            }
+            const interval = Math.max(300, ds.baseInterval - Math.floor(score / 100) * ds.speedUp * 50);
+            moleTimers.push(setTimeout(popMole, interval + Math.random() * 200));
+        }
+
+        function startGame() {
+            score = 0; combo = 0; timeLeft = 30; gameRunning = true;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('combo').textContent = '0';
+            document.getElementById('timeLeft').textContent = '30s';
+            document.getElementById('endOverlay').classList.remove('show');
+            moleTimers.forEach(t => clearTimeout(t));
+            moleTimers = [];
+            clearInterval(countdownInterval);
+            holes.forEach(h => { h.classList.remove('active','whacked'); h.querySelector('.mole').textContent = '🐹'; });
+
+            for (let i = 0; i < 3; i++) setTimeout(popMole, i * 400);
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeLeft').textContent = timeLeft + 's';
+                if (timeLeft <= 0) {
+                    gameRunning = false;
+                    clearInterval(countdownInterval);
+                    moleTimers.forEach(t => clearTimeout(t));
+                    holes.forEach(h => h.classList.remove('active'));
+                    document.getElementById('finalScore').textContent = score;
+                    document.getElementById('endOverlay').classList.add('show');
+                }
+            }, 1000);
+        }
+
+        document.querySelectorAll('.btn-diff').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-diff').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.dataset.level;
+            });
+        });
+    </script>
+</body>
+</html>

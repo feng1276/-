@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>躲避方块</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #06b6d4;
+            --player-color: #facc15;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+        header {
+            text-align: center;
+            padding: 1rem;
+            width: 100%;
+            background: var(--surface);
+        }
+        header h1 { font-size: 1.6rem; }
+        header p { color: var(--text-secondary); font-size: 0.85rem; }
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 0.8rem 0;
+        }
+        .stat {
+            text-align: center;
+            background: var(--surface);
+            padding: 0.4rem 1rem;
+            border-radius: 10px;
+            min-width: 60px;
+        }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); }
+        .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 500px;
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 0 auto;
+            border: 2px solid #334155;
+        }
+        #player {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background: var(--player-color);
+            border-radius: 8px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+        }
+        .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: var(--danger);
+            border-radius: 6px;
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+        .obstacle.small { width: 28px; height: 28px; background: #f97316; }
+        .obstacle.large { width: 55px; height: 55px; background: #dc2626; }
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--player-color);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            animation: explode 0.5s ease forwards;
+        }
+        @keyframes explode {
+            to { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-start { background: var(--accent); color: #0f172a; }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(6,182,212,0.5); }
+        .mobile-controls {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 0.5rem;
+        }
+        .mobile-row {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 0.3rem 0;
+        }
+        .ctrl-btn {
+            width: 80px;
+            height: 60px;
+            background: var(--surface);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            touch-action: manipulation;
+            color: var(--text);
+            transition: all 0.15s;
+        }
+        .ctrl-btn:active { background: var(--accent); color: #0f172a; }
+        @media (max-width: 768px) { .mobile-controls { display: block; } }
+        .game-over-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 20;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border-radius: 16px;
+        }
+        .game-over-overlay.show { display: flex; }
+        .game-over-overlay h3 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .game-over-overlay button { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏃 躲避方块</h1>
+        <p>左右移动，躲开掉落方块，坚持越久得分越高</p>
+        <a href="../游戏页面.html" style="display:inline-block;margin-top:0.5rem;color:var(--accent);text-decoration:none;font-size:0.9rem;">← 返回游戏中心</a>
+    </header>
+    <div class="stats">
+        <div class="stat"><div class="stat-label">得分</div><div class="stat-value" id="score">0</div></div>
+        <div class="stat"><div class="stat-label">最高分</div><div class="stat-value" id="highScore">0</div></div>
+        <div class="stat"><div class="stat-label">存活</div><div class="stat-value" id="timeAlive">0s</div></div>
+    </div>
+    <div class="game-container" id="gameContainer">
+        <div id="player"></div>
+        <div class="game-over-overlay" id="gameOverOverlay">
+            <h3>💥 游戏结束</h3>
+            <p>得分：<strong id="finalScore">0</strong></p>
+            <button class="btn-start" onclick="startGame()">再来一次</button>
+        </div>
+    </div>
+    <div class="mobile-controls">
+        <div class="mobile-row">
+            <button class="ctrl-btn" id="btnLeft">◀</button>
+            <button class="ctrl-btn" id="btnRight">▶</button>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="btn-start" onclick="startGame()">▶ 开始游戏</button>
+        <span style="color:var(--text-secondary);font-size:0.85rem;">或按空格键开始</span>
+    </div>
+    <script>
+        const container = document.getElementById('gameContainer');
+        const player = document.getElementById('player');
+        let playerX = 180, score = 0, timeSec = 0, gameRunning = false;
+        let obstacles = [], animFrame, spawnInterval, timeInterval;
+        let highScore = parseInt(localStorage.getItem('dodgeHighScore')) || 0;
+        document.getElementById('highScore').textContent = highScore;
+
+        let keys = { left: false, right: false };
+        const containerWidth = () => container.clientWidth;
+
+        document.addEventListener('keydown', e => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+            if (e.code === 'Space') { e.preventDefault(); if (!gameRunning) startGame(); }
+        });
+        document.addEventListener('keyup', e => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+        });
+
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        btnLeft.addEventListener('pointerdown', () => keys.left = true);
+        btnLeft.addEventListener('pointerup', () => keys.left = false);
+        btnLeft.addEventListener('pointerleave', () => keys.left = false);
+        btnRight.addEventListener('pointerdown', () => keys.right = true);
+        btnRight.addEventListener('pointerup', () => keys.right = false);
+        btnRight.addEventListener('pointerleave', () => keys.right = false);
+
+        document.addEventListener('touchmove', e => {
+            if (!gameRunning) return;
+            const touchX = e.touches[0].clientX;
+            const rect = container.getBoundingClientRect();
+            playerX = Math.max(0, Math.min(containerWidth() - 36, touchX - rect.left - 18));
+            player.style.left = playerX + 'px';
+        }, { passive: true });
+
+        function update() {
+            if (!gameRunning) return;
+            const speed = 4 + score / 15;
+            if (keys.left) playerX = Math.max(0, playerX - speed);
+            if (keys.right) playerX = Math.min(containerWidth() - 36, playerX + speed);
+            player.style.left = playerX + 'px';
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += obs.speed;
+                obs.el.style.top = obs.y + 'px';
+                if (obs.y > container.clientHeight) {
+                    obs.el.remove();
+                    obstacles.splice(i, 1);
+                    score += 5;
+                    document.getElementById('score').textContent = score;
+                } else if (checkCollision(playerX, obs)) {
+                    endGame();
+                    return;
+                }
+            }
+            animFrame = requestAnimationFrame(update);
+        }
+
+        function checkCollision(px, obs) {
+            const pw = 36, ph = 36, py = container.clientHeight - 56;
+            const ow = obs.w, oh = obs.h;
+            return px < obs.x + ow && px + pw > obs.x && py < obs.y + oh && py + ph > obs.y;
+        }
+
+        function spawnObstacle() {
+            if (!gameRunning) return;
+            const cw = containerWidth();
+            const types = ['normal','normal','normal','small','small','large'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const sizes = { normal: 40, small: 28, large: 55 };
+            const size = sizes[type];
+            const x = Math.random() * (cw - size);
+            const el = document.createElement('div');
+            el.className = 'obstacle' + (type !== 'normal' ? ' ' + type : '');
+            el.style.left = x + 'px';
+            el.style.top = '-50px';
+            container.appendChild(el);
+            obstacles.push({
+                el, x, y: -50, w: size, h: size,
+                speed: 1.5 + Math.random() * 2 + score / 30
+            });
+        }
+
+        function startGame() {
+            if (gameRunning) {
+                cancelAnimationFrame(animFrame);
+                clearInterval(spawnInterval);
+                clearInterval(timeInterval);
+                obstacles.forEach(o => o.el.remove());
+            }
+            playerX = containerWidth() / 2 - 18;
+            player.style.left = playerX + 'px';
+            score = 0; timeSec = 0; obstacles = [];
+            document.getElementById('score').textContent = '0';
+            document.getElementById('timeAlive').textContent = '0s';
+            document.getElementById('gameOverOverlay').classList.remove('show');
+            gameRunning = true;
+            animFrame = requestAnimationFrame(update);
+            spawnInterval = setInterval(spawnObstacle, 600);
+            timeInterval = setInterval(() => {
+                timeSec++;
+                document.getElementById('timeAlive').textContent = timeSec + 's';
+            }, 1000);
+        }
+
+        function endGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animFrame);
+            clearInterval(spawnInterval);
+            clearInterval(timeInterval);
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('dodgeHighScore', highScore);
+                document.getElementById('highScore').textContent = highScore;
+            }
+            document.getElementById('finalScore').textContent = score;
+
+            const pr = player.getBoundingClientRect();
+            for (let i = 0; i < 12; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = playerX + 13 + 'px';
+                p.style.bottom = '25px';
+                p.style.setProperty('--tx', (Math.random() - 0.5) * 120 + 'px');
+                p.style.setProperty('--ty', (Math.random() - 0.5) * 120 + 'px');
+                container.appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
+            player.style.display = 'none';
+            setTimeout(() => { player.style.display = 'block'; }, 300);
+            document.getElementById('gameOverOverlay').classList.add('show');
+            obstacles.forEach(o => o.el.remove());
+            obstacles = [];
+        }
+    </script>
+</body>
+</html>

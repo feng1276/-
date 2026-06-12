@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>打字速度测试</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --correct: #10b981;
+            --wrong: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Courier New', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        header {
+            text-align: center;
+            padding: 1.2rem;
+            width: 100%;
+            background: var(--surface);
+        }
+        header h1 { font-size: 1.8rem; }
+        header p { color: var(--text-secondary); font-size: 0.9rem; }
+        .stats {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .stat {
+            text-align: center;
+            background: var(--surface);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            min-width: 70px;
+        }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); }
+        .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+        .typing-area {
+            max-width: 650px;
+            width: 90%;
+            margin: 0 auto;
+        }
+        .text-display {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 16px;
+            font-size: 1.3rem;
+            line-height: 2;
+            letter-spacing: 1px;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            position: relative;
+        }
+        .text-display span { transition: all 0.1s; }
+        .text-display span.current { background: var(--accent); color: #fff; border-radius: 3px; padding: 2px 0; }
+        .text-display span.correct { color: var(--correct); }
+        .text-display span.wrong { color: var(--wrong); text-decoration: underline; }
+        .text-display span.remaining { color: var(--text-secondary); }
+        .input-hidden {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-restart { background: var(--accent); color: #fff; }
+        .btn-restart:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(99,102,241,0.5); }
+        .sentence-bank {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+        .sentence-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sentence-btn:hover, .sentence-btn.active { background: var(--accent); color: #fff; }
+        .result-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .result-overlay.show { display: flex; }
+        .result-box {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .result-box h2 { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; }
+        .result-box p { color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .click-hint {
+            text-align: center;
+            color: var(--accent);
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⌨️ 打字速度测试</h1>
+        <p>点击下方文字区域开始输入，测测你的打字速度</p>
+        <a href="../游戏页面.html" style="display:inline-block;margin-top:0.5rem;color:var(--accent);text-decoration:none;font-size:0.9rem;">← 返回游戏中心</a>
+    </header>
+    <div class="stats">
+        <div class="stat"><div class="stat-label">WPM</div><div class="stat-value" id="wpm">0</div></div>
+        <div class="stat"><div class="stat-label">准确率</div><div class="stat-value" id="accuracy">100%</div></div>
+        <div class="stat"><div class="stat-label">进度</div><div class="stat-value" id="progress">0%</div></div>
+        <div class="stat"><div class="stat-label">用时</div><div class="stat-value" id="elapsed">0s</div></div>
+    </div>
+    <div class="sentence-bank">
+        <button class="sentence-btn active" data-mode="en">英文练习</button>
+        <button class="sentence-btn" data-mode="code">代码片段</button>
+        <button class="sentence-btn" data-mode="cn">中文拼音</button>
+    </div>
+    <div class="typing-area">
+        <div class="text-display" id="textDisplay" tabindex="0"></div>
+        <div class="click-hint" id="clickHint">👆 点击此处开始打字</div>
+    </div>
+    <div class="controls">
+        <button class="btn-restart" onclick="restartTest()">🔄 重新开始</button>
+    </div>
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-box">
+            <h2>✅ 完成！</h2>
+            <p>速度：<strong id="rWpm">0</strong> WPM</p>
+            <p>准确率：<strong id="rAcc">100%</strong></p>
+            <p>用时：<strong id="rTime">0s</strong></p>
+            <button class="btn-restart" onclick="restartTest()">再来一次</button>
+        </div>
+    </div>
+    <script>
+        const texts = {
+            en: [
+                "The quick brown fox jumps over the lazy dog. The sun sets behind the mountains, painting the sky in shades of orange and purple.",
+                "Coding is the art of turning ideas into reality through logic and creativity. Every line of code tells a story of problem solving and innovation.",
+                "Life is what happens when you are busy making other plans. Take time to enjoy the small moments that make each day special and worth living.",
+                "The greatest glory in living lies not in never falling, but in rising every time we fall. Success is the sum of small efforts repeated day in and day out.",
+                "Technology is best when it brings people together. The future belongs to those who believe in the power of their dreams and work to make them real."
+            ],
+            code: [
+                "function fibonacci(n) { if (n <= 1) return n; return fibonacci(n - 1) + fibonacci(n - 2); }",
+                "const mergeSort = arr => { if (arr.length <= 1) return arr; const mid = Math.floor(arr.length / 2); const left = mergeSort(arr.slice(0, mid)); const right = mergeSort(arr.slice(mid)); return merge(left, right); };",
+                "class BinaryTree { constructor(value) { this.value = value; this.left = null; this.right = null; } insert(node) { if (node.value < this.value) { if (this.left) this.left.insert(node); else this.left = node; } else { if (this.right) this.right.insert(node); else this.right = node; } } }",
+                "async function fetchUsers() { try { const response = await fetch('/api/users'); const data = await response.json(); return data.filter(user => user.active).map(({ id, name, email }) => ({ id, name, email })); } catch (error) { console.error('Failed to fetch users:', error); return []; } }",
+                "const palindrome = str => { const clean = str.toLowerCase().replace(/[^a-z0-9]/g, ''); for (let i = 0; i < clean.length / 2; i++) { if (clean[i] !== clean[clean.length - 1 - i]) return false; } return true; };"
+            ],
+            cn: [
+                "peng you ni hao huan ying lai dao da zi ce shi zhe li ke yi ti gao ni de shu ru fa shui ping",
+                "ren sheng jiu shi yi chang man chang de lv xing bu yao zai hu mu di di zhi yao guan xin yan tu de feng jing",
+                "xue xi bian cheng xu yao nai xin he re qing mei yi ge da shen dou shi cong jian dan de dai ma kai shi yi bu bu cheng chang qi lai de"
+            ]
+        };
+
+        let targetText = '', currentIndex = 0, correctChars = 0, totalTyped = 0;
+        let startTime, timerInterval, testActive = false, mode = 'en';
+        let wrongIndices = new Set();
+
+        function initDisplay() {
+            document.getElementById('textDisplay').innerHTML = targetText.split('').map((ch, i) =>
+                `<span class="${i === 0 ? 'current' : 'remaining'}">${ch}</span>`
+            ).join('');
+            document.getElementById('textDisplay').tabIndex = 0;
+        }
+
+        function updateDisplay() {
+            const spans = document.getElementById('textDisplay').querySelectorAll('span');
+            spans.forEach((span, i) => {
+                if (i < currentIndex) {
+                    span.className = wrongIndices.has(i) ? 'wrong' : 'correct';
+                } else if (i === currentIndex) {
+                    span.className = 'current';
+                } else {
+                    span.className = 'remaining';
+                }
+            });
+            const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('progress').textContent = Math.round((currentIndex / targetText.length) * 100) + '%';
+            if (timerInterval) {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = elapsed / 60;
+                const words = correctChars / 5;
+                const wpm = mins > 0 ? Math.round(words / mins) : 0;
+                document.getElementById('wpm').textContent = wpm;
+                document.getElementById('elapsed').textContent = elapsed + 's';
+            }
+        }
+
+        function startTest() {
+            if (testActive) return;
+            testActive = true;
+            startTime = Date.now();
+            document.getElementById('clickHint').style.display = 'none';
+            timerInterval = setInterval(updateDisplay, 200);
+        }
+
+        function finishTest() {
+            testActive = false;
+            clearInterval(timerInterval);
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = elapsed / 60;
+            const words = correctChars / 5;
+            const wpm = mins > 0 ? Math.round(words / mins) : 0;
+            const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
+            document.getElementById('rWpm').textContent = wpm;
+            document.getElementById('rAcc').textContent = accuracy + '%';
+            document.getElementById('rTime').textContent = elapsed + 's';
+            document.getElementById('resultOverlay').classList.add('show');
+            document.getElementById('clickHint').style.display = 'block';
+        }
+
+        document.getElementById('textDisplay').addEventListener('keydown', function(e) {
+            if (!testActive && e.key.length === 1) startTest();
+            if (!testActive) return;
+            e.preventDefault();
+
+            if (e.key === 'Backspace') {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    const spans = this.querySelectorAll('span');
+                    if (spans[currentIndex]) {
+                        if (!wrongIndices.has(currentIndex)) correctChars--;
+                        wrongIndices.delete(currentIndex);
+                        totalTyped--;
+                    }
+                }
+            } else if (e.key.length === 1) {
+                totalTyped++;
+                if (e.key.toLowerCase() === targetText[currentIndex].toLowerCase()) {
+                    correctChars++;
+                } else {
+                    wrongIndices.add(currentIndex);
+                }
+                currentIndex++;
+                if (currentIndex >= targetText.length) {
+                    updateDisplay();
+                    finishTest();
+                    return;
+                }
+            }
+            updateDisplay();
+        });
+
+        document.getElementById('textDisplay').addEventListener('click', function() { this.focus(); });
+
+        document.querySelectorAll('.sentence-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sentence-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                restartTest();
+            });
+        });
+
+        function restartTest() {
+            clearInterval(timerInterval); timerInterval = null;
+            testActive = false;
+            targetText = texts[mode][Math.floor(Math.random() * texts[mode].length)];
+            currentIndex = 0; correctChars = 0; totalTyped = 0; wrongIndices = new Set();
+            document.getElementById('wpm').textContent = '0';
+            document.getElementById('accuracy').textContent = '100%';
+            document.getElementById('progress').textContent = '0%';
+            document.getElementById('elapsed').textContent = '0s';
+            document.getElementById('resultOverlay').classList.remove('show');
+            document.getElementById('clickHint').style.display = 'block';
+            initDisplay();
+            document.getElementById('textDisplay').focus();
+        }
+
+        restartTest();
+    </script>
+</body>
+</html>
