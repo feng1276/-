@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识图谱 — ScienceHub</title>
+<style>
+:root {
+  --bg:#080c14;--bg2:#0f1624;--card:rgba(15,22,36,0.75);--accent:#8b5cf6;--accent2:#7c3aed;--accent3:#a78bfa;
+  --text:#e2e8f0;--text2:#94a3b8;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','PingFang SC',sans-serif;line-height:1.6;padding-top:62px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(139,92,246,0.06) 0%,transparent 60%),radial-gradient(ellipse at 30% 70%,rgba(167,139,250,0.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(8,12,20,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:62px}
+nav .logo{font-size:1.4rem;font-weight:700;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px}
+nav .logo span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+nav .links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav .links a{color:var(--text2);text-decoration:none;padding:6px 14px;border-radius:8px;font-size:0.9rem;transition:all 0.25s;white-space:nowrap}
+nav .links a:hover,nav .links a.active{color:var(--text);background:var(--glass)}
+nav .search-btn{background:var(--glass);border:1px solid var(--glass-border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.25s;text-decoration:none}
+nav .search-btn:hover{border-color:var(--accent);color:var(--text)}
+
+.page-header{text-align:center;padding:60px 20px 30px;position:relative;z-index:1}
+.page-header h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-header p{color:var(--text2);font-size:1.1rem;margin-top:8px}
+
+.graph-wrapper{position:relative;z-index:1;max-width:1200px;margin:0 auto 40px;padding:0 20px;text-align:center}
+#graphCanvas{border-radius:16px;background:rgba(0,0,0,0.15);cursor:grab;border:1px solid var(--glass-border)}
+#graphCanvas:active{cursor:grabbing}
+.info-box{display:inline-block;background:var(--card);border:1px solid var(--glass-border);padding:8px 20px;border-radius:20px;margin-top:10px;color:var(--text2);font-size:0.85rem}
+
+footer{background:var(--bg2);border-top:1px solid var(--glass-border);padding:50px 40px 30px;position:relative;z-index:1}
+footer .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto 30px}
+footer h4{margin-bottom:16px}
+footer a{color:var(--text2);text-decoration:none;font-size:0.9rem;display:block;margin-bottom:8px;transition:color 0.2s}
+footer a:hover{color:var(--accent)}
+footer .bottom{text-align:center;color:var(--text2);font-size:0.85rem;border-top:1px solid var(--glass-border);padding-top:20px}
+
+@media(max-width:768px){#graphCanvas{width:100%!important}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="home.html" class="logo">🔬 <span>ScienceHub</span></a>
+  <div class="links">
+    <a href="home.html">首页</a><a href="physics.html">物理学</a><a href="chemistry.html">化学</a>
+    <a href="biology.html">生物学</a><a href="earth-science.html">地球科学</a><a href="computer-science.html">计算机科学</a>
+    <a href="scientists.html">科学家</a><a href="experiments.html">实验室</a>
+    <a href="knowledge-graph.html" class="active">知识图谱</a>
+    <a href="rankings.html">排行榜</a><a href="timeline.html">时间轴</a>
+  </div>
+  <a href="search.html" class="search-btn">🔍 搜索</a>
+</nav>
+
+<div class="page-header">
+  <h1>🕸️ 知识图谱</h1>
+  <p>可视化科学概念之间的关联——拖拽节点，探索知识的网络</p>
+</div>
+
+<div class="graph-wrapper">
+  <canvas id="graphCanvas" width="1100" height="600"></canvas>
+  <div class="info-box">💡 拖拽节点移动 | 连线代表概念关联 | 同色节点属同一学科</div>
+</div>
+
+<footer>
+  <div class="cols">
+    <div><h4>🔬 ScienceHub</h4><p style="color:var(--text2);font-size:0.9rem">科学知识百科平台</p></div>
+    <div><h4>快速导航</h4><a href="physics.html">物理学</a><a href="chemistry.html">化学</a><a href="biology.html">生物学</a><a href="scientists.html">科学家</a></div>
+    <div><h4>更多</h4><a href="experiments.html">实验室</a><a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="about.html">关于网站</a></div>
+  </div>
+  <div class="bottom">&copy; 2026 ScienceHub</div>
+</footer>
+
+<script>
+// Force-directed graph
+const gc=document.getElementById('graphCanvas'),gctx=gc.getContext('2d');
+const colors={物理学:'#6366f1',化学:'#22c55e',生物学:'#ec4899',地球科学:'#06b6d4',计算机科学:'#a855f7',数学家:'#f59e0b',人物:'#ef4444'};
+
+const nodes=[
+  {id:'n1',label:'牛顿',group:'人物',x:200,y:200},{id:'n2',label:'爱因斯坦',group:'人物',x:350,y:150},
+  {id:'n3',label:'万有引力',group:'物理学',x:100,y:300},{id:'n4',label:'经典力学',group:'物理学',x:250,y:320},
+  {id:'n5',label:'微积分',group:'数学家',x:150,y:130},{id:'n6',label:'相对论',group:'物理学',x:450,y:100},
+  {id:'n7',label:'量子力学',group:'物理学',x:500,y:250},{id:'n8',label:'玻尔',group:'人物',x:580,y:180},
+  {id:'n9',label:'原子模型',group:'物理学',x:600,y:300},{id:'n10',label:'元素周期表',group:'化学',x:650,y:420},
+  {id:'n11',label:'门捷列夫',group:'人物',x:700,y:350},{id:'n12',label:'化学键',group:'化学',x:550,y:400},
+  {id:'n13',label:'化学反应',group:'化学',x:500,y:500},{id:'n14',label:'达尔文',group:'人物',x:300,y:450},
+  {id:'n15',label:'进化论',group:'生物学',x:350,y:520},{id:'n16',label:'DNA',group:'生物学',x:180,y:450},
+  {id:'n17',label:'遗传学',group:'生物学',x:200,y:400},{id:'n18',label:'细胞',group:'生物学',x:80,y:400},
+  {id:'n19',label:'地球科学',group:'地球科学',x:750,y:250},{id:'n20',label:'板块构造',group:'地球科学',x:800,y:350},
+  {id:'n21',label:'图灵',group:'人物',x:750,y:100},{id:'n22',label:'计算机科学',group:'计算机科学',x:850,y:150},
+  {id:'n23',label:'AI',group:'计算机科学',x:900,y:250},{id:'n24',label:'法拉第',group:'人物',x:850,y:480},
+  {id:'n25',label:'电磁学',group:'物理学',x:780,y:500},{id:'n26',label:'居里夫人',group:'人物',x:400,y:550},
+  {id:'n27',label:'放射性',group:'物理学',x:500,y:550}
+];
+
+const edges=[
+  ['n1','n3'],['n1','n4'],['n1','n5'],['n2','n6'],['n2','n7'],
+  ['n2','n8'],['n8','n7'],['n8','n9'],['n7','n9'],['n3','n4'],
+  ['n6','n4'],['n10','n11'],['n12','n13'],['n14','n15'],
+  ['n16','n17'],['n15','n17'],['n16','n18'],['n17','n18'],
+  ['n19','n20'],['n21','n22'],['n22','n23'],['n24','n25'],
+  ['n26','n27'],['n7','n27'],['n1','n5'],['n10','n12'],
+  ['n25','n6']
+];
+
+// Initialize random positions
+nodes.forEach(n=>{n.x=100+Math.random()*900;n.y=60+Math.random()*480;n.vx=0;n.vy=0});
+
+let draggedNode=null,offsetX=0,offsetY=0;
+
+function drawGraph(){
+  gctx.clearRect(0,0,gc.width,gc.height);
+  // Edges
+  edges.forEach(([a,b])=>{
+    const na=nodes.find(n=>n.id===a),nb=nodes.find(n=>n.id===b);
+    gctx.beginPath();gctx.moveTo(na.x,na.y);gctx.lineTo(nb.x,nb.y);
+    gctx.strokeStyle='rgba(139,92,246,0.45)';gctx.lineWidth=2;gctx.stroke();
+  });
+  // Nodes
+  nodes.forEach(n=>{
+    const col=colors[n.group]||'#94a3b8';
+    gctx.beginPath();gctx.arc(n.x,n.y,18,0,Math.PI*2);
+    gctx.fillStyle=col;gctx.fill();gctx.strokeStyle='rgba(255,255,255,0.3)';gctx.lineWidth=2;gctx.stroke();
+    gctx.fillStyle='#fff';gctx.font='bold 10px sans-serif';gctx.textAlign='center';
+    gctx.fillText(n.label,n.x,n.y+3);
+    // Halo for dragged
+    if(n===draggedNode){
+      gctx.beginPath();gctx.arc(n.x,n.y,24,0,Math.PI*2);
+      gctx.strokeStyle='rgba(255,255,255,0.4)';gctx.lineWidth=2;gctx.stroke();
+    }
+  });
+}
+
+function simulate(){
+  const repulsion=800,attraction=0.005,damping=0.9;
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y;
+      const d=Math.max(1,Math.hypot(dx,dy));
+      const f=repulsion/(d*d);
+      const fx=dx/d*f,fy=dy/d*f;
+      nodes[i].vx-=fx;nodes[i].vy-=fy;
+      nodes[j].vx+=fx;nodes[j].vy+=fy;
+    }
+  }
+  edges.forEach(([a,b])=>{
+    const na=nodes.find(n=>n.id===a),nb=nodes.find(n=>n.id===b);
+    const dx=nb.x-na.x,dy=nb.y-na.y,d=Math.max(1,Math.hypot(dx,dy));
+    const f=(d-120)*attraction;
+    const fx=dx/d*f,fy=dy/d*f;
+    na.vx+=fx;na.vy+=fy;nb.vx-=fx;nb.vy-=fy;
+  });
+  nodes.forEach(n=>{
+    if(n===draggedNode) return;
+    n.vx*=damping;n.vy*=damping;
+    n.x+=n.vx;n.y+=n.vy;
+    n.x=Math.max(20,Math.min(gc.width-20,n.x));
+    n.y=Math.max(20,Math.min(gc.height-20,n.y));
+  });
+}
+
+function loop(){
+  simulate();drawGraph();requestAnimationFrame(loop);
+}
+
+// Mouse interaction
+gc.addEventListener('mousedown',e=>{
+  const rect=gc.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const node=nodes.find(n=>Math.hypot(mx-n.x,my-n.y)<22);
+  if(node){draggedNode=node;offsetX=mx-node.x;offsetY=my-node.y;}
+});
+gc.addEventListener('mousemove',e=>{
+  if(!draggedNode) return;
+  const rect=gc.getBoundingClientRect();
+  draggedNode.x=e.clientX-rect.left-offsetX;
+  draggedNode.y=e.clientY-rect.top-offsetY;
+});
+gc.addEventListener('mouseup',()=>{draggedNode=null});
+gc.addEventListener('mouseleave',()=>{draggedNode=null});
+
+// Touch support
+gc.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const rect=gc.getBoundingClientRect();
+  const mx=e.touches[0].clientX-rect.left,my=e.touches[0].clientY-rect.top;
+  const node=nodes.find(n=>Math.hypot(mx-n.x,my-n.y)<22);
+  if(node){draggedNode=node;offsetX=mx-node.x;offsetY=my-node.y;}
+},{passive:false});
+gc.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!draggedNode) return;
+  const rect=gc.getBoundingClientRect();
+  draggedNode.x=e.touches[0].clientX-rect.left-offsetX;
+  draggedNode.y=e.touches[0].clientY-rect.top-offsetY;
+},{passive:false});
+gc.addEventListener('touchend',()=>{draggedNode=null});
+
+loop();
+</script>
+</body>
+</html>

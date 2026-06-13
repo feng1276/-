@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排行榜 — ScienceHub</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#080c14;--bg2:#0f1624;--card:rgba(15,22,36,0.75);--accent:#ef4444;--accent2:#dc2626;--accent3:#f87171;
+  --text:#e2e8f0;--text2:#94a3b8;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','PingFang SC',sans-serif;line-height:1.6;padding-top:62px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(239,68,68,0.06) 0%,transparent 50%),radial-gradient(ellipse at 30% 70%,rgba(248,113,113,0.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(8,12,20,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:62px}
+nav .logo{font-size:1.4rem;font-weight:700;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px}
+nav .logo span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+nav .links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav .links a{color:var(--text2);text-decoration:none;padding:6px 14px;border-radius:8px;font-size:0.9rem;transition:all 0.25s;white-space:nowrap}
+nav .links a:hover,nav .links a.active{color:var(--text);background:var(--glass)}
+nav .search-btn{background:var(--glass);border:1px solid var(--glass-border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.25s;text-decoration:none}
+nav .search-btn:hover{border-color:var(--accent);color:var(--text)}
+
+.page-header{text-align:center;padding:60px 20px 30px;position:relative;z-index:1}
+.page-header h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-header p{color:var(--text2);font-size:1.1rem;margin-top:8px}
+
+section{max-width:1200px;margin:0 auto;padding:0 40px 60px;position:relative;z-index:1}
+section h2{font-size:1.8rem;margin-bottom:24px;color:var(--accent3)}
+
+.chart-row{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-bottom:30px}
+.chart-box{background:var(--card);border:1px solid var(--glass-border);border-radius:20px;padding:24px;backdrop-filter:blur(10px)}
+.chart-box h3{font-size:1.1rem;margin-bottom:12px;text-align:center}
+.chart-box canvas{max-height:320px}
+
+/* Rankings List */
+.ranking-list{background:var(--card);border:1px solid var(--glass-border);border-radius:20px;padding:24px 30px;backdrop-filter:blur(10px)}
+.rank-item{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--glass-border)}
+.rank-item:last-child{border-bottom:none}
+.rank-num{font-size:1.5rem;font-weight:800;width:50px;text-align:center;flex-shrink:0}
+.rank-num.gold{color:#fbbf24}.rank-num.silver{color:#94a3b8}.rank-num.bronze{color:#d97706}
+.rank-info{flex:1}.rank-info .name{font-weight:600}.rank-info .detail{color:var(--text2);font-size:0.85rem}
+.rank-score{color:var(--accent3);font-weight:700;font-size:1.1rem}
+
+footer{background:var(--bg2);border-top:1px solid var(--glass-border);padding:50px 40px 30px;position:relative;z-index:1}
+footer .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto 30px}
+footer h4{margin-bottom:16px}
+footer a{color:var(--text2);text-decoration:none;font-size:0.9rem;display:block;margin-bottom:8px;transition:color 0.2s}
+footer a:hover{color:var(--accent)}
+footer .bottom{text-align:center;color:var(--text2);font-size:0.85rem;border-top:1px solid var(--glass-border);padding-top:20px}
+
+@media(max-width:768px){.chart-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="home.html" class="logo">🔬 <span>ScienceHub</span></a>
+  <div class="links">
+    <a href="home.html">首页</a><a href="physics.html">物理学</a><a href="chemistry.html">化学</a>
+    <a href="biology.html">生物学</a><a href="earth-science.html">地球科学</a><a href="computer-science.html">计算机科学</a>
+    <a href="scientists.html">科学家</a><a href="experiments.html">实验室</a>
+    <a href="knowledge-graph.html">知识图谱</a><a href="rankings.html" class="active">排行榜</a><a href="timeline.html">时间轴</a>
+  </div>
+  <a href="search.html" class="search-btn">🔍 搜索</a>
+</nav>
+
+<div class="page-header">
+  <h1>🏆 排行榜</h1>
+  <p>数据可视化——科学史上的璀璨群星</p>
+</div>
+
+<section>
+  <div class="chart-row">
+    <div class="chart-box">
+      <h3>📊 诺贝尔奖按学科统计 (1901-2025)</h3>
+      <canvas id="nobelByField"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>🌍 诺贝尔奖按国家统计 (Top 10)</h3>
+      <canvas id="nobelByCountry"></canvas>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>👑 最著名科学家 TOP 10</h2>
+  <div class="ranking-list" id="sciRanking"></div>
+</section>
+
+<section>
+  <h2>💡 改变世界的发明 TOP 15</h2>
+  <div class="ranking-list" id="inventionRanking"></div>
+</section>
+
+<footer>
+  <div class="cols">
+    <div><h4>🔬 ScienceHub</h4><p style="color:var(--text2);font-size:0.9rem">科学知识百科平台</p></div>
+    <div><h4>快速导航</h4><a href="physics.html">物理学</a><a href="chemistry.html">化学</a><a href="biology.html">生物学</a><a href="scientists.html">科学家</a></div>
+    <div><h4>更多</h4><a href="experiments.html">实验室</a><a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="about.html">关于网站</a></div>
+  </div>
+  <div class="bottom">&copy; 2026 ScienceHub | 数据基于公开历史资料整理</div>
+</footer>
+
+<script>
+// ── Nobel Prize by Field ──
+new Chart(document.getElementById('nobelByField'),{
+  type:'bar',
+  data:{
+    labels:['物理学','化学','生理/医学','文学','和平','经济学'],
+    datasets:[{
+      label:'获奖人数',
+      data:[225,194,229,120,111,93],
+      backgroundColor:['#6366f1','#22c55e','#ec4899','#f59e0b','#06b6d4','#a855f7'],
+      borderRadius:8,borderWidth:0
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#94a3b8'}},
+      x:{ticks:{color:'#94a3b8'},grid:{display:false}}
+    }
+  }
+});
+
+// ── Nobel Prize by Country ──
+new Chart(document.getElementById('nobelByCountry'),{
+  type:'bar',
+  data:{
+    labels:['美国','英国','德国','法国','瑞典','瑞士','日本','俄罗斯','荷兰','加拿大'],
+    datasets:[{
+      label:'获奖人数',
+      data:[413,138,115,73,34,29,29,26,22,19],
+      backgroundColor:'#ef4444',
+      borderRadius:8,borderWidth:0
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#94a3b8'}},
+      y:{ticks:{color:'#94a3b8'},grid:{display:false}}
+    }
+  }
+});
+
+// ── Scientist Ranking ──
+const sciRank=[
+  {name:'阿尔伯特·爱因斯坦',detail:'物理学 | 相对论、E=mc²、光电效应',score:'100'},
+  {name:'艾萨克·牛顿',detail:'物理学/数学 | 万有引力、三大定律、微积分',score:'99'},
+  {name:'玛丽·居里',detail:'物理/化学 | 放射性研究、发现镭和钋',score:'95'},
+  {name:'查尔斯·达尔文',detail:'生物学 | 进化论、自然选择',score:'93'},
+  {name:'尼古拉·特斯拉',detail:'电气工程 | 交流电系统、特斯拉线圈',score:'90'},
+  {name:'伽利略·伽利莱',detail:'天文学/物理学 | 望远镜观测、日心说',score:'88'},
+  {name:'迈克尔·法拉第',detail:'物理学 | 电磁感应、电动机原理',score:'85'},
+  {name:'艾伦·图灵',detail:'计算机科学 | 图灵机、密码学、图灵测试',score:'83'},
+  {name:'尼尔斯·玻尔',detail:'物理学 | 原子模型、量子力学',score:'80'},
+  {name:'斯蒂芬·霍金',detail:'宇宙学 | 黑洞辐射、《时间简史》',score:'78'}
+];
+
+document.getElementById('sciRanking').innerHTML=sciRank.map((s,i)=>{
+  let cls='';if(i===0)cls='gold';else if(i===1)cls='silver';else if(i===2)cls='bronze';
+  return `<div class="rank-item">
+    <div class="rank-num ${cls}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
+    <div class="rank-info"><div class="name">${s.name}</div><div class="detail">${s.detail}</div></div>
+    <div class="rank-score">${s.score}</div>
+  </div>`;
+}).join('');
+
+// ── Inventions Ranking ──
+const inventions=[
+  {name:'互联网',detail:'改变了人类通信、商业和知识传播方式',year:'1960s-1990s',score:'⭐⭐⭐⭐⭐'},
+  {name:'电力系统',detail:'现代文明的基础——照明、工业、通信全靠电',year:'19世纪末',score:'⭐⭐⭐⭐⭐'},
+  {name:'计算机',detail:'从ENIAC到智能手机，彻底改变了人类生活',year:'1940s至今',score:'⭐⭐⭐⭐⭐'},
+  {name:'抗生素（青霉素）',detail:'拯救了数亿人的生命',year:'1928年',score:'⭐⭐⭐⭐⭐'},
+  {name:'晶体管',detail:'所有现代电子设备的基础元件',year:'1947年',score:'⭐⭐⭐⭐⭐'},
+  {name:'印刷术',detail:'知识传播的革命——从活字到激光打印',year:'15世纪',score:'⭐⭐⭐⭐⭐'},
+  {name:'蒸汽机',detail:'工业革命的引擎——人类首次大规模利用非生物动力',year:'18世纪',score:'⭐⭐⭐⭐'},
+  {name:'疫苗',detail:'天花、脊髓灰质炎等曾经致命的疾病得以控制',year:'1796年',score:'⭐⭐⭐⭐'},
+  {name:'内燃机',detail:'驱动汽车、飞机和轮船——改变了交通方式',year:'19世纪末',score:'⭐⭐⭐⭐'},
+  {name:'无线电通信',detail:'从电报到5G——信息瞬间跨越大陆',year:'1895年',score:'⭐⭐⭐⭐'},
+  {name:'核能技术',detail:'从原子弹到核电站——既能毁灭也能造福人类',year:'1940s',score:'⭐⭐⭐⭐'},
+  {name:'卫星技术',detail:'GPS、气象预报、全球通信——太空改变生活',year:'1957年',score:'⭐⭐⭐⭐'},
+  {name:'CRISPR基因编辑',detail:'精确编辑DNA——治疗遗传病的革命性工具',year:'2012年',score:'⭐⭐⭐'},
+  {name:'太阳能电池',detail:'清洁能源的希望——将阳光转化为电能',year:'1954年',score:'⭐⭐⭐'},
+  {name:'3D打印',detail:'增材制造——从个性化医疗到航空航天',year:'1980s',score:'⭐⭐⭐'}
+];
+
+document.getElementById('inventionRanking').innerHTML=inventions.map((inv,i)=>`
+  <div class="rank-item">
+    <div class="rank-num" style="font-size:1.1rem">#${i+1}</div>
+    <div class="rank-info"><div class="name">${inv.name}</div><div class="detail">${inv.detail} | ${inv.year}</div></div>
+    <div class="rank-score" style="font-size:0.9rem">${inv.score}</div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科学家数据库 — ScienceHub</title>
+<style>
+:root {
+  --bg:#080c14;--bg2:#0f1624;--card:rgba(15,22,36,0.75);--accent:#ec4899;--accent2:#be185d;--accent3:#f472b6;
+  --text:#e2e8f0;--text2:#94a3b8;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+  --glow:0 0 40px rgba(236,72,153,0.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','PingFang SC',sans-serif;line-height:1.6;padding-top:62px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(236,72,153,0.06) 0%,transparent 50%),radial-gradient(ellipse at 70% 60%,rgba(244,114,182,0.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(8,12,20,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:62px}
+nav .logo{font-size:1.4rem;font-weight:700;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px}
+nav .logo span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+nav .links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav .links a{color:var(--text2);text-decoration:none;padding:6px 14px;border-radius:8px;font-size:0.9rem;transition:all 0.25s;white-space:nowrap}
+nav .links a:hover,nav .links a.active{color:var(--text);background:var(--glass)}
+nav .search-btn{background:var(--glass);border:1px solid var(--glass-border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.25s;text-decoration:none}
+nav .search-btn:hover{border-color:var(--accent);color:var(--text)}
+
+.page-header{text-align:center;padding:60px 20px 30px;position:relative;z-index:1}
+.page-header h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-header p{color:var(--text2);font-size:1.1rem;margin-top:8px}
+
+/* Scientist Grid */
+.sci-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:1200px;margin:0 auto 60px;padding:0 40px;position:relative;z-index:1}
+.sci-card{background:var(--card);border:1px solid var(--glass-border);border-radius:16px;padding:24px;text-align:center;cursor:pointer;backdrop-filter:blur(10px);transition:all 0.35s}
+.sci-card:hover{border-color:var(--accent);transform:translateY(-6px);box-shadow:var(--glow)}
+.sci-card .avatar{font-size:4rem;display:block;margin-bottom:12px}
+.sci-card h3{font-size:1.1rem;margin-bottom:4px}
+.sci-card .field{color:var(--accent3);font-size:0.85rem;margin-bottom:6px}
+.sci-card .brief{color:var(--text2);font-size:0.8rem}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--glass-border);border-radius:20px;padding:36px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;position:relative}
+.modal .close{position:sticky;top:0;float:right;background:none;border:none;color:var(--text2);font-size:1.8rem;cursor:pointer;z-index:1}
+.modal .close:hover{color:var(--text)}
+.modal .m-header{display:flex;align-items:center;gap:20px;margin-bottom:20px}
+.modal .m-avatar{font-size:4rem}
+.modal .m-info h2{font-size:1.6rem;margin-bottom:4px}
+.modal .m-info .m-field{color:var(--accent3);font-size:0.9rem}
+.modal .m-section{margin-bottom:18px}
+.modal .m-section h4{color:var(--accent3);margin-bottom:8px;font-size:0.95rem;text-transform:uppercase;letter-spacing:1px}
+.modal .m-section p{color:var(--text2);font-size:0.9rem;line-height:1.7}
+.modal .m-timeline{position:relative;padding-left:20px;border-left:2px solid var(--glass-border)}
+.modal .m-timeline .mt-item{padding:6px 0 6px 16px;position:relative;font-size:0.85rem;color:var(--text2)}
+.modal .m-timeline .mt-item::before{content:'';position:absolute;left:-26px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.modal .m-timeline .mt-item .mt-year{color:var(--accent3);font-weight:600}
+
+footer{background:var(--bg2);border-top:1px solid var(--glass-border);padding:50px 40px 30px;position:relative;z-index:1}
+footer .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto 30px}
+footer h4{margin-bottom:16px}
+footer a{color:var(--text2);text-decoration:none;font-size:0.9rem;display:block;margin-bottom:8px;transition:color 0.2s}
+footer a:hover{color:var(--accent)}
+footer .bottom{text-align:center;color:var(--text2);font-size:0.85rem;border-top:1px solid var(--glass-border);padding-top:20px;max-width:1200px;margin:0 auto}
+
+@media(max-width:900px){.sci-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.sci-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="home.html" class="logo">🔬 <span>ScienceHub</span></a>
+  <div class="links">
+    <a href="home.html">首页</a><a href="physics.html">物理学</a><a href="chemistry.html">化学</a>
+    <a href="biology.html">生物学</a><a href="earth-science.html">地球科学</a><a href="computer-science.html">计算机科学</a>
+    <a href="scientists.html" class="active">科学家</a><a href="experiments.html">实验室</a>
+    <a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="timeline.html">时间轴</a>
+  </div>
+  <a href="search.html" class="search-btn">🔍 搜索</a>
+</nav>
+
+<div class="page-header">
+  <h1>🧑‍🔬 科学家数据库</h1>
+  <p>了解那些改变世界的伟大科学家</p>
+</div>
+
+<div class="sci-grid" id="sciGrid"></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+
+<footer>
+  <div class="cols">
+    <div><h4>🔬 ScienceHub</h4><p style="color:var(--text2);font-size:0.9rem">科学知识百科平台</p></div>
+    <div><h4>快速导航</h4><a href="physics.html">物理学</a><a href="chemistry.html">化学</a><a href="biology.html">生物学</a><a href="scientists.html">科学家</a></div>
+    <div><h4>更多</h4><a href="experiments.html">实验室</a><a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="about.html">关于网站</a></div>
+  </div>
+  <div class="bottom">&copy; 2026 ScienceHub</div>
+</footer>
+
+<script>
+const scientists=[
+  {
+    id:'einstein',name:'阿尔伯特·爱因斯坦',avatar:'🧑‍🔬',field:'物理学',years:'1879-1955',nationality:'德国/瑞士/美国',
+    brief:'相对论之父，E=mc²的提出者。',
+    intro:'爱因斯坦是20世纪最伟大的物理学家。他于1905年（"奇迹年"）发表了四篇划时代的论文，分别解释了光电效应、布朗运动、狭义相对论和质能等价关系（E=mc²）。1915年，他提出了广义相对论，将引力解释为时空的弯曲。1921年获得诺贝尔物理学奖。',
+    timeline:[{y:'1879',t:'出生于德国乌尔姆'},{y:'1905',t:'奇迹年：四篇划时代论文'},{y:'1915',t:'提出广义相对论'},{y:'1921',t:'获诺贝尔物理学奖'},{y:'1933',t:'移居美国普林斯顿'},{y:'1955',t:'逝世，享年76岁'}],
+    related:'相对论、光电效应、质能方程 E=mc²、布朗运动'
+  },
+  {
+    id:'newton',name:'艾萨克·牛顿',avatar:'🍎',field:'物理学/数学',years:'1643-1727',nationality:'英国',
+    brief:'经典力学奠基人，微积分发明者之一。',
+    intro:'牛顿是科学史上最具影响力的人物之一。他在《自然哲学的数学原理》中提出了万有引力定律和三大运动定律，奠定了经典力学的基础。在数学上，他与莱布尼茨独立发明了微积分。在光学方面，他用三棱镜发现白光由多种颜色组成。',
+    timeline:[{y:'1643',t:'出生于英格兰林肯郡'},{y:'1665-66',t:'瘟疫年间发现万有引力、微积分'},{y:'1687',t:'出版《自然哲学的数学原理》'},{y:'1704',t:'出版《光学》'},{y:'1727',t:'逝世，葬于威斯敏斯特教堂'}],
+    related:'万有引力定律、牛顿三大定律、微积分、光学色散'
+  },
+  {
+    id:'curie',name:'玛丽·居里',avatar:'👩‍🔬',field:'物理/化学',years:'1867-1934',nationality:'波兰/法国',
+    brief:'首位获得诺贝尔奖的女性，放射性研究的先驱。',
+    intro:'居里夫人是唯一一位在两个不同科学领域（物理和化学）获得诺贝尔奖的人。她与丈夫皮埃尔·居里共同发现了放射性元素钋和镭。她在第一次世界大战期间开发了移动X射线设备。她创造的"放射性"一词沿用至今。',
+    timeline:[{y:'1867',t:'出生于波兰华沙'},{y:'1898',t:'发现钋和镭'},{y:'1903',t:'获诺贝尔物理学奖'},{y:'1911',t:'获诺贝尔化学奖'},{y:'1934',t:'因再生障碍性贫血逝世'}],
+    related:'放射性、镭(Ra)、钋(Po)、X射线医学应用'
+  },
+  {
+    id:'darwin',name:'查尔斯·达尔文',avatar:'🐵',field:'生物学',years:'1809-1882',nationality:'英国',
+    brief:'进化论之父，《物种起源》作者。',
+    intro:'达尔文经过5年的贝格尔号环球航行考察，提出了自然选择进化论。1859年出版《物种起源》，彻底改变了人类对生命起源和发展的理解。他的理论认为所有物种都是从共同祖先进化而来的，适应环境的个体更可能生存和繁殖。',
+    timeline:[{y:'1809',t:'出生于英国什鲁斯伯里'},{y:'1831-36',t:'贝格尔号环球航行'},{y:'1859',t:'出版《物种起源》'},{y:'1871',t:'出版《人类的由来》'},{y:'1882',t:'逝世，葬于威斯敏斯特教堂'}],
+    related:'自然选择、物种起源、进化论、加拉帕戈斯雀'
+  },
+  {
+    id:'tesla',name:'尼古拉·特斯拉',avatar:'⚡',field:'电气工程',years:'1856-1943',nationality:'塞尔维亚/美国',
+    brief:'交流电系统之父，现代电力的奠基人。',
+    intro:'特斯拉是交流电(AC)系统的发明者，他的发明使长距离电力传输成为可能。他发明了特斯拉线圈、感应电动机，并预言了无线通信。尽管晚年贫困，他的700多项专利奠定了现代电气工程的基础。',
+    timeline:[{y:'1856',t:'出生于克罗地亚（当时属奥地利帝国）'},{y:'1888',t:'发明交流感应电动机'},{y:'1891',t:'发明特斯拉线圈'},{y:'1893',t:'交流电在芝加哥世博会胜出'},{y:'1943',t:'在纽约逝世'}],
+    related:'交流电系统、特斯拉线圈、感应电动机、无线输电'
+  },
+  {
+    id:'hawking',name:'斯蒂芬·霍金',avatar:'🌌',field:'理论物理/宇宙学',years:'1942-2018',nationality:'英国',
+    brief:'黑洞理论的集大成者，《时间简史》作者。',
+    intro:'霍金在21岁时被诊断出肌萎缩侧索硬化症（渐冻症），但他继续在理论物理学领域做出了开创性贡献。他提出了霍金辐射理论——黑洞不是完全"黑"的，会因量子效应而发出辐射。他的科普著作《时间简史》全球销量超过2500万册。',
+    timeline:[{y:'1942',t:'出生于英国牛津'},{y:'1963',t:'确诊渐冻症'},{y:'1974',t:'提出霍金辐射理论'},{y:'1988',t:'出版《时间简史》'},{y:'2018',t:'逝世，享年76岁'}],
+    related:'霍金辐射、黑洞理论、奇点定理、《时间简史》'
+  },
+  {
+    id:'galileo',name:'伽利略·伽利莱',avatar:'🔭',field:'天文学/物理学',years:'1564-1642',nationality:'意大利',
+    brief:'现代科学之父，用望远镜革新了天文学。',
+    intro:'伽利略被誉为"现代科学之父"和"科学方法之父"。他改进了望远镜并首次用于天文观测，发现了木星的四大卫星、太阳黑子和月球环形山。他支持哥白尼的日心说，因此受到教会的审判。他还通过实验方法奠定了力学研究的基础。',
+    timeline:[{y:'1564',t:'出生于意大利比萨'},{y:'1609',t:'改进望远镜并观测天空'},{y:'1610',t:'发现木星四颗卫星'},{y:'1633',t:'因日心说受教会审判'},{y:'1642',t:'逝世'}],
+    related:'日心说、望远镜天文学、自由落体实验、惯性原理'
+  },
+  {
+    id:'faraday',name:'迈克尔·法拉第',avatar:'🧲',field:'物理/化学',years:'1791-1867',nationality:'英国',
+    brief:'电磁感应发现者，电动机原理奠基人。',
+    intro:'法拉第出身贫寒，通过自学成为伟大的实验科学家。他发现了电磁感应现象——变化的磁场产生电流，这直接导致了发电机和变压器的发明。他还发现了法拉第电解定律，奠定了电化学的基础。麦克斯韦基于他的工作建立了电磁理论。',
+    timeline:[{y:'1791',t:'出生于伦敦附近'},{y:'1821',t:'发明电动机原型'},{y:'1831',t:'发现电磁感应'},{y:'1834',t:'提出电解定律'},{y:'1867',t:'逝世'}],
+    related:'电磁感应、法拉第笼、电解定律、苯的发现'
+  },
+  {
+    id:'mendeleev',name:'德米特里·门捷列夫',avatar:'📊',field:'化学',years:'1834-1907',nationality:'俄罗斯',
+    brief:'元素周期表的创造者。',
+    intro:'门捷列夫在1869年发表了第一版元素周期表，将当时已知的63种元素按原子量排列，并大胆预测了未知元素的存在和性质。他的周期表准确地预言了镓、钪和锗，后来全部被实验证实。元素周期表是化学史上最重要的理论工具。',
+    timeline:[{y:'1834',t:'出生于西伯利亚托博尔斯克'},{y:'1869',t:'发表第一版元素周期表'},{y:'1871',t:'修正周期表并预测新元素'},{y:'1875',t:'镓的发现验证了预言'},{y:'1907',t:'逝世'}],
+    related:'元素周期表、元素周期律、化学体系化'
+  },
+  {
+    id:'pasteur',name:'路易·巴斯德',avatar:'🦠',field:'微生物学/化学',years:'1822-1895',nationality:'法国',
+    brief:'微生物学之父，巴氏消毒法发明者。',
+    intro:'巴斯德通过实验推翻了"自然发生说"，证明微生物来自已有的微生物。他发明了巴氏消毒法，拯救了无数人的生命。他研制了狂犬病疫苗和炭疽疫苗，开创了现代免疫学。他的工作奠定了"细菌理论"——许多疾病是由微生物引起的。',
+    timeline:[{y:'1822',t:'出生于法国多勒'},{y:'1857',t:'证明发酵由微生物引起'},{y:'1861',t:'推翻自然发生说'},{y:'1865',t:'发明巴氏消毒法'},{y:'1885',t:'成功研制狂犬病疫苗'}],
+    related:'巴氏消毒法、细菌理论、狂犬病疫苗、立体化学'
+  },
+  {
+    id:'turing',name:'艾伦·图灵',avatar:'💻',field:'计算机科学/数学',years:'1912-1954',nationality:'英国',
+    brief:'计算机科学之父，人工智能先驱。',
+    intro:'图灵提出了"图灵机"这一抽象计算模型，奠定了现代计算机科学的理论基础。二战期间，他领导团队破解了德国的恩尼格玛密码，据估计使战争缩短了2-4年。他提出了"图灵测试"作为判断机器是否具有智能的标准。',
+    timeline:[{y:'1912',t:'出生于伦敦'},{y:'1936',t:'提出图灵机概念'},{y:'1939-45',t:'破解恩尼格玛密码'},{y:'1950',t:'提出图灵测试'},{y:'1954',t:'逝世，享年41岁'}],
+    related:'图灵机、图灵测试、密码学、人工智能理论基础'
+  },
+  {
+    id:'bohr',name:'尼尔斯·玻尔',avatar:'⚛️',field:'物理学',years:'1885-1962',nationality:'丹麦',
+    brief:'量子力学奠基人之一，原子模型的提出者。',
+    intro:'玻尔在1913年提出了玻尔原子模型，首次将量子概念引入原子结构理论，解释了氢原子的光谱线。他是哥本哈根学派的创始人，提出了互补原理，对量子力学的哲学解释产生了深远影响。1922年获诺贝尔物理学奖。',
+    timeline:[{y:'1885',t:'出生于丹麦哥本哈根'},{y:'1913',t:'提出玻尔原子模型'},{y:'1922',t:'获诺贝尔物理学奖'},{y:'1927',t:'提出互补原理'},{y:'1962',t:'逝世'}],
+    related:'玻尔原子模型、互补原理、量子力学哥本哈根诠释'
+  }
+];
+
+function buildGrid(){
+  const grid=document.getElementById('sciGrid');
+  grid.innerHTML=scientists.map(s=>`
+    <div class="sci-card" onclick="showScientist('${s.id}')">
+      <span class="avatar">${s.avatar}</span>
+      <h3>${s.name}</h3>
+      <div class="field">${s.field}</div>
+      <div class="brief">${s.brief}</div>
+    </div>
+  `).join('');
+}
+
+function showScientist(id){
+  const s=scientists.find(x=>x.id===id);
+  document.getElementById('modal').innerHTML=`
+    <button class="close" onclick="closeModal()">&times;</button>
+    <div class="m-header">
+      <span class="m-avatar">${s.avatar}</span>
+      <div class="m-info">
+        <h2>${s.name}</h2>
+        <div class="m-field">${s.field} | ${s.years} | ${s.nationality}</div>
+      </div>
+    </div>
+    <div class="m-section"><h4>简介</h4><p>${s.intro}</p></div>
+    <div class="m-section"><h4>主要贡献</h4><p>${s.related}</p></div>
+    <div class="m-section"><h4>时间轴</h4><div class="m-timeline">${s.timeline.map(t=>`<div class="mt-item"><span class="mt-year">${t.y}年</span> — ${t.t}</div>`).join('')}</div></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+buildGrid();
+</script>
+</body>
+</html>

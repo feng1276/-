@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科学实验室 — ScienceHub</title>
+<style>
+:root {
+  --bg:#080c14;--bg2:#0f1624;--card:rgba(15,22,36,0.75);--accent:#10b981;--accent2:#059669;--accent3:#34d399;
+  --text:#e2e8f0;--text2:#94a3b8;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','PingFang SC',sans-serif;line-height:1.6;padding-top:62px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 40% 30%,rgba(16,185,129,0.06) 0%,transparent 50%),radial-gradient(ellipse at 60% 60%,rgba(52,211,153,0.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(8,12,20,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:62px}
+nav .logo{font-size:1.4rem;font-weight:700;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px}
+nav .logo span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+nav .links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav .links a{color:var(--text2);text-decoration:none;padding:6px 14px;border-radius:8px;font-size:0.9rem;transition:all 0.25s;white-space:nowrap}
+nav .links a:hover,nav .links a.active{color:var(--text);background:var(--glass)}
+nav .search-btn{background:var(--glass);border:1px solid var(--glass-border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.25s;text-decoration:none}
+nav .search-btn:hover{border-color:var(--accent);color:var(--text)}
+
+.page-header{text-align:center;padding:60px 20px 30px;position:relative;z-index:1}
+.page-header h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-header p{color:var(--text2);font-size:1.1rem;margin-top:8px}
+
+section{max-width:1100px;margin:0 auto;padding:0 40px 60px;position:relative;z-index:1}
+section h2{font-size:1.8rem;margin-bottom:20px;color:var(--accent3)}
+
+.exp-card{background:var(--card);border:1px solid var(--glass-border);border-radius:20px;padding:30px;backdrop-filter:blur(10px);margin-bottom:30px}
+.exp-card h3{font-size:1.3rem;margin-bottom:8px}
+.exp-card .desc{color:var(--text2);margin-bottom:16px;font-size:0.9rem}
+.exp-card canvas{display:block;margin:0 auto;border-radius:12px;background:rgba(0,0,0,0.2)}
+.exp-card .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;justify-content:center}
+.exp-card button{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:10px 24px;border-radius:10px;cursor:pointer;font-size:0.95rem;font-weight:600;transition:all 0.3s}
+.exp-card button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,0.3)}
+.exp-card input{background:var(--bg);border:1px solid var(--glass-border);color:var(--text);padding:10px 14px;border-radius:10px;font-size:0.95rem;width:120px;outline:none}
+.exp-card input:focus{border-color:var(--accent)}
+.exp-card .result-text{text-align:center;margin-top:10px;font-size:1.05rem;color:var(--accent3);min-height:24px}
+
+/* Chemistry Reaction */
+.chem-visual{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:30px 0;font-size:1.6rem}
+.chem-mol{display:flex;align-items:center;gap:4px;padding:16px 24px;background:var(--glass);border-radius:12px;border:1px solid var(--glass-border);transition:all 0.5s}
+.chem-arrow{font-size:2rem;color:var(--accent3)}
+.chem-result{opacity:0;transform:scale(0.5);transition:all 0.8s cubic-bezier(0.175,0.885,0.32,1.275)}
+.chem-result.show{opacity:1;transform:scale(1)}
+.chem-atom{display:inline-block;animation:none;transition:all 0.5s}
+.chem-atom.react{animation:atomBounce 0.6s ease-in-out}
+@keyframes atomBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+
+footer{background:var(--bg2);border-top:1px solid var(--glass-border);padding:50px 40px 30px;position:relative;z-index:1}
+footer .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto 30px}
+footer h4{margin-bottom:16px}
+footer a{color:var(--text2);text-decoration:none;font-size:0.9rem;display:block;margin-bottom:8px;transition:color 0.2s}
+footer a:hover{color:var(--accent)}
+footer .bottom{text-align:center;color:var(--text2);font-size:0.85rem;border-top:1px solid var(--glass-border);padding-top:20px}
+
+@media(max-width:768px){.chem-visual{flex-direction:column}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="home.html" class="logo">🔬 <span>ScienceHub</span></a>
+  <div class="links">
+    <a href="home.html">首页</a><a href="physics.html">物理学</a><a href="chemistry.html">化学</a>
+    <a href="biology.html">生物学</a><a href="earth-science.html">地球科学</a><a href="computer-science.html">计算机科学</a>
+    <a href="scientists.html">科学家</a><a href="experiments.html" class="active">实验室</a>
+    <a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="timeline.html">时间轴</a>
+  </div>
+  <a href="search.html" class="search-btn">🔍 搜索</a>
+</nav>
+
+<div class="page-header">
+  <h1>🧪 科学实验室</h1>
+  <p>动手体验科学的魅力——交互式物理化学实验</p>
+</div>
+
+<!-- Newton's Cradle -->
+<section>
+  <div class="exp-card">
+    <h3>🔮 牛顿摆 (Newton's Cradle)</h3>
+    <p class="desc">经典物理演示——观察动量守恒和能量守恒。拖拽最左侧的球释放，观察碰撞如何传递。</p>
+    <canvas id="newtonCanvas" width="600" height="300"></canvas>
+    <div class="controls">
+      <button onclick="resetNewton()">🔄 重置</button>
+      <span style="color:var(--text2);font-size:0.85rem">💡 拖拽最左侧球释放</span>
+    </div>
+  </div>
+</section>
+
+<!-- Free Fall -->
+<section>
+  <div class="exp-card">
+    <h3>🍎 自由落体模拟</h3>
+    <p class="desc">设置高度和重力加速度，观察物体从静止开始下落的运动过程。</p>
+    <canvas id="fallCanvas" width="500" height="320"></canvas>
+    <div class="controls">
+      <label style="color:var(--text2);font-size:0.9rem">高度(m):</label>
+      <input type="number" id="fallHeight" value="80" min="1" max="200" step="1">
+      <label style="color:var(--text2);font-size:0.9rem">重力(m/s²):</label>
+      <input type="number" id="fallGravity" value="9.8" min="0.1" max="30" step="0.1">
+      <button onclick="startFall()">🚀 释放</button>
+    </div>
+    <div class="result-text" id="fallResult"></div>
+  </div>
+</section>
+
+<!-- Chemical Reaction -->
+<section>
+  <div class="exp-card">
+    <h3>⚗️ 化学反应演示</h3>
+    <p class="desc">点击按钮观察氢气和氧气反应生成水的化学过程：2H₂ + O₂ → 2H₂O</p>
+    <div class="chem-visual">
+      <div class="chem-mol" id="reactants">
+        <span>2</span><span class="chem-atom" id="h2">H₂</span>
+        <span>+</span>
+        <span class="chem-atom" id="o2">O₂</span>
+      </div>
+      <span class="chem-arrow">→</span>
+      <div class="chem-result" id="product">
+        <span class="chem-mol"><span>2</span>H₂O 💧</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button onclick="runReaction()">⚡ 触发反应</button>
+      <button onclick="resetReaction()">🔄 重置</button>
+    </div>
+    <p style="text-align:center;color:var(--text2);margin-top:12px;font-size:0.85rem" id="reactionNote"></p>
+  </div>
+</section>
+
+<footer>
+  <div class="cols">
+    <div><h4>🔬 ScienceHub</h4><p style="color:var(--text2);font-size:0.9rem">科学知识百科平台</p></div>
+    <div><h4>快速导航</h4><a href="physics.html">物理学</a><a href="chemistry.html">化学</a><a href="biology.html">生物学</a><a href="scientists.html">科学家</a></div>
+    <div><h4>更多</h4><a href="experiments.html">实验室</a><a href="knowledge-graph.html">知识图谱</a><a href="rankings.html">排行榜</a><a href="about.html">关于网站</a></div>
+  </div>
+  <div class="bottom">&copy; 2026 ScienceHub</div>
+</footer>
+
+<script>
+// ── Newton's Cradle (proper pendulum physics) ──
+const nc=document.getElementById('newtonCanvas'),nctx=nc.getContext('2d');
+const N=5,ballR=22,spacing=48,pivotY=60,cordLen=160;
+const startX=nc.width/2-(spacing*(N-1))/2;
+const G=9.8; // gravity for pendulum
+const scale=280; // pixels per "meter" for angular calc
+let balls=[],dragging=-1,dragStartX=0,dragStartAngle=0,lastTime=performance.now();
+
+function initBalls(){
+  balls=[];
+  for(let i=0;i<N;i++){
+    balls.push({anchorX:startX+i*spacing, angle:0, angularV:0});
+  }
+}
+initBalls();
+
+function getBallXY(b){
+  return {x:b.anchorX+Math.sin(b.angle)*cordLen, y:pivotY+Math.cos(b.angle)*cordLen};
+}
+
+function drawNewton(){
+  nctx.clearRect(0,0,nc.width,nc.height);
+  // Support bar
+  nctx.fillStyle='rgba(255,255,255,0.3)';
+  nctx.fillRect(nc.width/2-190,pivotY-8,380,6);
+  nctx.fillRect(nc.width/2-190,pivotY+2,380,6);
+  balls.forEach((b,i)=>{
+    const {x:bx,y:by}=getBallXY(b);
+    // Two cords for V-shape
+    nctx.beginPath();nctx.moveTo(b.anchorX-8,pivotY);nctx.lineTo(bx,by);
+    nctx.strokeStyle='rgba(255,255,255,0.15)';nctx.lineWidth=1;nctx.stroke();
+    nctx.beginPath();nctx.moveTo(b.anchorX+8,pivotY);nctx.lineTo(bx,by);nctx.stroke();
+    // Ball with 3D gradient
+    const grad=nctx.createRadialGradient(bx-5,by-5,2,bx,by,ballR);
+    grad.addColorStop(0,'#ffffff');
+    grad.addColorStop(0.4,i===dragging?'#fbbf24':'#818cf8');
+    grad.addColorStop(1,'#1e3a5f');
+    nctx.beginPath();nctx.arc(bx,by,ballR,0,Math.PI*2);
+    nctx.fillStyle=grad;nctx.fill();
+    nctx.strokeStyle='rgba(255,255,255,0.35)';nctx.lineWidth=1.5;nctx.stroke();
+    // Highlight for active ball
+    if(i===dragging){
+      nctx.beginPath();nctx.arc(bx,by,ballR+3,0,Math.PI*2);
+      nctx.strokeStyle='rgba(251,191,36,0.5)';nctx.lineWidth=2;nctx.stroke();
+    }
+  });
+}
+
+function updateNewton(now){
+  const dt=Math.min(0.05,(now-lastTime)/1000); // cap dt to avoid jumps
+  lastTime=now;
+  for(let i=0;i<N;i++){
+    const b=balls[i];
+    if(i===dragging) continue;
+    // Pendulum: angularAccel = -(g/L)*sin(angle), simplified with scale factor
+    b.angularV+=-(G/scale)*Math.sin(b.angle)*60*dt;
+    b.angularV*=0.9995; // very light damping
+    b.angle+=b.angularV*dt;
+    // Prevent full rotation
+    b.angle=Math.max(-Math.PI/3,Math.min(Math.PI/3,b.angle));
+  }
+  // Collision detection between adjacent balls
+  for(let i=0;i<N-1;i++){
+    const b1=balls[i],b2=balls[i+1];
+    const p1=getBallXY(b1),p2=getBallXY(b2);
+    const dist=Math.hypot(p2.x-p1.x,p2.y-p1.y);
+    const minDist=ballR*2-0.5;
+    if(dist<minDist){
+      // Elastic collision: swap angular velocities (as simplified momentum transfer)
+      const v1=b1.angularV,v2=b2.angularV;
+      b1.angularV=v2*0.96;
+      b2.angularV=v1*0.96;
+      // Push apart
+      const overlap=minDist-dist;
+      const nx=(p2.x-p1.x)/dist,ny=(p2.y-p1.y)/dist;
+      b1.angle-=overlap*nx*0.0004*(i===dragging?0:1);
+      b2.angle+=overlap*nx*0.0004;
+    }
+  }
+  // Stabilize near-zero angles
+  balls.forEach(b=>{
+    if(Math.abs(b.angle)<0.0005&&Math.abs(b.angularV)<0.0002&&dragging!==balls.indexOf(b)){
+      b.angle=0;b.angularV=0;
+    }
+  });
+}
+
+function resetNewton(){
+  initBalls();
+  dragging=-1;
+  lastTime=performance.now();
+}
+
+function animateNewton(now){
+  updateNewton(now);
+  drawNewton();
+  requestAnimationFrame(animateNewton);
+}
+drawNewton();
+requestAnimationFrame(animateNewton);
+
+// Mouse interaction — drag any ball
+function getClickedBall(mx,my){
+  for(let i=0;i<N;i++){
+    const {x,y}=getBallXY(balls[i]);
+    if(Math.hypot(mx-x,my-y)<ballR+8) return i;
+  }
+  return -1;
+}
+nc.addEventListener('mousedown',e=>{
+  const rect=nc.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const idx=getClickedBall(mx,my);
+  if(idx>=0){dragging=idx;dragStartX=mx;dragStartAngle=balls[idx].angle;nc.style.cursor='grabbing';}
+});
+nc.addEventListener('mousemove',e=>{
+  if(dragging<0) return;
+  const mx=e.clientX-nc.getBoundingClientRect().left;
+  const dx=mx-dragStartX;
+  balls[dragging].angle=Math.max(-1.2,Math.min(1.2,dragStartAngle+dx/180));
+  balls[dragging].angularV=0;
+  drawNewton();
+});
+nc.addEventListener('mouseup',()=>{if(dragging>=0){nc.style.cursor='default';dragging=-1;}});
+nc.addEventListener('mouseleave',()=>{if(dragging>=0){nc.style.cursor='default';dragging=-1;}});
+
+// Touch support
+nc.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const rect=nc.getBoundingClientRect();
+  const mx=e.touches[0].clientX-rect.left,my=e.touches[0].clientY-rect.top;
+  const idx=getClickedBall(mx,my);
+  if(idx>=0){dragging=idx;dragStartX=mx;dragStartAngle=balls[idx].angle;nc.style.cursor='grabbing';}
+},{passive:false});
+nc.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(dragging<0) return;
+  const mx=e.touches[0].clientX-nc.getBoundingClientRect().left;
+  const dx=mx-dragStartX;
+  balls[dragging].angle=Math.max(-1.2,Math.min(1.2,dragStartAngle+dx/180));
+  balls[dragging].angularV=0;
+  drawNewton();
+},{passive:false});
+nc.addEventListener('touchend',()=>{if(dragging>=0){nc.style.cursor='default';dragging=-1;}});
+
+// ── Free Fall (optimized: cached background + auto-scaled viewport) ──
+const fc=document.getElementById('fallCanvas'),fctx=fc.getContext('2d');
+const groundY=fc.height-40;
+// Offscreen canvas caches the static ruler background — avoids costly fillText per frame
+const bgCanvas=document.createElement('canvas');
+bgCanvas.width=fc.width;bgCanvas.height=fc.height;
+const bgCtx=bgCanvas.getContext('2d');
+let fallState=null; // {x, y, vy, g, startTime, maxH, pixelsPerMeter, trail:[]}
+let bgDirty=true;
+let curMaxH=100;
+
+function getPixelsPerMeter(maxH){
+  // Auto-fit: ball always stays visible on canvas regardless of height setting
+  return (groundY-50)/Math.max(maxH,50);
+}
+
+function drawBg(){
+  const inputH=parseFloat(document.getElementById('fallHeight').value)||80;
+  curMaxH=Math.max(inputH,100);
+  const ppm=getPixelsPerMeter(curMaxH);
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  // Ceiling line
+  bgCtx.fillStyle='rgba(255,255,255,0.08)';bgCtx.fillRect(60,48,fc.width-120,2);
+  // Ground
+  bgCtx.fillStyle='rgba(255,255,255,0.15)';bgCtx.fillRect(50,groundY,fc.width-100,3);
+  // Height markers (drawn once per parameter change, not every frame)
+  bgCtx.strokeStyle='rgba(255,255,255,0.06)';bgCtx.setLineDash([4,8]);
+  for(let h=0;h<=curMaxH;h+=20){
+    const y=groundY-(h/ppm);
+    if(y<45) continue;
+    bgCtx.beginPath();bgCtx.moveTo(60,y);bgCtx.lineTo(fc.width-60,y);bgCtx.stroke();
+    bgCtx.fillStyle='rgba(255,255,255,0.25)';bgCtx.font='10px sans-serif';bgCtx.textAlign='right';
+    bgCtx.fillText(h+'m ┤',fc.width-58,y+3);
+  }
+  bgCtx.setLineDash([]);
+  bgDirty=false;
+}
+
+function drawFall(){
+  if(bgDirty) drawBg();
+  // Composite: cached background + dynamic elements
+  fctx.clearRect(0,0,fc.width,fc.height);
+  fctx.drawImage(bgCanvas,0,0);
+  // Trail
+  if(fallState&&fallState.trail.length>1){
+    fctx.beginPath();
+    fctx.moveTo(fallState.trail[0].x,fallState.trail[0].y);
+    for(let i=1;i<fallState.trail.length;i++) fctx.lineTo(fallState.trail[i].x,fallState.trail[i].y);
+    fctx.strokeStyle='rgba(239,68,68,0.25)';fctx.lineWidth=2;fctx.stroke();
+  }
+  // Ball
+  if(fallState&&!fallState.landed){
+    const {x,y}=fallState;
+    const grad=fctx.createRadialGradient(x-3,y-3,2,x,y,14);
+    grad.addColorStop(0,'#ffffff');grad.addColorStop(0.4,'#f87171');grad.addColorStop(1,'#7f1d1d');
+    fctx.beginPath();fctx.arc(x,y,14,0,Math.PI*2);fctx.fillStyle=grad;fctx.fill();
+    fctx.strokeStyle='rgba(255,255,255,0.3)';fctx.lineWidth=1.5;fctx.stroke();
+    // Speed indicator
+    fctx.fillStyle='rgba(255,255,255,0.5)';fctx.font='11px sans-serif';fctx.textAlign='left';
+    fctx.fillText(`v=${Math.abs(fallState.vy).toFixed(1)} m/s`,x+18,y+4);
+  }else if(fallState&&fallState.landed){
+    const grad=fctx.createRadialGradient(fallState.x-3,groundY-14-3,2,fallState.x,groundY-14,14);
+    grad.addColorStop(0,'#fff');grad.addColorStop(0.4,'#f87171');grad.addColorStop(1,'#7f1d1d');
+    fctx.beginPath();fctx.arc(fallState.x,groundY-14,14,0,Math.PI*2);fctx.fillStyle=grad;fctx.fill();
+  }
+}
+
+function updateFall(now){
+  if(!fallState||!fallState.falling) return;
+  const elapsed=(now-fallState.startTime)/1000*fallState.speed;
+  const g=fallState.g,maxH=fallState.maxH,ppm=fallState.pixelsPerMeter;
+  const tLand=Math.sqrt(2*maxH/g);
+  const t=Math.min(elapsed,tLand);
+  fallState.y=fallState.startY+0.5*g*t*t*ppm;
+  fallState.vy=g*t;
+  fallState.trail.push({x:fallState.x,y:fallState.y});
+  if(fallState.trail.length>40) fallState.trail.shift();
+  if(t>=tLand){
+    fallState.y=groundY-14;fallState.vy=g*tLand;
+    fallState.falling=false;fallState.landed=true;
+    document.getElementById('fallResult').innerHTML='✅ 落地！时间：<strong>'+tLand.toFixed(2)+'</strong>秒 | 末速度：<strong>'+fallState.vy.toFixed(2)+'</strong>m/s | 公式：t=√(2h/g)';
+  }
+}
+
+let fallRafId=null;
+const ANIM_DURATION=2.0;
+function startFall(){
+  if(fallRafId)cancelAnimationFrame(fallRafId);
+  const h=parseFloat(document.getElementById('fallHeight').value)||80;
+  const g=parseFloat(document.getElementById('fallGravity').value)||9.8;
+  const ppm=getPixelsPerMeter(h);
+  const tLand=Math.sqrt(2*h/g);
+  const speed=tLand/ANIM_DURATION;
+  fallState={
+    x:fc.width/2, y:50, vy:0, g, maxH:h, speed, pixelsPerMeter:ppm,
+    startY:50, startTime:performance.now(),
+    falling:true, landed:false, trail:[]
+  };
+  document.getElementById('fallResult').textContent='⏳ 下落中...（动画固定 '+ANIM_DURATION+'s）';
+  function loopFall(now){
+    updateFall(now);drawFall();
+    if(fallState&&fallState.falling) fallRafId=requestAnimationFrame(loopFall);
+    else drawFall();
+  }
+  fallRafId=requestAnimationFrame(loopFall);
+}
+bgDirty=true;drawFall();
+	let bgDebounce;
+	function clampInput(el,min,max){
+	  let v=parseFloat(el.value);
+	  if(isNaN(v)||v<min) v=min;
+	  if(v>max) v=max;
+	  el.value=v;
+	}
+	function onFallParamChange(){
+	  const hEl=document.getElementById('fallHeight'),gEl=document.getElementById('fallGravity');
+	  clampInput(hEl,1,200);clampInput(gEl,0.1,30);
+	  clearTimeout(bgDebounce);bgDirty=true;bgDebounce=setTimeout(drawFall,200);
+	}
+	document.getElementById('fallHeight').addEventListener('input',onFallParamChange);
+	document.getElementById('fallGravity').addEventListener('input',onFallParamChange);
+
+// ── Chemical Reaction ──
+function runReaction(){
+  document.getElementById('h2').classList.add('react');
+  document.getElementById('o2').classList.add('react');
+  document.getElementById('product').classList.add('show');
+  document.getElementById('reactionNote').textContent='🔥 反应完成！化学键断裂重组，释放能量，生成水分子。';
+  setTimeout(()=>{document.getElementById('h2').classList.remove('react');document.getElementById('o2').classList.remove('react');},600);
+}
+function resetReaction(){
+  document.getElementById('product').classList.remove('show');
+  document.getElementById('reactionNote').textContent='';
+}
+</script>
+</body>
+</html>
