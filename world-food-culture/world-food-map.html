@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世界美食地图 — Explore World Food Map</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --gold: #d4a574; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --shadow-lg: 0 20px 60px rgba(0,0,0,0.12); --radius-md: 20px; --radius-lg: 28px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+
+  .page-hero { min-height: 40vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #1a1a2e 0%, #2c3e50 40%, #34495e 100%); position: relative; overflow: hidden; padding-top: 72px; }
+  .page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(212,165,116,0.1) 0%, transparent 60%); }
+  .page-hero-content { position: relative; z-index: 1; padding: 40px; }
+  .page-hero h1 { font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 800; color: #fff; margin-bottom: 12px; }
+  .page-hero p { font-size: 1.1rem; color: rgba(255,255,255,0.7); max-width: 550px; margin: 0 auto; }
+  section { padding: 60px 40px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .section-tag { display: inline-block; padding: 6px 18px; background: rgba(212,165,116,0.12); color: #b8860b; border-radius: 50px; font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 800; color: var(--warm-dark); margin-bottom: 12px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 560px; margin-bottom: 40px; }
+
+  /* SVG Map */
+  .map-wrapper { background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 24px; overflow-x: auto; }
+  .map-wrapper svg { display: block; margin: 0 auto; max-width: 100%; min-width: 800px; }
+  .land { fill: #e8d5b7; stroke: #d4a574; stroke-width: 1.5; }
+  .land-sub { fill: #f0e0c8; stroke: #d4a574; stroke-width: 1; }
+  .country-group { cursor: pointer; }
+  .country-group:hover .marker-circle { filter: brightness(1.25); }
+  .marker-circle { transition: all 0.3s ease; }
+  .marker-circle.linked { stroke: #fff; stroke-width: 3; }
+  .marker-circle.unlinked { stroke: #fff; stroke-width: 2.5; stroke-dasharray: 5 3; }
+  .marker-text { fill: #fff; font-weight: 700; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+
+  /* Pulse animation */
+  @keyframes pulse-lg { 0%,100% { r: 32; opacity: 0.4; } 50% { r: 48; opacity: 0; } }
+  @keyframes pulse-md { 0%,100% { r: 26; opacity: 0.35; } 50% { r: 40; opacity: 0; } }
+  @keyframes pulse-sm { 0%,100% { r: 22; opacity: 0.3; } 50% { r: 34; opacity: 0; } }
+  .pulse-ring-lg { fill: none; stroke: #c0392b; stroke-width: 3; animation: pulse-lg 2.5s ease-out infinite; }
+  .pulse-ring-md { fill: none; stroke: #c0392b; stroke-width: 2.5; animation: pulse-md 2.5s ease-out infinite; }
+  .pulse-ring-sm { fill: none; stroke: #c0392b; stroke-width: 2; animation: pulse-sm 2.5s ease-out infinite; }
+
+  /* Detail Panel */
+  #detailPanel { display: none; }
+  #detailPanel.visible { display: block; }
+  .country-detail-panel { background: var(--card-bg); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 32px; margin-top: 0; animation: fadeSlideIn 0.4s ease; }
+  @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .detail-flag { font-size: 3.5rem; }
+  .detail-header h3 { font-size: 1.8rem; color: var(--warm-dark); }
+  .detail-header .region { font-size: 0.85rem; color: #c0392b; font-weight: 600; }
+  .detail-desc { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.7; font-size: 0.95rem; }
+  .detail-dishes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .detail-dish-item { background: var(--cream); padding: 18px; border-radius: 12px; transition: var(--transition); }
+  .detail-dish-item:hover { background: #fff; box-shadow: var(--shadow-sm); }
+  .detail-dish-item h4 { font-size: 1rem; margin-bottom: 4px; color: #c0392b; }
+  .detail-dish-item p { font-size: 0.83rem; color: var(--text-secondary); }
+  .detail-action { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-detail { display: inline-block; padding: 10px 24px; background: #c0392b; color: #fff; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: var(--transition); }
+  .btn-detail:hover { background: #a93226; transform: translateY(-2px); }
+  .btn-detail-outline { display: inline-block; padding: 10px 24px; border: 1.5px solid #c0392b; color: #c0392b; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: var(--transition); }
+  .btn-detail-outline:hover { background: #fef3e2; }
+
+  /* Quick Access */
+  .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .quick-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 26px; text-align: center; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; transition: var(--transition); }
+  .quick-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+  .quick-card .emoji { font-size: 2.8rem; margin-bottom: 10px; }
+  .quick-card h4 { font-size: 1.05rem; margin-bottom: 4px; }
+  .quick-card p { font-size: 0.82rem; color: var(--text-secondary); }
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 40px 16px; } .map-wrapper { padding: 12px; } .map-wrapper svg { min-width: 700px; } .marker-text { font-size: 80%; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li>
+    <li><a href="world-food-map.html" class="active">世界地图</a></li>
+    <li><a href="china-cuisine.html">中国馆</a></li>
+    <li><a href="japan-cuisine.html">日本馆</a></li>
+    <li><a href="italy-cuisine.html">意大利馆</a></li>
+    <li><a href="france-cuisine.html">法国馆</a></li>
+    <li><a href="india-cuisine.html">印度馆</a></li>
+    <li><a href="recipe-center.html">菜谱中心</a></li>
+    <li><a href="ingredient-basics.html">食材百科</a></li>
+    <li><a href="food-culture-hub.html">饮食文化</a></li>
+    <li><a href="food-rankings.html">排行榜</a></li>
+    <li><a href="food-timeline.html">时间线</a></li>
+    <li><a href="search-center.html">搜索</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-content">
+    <h1>🗺️ 世界美食地图</h1>
+    <p>点击地图上的国家标记，探索各地的特色美食与饮食文化 —— 一次味蕾的环球旅行</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-tag">Interactive Map</div>
+    <h2 class="section-title">点击探索美食王国</h2>
+    <p class="section-subtitle">实心圆 = 已开放国家馆（可点击跳转）&nbsp;&nbsp;|&nbsp;&nbsp;虚线圆 = 特色美食地区（点击查看详情）</p>
+    <div class="map-wrapper">
+      <svg viewBox="0 0 1100 560" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.3"/></filter>
+          <radialGradient id="oceanDepth" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#dce8f5"/><stop offset="60%" stop-color="#c5d9ed"/><stop offset="100%" stop-color="#a8c8e2"/>
+          </radialGradient>
+        </defs>
+        <rect width="1100" height="560" fill="url(#oceanDepth)" rx="16"/>
+        <!-- Grid -->
+        <g stroke="#bfd4e6" stroke-width="0.4" stroke-dasharray="6 4">
+          <line x1="0" y1="93" x2="1100" y2="93"/><line x1="0" y1="186" x2="1100" y2="186"/><line x1="0" y1="280" x2="1100" y2="280"/><line x1="0" y1="373" x2="1100" y2="373"/><line x1="0" y1="466" x2="1100" y2="466"/>
+          <line x1="220" y1="0" x2="220" y2="560"/><line x1="440" y1="0" x2="440" y2="560"/><line x1="660" y1="0" x2="660" y2="560"/><line x1="880" y1="0" x2="880" y2="560"/>
+        </g>
+        <!-- North America -->
+        <path d="M68,72 L95,60 L125,48 L155,40 L185,32 L215,28 L248,25 L275,24 L300,28 L320,35 L338,48 L352,62 L362,78 L370,95 L374,115 L375,135 L368,155 L355,172 L338,186 L318,198 L295,210 L272,220 L250,228 L228,236 L210,244 L198,254 L188,268 L182,282 L178,298 L175,310 L172,320 L168,328 L162,335 L158,342 L155,335 L148,324 L140,312 L128,300 L118,290 L105,278 L92,266 L82,252 L72,238 L62,222 L52,204 L46,184 L42,164 L44,144 L50,124 L56,106 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M270,70 L295,65 L310,75 L315,90 L308,100 L290,105 L275,98 L268,85 Z" fill="url(#oceanDepth)" stroke="#bfd4e6" stroke-width="0.5"/>
+        <path d="M60,40 L75,28 L95,22 L115,24 L128,32 L135,45 L128,55 L115,58 L98,54 L82,48 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M330,22 L345,15 L362,14 L376,20 L385,32 L388,48 L384,62 L374,72 L358,76 L342,72 L330,62 L325,48 L326,34 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M290,38 L305,30 L318,34 L322,48 L314,58 L300,60 L290,52 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M168,328 L180,338 L192,345 L200,352 L208,360 L212,370 L215,365 L220,355 L225,345 L230,335 L235,328 L240,322 L242,315 L238,308 L230,302 L220,298 L210,296 L200,300 L192,308 L182,316 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <ellipse cx="248" cy="335" rx="6" ry="3" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/><ellipse cx="258" cy="340" rx="5" ry="2.5" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/><ellipse cx="238" cy="342" rx="4" ry="2" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/>
+        <!-- South America -->
+        <path d="M200,360 L215,352 L232,346 L252,342 L272,340 L292,342 L308,348 L318,358 L325,372 L328,390 L326,410 L318,432 L306,452 L290,470 L272,484 L254,494 L238,498 L224,494 L212,484 L204,470 L198,454 L194,436 L192,418 L194,400 L196,382 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <!-- Africa -->
+        <path d="M425,175 L445,165 L470,156 L498,150 L528,148 L558,150 L585,156 L608,166 L622,180 L630,198 L634,218 L632,242 L628,268 L620,294 L610,318 L596,344 L578,368 L558,388 L538,404 L518,418 L498,428 L478,434 L460,436 L444,430 L430,418 L420,402 L412,384 L406,366 L402,348 L400,328 L402,308 L406,288 L410,268 L414,248 L418,228 L420,210 L422,192 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M605,400 L615,392 L625,396 L632,408 L634,422 L628,436 L618,444 L608,440 L604,428 L603,414 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <!-- Europe -->
+        <path d="M428,108 L440,92 L455,78 L472,66 L490,56 L508,48 L526,42 L544,40 L562,42 L578,48 L592,58 L604,72 L612,88 L616,106 L614,122 L608,138 L596,150 L580,158 L562,164 L542,166 L522,164 L504,160 L486,154 L470,148 L456,144 L444,138 L434,128 L428,118 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M412,82 L420,72 L426,68 L430,76 L428,88 L422,98 L414,104 L408,100 L406,90 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/><path d="M400,88 L404,82 L410,78 L412,86 L408,94 L402,96 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M476,40 L492,24 L510,16 L526,12 L540,14 L550,22 L555,34 L554,48 L546,58 L534,62 L520,60 L506,54 L492,48 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M428,132 L438,140 L446,150 L448,162 L444,172 L436,176 L426,172 L420,162 L422,150 L424,140 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M500,140 L506,148 L508,160 L504,170 L498,174 L494,168 L494,156 L496,146 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/><path d="M520,148 L526,156 L524,168 L518,174 L512,170 L514,158 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <!-- Asia -->
+        <path d="M610,70 L630,52 L655,36 L682,24 L710,16 L740,12 L770,14 L800,20 L828,30 L852,42 L872,56 L888,72 L900,90 L908,110 L912,130 L910,150 L904,168 L894,184 L878,196 L858,204 L835,208 L810,210 L788,212 L766,216 L746,222 L728,230 L712,240 L698,248 L684,254 L672,256 L658,254 L646,248 L636,238 L626,226 L618,212 L612,196 L610,178 L608,158 L606,138 L606,118 L608,98 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <path d="M590,160 L600,168 L612,176 L624,186 L632,198 L634,212 L628,224 L618,232 L606,236 L596,232 L590,222 L586,208 L584,192 L584,176 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M690,222 L710,216 L728,218 L744,226 L756,240 L762,258 L762,278 L756,296 L744,310 L728,318 L710,320 L694,314 L682,302 L676,286 L674,268 L676,250 L682,236 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <ellipse cx="708" cy="328" rx="8" ry="13" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <path d="M766,216 L786,210 L806,212 L822,220 L832,234 L836,252 L832,272 L822,290 L808,302 L792,308 L778,306 L768,296 L762,280 L760,262 L762,246 L764,232 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M896,118 L906,108 L914,104 L920,112 L922,126 L918,140 L910,152 L900,158 L892,154 L888,142 L888,128 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/><path d="M902,96 L908,90 L914,92 L914,102 L908,108 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <path d="M840,74 L852,66 L860,70 L864,82 L862,96 L856,106 L846,110 L838,106 L836,94 L838,82 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.8"/>
+        <ellipse cx="818" cy="210" rx="6" ry="10" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/>
+        <!-- SE Asia Islands -->
+        <path d="M750,300 L770,295 L790,298 L800,310 L798,325 L785,332 L768,330 L755,322 L750,312 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <path d="M800,320 L820,318 L838,322 L845,330 L838,338 L820,340 L804,336 L798,330 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <path d="M840,290 L860,282 L878,284 L890,294 L890,308 L878,318 L860,322 L845,316 L838,304 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <path d="M880,310 L895,305 L908,312 L910,325 L902,334 L888,332 L880,324 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <path d="M872,240 L880,232 L886,236 L886,250 L880,262 L872,260 L868,250 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/><ellipse cx="880" cy="222" rx="5" ry="8" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/>
+        <path d="M920,330 L940,320 L955,322 L962,334 L958,350 L945,358 L928,356 L918,346 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <!-- Australia -->
+        <path d="M780,416 L810,406 L842,400 L870,402 L892,410 L906,424 L912,442 L908,462 L896,480 L876,494 L852,502 L828,504 L806,498 L788,486 L776,470 L770,452 L772,436 Z" fill="#e6d5b8" stroke="#c4a87c" stroke-width="1.2"/>
+        <ellipse cx="848" cy="510" rx="10" ry="6" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.6"/>
+        <path d="M940,468 L950,458 L956,456 L960,466 L956,478 L946,486 L938,484 L934,476 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/><path d="M948,488 L954,484 L958,486 L958,496 L952,502 L946,500 Z" fill="#dccdb0" stroke="#c4a87c" stroke-width="0.7"/>
+        <!-- Antarctica -->
+        <path d="M60,530 L220,522 L380,518 L540,520 L700,518 L860,522 L1020,528 L1060,530 L1060,555 L50,555 Z" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="0.8"/>
+
+        <!-- ====== COUNTRY MARKERS ====== -->
+        <!-- CHINA -->
+        <g class="country-group" onclick="navigateTo('china-cuisine.html')" filter="url(#shadow)">
+          <circle class="pulse-ring-lg" cx="760" cy="155" r="32"/><circle class="marker-circle linked" cx="760" cy="155" r="28" fill="#c0392b" opacity="0.92"/>
+          <text class="marker-text" x="760" y="149" font-size="18">🇨🇳</text><text class="marker-text" x="760" y="173" font-size="13" font-weight="800">中国</text>
+        </g>
+        <!-- JAPAN -->
+        <g class="country-group" onclick="navigateTo('japan-cuisine.html')" filter="url(#shadow)">
+          <circle class="pulse-ring-md" cx="910" cy="128" r="26"/><circle class="marker-circle linked" cx="910" cy="128" r="23" fill="#c0392b" opacity="0.92"/>
+          <text class="marker-text" x="910" y="122" font-size="15">🇯🇵</text><text class="marker-text" x="910" y="144" font-size="11" font-weight="800">日本</text>
+        </g>
+        <!-- INDIA -->
+        <g class="country-group" onclick="navigateTo('india-cuisine.html')" filter="url(#shadow)">
+          <circle class="pulse-ring-md" cx="710" cy="240" r="26"/><circle class="marker-circle linked" cx="710" cy="240" r="23" fill="#e67e22" opacity="0.92"/>
+          <text class="marker-text" x="710" y="234" font-size="15">🇮🇳</text><text class="marker-text" x="710" y="256" font-size="11" font-weight="800">印度</text>
+        </g>
+        <!-- ITALY -->
+        <g class="country-group" onclick="navigateTo('italy-cuisine.html')" filter="url(#shadow)">
+          <circle class="pulse-ring-sm" cx="505" cy="135" r="22"/><circle class="marker-circle linked" cx="505" cy="135" r="18" fill="#27ae60" opacity="0.92"/>
+          <text class="marker-text" x="505" y="128" font-size="12">🇮🇹</text><text class="marker-text" x="505" y="149" font-size="10" font-weight="800">意大利</text>
+        </g>
+        <!-- FRANCE -->
+        <g class="country-group" onclick="navigateTo('france-cuisine.html')" filter="url(#shadow)">
+          <circle class="pulse-ring-sm" cx="470" cy="112" r="22"/><circle class="marker-circle linked" cx="470" cy="112" r="18" fill="#2980b9" opacity="0.92"/>
+          <text class="marker-text" x="470" y="105" font-size="12">🇫🇷</text><text class="marker-text" x="470" y="126" font-size="10" font-weight="800">法国</text>
+        </g>
+        <!-- THAILAND -->
+        <g class="country-group" onclick="showDetail('thailand')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="778" cy="270" r="18" fill="#e91e63" opacity="0.88"/>
+          <text class="marker-text" x="778" y="263" font-size="12">🇹🇭</text><text class="marker-text" x="778" y="283" font-size="10" font-weight="700">泰国</text>
+        </g>
+        <!-- VIETNAM -->
+        <g class="country-group" onclick="showDetail('vietnam')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="800" cy="288" r="16" fill="#27ae60" opacity="0.88"/>
+          <text class="marker-text" x="800" y="282" font-size="11">🇻🇳</text><text class="marker-text" x="800" y="300" font-size="9" font-weight="700">越南</text>
+        </g>
+        <!-- KOREA -->
+        <g class="country-group" onclick="showDetail('korea')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="860" cy="88" r="16" fill="#c0392b" opacity="0.88"/>
+          <text class="marker-text" x="860" y="81" font-size="11">🇰🇷</text><text class="marker-text" x="860" y="99" font-size="9" font-weight="700">韩国</text>
+        </g>
+        <!-- MEXICO -->
+        <g class="country-group" onclick="showDetail('mexico')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="175" cy="238" r="18" fill="#ff6f00" opacity="0.88"/>
+          <text class="marker-text" x="175" y="231" font-size="12">🇲🇽</text><text class="marker-text" x="175" y="252" font-size="10" font-weight="700">墨西哥</text>
+        </g>
+        <!-- USA -->
+        <g class="country-group" onclick="showDetail('usa')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="195" cy="110" r="18" fill="#2980b9" opacity="0.88"/>
+          <text class="marker-text" x="195" y="103" font-size="12">🇺🇸</text><text class="marker-text" x="195" y="123" font-size="10" font-weight="700">美国</text>
+        </g>
+        <!-- BRAZIL -->
+        <g class="country-group" onclick="showDetail('brazil')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="285" cy="398" r="18" fill="#27ae60" opacity="0.88"/>
+          <text class="marker-text" x="285" y="391" font-size="12">🇧🇷</text><text class="marker-text" x="285" y="412" font-size="10" font-weight="700">巴西</text>
+        </g>
+        <!-- PERU -->
+        <g class="country-group" onclick="showDetail('peru')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="245" cy="388" r="15" fill="#8e24aa" opacity="0.88"/>
+          <text class="marker-text" x="245" y="382" font-size="10">🇵🇪</text><text class="marker-text" x="245" y="400" font-size="9" font-weight="700">秘鲁</text>
+        </g>
+        <!-- TURKEY -->
+        <g class="country-group" onclick="showDetail('turkey')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="568" cy="152" r="18" fill="#e67e22" opacity="0.88"/>
+          <text class="marker-text" x="568" y="145" font-size="12">🇹🇷</text><text class="marker-text" x="568" y="166" font-size="10" font-weight="700">土耳其</text>
+        </g>
+        <!-- SPAIN -->
+        <g class="country-group" onclick="showDetail('spain')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="445" cy="144" r="15" fill="#f39c12" opacity="0.88"/>
+          <text class="marker-text" x="445" y="138" font-size="10">🇪🇸</text><text class="marker-text" x="445" y="156" font-size="9" font-weight="700">西班牙</text>
+        </g>
+        <!-- MOROCCO -->
+        <g class="country-group" onclick="showDetail('morocco')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="438" cy="200" r="15" fill="#e67e22" opacity="0.88"/>
+          <text class="marker-text" x="438" y="194" font-size="10">🇲🇦</text><text class="marker-text" x="438" y="212" font-size="9" font-weight="700">摩洛哥</text>
+        </g>
+        <!-- UK -->
+        <g class="country-group" onclick="showDetail('uk')" filter="url(#shadow)">
+          <circle class="marker-circle unlinked" cx="410" cy="88" r="15" fill="#2980b9" opacity="0.88"/>
+          <text class="marker-text" x="410" y="82" font-size="10">🇬🇧</text><text class="marker-text" x="410" y="100" font-size="9" font-weight="700">英国</text>
+        </g>
+
+        <!-- Legend -->
+        <g transform="translate(24, 490)">
+          <rect x="0" y="0" width="330" height="60" rx="12" fill="#fff" fill-opacity="0.92" stroke="#ccc" stroke-width="1"/>
+          <circle cx="24" cy="22" r="12" fill="#c0392b" opacity="0.9" stroke="#fff" stroke-width="3"/>
+          <text x="44" y="27" fill="#333" font-size="13" font-weight="600">已开放国家馆（点击跳转）</text>
+          <circle cx="24" cy="46" r="11" fill="#e91e63" opacity="0.85" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 3"/>
+          <text x="44" y="50" fill="#333" font-size="13" font-weight="600">特色美食地区（点击查看详情）</text>
+        </g>
+        <text x="550" y="550" text-anchor="middle" fill="#999" font-size="12">💡 点击地图上的圆形标记探索各国美食</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- Detail Panel -->
+<section id="detailPanel">
+  <div class="container">
+    <div class="country-detail-panel" id="countryDetail">
+      <div class="detail-header"><div class="detail-flag" id="detailFlag"></div><div><div class="region" id="detailRegion"></div><h3 id="detailTitle"></h3></div></div>
+      <p class="detail-desc" id="detailDesc"></p>
+      <div class="detail-dishes" id="detailDishes"></div>
+      <div class="detail-action">
+        <a href="recipe-center.html" class="btn-detail">📖 查看菜谱中心</a>
+        <a href="search-center.html" class="btn-detail-outline">🔍 搜索更多美食</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Access -->
+<section style="background:#fff;">
+  <div class="container">
+    <div class="section-tag">Quick Access</div>
+    <h2 class="section-title">热门美食国家</h2>
+    <p class="section-subtitle">直接进入已开放的国家美食馆，深入了解各国饮食文化。</p>
+    <div class="quick-grid">
+      <a href="china-cuisine.html" class="quick-card"><div class="emoji">🇨🇳</div><h4>中国</h4><p>八大菜系 · 烤鸭 · 火锅</p></a>
+      <a href="japan-cuisine.html" class="quick-card"><div class="emoji">🇯🇵</div><h4>日本</h4><p>寿司 · 拉面 · 天妇罗</p></a>
+      <a href="italy-cuisine.html" class="quick-card"><div class="emoji">🇮🇹</div><h4>意大利</h4><p>披萨 · 意面 · 提拉米苏</p></a>
+      <a href="france-cuisine.html" class="quick-card"><div class="emoji">🇫🇷</div><h4>法国</h4><p>法棍 · 鹅肝 · 马卡龙</p></a>
+      <a href="india-cuisine.html" class="quick-card"><div class="emoji">🇮🇳</div><h4>印度</h4><p>咖喱 · 唐杜里 · 香饭</p></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="home.html">← 返回首页</a> &nbsp;|&nbsp; <a href="china-cuisine.html">中国馆 →</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+
+<script>
+const countryData = {
+  thailand: { flag:'🇹🇭',name:'泰国',region:'东南亚',desc:'泰国美食以酸、辣、甜、咸的完美平衡著称。椰奶的浓郁、香茅的清新、鱼露的鲜美、小米辣的刺激——这些元素在泰国菜中交织出令人难忘的味觉体验。泰国街头小吃文化极为发达，曼谷是全球美食爱好者的圣地。',dishes:[{name:'冬阴功汤 Tom Yum',desc:'酸辣虾汤，泰国最具辨识度的菜品'},{name:'泰式炒河粉 Pad Thai',desc:'甜酸口感的经典街头炒面'},{name:'绿咖喱 Green Curry',desc:'椰奶为基底，搭配青辣椒的香浓咖喱'},{name:'芒果糯米饭',desc:'甜美芒果配椰奶糯米，经典甜品'},{name:'青木瓜沙拉 Som Tam',desc:'酸辣爽脆的开胃沙拉'}]},
+  vietnam: { flag:'🇻🇳',name:'越南',region:'东南亚',desc:'越南美食深受法国殖民历史和中国邻国文化的影响，形成了独树一帜的风格。清淡、新鲜、大量使用香草和蔬菜是越南菜的特点。鱼露是越南厨房的灵魂调味品。',dishes:[{name:'越南河粉 Pho',desc:'牛肉或鸡肉汤河粉，国民早餐'},{name:'法棍三明治 Banh Mi',desc:'法越融合的街头美食经典'},{name:'越南春卷 Goi Cuon',desc:'新鲜米纸包裹虾、香草和米粉'},{name:'越南咖啡',desc:'浓郁滴滤咖啡配炼乳，独具特色'}]},
+  korea: { flag:'🇰🇷',name:'韩国',region:'东亚',desc:'韩国料理以发酵食品为核心——泡菜、大酱、辣椒酱是韩餐三大基础调味品。韩国的餐桌文化强调"饭馔"——多样小菜围绕主食的共享方式。',dishes:[{name:'韩式泡菜 Kimchi',desc:'发酵辣白菜，韩国饮食的灵魂'},{name:'韩式烤肉 BBQ',desc:'五花肉或牛肉在桌上现烤现吃'},{name:'石锅拌饭 Bibimbap',desc:'色彩缤纷的石锅拌饭配辣酱'},{name:'辣炒年糕 Tteokbokki',desc:'甜辣口感的街头人气小吃'}]},
+  mexico: { flag:'🇲🇽',name:'墨西哥',region:'北美洲',desc:'墨西哥美食是联合国非遗，拥有3000多年历史。玉米、豆类、辣椒是墨西哥饮食的三大基石。从街头的Tacos到节日的Mole酱，墨西哥菜以其丰富的层次感和鲜明的色彩著称于世。',dishes:[{name:'玉米卷 Tacos',desc:'玉米饼包裹烤肉、洋葱、香菜和青柠'},{name:'鳄梨酱 Guacamole',desc:'新鲜牛油果泥配番茄洋葱和青柠'},{name:'巧克力 Mole',desc:'辣椒与巧克力的传奇酱汁组合'},{name:'塔马利 Tamales',desc:'玉米面团包裹馅料蒸制的传统食物'}]},
+  usa: { flag:'🇺🇸',name:'美国',region:'北美洲',desc:'美国作为移民国家，其饮食文化是名副其实的"大熔炉"。从南部烧烤到新英格兰海鲜，从加州融合菜到德州墨西哥风味——每个地区都有独特的美食传统。',dishes:[{name:'美式汉堡 Burger',desc:'全球最知名的快餐符号'},{name:'南部烧烤 BBQ',desc:'低温慢烤的烟熏肉类盛宴'},{name:'苹果派 Apple Pie',desc:'最经典的美式甜点'},{name:'纽约披萨',desc:'薄底大片的意裔美式披萨风格'}]},
+  brazil: { flag:'🇧🇷',name:'巴西',region:'南美洲',desc:'巴西美食融合了原住民、葡萄牙殖民者和非洲奴隶的烹饪传统。巴西烤肉是全球闻名的肉食盛宴，而黑豆饭则是巴西的国民灵魂食物。',dishes:[{name:'巴西烤肉 Churrasco',desc:'大块肉串在炭火上慢烤的盛宴'},{name:'黑豆饭 Feijoada',desc:'巴西国菜，黑豆炖各种猪肉部位'},{name:'芝士面包 Pao de Queijo',desc:'木薯粉制成的小巧芝士面包球'}]},
+  peru: { flag:'🇵🇪',name:'秘鲁',region:'南美洲',desc:'秘鲁近年来成为全球美食界的新星。安第斯山脉的原住民传统、西班牙殖民影响、日本和中国移民的烹饪智慧在此交汇。酸橘汁腌鱼是秘鲁最具代表性的国菜。',dishes:[{name:'酸橘腌鱼 Ceviche',desc:'青柠汁"煮"新鲜海鱼，秘鲁国菜'},{name:'烤牛心 Anticuchos',desc:'秘鲁最受欢迎的街头烧烤'},{name:'土豆料理',desc:'秘鲁有4000+种土豆品种，料理方式极其丰富'}]},
+  turkey: { flag:'🇹🇷',name:'土耳其',region:'西亚',desc:'土耳其美食与中餐、法餐并称世界三大菜系。奥斯曼帝国的宫廷烹饪传统与地中海食材完美融合。烤肉、甜点和土耳其茶构成了土耳其饮食文化的核心。',dishes:[{name:'旋转烤肉 Döner Kebab',desc:'垂直旋转烤架切下的多汁肉片'},{name:'土耳其软糖 Lokum',desc:'玫瑰水和坚果制成的传统糖果'},{name:'土耳其咖啡',desc:'细粉咖啡不滤渣直接饮用，可占卜'},{name:'巴克拉瓦 Baklava',desc:'层层酥皮夹坚果碎，浇蜜糖浆'}]},
+  spain: { flag:'🇪🇸',name:'西班牙',region:'南欧',desc:'西班牙美食以Tapas小吃文化和海鲜饭闻名于世。分子料理先驱费兰·阿德里亚的斗牛犬餐厅曾五次被评为世界最佳餐厅。',dishes:[{name:'海鲜饭 Paella',desc:'藏红花染色的米饭配海鲜，瓦伦西亚名菜'},{name:'Tapas 小吃',desc:'各式小盘菜肴，社交饮食的精髓'},{name:'伊比利亚火腿 Jamón',desc:'橡果饲养的黑猪后腿，西班牙瑰宝'},{name:'吉事果 Churros',desc:'炸油条蘸热巧克力，经典早餐'}]},
+  morocco: { flag:'🇲🇦',name:'摩洛哥',region:'北非',desc:'摩洛哥美食是阿拉伯、柏柏尔和地中海烹饪传统的融合。慢炖塔吉锅和香料蒸粗麦粉是摩洛哥最著名的菜肴。薄荷茶是摩洛哥人待客的重要仪式。',dishes:[{name:'塔吉锅 Tagine',desc:'锥形陶锅慢炖肉类和干果的经典料理'},{name:'蒸粗麦粉 Couscous',desc:'北非主食，配蔬菜和肉类'},{name:'摩洛哥薄荷茶',desc:'绿茶配新鲜薄荷叶和大量糖'}]},
+  uk: { flag:'🇬🇧',name:'英国',region:'西欧',desc:'英国美食常被低估，但其拥有丰富的烘焙传统和独具特色的料理文化。从完整的英式早餐到下午茶，从炸鱼薯条到周日烤肉——英国饮食文化讲究传统与仪式感。',dishes:[{name:'炸鱼薯条 Fish & Chips',desc:'英国国民美食，裹面糊炸鱼配厚切薯条'},{name:'英式下午茶',desc:'三层点心架配红茶，优雅的英伦传统'},{name:'周日烤肉 Sunday Roast',desc:'周末家庭烤肉大餐，配约克郡布丁'}]}
+};
+function navigateTo(url) { window.location.href = url; }
+function showDetail(key) {
+  var d = countryData[key]; if (!d) return;
+  var p = document.getElementById('detailPanel');
+  document.getElementById('detailFlag').textContent = d.flag;
+  document.getElementById('detailRegion').textContent = d.region;
+  document.getElementById('detailTitle').textContent = d.name + '美食';
+  document.getElementById('detailDesc').textContent = d.desc;
+  document.getElementById('detailDishes').innerHTML = d.dishes.map(function(dish){ return '<div class="detail-dish-item"><h4>'+dish.name+'</h4><p>'+dish.desc+'</p></div>'; }).join('');
+  p.classList.add('visible'); p.scrollIntoView({behavior:'smooth',block:'center'});
+}
+</script>
+</body>
+</html>

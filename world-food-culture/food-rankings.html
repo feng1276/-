@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美食排行榜 — Food Rankings · 全球美食榜单</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --gold: #d4a574; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --radius-md: 20px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+  .page-hero { min-height: 36vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #1a1a2e 0%, #0d2137 40%, #c0392b 100%); position: relative; overflow: hidden; padding-top: 72px; }
+  .page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(255,215,0,0.12) 0%, transparent 50%); }
+  .page-hero-content { position: relative; z-index: 1; padding: 40px; }
+  .page-hero h1 { font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 800; color: #fff; margin-bottom: 10px; }
+  .page-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.8); max-width: 550px; margin: 0 auto; }
+  section { padding: 80px 40px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  .section-tag { display: inline-block; padding: 6px 18px; background: rgba(192,57,43,0.1); color: #c0392b; border-radius: 50px; font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 800; color: var(--warm-dark); margin-bottom: 12px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 560px; margin-bottom: 40px; }
+
+  .ranking-list { display: flex; flex-direction: column; gap: 14px; }
+  .ranking-item { display: flex; align-items: center; gap: 18px; background: var(--card-bg); padding: 22px 26px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); transition: var(--transition); }
+  .ranking-item:hover { transform: translateX(6px); box-shadow: var(--shadow-md); }
+  .rank-number { min-width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #fff; flex-shrink: 0; }
+  .rank-1 { background: linear-gradient(135deg, #ffd700, #ffb300); color: #5d4037; font-size: 1.5rem; }
+  .rank-2 { background: linear-gradient(135deg, #c0c0c0, #9e9e9e); }
+  .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); }
+  .rank-other { background: #bdbdbd; color: #fff; }
+  .rank-info { flex: 1; }
+  .rank-info h4 { font-size: 1.05rem; margin-bottom: 2px; }
+  .rank-info .origin { font-size: 0.8rem; color: #c0392b; font-weight: 600; margin-bottom: 2px; }
+  .rank-info p { font-size: 0.83rem; color: var(--text-secondary); }
+  .rank-emoji { font-size: 2rem; flex-shrink: 0; }
+
+  .ranking-section { margin-bottom: 56px; }
+  .ranking-section h3 { font-size: 1.4rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .ranking-section .section-desc { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px; }
+
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 50px 20px; } .ranking-item { flex-wrap: wrap; gap: 10px; padding: 16px; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li><li><a href="world-food-map.html">世界地图</a></li><li><a href="china-cuisine.html">中国馆</a></li><li><a href="japan-cuisine.html">日本馆</a></li><li><a href="italy-cuisine.html">意大利馆</a></li><li><a href="france-cuisine.html">法国馆</a></li><li><a href="india-cuisine.html">印度馆</a></li><li><a href="recipe-center.html">菜谱中心</a></li><li><a href="ingredient-basics.html">食材百科</a></li><li><a href="food-culture-hub.html">饮食文化</a></li><li><a href="food-rankings.html" class="active">排行榜</a></li><li><a href="food-timeline.html">时间线</a></li><li><a href="search-center.html">搜索</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-content">
+    <h1>🏆 美食排行榜</h1>
+    <p>从世界十大名菜到最辣美食、最受欢迎甜品到最佳街头小吃 —— 多维度的全球美食榜单</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <!-- World Top 10 -->
+    <div class="ranking-section">
+      <h3>🌍 世界十大名菜</h3><p class="section-desc">根据全球影响力、历史底蕴和文化代表性评选。</p>
+      <div class="ranking-list">
+        <div class="ranking-item"><div class="rank-number rank-1">🥇</div><div class="rank-emoji">🍕</div><div class="rank-info"><h4>那不勒斯披萨</h4><div class="origin">🇮🇹 意大利 · 那不勒斯</div><p>联合国非遗美食，全球每天消费超过50亿个披萨。最简单的食材创造最经典的美味。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-2">🥈</div><div class="rank-emoji">🍣</div><div class="rank-info"><h4>寿司</h4><div class="origin">🇯🇵 日本 · 东京</div><p>日本料理的世界名片，全球超过45000家寿司餐厅。江户前握寿司是技艺的巅峰。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-3">🥉</div><div class="rank-emoji">🦆</div><div class="rank-info"><h4>北京烤鸭</h4><div class="origin">🇨🇳 中国 · 北京</div><p>600年宫廷历史，中国饮食文化在世界的代表。外酥里嫩、色泽红润的极致追求。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">4</div><div class="rank-emoji">🍝</div><div class="rank-info"><h4>意大利面</h4><div class="origin">🇮🇹 意大利</div><p>350+种面型，全球消费量最大的主食之一。从博洛尼亚肉酱到罗马卡邦尼，每种酱汁都有专属面型。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">5</div><div class="rank-emoji">🥐</div><div class="rank-info"><h4>法式可颂</h4><div class="origin">🇫🇷 法国 · 巴黎</div><p>层层酥脆的黄油面包代表法式烘焙极致。手工开酥需要72层以上的折叠。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">6</div><div class="rank-emoji">🍛</div><div class="rank-info"><h4>印度咖喱</h4><div class="origin">🇮🇳 印度</div><p>最复杂的香料艺术体系。英国甚至将咖喱视为"国菜"。全球咖喱产业超200亿美元。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">7</div><div class="rank-emoji">🌮</div><div class="rank-info"><h4>墨西哥玉米饼</h4><div class="origin">🇲🇽 墨西哥</div><p>联合国非遗美食，街头小吃的王者。玉米饼+烤肉+洋葱+香菜+青柠=完美的街头味道。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">8</div><div class="rank-emoji">🍜</div><div class="rank-info"><h4>日式拉面</h4><div class="origin">🇯🇵 日本 · 福冈</div><p>从中国传入，在日本被提升到艺术高度。豚骨拉面需熬制18小时汤底。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">9</div><div class="rank-emoji">🥘</div><div class="rank-info"><h4>泰式冬阴功</h4><div class="origin">🇹🇭 泰国</div><p>酸辣鲜香的极致平衡。香茅、青柠叶、南姜、小米辣在椰奶中交织出泰国的灵魂味道。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">10</div><div class="rank-emoji">🥖</div><div class="rank-info"><h4>法棍面包</h4><div class="origin">🇫🇷 法国</div><p>2022年列入联合国非遗。法国人每天消费约3000万根——没有法棍就没有法式生活。</p></div></div>
+      </div>
+    </div>
+
+    <!-- Spiciest -->
+    <div class="ranking-section">
+      <h3>🌶️ 世界最辣美食 Top 8</h3><p class="section-desc">辣不仅是味觉，更是一种文化——从四川的麻辣到泰国的酸辣。</p>
+      <div class="ranking-list">
+        <div class="ranking-item"><div class="rank-number rank-other">1</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>重庆火锅</h4><div class="origin">🇨🇳 中国 · 重庆</div><p>花椒的麻与辣椒的辣双重刺激——"麻得跳、辣得爽"，越吃越过瘾。牛油锅底是正宗标志。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">2</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>泰国冬阴功</h4><div class="origin">🇹🇭 泰国</div><p>小米辣的灼烧感与柠檬草的清香、椰奶的醇厚形成极致对比。全球最受欢迎的辣汤。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">3</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>印度鬼椒咖喱</h4><div class="origin">🇮🇳 印度 · 东北部</div><p>使用世界最辣辣椒之一——断魂椒（Bhut Jolokia），辣度超100万SHU。配酸奶食用以缓解灼烧。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">4</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>韩国辣炒年糕+火鸡面</h4><div class="origin">🇰🇷 韩国</div><p>韩式辣椒酱（Gochujang）独特的甜辣风格，加上火鸡面在全球社交媒体上的病毒式传播。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">5</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>墨西哥哈瓦那辣椒酱</h4><div class="origin">🇲🇽 墨西哥 · 尤卡坦</div><p>辣椒的原产地就有最正宗的辣味哲学。哈瓦那辣椒（Habanero）辣度达35万SHU，带有独特果香。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">6</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>四川水煮牛肉</h4><div class="origin">🇨🇳 中国 · 四川</div><p>最后一勺滚油浇在辣椒和花椒上——"滋啦"一声，香气炸裂。川菜麻辣的极致表达。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">7</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>秘鲁黄辣椒料理</h4><div class="origin">🇵🇪 秘鲁</div><p>Aji Amarillo黄辣椒是秘鲁菜的灵魂——从酸橘腌鱼到土豆泥，这种独特的中辣带果香的辣椒无处不在。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">8</div><div class="rank-emoji">🔥</div><div class="rank-info"><h4>加勒比 jerk 烤鸡</h4><div class="origin">🇯🇲 牙买加</div><p>苏格兰帽辣椒（Scotch Bonnet）混合多香果、百里香的烟熏辣味，加勒比海最狂野的风味。</p></div></div>
+      </div>
+    </div>
+
+    <!-- Best Desserts -->
+    <div class="ranking-section">
+      <h3>🍰 世界最受欢迎甜品 Top 8</h3><p class="section-desc">甜味是人类基因中最古老的渴望——世界各地的甜品文化各有千秋。</p>
+      <div class="ranking-list">
+        <div class="ranking-item"><div class="rank-number rank-1">🥇</div><div class="rank-emoji">🍰</div><div class="rank-info"><h4>提拉米苏</h4><div class="origin">🇮🇹 意大利 · 威尼托</div><p>"Tiramisu"意为"带我走"——咖啡的苦、马斯卡彭的醇、可可的香层层交织，冷藏后入口即化。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-2">🥈</div><div class="rank-emoji">🍬</div><div class="rank-info"><h4>法式马卡龙</h4><div class="origin">🇫🇷 法国 · 巴黎</div><p>两片杏仁蛋白饼夹着甘纳许或奶油馅。外壳薄脆、内里柔软，色彩缤纷如珠宝。Ladurée和Pierre Hermé是马卡龙的朝圣之地。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-3">🥉</div><div class="rank-emoji">🍦</div><div class="rank-info"><h4>意式冰淇淋 Gelato</h4><div class="origin">🇮🇹 意大利</div><p>相比普通冰淇淋，Gelato脂肪含量更低、空气含量更少、口感更绵密浓郁。开心果和榛子口味是经典之选。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">4</div><div class="rank-emoji">🥭</div><div class="rank-info"><h4>芒果糯米饭</h4><div class="origin">🇹🇭 泰国</div><p>甜糯椰浆糯米搭配新鲜成熟芒果，撒上脆脆的绿豆仁。泰国的热带甜蜜名片。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">5</div><div class="rank-emoji">🥞</div><div class="rank-info"><h4>日式抹茶千层</h4><div class="origin">🇯🇵 日本</div><p>抹茶的微苦与奶油的甜完美平衡，20+层薄如蝉翼的可丽饼层层叠加。日法融合的代表甜品。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">6</div><div class="rank-emoji">🍮</div><div class="rank-info"><h4>法式焦糖布丁 Crème Brûlée</h4><div class="origin">🇫🇷 法国</div><p>丝滑蛋奶冻表面覆盖一层焦脆的焦糖壳。用小勺轻敲——"咔"的一声，是法式甜品最具仪式感的瞬间。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">7</div><div class="rank-emoji">🥮</div><div class="rank-info"><h4>广式双皮奶</h4><div class="origin">🇨🇳 中国 · 广东</div><p>顺德名甜品，用水牛奶制成两层奶皮，口感如丝绸般细腻。看似简单，却极考验火候控制。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">8</div><div class="rank-emoji">🥧</div><div class="rank-info"><h4>土耳其巴克拉瓦 Baklava</h4><div class="origin">🇹🇷 土耳其 · 加济安泰普</div><p>40层薄如纸张的酥皮夹着开心果碎，浇上蜂蜜或糖浆。加济安泰普的巴克拉瓦在2013年获得欧盟地理标志保护。</p></div></div>
+      </div>
+    </div>
+
+    <!-- Street Food -->
+    <div class="ranking-section">
+      <h3>🍢 世界最佳街头小吃 Top 8</h3><p class="section-desc">真正的美食灵魂不在米其林餐厅，而在街头巷尾的烟火气中。</p>
+      <div class="ranking-list">
+        <div class="ranking-item"><div class="rank-number rank-1">🥇</div><div class="rank-emoji">🌮</div><div class="rank-info"><h4>墨西哥 Tacos al Pastor</h4><div class="origin">🇲🇽 墨西哥</div><p>猪肉在垂直烤架上旋转烤制（源自黎巴嫩移民的Shawarma），切下薄片放在玉米饼上，加菠萝、洋葱、香菜和青柠。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-2">🥈</div><div class="rank-emoji">🍜</div><div class="rank-info"><h4>泰式炒河粉 Pad Thai</h4><div class="origin">🇹🇭 泰国 · 曼谷</div><p>甜酸咸辣的完美平衡——河粉、虾、豆腐、豆芽、花生碎在高温铁锅上快速翻炒。曼谷街头最动人的烟火气。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-3">🥉</div><div class="rank-emoji">🥟</div><div class="rank-info"><h4>上海小笼包</h4><div class="origin">🇨🇳 中国 · 上海</div><p>薄如纸的面皮包裹滚烫鲜美的汤汁和肉馅。轻咬一小口→吹气降温→吸汤汁→蘸醋→一口吃下。18个褶子是标准。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">4</div><div class="rank-emoji">🥪</div><div class="rank-info"><h4>越南法棍三明治 Banh Mi</h4><div class="origin">🇻🇳 越南</div><p>法国殖民遗产与越南风味的完美融合。脆皮法棍夹着烤肉、腌萝卜、香菜和辣椒——东西方最美味的邂逅。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">5</div><div class="rank-emoji">🍢</div><div class="rank-info"><h4>日本章鱼烧 Takoyaki</h4><div class="origin">🇯🇵 日本 · 大阪</div><p>外酥内软的面糊球包裹弹牙的章鱼块，淋上酱汁和美乃滋，撒上舞动的柴鱼片和海苔粉。大阪的骄傲。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">6</div><div class="rank-emoji">🥙</div><div class="rank-info"><h4>土耳其烤肉卷 Döner Kebab</h4><div class="origin">🇹🇷 土耳其 / 🇩🇪 德国</div><p>垂直旋转烤架上切下的多汁肉片，塞进热腾腾的薄饼中。现已成为德国最受欢迎的街头午餐。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">7</div><div class="rank-emoji">🥟</div><div class="rank-info"><h4>波兰饺子 Pierogi</h4><div class="origin">🇵🇱 波兰</div><p>东欧最受欢迎的街头美食。半圆形饺子包着土豆奶酪、酸菜蘑菇或肉馅，煮熟后用黄油煎至金黄，配酸奶油食用。</p></div></div>
+        <div class="ranking-item"><div class="rank-number rank-other">8</div><div class="rank-emoji">🧆</div><div class="rank-info"><h4>埃及炸豆丸 Falafel</h4><div class="origin">🇪🇬 埃及 / 中东</div><p>鹰嘴豆或蚕豆磨碎混合香料炸成金黄色的丸子，塞进皮塔饼中配以芝麻酱和蔬菜。中东街头无处不在的美味。</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="food-culture-hub.html">← 饮食文化馆</a> &nbsp;|&nbsp; <a href="home.html">返回首页</a> &nbsp;|&nbsp; <a href="food-timeline.html">时间线 →</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+</body>
+</html>

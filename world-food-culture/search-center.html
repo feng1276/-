@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能搜索 — Search Center · 全球美食搜索</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --gold: #d4a574; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --radius-md: 20px; --radius-lg: 28px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+
+  section { padding: 80px 40px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+
+  /* Search Hero */
+  .search-hero { min-height: 55vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #1a1a2e 0%, #0d2137 35%, #1a3a4a 70%, #1a1a2e 100%); position: relative; overflow: hidden; padding-top: 72px; }
+  .search-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(212,165,116,0.1) 0%, transparent 60%); }
+  .search-hero-content { position: relative; z-index: 1; padding: 40px; width: 100%; max-width: 700px; }
+  .search-hero h1 { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .search-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.7); margin-bottom: 36px; }
+  .search-box { display: flex; background: #fff; border-radius: 50px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+  .search-box input { flex: 1; padding: 18px 28px; border: none; font-size: 1.1rem; outline: none; color: var(--text-primary); }
+  .search-box input::placeholder { color: #bbb; }
+  .search-box button { padding: 18px 36px; background: #c0392b; color: #fff; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: var(--transition); white-space: nowrap; }
+  .search-box button:hover { background: #a93226; }
+
+  /* Search suggestions */
+  .suggestions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .suggestion-tag { padding: 8px 20px; border: 1px solid rgba(255,255,255,0.3); border-radius: 30px; color: rgba(255,255,255,0.8); font-size: 0.85rem; cursor: pointer; transition: var(--transition); background: transparent; }
+  .suggestion-tag:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); color: #fff; }
+
+  /* Results */
+  .results-area { margin-top: 40px; display: none; }
+  .results-area.visible { display: block; }
+  .result-category { margin-bottom: 40px; }
+  .result-category h3 { font-size: 1.1rem; color: #c0392b; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f0e6d3; }
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .result-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 24px; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; gap: 16px; align-items: center; transition: var(--transition); }
+  .result-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .result-icon { font-size: 2rem; width: 52px; height: 52px; background: #fef3e2; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .result-info h4 { font-size: 1rem; margin-bottom: 2px; }
+  .result-info .type { font-size: 0.75rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .result-info p { font-size: 0.82rem; color: var(--text-secondary); }
+
+  /* Quick browse */
+  .quick-browse { margin-top: 60px; }
+  .browse-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  .browse-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 24px; text-align: center; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; transition: var(--transition); }
+  .browse-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .browse-card .icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .browse-card h4 { font-size: 0.95rem; }
+
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 50px 20px; } .search-box { flex-direction: column; border-radius: 20px; } .search-box input { padding: 16px 20px; } .search-box button { padding: 14px; border-radius: 0 0 20px 20px; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li>
+    <li><a href="world-food-map.html">世界地图</a></li>
+    <li><a href="china-cuisine.html">中国馆</a></li>
+    <li><a href="japan-cuisine.html">日本馆</a></li>
+    <li><a href="italy-cuisine.html">意大利馆</a></li>
+    <li><a href="france-cuisine.html">法国馆</a></li>
+    <li><a href="india-cuisine.html">印度馆</a></li>
+    <li><a href="recipe-center.html">菜谱中心</a></li>
+    <li><a href="ingredient-basics.html">食材百科</a></li>
+    <li><a href="food-culture-hub.html">饮食文化</a></li>
+    <li><a href="food-rankings.html">排行榜</a></li>
+    <li><a href="food-timeline.html">时间线</a></li>
+    <li><a href="search-center.html" class="active">搜索</a></li>
+  </ul>
+</nav>
+
+<section class="search-hero">
+  <div class="search-hero-content">
+    <h1>🔍 智能搜索</h1>
+    <p>搜索国家、菜品、食材或文化内容——发现全球美食的每一个角落</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="搜索：寿司、披萨、辣椒、法国……" onkeyup="handleSearch()">
+      <button onclick="handleSearch()">🔍 搜索</button>
+    </div>
+    <div class="suggestions">
+      <span class="suggestion-tag" onclick="quickSearch('寿司')">🍣 寿司</span>
+      <span class="suggestion-tag" onclick="quickSearch('披萨')">🍕 披萨</span>
+      <span class="suggestion-tag" onclick="quickSearch('辣椒')">🌶️ 辣椒</span>
+      <span class="suggestion-tag" onclick="quickSearch('法国')">🇫🇷 法国</span>
+      <span class="suggestion-tag" onclick="quickSearch('咖喱')">🍛 咖喱</span>
+      <span class="suggestion-tag" onclick="quickSearch('火锅')">🍲 火锅</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <!-- Search Results -->
+    <div class="results-area" id="resultsArea">
+      <div class="result-category" id="countryResults" style="display:none;">
+        <h3>🌍 国家/地区</h3>
+        <div class="result-grid" id="countryGrid"></div>
+      </div>
+      <div class="result-category" id="dishResults" style="display:none;">
+        <h3>🍽️ 菜品</h3>
+        <div class="result-grid" id="dishGrid"></div>
+      </div>
+      <div class="result-category" id="ingredientResults" style="display:none;">
+        <h3>🥕 食材</h3>
+        <div class="result-grid" id="ingredientGrid"></div>
+      </div>
+      <div class="result-category" id="cultureResults" style="display:none;">
+        <h3>🏛️ 文化内容</h3>
+        <div class="result-grid" id="cultureGrid"></div>
+      </div>
+      <p id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:40px;">没有找到相关结果，请尝试其他关键词。🔍</p>
+    </div>
+
+    <!-- Quick Browse -->
+    <div class="quick-browse" id="quickBrowse">
+      <h3 style="margin-bottom:24px;font-size:1.3rem;color:var(--warm-dark);">📂 按分类浏览</h3>
+      <div class="browse-grid">
+        <a href="china-cuisine.html" class="browse-card"><div class="icon">🇨🇳</div><h4>中国馆</h4></a>
+        <a href="japan-cuisine.html" class="browse-card"><div class="icon">🇯🇵</div><h4>日本馆</h4></a>
+        <a href="italy-cuisine.html" class="browse-card"><div class="icon">🇮🇹</div><h4>意大利馆</h4></a>
+        <a href="france-cuisine.html" class="browse-card"><div class="icon">🇫🇷</div><h4>法国馆</h4></a>
+        <a href="india-cuisine.html" class="browse-card"><div class="icon">🇮🇳</div><h4>印度馆</h4></a>
+        <a href="recipe-center.html" class="browse-card"><div class="icon">📖</div><h4>菜谱中心</h4></a>
+        <a href="ingredient-basics.html" class="browse-card"><div class="icon">🥕</div><h4>食材百科</h4></a>
+        <a href="food-culture-hub.html" class="browse-card"><div class="icon">🏛️</div><h4>饮食文化</h4></a>
+        <a href="food-rankings.html" class="browse-card"><div class="icon">🏆</div><h4>排行榜</h4></a>
+        <a href="food-timeline.html" class="browse-card"><div class="icon">⏳</div><h4>时间线</h4></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="food-timeline.html">← 时间线</a> &nbsp;|&nbsp; <a href="home.html">返回首页</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+
+<script>
+// Search database
+const database = {
+  countries: [
+    { name: '中国', emoji: '🇨🇳', desc: '八大菜系 · 五千年饮食文明', link: 'china-cuisine.html' },
+    { name: '日本', emoji: '🇯🇵', desc: '匠心料理 · 和食之美', link: 'japan-cuisine.html' },
+    { name: '意大利', emoji: '🇮🇹', desc: '地中海风味 · 美食艺术之国', link: 'italy-cuisine.html' },
+    { name: '法国', emoji: '🇫🇷', desc: '精致料理 · 世界美食之巅', link: 'france-cuisine.html' },
+    { name: '印度', emoji: '🇮🇳', desc: '香料王国 · 味觉盛宴', link: 'india-cuisine.html' },
+  ],
+  dishes: [
+    { name: '北京烤鸭', emoji: '🦆', country: '中国 · 北京', link: 'recipe-detail.html?dish=peking-duck', keywords: '烤鸭 北京 duck' },
+    { name: '寿司', emoji: '🍣', country: '日本 · 东京', link: 'recipe-detail.html?dish=sushi', keywords: 'sushi 日本' },
+    { name: '披萨', emoji: '🍕', country: '意大利 · 那不勒斯', link: 'recipe-detail.html?dish=pizza', keywords: 'pizza 意大利' },
+    { name: '麻婆豆腐', emoji: '🌶️', country: '中国 · 四川', link: 'recipe-detail.html?dish=mapo-tofu', keywords: '麻婆 豆腐 四川' },
+    { name: '拉面', emoji: '🍜', country: '日本 · 福冈', link: 'recipe-detail.html?dish=ramen', keywords: 'ramen 拉面 日本' },
+    { name: '提拉米苏', emoji: '🍰', country: '意大利 · 威尼托', link: 'recipe-detail.html?dish=tiramisu', keywords: 'tiramisu 甜品 意大利' },
+    { name: '咖喱', emoji: '🍛', country: '印度 · 旁遮普', link: 'recipe-detail.html?dish=curry', keywords: 'curry 咖喱 印度' },
+    { name: '火锅', emoji: '🍲', country: '中国 · 重庆', link: 'recipe-detail.html?dish=hotpot', keywords: '火锅 重庆 hotpot' },
+    { name: '天妇罗', emoji: '🍤', country: '日本 · 东京', link: 'recipe-detail.html?dish=tempura', keywords: 'tempura 天妇罗 日本' },
+    { name: '法棍面包', emoji: '🥖', country: '法国 · 巴黎', link: 'france-cuisine.html', keywords: '法棍 面包 法国 baguette' },
+    { name: '可颂', emoji: '🥐', country: '法国 · 巴黎', link: 'recipe-detail.html?dish=croissant', keywords: '可颂 法国 croissant' },
+    { name: '马卡龙', emoji: '🍬', country: '法国 · 巴黎', link: 'france-cuisine.html', keywords: '马卡龙 法国 macaron 甜品' },
+  ],
+  ingredients: [
+    { name: '番茄', emoji: '🍅', desc: '原产南美洲，16世纪传入欧洲', link: 'ingredient-basics.html', keywords: '番茄 西红柿 tomato' },
+    { name: '辣椒', emoji: '🌶️', desc: '原产中美洲，改变全球饮食版图', link: 'ingredient-basics.html', keywords: '辣椒 chili 辣' },
+    { name: '小麦', emoji: '🌾', desc: '新月沃地驯化，人类文明基石', link: 'ingredient-basics.html', keywords: '小麦 面粉 wheat' },
+    { name: '稻米', emoji: '🍚', desc: '长江流域驯化，半数人类主食', link: 'ingredient-basics.html', keywords: '稻米 米饭 rice' },
+    { name: '橄榄', emoji: '🫒', desc: '地中海文明象征，6000年历史', link: 'ingredient-basics.html', keywords: '橄榄 olive' },
+    { name: '大豆', emoji: '🫘', desc: '原产中国，5000年种植历史', link: 'ingredient-basics.html', keywords: '大豆 豆腐 酱油 soybean' },
+  ],
+  cultures: [
+    { name: '筷子文化', emoji: '🥢', desc: '中国3000年用餐传统', link: 'food-culture-hub.html' },
+    { name: '茶道文化', emoji: '🍵', desc: '日本和敬清寂的茶道精神', link: 'food-culture-hub.html' },
+    { name: '米其林文化', emoji: '⭐', desc: '法国诞生的全球餐饮评级体系', link: 'food-culture-hub.html' },
+    { name: '素食文化', emoji: '🌿', desc: '印度不杀生理念与素食主义', link: 'food-culture-hub.html' },
+    { name: '便当文化', emoji: '🍱', desc: '日本可以吃的艺术品', link: 'food-culture-hub.html' },
+    { name: '慢食运动', emoji: '🐌', desc: '意大利发起的反快餐文化运动', link: 'food-culture-hub.html' },
+  ]
+};
+
+function handleSearch() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const resultsArea = document.getElementById('resultsArea');
+  const quickBrowse = document.getElementById('quickBrowse');
+
+  if (!query) {
+    resultsArea.classList.remove('visible');
+    quickBrowse.style.display = '';
+    return;
+  }
+
+  resultsArea.classList.add('visible');
+  quickBrowse.style.display = 'none';
+
+  // Search all categories
+  const foundCountries = database.countries.filter(c => c.name.includes(query) || c.desc.includes(query));
+  const foundDishes = database.dishes.filter(d => d.name.includes(query) || d.keywords.includes(query) || d.country.includes(query));
+  const foundIngredients = database.ingredients.filter(i => i.name.includes(query) || i.keywords.includes(query));
+  const foundCultures = database.cultures.filter(c => c.name.includes(query) || c.desc.includes(query));
+
+  // Render results
+  renderCategory('countryResults', 'countryGrid', foundCountries, 'country');
+  renderCategory('dishResults', 'dishGrid', foundDishes, 'dish');
+  renderCategory('ingredientResults', 'ingredientGrid', foundIngredients, 'ingredient');
+  renderCategory('cultureResults', 'cultureGrid', foundCultures, 'culture');
+
+  const hasResults = foundCountries.length + foundDishes.length + foundIngredients.length + foundCultures.length > 0;
+  document.getElementById('noResults').style.display = hasResults ? 'none' : 'block';
+}
+
+function renderCategory(catId, gridId, items, type) {
+  document.getElementById(catId).style.display = items.length ? 'block' : 'none';
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = items.map(item => {
+    if (type === 'country') {
+      return `<a href="${item.link}" class="result-card"><div class="result-icon">${item.emoji}</div><div class="result-info"><div class="type">国家</div><h4>${item.name}</h4><p>${item.desc}</p></div></a>`;
+    } else if (type === 'dish') {
+      return `<a href="${item.link}" class="result-card"><div class="result-icon">${item.emoji}</div><div class="result-info"><div class="type">菜品 · ${item.country}</div><h4>${item.name}</h4></div></a>`;
+    } else if (type === 'ingredient') {
+      return `<a href="${item.link}" class="result-card"><div class="result-icon">${item.emoji}</div><div class="result-info"><div class="type">食材</div><h4>${item.name}</h4><p>${item.desc}</p></div></a>`;
+    } else {
+      return `<a href="${item.link}" class="result-card"><div class="result-icon">${item.emoji}</div><div class="result-info"><div class="type">文化</div><h4>${item.name}</h4><p>${item.desc}</p></div></a>`;
+    }
+  }).join('');
+}
+
+function quickSearch(term) {
+  document.getElementById('searchInput').value = term;
+  handleSearch();
+}
+
+// Enter key support
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') handleSearch();
+});
+</script>
+
+</body>
+</html>

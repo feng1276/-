@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>菜谱详情 — 全球美食菜谱</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --gold: #d4a574; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --accent: #c0392b; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --radius-md: 20px; --radius-sm: 12px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+  section { padding: 60px 40px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+
+  .recipe-header { margin-top: 92px; }
+  .breadcrumb { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .recipe-hero-img { height: 360px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 6rem; color: #fff; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .recipe-hero-img .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%); }
+  .recipe-hero-img .hero-text { position: relative; z-index: 1; }
+  .recipe-title-section { text-align: center; margin-bottom: 40px; }
+  .recipe-country-tag { display: inline-block; padding: 6px 18px; background: rgba(39,174,96,0.1); color: #27ae60; border-radius: 30px; font-size: 0.8rem; font-weight: 600; letter-spacing: 1px; margin-bottom: 12px; }
+  .recipe-title-section h1 { font-size: clamp(2rem, 3.5vw, 2.8rem); font-weight: 800; color: var(--warm-dark); margin-bottom: 8px; }
+  .recipe-title-section .subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 640px; margin: 0 auto; }
+  .quick-stats { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .stat { text-align: center; }
+  .stat .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 0.82rem; color: var(--text-secondary); }
+
+  /* Tabs */
+  .tab-nav { display: flex; gap: 4px; margin-bottom: 32px; border-bottom: 2px solid #f0e6d3; }
+  .tab-btn { padding: 12px 28px; border: none; background: none; cursor: pointer; font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); transition: var(--transition); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn:hover { color: var(--accent); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; animation: fadeIn 0.4s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card { background: var(--card-bg); border-radius: var(--radius-md); padding: 32px; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+  .card h3 { font-size: 1.25rem; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #f0e6d3; color: var(--warm-dark); }
+
+  .ingredient-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px; }
+  .ingredient-list li { padding: 8px 12px; border-bottom: 1px dashed #f0e6d3; display: flex; justify-content: space-between; font-size: 0.93rem; }
+  .ingredient-list li .amount { color: var(--text-secondary); font-weight: 500; }
+
+  .step-list { list-style: none; counter-reset: step; }
+  .step-list li { counter-increment: step; padding: 18px 0; border-bottom: 1px solid #f0e6d3; display: flex; gap: 16px; align-items: flex-start; }
+  .step-list li::before { content: counter(step); min-width: 38px; height: 38px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+  .step-list li .step-text { font-size: 0.95rem; line-height: 1.75; }
+  .step-list li .step-text strong { color: var(--accent); }
+
+  .tip-box { background: linear-gradient(135deg, #fef9e7, #fef3e2); border-radius: var(--radius-sm); padding: 20px 24px; margin-bottom: 16px; border-left: 4px solid #e67e22; }
+  .tip-box h4 { color: #e67e22; margin-bottom: 4px; font-size: 0.95rem; }
+  .tip-box p { font-size: 0.88rem; color: var(--text-secondary); }
+
+  .nutrition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; text-align: center; }
+  .nutrition-item { background: #f8f9fa; padding: 16px; border-radius: var(--radius-sm); }
+  .nutrition-item .val { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .nutrition-item .lbl { font-size: 0.78rem; color: var(--text-secondary); }
+
+  .culture-note { background: linear-gradient(135deg, #fef3e2, #fce4ec); border-radius: var(--radius-md); padding: 32px; margin-bottom: 24px; }
+  .culture-note h3 { color: var(--accent); margin-bottom: 12px; }
+  .culture-note p { color: var(--text-secondary); line-height: 1.85; font-size: 0.95rem; }
+
+  .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .related-card { background: var(--card-bg); border-radius: var(--radius-sm); padding: 22px; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; transition: var(--transition); text-align: center; }
+  .related-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .related-card .emoji { font-size: 2.5rem; margin-bottom: 8px; }
+  .related-card h4 { font-size: 1rem; margin-bottom: 4px; }
+
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 40px 16px; } .recipe-hero-img { height: 220px; } .tab-btn { padding: 10px 16px; font-size: 0.82rem; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li><li><a href="world-food-map.html">世界地图</a></li><li><a href="china-cuisine.html">中国馆</a></li><li><a href="japan-cuisine.html">日本馆</a></li><li><a href="italy-cuisine.html">意大利馆</a></li><li><a href="france-cuisine.html">法国馆</a></li><li><a href="india-cuisine.html">印度馆</a></li><li><a href="recipe-center.html" class="active">菜谱中心</a></li><li><a href="ingredient-basics.html">食材百科</a></li><li><a href="food-culture-hub.html">饮食文化</a></li><li><a href="food-rankings.html">排行榜</a></li><li><a href="food-timeline.html">时间线</a></li><li><a href="search-center.html">搜索</a></li>
+  </ul>
+</nav>
+
+<section>
+  <div class="container">
+    <div class="recipe-header">
+      <div class="breadcrumb"><a href="home.html">首页</a> › <a href="recipe-center.html">菜谱中心</a> › 玛格丽特披萨</div>
+    </div>
+    <div class="recipe-hero-img" style="background:linear-gradient(135deg,#d84315,#ef6c00,#ffab40,#ffcc02);"><div class="overlay"></div><div class="hero-text">🍕</div></div>
+    <div class="recipe-title-section">
+      <div class="recipe-country-tag">🇮🇹 意大利 · 那不勒斯</div>
+      <h1>玛格丽特披萨 <small style="font-weight:400;font-size:1.2rem;color:#999;">Pizza Margherita</small></h1>
+      <p class="subtitle">番茄的红、马苏里拉的白、罗勒的绿 —— 意大利国旗的色彩在一张饼上完美呈现。2017年入选联合国人类非物质文化遗产。</p>
+      <div class="quick-stats">
+        <div class="stat"><div class="value">~2小时</div><div class="label">总时间</div></div>
+        <div class="stat"><div class="value">中等</div><div class="label">难度</div></div>
+        <div class="stat"><div class="value">2-3人</div><div class="label">份量</div></div>
+        <div class="stat"><div class="value">485°C</div><div class="label">烤制温度</div></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('ingredients')">🥘 食材清单</button>
+      <button class="tab-btn" onclick="switchTab('steps')">👨‍🍳 制作步骤</button>
+      <button class="tab-btn" onclick="switchTab('tips')">💡 厨师技巧</button>
+      <button class="tab-btn" onclick="switchTab('nutrition')">📊 营养信息</button>
+      <button class="tab-btn" onclick="switchTab('culture')">📖 文化背景</button>
+    </div>
+
+    <!-- Panel 1: Ingredients -->
+    <div class="tab-panel active" id="panel-ingredients">
+      <div class="card">
+        <h3>🥘 食材清单</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;">正宗那不勒斯披萨协会（AVPN）规定的标准配方。</p>
+        <h4 style="margin-bottom:8px;color:var(--accent);">面团（2个披萨）</h4>
+        <ul class="ingredient-list">
+          <li><span>高筋面粉（00号）</span><span class="amount">500g</span></li>
+          <li><span>温水（25°C）</span><span class="amount">325ml</span></li>
+          <li><span>新鲜酵母 / 干酵母</span><span class="amount">3g / 1g</span></li>
+          <li><span>海盐</span><span class="amount">10g</span></li>
+        </ul>
+        <h4 style="margin:16px 0 8px;color:var(--accent);">顶料</h4>
+        <ul class="ingredient-list">
+          <li><span>圣马尔扎诺番茄（去皮整颗）</span><span class="amount">400g</span></li>
+          <li><span>水牛马苏里拉奶酪</span><span class="amount">250g</span></li>
+          <li><span>新鲜罗勒叶</span><span class="amount">8-10片</span></li>
+          <li><span>特级初榨橄榄油</span><span class="amount">30ml</span></li>
+          <li><span>海盐（调味）</span><span class="amount">少许</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Panel 2: Steps -->
+    <div class="tab-panel" id="panel-steps">
+      <div class="card">
+        <h3>👨‍🍳 详细制作步骤</h3>
+        <ol class="step-list">
+          <li><span class="step-text"><strong>激活酵母：</strong>将酵母溶于325ml温水中，静置5分钟至起泡。切勿使用热水，否则会杀死酵母。</span></li>
+          <li><span class="step-text"><strong>和面：</strong>将面粉和盐在大碗中混合，逐步加入酵母水，用手或木勺搅拌成粗糙面团。转移到台面上揉面10-12分钟，直到面团光滑有弹性。</span></li>
+          <li><span class="step-text"><strong>第一次发酵：</strong>将面团放入涂油的碗中，盖上保鲜膜，在温暖处发酵2小时，直至体积翻倍。理想温度26-28°C。</span></li>
+          <li><span class="step-text"><strong>分割与二次发酵：</strong>将面团分成2等份，揉成球形。放在撒了面粉的托盘上，盖上湿布，再次发酵4-6小时（或冷藏过夜发酵12-24小时，风味更佳）。</span></li>
+          <li><span class="step-text"><strong>准备酱料：</strong>将圣马尔扎诺番茄用手捏碎（绝不用搅拌机！），加入少许盐和1勺橄榄油，轻轻拌匀。酱料应为粗粒状，有质感。</span></li>
+          <li><span class="step-text"><strong>预热烤箱：</strong>将烤箱预热至最高温度（250°C以上），放入披萨石或烤盘一起预热至少45分钟。如果是家用烤箱，使用顶部+底部加热模式。</span></li>
+          <li><span class="step-text"><strong>手工整形：</strong>在撒满面粉的台面上，用手指从中心向外按压面团。提起面团，利用重力自然拉伸成圆形薄底（约30cm直径）。边缘保留2-3cm的稍厚边框。严禁使用擀面杖！</span></li>
+          <li><span class="step-text"><strong>铺料：</strong>将番茄酱均匀涂抹在饼底上（边缘留空2cm），撕开马苏里拉奶酪均匀分布，淋上橄榄油。</span></li>
+          <li><span class="step-text"><strong>极速烤制：</strong>将披萨滑入预热好的披萨石上，以最高温度烤制7-9分钟，直到底部金黄酥脆、边缘膨胀起泡、奶酪完全融化。</span></li>
+          <li><span class="step-text"><strong>出炉装点：</strong>出炉后立即放上新鲜罗勒叶，再淋一圈橄榄油。静置1分钟后切片享用。趁热吃！</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Panel 3: Chef Tips -->
+    <div class="tab-panel" id="panel-tips">
+      <div class="card">
+        <h3>💡 厨师私房技巧</h3>
+        <div class="tip-box"><h4>🔥 温度是关键</h4><p>正宗那不勒斯披萨在485°C柴火烤炉中仅需60-90秒。家庭烤箱无法达到这个温度，但你可以：① 使用披萨石并充分预热；② 将烤箱开到最高温（250-280°C）；③ 使用烤箱的顶部+底部加热而非风扇模式；④ 将披萨放在最下层靠近加热管的位置。</p></div>
+        <div class="tip-box"><h4>🧀 奶酪的选择</h4><p>水牛马苏里拉（Mozzarella di Bufala）是首选，奶香浓郁、水分充足。如果买不到，可用新鲜的牛奶莫扎瑞拉（Fior di Latte）。切记：不要用干酪丝！新鲜奶酪在烤制时释放的水分是正宗口感的关键。</p></div>
+        <div class="tip-box"><h4>🍅 番茄的讲究</h4><p>圣马尔扎诺番茄（San Marzano）生长在维苏威火山脚下的肥沃土壤中，甜度高、酸度低、籽少肉厚。如果使用普通番茄罐头，请选择"整颗去皮"的品种，用手捏碎而非机器打碎，保留质感。</p></div>
+        <div class="tip-box"><h4>🤲 绝不用擀面杖</h4><p>这是那不勒斯披萨最关键的规则之一。擀面杖会压出面团中的所有气泡，导致饼底失去蓬松的边沿结构。用手指按压和拉伸可以保留面团的空气结构，形成标志性的蓬松饼边（cornicione）。</p></div>
+        <div class="tip-box"><h4>⏰ 冷发酵的魔法</h4><p>将面团在冰箱中冷藏发酵24-48小时，可以让面粉中的酶充分工作，产生更复杂的风味。这就是为什么好的披萨店的面团都是提前两天准备的。</p></div>
+      </div>
+    </div>
+
+    <!-- Panel 4: Nutrition -->
+    <div class="tab-panel" id="panel-nutrition">
+      <div class="card">
+        <h3>📊 营养信息（每份披萨，约300g）</h3>
+        <div class="nutrition-grid">
+          <div class="nutrition-item"><div class="val">720</div><div class="lbl">卡路里 kcal</div></div>
+          <div class="nutrition-item"><div class="val">28g</div><div class="lbl">蛋白质</div></div>
+          <div class="nutrition-item"><div class="val">82g</div><div class="lbl">碳水化合物</div></div>
+          <div class="nutrition-item"><div class="val">30g</div><div class="lbl">脂肪</div></div>
+          <div class="nutrition-item"><div class="val">4.5g</div><div class="lbl">膳食纤维</div></div>
+          <div class="nutrition-item"><div class="val">980mg</div><div class="lbl">钠</div></div>
+        </div>
+        <p style="margin-top:20px;color:var(--text-secondary);font-size:0.88rem;">💡 玛格丽特披萨是地中海饮食的一部分。相比许多现代快餐披萨（满载加工肉和过量奶酪），传统玛格丽特披萨使用新鲜简单的食材，脂肪含量适中，番茄提供丰富的番茄红素（抗氧化剂）。</p>
+      </div>
+    </div>
+
+    <!-- Panel 5: Culture -->
+    <div class="tab-panel" id="panel-culture">
+      <div class="culture-note">
+        <h3>📖 文化背景</h3>
+        <p>1889年6月，意大利国王翁贝托一世和王后玛格丽特访问那不勒斯。厌倦了繁复的法式宫廷料理，王后希望品尝当地平民美食。披萨师傅拉斐尔·埃斯波西托（Raffaele Esposito）受邀为王室制作披萨。他精心准备了三种口味，其中一款以番茄（红）、马苏里拉奶酪（白）和罗勒（绿）为配料——正合意大利国旗的三色。王后非常喜爱这款披萨，埃斯波西托便以她的名字命名——玛格丽特披萨由此诞生。</p>
+        <p style="margin-top:12px;">这个广为流传的故事缺乏可靠史料佐证，但它完美体现了意大利美食的核心精神：用最简单、最新鲜的食材创造非凡的美味。2017年12月，联合国教科文组织将那不勒斯披萨制作技艺列入人类非物质文化遗产名录。根据AVPN（正宗那不勒斯披萨协会）的严格规定，真正的玛格丽特披萨只能使用圣马尔扎诺番茄和水牛马苏里拉奶酪，在485°C柴火烤炉中烤制不超过90秒。</p>
+      </div>
+    </div>
+
+    <!-- Related -->
+    <h3 style="margin:32px 0 20px;">🔗 相关推荐</h3>
+    <div class="related-grid">
+      <a href="italy-cuisine.html" class="related-card"><div class="emoji">🇮🇹</div><h4>意大利美食馆</h4><p>探索更多意大利美味</p></a>
+      <a href="recipe-center.html" class="related-card"><div class="emoji">🍝</div><h4>意面菜谱</h4><p>经典意式主食</p></a>
+      <a href="recipe-center.html" class="related-card"><div class="emoji">🍰</div><h4>提拉米苏</h4><p>意大利国民甜点</p></a>
+      <a href="ingredient-basics.html" class="related-card"><div class="emoji">🍅</div><h4>番茄百科</h4><p>了解番茄的全球之旅</p></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="recipe-center.html">← 返回菜谱中心</a> &nbsp;|&nbsp; <a href="italy-cuisine.html">意大利美食馆 →</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>食材百科 — Ingredient Encyclopedia · 全球食材知识库</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --gold: #d4a574; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --radius-md: 20px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+  .page-hero { min-height: 35vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #2e7d32 0%, #43a047 30%, #66bb6a 60%, #a5d6a7 100%); position: relative; overflow: hidden; padding-top: 72px; }
+  .page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, rgba(255,255,255,0.15) 0%, transparent 50%); }
+  .page-hero-content { position: relative; z-index: 1; padding: 40px; }
+  .page-hero h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #fff; margin-bottom: 10px; }
+  .page-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.85); max-width: 550px; margin: 0 auto; }
+  section { padding: 80px 40px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .section-tag { display: inline-block; padding: 6px 18px; background: rgba(46,125,50,0.1); color: #2e7d32; border-radius: 50px; font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 800; color: var(--warm-dark); margin-bottom: 12px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 560px; margin-bottom: 40px; }
+
+  .ingredient-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 28px; }
+  .ingredient-card { background: var(--card-bg); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); transition: var(--transition); }
+  .ingredient-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+  .ingredient-header { padding: 28px; display: flex; align-items: center; gap: 16px; }
+  .ingredient-icon { font-size: 3rem; }
+  .ingredient-header h3 { font-size: 1.3rem; }
+  .ingredient-header .latin { font-size: 0.82rem; color: #999; font-style: italic; }
+  .ingredient-body { padding: 0 28px 28px; }
+  .ingredient-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ingredient-meta span { background: #f0f4e8; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; color: #4a7c2e; }
+  .ingredient-body p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  .related-link { font-size: 0.85rem; color: #2e7d32; text-decoration: none; font-weight: 600; }
+  .related-link:hover { text-decoration: underline; }
+
+  /* Network visualization */
+  .network-section { background: #fff; }
+  .network-flow { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 40px 0; }
+  .network-node { background: var(--card-bg); padding: 20px 28px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); text-align: center; }
+  .network-node .icon { font-size: 2rem; margin-bottom: 6px; }
+  .network-node h4 { font-size: 0.95rem; }
+  .network-arrow { font-size: 1.5rem; color: #2e7d32; font-weight: 700; }
+
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 50px 20px; } .ingredient-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li>
+    <li><a href="world-food-map.html">世界地图</a></li>
+    <li><a href="china-cuisine.html">中国馆</a></li>
+    <li><a href="japan-cuisine.html">日本馆</a></li>
+    <li><a href="italy-cuisine.html">意大利馆</a></li>
+    <li><a href="france-cuisine.html">法国馆</a></li>
+    <li><a href="india-cuisine.html">印度馆</a></li>
+    <li><a href="recipe-center.html">菜谱中心</a></li>
+    <li><a href="ingredient-basics.html" class="active">食材百科</a></li>
+    <li><a href="food-culture-hub.html">饮食文化</a></li>
+    <li><a href="food-rankings.html">排行榜</a></li>
+    <li><a href="food-timeline.html">时间线</a></li>
+    <li><a href="search-center.html">搜索</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-content">
+    <h1>🥕 食材百科</h1>
+    <p>了解每种食材的起源、营养价值与全球使用方式</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-tag">Ingredient Encyclopedia</div>
+    <h2 class="section-title">核心食材图鉴</h2>
+    <p class="section-subtitle">从番茄到辣椒，每一种食材都承载着跨越大陆的迁徙故事与烹饪智慧。</p>
+    <div class="ingredient-grid">
+      <!-- Tomato -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#fef3e2,#e8f5e9);">
+          <div class="ingredient-icon">🍅</div>
+          <div><h3>番茄</h3><div class="latin">Solanum lycopersicum</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇲🇽 原产：南美洲</span><span>🌍 全球普及</span><span>🥗 蔬果两用</span></div>
+          <p>原产于南美洲安第斯山脉，16世纪由西班牙人传入欧洲。最初被当作观赏植物，18世纪才被广泛食用。如今番茄是全球消费量最大的蔬菜之一，从意大利披萨酱到中国番茄炒蛋，无处不在。</p>
+          <p>富含番茄红素、维生素C和钾。加热后番茄红素更易吸收。</p>
+          <a href="italy-cuisine.html" class="related-link">→ 意大利美食中的番茄</a>
+        </div>
+      </div>
+      <!-- Chili Pepper -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#fce4ec,#fff3e0);">
+          <div class="ingredient-icon">🌶️</div>
+          <div><h3>辣椒</h3><div class="latin">Capsicum annuum</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇲🇽 原产：中美洲</span><span>🔥 辣度多样</span><span>🌏 改变亚洲饮食</span></div>
+          <p>原产于中美洲，哥伦布大交换后传入亚洲。辣椒在短短400年间彻底改变了中国川菜、印度咖喱、泰国菜和韩国泡菜的风味版图。很难想象这些菜系在16世纪前是没有辣椒的。</p>
+          <p>辣椒素具有促进新陈代谢、缓解疼痛的功效。斯科维尔辣度单位(SHU)用于衡量辣度。</p>
+          <a href="china-cuisine.html" class="related-link">→ 中国川菜中的辣椒</a>
+        </div>
+      </div>
+      <!-- Wheat -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#fff8e1,#fef9e7);">
+          <div class="ingredient-icon">🌾</div>
+          <div><h3>小麦</h3><div class="latin">Triticum aestivum</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🏛️ 新月沃地起源</span><span>🍞 文明基石</span><span>🌍 全球主食</span></div>
+          <p>约一万年前在西亚新月沃地被驯化，是人类文明最重要的粮食作物之一。从中国的面条到意大利的披萨，从法国的面包到印度的馕，小麦塑造了全球各地的饮食文化。</p>
+          <p>小麦面粉中的面筋蛋白赋予面团独特的弹性和延展性，使得面包和面条成为可能。</p>
+          <a href="france-cuisine.html" class="related-link">→ 法国面包文化</a>
+        </div>
+      </div>
+      <!-- Rice -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);">
+          <div class="ingredient-icon">🍚</div>
+          <div><h3>稻米</h3><div class="latin">Oryza sativa</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇨🇳 原产：亚洲</span><span>🍣 多样品种</span><span>🥢 半数人类主食</span></div>
+          <p>约一万年前在中国长江流域被驯化，如今养活着全球一半以上的人口。从日本寿司到印度香饭，从西班牙海鲜饭到意大利烩饭，稻米在不同文化中展现出惊人的多样性。</p>
+          <p>稻米品种繁多：日本的越光米、印度的巴斯马蒂香米、泰国的茉莉香米，各具独特香气与口感。</p>
+          <a href="japan-cuisine.html" class="related-link">→ 日本寿司中的米饭</a>
+        </div>
+      </div>
+      <!-- Olive -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#e8f5e9,#fef9e7);">
+          <div class="ingredient-icon">🫒</div>
+          <div><h3>橄榄</h3><div class="latin">Olea europaea</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🏛️ 地中海起源</span><span>🫒 橄榄油</span><span>📜 6000年历史</span></div>
+          <p>橄榄树是地中海文明的象征，已有6000多年种植历史。橄榄油是地中海饮食的核心，被誉为"液体黄金"。从古希腊奥运会冠军的花环到圣经中的橄榄枝，橄榄承载着深厚的文化意义。</p>
+          <p>特级初榨橄榄油富含单不饱和脂肪酸和抗氧化物质，是地中海饮食长寿秘诀的关键。</p>
+          <a href="italy-cuisine.html" class="related-link">→ 意大利地中海饮食</a>
+        </div>
+      </div>
+      <!-- Soybean -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#fef3e2,#fff8e1);">
+          <div class="ingredient-icon">🫘</div>
+          <div><h3>大豆</h3><div class="latin">Glycine max</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇨🇳 原产：中国</span><span>🥢 5000年历史</span><span>🫘 百变食材</span></div>
+          <p>原产于中国，已有5000多年种植历史。从豆腐、酱油、味噌到纳豆、豆浆，大豆是东亚饮食中最重要的植物蛋白来源。没有大豆就没有中国和日本的传统饮食体系。</p>
+          <p>大豆可制成豆腐、豆皮、腐乳、豆豉、酱油、味噌、纳豆等数十种形态，是地球上最多变的食材之一。</p>
+          <a href="china-cuisine.html" class="related-link">→ 中国豆腐文化</a>
+        </div>
+      </div>
+      <!-- Corn -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">
+          <div class="ingredient-icon">🌽</div>
+          <div><h3>玉米</h3><div class="latin">Zea mays</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇲🇽 原产：中美洲</span><span>🌎 全球三大谷物</span><span>📜 9000年历史</span></div>
+          <p>约9000年前在墨西哥被驯化，与小麦、稻米并称世界三大谷物。从墨西哥的玉米饼到非洲的玉米糊，从美国的爆米花到中国的玉米排骨汤——玉米是全球最多样化的主食之一。</p>
+          <p>哥伦布大交换将玉米带到世界各地。今天玉米不仅是人类食物，还是重要的饲料和生物燃料原料。</p>
+          <a href="world-food-map.html" class="related-link">→ 哥伦布大交换</a>
+        </div>
+      </div>
+      <!-- Potato -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#efebe9,#d7ccc8);">
+          <div class="ingredient-icon">🥔</div>
+          <div><h3>土豆</h3><div class="latin">Solanum tuberosum</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇵🇪 原产：安第斯山脉</span><span>🌍 第四大主食</span><span>📜 8000年历史</span></div>
+          <p>原产于南美洲安第斯山脉，16世纪传入欧洲。最初被欧洲人视为"魔鬼的食物"甚至认为会传播麻风病。但因其高产和营养，最终成为支撑工业革命和欧洲人口爆炸的关键作物。</p>
+          <p>从炸薯条到土豆泥，从咖喱土豆到醋溜土豆丝，土豆已成为全球最受欢迎的主食之一。安第斯山区至今仍有4000多个土豆品种。</p>
+          <a href="food-timeline.html" class="related-link">→ 土豆的全球传播史</a>
+        </div>
+      </div>
+      <!-- Garlic -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#f5f5f5,#eeeeee);">
+          <div class="ingredient-icon">🧄</div>
+          <div><h3>大蒜</h3><div class="latin">Allium sativum</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🏛️ 中亚起源</span><span>🧄 全球调味</span><span>💊 药用价值</span></div>
+          <p>原产于中亚，已有7000多年种植历史。古埃及人用大蒜为建造金字塔的工人增强体力。从意大利的蒜香意面到中国的蒜蓉炒菜，从法国的蒜香黄油到韩国的蒜味泡菜——大蒜是全球使用最广泛的调味品之一。</p>
+          <p>大蒜素具有强大的抗菌和抗氧化功效。在抗生素发明之前，大蒜被广泛用于预防感染。</p>
+          <a href="italy-cuisine.html" class="related-link">→ 意大利蒜香料理</a>
+        </div>
+      </div>
+      <!-- Cocoa -->
+      <div class="ingredient-card">
+        <div class="ingredient-header" style="background:linear-gradient(135deg,#5d4037,#6d4c41,#8d6e63);">
+          <div class="ingredient-icon">🍫</div>
+          <div><h3>可可</h3><div class="latin">Theobroma cacao</div></div>
+        </div>
+        <div class="ingredient-body">
+          <div class="ingredient-meta"><span>🇲🇽 原产：中美洲</span><span>☕ 神圣饮品</span><span>🍫 全球零食</span></div>
+          <p>原产于中美洲，学名意为"众神的食物"。阿兹特克人将可可豆作为货币使用，可可饮品是贵族的特权。16世纪传入欧洲后加入糖和牛奶，演变为现代巧克力。</p>
+          <p>可可富含黄酮类化合物，具有抗氧化和改善心血管健康的功效。黑巧克力（可可含量70%以上）被认为是健康食品。</p>
+          <a href="food-timeline.html" class="related-link">→ 巧克力的欧洲之旅</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Connection Network -->
+<section class="network-section">
+  <div class="container">
+    <div class="section-tag">Food Network</div>
+    <h2 class="section-title">食材 → 国家 → 菜品</h2>
+    <p class="section-subtitle">每一种食材都是连接国家与菜品的纽带。</p>
+    <div class="network-flow">
+      <div class="network-node"><div class="icon">🍅</div><h4>番茄</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🇮🇹</div><h4>意大利</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🍕</div><h4>披萨 · 意面</h4></div>
+    </div>
+    <div class="network-flow">
+      <div class="network-node"><div class="icon">🌶️</div><h4>辣椒</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🇨🇳</div><h4>中国四川</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🌶️</div><h4>麻婆豆腐 · 火锅</h4></div>
+    </div>
+    <div class="network-flow">
+      <div class="network-node"><div class="icon">🍚</div><h4>稻米</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🇯🇵</div><h4>日本</h4></div>
+      <div class="network-arrow">→</div>
+      <div class="network-node"><div class="icon">🍣</div><h4>寿司 · 清酒</h4></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="home.html">← 返回首页</a> &nbsp;|&nbsp; <a href="food-culture-hub.html">饮食文化馆 →</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+
+</body>
+</html>

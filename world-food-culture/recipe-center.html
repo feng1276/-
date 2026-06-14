@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>菜谱中心 — Recipe Center · 全球美食菜谱</title>
+<style>
+  :root { --warm-dark: #1a1a2e; --cream: #faf7f2; --card-bg: #ffffff; --text-primary: #2c2416; --text-secondary: #6b5e4a; --accent: #c0392b; --shadow-sm: 0 2px 12px rgba(0,0,0,0.06); --shadow-md: 0 8px 32px rgba(0,0,0,0.10); --radius-md: 20px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; background: var(--cream); color: var(--text-primary); line-height: 1.6; }
+  .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,26,46,0.95); backdrop-filter: blur(20px); padding: 0 40px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .nav-brand { font-size: 1.4rem; font-weight: 700; color: #d4a574; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+  .nav-links a { color: #ccc; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: var(--transition); white-space: nowrap; }
+  .nav-links a:hover, .nav-links a.active { color: #d4a574; background: rgba(212,165,116,0.12); }
+  .page-hero { min-height: 36vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #e65100 0%, #ef6c00 25%, #c0392b 55%, #880e4f 100%); position: relative; overflow: hidden; padding-top: 72px; }
+  .page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 40% 50%, rgba(255,255,255,0.12) 0%, transparent 55%); }
+  .page-hero-content { position: relative; z-index: 1; padding: 40px; }
+  .page-hero h1 { font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 800; color: #fff; margin-bottom: 12px; }
+  .page-hero p { font-size: 1.1rem; color: rgba(255,255,255,0.8); max-width: 550px; margin: 0 auto; }
+  section { padding: 80px 40px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .section-tag { display: inline-block; padding: 6px 18px; background: rgba(192,57,43,0.1); color: #c0392b; border-radius: 50px; font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 800; color: var(--warm-dark); margin-bottom: 12px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 560px; margin-bottom: 40px; }
+
+  .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 36px; }
+  .filter-btn { padding: 10px 22px; border-radius: 30px; border: 1.5px solid #ddd; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 500; transition: var(--transition); color: var(--text-primary); }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .recipes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 28px; }
+  .recipe-card { background: var(--card-bg); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); transition: var(--transition); text-decoration: none; color: inherit; display: block; }
+  .recipe-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+  .recipe-img { height: 190px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #fff; position: relative; }
+  .recipe-img .diff-badge { position: absolute; top: 12px; right: 12px; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; color: #fff; }
+  .badge-easy { background: #27ae60; } .badge-medium { background: #e67e22; } .badge-hard { background: #c0392b; }
+  .recipe-body { padding: 22px; }
+  .recipe-country { font-size: 0.76rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .recipe-body h3 { font-size: 1.2rem; margin-bottom: 6px; }
+  .recipe-body p { font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
+  .recipe-meta { display: flex; gap: 14px; font-size: 0.8rem; color: #999; flex-wrap: wrap; }
+
+  .footer { background: var(--warm-dark); color: rgba(255,255,255,0.6); padding: 40px; text-align: center; }
+  .footer a { color: #d4a574; text-decoration: none; }
+  @media (max-width: 768px) { .navbar { padding: 0 16px; height: 60px; } .nav-brand { font-size: 1.1rem; } .nav-links a { padding: 6px 8px; font-size: 0.75rem; } section { padding: 50px 20px; } .recipes-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="home.html" class="nav-brand">🌍 Global Food</a>
+  <ul class="nav-links">
+    <li><a href="home.html">首页</a></li><li><a href="world-food-map.html">世界地图</a></li><li><a href="china-cuisine.html">中国馆</a></li><li><a href="japan-cuisine.html">日本馆</a></li><li><a href="italy-cuisine.html">意大利馆</a></li><li><a href="france-cuisine.html">法国馆</a></li><li><a href="india-cuisine.html">印度馆</a></li><li><a href="recipe-center.html" class="active">菜谱中心</a></li><li><a href="ingredient-basics.html">食材百科</a></li><li><a href="food-culture-hub.html">饮食文化</a></li><li><a href="food-rankings.html">排行榜</a></li><li><a href="food-timeline.html">时间线</a></li><li><a href="search-center.html">搜索</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-content">
+    <h1>📖 菜谱中心</h1>
+    <p>汇集全球15道经典菜谱，每道菜都有详细步骤、食材清单与文化背景</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-tag">Recipe Collection</div>
+    <h2 class="section-title">精选全球菜谱</h2>
+    <p class="section-subtitle">从亚洲到欧洲，从街头小吃到国宴大菜，点击任意菜谱查看完整做法。</p>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterRecipes('all',this)">全部</button>
+      <button class="filter-btn" onclick="filterRecipes('china',this)">🇨🇳 中国菜</button>
+      <button class="filter-btn" onclick="filterRecipes('japan',this)">🇯🇵 日本菜</button>
+      <button class="filter-btn" onclick="filterRecipes('italy',this)">🇮🇹 意大利菜</button>
+      <button class="filter-btn" onclick="filterRecipes('france',this)">🇫🇷 法国菜</button>
+      <button class="filter-btn" onclick="filterRecipes('india',this)">🇮🇳 印度菜</button>
+      <button class="filter-btn" onclick="filterRecipes('easy',this)">🟢 简单</button>
+      <button class="filter-btn" onclick="filterRecipes('hard',this)">🔴 高难度</button>
+    </div>
+    <div class="recipes-grid" id="recipesGrid">
+      <!-- China -->
+      <a href="recipe-detail.html" class="recipe-card" data-country="china" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#8b4513,#a0522d,#cd853f);"><span class="diff-badge badge-medium">中等</span>🦆</div>
+        <div class="recipe-body"><div class="recipe-country">🇨🇳 中国 · 北京</div><h3>北京烤鸭</h3><p>外皮酥脆、肉质鲜嫩的宫廷名菜，配薄饼甜酱卷食。600年历史的名菜。</p><div class="recipe-meta"><span>⏱️ 90分钟</span><span>🍽️ 4-6人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="china" data-difficulty="easy">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#c0392b,#e74c3c,#f39c12);"><span class="diff-badge badge-easy">简单</span>🌶️</div>
+        <div class="recipe-body"><div class="recipe-country">🇨🇳 中国 · 四川</div><h3>麻婆豆腐</h3><p>麻辣鲜香的四川名菜，"麻、辣、烫、香、酥、嫩、鲜、活"八字箴言。</p><div class="recipe-meta"><span>⏱️ 25分钟</span><span>🍽️ 2-3人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="china" data-difficulty="easy">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#c0392b,#e74c3c,#d35400);"><span class="diff-badge badge-easy">简单</span>🍲</div>
+        <div class="recipe-body"><div class="recipe-country">🇨🇳 中国 · 重庆</div><h3>重庆火锅</h3><p>麻辣沸腾的牛油锅底中涮煮万物，最具社交属性的中国美食。</p><div class="recipe-meta"><span>⏱️ 不限时</span><span>🍽️ 多人共享</span></div></div>
+      </a>
+      <!-- Japan -->
+      <a href="recipe-detail.html" class="recipe-card" data-country="japan" data-difficulty="hard">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#f5f5f5,#e0e0e0,#ff8f00);"><span class="diff-badge badge-hard">高难度</span>🍣</div>
+        <div class="recipe-body"><div class="recipe-country">🇯🇵 日本 · 东京</div><h3>握寿司</h3><p>醋饭与鲜鱼的完美结合。"舍利三年，种一生"——寿司饭需三年修行。</p><div class="recipe-meta"><span>⏱️ 30分钟</span><span>🍽️ 2人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="japan" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#d84315,#e64a19,#ffab00);"><span class="diff-badge badge-medium">中等</span>🍜</div>
+        <div class="recipe-body"><div class="recipe-country">🇯🇵 日本 · 福冈</div><h3>豚骨拉面</h3><p>浓郁猪骨汤底配手工面条，熬制18小时的汤底是灵魂所在。</p><div class="recipe-meta"><span>⏱️ 4小时熬汤</span><span>🍽️ 2人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="japan" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#fff9c4,#fff176,#ffd54f);"><span class="diff-badge badge-medium">中等</span>🍤</div>
+        <div class="recipe-body"><div class="recipe-country">🇯🇵 日本 · 东京</div><h3>天妇罗</h3><p>薄如蝉翼的面衣包裹新鲜食材，在芝麻油中迅速炸至金黄。</p><div class="recipe-meta"><span>⏱️ 20分钟</span><span>🍽️ 2人</span></div></div>
+      </a>
+      <!-- Italy -->
+      <a href="recipe-detail.html" class="recipe-card" data-country="italy" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#d84315,#ef6c00,#ffab40);"><span class="diff-badge badge-medium">中等</span>🍕</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇹 意大利 · 那不勒斯</div><h3>玛格丽特披萨</h3><p>番茄的红、奶酪的白、罗勒的绿——联合国非遗美食，意大利的骄傲。</p><div class="recipe-meta"><span>⏱️ 2小时发酵</span><span>🍽️ 2-3人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="italy" data-difficulty="easy">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#5d4037,#795548,#a1887f);"><span class="diff-badge badge-easy">简单</span>🍰</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇹 意大利 · 威尼托</div><h3>提拉米苏</h3><p>"带我走"——咖啡与马斯卡彭奶酪的浪漫邂逅，无需烘焙的经典甜品。</p><div class="recipe-meta"><span>⏱️ 30分钟+冷藏</span><span>🍽️ 4-6人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="italy" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#f9a825,#fdd835,#fff176);"><span class="diff-badge badge-medium">中等</span>🍝</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇹 意大利 · 罗马</div><h3>卡邦尼意面</h3><p>鸡蛋、佩科里诺奶酪、培根和黑胡椒——不用一滴奶油的正宗罗马做法。</p><div class="recipe-meta"><span>⏱️ 20分钟</span><span>🍽️ 2人</span></div></div>
+      </a>
+      <!-- France -->
+      <a href="recipe-detail.html" class="recipe-card" data-country="france" data-difficulty="hard">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#ffcc02,#ffb300,#ff8f00);"><span class="diff-badge badge-hard">高难度</span>🥐</div>
+        <div class="recipe-body"><div class="recipe-country">🇫🇷 法国 · 巴黎</div><h3>法式可颂</h3><p>72层以上的黄油酥皮，手工开酥需要耐心和技巧——法国早餐的灵魂。</p><div class="recipe-meta"><span>⏱️ 6小时</span><span>🍽️ 8个</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="france" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#5d4037,#8d6e63,#bcaaa4);"><span class="diff-badge badge-medium">中等</span>🥖</div>
+        <div class="recipe-body"><div class="recipe-country">🇫🇷 法国</div><h3>传统法棍</h3><p>仅四种原料——面粉、水、盐、酵母。2022年列入联合国非遗，法式生活的灵魂。</p><div class="recipe-meta"><span>⏱️ 5小时发酵</span><span>🍽️ 2根</span></div></div>
+      </a>
+      <!-- India -->
+      <a href="recipe-detail.html" class="recipe-card" data-country="india" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#e65100,#ef6c00,#ff9800);"><span class="diff-badge badge-medium">中等</span>🍛</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇳 印度 · 旁遮普</div><h3>黄油鸡</h3><p>奶油番茄咖喱与唐杜里烤鸡的完美融合，印度最受欢迎的国民美食之一。</p><div class="recipe-meta"><span>⏱️ 1小时</span><span>🍽️ 3-4人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="india" data-difficulty="hard">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#f9a825,#fdd835,#ffee58);"><span class="diff-badge badge-hard">高难度</span>🍚</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇳 印度 · 海德拉巴</div><h3>海德拉巴香饭</h3><p>香料腌肉与巴斯马蒂香米层层叠加密封慢煮——印度节庆盛宴的主角。</p><div class="recipe-meta"><span>⏱️ 2小时</span><span>🍽️ 4-6人</span></div></div>
+      </a>
+      <a href="recipe-detail.html" class="recipe-card" data-country="india" data-difficulty="medium">
+        <div class="recipe-img" style="background:linear-gradient(135deg,#bf360c,#d84315,#e64a19);"><span class="diff-badge badge-medium">中等</span>🍗</div>
+        <div class="recipe-body"><div class="recipe-country">🇮🇳 印度 · 旁遮普</div><h3>唐杜里烤鸡</h3><p>酸奶香料腌制后在泥窑中高温烤制。鲜红色泽来自克什米尔辣椒粉。</p><div class="recipe-meta"><span>⏱️ 4小时腌制</span><span>🍽️ 2-3人</span></div></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p><a href="home.html">← 返回首页</a> &nbsp;|&nbsp; <a href="recipe-detail.html">查看完整菜谱 →</a></p>
+  <p style="margin-top:12px;">© 2026 Global Food Culture Platform.</p>
+</footer>
+
+<script>
+function filterRecipes(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.recipe-card').forEach(card => {
+    if (cat === 'all') { card.style.display = ''; return; }
+    if (cat === 'easy' || cat === 'hard') { card.style.display = card.dataset.difficulty === cat ? '' : 'none'; return; }
+    card.style.display = card.dataset.country === cat ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
