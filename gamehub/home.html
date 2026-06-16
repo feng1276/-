@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameHub - 游戏资料库</title>
+    <style>
+        /* ==================== CSS变量与全局样式 ==================== */
+        :root {
+            --bg-primary: #1b2838;
+            --bg-secondary: #171a21;
+            --bg-tertiary: #2a475e;
+            --text-primary: #c7d5e0;
+            --text-secondary: #8f98a0;
+            --text-highlight: #ffffff;
+            --accent-blue: #66c0f4;
+            --accent-green: #a1cd44;
+            --accent-orange: #ff7f50;
+            --accent-red: #e74c3c;
+            --accent-purple: #8e44ad;
+            --gradient-hero: linear-gradient(135deg, #1b2838 0%, #2a475e 50%, #1b2838 100%);
+            --gradient-card: linear-gradient(180deg, #2a475e 0%, #1b2838 100%);
+            --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.5);
+            --shadow-hover: 0 8px 30px rgba(102, 192, 244, 0.3);
+            --border-radius: 8px;
+            --transition-speed: 0.3s;
+            --nav-height: 70px;
+            --max-width: 1400px;
+        }
+
+        /* 深色模式变量（默认即为深色） */
+        body.light-mode {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-highlight: #111111;
+            --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.15);
+            --shadow-hover: 0 8px 30px rgba(102, 192, 244, 0.2);
+            --gradient-card: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+            --gradient-hero: linear-gradient(135deg, #e8f4f8 0%, #d0e8f0 50%, #e8f4f8 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            overflow-x: hidden;
+        }
+
+        /* ==================== 滚动条样式 ==================== */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+
+        /* ==================== 导航栏 ==================== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: rgba(23, 26, 33, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: all var(--transition-speed);
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            background: rgba(23, 26, 33, 0.95);
+        }
+
+        .navbar .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 30px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-highlight);
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            transition: all var(--transition-speed);
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #1b2838;
+            font-weight: 900;
+            transition: all var(--transition-speed);
+            box-shadow: 0 0 15px rgba(102, 192, 244, 0.4);
+        }
+
+        .logo:hover .logo-icon {
+            transform: rotate(-10deg) scale(1.1);
+            box-shadow: 0 0 25px rgba(102, 192, 244, 0.7);
+        }
+
+        .logo-text {
+            background: linear-gradient(135deg, #66c0f4, #a1cd44);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .nav-links li a {
+            display: block;
+            padding: 10px 18px;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all var(--transition-speed);
+            font-size: 0.95rem;
+            font-weight: 500;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .nav-links li a::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 60%;
+            height: 2px;
+            background: var(--accent-blue);
+            transition: transform var(--transition-speed);
+            border-radius: 2px;
+        }
+
+        .nav-links li a:hover,
+        .nav-links li a.active {
+            color: var(--text-highlight);
+            background: rgba(102, 192, 244, 0.1);
+        }
+
+        .nav-links li a:hover::after,
+        .nav-links li a.active::after {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: rgba(102, 192, 244, 0.2);
+            color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        .btn-search-nav {
+            position: relative;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            display: none;
+            box-shadow: var(--shadow-card);
+            margin-top: 10px;
+        }
+
+        .search-dropdown.active {
+            display: block;
+        }
+
+        .search-dropdown input {
+            width: 100%;
+            padding: 10px 15px;
+            background: var(--bg-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .search-dropdown input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .search-suggestions {
+            margin-top: 10px;
+            list-style: none;
+        }
+
+        .search-suggestions li {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background var(--transition-speed);
+            font-size: 0.9rem;
+        }
+
+        .search-suggestions li:hover {
+            background: rgba(102, 192, 244, 0.15);
+            color: var(--accent-blue);
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+
+        .mobile-menu-btn span {
+            display: block;
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all var(--transition-speed);
+            border-radius: 2px;
+        }
+
+        /* ==================== Hero横幅 ==================== */
+        .hero {
+            margin-top: var(--nav-height);
+            position: relative;
+            height: 600px;
+            overflow: hidden;
+            background: var(--gradient-hero);
+        }
+
+        .hero-slider {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-slide.active {
+            opacity: 1;
+        }
+
+        .hero-slide-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.35);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(102, 192, 244, 0.2);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--text-highlight);
+            margin-bottom: 15px;
+            animation: fadeInUp 0.6s ease;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            border: none;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #66c0f4, #3d8ec9);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 192, 244, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 192, 244, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-highlight);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(102, 192, 244, 0.1);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .hero-slider-dots {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 3;
+        }
+
+        .hero-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .hero-dot.active {
+            background: var(--accent-blue);
+            box-shadow: 0 0 10px var(--accent-blue);
+            width: 30px;
+            border-radius: 10px;
+        }
+
+        /* ==================== 统计条 ==================== */
+        .stats-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 25px 0;
+        }
+
+        .stats-container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--accent-blue);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ==================== 区块标题 ==================== */
+        .section {
+            padding: 60px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-highlight);
+            margin-bottom: 10px;
+        }
+
+        .section-header .section-line {
+            width: 60px;
+            height: 3px;
+            background: var(--accent-blue);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 30px;
+        }
+
+        /* ==================== 游戏卡片 ==================== */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+        }
+
+        .game-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all var(--transition-speed);
+            box-shadow: var(--shadow-card);
+            cursor: pointer;
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .game-card-img {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+        }
+
+        .game-card-img .img-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--text-secondary);
+            transition: transform var(--transition-speed);
+            background: linear-gradient(135deg, #2a475e, #1b2838);
+        }
+
+        .game-card:hover .game-card-img .img-placeholder {
+            transform: scale(1.08);
+        }
+
+        .game-card-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            z-index: 2;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-new {
+            background: var(--accent-green);
+            color: #1b2838;
+        }
+
+        .badge-hot {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        .badge-trending {
+            background: var(--accent-orange);
+            color: #1b2838;
+        }
+
+        .game-card-info {
+            padding: 18px;
+        }
+
+        .game-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-highlight);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .game-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .game-card-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--accent-blue);
+            font-weight: 700;
+        }
+
+        .game-card-rating .star {
+            color: #ffc107;
+        }
+
+        .game-card-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .game-tag {
+            padding: 3px 10px;
+            background: rgba(102, 192, 244, 0.1);
+            color: var(--accent-blue);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* ==================== 分类标签页 ==================== */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .category-tab {
+            padding: 10px 22px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover,
+        .category-tab.active {
+            background: rgba(102, 192, 244, 0.2);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* ==================== 新闻区块 ==================== */
+        .news-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: 200px 200px;
+            gap: 20px;
+        }
+
+        .news-item {
+            position: relative;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .news-item:first-child {
+            grid-row: 1 / 3;
+        }
+
+        .news-item-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.15);
+            transition: transform var(--transition-speed);
+            background: linear-gradient(135deg, #2a475e, #1b2838);
+        }
+
+        .news-item:hover .news-item-bg {
+            transform: scale(1.05);
+        }
+
+        .news-item-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+        }
+
+        .news-item-title {
+            color: var(--text-highlight);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .news-item:first-child .news-item-title {
+            font-size: 1.3rem;
+        }
+
+        .news-item-date {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* ==================== 社区预览 ==================== */
+        .community-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .community-post {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-speed);
+            border: 1px solid transparent;
+        }
+
+        .community-post:hover {
+            border-color: rgba(102, 192, 244, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .post-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: var(--accent-blue);
+        }
+
+        .post-user {
+            font-weight: 600;
+            color: var(--text-highlight);
+            font-size: 0.95rem;
+        }
+
+        .post-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .post-content {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: color var(--transition-speed);
+            background: none;
+            border: none;
+        }
+
+        .post-action:hover {
+            color: var(--accent-blue);
+        }
+
+        .post-action.liked {
+            color: var(--accent-red);
+        }
+
+        /* ==================== 页脚 ==================== */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 50px 0 20px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-col h4 {
+            color: var(--text-highlight);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-col ul li a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color var(--transition-speed);
+        }
+
+        .footer-col ul li a:hover {
+            color: var(--accent-blue);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* ==================== 返回顶部 ==================== */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 46px;
+            height: 46px;
+            background: var(--bg-tertiary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-highlight);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-speed);
+            z-index: 999;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #1b2838;
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(102, 192, 244, 0.4);
+        }
+
+        /* ==================== 收藏按钮动画 ==================== */
+        .favorite-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.4rem;
+            transition: all var(--transition-speed);
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .favorite-btn.favorited {
+            color: #e74c3c;
+            animation: heartBeat 0.5s ease;
+        }
+
+        @keyframes heartBeat {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.3);
+            }
+            50% {
+                transform: scale(1);
+            }
+            75% {
+                transform: scale(1.2);
+            }
+        }
+
+        /* ==================== 动画关键帧 ==================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 192, 244, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(102, 192, 244, 0);
+            }
+        }
+
+        /* ==================== 响应式设计 ==================== */
+        @media (max-width: 1024px) {
+            .news-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto;
+            }
+            .news-item:first-child {
+                grid-row: auto;
+                grid-column: 1 / 3;
+                height: 300px;
+            }
+            .hero-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: var(--nav-height);
+                left: 0;
+                width: 100%;
+                background: rgba(23, 26, 33, 0.98);
+                flex-direction: column;
+                padding: 20px;
+                backdrop-filter: blur(20px);
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .mobile-menu-btn {
+                display: flex;
+            }
+            .hero {
+                height: 400px;
+            }
+            .hero-title {
+                font-size: 2rem;
+            }
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            .news-item:first-child {
+                grid-column: auto;
+                height: 200px;
+            }
+            .stats-container {
+                gap: 15px;
+            }
+            .stat-number {
+                font-size: 1.8rem;
+            }
+            .section-header h2 {
+                font-size: 1.6rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                height: 320px;
+            }
+            .hero-title {
+                font-size: 1.5rem;
+            }
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            .search-dropdown {
+                width: 280px;
+                right: -50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== 导航栏 ==================== -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="home.html" class="logo">
+                <div class="logo-icon">G</div>
+                <span class="logo-text">GameHub</span>
+            </a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html" class="active">首页</a></li>
+                <li><a href="games.html">游戏库</a></li>
+                <li><a href="ranking.html">排行榜</a></li>
+                <li><a href="news.html">新闻</a></li>
+                <li><a href="guide.html">攻略</a></li>
+                <li><a href="developers.html">开发商</a></li>
+                <li><a href="community.html">社区</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div class="btn-search-nav">
+                    <button class="btn-icon" id="btnSearchNav" title="搜索游戏">🔍</button>
+                    <div class="search-dropdown" id="searchDropdown">
+                        <input type="text" placeholder="搜索游戏..." id="searchInput" autocomplete="off">
+                        <ul class="search-suggestions" id="searchSuggestions">
+                            <li data-game="原神">原神 - Genshin Impact</li>
+                            <li data-game="Minecraft">Minecraft - 我的世界</li>
+                            <li data-game="CS2">CS2 - 反恐精英2</li>
+                            <li data-game="黑神话悟空">黑神话：悟空</li>
+                            <li data-game="GTA V">GTA V - 侠盗猎车手5</li>
+                        </ul>
+                    </div>
+                </div>
+                <button class="btn-icon" id="btnThemeToggle" title="切换主题">🌙</button>
+                <button class="btn-icon favorite-btn" id="btnFavorites" title="收藏夹">❤️</button>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== Hero横幅轮播 ==================== -->
+    <section class="hero" id="hero">
+        <div class="hero-slider">
+            <div class="hero-slide active" data-index="0">
+                <div class="hero-slide-bg" style="background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 30%, #0d2137 60%, #1b2838 100%);"></div>
+                <div class="hero-content">
+                    <div class="hero-badge">🔥 热门推荐</div>
+                    <h1 class="hero-title">探索游戏世界</h1>
+                    <p class="hero-subtitle">收录 1000+ 热门游戏资料，评分、攻略、新闻一网打尽</p>
+                    <div class="hero-buttons">
+                        <a href="games.html" class="btn btn-primary">🎮 进入游戏库</a>
+                        <a href="ranking.html" class="btn btn-outline">🏆 查看排行榜</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-slide" data-index="1">
+                <div class="hero-slide-bg" style="background: linear-gradient(135deg, #1a0a0a 0%, #3d1a1a 30%, #2a1010 60%, #1b1515 100%);"></div>
+                <div class="hero-content">
+                    <div class="hero-badge">🆕 新游上线</div>
+                    <h1 class="hero-title">黑神话：悟空</h1>
+                    <p class="hero-subtitle">国产3A大作，西游题材动作RPG，踏上取经之路</p>
+                    <div class="hero-buttons">
+                        <a href="detail.html?id=wukong" class="btn btn-primary">🎯 查看详情</a>
+                        <a href="guide.html" class="btn btn-outline">📖 查看攻略</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-slide" data-index="2">
+                <div class="hero-slide-bg" style="background: linear-gradient(135deg, #0a1a0a 0%, #1a3d1a 30%, #102a10 60%, #152015 100%);"></div>
+                <div class="hero-content">
+                    <div class="hero-badge">⭐ 经典永存</div>
+                    <h1 class="hero-title">Minecraft</h1>
+                    <p class="hero-subtitle">无限创造力的沙盒世界，全球销量第一的游戏传奇</p>
+                    <div class="hero-buttons">
+                        <a href="detail.html?id=minecraft" class="btn btn-primary">⛏️ 了解更多</a>
+                        <a href="community.html" class="btn btn-outline">💬 玩家社区</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-slider-dots" id="heroDots">
+            <span class="hero-dot active" data-index="0"></span>
+            <span class="hero-dot" data-index="1"></span>
+            <span class="hero-dot" data-index="2"></span>
+        </div>
+    </section>
+
+    <!-- ==================== 统计条 ==================== -->
+    <section class="stats-bar">
+        <div class="stats-container">
+            <div class="stat-item">
+                <span class="stat-number" data-count="1250">0</span>
+                <span class="stat-label">收录游戏</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="38600">0</span>
+                <span class="stat-label">玩家评价</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="520">0</span>
+                <span class="stat-label">攻略文章</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="89">0</span>
+                <span class="stat-label">合作开发商</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="15">0</span>
+                <span class="stat-label">游戏分类</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 热门游戏推荐 ==================== -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>🔥 热门游戏推荐</h2>
+                <div class="section-line"></div>
+                <p>本周最受玩家欢迎的游戏</p>
+            </div>
+            <div class="category-tabs" id="categoryTabs">
+                <button class="category-tab active" data-category="all">全部</button>
+                <button class="category-tab" data-category="rpg">角色扮演</button>
+                <button class="category-tab" data-category="fps">射击游戏</button>
+                <button class="category-tab" data-category="sandbox">沙盒游戏</button>
+                <button class="category-tab" data-category="moba">MOBA</button>
+                <button class="category-tab" data-category="indie">独立游戏</button>
+            </div>
+            <div class="games-grid" id="gamesGrid">
+                <!-- 游戏卡片1：原神 -->
+                <a href="detail.html?id=genshin" class="game-card" data-category="rpg">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🌌</div>
+                        <span class="game-card-badge badge-hot">热门</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">原神 - Genshin Impact</div>
+                        <div class="game-card-meta">
+                            <span>miHoYo</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.8</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">RPG</span>
+                            <span class="game-tag">开放世界</span>
+                            <span class="game-tag">免费</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片2：黑神话悟空 -->
+                <a href="detail.html?id=wukong" class="game-card" data-category="rpg">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🐵</div>
+                        <span class="game-card-badge badge-new">新游</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">黑神话：悟空</div>
+                        <div class="game-card-meta">
+                            <span>游戏科学</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.9</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">动作</span>
+                            <span class="game-tag">RPG</span>
+                            <span class="game-tag">西游</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片3：Minecraft -->
+                <a href="detail.html?id=minecraft" class="game-card" data-category="sandbox">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">⛏️</div>
+                        <span class="game-card-badge badge-trending">热门</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">Minecraft</div>
+                        <div class="game-card-meta">
+                            <span>Mojang</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.7</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">沙盒</span>
+                            <span class="game-tag">生存</span>
+                            <span class="game-tag">创造</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片4：CS2 -->
+                <a href="detail.html?id=cs2" class="game-card" data-category="fps">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🎯</div>
+                        <span class="game-card-badge badge-hot">热门</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">CS2 - 反恐精英2</div>
+                        <div class="game-card-meta">
+                            <span>Valve</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.6</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">FPS</span>
+                            <span class="game-tag">竞技</span>
+                            <span class="game-tag">免费</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片5：GTA V -->
+                <a href="detail.html?id=gtav" class="game-card" data-category="sandbox">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🚗</div>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">GTA V - 侠盗猎车手5</div>
+                        <div class="game-card-meta">
+                            <span>Rockstar Games</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.9</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">开放世界</span>
+                            <span class="game-tag">动作</span>
+                            <span class="game-tag">多人</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片6：英雄联盟 -->
+                <a href="detail.html?id=lol" class="game-card" data-category="moba">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">⚔️</div>
+                        <span class="game-card-badge badge-trending">电竞</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">英雄联盟</div>
+                        <div class="game-card-meta">
+                            <span>Riot Games</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.5</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">MOBA</span>
+                            <span class="game-tag">竞技</span>
+                            <span class="game-tag">免费</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片7：幻兽帕鲁 -->
+                <a href="detail.html?id=palworld" class="game-card" data-category="indie">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🦙</div>
+                        <span class="game-card-badge badge-new">新游</span>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">幻兽帕鲁</div>
+                        <div class="game-card-meta">
+                            <span>Pocketpair</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.4</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">生存</span>
+                            <span class="game-tag">收集</span>
+                            <span class="game-tag">多人</span>
+                        </div>
+                    </div>
+                </a>
+                <!-- 游戏卡片8：赛博朋克2077 -->
+                <a href="detail.html?id=cyberpunk" class="game-card" data-category="rpg">
+                    <div class="game-card-img">
+                        <div class="img-placeholder">🤖</div>
+                    </div>
+                    <div class="game-card-info">
+                        <div class="game-card-title">赛博朋克2077</div>
+                        <div class="game-card-meta">
+                            <span>CD Projekt Red</span>
+                            <span class="game-card-rating"><span class="star">⭐</span> 4.3</span>
+                        </div>
+                        <div class="game-card-tags">
+                            <span class="game-tag">RPG</span>
+                            <span class="game-tag">科幻</span>
+                            <span class="game-tag">开放世界</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div style="text-align:center; margin-top:30px;">
+                <a href="games.html" class="btn btn-outline">查看全部游戏 →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 最新新闻 ==================== -->
+    <section class="section" style="background: var(--bg-secondary);">
+        <div class="container">
+            <div class="section-header">
+                <h2>📰 最新游戏新闻</h2>
+                <div class="section-line"></div>
+                <p>游戏圈最新动态</p>
+            </div>
+            <div class="news-grid">
+                <a href="news.html" class="news-item">
+                    <div class="news-item-bg">📡</div>
+                    <div class="news-item-overlay">
+                        <div class="news-item-title">2025 E3游戏展重磅消息汇总：多款大作公布</div>
+                        <div class="news-item-date">2025-06-14</div>
+                    </div>
+                </a>
+                <a href="news.html" class="news-item">
+                    <div class="news-item-bg">🎮</div>
+                    <div class="news-item-overlay">
+                        <div class="news-item-title">黑神话悟空销量突破3000万</div>
+                        <div class="news-item-date">2025-06-10</div>
+                    </div>
+                </a>
+                <a href="news.html" class="news-item">
+                    <div class="news-item-bg">🏆</div>
+                    <div class="news-item-overlay">
+                        <div class="news-item-title">TGA年度游戏提名公布</div>
+                        <div class="news-item-date">2025-06-08</div>
+                    </div>
+                </a>
+                <a href="news.html" class="news-item">
+                    <div class="news-item-bg">💡</div>
+                    <div class="news-item-overlay">
+                        <div class="news-item-title">Unity 6引擎正式发布</div>
+                        <div class="news-item-date">2025-06-05</div>
+                    </div>
+                </a>
+                <a href="news.html" class="news-item">
+                    <div class="news-item-bg">🔥</div>
+                    <div class="news-item-overlay">
+                        <div class="news-item-title">Steam夏促即将开始</div>
+                        <div class="news-item-date">2025-06-01</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 玩家社区预览 ==================== -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>💬 玩家社区</h2>
+                <div class="section-line"></div>
+                <p>加入讨论，分享你的游戏体验</p>
+            </div>
+            <div class="community-preview">
+                <div class="community-post">
+                    <div class="post-header">
+                        <div class="post-avatar">🐉</div>
+                        <div>
+                            <div class="post-user">龙之使者</div>
+                            <div class="post-time">2小时前</div>
+                        </div>
+                    </div>
+                    <div class="post-content">黑神话悟空三周目通关！分享一些隐藏BOSS的打法心得，虎先锋其实有规律可循...</div>
+                    <div class="post-actions">
+                        <button class="post-action" onclick="this.classList.toggle('liked')">❤️ <span>328</span></button>
+                        <button class="post-action">💬 <span>56</span></button>
+                        <button class="post-action">🔗 分享</button>
+                    </div>
+                </div>
+                <div class="community-post">
+                    <div class="post-header">
+                        <div class="post-avatar">⛏️</div>
+                        <div>
+                            <div class="post-user">方块建筑师</div>
+                            <div class="post-time">5小时前</div>
+                        </div>
+                    </div>
+                    <div class="post-content">花了三个月建造的城堡终于完工了！Minecraft生存模式纯手撸，附上建造过程...</div>
+                    <div class="post-actions">
+                        <button class="post-action" onclick="this.classList.toggle('liked')">❤️ <span>512</span></button>
+                        <button class="post-action">💬 <span>89</span></button>
+                        <button class="post-action">🔗 分享</button>
+                    </div>
+                </div>
+                <div class="community-post">
+                    <div class="post-header">
+                        <div class="post-avatar">🎯</div>
+                        <div>
+                            <div class="post-user">瞄准镜</div>
+                            <div class="post-time">8小时前</div>
+                        </div>
+                    </div>
+                    <div class="post-content">CS2最新更新后的武器平衡分析，AWP和M4A1-S的变化对竞技模式的影响...</div>
+                    <div class="post-actions">
+                        <button class="post-action" onclick="this.classList.toggle('liked')">❤️ <span>196</span></button>
+                        <button class="post-action">💬 <span>42</span></button>
+                        <button class="post-action">🔗 分享</button>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:30px;">
+                <a href="community.html" class="btn btn-outline">进入社区 →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 页脚 ==================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>GameHub</h4>
+                    <ul>
+                        <li><a href="about.html">关于我们</a></li>
+                        <li><a href="contact.html">联系我们</a></li>
+                        <li><a href="#">加入我们</a></li>
+                        <li><a href="#">广告合作</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>浏览</h4>
+                    <ul>
+                        <li><a href="games.html">游戏库</a></li>
+                        <li><a href="ranking.html">排行榜</a></li>
+                        <li><a href="news.html">新闻</a></li>
+                        <li><a href="guide.html">攻略</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>分类</h4>
+                    <ul>
+                        <li><a href="category.html?type=rpg">角色扮演</a></li>
+                        <li><a href="category.html?type=fps">射击游戏</a></li>
+                        <li><a href="category.html?type=sandbox">沙盒游戏</a></li>
+                        <li><a href="category.html?type=moba">MOBA</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>关注我们</h4>
+                    <ul>
+                        <li><a href="#">微博</a></li>
+                        <li><a href="#">Bilibili</a></li>
+                        <li><a href="#">Discord</a></li>
+                        <li><a href="#">微信公众号</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 GameHub 游戏资料库 | 仅供学习使用 | 游戏资料来源于公开信息</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== 返回顶部按钮 ==================== -->
+    <button class="back-to-top" id="backToTop" title="返回顶部">↑</button>
+
+    <!-- ==================== 脚本 ==================== -->
+    <script>
+        // ==================== 导航栏滚动效果 ====================
+        const navbar = document.getElementById('navbar');
+        const backToTop = document.getElementById('backToTop');
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            if (scrollY > 50) {
+                navbar.classList.add('scrolled');
+                backToTop.classList.add('visible');
+            } else {
+                navbar.classList.remove('scrolled');
+                backToTop.classList.remove('visible');
+            }
+        });
+
+        // ==================== 返回顶部 ====================
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // ==================== 移动端菜单 ====================
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const navLinks = document.getElementById('navLinks');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        // 点击导航链接后关闭菜单
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // ==================== Hero轮播 ====================
+        const slides = document.querySelectorAll('.hero-slide');
+        const dots = document.querySelectorAll('.hero-dot');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+        let slideInterval;
+
+        function showSlide(index) {
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+            currentSlide = index;
+        }
+
+        function nextSlide() {
+            const next = (currentSlide + 1) % totalSlides;
+            showSlide(next);
+        }
+
+        function startSlideShow() {
+            slideInterval = setInterval(nextSlide, 4500);
+        }
+
+        function stopSlideShow() {
+            clearInterval(slideInterval);
+        }
+
+        dots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                stopSlideShow();
+                showSlide(parseInt(dot.dataset.index));
+                startSlideShow();
+            });
+        });
+
+        startSlideShow();
+
+        // 鼠标悬停暂停轮播
+        const hero = document.getElementById('hero');
+        hero.addEventListener('mouseenter', stopSlideShow);
+        hero.addEventListener('mouseleave', startSlideShow);
+
+        // ==================== 搜索下拉 ====================
+        const btnSearchNav = document.getElementById('btnSearchNav');
+        const searchDropdown = document.getElementById('searchDropdown');
+        const searchInput = document.getElementById('searchInput');
+        const searchSuggestions = document.getElementById('searchSuggestions');
+
+        btnSearchNav.addEventListener('click', (e) => {
+            e.stopPropagation();
+            searchDropdown.classList.toggle('active');
+            if (searchDropdown.classList.contains('active')) {
+                searchInput.focus();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchDropdown.contains(e.target) && e.target !== btnSearchNav) {
+                searchDropdown.classList.remove('active');
+            }
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const items = searchSuggestions.querySelectorAll('li');
+            let hasResults = false;
+            items.forEach(item => {
+                if (item.dataset.game.toLowerCase().includes(query) || query === '') {
+                    item.style.display = 'block';
+                    hasResults = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        searchSuggestions.querySelectorAll('li').forEach(item => {
+            item.addEventListener('click', () => {
+                const game = item.dataset.game;
+                const gameMap = {
+                    '原神': 'genshin',
+                    'Minecraft': 'minecraft',
+                    'CS2': 'cs2',
+                    '黑神话悟空': 'wukong',
+                    'GTA V': 'gtav'
+                };
+                const id = gameMap[game] || game.toLowerCase().replace(/\s/g, '-');
+                window.location.href = `detail.html?id=${id}`;
+            });
+        });
+
+        // ==================== 主题切换 ====================
+        const btnThemeToggle = document.getElementById('btnThemeToggle');
+        const savedTheme = localStorage.getItem('gamehub-theme');
+
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            btnThemeToggle.textContent = '☀️';
+        }
+
+        btnThemeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            btnThemeToggle.textContent = isLight ? '☀️' : '🌙';
+            localStorage.setItem('gamehub-theme', isLight ? 'light' : 'dark');
+        });
+
+        // ==================== 游戏分类筛选 ====================
+        const categoryTabs = document.querySelectorAll('.category-tab');
+        const gameCards = document.querySelectorAll('.game-card[data-category]');
+
+        categoryTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                categoryTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const category = tab.dataset.category;
+                gameCards.forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.style.display = 'block';
+                        card.style.animation = 'fadeInUp 0.4s ease';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // ==================== 收藏功能 ====================
+        const btnFavorites = document.getElementById('btnFavorites');
+        let favorites = JSON.parse(localStorage.getItem('gamehub-favorites') || '[]');
+
+        btnFavorites.addEventListener('click', () => {
+            alert(favorites.length > 0 ?
+                `已收藏的游戏：\n${favorites.join('\n')}` :
+                '收藏夹为空。在游戏详情页点击❤️即可收藏！');
+        });
+
+        // 将收藏函数暴露到全局
+        window.toggleFavorite = function(gameName) {
+            const index = favorites.indexOf(gameName);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(gameName);
+            }
+            localStorage.setItem('gamehub-favorites', JSON.stringify(favorites));
+            return favorites.includes(gameName);
+        };
+
+        // ==================== 数字计数动画 ====================
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number[data-count]');
+            counters.forEach(counter => {
+                const target = parseInt(counter.dataset.count);
+                const duration = 2000;
+                const step = target / (duration / 30);
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= target) {
+                        counter.textContent = target.toLocaleString();
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current).toLocaleString();
+                    }
+                }, 30);
+            });
+        }
+
+        // 使用IntersectionObserver检测统计条是否进入视口
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    statsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const statsBar = document.querySelector('.stats-bar');
+        if (statsBar) {
+            statsObserver.observe(statsBar);
+        }
+
+        // ==================== 键盘快捷键 ====================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchDropdown.classList.remove('active');
+                navLinks.classList.remove('active');
+            }
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                searchDropdown.classList.add('active');
+                searchInput.focus();
+            }
+        });
+
+        console.log('%c🎮 GameHub 游戏资料库 %c已就绪',
+            'font-size:1.5em;color:#66c0f4;', 'color:#c7d5e0;');
+        console.log('%c按 Ctrl+K 快速搜索 | 按 Esc 关闭弹窗',
+            'color:#8f98a0;font-size:0.9em;');
+        console.log('%c主页: home.html | 共10个页面 | 代码行数5000+',
+            'color:#a1cd44;font-size:0.9em;');
+    </script>
+</body>
+</html>
