@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人生模拟器 - Life Simulator</title>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?43572d67ab5bd2cb80169add393b5373";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --panel: #12121a;
+  --card: #1a1a28;
+  --border: #2a2a3a;
+  --text: #d0d0e0;
+  --dim: #6a6a80;
+  --accent: #c9a96e;
+  --accent2: #7eb8da;
+  --red: #e0556a;
+  --green: #5dbe8b;
+  --blue: #5b9bd5;
+  --purple: #9b7ec4;
+  --orange: #e8985e;
+  --pink: #e07ba0;
+  --health: #e0556a;
+  --intel: #5b9bd5;
+  --wealth: #e8985e;
+  --mood: #e07ba0;
+  --social: #5dbe8b;
+  --stress: #c9a96e;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(201,169,110,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(91,155,213,0.04) 0%, transparent 50%);
+}
+
+/* ===== SCREENS ===== */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* ===== START SCREEN ===== */
+#start-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.start-logo {
+  font-size: 4.5rem;
+  font-weight: 200;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 60px rgba(201,169,110,0.3);
+  animation: fadeInUp 1.2s ease;
+}
+
+.start-logo .dot {
+  color: var(--accent2);
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.start-subtitle {
+  font-size: 1.2rem;
+  color: var(--dim);
+  margin-bottom: 3rem;
+  letter-spacing: 0.3em;
+  animation: fadeInUp 1.2s ease 0.15s both;
+}
+
+.start-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeInUp 1.2s ease 0.3s both;
+}
+
+.btn {
+  padding: 1rem 3rem;
+  font-size: 1.1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(201,169,110,0.15);
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(201,169,110,0.08);
+}
+
+.btn.primary:hover {
+  background: rgba(201,169,110,0.15);
+  box-shadow: 0 8px 40px rgba(201,169,110,0.25);
+}
+
+.start-version {
+  margin-top: 3rem;
+  color: var(--dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  animation: fadeInUp 1.2s ease 0.45s both;
+}
+
+/* ===== GAME SCREEN ===== */
+#game-screen {
+  min-height: 100vh;
+  display: none;
+  gap: 0;
+}
+#game-screen.active { display: flex; }
+
+/* Sidebar */
+.sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  overflow-y: auto;
+  max-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.sidebar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.age-badge {
+  font-size: 1.8rem;
+  font-weight: 200;
+  color: var(--accent2);
+}
+
+.stage-label {
+  font-size: 0.7rem;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.stat-group { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.stat-icon { width: 20px; text-align: center; font-size: 0.85rem; }
+.stat-name { width: 40px; color: var(--dim); font-size: 0.7rem; }
+.stat-value { width: 32px; text-align: right; font-weight: 600; font-size: 0.8rem; }
+
+.stat-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.stat-bar-fill.health { background: var(--health); }
+.stat-bar-fill.intelligence { background: var(--intel); }
+.stat-bar-fill.wealth { background: var(--wealth); }
+.stat-bar-fill.mood { background: var(--mood); }
+.stat-bar-fill.social { background: var(--social); }
+.stat-bar-fill.stress { background: var(--stress); }
+
+.money-display {
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--orange);
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  background: rgba(232,152,94,0.05);
+}
+
+.career-display {
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+.sidebar-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.6rem 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+/* Rel UI */
+.rel-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.rel-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+}
+.rel-name { width: 36px; color: var(--dim); }
+.rel-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.rel-bar-fill { height: 100%; background: var(--pink); border-radius: 2px; transition: width 0.5s ease; }
+.rel-val { width: 24px; text-align: right; color: var(--dim); font-size: 0.65rem; }
+
+/* Main area */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.turn-counter {
+  font-size: 0.7rem;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+}
+
+/* Event card */
+.event-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  max-width: 650px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeInUp 0.5s ease;
+}
+
+.event-stage-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  margin-bottom: 1.5rem;
+  opacity: 0.7;
+}
+
+.event-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 0.8rem;
+  line-height: 1.6;
+  color: #e8e8f0;
+}
+
+.event-desc {
+  font-size: 0.9rem;
+  color: var(--dim);
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+}
+
+.event-choices { display: flex; flex-direction: column; gap: 0.7rem; }
+
+.choice-btn {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.choice-btn:hover {
+  border-color: var(--accent2);
+  background: rgba(126,184,218,0.06);
+  transform: translateX(4px);
+}
+
+.choice-btn .choice-label { font-weight: 500; }
+.choice-btn .choice-hint {
+  font-size: 0.7rem;
+  color: var(--dim);
+  opacity: 0.7;
+}
+
+/* Effect toast */
+.effect-toast {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  z-index: 100;
+  pointer-events: none;
+  animation: toastIn 2s ease forwards;
+  display: flex;
+  gap: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.effect-toast .pos { color: var(--green); }
+.effect-toast .neg { color: var(--red); }
+
+@keyframes toastIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
+/* Stage transition overlay */
+.stage-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.3s ease;
+}
+
+.stage-overlay .stage-icon { font-size: 4rem; margin-bottom: 1rem; animation: pulse 1.5s infinite; }
+.stage-overlay .stage-title { font-size: 2rem; color: var(--accent); letter-spacing: 0.1em; font-weight: 200; }
+.stage-overlay .stage-desc { font-size: 0.9rem; color: var(--dim); margin-top: 0.5rem; margin-bottom: 2rem; }
+.stage-overlay .btn { animation: fadeInUp 0.5s ease 0.3s both; }
+
+/* ===== ENDING SCREEN ===== */
+#ending-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.ending-icon { font-size: 5rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; }
+.ending-title { font-size: 2.5rem; font-weight: 200; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.ending-subtitle { font-size: 1rem; color: var(--dim); margin-bottom: 2rem; max-width: 500px; line-height: 1.8; }
+.ending-stats { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5rem; }
+.ending-stat { text-align: center; }
+.ending-stat-val { font-size: 2rem; font-weight: 200; color: var(--accent2); }
+.ending-stat-label { font-size: 0.7rem; color: var(--dim); letter-spacing: 0.1em; margin-top: 0.2rem; }
+
+.ending-events-log {
+  max-width: 500px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2.5rem;
+}
+
+.ending-events-log h3 {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: var(--dim);
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.log-entry {
+  font-size: 0.75rem;
+  color: var(--dim);
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.log-entry .log-age { color: var(--accent2); min-width: 40px; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal h3 {
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.1em;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  #game-screen { flex-direction: column; }
+  .sidebar {
+    width: 100%; min-width: 100%; max-height: none;
+    position: static; flex-direction: row; flex-wrap: wrap;
+    padding: 1rem; gap: 0.5rem; font-size: 0.7rem;
+    border-right: none; border-bottom: 1px solid var(--border);
+  }
+  .sidebar > * { flex: 1; min-width: 120px; }
+  .stat-row { font-size: 0.65rem; }
+  .main-area { padding: 1rem; max-height: none; }
+  .event-card { padding: 1.5rem; }
+  .start-logo { font-size: 2.5rem; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== START SCREEN ==================== -->
+<div id="start-screen" class="screen active">
+  <div class="start-logo">
+    人生模拟器<span class="dot">·</span>
+  </div>
+  <div class="start-subtitle">你将如何度过这一生？</div>
+  <div class="start-buttons">
+    <button class="btn primary" onclick="startNewGame()">✦ &nbsp;开始人生</button>
+    <button class="btn" onclick="startRandomLife()">🎲 &nbsp;随机人生</button>
+    <button class="btn" id="btn-load" onclick="loadGame()">📂 &nbsp;读取存档</button>
+  </div>
+  <div class="start-version">Life Simulator v1.0 · 选择塑造人生</div>
+</div>
+
+<!-- ==================== GAME SCREEN ==================== -->
+<div id="game-screen" class="screen">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div>
+        <div class="sidebar-title">人生状态</div>
+        <div class="stage-label" id="stage-label">童年</div>
+      </div>
+      <div class="age-badge" id="age-badge">6</div>
+    </div>
+
+    <div class="stat-group">
+      <div class="stat-row">
+        <span class="stat-icon">❤️</span><span class="stat-name">健康</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill health" id="bar-health" style="width:80%"></div></div>
+        <span class="stat-value" id="val-health">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">🧠</span><span class="stat-name">智力</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill intelligence" id="bar-int" style="width:50%"></div></div>
+        <span class="stat-value" id="val-int">50</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">😊</span><span class="stat-name">情绪</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill mood" id="bar-mood" style="width:70%"></div></div>
+        <span class="stat-value" id="val-mood">70</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">🤝</span><span class="stat-name">社交</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill social" id="bar-social" style="width:50%"></div></div>
+        <span class="stat-value" id="val-social">50</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">⚠️</span><span class="stat-name">压力</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill stress" id="bar-stress" style="width:20%"></div></div>
+        <span class="stat-value" id="val-stress">20</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">💰</span><span class="stat-name">财富</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill wealth" id="bar-wealth" style="width:10%"></div></div>
+        <span class="stat-value" id="val-wealth">10</span>
+      </div>
+    </div>
+
+    <div class="money-display" id="money-display">¥0</div>
+    <div class="career-display" id="career-display">学生</div>
+
+    <div style="border-top:1px solid var(--border);padding-top:0.8rem;">
+      <div class="stage-label" style="margin-bottom:0.5rem;">人际关系</div>
+      <div class="rel-group" id="rel-group">
+        <div class="rel-row"><span class="rel-name">家人</span><div class="rel-bar-wrap"><div class="rel-bar-fill" id="bar-family" style="width:80%"></div></div><span class="rel-val" id="val-family">80</span></div>
+        <div class="rel-row"><span class="rel-name">朋友</span><div class="rel-bar-wrap"><div class="rel-bar-fill" id="bar-friend" style="width:40%"></div></div><span class="rel-val" id="val-friend">40</span></div>
+        <div class="rel-row"><span class="rel-name">爱人</span><div class="rel-bar-wrap"><div class="rel-bar-fill" id="bar-lover" style="width:0%"></div></div><span class="rel-val" id="val-lover">0</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn btn-sm" onclick="saveGame()">💾 保存进度</button>
+      <button class="btn btn-sm" onclick="confirmQuit()">🚪 返回首页</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="main-header">
+      <span style="font-weight:500;color:var(--accent2);" id="char-name-display">你</span>
+      <span class="turn-counter" id="turn-counter">第 1 年</span>
+    </div>
+    <div id="event-container"></div>
+  </div>
+</div>
+
+<!-- ==================== ENDING SCREEN ==================== -->
+<div id="ending-screen" class="screen">
+  <div class="ending-icon" id="ending-icon">🏆</div>
+  <div class="ending-title" id="ending-title">人生落幕</div>
+  <div class="ending-subtitle" id="ending-subtitle"></div>
+  <div class="ending-stats" id="ending-stats"></div>
+  <div class="ending-events-log" id="ending-log"></div>
+  <div class="start-buttons">
+    <button class="btn primary" onclick="startNewGame()">🔄 &nbsp;重新开始</button>
+    <button class="btn" onclick="showScreen('start-screen')">🏠 &nbsp;返回首页</button>
+  </div>
+</div>
+
+<!-- ==================== SCRIPTS ==================== -->
+<script>
+// ===========================
+// CORE STATE
+// ===========================
+const DEFAULT_STATE = {
+  name: '你',
+  age: 6,
+  turn: 1,
+  stage: 'child',       // child | teen | adult | elder
+  health: 80,
+  intelligence: 50,
+  wealth: 10,
+  money: 0,
+  mood: 70,
+  social: 50,
+  stress: 20,
+  career: '学生',
+  family: 80,
+  friend: 40,
+  lover: 0,
+  hasLover: false,
+  eventLog: [],
+  flags: {}             // for persistent choices
+};
+
+let S = { ...DEFAULT_STATE, eventLog: [] };
+
+// ===========================
+// SCREEN MANAGEMENT
+// ===========================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===========================
+// NAME INPUT MODAL
+// ===========================
+function askName(callback) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>👤 你的名字是？</h3>
+      <input type="text" id="name-input" placeholder="输入你的名字…" maxlength="12" autofocus>
+      <div>
+        <button class="btn primary" id="btn-confirm-name">确认</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#name-input');
+  const btn = overlay.querySelector('#btn-confirm-name');
+
+  function confirm() {
+    const name = input.value.trim() || '无名者';
+    document.body.removeChild(overlay);
+    callback(name);
+  }
+
+  btn.addEventListener('click', confirm);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); });
+  setTimeout(() => input.focus(), 100);
+}
+
+// ===========================
+// START / LOAD
+// ===========================
+function startNewGame() {
+  askName(name => {
+    S = { ...DEFAULT_STATE, eventLog: [] };
+    S.name = name;
+    initGame();
+  });
+}
+
+function startRandomLife() {
+  const names = ['阿星','小月','林风','雨晴','山海','云逸','星辰','若水','天行','明月'];
+  S = { ...DEFAULT_STATE, eventLog: [] };
+  S.name = names[Math.floor(Math.random() * names.length)];
+  // Randomize starting stats a bit
+  S.health += rand(-10, 10);
+  S.intelligence += rand(-10, 10);
+  S.mood += rand(-10, 10);
+  S.social += rand(-10, 10);
+  S.family += rand(-10, 10);
+  S.friend += rand(-10, 10);
+  initGame();
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('life_sim_save');
+  if (!raw) {
+    showToast('没有找到存档', true);
+    return;
+  }
+  try {
+    S = JSON.parse(raw);
+    initGame(false);
+    showToast('📂 存档已加载');
+  } catch (e) {
+    showToast('存档损坏，无法读取', true);
+  }
+}
+
+function saveGame() {
+  localStorage.setItem('life_sim_save', JSON.stringify(S));
+  showToast('💾 进度已保存');
+}
+
+function confirmQuit() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>确定要返回首页吗？</h3>
+      <p style="color:var(--dim);font-size:0.8rem;margin-bottom:1.5rem;">未保存的进度将会丢失</p>
+      <div style="display:flex;gap:0.8rem;justify-content:center;">
+        <button class="btn btn-sm" id="btn-quit-yes">确认离开</button>
+        <button class="btn btn-sm primary" id="btn-quit-no">继续游戏</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#btn-quit-yes').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    showScreen('start-screen');
+    updateLoadBtn();
+  });
+  overlay.querySelector('#btn-quit-no').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+}
+
+function updateLoadBtn() {
+  const btn = document.getElementById('btn-load');
+  if (localStorage.getItem('life_sim_save')) {
+    btn.style.opacity = '1';
+    btn.textContent = '📂  读取存档';
+  } else {
+    btn.style.opacity = '0.4';
+    btn.textContent = '📂  暂无存档';
+  }
+}
+
+// ===========================
+// INIT GAME
+// ===========================
+function initGame(showStartToast = true) {
+  S._seenEvents = [];
+  showScreen('game-screen');
+  clampStats();
+  updateAllUI();
+  if (showStartToast) showToast(`🎬 ${S.name}的人生开始了…`);
+  setTimeout(() => nextEvent(), showStartToast ? 1200 : 300);
+}
+
+// ===========================
+// UTILS
+// ===========================
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function clampStats() {
+  S.health = clamp(S.health, 0, 100);
+  S.intelligence = clamp(S.intelligence, 0, 100);
+  S.wealth = clamp(S.wealth, 0, 100);
+  S.mood = clamp(S.mood, 0, 100);
+  S.social = clamp(S.social, 0, 100);
+  S.stress = clamp(S.stress, 0, 100);
+  S.family = clamp(S.family, 0, 100);
+  S.friend = clamp(S.friend, 0, 100);
+  S.lover = clamp(S.lover, 0, 100);
+}
+
+function applyEffects(effects) {
+  const changes = [];
+  for (let [key, val] of Object.entries(effects)) {
+    if (key === 'money') { S.money += val; changes.push([key, val]); continue; }
+    if (key === 'career') { S.career = val; changes.push([key, val]); continue; }
+    if (key === 'flag') { S.flags[val] = true; continue; }
+    if (key === 'hasLover') { S.hasLover = val; continue; }
+    if (S.hasOwnProperty(key)) {
+      S[key] = clamp(S[key] + val, 0, 100);
+      changes.push([key, val]);
+    }
+  }
+  clampStats();
+  return changes;
+}
+
+function formatChanges(changes) {
+  const labels = {
+    health: ['健康','❤️'], intelligence: ['智力','🧠'], wealth: ['财富','💰'],
+    mood: ['情绪','😊'], social: ['社交','🤝'], stress: ['压力','⚠️'],
+    family: ['家人','👪'], friend: ['朋友','👥'], lover: ['爱人','💕'],
+    money: ['金钱','💵']
+  };
+  return changes.map(([k, v]) => {
+    const [label, icon] = labels[k] || [k, ''];
+    const cls = v > 0 ? 'pos' : 'neg';
+    const sign = v > 0 ? '+' : '';
+    return `<span class="${cls}">${icon} ${label} ${sign}${v}</span>`;
+  }).join(' ');
+}
+
+function showToast(msg, isWarning = false) {
+  const toast = document.createElement('div');
+  toast.className = 'effect-toast';
+  toast.style.cssText = isWarning ? 'border-color: var(--red);' : '';
+  toast.innerHTML = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) document.body.removeChild(toast); }, 2200);
+}
+
+// ===========================
+// UI UPDATE
+// ===========================
+function updateAllUI() {
+  // Age & stage
+  document.getElementById('age-badge').textContent = S.age;
+  const stageNames = { child: '👶 童年', teen: '🧑 青少年', adult: '🧔 成年', elder: '👴 老年' };
+  document.getElementById('stage-label').textContent = stageNames[S.stage] || S.stage;
+
+  // Stats
+  ['health','intelligence','wealth','mood','social','stress'].forEach(k => {
+    document.getElementById('bar-' + (k === 'intelligence' ? 'int' : k)).style.width = S[k] + '%';
+    document.getElementById('val-' + (k === 'intelligence' ? 'int' : k)).textContent = S[k];
+  });
+
+  // Money & career
+  document.getElementById('money-display').textContent = '¥' + S.money.toLocaleString();
+  document.getElementById('career-display').textContent = S.career;
+
+  // Relationships
+  ['family','friend','lover'].forEach(k => {
+    document.getElementById('bar-' + k).style.width = S[k] + '%';
+    document.getElementById('val-' + k).textContent = S[k];
+  });
+
+  // Header
+  document.getElementById('char-name-display').textContent = S.name;
+  document.getElementById('turn-counter').textContent = '第 ' + S.turn + ' 年';
+}
+
+// ===========================
+// STAGE TRANSITION
+// ===========================
+function transitionStage(newStage, title, desc, icon) {
+  const overlay = document.createElement('div');
+  overlay.className = 'stage-overlay';
+  overlay.innerHTML = `
+    <div class="stage-icon">${icon}</div>
+    <div class="stage-title">${title}</div>
+    <div class="stage-desc">${desc}</div>
+    <button class="btn primary" id="btn-stage-continue">继续</button>
+  `;
+  document.body.appendChild(overlay);
+
+  return new Promise(resolve => {
+    overlay.querySelector('#btn-stage-continue').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      S.stage = newStage;
+      updateAllUI();
+      resolve();
+    });
+  });
+}
+
+// ===========================
+// EVENT SYSTEM
+// ===========================
+// Track recently seen events to avoid repeats
+if (!S._seenEvents) S._seenEvents = [];
+
+function nextEvent() {
+  // Check death conditions
+  if (S.health <= 0) { endGame('health_death'); return; }
+  if (S.stress >= 100) { endGame('stress_death'); return; }
+
+  // Age progression & stage check
+  const oldStage = S.stage;
+  if (S.age < 12) S.stage = 'child';
+  else if (S.age < 18) S.stage = 'teen';
+  else if (S.age < 55) S.stage = 'adult';
+  else S.stage = 'elder';
+
+  // Check end of life
+  if (S.age >= 75) { endGame('old_age'); return; }
+  // Random chance of death in elder stage
+  if (S.stage === 'elder' && S.age >= 65 && Math.random() < 0.08) { endGame('old_age'); return; }
+
+  // Stage transition
+  if (oldStage !== S.stage) {
+    // Clear seen events on stage transition so new stage events are all fresh
+    S._seenEvents = [];
+    const transitions = {
+      teen: ['青少年时期', '你进入了青春期，开始形成自己的世界观。人生的重要选择即将到来。', '🧑'],
+      adult: ['成年时代', '你正式步入社会。职业、感情、人生方向——一切由你决定。', '🧔'],
+      elder: ['人生暮年', '岁月如歌，你开始回顾这一生的得失。珍惜剩下的时光吧。', '👴']
+    };
+    if (transitions[S.stage]) {
+      transitionStage(S.stage, ...transitions[S.stage]).then(() => {
+        updateAllUI();
+        pickAndShowEvent();
+      });
+      return;
+    }
+  }
+
+  pickAndShowEvent();
+}
+
+function pickAndShowEvent() {
+  const pool = getEventPool();
+
+  // 10% chance of random event instead (reduced from 15%)
+  if (Math.random() < 0.10 && RANDOM_EVENTS.length > 0 && S.stage !== 'elder') {
+    const fresh = RANDOM_EVENTS.filter(e => !S._seenEvents.includes(e.id));
+    const randPool = fresh.length >= 2 ? fresh : RANDOM_EVENTS;
+    const event = randPool[Math.floor(Math.random() * randPool.length)];
+    S._seenEvents.push(event.id);
+    if (S._seenEvents.length > 20) S._seenEvents = S._seenEvents.slice(-20);
+    renderEvent(event);
+    return;
+  }
+
+  // Pick a FRESH event - try to avoid recently seen ones
+  const fresh = pool.filter(e => !S._seenEvents.includes(e.id));
+  const pickPool = fresh.length >= 2 ? fresh : pool;
+  const event = pickPool[Math.floor(Math.random() * pickPool.length)];
+
+  S._seenEvents.push(event.id);
+  if (S._seenEvents.length > 20) S._seenEvents = S._seenEvents.slice(-20);
+
+  renderEvent(event);
+}
+
+function renderEvent(event) {
+  const container = document.getElementById('event-container');
+  // Store current event globally so makeChoice can use it directly
+  window._currentEvent = event;
+
+  const choicesHTML = event.choices.map((c, i) => `
+    <button class="choice-btn" onclick="makeChoice(${i}, this)" data-label="${String.fromCharCode(65 + i)}">
+      <span class="choice-label">${String.fromCharCode(65 + i)}. ${c.text}</span>
+      <span class="choice-hint">${c.hint || ''}</span>
+    </button>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="event-card">
+      <div class="event-stage-tag">📌 ${event.category || '人生事件'}</div>
+      <div class="event-title">${event.title}</div>
+      <div class="event-desc">${event.desc}</div>
+      <div class="event-choices">${choicesHTML}</div>
+    </div>
+  `;
+
+  // Scroll to top of event card
+  container.scrollIntoView({ behavior: 'smooth' });
+}
+
+function makeChoice(index, btnEl) {
+  const event = window._currentEvent;
+  if (!event) { advanceTime(); return; }
+
+  const card = btnEl.closest('.event-card');
+  const allBtns = card.querySelectorAll('.choice-btn');
+  allBtns.forEach(b => { b.disabled = true; b.style.pointerEvents = 'none'; });
+
+  // Highlight chosen
+  btnEl.style.borderColor = 'var(--accent)';
+  btnEl.style.background = 'rgba(201,169,110,0.1)';
+
+  const choice = event.choices[index];
+  if (!choice) { advanceTime(); return; }
+
+  const effects = choice.effects || {};
+
+  // Apply effects
+  const changes = applyEffects(effects);
+
+  // Log event
+  S.eventLog.push({
+    age: S.age,
+    title: event.title,
+    choice: choice.text,
+    effects
+  });
+
+  // Show effect toast
+  if (changes.length > 0) {
+    showToast(formatChanges(changes));
+  }
+
+  // Check for forced endings
+  if (effects._end) {
+    setTimeout(() => endGame(effects._end), 1500);
+    return;
+  }
+
+  // Advance
+  setTimeout(() => advanceTime(), changes.length > 0 ? 800 : 300);
+}
+
+function advanceTime() {
+  S.turn++;
+  // Age advances: each turn = 1-3 years depending on stage
+  const yearStep = S.stage === 'child' ? 1 : S.stage === 'teen' ? 1 : S.stage === 'adult' ? 2 : 1;
+  S.age += yearStep;
+
+  // Passive stat drift
+  S.stress = clamp(S.stress + rand(-2, 3), 0, 100);
+  if (S.stage === 'elder') S.health = clamp(S.health - rand(1, 3), 0, 100);
+
+  // Career income
+  if (S.career && S.career !== '学生' && S.career !== '失业') {
+    const incomes = { '程序员': 8000, '医生': 10000, '教师': 5000, '设计师': 6000, '企业家': 15000, '自由职业者': 4000, '作家': 4500, '厨师': 5000, '科学家': 9000, '音乐家': 5500 };
+    S.money += (incomes[S.career] || 3000) * yearStep;
+    S.wealth = clamp(Math.floor(S.money / 5000), 0, 100);
+  }
+
+  clampStats();
+  updateAllUI();
+  nextEvent();
+}
+
+// ===========================
+// EVENT POOLS
+// ===========================
+function getEventPool() {
+  const pools = {
+    child: CHILD_EVENTS,
+    teen: TEEN_EVENTS,
+    adult: ADULT_EVENTS,
+    elder: ELDER_EVENTS
+  };
+  let pool = [...(pools[S.stage] || ADULT_EVENTS)];
+
+  // Only filter out one-time / conditional events that don't apply
+  if (S.career && S.career !== '学生' && S.career !== '失业') {
+    pool = pool.filter(e => e.id !== 'career_choice');
+  }
+  if (S.flags['went_to_college']) {
+    pool = pool.filter(e => e.id !== 'college_choice');
+  }
+  if (S.hasLover) {
+    pool = pool.filter(e => e.id !== 'find_love');
+  }
+  if (!S.hasLover) {
+    pool = pool.filter(e => e.id !== 'marriage_proposal' && e.id !== 'spouse_conflict' && e.id !== 'having_kids' && e.id !== 'parenting');
+  }
+  if (S.money < 30000) {
+    pool = pool.filter(e => e.id !== 'buy_house');
+  }
+  // Keep retirement events only in elder stage
+  if (S.stage !== 'elder') {
+    pool = pool.filter(e => e.id !== 'retirement_planning');
+  }
+
+  return pool.length > 0 ? pool : [...(pools[S.stage] || ADULT_EVENTS)];
+}
+
+// ===========================
+// CHILD EVENTS (age 6-11) — 12 events
+// ===========================
+const CHILD_EVENTS = [
+  {
+    id: 'child_school', category: '📚 学业', title: '新学期开始了，老师说你很有潜力。你要怎么对待学习？',
+    desc: '你的成绩在班里中等偏上。父母希望你多用功，但你也想和小伙伴们一起玩耍。',
+    choices: [
+      { text: '认真听课，按时完成作业', hint: '+智力 +压力', effects: { intelligence: 8, stress: 5, mood: -3 } },
+      { text: '和同学一起玩，快乐最重要', hint: '+社交 +情绪', effects: { social: 8, mood: 8, intelligence: -3 } },
+      { text: '参加课外兴趣班', hint: '+智力 +社交', effects: { intelligence: 5, social: 5, stress: 3 } }
+    ]
+  },
+  {
+    id: 'child_sport', category: '⚽ 健康', title: '体育课上，你发现自己跑得特别快。',
+    desc: '体育老师建议你加入校田径队训练，但这会占用不少课余时间。',
+    choices: [
+      { text: '加入校队，坚持训练', hint: '+健康 +社交', effects: { health: 10, social: 5, stress: 3 } },
+      { text: '偶尔运动就好，学业更重要', hint: '+智力', effects: { intelligence: 5, health: 2 } },
+      { text: '拒绝，我更喜欢在家看书', hint: '+智力 -社交', effects: { intelligence: 8, social: -5, health: -3 } }
+    ]
+  },
+  {
+    id: 'child_friend', category: '🤝 社交', title: '班里来了一个转校生，看起来有点孤单。',
+    desc: '他坐在角落里，没人跟他说话。你想去打招呼，但你的朋友们好像不太喜欢他。',
+    choices: [
+      { text: '主动过去交朋友', hint: '+社交 +情绪', effects: { social: 10, mood: 5, friend: 10 } },
+      { text: '跟着朋友们一起，不去理会', hint: '+社交 -情绪', effects: { social: 3, mood: -5 } },
+      { text: '偷偷给他递一张纸条', hint: '+社交', effects: { social: 5, friend: 5 } }
+    ]
+  },
+  {
+    id: 'child_pet', category: '🏠 家庭', title: '你在路边发现一只受伤的小猫，它看起来非常可怜。',
+    desc: '你很想把它带回家，但不知道父母会不会同意。',
+    choices: [
+      { text: '带回家，说服父母收养', hint: '+情绪 +家庭', effects: { mood: 10, family: 5, social: 3 } },
+      { text: '给它一些食物，然后离开', hint: '+情绪', effects: { mood: 3 } },
+      { text: '找附近的动物救助站帮忙', hint: '+智力 +情绪', effects: { intelligence: 3, mood: 5 } }
+    ]
+  },
+  {
+    id: 'child_exam', category: '📚 学业', title: '期末考试临近，你觉得自己准备得还不够充分。',
+    desc: '距离考试还有两周，你有几种复习方式可以选择。',
+    choices: [
+      { text: '制定复习计划，每天坚持', hint: '+智力 +压力', effects: { intelligence: 10, stress: 10, mood: -3 } },
+      { text: '找朋友一起学习', hint: '+智力 +社交', effects: { intelligence: 6, social: 6 } },
+      { text: '佛系复习，考多少算多少', hint: '-智力 -压力', effects: { intelligence: -5, stress: -8, mood: 5 } }
+    ]
+  },
+  {
+    id: 'child_bully', category: '🤝 社交', title: '操场上有个大块头抢走了你同学的文具盒。',
+    desc: '你的同学快哭出来了，周围的孩子都不敢出声。你心里很生气，但也有些害怕。',
+    choices: [
+      { text: '站出来制止那个大块头', hint: '+社交 +情绪 -压力', effects: { social: 12, mood: 8, stress: 8, friend: 8 } },
+      { text: '偷偷跑去告诉老师', hint: '+智力 +社交', effects: { intelligence: 5, social: 5, stress: -3 } },
+      { text: '假装没看到，走开', hint: '-情绪', effects: { mood: -8, stress: 3 } }
+    ]
+  },
+  {
+    id: 'child_hobby', category: '🎨 兴趣', title: '妈妈带你去上了一节钢琴体验课，你意外地发现自己很喜欢。',
+    desc: '但是买钢琴和学费都不便宜，而且每天要练一小时。',
+    choices: [
+      { text: '求父母让你学钢琴', hint: '+智力 +情绪 -财富', effects: { intelligence: 8, mood: 10, money: -10000, stress: 3 } },
+      { text: '用学校的音乐课满足兴趣就够了', hint: '小幅+情绪', effects: { mood: 3, intelligence: 2 } },
+      { text: '先不学，长大了自己赚钱学', hint: '+智力 +情绪', effects: { intelligence: 3, mood: 5 } }
+    ]
+  },
+  {
+    id: 'child_birthday', category: '🏠 家庭', title: '你的生日快到了！你希望怎么庆祝？',
+    desc: '爸爸妈妈让你自己决定今年的生日安排。',
+    choices: [
+      { text: '邀请全班同学来家里开派对', hint: '+社交 +家庭 +情绪', effects: { social: 10, family: 5, mood: 12, money: -2000 } },
+      { text: '和家人去游乐园玩一天', hint: '+家庭 +情绪', effects: { family: 12, mood: 10, money: -3000 } },
+      { text: '简单过，留时间看书学习', hint: '+智力 -情绪', effects: { intelligence: 5, mood: -5 } }
+    ]
+  },
+  {
+    id: 'child_chores', category: '🏠 家庭', title: '妈妈生病了，家里的家务没人做。',
+    desc: '爸爸工作很忙，家里有些乱。你可以选择帮帮忙或者继续玩自己的。',
+    choices: [
+      { text: '主动帮妈妈做家务，照顾她', hint: '+家庭 +情绪 +社交', effects: { family: 15, mood: 8, social: 3 } },
+      { text: '只做自己份内的事，保持房间整洁', hint: '+家庭', effects: { family: 5 } },
+      { text: '觉得不关自己的事，继续玩', hint: '-家庭 -情绪', effects: { family: -8, mood: -5 } }
+    ]
+  },
+  {
+    id: 'child_puzzle', category: '📚 学业', title: '爸爸送你一套复杂的拼图，有1000块。',
+    desc: '你拼了半小时就觉得太难了，有点想放弃。',
+    choices: [
+      { text: '下定决心，每天拼一点直到完成', hint: '+智力 +情绪 +压力', effects: { intelligence: 8, mood: 5, stress: 5 } },
+      { text: '叫上朋友一起拼', hint: '+社交 +智力', effects: { social: 6, intelligence: 4, friend: 5 } },
+      { text: '太难了，收起来以后再说', hint: '无变化', effects: {} }
+    ]
+  },
+  {
+    id: 'child_allowance', category: '💰 生活', title: '你攒了两个月的零花钱，终于够买那个心仪已久的玩具了。',
+    desc: '但就在这个时候，学校组织给灾区小朋友捐款。',
+    choices: [
+      { text: '把零花钱全部捐出去', hint: '+情绪 +社交 -财富', effects: { mood: 12, social: 10, money: -500 } },
+      { text: '捐一半，买一个便宜的玩具', hint: '+情绪 +社交', effects: { mood: 5, social: 5, money: -250 } },
+      { text: '坚持买玩具，捐款找爸妈要', hint: '+情绪 -社交', effects: { mood: 8, social: -3 } }
+    ]
+  },
+  {
+    id: 'child_adventure', category: '⚽ 健康', title: '邻居家的大哥哥邀你去后山探险。',
+    desc: '听说山上有条小溪还有野果子树。但妈妈说过不要跑太远。',
+    choices: [
+      { text: '偷偷跟去，冒险一次', hint: '+健康 +情绪 +社交', effects: { health: 5, mood: 10, social: 8, stress: -3 } },
+      { text: '先问妈妈，征得同意再去', hint: '+家庭 +健康', effects: { family: 8, health: 3, mood: 5 } },
+      { text: '乖乖待在家，安全第一', hint: '+智力 -社交', effects: { intelligence: 5, social: -5 } }
+    ]
+  }
+];
+
+// ===========================
+// TEEN EVENTS (age 12-17) — 12 events
+// ===========================
+const TEEN_EVENTS = [
+  {
+    id: 'teen_study', category: '📚 学业', title: '中考/高考的压力越来越大，你需要做出选择。',
+    desc: '周围的同学都在疯狂刷题，你觉得有些喘不过气。你的未来很大程度上取决于现在的努力。',
+    choices: [
+      { text: '全力以赴，冲刺好成绩', hint: '+智力 +压力', effects: { intelligence: 12, stress: 15, health: -5, mood: -5 } },
+      { text: '劳逸结合，保持平衡', hint: '+智力 +健康', effects: { intelligence: 6, health: 3, mood: 3 } },
+      { text: '探索自己真正的兴趣所在', hint: '+情绪 +社交', effects: { mood: 10, social: 8, intelligence: -5 } }
+    ]
+  },
+  {
+    id: 'teen_hobby', category: '🎨 兴趣', title: '你迷上了一个新爱好——课余时间全泡在里面。',
+    desc: '可能是编程、画画、弹吉他或者写小说。沉浸其中让你忘记了时间，但成绩开始下滑了。',
+    choices: [
+      { text: '坚持发展自己的爱好', hint: '+智力 +情绪', effects: { intelligence: 8, mood: 10, family: -8 } },
+      { text: '听父母的话，以学业为重', hint: '+家庭 -情绪', effects: { family: 8, mood: -5, intelligence: 3 } },
+      { text: '偷偷进行，尝试两者兼顾', hint: '+智力 +压力', effects: { intelligence: 5, stress: 8, mood: 3 } }
+    ]
+  },
+  {
+    id: 'teen_friend2', category: '🤝 社交', title: '你最好的朋友最近总是和一个你不喜欢的人在一起。',
+    desc: '你感觉你们的友谊正在变淡，这让你很难受。',
+    choices: [
+      { text: '坦诚地和朋友聊聊你的感受', hint: '+社交 +情绪', effects: { social: 8, mood: 5, friend: 5 } },
+      { text: '尊重朋友的选择，保持距离', hint: '-社交 -情绪', effects: { social: -8, mood: -8, friend: -10 } },
+      { text: '尝试融入他们的新圈子', hint: '+社交 +压力', effects: { social: 10, stress: 5, friend: 8 } }
+    ]
+  },
+  {
+    id: 'teen_health', category: '⚽ 健康', title: '最近你总是熬夜打游戏/刷手机，白天精神很差。',
+    desc: '黑眼圈越来越重，体育课跑步也跟不上。班主任找了你爸妈谈话。',
+    choices: [
+      { text: '痛改前非，早睡早起', hint: '+健康 -压力', effects: { health: 12, stress: -8, mood: 3 } },
+      { text: '减少屏幕时间但不完全戒掉', hint: '小幅+健康', effects: { health: 5, mood: 2 } },
+      { text: '继续熬，年轻就是资本', hint: '-健康 +压力', effects: { health: -10, stress: 10, intelligence: 3 } }
+    ]
+  },
+  {
+    id: 'college_choice', category: '🎓 人生抉择', title: '高考结束了！现在你需要决定未来的路。',
+    desc: '你的成绩还算不错。这是人生中第一个真正意义上的重大决定。',
+    choices: [
+      { text: '去一所好大学深造', hint: '+智力 +未来', effects: { intelligence: 15, stress: 5, money: -20000, flag: 'went_to_college' } },
+      { text: '不上大学，直接工作赚钱', hint: '+财富 +压力', effects: { wealth: 15, money: 30000, stress: 5, intelligence: -5 } },
+      { text: '间隔年——旅行探索世界', hint: '+情绪 +社交', effects: { mood: 20, social: 15, intelligence: -3, money: -5000 } }
+    ]
+  },
+  {
+    id: 'teen_social_media', category: '🤝 社交', title: '你在社交平台上发的一条内容突然火了，很多人评论。',
+    desc: '有人夸你，也有人说难听的话。这种被关注的感觉很复杂。',
+    choices: [
+      { text: '积极和网友互动，扩大影响力', hint: '+社交 +情绪', effects: { social: 10, mood: 5, stress: 5 } },
+      { text: '平常心对待，不过分在意', hint: '+智力 +情绪', effects: { intelligence: 5, mood: 5 } },
+      { text: '删除内容，远离网络喧嚣', hint: '-社交 -压力', effects: { social: -8, stress: -10 } }
+    ]
+  },
+  {
+    id: 'teen_part_time', category: '💰 生活', title: '暑假到了，同学介绍你去奶茶店打工。',
+    desc: '这是你第一次有机会自己赚钱。但暑假作业也不少，而且爸妈不太支持。',
+    choices: [
+      { text: '去打工，体验赚钱的感觉', hint: '+财富 +社交 +压力', effects: { money: 5000, wealth: 5, social: 8, stress: 5, intelligence: -3 } },
+      { text: '拒绝，利用暑假充电学习', hint: '+智力', effects: { intelligence: 8, stress: -3 } },
+      { text: '找一份更轻松的线上兼职', hint: '+财富 +智力', effects: { money: 2000, wealth: 3, intelligence: 3 } }
+    ]
+  },
+  {
+    id: 'teen_crush', category: '💕 感情', title: '你对隔壁班的一个人产生了好感。',
+    desc: '每次路过他们班门口都会紧张。你在想要不要告诉对方，但又怕被拒绝。',
+    choices: [
+      { text: '写一封情书悄悄塞给对方', hint: '+情绪 +社交 -压力', effects: { mood: 10, social: 5, stress: 8 } },
+      { text: '把心思藏在心里，专注学业', hint: '+智力 -情绪', effects: { intelligence: 5, mood: -5 } },
+      { text: '托朋友帮忙打听对方的意思', hint: '+社交 +情绪', effects: { social: 5, mood: 3 } }
+    ]
+  },
+  {
+    id: 'teen_peer_pressure', category: '🤝 社交', title: '一群同学约你放学后去网吧/台球室玩。',
+    desc: '你知道去那种地方不太好，但大家都在起哄，说不去就是不够朋友。',
+    choices: [
+      { text: '拒绝，坚持自己的原则', hint: '+智力 +情绪', effects: { intelligence: 8, mood: 3, social: -5 } },
+      { text: '跟着去一次，体验一下', hint: '+社交 -智力', effects: { social: 10, intelligence: -5, stress: 5, mood: 3 } },
+      { text: '提议去做更有意义的活动', hint: '+社交 +智力 +情绪', effects: { social: 8, intelligence: 5, mood: 5 } }
+    ]
+  },
+  {
+    id: 'teen_family_conflict', category: '🏠 家庭', title: '父母翻看了你的日记，你发现后非常愤怒。',
+    desc: '你觉得隐私被侵犯了。但爸妈说他们是关心你，怕你走弯路。',
+    choices: [
+      { text: '和父母大吵一架，要求他们尊重你', hint: '+情绪 -家庭', effects: { mood: 5, family: -15, stress: 10 } },
+      { text: '冷静沟通，表达你的感受', hint: '+智力 +家庭', effects: { intelligence: 5, family: 8, mood: 3 } },
+      { text: '默默忍了，以后把日记藏得更好', hint: '-情绪 +压力', effects: { mood: -5, stress: 8 } }
+    ]
+  },
+  {
+    id: 'teen_exchange', category: '📚 学业', title: '学校有一个国际交换生项目的名额，你想申请。',
+    desc: '去国外学习半年——想想就激动。但费用不低，而且意味着离开家人和朋友。',
+    choices: [
+      { text: '全力争取这个名额', hint: '+智力 +社交 +情绪', effects: { intelligence: 12, social: 12, mood: 8, money: -30000, family: -5 } },
+      { text: '放弃，在国内一样可以学好', hint: '+家庭 +智力', effects: { family: 5, intelligence: 5 } },
+      { text: '先申请，拿到名额再决定', hint: '+智力 +压力', effects: { intelligence: 5, stress: 5 } }
+    ]
+  },
+  {
+    id: 'teen_volunteer', category: '🤝 社交', title: '周末社区组织去养老院做志愿者，班主任鼓励大家参加。',
+    desc: '你本来计划和朋友出去玩，但听说养老院的爷爷奶奶们很期待有人去看他们。',
+    choices: [
+      { text: '放弃玩乐，去做志愿者', hint: '+社交 +情绪 +智力', effects: { social: 10, mood: 8, intelligence: 3 } },
+      { text: '和朋友一起去，两全其美', hint: '+社交 +情绪', effects: { social: 8, mood: 5, friend: 5 } },
+      { text: '还是去玩吧，志愿者下次再说', hint: '+情绪 -社交', effects: { mood: 5, social: -5 } }
+    ]
+  }
+];
+
+// ===========================
+// ADULT EVENTS (age 18-54) — 20 events
+// ===========================
+const ADULT_EVENTS = [
+  {
+    id: 'career_choice', category: '💼 职业', title: '是时候选择你的职业道路了。这将深刻影响你的人生。',
+    desc: '你面前有几条不同的路，每一条都有不同的风景和代价。',
+    choices: [
+      { text: '程序员 — 高薪但加班多', hint: '+财富 +压力', effects: { career: '程序员', wealth: 20, money: 50000, stress: 10, intelligence: 5 } },
+      { text: '医生 — 稳定体面但学习周期长', hint: '+社交 +压力', effects: { career: '医生', wealth: 15, money: 30000, stress: 8, social: 8, intelligence: 8 } },
+      { text: '教师 — 清贫但有寒暑假', hint: '+社交 -财富', effects: { career: '教师', social: 12, mood: 5, money: 15000, wealth: 5 } },
+      { text: '企业家 — 风险与机遇并存', hint: '±财富 +压力', effects: { career: '企业家', stress: 15, money: 20000, wealth: 10, intelligence: 5 } },
+      { text: '自由职业者 — 自由但收入不稳定', hint: '+情绪 -财富', effects: { career: '自由职业者', mood: 10, stress: -5, money: 10000, wealth: 5 } }
+    ]
+  },
+  {
+    id: 'work_hard', category: '💼 职业', title: '老板交给你一个重要的项目，做好了就能升职。',
+    desc: '但接下这个项目意味着连续几个月的加班，周末也没了。你有信心做好，但也担心身体扛不住。',
+    choices: [
+      { text: '全力以赴拿下项目', hint: '+财富 +压力 -健康', effects: { wealth: 15, money: 50000, stress: 20, health: -10, mood: -5 } },
+      { text: '量力而行，保持工作生活平衡', hint: '+健康 +情绪', effects: { health: 5, mood: 8, wealth: 3, money: 10000 } },
+      { text: '拒绝，考虑换个不那么卷的工作', hint: '-压力 -财富', effects: { stress: -15, wealth: -5, mood: 5, career: '自由职业者' } }
+    ]
+  },
+  {
+    id: 'find_love', category: '💕 感情', title: '在一次朋友聚会上，你遇到了一个让你心跳加速的人。',
+    desc: '你们聊得很投缘，互相留了联系方式。但发展一段关系需要投入真心和时间。',
+    choices: [
+      { text: '勇敢追求，开启一段恋情', hint: '+社交 +情绪 +爱人', effects: { social: 10, mood: 15, lover: 30, hasLover: true, stress: 3 } },
+      { text: '先做朋友，顺其自然', hint: '+社交', effects: { social: 5, lover: 10, mood: 3 } },
+      { text: '专注事业，暂时不谈感情', hint: '+财富 -情绪', effects: { wealth: 5, mood: -5, money: 10000 } }
+    ]
+  },
+  {
+    id: 'family_ties', category: '🏠 家庭', title: '父母年纪大了，电话里的声音越来越苍老。',
+    desc: '你已经很久没回家了。妈妈说冰箱里一直留着你爱吃的东西。',
+    choices: [
+      { text: '立刻请假回家，好好陪陪父母', hint: '+家庭 +情绪 -财富', effects: { family: 20, mood: 10, money: -3000, wealth: -3 } },
+      { text: '打个长电话聊聊天', hint: '+家庭', effects: { family: 5, mood: 3 } },
+      { text: '寄些钱回去表达孝心', hint: '+家庭 +压力', effects: { family: 8, money: -10000, stress: 3, mood: -3 } }
+    ]
+  },
+  {
+    id: 'health_crisis', category: '⚽ 健康', title: '体检报告出来了——血脂偏高、脂肪肝前期。',
+    desc: '医生说你长期久坐、饮食不规律、缺乏运动。再不注意就要出大问题了。',
+    choices: [
+      { text: '开始健身，彻底调整饮食', hint: '+健康 -压力', effects: { health: 15, stress: -10, mood: 8, money: -5000 } },
+      { text: '减少工作量，每天散步半小时', hint: '+健康 -财富', effects: { health: 10, stress: -5, wealth: -5, mood: 3 } },
+      { text: '工作太忙了，以后再说吧', hint: '-健康 +压力', effects: { health: -15, stress: 5 } }
+    ]
+  },
+  {
+    id: 'investment', category: '💰 财富', title: '一个朋友兴致勃勃地推荐了一个投资项目。',
+    desc: '他说自己已经投了，回报很不错。但也坦承有一定风险。你手里确实有些闲钱。',
+    choices: [
+      { text: '大胆投入，富贵险中求', hint: '±财富 +压力', effects: { wealth: (Math.random() > 0.5 ? 25 : -20), money: (Math.random() > 0.5 ? 80000 : -40000), stress: 10 } },
+      { text: '小额试试水', hint: '小幅±财富', effects: { wealth: (Math.random() > 0.5 ? 10 : -5), money: (Math.random() > 0.5 ? 20000 : -10000) } },
+      { text: '婉拒，把钱存定期更安心', hint: '-压力 +情绪', effects: { stress: -5, mood: 3 } }
+    ]
+  },
+  {
+    id: 'social_life', category: '🤝 社交', title: '高中同学群里突然热闹起来——有人在组织十周年聚会。',
+    desc: '你们已经很多年没见了。有人发福了，有人创业成功了，也有人失联了……',
+    choices: [
+      { text: '欣然前往，和老友叙旧', hint: '+社交 +情绪', effects: { social: 12, mood: 8, friend: 10 } },
+      { text: '犹豫了一会儿还是决定去', hint: '+社交', effects: { social: 5, friend: 5 } },
+      { text: '找个借口不去，享受独处', hint: '-社交 -压力', effects: { social: -8, stress: -5, mood: -3 } }
+    ]
+  },
+  {
+    id: 'marriage_proposal', category: '💕 感情', title: '你和伴侣已经在一起很久了，是时候考虑下一步了。',
+    desc: '结婚意味着责任和承诺。你准备好了吗？',
+    choices: [
+      { text: '精心策划一场求婚', hint: '+爱人 +情绪 -财富', effects: { lover: 25, mood: 20, money: -30000, social: 5 } },
+      { text: '先和对方认真聊聊未来规划', hint: '+爱人 +智力', effects: { lover: 10, intelligence: 5, mood: 5 } },
+      { text: '再等等，现在还不想被束缚', hint: '-爱人 +情绪', effects: { lover: -10, mood: 5, stress: -5 } }
+    ]
+  },
+  {
+    id: 'spouse_conflict', category: '💕 感情', title: '你和伴侣最近频繁为小事争吵。',
+    desc: '从谁来洗碗到怎么花钱——好像什么都成了导火索。你开始怀疑这段关系。',
+    choices: [
+      { text: '主动道歉，努力修复关系', hint: '+爱人 +情绪', effects: { lover: 15, mood: 5, stress: -5 } },
+      { text: '冷战几天，等对方先低头', hint: '-爱人 -情绪', effects: { lover: -10, mood: -8, stress: 5 } },
+      { text: '找朋友倾诉，听听局外人的建议', hint: '+社交 +智力', effects: { social: 5, intelligence: 3, friend: 5 } }
+    ]
+  },
+  {
+    id: 'having_kids', category: '🏠 家庭', title: '你们开始考虑要不要孩子。',
+    desc: '有了孩子生活会彻底改变——没有整觉睡，开销大增，但也会带来无尽的欢乐。',
+    choices: [
+      { text: '准备好迎接新生命了', hint: '+家庭 +情绪 +压力', effects: { family: 15, mood: 12, stress: 15, money: -20000, wealth: -5 } },
+      { text: '再等两年，先稳定事业', hint: '+财富 +智力', effects: { wealth: 5, intelligence: 3, mood: -3 } },
+      { text: '决定不要孩子，过二人世界', hint: '+情绪 -家庭', effects: { mood: 8, family: -10, stress: -5 } }
+    ]
+  },
+  {
+    id: 'parenting', category: '🏠 家庭', title: '孩子学校来电话了——他在学校和同学打架了。',
+    desc: '老师说对方先动的手，但你家孩子下手也不轻。你需要处理这个局面。',
+    choices: [
+      { text: '先听孩子解释，再心平气和地教育', hint: '+家庭 +智力', effects: { family: 8, intelligence: 5, mood: 3 } },
+      { text: '严厉训斥，让他记住不能打人', hint: '+家庭 -情绪', effects: { family: 5, mood: -8, stress: 5 } },
+      { text: '找对方家长沟通，一起解决问题', hint: '+社交 +家庭', effects: { social: 8, family: 5, mood: 5 } }
+    ]
+  },
+  {
+    id: 'buy_house', category: '💰 财富', title: '房价最近有些松动，中介说现在入手是好时机。',
+    desc: '你手里刚好攒够了首付，但背上30年房贷想想就压力山大。',
+    choices: [
+      { text: '果断买房，有自己的家才安心', hint: '+财富 +情绪 +压力', effects: { wealth: 15, mood: 10, stress: 15, money: -200000 } },
+      { text: '继续租房，把钱用来投资自己', hint: '+智力 -压力', effects: { intelligence: 5, stress: -8, mood: -3 } },
+      { text: '观望一阵子，等更好的机会', hint: '无变化', effects: { mood: 3 } }
+    ]
+  },
+  {
+    id: 'midlife_crisis', category: '💼 职业', title: '某天醒来你突然觉得自己好像被困住了。',
+    desc: '每天重复同样的生活——通勤、上班、下班、睡觉。你开始怀疑这一切的意义。',
+    choices: [
+      { text: '辞职去追寻真正想做的事', hint: '+情绪 +压力 -财富', effects: { mood: 15, stress: 10, wealth: -10, money: -20000, career: '自由职业者' } },
+      { text: '培养一个新爱好，给生活添点色彩', hint: '+情绪 +智力', effects: { mood: 8, intelligence: 5, stress: -5 } },
+      { text: '接受现实，稳定也是一种幸福', hint: '-情绪 -压力', effects: { mood: -5, stress: -8 } }
+    ]
+  },
+  {
+    id: 'friend_in_need', category: '🤝 社交', title: '大学室友深夜打电话来——他遇到大麻烦了。',
+    desc: '他做生意失败，欠了一笔不小的债务，连房租都交不起了。',
+    choices: [
+      { text: '二话不说，借钱给他周转', hint: '+社交 +朋友 -财富', effects: { social: 12, friend: 20, money: -30000, mood: 5 } },
+      { text: '帮他介绍工作，教他理财', hint: '+社交 +智力', effects: { social: 8, intelligence: 3, friend: 10 } },
+      { text: '表示同情但爱莫能助', hint: '-社交 -情绪', effects: { social: -5, friend: -10, mood: -5 } }
+    ]
+  },
+  {
+    id: 'learn_skill', category: '📚 学业', title: '行业变化很快，你发现自己有些技能已经过时了。',
+    desc: '年轻人用着你不懂的新工具，效率比你高很多。你感到了一丝焦虑。',
+    choices: [
+      { text: '报培训班，系统学习新技能', hint: '+智力 +财富 -财富', effects: { intelligence: 12, wealth: 5, stress: 5, money: -15000 } },
+      { text: '利用业余时间自学网课', hint: '+智力 +压力', effects: { intelligence: 8, stress: 5, mood: -3 } },
+      { text: '不想卷了，用经验优势就好', hint: '-智力 +情绪', effects: { intelligence: -5, mood: 5 } }
+    ]
+  },
+  {
+    id: 'travel_opportunity', category: '🎨 兴趣', title: '一张特价环球机票出现在你的推送里。',
+    desc: '环游世界一直是你的梦想。刚好手上有点假期和存款。但现在出发意味着中断工作和日常。',
+    choices: [
+      { text: '说走就走，人生需要冲动', hint: '+情绪 +社交 -财富', effects: { mood: 20, social: 10, money: -40000, health: 5 } },
+      { text: '规划一个短途旅行，过过瘾', hint: '+情绪', effects: { mood: 8, money: -5000 } },
+      { text: '攒够了钱再去，现在先忍忍', hint: '+财富 -情绪', effects: { wealth: 3, mood: -5 } }
+    ]
+  },
+  {
+    id: 'volunteer_work', category: '🤝 社交', title: '一场自然灾害的消息让你坐立不安。',
+    desc: '受灾地区需要大量志愿者和物资。你觉得自己应该做点什么。',
+    choices: [
+      { text: '请假去现场做志愿者', hint: '+社交 +情绪 +健康', effects: { social: 15, mood: 10, health: 5, money: -5000 } },
+      { text: '捐款捐物，尽自己一份心', hint: '+情绪 -财富', effects: { mood: 8, money: -10000, social: 5 } },
+      { text: '转发消息让更多人知道', hint: '+社交', effects: { social: 3 } }
+    ]
+  },
+  {
+    id: 'career_switch', category: '💼 职业', title: '猎头打电话来，一个全新的行业向你抛出橄榄枝。',
+    desc: '薪资翻倍，但和你目前做的完全不一样，需要从零学起。你动心了但也忐忑。',
+    choices: [
+      { text: '接受挑战，跳槽去新行业', hint: '+财富 +智力 +压力', effects: { wealth: 15, money: 80000, intelligence: 8, stress: 15, mood: 5 } },
+      { text: '留在舒适区，熟练也是一种竞争力', hint: '+情绪 -压力', effects: { mood: 5, stress: -5 } },
+      { text: '和现在老板谈谈，争取更好的待遇', hint: '+财富 +社交', effects: { wealth: 5, social: 5, money: 15000 } }
+    ]
+  },
+  {
+    id: 'lost_friend', category: '🤝 社交', title: '你听到消息说一个老朋友得了重病。',
+    desc: '你们已经很多年没联系了。上次见面还是在他的婚礼上。现在他需要帮助。',
+    choices: [
+      { text: '立刻联系他，尽自己所能帮忙', hint: '+朋友 +情绪 +社交', effects: { friend: 20, mood: 8, social: 8 } },
+      { text: '发一条消息问候，心意到了就好', hint: '+朋友', effects: { friend: 5, mood: 3 } },
+      { text: '人生无常……但不知该说什么', hint: '-情绪', effects: { mood: -8 } }
+    ]
+  },
+  {
+    id: 'side_hustle', category: '💰 财富', title: '你的一个兴趣开始有了变现的可能。',
+    desc: '有人愿意花钱买你业余时间做的手工艺品/设计/文章。是时候考虑副业了。',
+    choices: [
+      { text: '认真经营，做成稳定副业', hint: '+财富 +智力 +压力', effects: { wealth: 10, money: 20000, intelligence: 5, stress: 8 } },
+      { text: '当作兴趣就好，不想让它变味', hint: '+情绪', effects: { mood: 8 } },
+      { text: '扩大规模，争取替代主业', hint: '+财富 +压力 +情绪', effects: { wealth: 15, money: 30000, stress: 15, mood: 8 } }
+    ]
+  }
+];
+
+// ===========================
+// ELDER EVENTS (age 55+) — 10 events
+// ===========================
+const ELDER_EVENTS = [
+  {
+    id: 'elder_reflect', category: '🌟 回顾', title: '午后阳光洒在摇椅上，你翻看着旧相册。',
+    desc: '那些年轻时的选择——对的和错的——共同造就了今天的你。你感到一阵又甜又涩的复杂情绪。',
+    choices: [
+      { text: '心怀感激，珍惜当下的每一天', hint: '+情绪 -压力', effects: { mood: 10, stress: -10, health: 3 } },
+      { text: '有些遗憾，要是当初……', hint: '-情绪 +压力', effects: { mood: -8, stress: 5 } },
+      { text: '把人生经验写下来留给后辈', hint: '+智力 +社交', effects: { intelligence: 5, social: 8, mood: 8 } }
+    ]
+  },
+  {
+    id: 'elder_health', category: '⚽ 健康', title: '年纪大了，膝盖一到阴天就疼。',
+    desc: '医生建议你每天坚持适量的运动。公园里那些打太极的老人家看起来挺精神的。',
+    choices: [
+      { text: '每天坚持晨练，风雨无阻', hint: '+健康 +情绪', effects: { health: 8, mood: 8, social: 5 } },
+      { text: '天气好的时候出去走走', hint: '+健康', effects: { health: 3, mood: 3 } },
+      { text: '在家静养，安全最重要', hint: '-健康 -社交', effects: { health: -5, social: -5 } }
+    ]
+  },
+  {
+    id: 'elder_family', category: '🏠 家庭', title: '孙辈们周末来看你，小屋子里一下子热闹起来。',
+    desc: '他们在客厅里追逐嬉闹，让你想起自己孩子小时候的样子。他们吵着要你讲故事。',
+    choices: [
+      { text: '开心地享受天伦之乐', hint: '+情绪 +家庭', effects: { mood: 15, family: 10, social: 5 } },
+      { text: '给他们准备一顿拿手好菜', hint: '+家庭 +情绪', effects: { family: 8, mood: 5, stress: 3 } },
+      { text: '安静地坐在一旁看着，心里很满足', hint: '+情绪', effects: { mood: 5, family: 3 } }
+    ]
+  },
+  {
+    id: 'elder_legacy', category: '🌟 回顾', title: '你想在离开之前为这个世界留下点什么。',
+    desc: '你积攒了一些财富和智慧。是时候考虑如何传承下去了。',
+    choices: [
+      { text: '资助贫困学生读书', hint: '+社交 +情绪 -财富', effects: { social: 15, mood: 12, money: -50000, wealth: -10 } },
+      { text: '把积蓄都留给子女', hint: '+家庭', effects: { family: 20, mood: 8 } },
+      { text: '捐给社区建设一个图书馆', hint: '+情绪 +社交', effects: { mood: 10, social: 10, money: -30000 } }
+    ]
+  },
+  {
+    id: 'elder_oldfriend', category: '🤝 社交', title: '你突然接到一个老朋友的电话——你们失联了二十年。',
+    desc: '他的声音苍老了但你一下就认出来了。他说最近总想起年轻时候的事，特别想见你一面。',
+    choices: [
+      { text: '约定见面，好好叙旧', hint: '+社交 +情绪 +朋友', effects: { social: 10, mood: 12, friend: 15 } },
+      { text: '在电话里聊了很久，但不方便见面了', hint: '+社交 +情绪', effects: { social: 5, mood: 5, friend: 5 } },
+      { text: '物是人非，婉拒了见面的提议', hint: '-情绪 -社交', effects: { mood: -8, social: -5 } }
+    ]
+  },
+  {
+    id: 'retirement_planning', category: '💰 财富', title: '退休的日子快到了，你需要规划一下退休生活。',
+    desc: '辛苦了大半辈子，接下来是属于自己的时间。但你担心退休金够不够用。',
+    choices: [
+      { text: '制定详细计划，精打细算过日子', hint: '+智力 +情绪 -压力', effects: { intelligence: 5, mood: 5, stress: -10 } },
+      { text: '不想那么多，船到桥头自然直', hint: '-智力 -压力', effects: { intelligence: -3, stress: -8, mood: 3 } },
+      { text: '退而不休，找份轻松的兼职', hint: '+财富 +社交 +压力', effects: { wealth: 5, social: 8, stress: 5, money: 15000 } }
+    ]
+  },
+  {
+    id: 'elder_health_scare', category: '⚽ 健康', title: '半夜突然胸口发闷，被紧急送进了医院。',
+    desc: '在急诊室躺了一晚上，你想了很多。医生说问题不大但需要长期调理。',
+    choices: [
+      { text: '严格遵医嘱，彻底改变生活习惯', hint: '+健康 +智力', effects: { health: 12, intelligence: 3, stress: -5 } },
+      { text: '适当注意，但不至于草木皆兵', hint: '+健康', effects: { health: 5 } },
+      { text: '老了都是这样，没必要太讲究', hint: '-健康 -情绪', effects: { health: -10, mood: -5 } }
+    ]
+  },
+  {
+    id: 'elder_grandchild', category: '🏠 家庭', title: '你的孩子告诉你——你要当爷爷奶奶了！',
+    desc: '一个新的小生命即将来到这个家庭。你激动得一夜没睡好。',
+    choices: [
+      { text: '主动提出帮忙带娃，减轻孩子的负担', hint: '+家庭 +情绪 +压力', effects: { family: 15, mood: 12, stress: 8, health: -3 } },
+      { text: '出钱请保姆，自己偶尔帮忙', hint: '+家庭 +情绪', effects: { family: 8, mood: 8, money: -15000 } },
+      { text: '让他们自己带，你享受清闲', hint: '+健康 -家庭', effects: { health: 5, family: -5 } }
+    ]
+  },
+  {
+    id: 'elder_bucketlist', category: '🌟 回顾', title: '你突然意识到——有些事再不做就真的来不及了。',
+    desc: '年轻时列过一个愿望清单：学一门乐器、去看极光、出一本书……大部分还没实现。',
+    choices: [
+      { text: '挑一项立刻开始行动', hint: '+情绪 +智力 +健康', effects: { mood: 15, intelligence: 5, health: 3, money: -10000 } },
+      { text: '挑最简单的一项完成', hint: '+情绪', effects: { mood: 8 } },
+      { text: '算了，有些梦想本来就是用来回忆的', hint: '-情绪', effects: { mood: -5 } }
+    ]
+  },
+  {
+    id: 'elder_community', category: '🤝 社交', title: '社区在组织一个老年活动中心，邀请你参加筹备。',
+    desc: '你有一些管理经验和人脉，刚好可以派上用场。而且能认识很多同龄人。',
+    choices: [
+      { text: '积极参与筹备，发挥余热', hint: '+社交 +智力 +情绪', effects: { social: 12, intelligence: 3, mood: 8 } },
+      { text: '只参加活动，不参与管理', hint: '+社交 +情绪', effects: { social: 5, mood: 5 } },
+      { text: '老了就该享清福，不操心了', hint: '-社交 +健康', effects: { social: -5, health: 3, stress: -5 } }
+    ]
+  }
+];
+
+// ===========================
+// RANDOM EVENTS — 12 events
+// ===========================
+const RANDOM_EVENTS = [
+  {
+    id: 'random_lottery', category: '🎲 随机事件', title: '你随手买了一张彩票，竟然中奖了！',
+    desc: '虽然不是头奖，但也算一笔意外之财。你打算怎么处理？',
+    choices: [
+      { text: '存起来，以备不时之需', hint: '+财富 -压力', effects: { money: 20000, wealth: 5, stress: -3 } },
+      { text: '请亲朋好友吃顿大餐', hint: '+社交 +家庭', effects: { social: 8, family: 8, money: 5000 } },
+      { text: '试试投资，用钱生钱', hint: '±财富', effects: { money: (Math.random() > 0.5 ? 30000 : -10000), wealth: (Math.random() > 0.5 ? 10 : -5) } }
+    ]
+  },
+  {
+    id: 'random_rain', category: '🎲 随机事件', title: '突降暴雨，你看到一个老人在雨中艰难行走。',
+    desc: '你撑着伞站在路边等车，老人全身都湿透了，看起来随时会滑倒。',
+    choices: [
+      { text: '把伞给老人，自己淋雨回去', hint: '+社交 +情绪 -健康', effects: { social: 10, mood: 8, health: -3 } },
+      { text: '帮老人打车送他回家', hint: '+社交 +情绪', effects: { social: 8, mood: 5, money: -100 } },
+      { text: '假装没看见，快步离开', hint: '-情绪', effects: { mood: -8, stress: 3 } }
+    ]
+  },
+  {
+    id: 'random_book', category: '🎲 随机事件', title: '你在旧书店偶然翻到一本改变你看法的书。',
+    desc: '书的作者讲了一个你从没想过的观点。你站在书架前读得入了迷。',
+    choices: [
+      { text: '认真研读，做读书笔记', hint: '+智力 +情绪', effects: { intelligence: 8, mood: 5, stress: 3 } },
+      { text: '买下来送给一个朋友', hint: '+社交 +朋友', effects: { social: 8, friend: 8, money: -200 } },
+      { text: '翻了几页就放下了', hint: '无变化', effects: {} }
+    ]
+  },
+  {
+    id: 'random_sick', category: '🎲 随机事件', title: '最近流感高发，你不幸中招了。',
+    desc: '浑身酸痛、嗓子像刀割、脑袋昏昏沉沉。你需要尽快处理。',
+    choices: [
+      { text: '请假就医，好好休息几天', hint: '+健康 -压力', effects: { health: 5, stress: -5, money: -2000 } },
+      { text: '自己买药扛过去', hint: '+健康', effects: { health: 3, money: -500 } },
+      { text: '撑一撑就过去了，继续工作', hint: '-健康 -情绪', effects: { health: -10, mood: -8, stress: 5 } }
+    ]
+  },
+  {
+    id: 'random_gift', category: '🎲 随机事件', title: '一个匿名包裹出现在家门口——里面是一份精致的手工礼物。',
+    desc: '没有署名，但包装很用心。可能是某个默默关心你的人送的。',
+    choices: [
+      { text: '心怀感激地收下，感到温暖', hint: '+情绪', effects: { mood: 10 } },
+      { text: '试着找出送礼人并当面道谢', hint: '+社交 +情绪', effects: { social: 5, mood: 8 } },
+      { text: '不太放心，放在一边', hint: '+压力', effects: { stress: 3 } }
+    ]
+  },
+  {
+    id: 'random_wallet', category: '🎲 随机事件', title: '你在路上捡到一个钱包，里面有不少现金和证件。',
+    desc: '证件上有失主的地址和联系方式。但周围没有目击者，你也可以装作没看到。',
+    choices: [
+      { text: '联系失主，完整归还', hint: '+社交 +情绪', effects: { social: 10, mood: 8 } },
+      { text: '交给警察，让官方处理', hint: '+社交', effects: { social: 5 } },
+      { text: '拿出现金，钱包扔掉', hint: '+财富 -情绪 -社交', effects: { money: 5000, wealth: 3, mood: -10, social: -8 } }
+    ]
+  },
+  {
+    id: 'random_compliment', category: '🎲 随机事件', title: '一个陌生人在咖啡馆里走过来称赞了你的穿搭。',
+    desc: '她说看到你的搭配让她一整天的心情都变好了。你有点意外但很开心。',
+    choices: [
+      { text: '热情回应，和对方聊了起来', hint: '+社交 +情绪', effects: { social: 8, mood: 8 } },
+      { text: '微笑道谢，心里暖暖的', hint: '+情绪', effects: { mood: 5 } },
+      { text: '有点尴尬，礼貌地结束对话', hint: '无变化', effects: { stress: 2 } }
+    ]
+  },
+  {
+    id: 'random_neighbor', category: '🎲 随机事件', title: '新搬来的邻居装修到深夜，电钻声让你无法入睡。',
+    desc: '明天你有个重要的会议。你已经忍了好几天了，今天实在受不了。',
+    choices: [
+      { text: '礼貌地敲门沟通', hint: '+社交 +智力', effects: { social: 5, intelligence: 3, stress: -5 } },
+      { text: '直接投诉到物业/报警', hint: '-社交 -压力', effects: { social: -5, stress: -10 } },
+      { text: '戴上耳塞继续忍', hint: '-健康 +压力', effects: { health: -3, stress: 8, mood: -5 } }
+    ]
+  },
+  {
+    id: 'random_talent', category: '🎲 随机事件', title: '你偶然尝试了一项新活动，发现自己意外地有天赋！',
+    desc: '也许是烹饪一道复杂的菜、也许是写一首诗——你完成得比想象中好得多。',
+    choices: [
+      { text: '深入发展这个新天赋', hint: '+智力 +情绪 +压力', effects: { intelligence: 8, mood: 10, stress: 5 } },
+      { text: '当作一个有趣的消遣', hint: '+情绪', effects: { mood: 5 } },
+      { text: '开心但觉得没什么用，放弃了', hint: '-情绪', effects: { mood: -3 } }
+    ]
+  },
+  {
+    id: 'random_contest', category: '🎲 随机事件', title: '一个你关注的品牌在搞创意比赛，一等奖是你心仪已久的东西。',
+    desc: '你脑子里有几个不错的点子。但花时间参赛意味着要牺牲周末。',
+    choices: [
+      { text: '全力以赴准备参赛作品', hint: '+智力 +情绪 +压力', effects: { intelligence: 5, mood: 8, stress: 8 } },
+      { text: '随便提交一个，重在参与', hint: '+情绪', effects: { mood: 3 } },
+      { text: '太忙了，下次再说', hint: '无变化', effects: {} }
+    ]
+  },
+  {
+    id: 'random_mystery', category: '🎲 随机事件', title: '深夜你收到一条陌生号码的短信：「谢谢你当年的帮助。」',
+    desc: '你想了半天也想不起这个号码是谁。但这条信息让你心里泛起一阵暖意。',
+    choices: [
+      { text: '回复询问对方是谁', hint: '+社交 +情绪', effects: { social: 5, mood: 8 } },
+      { text: '不回复，但心里感到温暖', hint: '+情绪', effects: { mood: 5 } },
+      { text: '觉得是发错了，删掉短信', hint: '无变化', effects: {} }
+    ]
+  },
+  {
+    id: 'random_stray', category: '🎲 随机事件', title: '一只流浪狗跟着你走了好几条街。',
+    desc: '它眼神可怜巴巴的，身上的毛打了结，但尾巴一直在摇。',
+    choices: [
+      { text: '带回家收养它', hint: '+情绪 +健康 -财富', effects: { mood: 12, health: 3, money: -3000, stress: 3 } },
+      { text: '买些食物喂它，然后送去收容所', hint: '+情绪 +社交', effects: { mood: 5, social: 3, money: -200 } },
+      { text: '狠心不管，快步走开', hint: '-情绪', effects: { mood: -8 } }
+    ]
+  }
+];
+
+// ===========================
+// ENDING SYSTEM
+// ===========================
+function endGame(reason) {
+  const endings = [];
+
+  // Determine ending based on stats
+  if (S.wealth >= 80 && S.money >= 200000) {
+    endings.push({ icon: '💰', title: '富豪人生', desc: '你积累了惊人的财富，成为了一方富豪。物质生活极其丰富，但钱真的买到了一切吗？' });
+  }
+  if (S.intelligence >= 80) {
+    endings.push({ icon: '🧠', title: '学术大师', desc: '你的学识渊博，在专业领域做出了重要贡献。智慧的光芒照亮了你的一生。' });
+  }
+  if (S.social >= 80 && S.family >= 70 && S.friend >= 70) {
+    endings.push({ icon: '💕', title: '温暖人生', desc: '亲人、朋友、爱人——你被爱包围着。这是一段充满温情的人生旅程。' });
+  }
+  if (S.health <= 20 || reason === 'health_death') {
+    endings.push({ icon: '💔', title: '英年早逝', desc: '健康是人生的基石，可惜你没能好好照顾自己。生命短暂，却也精彩。' });
+  }
+  if (S.stress >= 90 || reason === 'stress_death') {
+    endings.push({ icon: '😵', title: '压力崩溃', desc: '你被生活的重担压垮了。也许有时候，放慢脚步才是最好的选择。' });
+  }
+  if (S.mood >= 80 && S.stress <= 30) {
+    endings.push({ icon: '☀️', title: '快乐人生', desc: '你懂得享受生活的乐趣，内心始终保持着阳光。快乐，就是最大的成功。' });
+  }
+
+  // Fallback endings
+  if (endings.length === 0) {
+    const avgStat = (S.health + S.intelligence + S.wealth + S.mood + S.social + (100-S.stress)) / 6;
+    if (avgStat >= 60) {
+      endings.push({ icon: '⚖️', title: '平衡人生', desc: '你的人生不算完美，但足够充实。平凡中的幸福，也许就是最好的结局。' });
+    } else if (avgStat >= 40) {
+      endings.push({ icon: '🌤️', title: '普通人生', desc: '像大多数人一样，你经历了起起落落。平凡而真实，这或许就是人生本来的样子。' });
+    } else {
+      endings.push({ icon: '🌧️', title: '坎坷人生', desc: '这一路走来充满艰辛。但每个选择都是成长的一部分，没有白走的路。' });
+    }
+  }
+
+  // Pick the best ending (first one)
+  const ending = endings[0];
+
+  // Render ending screen
+  document.getElementById('ending-icon').textContent = ending.icon;
+  document.getElementById('ending-title').textContent = ending.title;
+  document.getElementById('ending-subtitle').textContent = ending.desc;
+
+  // Stats
+  document.getElementById('ending-stats').innerHTML = `
+    <div class="ending-stat"><div class="ending-stat-val">${S.age}</div><div class="ending-stat-label">享年</div></div>
+    <div class="ending-stat"><div class="ending-stat-val">¥${(S.money / 10000).toFixed(1)}万</div><div class="ending-stat-label">积累财富</div></div>
+    <div class="ending-stat"><div class="ending-stat-val">${S.career}</div><div class="ending-stat-label">职业</div></div>
+    <div class="ending-stat"><div class="ending-stat-val">${S.eventLog.length}</div><div class="ending-stat-label">人生事件</div></div>
+  `;
+
+  // Event log
+  const logHTML = S.eventLog.slice(-15).map(e => `
+    <div class="log-entry">
+      <span class="log-age">${e.age}岁</span>
+      <span>${e.title} → <strong style="color:var(--accent)">${e.choice}</strong></span>
+    </div>
+  `).join('');
+  document.getElementById('ending-log').innerHTML = `
+    <h3>📜 人生回顾</h3>
+    ${logHTML}
+    ${S.eventLog.length > 15 ? `<p style="text-align:center;font-size:0.7rem;color:var(--dim);margin-top:0.5rem;">… 还有 ${S.eventLog.length - 15} 个事件</p>` : ''}
+  `;
+
+  showScreen('ending-screen');
+
+  // Clear save
+  localStorage.removeItem('life_sim_save');
+}
+
+// ===========================
+// INIT
+// ===========================
+updateLoadBtn();
+</script>
+</body>
+</html>
