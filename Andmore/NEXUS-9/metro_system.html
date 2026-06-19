@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 地铁系统 | Metro Transit Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   NEXUS-9 METRO SYSTEM - Complete Stylesheet
+   ============================================================ */
+:root {
+  --neon-yellow: #ffe600;
+  --neon-yellow-dim: #b8a600;
+  --neon-cyan: #00e5ff;
+  --neon-magenta: #ff00e5;
+  --neon-green: #39ff14;
+  --neon-red: #ff3131;
+  --neon-blue: #1e90ff;
+  --neon-orange: #ff8c00;
+  --bg-dark: #0a0a0a;
+  --bg-panel: #0d0d0d;
+  --bg-elevated: #111118;
+  --border-glow: rgba(255, 230, 0, 0.3);
+  --text-primary: #e0e0e0;
+  --text-dim: #888888;
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-cn: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-cn);
+  overflow-x: hidden;
+  overflow-y: auto;
+  cursor: crosshair;
+}
+
+/* ---- Scanlines Overlay ---- */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ---- CRT Flicker (subtle) ---- */
+@keyframes crtFlicker {
+  0%   { opacity: 0.98; }
+  5%   { opacity: 1; }
+  10%  { opacity: 0.97; }
+  15%  { opacity: 1; }
+  50%  { opacity: 0.99; }
+  95%  { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+body {
+  animation: crtFlicker 6s infinite;
+}
+
+/* ---- Top Navigation Bar ---- */
+.nav-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(10,10,10,0.9) 100%);
+  border-bottom: 2px solid var(--neon-yellow);
+  box-shadow: 0 0 20px rgba(255, 230, 0, 0.25), 0 4px 16px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 1000;
+  font-family: var(--font-display);
+}
+
+.nav-logo {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px var(--neon-yellow), 0 0 30px rgba(255,230,0,0.5);
+  text-transform: uppercase;
+}
+
+.nav-logo span {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px var(--neon-cyan);
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0;
+  width: 0; height: 2px;
+  background: var(--neon-yellow);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px var(--neon-yellow);
+}
+
+.nav-links a:hover {
+  color: var(--neon-yellow);
+  text-shadow: 0 0 10px var(--neon-yellow);
+}
+
+.nav-links a:hover::after { width: 100%; }
+
+.nav-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--neon-green);
+  font-family: var(--font-mono);
+}
+
+.nav-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.5); }
+}
+
+/* ---- Main Layout ---- */
+.main-container {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  grid-template-rows: auto auto;
+  gap: 20px;
+  padding: 80px 24px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* ---- Panel Styling ---- */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 230, 0, 0.2);
+  border-radius: 4px;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 0 15px rgba(255,230,0,0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-yellow), transparent);
+  opacity: 0.6;
+}
+
+.panel-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255, 230, 0, 0.15);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 8px rgba(255,230,0,0.5);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-header .icon {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--neon-yellow);
+  box-shadow: 0 0 10px var(--neon-yellow);
+}
+
+.panel-body {
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Route Map Section ---- */
+.route-map-section {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3;
+}
+
+.route-map-section .panel-body {
+  padding: 0;
+  height: 620px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- SVG Metro Map ---- */
+.metro-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.station-node {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.station-node:hover {
+  filter: brightness(1.5);
+}
+
+.station-node circle {
+  transition: r 0.3s ease;
+}
+
+.station-node:hover circle {
+  r: 11;
+}
+
+.station-label {
+  font-family: var(--font-cn);
+  font-size: 11px;
+  fill: #ccc;
+  pointer-events: none;
+  transition: fill 0.3s ease;
+}
+
+.station-node:hover + .station-label,
+.station-label-group:hover .station-label {
+  fill: var(--neon-yellow);
+}
+
+.metro-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.transfer-ring {
+  fill: none;
+  stroke: var(--neon-yellow);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px var(--neon-yellow));
+  pointer-events: none;
+}
+
+/* ---- Right Side Panels ---- */
+.departure-section {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+
+.current-train-section {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+}
+
+/* ---- Departure Board ---- */
+.departure-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.departure-table th {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255,230,0,0.2);
+  color: var(--neon-yellow);
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+.departure-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.departure-table tr {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.departure-table tr:hover td {
+  background: rgba(255,230,0,0.08);
+  color: var(--neon-yellow);
+}
+
+.departure-table tr:active td {
+  background: rgba(255,230,0,0.15);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: var(--font-display);
+}
+
+.status-on-time {
+  background: rgba(57, 255, 20, 0.15);
+  color: var(--neon-green);
+  border: 1px solid rgba(57,255,20,0.3);
+}
+
+.status-boarding {
+  background: rgba(255, 230, 0, 0.15);
+  color: var(--neon-yellow);
+  border: 1px solid rgba(255,230,0,0.3);
+  animation: boardingPulse 1s infinite;
+}
+
+.status-delayed {
+  background: rgba(255, 49, 49, 0.15);
+  color: var(--neon-red);
+  border: 1px solid rgba(255,49,49,0.3);
+}
+
+.status-arriving {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0,229,255,0.3);
+  animation: boardingPulse 0.7s infinite;
+}
+
+@keyframes boardingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.platform-num {
+  display: inline-block;
+  width: 26px; height: 26px;
+  line-height: 26px;
+  text-align: center;
+  background: rgba(255,230,0,0.1);
+  border: 1px solid rgba(255,230,0,0.3);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--neon-yellow);
+}
+
+/* ---- Current Train Panel ---- */
+.train-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.train-info-item {
+  background: var(--bg-elevated);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 12px;
+  border-radius: 2px;
+}
+
+.train-info-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  margin-bottom: 6px;
+}
+
+.train-info-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-yellow);
+  font-family: var(--font-mono);
+  text-shadow: 0 0 6px rgba(255,230,0,0.4);
+}
+
+.train-info-value.blink {
+  animation: textBlink 1s infinite;
+}
+
+@keyframes textBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---- Board Train Button ---- */
+.board-section {
+  margin-top: 16px;
+}
+
+.btn-board {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 2px solid var(--neon-yellow);
+  color: var(--neon-yellow);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-shadow: 0 0 8px rgba(255,230,0,0.5);
+  box-shadow: 0 0 20px rgba(255,230,0,0.1), inset 0 0 20px rgba(255,230,0,0.05);
+}
+
+.btn-board:hover {
+  background: rgba(255, 230, 0, 0.1);
+  box-shadow: 0 0 40px rgba(255,230,0,0.3), inset 0 0 30px rgba(255,230,0,0.1);
+}
+
+.btn-board:active {
+  background: var(--neon-yellow);
+  color: #000;
+  box-shadow: 0 0 60px rgba(255,230,0,0.6);
+}
+
+.btn-board:disabled {
+  border-color: #333;
+  color: #333;
+  cursor: not-allowed;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.btn-board .btn-glow {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,230,0,0.15), transparent);
+  transition: left 0.6s ease;
+}
+
+.btn-board:hover .btn-glow {
+  left: 100%;
+}
+
+/* ---- Countdown Overlay ---- */
+.departure-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+}
+
+.departure-overlay.active {
+  display: flex;
+}
+
+.countdown-number {
+  font-size: 140px;
+  font-weight: 900;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 60px var(--neon-yellow), 0 0 120px rgba(255,230,0,0.5);
+  animation: countdownPulse 1s infinite;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 60px var(--neon-yellow), 0 0 120px rgba(255,230,0,0.5); }
+  50% { transform: scale(1.08); text-shadow: 0 0 80px var(--neon-yellow), 0 0 160px rgba(255,230,0,0.7); }
+}
+
+.countdown-label {
+  font-size: 24px;
+  letter-spacing: 6px;
+  color: #aaa;
+  margin-top: 8px;
+}
+
+.countdown-destination {
+  font-size: 18px;
+  color: var(--neon-cyan);
+  margin-top: 20px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px var(--neon-cyan);
+}
+
+/* ---- Tunnel Animation ---- */
+.tunnel-animation {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.tunnel-animation.active {
+  display: block;
+}
+
+.tunnel-perspective {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 600px;
+}
+
+.tunnel-rings {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.tunnel-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 40px; height: 40px;
+  border: 2px solid var(--neon-yellow);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--neon-yellow), inset 0 0 12px rgba(255,230,0,0.3);
+  animation: tunnelFly 1.8s linear infinite;
+}
+
+@keyframes tunnelFly {
+  0% {
+    transform: translate(-50%, -50%) translateZ(500px) scale(0.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateZ(-200px) scale(18);
+    opacity: 0;
+  }
+}
+
+.tunnel-message {
+  position: absolute;
+  bottom: 100px;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 20px var(--neon-yellow);
+  z-index: 10;
+  animation: messageGlow 0.8s infinite;
+}
+
+@keyframes messageGlow {
+  0%, 100% { text-shadow: 0 0 20px var(--neon-yellow); }
+  50% { text-shadow: 0 0 40px var(--neon-yellow), 0 0 80px rgba(255,230,0,0.6); }
+}
+
+/* ---- Arrival Announcement ---- */
+.arrival-banner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%);
+  border-bottom: 2px solid var(--neon-green);
+  z-index: 2100;
+  text-align: center;
+  font-family: var(--font-display);
+  box-shadow: 0 0 30px rgba(57,255,20,0.2);
+}
+
+.arrival-banner.active {
+  display: block;
+  animation: bannerSlideIn 0.5s ease;
+}
+
+@keyframes bannerSlideIn {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+.arrival-title {
+  font-size: 20px;
+  color: var(--neon-green);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px var(--neon-green);
+}
+
+.arrival-station {
+  font-size: 14px;
+  color: #ccc;
+  margin-top: 6px;
+  letter-spacing: 2px;
+}
+
+/* ---- Transfer Info Panel ---- */
+.transfer-section {
+  grid-column: 2 / 3;
+  margin-top: 4px;
+}
+
+.transfer-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.transfer-line-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.line-yellow { background: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+.line-blue { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+.line-red { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+.line-magenta { background: var(--neon-magenta); box-shadow: 0 0 10px var(--neon-magenta); }
+
+.transfer-line-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  min-width: 60px;
+  color: #ccc;
+}
+
+.transfer-line-stations {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-cn);
+}
+
+/* ---- Clock Display ---- */
+.clock-display {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 10px rgba(255,230,0,0.5);
+  text-align: center;
+  padding: 8px 0;
+  letter-spacing: 2px;
+}
+
+/* ---- Particle Effects ---- */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1999;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 8px var(--neon-yellow);
+  animation: particleFloat 1.5s ease-out forwards;
+}
+
+@keyframes particleFloat {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-120px) scale(0.3); opacity: 0; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1000px) {
+  .main-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .route-map-section { grid-column: 1; grid-row: auto; }
+  .departure-section { grid-column: 1; }
+  .current-train-section { grid-column: 1; }
+  .transfer-section { grid-column: 1; }
+}
+
+/* ---- Custom Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: rgba(255,230,0,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,230,0,0.4); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAVIGATION BAR
+     ============================================================ -->
+<nav class="nav-bar">
+  <div class="nav-logo">NEXUS<span>-9</span> METRO</div>
+  <ul class="nav-links">
+    <li><a href="nexus_home.html">城市入口</a></li>
+    <li><a href="city_map.html">城市地图</a></li>
+    <li><a href="metro_system.html" style="color:var(--neon-yellow);text-shadow:0 0 10px var(--neon-yellow);">地铁系统</a></li>
+    <li><a href="ai_institute.html">AI研究院</a></li>
+    <li><a href="data_bank.html">数据银行</a></li>
+    <li><a href="info_tower.html">信息塔</a></li>
+    <li><a href="network_plaza.html">网络广场</a></li>
+    <li><a href="quantum_factory.html">量子工厂</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="nav-status-dot"></div>
+    <span>系统运行中</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<div class="main-container">
+
+  <!-- ROUTE MAP (线路图) -->
+  <div class="route-map-section">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="icon"></div>
+        线路图 ROUTE MAP
+        <span style="margin-left:auto;font-size:10px;opacity:0.6;">点击站点选择目的地</span>
+      </div>
+      <div class="panel-body">
+        <svg class="metro-svg" viewBox="0 0 750 580" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow-yellow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glow-blue">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glow-red">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glow-green">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glow-magenta">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <linearGradient id="bg-grid" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0a0a0a"/>
+              <stop offset="100%" stop-color="#0d0d14"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Background -->
+          <rect x="0" y="0" width="750" height="580" fill="url(#bg-grid)"/>
+
+          <!-- Grid pattern -->
+          <g opacity="0.05">
+            <line x1="0" y1="58" x2="750" y2="58" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="116" x2="750" y2="116" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="174" x2="750" y2="174" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="232" x2="750" y2="232" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="290" x2="750" y2="290" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="348" x2="750" y2="348" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="406" x2="750" y2="406" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="464" x2="750" y2="464" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="0" y1="522" x2="750" y2="522" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="83" y1="0" x2="83" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="166" y1="0" x2="166" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="250" y1="0" x2="250" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="333" y1="0" x2="333" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="416" y1="0" x2="416" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="500" y1="0" x2="500" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="583" y1="0" x2="583" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+            <line x1="666" y1="0" x2="666" y2="580" stroke="#ffe600" stroke-width="0.5"/>
+          </g>
+
+          <!-- === LINE 1 (YELLOW LINE - 1号线 中央线) === -->
+          <!-- Route: 城市入口(620,480) → 信息塔(375,270) → AI研究院(130,140) → 数据银行(130,60) -->
+          <polyline points="620,480 440,340 375,270"
+            class="metro-line" stroke="#ffe600" stroke-width="5"
+            style="filter: url(#glow-yellow); opacity: 0.9;"/>
+          <polyline points="375,270 250,200 130,140 130,60"
+            class="metro-line" stroke="#ffe600" stroke-width="5"
+            style="filter: url(#glow-yellow); opacity: 0.9;"/>
+
+          <!-- Line 1 Label -->
+          <text x="580" y="400" fill="#ffe600" opacity="0.6" font-family="Orbitron, sans-serif" font-size="10" letter-spacing="1">1号线 — 中央线</text>
+
+          <!-- === LINE 2 (BLUE LINE - 2号线 环线) === -->
+          <!-- Route: 网络广场(100,410) → 信息塔(375,270) → 量子工厂(540,180) → 城市地图(680,130) -->
+          <polyline points="100,410 240,340 375,270"
+            class="metro-line" stroke="#1e90ff" stroke-width="5"
+            style="filter: url(#glow-blue); opacity: 0.9;"/>
+          <polyline points="375,270 460,220 540,180 680,130"
+            class="metro-line" stroke="#1e90ff" stroke-width="5"
+            style="filter: url(#glow-blue); opacity: 0.9;"/>
+
+          <!-- Line 2 Label -->
+          <text x="180" y="375" fill="#1e90ff" opacity="0.6" font-family="Orbitron, sans-serif" font-size="10" letter-spacing="1">2号线 — 环线</text>
+
+          <!-- === LINE 3 (RED LINE - 3号线 深层线) === -->
+          <!-- Route: 数据银行(130,60) → 量子工厂(540,180) → ???(330,480) -->
+          <polyline points="130,60 200,140 400,160 540,180"
+            class="metro-line" stroke="#ff3131" stroke-width="4" stroke-dasharray="8,4"
+            style="filter: url(#glow-red); opacity: 0.8;"/>
+          <polyline points="540,180 480,280 400,380 330,480"
+            class="metro-line" stroke="#ff3131" stroke-width="4" stroke-dasharray="8,4"
+            style="filter: url(#glow-red); opacity: 0.8;"/>
+
+          <!-- Line 3 Label -->
+          <text x="210" y="95" fill="#ff3131" opacity="0.6" font-family="Orbitron, sans-serif" font-size="10" letter-spacing="1">3号线 — 深层线</text>
+
+          <!-- === Transfer Ring at 信息塔 === -->
+          <circle cx="375" cy="270" r="18" class="transfer-ring"/>
+          <text x="375" y="315" fill="#ffe600" font-family="Orbitron, sans-serif" font-size="8" text-anchor="middle">换乘站 TRANSFER</text>
+
+          <!-- === STATION NODES === -->
+
+          <!-- 城市入口 (Nexus Home) -->
+          <g class="station-node" data-station="城市入口" data-link="nexus_home.html" data-line="1">
+            <circle cx="620" cy="480" r="7" fill="#0a0a0a" stroke="#ffe600" stroke-width="3" style="filter:url(#glow-yellow)"/>
+            <text x="620" y="508" class="station-label" text-anchor="middle">城市入口</text>
+            <text x="620" y="522" class="station-label" text-anchor="middle" font-size="8" opacity="0.5">NEXUS HOME</text>
+          </g>
+
+          <!-- 信息塔 (Info Tower) - TRANSFER HUB -->
+          <g class="station-node" data-station="信息塔" data-link="info_tower.html" data-line="1,2">
+            <circle cx="375" cy="270" r="10" fill="#0a0a0a" stroke="#ffe600" stroke-width="4" style="filter:url(#glow-yellow)"/>
+            <circle cx="375" cy="270" r="5" fill="#ffe600" style="filter:url(#glow-yellow)"/>
+            <text x="375" y="298" class="station-label" text-anchor="middle" font-weight="bold">信息塔 [换乘]</text>
+            <text x="375" y="312" class="station-label" text-anchor="middle" font-size="8" opacity="0.5">INFO TOWER · TRANSFER</text>
+          </g>
+
+          <!-- AI研究院 -->
+          <g class="station-node" data-station="AI研究院" data-link="ai_institute.html" data-line="1">
+            <circle cx="130" cy="140" r="7" fill="#0a0a0a" stroke="#ffe600" stroke-width="3" style="filter:url(#glow-yellow)"/>
+            <text x="130" y="130" class="station-label" text-anchor="middle">AI研究院</text>
+          </g>
+
+          <!-- 数据银行 -->
+          <g class="station-node" data-station="数据银行" data-link="data_bank.html" data-line="1,3">
+            <circle cx="130" cy="60" r="9" fill="#0a0a0a" stroke="#ff3131" stroke-width="3" style="filter:url(#glow-red)"/>
+            <circle cx="130" cy="60" r="4" fill="#ff3131" style="filter:url(#glow-red)"/>
+            <text x="130" y="48" class="station-label" text-anchor="middle">数据银行</text>
+            <text x="130" y="38" class="station-label" text-anchor="middle" font-size="8" opacity="0.5">DATA BANK</text>
+          </g>
+
+          <!-- 网络广场 -->
+          <g class="station-node" data-station="网络广场" data-link="network_plaza.html" data-line="2">
+            <circle cx="100" cy="410" r="7" fill="#0a0a0a" stroke="#1e90ff" stroke-width="3" style="filter:url(#glow-blue)"/>
+            <text x="100" y="438" class="station-label" text-anchor="middle">网络广场</text>
+          </g>
+
+          <!-- 量子工厂 -->
+          <g class="station-node" data-station="量子工厂" data-link="quantum_factory.html" data-line="2,3">
+            <circle cx="540" cy="180" r="9" fill="#0a0a0a" stroke="#ff3131" stroke-width="3" style="filter:url(#glow-red)"/>
+            <circle cx="540" cy="180" r="4" fill="#ff3131" style="filter:url(#glow-red)"/>
+            <text x="540" y="170" class="station-label" text-anchor="middle">量子工厂</text>
+            <text x="540" y="160" class="station-label" text-anchor="middle" font-size="8" opacity="0.5">QUANTUM FACTORY</text>
+          </g>
+
+          <!-- 城市地图 -->
+          <g class="station-node" data-station="城市地图" data-link="city_map.html" data-line="2">
+            <circle cx="680" cy="130" r="7" fill="#0a0a0a" stroke="#1e90ff" stroke-width="3" style="filter:url(#glow-blue)"/>
+            <text x="680" y="120" class="station-label" text-anchor="middle">城市地图</text>
+          </g>
+
+          <!-- ??? 隐藏站点 -->
+          <g class="station-node" data-station="???" data-link="underground.html" data-line="3" style="opacity:0.6">
+            <circle cx="330" cy="480" r="8" fill="#0a0a0a" stroke="#ff00e5" stroke-width="3" stroke-dasharray="3,2" style="filter:url(#glow-magenta)"/>
+            <text x="330" y="508" class="station-label" text-anchor="middle" fill="#888">???</text>
+            <text x="330" y="522" class="station-label" text-anchor="middle" font-size="8" opacity="0.35">未登记站点</text>
+          </g>
+
+          <!-- Legend -->
+          <g transform="translate(560, 530)">
+            <rect x="0" y="0" width="170" height="45" fill="rgba(0,0,0,0.6)" stroke="rgba(255,230,0,0.15)" rx="3"/>
+            <line x1="10" y1="14" x2="40" y2="14" stroke="#ffe600" stroke-width="3" style="filter:url(#glow-yellow)"/>
+            <text x="48" y="18" fill="#ffe600" font-family="Orbitron, sans-serif" font-size="8">1号线 中央线</text>
+            <line x1="10" y1="28" x2="40" y2="28" stroke="#1e90ff" stroke-width="3" style="filter:url(#glow-blue)"/>
+            <text x="48" y="32" fill="#1e90ff" font-family="Orbitron, sans-serif" font-size="8">2号线 环线</text>
+            <line x1="10" y1="40" x2="40" y2="40" stroke="#ff3131" stroke-width="3" stroke-dasharray="4,2" style="filter:url(#glow-red)"/>
+            <text x="48" y="42" fill="#ff3131" font-family="Orbitron, sans-serif" font-size="8">3号线 深层线</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPARTURE BOARD (出发时刻表) -->
+  <div class="departure-section">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="icon" style="background:var(--neon-cyan);box-shadow:0 0 10px var(--neon-cyan);"></div>
+        出发时刻表 DEPARTURES
+      </div>
+      <div class="panel-body">
+        <div class="clock-display" id="clockDisplay">--:--:--</div>
+        <table class="departure-table" id="departureTable">
+          <thead>
+            <tr>
+              <th>站台</th>
+              <th>目的地</th>
+              <th>线路</th>
+              <th>状态</th>
+              <th>发车</th>
+            </tr>
+          </thead>
+          <tbody id="departureBody">
+            <tr data-station="AI研究院" data-link="ai_institute.html">
+              <td><span class="platform-num">1</span></td>
+              <td>AI研究院</td>
+              <td style="color:#ffe600;">1号线</td>
+              <td><span class="status-badge status-on-time">准点</span></td>
+              <td id="depTime0">03:24</td>
+            </tr>
+            <tr data-station="数据银行" data-link="data_bank.html">
+              <td><span class="platform-num">2</span></td>
+              <td>数据银行</td>
+              <td style="color:#ff3131;">3号线</td>
+              <td><span class="status-badge status-boarding">正在登车</span></td>
+              <td id="depTime1">01:15</td>
+            </tr>
+            <tr data-station="信息塔" data-link="info_tower.html">
+              <td><span class="platform-num">3</span></td>
+              <td>信息塔</td>
+              <td style="color:#ffe600;">1号线</td>
+              <td><span class="status-badge status-on-time">准点</span></td>
+              <td id="depTime2">05:42</td>
+            </tr>
+            <tr data-station="网络广场" data-link="network_plaza.html">
+              <td><span class="platform-num">4</span></td>
+              <td>网络广场</td>
+              <td style="color:#1e90ff;">2号线</td>
+              <td><span class="status-badge status-delayed">延误</span></td>
+              <td id="depTime3">08:10</td>
+            </tr>
+            <tr data-station="量子工厂" data-link="quantum_factory.html">
+              <td><span class="platform-num">5</span></td>
+              <td>量子工厂</td>
+              <td style="color:#ff3131;">3号线</td>
+              <td><span class="status-badge status-arriving">即将到站</span></td>
+              <td id="depTime4">00:48</td>
+            </tr>
+            <tr data-station="城市地图" data-link="city_map.html">
+              <td><span class="platform-num">6</span></td>
+              <td>城市地图</td>
+              <td style="color:#1e90ff;">2号线</td>
+              <td><span class="status-badge status-on-time">准点</span></td>
+              <td id="depTime5">12:33</td>
+            </tr>
+            <tr data-station="城市入口" data-link="nexus_home.html">
+              <td><span class="platform-num">7</span></td>
+              <td>城市入口</td>
+              <td style="color:#ffe600;">1号线</td>
+              <td><span class="status-badge status-on-time">准点</span></td>
+              <td id="depTime6">15:00</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="board-section">
+          <button class="btn-board" id="btnBoard" onclick="boardTrain()">
+            <span class="btn-glow"></span>
+            搭乘地铁 ▸ BOARD TRAIN
+          </button>
+          <div style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-dim);font-family:var(--font-mono);">
+            选择上方目的地后点击搭乘 &nbsp;|&nbsp; 或直接点击线路图站点
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CURRENT TRAIN (当前列车) -->
+  <div class="current-train-section">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="icon" style="background:var(--neon-green);box-shadow:0 0 10px var(--neon-green);"></div>
+        当前列车 CURRENT TRAIN
+      </div>
+      <div class="panel-body">
+        <div class="train-info-grid">
+          <div class="train-info-item">
+            <div class="train-info-label">列车编号</div>
+            <div class="train-info-value" id="trainId">NX9-M-7742</div>
+          </div>
+          <div class="train-info-item">
+            <div class="train-info-label">当前线路</div>
+            <div class="train-info-value" id="trainLine">1号线</div>
+          </div>
+          <div class="train-info-item">
+            <div class="train-info-label">当前位置</div>
+            <div class="train-info-value blink" id="trainLocation">信息塔 → AI研究院</div>
+          </div>
+          <div class="train-info-item">
+            <div class="train-info-label">下一站</div>
+            <div class="train-info-value" id="trainNext">AI研究院</div>
+          </div>
+          <div class="train-info-item">
+            <div class="train-info-label">车厢编号</div>
+            <div class="train-info-value" id="trainCar">C-09</div>
+          </div>
+          <div class="train-info-item">
+            <div class="train-info-label">车厢温度</div>
+            <div class="train-info-value" id="trainTemp">22.6°C</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSFER INFO (换乘信息) -->
+  <div class="transfer-section">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="icon" style="background:var(--neon-magenta);box-shadow:0 0 10px var(--neon-magenta);"></div>
+        换乘信息 TRANSFER INFO
+      </div>
+      <div class="panel-body">
+        <div class="transfer-line">
+          <div class="transfer-line-dot line-yellow"></div>
+          <span class="transfer-line-name">1号线</span>
+          <span class="transfer-line-stations">城市入口 · 信息塔 · AI研究院 · 数据银行</span>
+        </div>
+        <div class="transfer-line">
+          <div class="transfer-line-dot line-blue"></div>
+          <span class="transfer-line-name">2号线</span>
+          <span class="transfer-line-stations">网络广场 · 信息塔 · 量子工厂 · 城市地图</span>
+        </div>
+        <div class="transfer-line">
+          <div class="transfer-line-dot line-red"></div>
+          <span class="transfer-line-name">3号线</span>
+          <span class="transfer-line-stations">数据银行 · 量子工厂 · [深层区域]</span>
+        </div>
+        <div style="margin-top:12px;padding:8px 10px;background:rgba(255,230,0,0.05);border-left:2px solid var(--neon-yellow);font-size:10px;color:var(--text-dim);font-family:var(--font-cn);">
+          <strong style="color:var(--neon-yellow);">换乘枢纽:</strong> 信息塔站 — 1号线 ⇄ 2号线<br>
+          <strong style="color:var(--neon-yellow);">换乘枢纽:</strong> 数据银行站 — 1号线 ⇄ 3号线<br>
+          <strong style="color:var(--neon-yellow);">换乘枢纽:</strong> 量子工厂站 — 2号线 ⇄ 3号线<br>
+          <span style="color:var(--neon-red);">⚠ 3号线部分站点运行不稳定，深层区域访问受限</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     DEPARTURE COUNTDOWN OVERLAY
+     ============================================================ -->
+<div class="departure-overlay" id="departureOverlay">
+  <div class="countdown-number" id="countdownNumber">3</div>
+  <div class="countdown-label">即将发车 DEPARTING</div>
+  <div class="countdown-destination" id="countdownDest">目的地: --</div>
+</div>
+
+<!-- ============================================================
+     TUNNEL ANIMATION OVERLAY
+     ============================================================ -->
+<div class="tunnel-animation" id="tunnelAnimation">
+  <div class="tunnel-perspective">
+    <div class="tunnel-rings" id="tunnelRings"></div>
+  </div>
+  <div class="tunnel-message" id="tunnelMessage">列 车 运 行 中 . . .</div>
+</div>
+
+<!-- ============================================================
+     ARRIVAL BANNER
+     ============================================================ -->
+<div class="arrival-banner" id="arrivalBanner">
+  <div class="arrival-title">◆ 列车到站 TRAIN ARRIVED ◆</div>
+  <div class="arrival-station" id="arrivalStation">欢迎抵达: --</div>
+</div>
+
+<script>
+/* ============================================================
+   NEXUS-9 METRO SYSTEM - Complete JavaScript
+   ============================================================ */
+
+// ── State ──────────────────────────────────────────────
+let selectedDestination = null;
+let selectedLink = null;
+let isAnimating = false;
+const departureTimes = ['03:24', '01:15', '05:42', '08:10', '00:48', '12:33', '15:00'];
+
+// ── Console Easter Egg ─────────────────────────────────
+(function() {
+  const ascii = `
+  ╔══════════════════════════════════════════════╗
+  ║     NEXUS-9 地铁系统 v3.7 — 已激活            ║
+  ║     METRO TRANSIT NETWORK ONLINE              ║
+  ║                                              ║
+  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  ║
+  ║  ▓ 线路: 1号线 2号线 3号线                 ▓  ║
+  ║  ▓ 站点: 7个已登记 + 1个未登记               ▓  ║
+  ║  ▓ 状态: 运行中                              ▓  ║
+  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  ║
+  ║                                              ║
+  ║  深度访问码: deep-tunnel-9                    ║
+  ║  输入 NEXUS.metro.unlock('deep-tunnel-9')    ║
+  ║  以访问隐藏站点                               ║
+  ╚══════════════════════════════════════════════╝
+  `;
+  console.log('%c' + ascii, 'color: #ffe600; font-family: monospace;');
+  console.log('%c[METRO] %c系统初始化完成。输入 help() 查看可用命令。',
+    'color: #39ff14;', 'color: #ccc;');
+
+  // Expose API
+  window.NEXUS = window.NEXUS || {};
+  window.NEXUS.metro = {
+    version: '3.7',
+    lines: ['1号线-中央线', '2号线-环线', '3号线-深层线'],
+    stations: ['城市入口','信息塔','AI研究院','数据银行','网络广场','量子工厂','城市地图','???'],
+    unlock: function(code) {
+      if (code === 'deep-tunnel-9') {
+        const hiddenNode = document.querySelector('[data-station="???"]');
+        if (hiddenNode) {
+          hiddenNode.style.opacity = '1';
+          hiddenNode.querySelector('circle').setAttribute('r', '10');
+          console.log('%c[SECRET] %c隐藏站点已解锁: 深层隧道入口',
+            'color: #ff00e5;', 'color: #fff;');
+          spawnParticles(330, 480, '紫色粒子: 深层隧道已激活', '#ff00e5');
+          return '深层隧道入口已解锁。访问 underground.html';
+        }
+      }
+      return '访问码无效。';
+    }
+  };
+
+  window.help = function() {
+    console.log('%c可用命令:', 'color: #ffe600; font-weight: bold;');
+    console.log('  NEXUS.metro.version        - 系统版本');
+    console.log('  NEXUS.metro.lines          - 线路列表');
+    console.log('  NEXUS.metro.stations       - 站点列表');
+    console.log('  NEXUS.metro.unlock(code)   - 解锁隐藏内容');
+    console.log('  boardTrain()               - 搭乘地铁');
+    console.log('  resetMetro()               - 重置系统');
+  };
+})();
+
+// ── Clock ──────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clockDisplay').textContent = h + ':' + m + ':' + s;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Departure Times (countdown) ────────────────────────
+function updateDepartureCountdowns() {
+  departureTimes.forEach((time, i) => {
+    const el = document.getElementById('depTime' + i);
+    if (!el) return;
+    const parts = time.split(':');
+    let mins = parseInt(parts[0]);
+    let secs = parseInt(parts[1]);
+    secs -= 1;
+    if (secs < 0) { secs = 59; mins -= 1; }
+    if (mins < 0) { mins = Math.floor(Math.random() * 15); secs = Math.floor(Math.random() * 60); }
+    departureTimes[i] = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    el.textContent = departureTimes[i];
+  });
+}
+setInterval(updateDepartureCountdowns, 1000);
+
+// ── Station Node Click ─────────────────────────────────
+document.querySelectorAll('.station-node').forEach(node => {
+  node.addEventListener('click', function(e) {
+    if (isAnimating) return;
+    const station = this.dataset.station;
+    const link = this.dataset.link;
+    selectedDestination = station;
+    selectedLink = link;
+
+    // Highlight selected in departure table
+    document.querySelectorAll('#departureBody tr').forEach(row => {
+      row.style.outline = 'none';
+      row.style.background = '';
+    });
+    const matchingRow = document.querySelector(`#departureBody tr[data-station="${station}"]`);
+    if (matchingRow) {
+      matchingRow.style.outline = '1px solid var(--neon-yellow)';
+      matchingRow.style.background = 'rgba(255,230,0,0.1)';
+    }
+
+    // Feedback
+    spawnParticles(e.clientX, e.clientY, '目的地: ' + station);
+    document.getElementById('trainNext').textContent = station;
+    document.getElementById('trainLocation').textContent = '等待发车 → ' + station;
+  });
+});
+
+// ── Departure Table Row Click ──────────────────────────
+document.querySelectorAll('#departureBody tr').forEach(row => {
+  row.addEventListener('click', function() {
+    if (isAnimating) return;
+    selectedDestination = this.dataset.station;
+    selectedLink = this.dataset.link;
+
+    document.querySelectorAll('#departureBody tr').forEach(r => {
+      r.style.outline = 'none';
+      r.style.background = '';
+    });
+    this.style.outline = '1px solid var(--neon-yellow)';
+    this.style.background = 'rgba(255,230,0,0.1)';
+
+    document.getElementById('trainNext').textContent = selectedDestination;
+    document.getElementById('trainLocation').textContent = '等待发车 → ' + selectedDestination;
+  });
+});
+
+// ── Board Train ────────────────────────────────────────
+function boardTrain() {
+  if (isAnimating) return;
+  if (!selectedDestination) {
+    spawnParticles(
+      window.innerWidth / 2, window.innerHeight / 2,
+      '请先选择目的地!', '#ff3131'
+    );
+    return;
+  }
+  startDepartureSequence(selectedDestination, selectedLink);
+}
+window.boardTrain = boardTrain;
+
+// ── Departure Sequence ─────────────────────────────────
+function startDepartureSequence(destination, link) {
+  isAnimating = true;
+
+  // Disable button
+  const btn = document.getElementById('btnBoard');
+  btn.disabled = true;
+  btn.textContent = '发车准备中...';
+
+  // Update train info
+  document.getElementById('trainLocation').textContent = '发车准备 → ' + destination;
+  document.getElementById('trainLocation').classList.add('blink');
+
+  // Countdown overlay
+  const overlay = document.getElementById('departureOverlay');
+  const countNum = document.getElementById('countdownNumber');
+  const countDest = document.getElementById('countdownDest');
+  countDest.textContent = '目的地: ' + destination;
+  overlay.classList.add('active');
+
+  let count = 3;
+  countNum.textContent = count;
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = count === 1 ? 1200 : 800;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    } catch(e) {}
+  }
+
+  const countdownInterval = setInterval(() => {
+    count--;
+    countNum.textContent = count;
+    playBeep();
+    if (count <= 0) {
+      clearInterval(countdownInterval);
+      overlay.classList.remove('active');
+      startTunnelAnimation(destination, link);
+    }
+  }, 1000);
+
+  playBeep();
+}
+
+// ── Tunnel Animation ──────────────────────────────────
+function startTunnelAnimation(destination, link) {
+  const tunnelEl = document.getElementById('tunnelAnimation');
+  const ringsContainer = document.getElementById('tunnelRings');
+  const messageEl = document.getElementById('tunnelMessage');
+
+  // Generate rings
+  ringsContainer.innerHTML = '';
+  for (let i = 0; i < 30; i++) {
+    const ring = document.createElement('div');
+    ring.className = 'tunnel-ring';
+    ring.style.animationDelay = (i * 0.06) + 's';
+    if (i % 5 === 0) {
+      ring.style.borderColor = '#00e5ff';
+      ring.style.boxShadow = '0 0 12px #00e5ff, inset 0 0 12px rgba(0,229,255,0.3)';
+    }
+    ringsContainer.appendChild(ring);
+  }
+
+  messageEl.textContent = '列 车 运 行 中 · · · 目 的 地 : ' + destination;
+  tunnelEl.classList.add('active');
+
+  // Phase messages
+  const phases = [
+    { delay: 800, msg: '穿 越 隧 道 · · ·' },
+    { delay: 2000, msg: '加 速 中 · · ·' },
+    { delay: 3200, msg: '前 方 到 站 : ' + destination },
+    { delay: 4000, msg: '减 速 进 站 · · ·' },
+  ];
+
+  phases.forEach(p => {
+    setTimeout(() => { messageEl.textContent = p.msg; }, p.delay);
+  });
+
+  // End tunnel, show arrival
+  setTimeout(() => {
+    tunnelEl.classList.remove('active');
+    showArrival(destination, link);
+  }, 5000);
+}
+
+// ── Arrival ────────────────────────────────────────────
+function showArrival(destination, link) {
+  const banner = document.getElementById('arrivalBanner');
+  const stationEl = document.getElementById('arrivalStation');
+  stationEl.textContent = '欢迎抵达: ' + destination + ' — 请从右侧车门下车';
+  banner.classList.add('active');
+
+  // Update train info
+  document.getElementById('trainLocation').textContent = '已到站: ' + destination;
+  document.getElementById('trainLocation').classList.remove('blink');
+  document.getElementById('trainId').textContent = 'NX9-M-' + String(Math.floor(Math.random() * 9000) + 1000);
+
+  // Random line assignment
+  const lines = ['1号线', '2号线', '3号线'];
+  document.getElementById('trainLine').textContent = lines[Math.floor(Math.random() * lines.length)];
+
+  // Re-enable button
+  const btn = document.getElementById('btnBoard');
+  btn.disabled = false;
+  btn.textContent = '搭乘地铁 ▸ BOARD TRAIN';
+
+  // Hide banner after delay
+  setTimeout(() => {
+    banner.classList.remove('active');
+  }, 3000);
+
+  // Navigate after arrival
+  setTimeout(() => {
+    if (link) {
+      window.location.href = link;
+    }
+  }, 2500);
+
+  isAnimating = false;
+
+  // Reset selection
+  document.querySelectorAll('#departureBody tr').forEach(r => {
+    r.style.outline = 'none';
+    r.style.background = '';
+  });
+  selectedDestination = null;
+  selectedLink = null;
+
+  // Console log
+  console.log('%c[ARRIVAL] %c列车已抵达: ' + destination,
+    'color: #39ff14;', 'color: #fff;');
+}
+
+// ── Particle Effects ──────────────────────────────────
+function spawnParticles(x, y, text, color) {
+  const particle = document.createElement('div');
+  particle.className = 'particle';
+  particle.textContent = text;
+  particle.style.left = x + 'px';
+  particle.style.top = y + 'px';
+  if (color) {
+    particle.style.color = color;
+    particle.style.textShadow = '0 0 8px ' + color;
+  }
+  document.body.appendChild(particle);
+  setTimeout(() => { particle.remove(); }, 1500);
+}
+
+// ── Metro System API ──────────────────────────────────
+window.resetMetro = function() {
+  document.getElementById('arrivalBanner').classList.remove('active');
+  document.getElementById('departureOverlay').classList.remove('active');
+  document.getElementById('tunnelAnimation').classList.remove('active');
+  document.getElementById('btnBoard').disabled = false;
+  document.getElementById('btnBoard').textContent = '搭乘地铁 ▸ BOARD TRAIN';
+  document.getElementById('trainLocation').textContent = '信息塔 → AI研究院';
+  document.getElementById('trainLocation').classList.add('blink');
+  document.getElementById('trainNext').textContent = 'AI研究院';
+  selectedDestination = null;
+  selectedLink = null;
+  isAnimating = false;
+  document.querySelectorAll('#departureBody tr').forEach(r => {
+    r.style.outline = 'none';
+    r.style.background = '';
+  });
+  console.log('%c[METRO] %c系统已重置。', 'color: #ffe600;', 'color: #ccc;');
+};
+
+// ── Keyboard Shortcuts ────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !isAnimating && selectedDestination) {
+    e.preventDefault();
+    boardTrain();
+  }
+  if (e.key === 'Escape') {
+    resetMetro();
+  }
+});
+
+// ── Initialize ─────────────────────────────────────────
+console.log('%c[METRO] %cNEXUS-9 地铁系统就绪。%c 选择目的地后按 Enter 或点击"搭乘地铁"按钮。',
+  'color: #39ff14;', 'color: #ccc;', 'color: #888;');
+console.log('%c[提示] %c在控制台输入 help() 查看可用命令。',
+  'color: #ffe600;', 'color: #888;');
+</script>
+
+</body>
+</html>

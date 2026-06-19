@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS - Weather & Environment Monitor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #030814;
+  --panel: rgba(6, 15, 40, 0.8);
+  --border: rgba(0, 212, 255, 0.12);
+  --neon: #00d4ff;
+  --purple: #b347ea;
+  --cyan: #00ffcc;
+  --green: #00ff88;
+  --red: #ff3366;
+  --yellow: #ffb700;
+  --text: #c8d6e5;
+  --text2: #6b7d95;
+  --glow: 0 0 20px rgba(0,212,255,0.05);
+  --font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanlines 8s linear infinite;
+}
+
+@keyframes scanlines {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+#particles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* TOP STATUS BAR */
+#topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: rgba(6, 15, 40, 0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text2);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#topbar .brand { color: var(--neon); font-weight: 700; font-size: 14px; }
+#topbar .dot { color: var(--green); margin: 0 6px; }
+#topbar .stat { color: var(--cyan); }
+#topbar .clock { color: var(--text); margin-left: auto; }
+
+/* SIDEBAR */
+#sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 56px;
+  background: rgba(6, 15, 40, 0.9);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 70px;
+  gap: 6px;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+#sidebar:hover { width: 220px; }
+#sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 18px;
+  white-space: nowrap;
+  gap: 14px;
+  transition: all 0.25s ease;
+  border-left: 2px solid transparent;
+}
+#sidebar .nav-item:hover {
+  color: var(--neon);
+  background: rgba(0,212,255,0.06);
+  border-left-color: var(--neon);
+}
+#sidebar .nav-item.active {
+  color: var(--neon);
+  background: rgba(0,212,255,0.1);
+  border-left-color: var(--neon);
+}
+#sidebar .nav-item .label {
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#sidebar:hover .nav-item .label { opacity: 1; }
+
+/* MAIN */
+#main {
+  margin-left: 56px;
+  padding: 20px 28px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.breadcrumb {
+  font-size: 12px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+.breadcrumb span { color: var(--neon); }
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 24px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* PANEL */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--glow);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+.panel h3 {
+  font-size: 15px;
+  color: var(--neon);
+  margin-bottom: 16px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* WEATHER HERO */
+.hero-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 30px;
+  box-shadow: var(--glow), 0 0 40px rgba(0,212,255,0.06);
+  backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,212,255,0.03), transparent 50%, rgba(179,71,234,0.03));
+  pointer-events: none;
+}
+.hero-main {
+  text-align: center;
+  position: relative;
+}
+.hero-icon {
+  font-size: 80px;
+  animation: floatUp 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(255,183,0,0.3));
+}
+.hero-condition {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+}
+.hero-temp {
+  font-size: 72px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--neon);
+  line-height: 1;
+  position: relative;
+}
+.hero-feels {
+  font-size: 14px;
+  color: var(--text2);
+  font-family: system-ui, sans-serif;
+  margin-top: 4px;
+}
+.hero-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  position: relative;
+}
+.hero-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hero-detail-item .dlabel {
+  font-size: 10px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.hero-detail-item .dvalue {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.hero-sun {
+  text-align: right;
+  position: relative;
+}
+.hero-sun .sun-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.hero-sun .sun-label { color: var(--text2); }
+.hero-sun .sun-val { color: var(--yellow); font-weight: 600; }
+
+/* AIR QUALITY */
+.aqi-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+.aqi-gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.aqi-gauge {
+  width: 160px;
+  height: 80px;
+  border-radius: 80px 80px 0 0;
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(
+    #00ff88 0deg 72deg,
+    #ffb700 72deg 108deg,
+    #f0932b 108deg 144deg,
+    #ff3366 144deg 180deg,
+    #b347ea 180deg 180deg
+  );
+  clip-path: polygon(0% 100%, 100% 100%, 100% 0%, 0% 0%);
+  border-radius: 80px 80px 0 0;
+}
+.aqi-gauge::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 70px;
+  background: var(--neon);
+  border-radius: 2px;
+  transform-origin: bottom center;
+  animation: gaugeSwing 3s ease-in-out infinite alternate;
+}
+@keyframes gaugeSwing {
+  0% { transform: translateX(-50%) rotate(-65deg); }
+  100% { transform: translateX(-50%) rotate(65deg); }
+}
+.aqi-value {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--green);
+}
+.aqi-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  text-transform: uppercase;
+}
+.aqi-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.pollutant-card {
+  background: rgba(6,15,40,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.pollutant-card .pol-name {
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.pollutant-card .pol-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.pollutant-card .pol-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pollutant-card .pol-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+.pollutant-card .pol-status {
+  font-size: 10px;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+/* 7-DAY FORECAST */
+.forecast-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-behavior: smooth;
+}
+.forecast-scroll::-webkit-scrollbar { height: 4px; }
+.forecast-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+.forecast-scroll::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 2px; }
+.forecast-card {
+  min-width: 150px;
+  background: rgba(6,15,40,0.5);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 14px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.forecast-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  border-color: var(--neon);
+  box-shadow: 0 12px 28px rgba(0,212,255,0.15);
+}
+.forecast-card.today {
+  border-color: var(--neon);
+  box-shadow: 0 0 18px rgba(0,212,255,0.1);
+}
+.forecast-card .fc-day {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.forecast-card .fc-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+.forecast-card .fc-temps {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.forecast-card .fc-high { color: #ff6b6b; font-weight: 700; }
+.forecast-card .fc-low { color: var(--neon); }
+.forecast-card .fc-extra {
+  font-size: 10px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* HOURLY FORECAST */
+.hourly-wrap {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.hourly-wrap::-webkit-scrollbar { height: 4px; }
+.hourly-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+.hourly-wrap::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 2px; }
+
+.hourly-chart {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 200px;
+  min-width: 1400px;
+}
+.hourly-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 40px;
+}
+.hourly-bar {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+.hourly-bar:hover {
+  filter: brightness(1.4);
+  box-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+.hourly-bar .bar-tooltip {
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(3,8,20,0.95);
+  border: 1px solid var(--neon);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--neon);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hourly-bar:hover .bar-tooltip { opacity: 1; }
+.hourly-time {
+  font-size: 10px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+}
+
+/* SENSORS GRID */
+.sensors-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.sensor-card {
+  background: rgba(6,15,40,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  transition: all 0.25s ease;
+}
+.sensor-card:hover {
+  border-color: var(--neon);
+  box-shadow: 0 0 15px rgba(0,212,255,0.08);
+}
+.sensor-card .sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.sensor-card .sensor-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.sensor-card .sensor-status {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: pulse-dot 2s ease infinite;
+}
+.sensor-card .sensor-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text2);
+}
+.sensor-card .sensor-data .sd-val { color: var(--text); font-weight: 600; }
+.sensor-card .sensor-time {
+  font-size: 10px;
+  color: var(--text2);
+  margin-top: 8px;
+  font-family: var(--font-mono);
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* CLIMATE TRENDS TABLE */
+.climate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.climate-table th {
+  text-align: left;
+  padding: 10px 14px;
+  color: var(--neon);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.climate-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,212,255,0.05);
+  color: var(--text);
+}
+.climate-table .temp-hot { color: #ff6b6b; }
+.climate-table .temp-cold { color: var(--neon); }
+.climate-table .temp-mild { color: var(--cyan); }
+.climate-table .aqi-good { color: var(--green); }
+.climate-table .aqi-moderate { color: var(--yellow); }
+.climate-table tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+/* RAINFALL RADAR */
+.radar-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.radar-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  min-width: 35px;
+}
+.radar-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.radar-legend .swatch {
+  width: 16px; height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* UV INDEX MAP */
+.uv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.uv-card {
+  background: rgba(6,15,40,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.uv-card .uv-zone {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.uv-card .uv-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.uv-card .uv-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.uv-card .uv-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.uv-card .uv-recommend {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+/* ALERTS */
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(6,15,40,0.4);
+  transition: all 0.25s ease;
+}
+.alert-item:hover {
+  border-color: var(--neon);
+  background: rgba(0,212,255,0.04);
+}
+.alert-item .alert-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.alert-item .alert-content {
+  flex: 1;
+}
+.alert-item .alert-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.alert-item .alert-desc {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.alert-item .alert-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.alert-warning { border-left: 3px solid var(--yellow); }
+.alert-info { border-left: 3px solid var(--neon); }
+.alert-severe { border-left: 3px solid var(--red); }
+
+/* TICKER */
+#ticker {
+  position: fixed;
+  bottom: 0;
+  left: 56px;
+  right: 0;
+  height: 32px;
+  background: rgba(6, 15, 40, 0.95);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+#ticker .ticker-content {
+  white-space: nowrap;
+  animation: ticker-scroll 40s linear infinite;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  display: flex;
+  gap: 60px;
+}
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+#ticker .ticker-item { color: var(--cyan); }
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .hero-card { grid-template-columns: 1fr 1fr; }
+  .hero-sun { grid-column: span 2; text-align: center; }
+  .aqi-grid { grid-template-columns: 1fr; }
+  .sensors-grid { grid-template-columns: repeat(2, 1fr); }
+  .uv-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .hero-card { grid-template-columns: 1fr; }
+  .hero-sun { grid-column: span 1; }
+  .aqi-details { grid-template-columns: repeat(2, 1fr); }
+  .sensors-grid { grid-template-columns: 1fr; }
+  .uv-grid { grid-template-columns: 1fr; }
+  .page-title { font-size: 22px; }
+  .hero-temp { font-size: 52px; }
+}
+
+/* ANIMATIONS */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(0,212,255,0.05); }
+  50% { box-shadow: 0 0 35px rgba(0,212,255,0.15); }
+}
+@keyframes floatUp {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes gaugeSwing {
+  0% { transform: translateX(-50%) rotate(-70deg); }
+  50% { transform: translateX(-50%) rotate(68deg); }
+  100% { transform: translateX(-50%) rotate(-70deg); }
+}
+@keyframes shimmerBg {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes borderGlow {
+  0%,100% { border-color: rgba(0,212,255,0.12); }
+  50% { border-color: rgba(0,212,255,0.35); }
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes rainDrop {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.3; transform: scale(0.8); }
+}
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes digitFlip {
+  0% { opacity: 0.5; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideRight {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- TOP STATUS BAR -->
+<div id="topbar">
+  <span class="brand">NEO CITY OS v3.7</span>
+  <span class="dot">●</span> SYSTEM ONLINE
+  <span class="stat">STABILITY: 98.2%</span>
+  <span class="stat">AI CORE ACTIVE</span>
+  <span class="clock" id="liveClock">UTC 2026-06-17 14:32:08</span>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <a class="nav-item" href="dashboard.html"><span>📊</span><span class="label">总览</span></a>
+  <a class="nav-item" href="traffic.html"><span>🚦</span><span class="label">交通</span></a>
+  <a class="nav-item" href="energy.html"><span>⚡</span><span class="label">能源</span></a>
+  <a class="nav-item" href="population.html"><span>👥</span><span class="label">人口</span></a>
+  <a class="nav-item active" href="weather.html"><span>🌦</span><span class="label">天气</span></a>
+  <a class="nav-item" href="security.html"><span>🚨</span><span class="label">安全</span></a>
+  <a class="nav-item" href="map.html"><span>🗺</span><span class="label">地图</span></a>
+  <a class="nav-item" href="ai.html"><span>🧠</span><span class="label">AI</span></a>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="breadcrumb">NEO CITY OS &nbsp;&#9656;&nbsp; <span>天气与环境监测</span></div>
+  <div class="page-title">&#127787; 天气与环境监测 &nbsp;|&nbsp; CLIMATE MONITOR</div>
+
+  <!-- CURRENT WEATHER HERO -->
+  <div class="hero-card" style="animation: popIn 0.6s ease;">
+    <div class="hero-main">
+      <div class="hero-icon">&#9729;&#65039;</div>
+      <div class="hero-condition">Partly Cloudy</div>
+    </div>
+    <div class="hero-main">
+      <div class="hero-temp" id="heroTemp">23.7°C</div>
+      <div class="hero-feels">Feels like 25.1°C &nbsp;|&nbsp; Dew point 14.8°C</div>
+    </div>
+    <div class="hero-details">
+      <div class="hero-detail-item"><span class="dlabel">Humidity</span><span class="dvalue">62%</span></div>
+      <div class="hero-detail-item"><span class="dlabel">Wind</span><span class="dvalue">12.3 km/h NE</span></div>
+      <div class="hero-detail-item"><span class="dlabel">UV Index</span><span class="dvalue" style="color:#ffb700;">5 Moderate</span></div>
+      <div class="hero-detail-item"><span class="dlabel">Visibility</span><span class="dvalue">14.2 km</span></div>
+      <div class="hero-detail-item"><span class="dlabel">Pressure</span><span class="dvalue">1013.2 hPa</span></div>
+      <div class="hero-detail-item"><span class="dlabel">Cloud Cover</span><span class="dvalue">47%</span></div>
+    </div>
+    <div class="hero-sun">
+      <div class="sun-row"><span class="sun-label">&#127749; Sunrise</span><span class="sun-val">06:23</span></div>
+      <div class="sun-row"><span class="sun-label">&#127751; Sunset</span><span class="sun-val">19:47</span></div>
+      <div class="sun-row"><span class="sun-label">Daylight</span><span class="sun-val">13h 24m</span></div>
+      <div class="sun-row" style="margin-top:8px;"><span class="sun-label">First Light</span><span class="sun-val">05:54</span></div>
+      <div class="sun-row"><span class="sun-label">Last Light</span><span class="sun-val">20:16</span></div>
+    </div>
+  </div>
+
+  <!-- AIR QUALITY -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.3s both;">
+    <h3>&#128168; Air Quality Index &mdash; Real-Time Atmospheric Monitoring</h3>
+    <div class="aqi-grid">
+      <div class="aqi-gauge-wrap">
+        <div class="aqi-gauge" id="aqiGauge"></div>
+        <div class="aqi-value" id="aqiValue">42</div>
+        <div class="aqi-label">GOOD</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;font-family:var(--font-mono);">
+          Updated 2 min ago<br>Station: CBD Central Monitor
+        </div>
+      </div>
+      <div class="aqi-details">
+        <div class="pollutant-card">
+          <div class="pol-name">PM2.5 &mdash; Fine Particulates</div>
+          <div class="pol-value" style="color:var(--green);">12.8 <span style="font-size:12px;">µg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:26%;background:var(--green);"></div></div>
+          <div class="pol-status" style="color:var(--green);">&#9679; Good (limit 35)</div>
+        </div>
+        <div class="pollutant-card">
+          <div class="pol-name">PM10 &mdash; Coarse Particulates</div>
+          <div class="pol-value" style="color:var(--green);">24.3 <span style="font-size:12px;">µg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:32%;background:var(--green);"></div></div>
+          <div class="pol-status" style="color:var(--green);">&#9679; Good (limit 50)</div>
+        </div>
+        <div class="pollutant-card">
+          <div class="pol-name">O&#8323; &mdash; Ground-Level Ozone</div>
+          <div class="pol-value" style="color:var(--yellow);">58.4 <span style="font-size:12px;">µg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:58%;background:var(--yellow);"></div></div>
+          <div class="pol-status" style="color:var(--yellow);">&#9679; Moderate (limit 100)</div>
+        </div>
+        <div class="pollutant-card">
+          <div class="pol-name">NO&#8322; &mdash; Nitrogen Dioxide</div>
+          <div class="pol-value" style="color:var(--green);">18.7 <span style="font-size:12px;">µg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:19%;background:var(--green);"></div></div>
+          <div class="pol-status" style="color:var(--green);">&#9679; Good (limit 40)</div>
+        </div>
+        <div class="pollutant-card">
+          <div class="pol-name">SO&#8322; &mdash; Sulfur Dioxide</div>
+          <div class="pol-value" style="color:var(--green);">5.2 <span style="font-size:12px;">µg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:8%;background:var(--green);"></div></div>
+          <div class="pol-status" style="color:var(--green);">&#9679; Good (limit 20)</div>
+        </div>
+        <div class="pollutant-card">
+          <div class="pol-name">CO &mdash; Carbon Monoxide</div>
+          <div class="pol-value" style="color:var(--green);">0.38 <span style="font-size:12px;">mg/m³</span></div>
+          <div class="pol-bar"><div class="pol-bar-fill" style="width:11%;background:var(--green);"></div></div>
+          <div class="pol-status" style="color:var(--green);">&#9679; Good (limit 4.0)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-DAY FORECAST -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.4s both;">
+    <h3>&#128338; 7-Day Forecast &mdash; Extended Outlook</h3>
+    <div class="forecast-scroll" id="forecastScroll">
+      <div class="forecast-card today">
+        <div class="fc-day">Today - Jun 17</div>
+        <div class="fc-icon">&#9925;</div>
+        <div class="fc-temps"><span class="fc-high">26°</span> / <span class="fc-low">19°</span></div>
+        <div class="fc-extra"><span>Humidity: 62%</span><span>Wind: 12 km/h</span><span>Rain: 15%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Thu - Jun 18</div>
+        <div class="fc-icon">&#127781;</div>
+        <div class="fc-temps"><span class="fc-high">24°</span> / <span class="fc-low">18°</span></div>
+        <div class="fc-extra"><span>Humidity: 78%</span><span>Wind: 18 km/h</span><span>Rain: 65%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Fri - Jun 19</div>
+        <div class="fc-icon">&#127780;</div>
+        <div class="fc-temps"><span class="fc-high">22°</span> / <span class="fc-low">16°</span></div>
+        <div class="fc-extra"><span>Humidity: 71%</span><span>Wind: 22 km/h</span><span>Rain: 30%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Sat - Jun 20</div>
+        <div class="fc-icon">&#9729;&#65039;</div>
+        <div class="fc-temps"><span class="fc-high">25°</span> / <span class="fc-low">17°</span></div>
+        <div class="fc-extra"><span>Humidity: 58%</span><span>Wind: 10 km/h</span><span>Rain: 10%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Sun - Jun 21</div>
+        <div class="fc-icon">&#127774;</div>
+        <div class="fc-temps"><span class="fc-high">28°</span> / <span class="fc-low">20°</span></div>
+        <div class="fc-extra"><span>Humidity: 48%</span><span>Wind: 8 km/h</span><span>Rain: 0%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Mon - Jun 22</div>
+        <div class="fc-icon">&#127774;</div>
+        <div class="fc-temps"><span class="fc-high">29°</span> / <span class="fc-low">21°</span></div>
+        <div class="fc-extra"><span>Humidity: 52%</span><span>Wind: 11 km/h</span><span>Rain: 5%</span></div>
+      </div>
+      <div class="forecast-card">
+        <div class="fc-day">Tue - Jun 23</div>
+        <div class="fc-icon">&#127785;</div>
+        <div class="fc-temps"><span class="fc-high">26°</span> / <span class="fc-low">19°</span></div>
+        <div class="fc-extra"><span>Humidity: 82%</span><span>Wind: 25 km/h</span><span>Rain: 80%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOURLY FORECAST -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.5s both;">
+    <h3>&#9202; Hourly Temperature Forecast &mdash; Next 24 Hours</h3>
+    <div class="hourly-wrap">
+      <div class="hourly-chart" id="hourlyChart"></div>
+    </div>
+  </div>
+
+  <!-- ENVIRONMENTAL SENSORS -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.6s both;">
+    <h3>&#127758; Environmental Sensor Network &mdash; Citywide Station Readings</h3>
+    <div class="sensors-grid" id="sensorsGrid">
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">CBD Tower Sensor</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">24.1°C</span></span><span>Humidity: <span class="sd-val">60%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--green);">11.2</span></span><span>CO2: <span class="sd-val">412 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--yellow);">68.4 dB</span></span><span>Wind: <span class="sd-val">14 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 18s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Riverside Monitor</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">22.8°C</span></span><span>Humidity: <span class="sd-val">68%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--green);">9.7</span></span><span>CO2: <span class="sd-val">395 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--green);">52.1 dB</span></span><span>Wind: <span class="sd-val">10 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 23s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Industrial Zone Station</span><span class="sensor-status" style="background:var(--yellow);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">25.6°C</span></span><span>Humidity: <span class="sd-val">54%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--yellow);">23.5</span></span><span>CO2: <span class="sd-val">487 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--red);">82.3 dB</span></span><span>Wind: <span class="sd-val">9 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 31s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Tech Park Array</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">23.2°C</span></span><span>Humidity: <span class="sd-val">56%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--green);">8.9</span></span><span>CO2: <span class="sd-val">402 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--green);">48.6 dB</span></span><span>Wind: <span class="sd-val">13 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 12s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Port Authority Sensor</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">22.1°C</span></span><span>Humidity: <span class="sd-val">72%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--yellow);">18.4</span></span><span>CO2: <span class="sd-val">428 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--yellow);">74.8 dB</span></span><span>Wind: <span class="sd-val">18 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 27s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Eco Reserve Node</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">21.4°C</span></span><span>Humidity: <span class="sd-val">74%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--green);">4.2</span></span><span>CO2: <span class="sd-val">378 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--green);">34.2 dB</span></span><span>Wind: <span class="sd-val">6 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 15s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Suburban North Monitor</span><span class="sensor-status" style="background:var(--green);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">22.7°C</span></span><span>Humidity: <span class="sd-val">64%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--green);">10.1</span></span><span>CO2: <span class="sd-val">388 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--green);">45.7 dB</span></span><span>Wind: <span class="sd-val">11 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 20s ago</div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-header"><span class="sensor-name">Highway Interchange Array</span><span class="sensor-status" style="background:var(--yellow);"></span></div>
+        <div class="sensor-data">
+          <span>Temp: <span class="sd-val">24.8°C</span></span><span>Humidity: <span class="sd-val">51%</span></span>
+          <span>PM2.5: <span class="sd-val" style="color:var(--yellow);">27.6</span></span><span>CO2: <span class="sd-val">512 ppm</span></span>
+          <span>Noise: <span class="sd-val" style="color:var(--red);">91.2 dB</span></span><span>Wind: <span class="sd-val">16 km/h</span></span>
+        </div>
+        <div class="sensor-time">Last report: 34s ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIMATE TRENDS -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.7s both;">
+    <h3>&#128200; Climate Trends &mdash; Monthly Averages Last 12 Months</h3>
+    <div style="overflow-x:auto;">
+      <table class="climate-table">
+        <thead>
+          <tr><th>Month</th><th>Avg High (°C)</th><th>Avg Low (°C)</th><th>Total Rainfall (mm)</th><th>Rainy Days</th><th>Avg AQI</th><th>Dominant Wind</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2025-Jul</td><td class="temp-hot">32.4</td><td class="temp-mild">24.1</td><td>187.3</td><td>14</td><td class="aqi-moderate">58</td><td>SW 14 km/h</td>
+          </tr>
+          <tr>
+            <td>2025-Aug</td><td class="temp-hot">31.8</td><td class="temp-mild">23.6</td><td>210.6</td><td>16</td><td class="aqi-moderate">62</td><td>SW 12 km/h</td>
+          </tr>
+          <tr>
+            <td>2025-Sep</td><td class="temp-hot">28.9</td><td class="temp-mild">20.2</td><td>142.4</td><td>10</td><td class="aqi-good">44</td><td>NE 15 km/h</td>
+          </tr>
+          <tr>
+            <td>2025-Oct</td><td class="temp-mild">23.5</td><td class="temp-cold">15.8</td><td>98.7</td><td>8</td><td class="aqi-good">38</td><td>N 18 km/h</td>
+          </tr>
+          <tr>
+            <td>2025-Nov</td><td class="temp-cold">17.2</td><td class="temp-cold">9.4</td><td>76.2</td><td>7</td><td class="aqi-good">35</td><td>NW 20 km/h</td>
+          </tr>
+          <tr>
+            <td>2025-Dec</td><td class="temp-cold">12.8</td><td class="temp-cold">5.1</td><td>54.9</td><td>6</td><td class="aqi-moderate">52</td><td>NW 22 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-Jan</td><td class="temp-cold">11.4</td><td class="temp-cold">3.7</td><td>41.3</td><td>5</td><td class="aqi-moderate">67</td><td>N 24 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-Feb</td><td class="temp-cold">13.6</td><td class="temp-cold">5.8</td><td>48.8</td><td>6</td><td class="aqi-moderate">59</td><td>NE 19 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-Mar</td><td class="temp-mild">18.2</td><td class="temp-cold">9.2</td><td>82.5</td><td>9</td><td class="aqi-good">41</td><td>SE 16 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-Apr</td><td class="temp-mild">22.7</td><td class="temp-mild">13.6</td><td>115.4</td><td>11</td><td class="aqi-good">37</td><td>S 14 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-May</td><td class="temp-hot">27.1</td><td class="temp-mild">18.4</td><td>134.8</td><td>12</td><td class="aqi-good">43</td><td>SW 11 km/h</td>
+          </tr>
+          <tr>
+            <td>2026-Jun</td><td class="temp-hot">29.3</td><td class="temp-mild">20.7</td><td>168.2</td><td>13</td><td class="aqi-good">42</td><td>SW 13 km/h</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px; font-size:12px; color:var(--text2); font-family:var(--font-mono);">
+      Annual rainfall total: <span style="color:var(--neon);">1,361.1 mm</span> &nbsp;|&nbsp;
+      Hottest month: July 2025 &nbsp;|&nbsp;
+      Coldest month: January 2026 &nbsp;|&nbsp;
+      Annual avg temperature: <span style="color:var(--cyan);">18.9°C</span>
+    </div>
+  </div>
+
+  <!-- RAINFALL RADAR -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.8s both;">
+    <h3>&#127783; Rainfall Radar &mdash; Precipitation Intensity Map</h3>
+    <div class="radar-grid" id="radarGrid"></div>
+    <div class="radar-legend">
+      <span style="color:var(--text2);">None</span>
+      <span class="swatch" style="background:rgba(6,15,40,0.6);"></span>
+      <span class="swatch" style="background:rgba(0,212,255,0.25);"></span>
+      <span class="swatch" style="background:rgba(0,212,255,0.45);"></span>
+      <span class="swatch" style="background:rgba(0,140,255,0.6);"></span>
+      <span class="swatch" style="background:rgba(30,80,200,0.75);"></span>
+      <span class="swatch" style="background:rgba(179,71,234,0.7);"></span>
+      <span class="swatch" style="background:rgba(255,51,102,0.65);"></span>
+      <span style="color:#ff3366;">Heavy</span>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text2);font-family:var(--font-mono);">
+      Simulated radar composite &mdash; Updated every 5 minutes &mdash; Next full scan in 2m 34s
+    </div>
+  </div>
+
+  <!-- UV INDEX MAP -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.9s both;">
+    <h3>&#9728; UV Index Zone Map &mdash; Protection Recommendations</h3>
+    <div class="uv-grid">
+      <div class="uv-card">
+        <div class="uv-zone">Zone A &mdash; CBD</div>
+        <div class="uv-value" style="color:var(--yellow);">6</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:60%;background:var(--yellow);"></div></div>
+        <div class="uv-recommend">High. Wear SPF 30+, hat, sunglasses. Seek shade 10:00-16:00. Glass canyon effect amplifies UV by 15%.</div>
+      </div>
+      <div class="uv-card">
+        <div class="uv-zone">Zone B &mdash; Residential</div>
+        <div class="uv-value" style="color:var(--yellow);">5</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:50%;background:var(--yellow);"></div></div>
+        <div class="uv-recommend">Moderate. SPF 15+ recommended. Tree canopy provides 40% UV reduction along residential streets.</div>
+      </div>
+      <div class="uv-card">
+        <div class="uv-zone">Zone C &mdash; Industrial</div>
+        <div class="uv-value" style="color:var(--yellow);">5</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:50%;background:var(--yellow);"></div></div>
+        <div class="uv-recommend">Moderate. Protective clothing recommended for outdoor workers. Haze layer provides partial UV filtering.</div>
+      </div>
+      <div class="uv-card">
+        <div class="uv-zone">Zone D &mdash; Tech Park</div>
+        <div class="uv-value" style="color:var(--yellow);">6</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:60%;background:var(--yellow);"></div></div>
+        <div class="uv-recommend">High. Glass-walled buildings reflect additional UV. Use polarized sunglasses in campus courtyards 11:00-15:00.</div>
+      </div>
+      <div class="uv-card">
+        <div class="uv-zone">Zone E &mdash; Port</div>
+        <div class="uv-value" style="color:var(--red);">7</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:70%;background:var(--red);"></div></div>
+        <div class="uv-recommend">High-Very High. Water reflection doubles exposure. Dock workers must use SPF 50+ and UV-protective eyewear.</div>
+      </div>
+      <div class="uv-card">
+        <div class="uv-zone">Zone F &mdash; Eco Reserve</div>
+        <div class="uv-value" style="color:var(--yellow);">4</div>
+        <div class="uv-bar"><div class="uv-bar-fill" style="width:40%;background:var(--yellow);"></div></div>
+        <div class="uv-recommend">Moderate. Dense forest canopy blocks 70% UV. Open meadows still require SPF 15+ during midday hours.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEATHER ALERTS -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 1.0s both;">
+    <h3>&#9888; Active Weather Advisories &amp; Alerts</h3>
+    <div class="alerts-list">
+      <div class="alert-item alert-warning">
+        <span class="alert-icon">&#9888;&#65039;</span>
+        <div class="alert-content">
+          <div class="alert-title">Thunderstorm Watch &mdash; Eastern Sectors</div>
+          <div class="alert-desc">Developing cumulonimbus cells detected 45km east of Zone E. Possible lightning activity, gusty winds up to 45 km/h, and localized heavy downpour. Advisory effective until 21:00 UTC. Maritime operations in Port Zone advised to secure loose cargo.</div>
+        </div>
+        <span class="alert-time">18:30 UTC</span>
+      </div>
+      <div class="alert-item alert-warning">
+        <span class="alert-icon">&#9728;&#65039;</span>
+        <div class="alert-content">
+          <div class="alert-title">High UV Advisory &mdash; 11:00 to 15:00</div>
+          <div class="alert-desc">UV index forecast to reach 8 in Zones A, D, and E during peak solar hours. City health authority recommends limiting outdoor exposure, applying broad-spectrum sunscreen every two hours, and utilizing shaded walkways. Public cooling stations activated at 14 locations.</div>
+        </div>
+        <span class="alert-time">10:00 UTC</span>
+      </div>
+      <div class="alert-item alert-info">
+        <span class="alert-icon">&#128167;</span>
+        <div class="alert-content">
+          <div class="alert-title">Air Quality Note &mdash; Moderate Ozone Levels</div>
+          <div class="alert-desc">Ground-level ozone concentrations trending upward in Zone C and along major traffic corridors. Levels remain within safe thresholds but sensitive individuals (asthma, respiratory conditions) should limit prolonged outdoor exertion during afternoon hours.</div>
+        </div>
+        <span class="alert-time">14:00 UTC</span>
+      </div>
+      <div class="alert-item alert-info">
+        <span class="alert-icon">&#127754;</span>
+        <div class="alert-content">
+          <div class="alert-title">Humidity Inversion Layer &mdash; Morning Fog Advisory</div>
+          <div class="alert-desc">Temperature inversion expected overnight into early morning (04:00-08:00). Visibility may drop to 800m in low-lying areas of Zone F and along the river corridor. Automated drone delivery services switching to enhanced sensor navigation protocol.</div>
+        </div>
+        <span class="alert-time">22:00 UTC (forecast)</span>
+      </div>
+      <div class="alert-item alert-severe">
+        <span class="alert-icon">&#127788;&#65039;</span>
+        <div class="alert-content">
+          <div class="alert-title">Severe Wind Advisory &mdash; Jun 23 Forecast</div>
+          <div class="alert-desc">Gale-force winds forecast for Tuesday June 23, with sustained speeds of 45-55 km/h and gusts potentially reaching 75 km/h ahead of an advancing cold front. Structural integrity teams placed on standby. Construction cranes in Zone D to be secured by 06:00 Tuesday.</div>
+        </div>
+        <span class="alert-time">Advisory issued</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="ticker-content">
+    <span>&#9670; CURRENT TEMPERATURE: <span class="ticker-item">23.7°C</span></span>
+    <span>&#9670; HUMIDITY: <span class="ticker-item">62%</span></span>
+    <span>&#9670; WIND: <span class="ticker-item">NE 12.3 km/h</span></span>
+    <span>&#9670; AQI: <span class="ticker-item">42 GOOD</span></span>
+    <span>&#9670; SUNRISE: <span class="ticker-item">06:23</span></span>
+    <span>&#9670; SUNSET: <span class="ticker-item">19:47</span></span>
+    <span>&#9670; NEXT RAIN: <span class="ticker-item">Thursday 65% probability</span></span>
+    <span>&#9670; UV ALERT: <span class="ticker-item">Active 11:00-15:00</span></span>
+    <span>&#9670; CURRENT TEMPERATURE: <span class="ticker-item">23.7°C</span></span>
+    <span>&#9670; HUMIDITY: <span class="ticker-item">62%</span></span>
+    <span>&#9670; WIND: <span class="ticker-item">NE 12.3 km/h</span></span>
+    <span>&#9670; AQI: <span class="ticker-item">42 GOOD</span></span>
+    <span>&#9670; SUNRISE: <span class="ticker-item">06:23</span></span>
+    <span>&#9670; SUNSET: <span class="ticker-item">19:47</span></span>
+    <span>&#9670; NEXT RAIN: <span class="ticker-item">Thursday 65% probability</span></span>
+    <span>&#9670; UV ALERT: <span class="ticker-item">Active 11:00-15:00</span></span>
+  </div>
+</div>
+
+<script>
+// ===== LIVE CLOCK =====
+function updateClock() {
+  const now = new Date();
+  const utc = now.toISOString().replace('T',' ').slice(0,19);
+  document.getElementById('liveClock').textContent = 'UTC ' + utc;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ===== PARTICLE BACKGROUND =====
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const particles = [];
+const PARTICLE_COUNT = 80;
+
+function createParticle() {
+  return {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.5,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    alpha: Math.random() * 0.5 + 0.15
+  };
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particles.push(createParticle());
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,212,255,${p.alpha})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// ===== HOURLY FORECAST BARS =====
+const hourlyData = [
+  { hour: '00:00', temp: 20.2, humidity: 70 },
+  { hour: '01:00', temp: 19.8, humidity: 72 },
+  { hour: '02:00', temp: 19.3, humidity: 74 },
+  { hour: '03:00', temp: 19.0, humidity: 76 },
+  { hour: '04:00', temp: 18.7, humidity: 78 },
+  { hour: '05:00', temp: 18.5, humidity: 79 },
+  { hour: '06:00', temp: 18.8, humidity: 77 },
+  { hour: '07:00', temp: 19.6, humidity: 72 },
+  { hour: '08:00', temp: 20.8, humidity: 66 },
+  { hour: '09:00', temp: 22.1, humidity: 61 },
+  { hour: '10:00', temp: 23.4, humidity: 57 },
+  { hour: '11:00', temp: 24.6, humidity: 53 },
+  { hour: '12:00', temp: 25.8, humidity: 49 },
+  { hour: '13:00', temp: 26.5, humidity: 46 },
+  { hour: '14:00', temp: 26.9, humidity: 44 },
+  { hour: '15:00', temp: 26.3, humidity: 47 },
+  { hour: '16:00', temp: 25.5, humidity: 51 },
+  { hour: '17:00', temp: 24.7, humidity: 55 },
+  { hour: '18:00', temp: 23.8, humidity: 59 },
+  { hour: '19:00', temp: 22.9, humidity: 63 },
+  { hour: '20:00', temp: 22.1, humidity: 66 },
+  { hour: '21:00', temp: 21.4, humidity: 69 },
+  { hour: '22:00', temp: 20.8, humidity: 71 },
+  { hour: '23:00', temp: 20.4, humidity: 72 }
+];
+
+const maxTemp = 27;
+const minTemp = 18;
+const chart = document.getElementById('hourlyChart');
+
+function getTempColor(temp) {
+  const ratio = (temp - minTemp) / (maxTemp - minTemp);
+  if (ratio < 0.2) return '#1a5276';
+  if (ratio < 0.35) return '#2e86c1';
+  if (ratio < 0.5) return '#00d4ff';
+  if (ratio < 0.65) return '#00ffcc';
+  if (ratio < 0.8) return '#f39c12';
+  return '#e74c3c';
+}
+
+hourlyData.forEach((h, i) => {
+  const wrap = document.createElement('div');
+  wrap.className = 'hourly-bar-wrap';
+
+  const bar = document.createElement('div');
+  bar.className = 'hourly-bar';
+  const heightPct = ((h.temp - minTemp) / (maxTemp - minTemp)) * 160 + 20;
+  bar.style.height = heightPct + 'px';
+  bar.style.background = `linear-gradient(180deg, ${getTempColor(h.temp)}, ${getTempColor(h.temp)}88)`;
+
+  const tooltip = document.createElement('span');
+  tooltip.className = 'bar-tooltip';
+  tooltip.textContent = `${h.temp}°C | ${h.humidity}% RH`;
+  bar.appendChild(tooltip);
+
+  const time = document.createElement('div');
+  time.className = 'hourly-time';
+  time.textContent = h.hour;
+
+  wrap.appendChild(bar);
+  wrap.appendChild(time);
+  chart.appendChild(wrap);
+});
+
+// ===== RAINFALL RADAR =====
+const radarGrid = document.getElementById('radarGrid');
+const radarRows = 8, radarCols = 8;
+
+// Simulated precipitation: heavier toward upper-right (east side storm)
+const precipMap = [
+  [0,0,0,0,1,2,4,6],
+  [0,0,0,1,2,3,5,7],
+  [0,0,1,2,3,4,6,5],
+  [0,1,2,3,4,5,5,4],
+  [1,2,3,4,4,5,4,3],
+  [0,1,2,3,3,4,3,2],
+  [0,0,1,2,2,3,2,1],
+  [0,0,0,1,1,2,1,0]
+];
+
+function getPrecipColor(level) {
+  switch(level) {
+    case 0: return 'rgba(6,15,40,0.6)';
+    case 1: return 'rgba(0,212,255,0.25)';
+    case 2: return 'rgba(0,212,255,0.45)';
+    case 3: return 'rgba(0,140,255,0.6)';
+    case 4: return 'rgba(30,80,200,0.75)';
+    case 5: return 'rgba(179,71,234,0.7)';
+    case 6: return 'rgba(255,51,102,0.55)';
+    case 7: return 'rgba(255,51,102,0.8)';
+    default: return 'rgba(6,15,40,0.6)';
+  }
+}
+
+for (let r = 0; r < radarRows; r++) {
+  for (let c = 0; c < radarCols; c++) {
+    const cell = document.createElement('div');
+    cell.className = 'radar-cell';
+    cell.style.backgroundColor = getPrecipColor(precipMap[r][c]);
+    if (precipMap[r][c] >= 4) {
+      cell.style.animation = 'rainDrop 1.5s ease-in-out infinite';
+      cell.style.animationDelay = (Math.random() * 1.5) + 's';
+    }
+    radarGrid.appendChild(cell);
+  }
+}
+
+// ===== FORECAST CARD HOVER EXPANSION =====
+document.querySelectorAll('.forecast-card').forEach(card => {
+  card.addEventListener('mouseenter', () => {
+    card.style.transform = 'translateY(-6px) scale(1.05)';
+  });
+  card.addEventListener('mouseleave', () => {
+    if (!card.classList.contains('today')) {
+      card.style.transform = 'translateY(0) scale(1)';
+    } else {
+      card.style.transform = 'translateY(0) scale(1)';
+    }
+  });
+});
+
+// ===== DATA REFRESH CYCLES =====
+function microJitter() {
+  // Subtly vary temperature display
+  const heroTemp = document.getElementById('heroTemp');
+  if (heroTemp) {
+    heroTemp.style.animation = 'none';
+    heroTemp.offsetHeight;
+    heroTemp.style.animation = 'digitFlip 0.3s ease';
+  }
+  // Jitter sensor values
+  document.querySelectorAll('.sd-val').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'digitFlip 0.25s ease';
+  });
+}
+setInterval(microJitter, 12000);
+
+// ===== AQI GAUGE ANIMATION =====
+const aqiGauge = document.getElementById('aqiGauge');
+if (aqiGauge) {
+  setInterval(() => {
+    aqiGauge.style.animation = 'none';
+    aqiGauge.offsetHeight;
+    aqiGauge.style.animation = 'glowPulse 2s ease';
+  }, 5000);
+}
+
+// ===== BAR ANIMATION ON LOAD =====
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.pol-bar-fill, .uv-bar-fill').forEach(bar => {
+    const targetWidth = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => {
+      bar.style.width = targetWidth;
+      bar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    }, 400);
+  });
+});
+
+// ===== PERIODIC FULL REFRESH SIMULATION =====
+setInterval(() => {
+  const panels = document.querySelectorAll('.panel');
+  panels.forEach((p, i) => {
+    p.style.animation = 'none';
+    p.offsetHeight;
+    p.style.animation = `glowPulse ${1.5 + i * 0.3}s ease`;
+  });
+}, 35000);
+
+console.log('NEO CITY OS - Weather & Environment Monitor initialized.');
+console.log('Active modules: Particle Engine, Hourly Chart, Rainfall Radar, AQI Gauge, UV Map, Alerts System');
+console.log('Data refresh cycle: 35s full / 12s micro-jitter');
+</script>
+</body>
+</html>

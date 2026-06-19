@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>监控室 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.8);
+  --surface2: #111;
+  --text: #c8c0b8;
+  --text-dim: #706860;
+  --red-dark: #8b0000;
+  --red-mid: #b01010;
+  --red-glow: #ff2020;
+  --amber: #b8701a;
+  --amber-light: #e0902a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grain/Noise Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.6;
+}
+
+/* Top Navigation */
+.top-nav {
+  background: rgba(10,10,10,0.95) !important;
+  border-bottom: 1px solid rgba(120,20,20,0.3) !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 14px !important;
+  justify-content: center !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  font-size: 12px !important;
+  font-family: 'Noto Serif SC', serif !important;
+}
+.top-nav a {
+  color: #888;
+  text-decoration: none;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.top-nav a:hover {
+  color: #e0c0c0;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+.top-nav a.active {
+  color: #c04040;
+  pointer-events: none;
+  font-weight: 600;
+}
+
+/* Main layout */
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px;
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* === SYSTEM BAR === */
+.system-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(10,10,10,0.9);
+  border-bottom: 1px solid rgba(139,0,0,0.2);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8em;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+.system-bar .sys-time {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--amber);
+  font-size: 1.1em;
+  letter-spacing: 3px;
+  transition: opacity 0.2s;
+}
+
+.system-bar .sys-label {
+  color: var(--text-dim);
+}
+
+.system-bar .rec-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red-mid);
+}
+
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red-glow);
+  box-shadow: 0 0 8px rgba(255,32,32,0.6);
+  animation: recDotBlink 1s step-end infinite;
+}
+
+@keyframes recDotBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.system-bar .sys-status {
+  color: #4a6a3a;
+}
+
+/* === SECTION TITLE === */
+.section-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #b0a090;
+  border-left: 3px solid var(--amber);
+  padding-left: 14px;
+  margin: 24px 0 14px;
+  letter-spacing: 2px;
+}
+
+/* === CAMERA GRID === */
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .camera-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .camera-grid { grid-template-columns: 1fr; }
+}
+
+/* === CAMERA FEED CARD === */
+.camera-feed {
+  background: #050505;
+  border: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.camera-feed:hover {
+  border-color: rgba(139,0,0,0.3);
+  box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 40px rgba(139,0,0,0.05);
+}
+
+.camera-feed.zoomed {
+  grid-column: 1 / -1;
+  aspect-ratio: 16/9;
+  border-color: rgba(255,32,32,0.4);
+  box-shadow: 0 0 40px rgba(139,0,0,0.2);
+  z-index: 10;
+}
+
+/* Feed grain overlay */
+.camera-feed::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0,0,0,0.06) 1px,
+    rgba(0,0,0,0.06) 2px
+  );
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.8;
+}
+
+/* Camera overlay bar */
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.7);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55em;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.camera-overlay .cam-id {
+  color: var(--amber);
+}
+
+.camera-overlay .cam-time {
+  color: #aaa;
+}
+
+.camera-overlay .rec-mini {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red-mid);
+  display: inline-block;
+  margin-right: 3px;
+  vertical-align: middle;
+  animation: recDotBlink 1s step-end infinite;
+}
+
+/* Camera scene content */
+.feed-scene {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 0.7em;
+  z-index: 1;
+  padding: 24px 12px 12px;
+  overflow: hidden;
+}
+
+.feed-scene .scene-text {
+  text-align: center;
+  line-height: 1.6;
+  font-size: 0.9em;
+  max-width: 90%;
+}
+
+/* Static effect */
+.feed-static {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='0.8'/%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  transition: opacity 0.3s;
+}
+
+.camera-feed.static .feed-static {
+  opacity: 0.7;
+  animation: staticShift 0.1s steps(3) infinite;
+}
+
+@keyframes staticShift {
+  0% { background-position: 0 0; }
+  33% { background-position: 3px 2px; }
+  66% { background-position: 1px 4px; }
+  100% { background-position: 5px 1px; }
+}
+
+/* Signal lost overlay */
+.signal-lost-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9em;
+  color: var(--red-mid);
+  letter-spacing: 3px;
+  z-index: 5;
+  pointer-events: none;
+  display: none;
+  text-align: center;
+}
+
+.camera-feed.static .signal-lost-overlay {
+  display: block;
+  animation: signalLostFlicker 3s ease-in-out infinite;
+}
+
+@keyframes signalLostFlicker {
+  0%, 90%, 100% { opacity: 1; }
+  92% { opacity: 0.2; }
+  95% { opacity: 0.1; }
+  97% { opacity: 1; }
+}
+
+/* === SPECIFIC FEED STYLING === */
+/* Lobby */
+.feed-lobby {
+  background: radial-gradient(ellipse at center, #141210 0%, #050302 100%);
+}
+
+/* Elevator */
+.feed-elevator {
+  background: radial-gradient(ellipse at center, #100e0c 0%, #030201 100%);
+}
+
+/* 4F Corridor */
+.feed-corridor4 {
+  background: radial-gradient(ellipse at center, #0e0c0a 0%, #030201 100%);
+}
+
+/* 7F Corridor */
+.feed-corridor7 {
+  background: #000;
+}
+
+/* B1 */
+.feed-b1 {
+  background: radial-gradient(ellipse at center, #0c0a06 0%, #020100 100%);
+}
+
+/* B2 */
+.feed-b2 {
+  background: #000;
+}
+
+/* Rooftop */
+.feed-rooftop {
+  background: radial-gradient(ellipse at center, #0a0a14 0%, #020208 100%);
+}
+
+/* Room 404 door */
+.feed-404door {
+  background: radial-gradient(ellipse at center, #100804 0%, #030100 100%);
+}
+
+/* Back alley */
+.feed-alley {
+  background: radial-gradient(ellipse at center, #0c0e0c 0%, #020302 100%);
+}
+
+/* Shadow figure (CSS, appears in feeds) */
+.shadow-figure {
+  position: absolute;
+  width: 12px;
+  height: 30px;
+  background: #0a0a0a;
+  border-radius: 2px;
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+.shadow-figure.visible {
+  opacity: 0.6;
+}
+
+/* Door animation in corridor feed */
+.corridor-door {
+  position: absolute;
+  bottom: 20%;
+  right: 8%;
+  width: 14px;
+  height: 28px;
+  background: #1a1008;
+  border: 1px solid #2a1a0a;
+  transform-origin: right center;
+  transition: transform 4s;
+  z-index: 1;
+}
+
+.corridor-door.opening {
+  transform: perspective(100px) rotateY(-15deg);
+}
+
+/* === EXPANDED VIEW OVERLAY === */
+.expanded-view-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.expanded-view-overlay.active {
+  display: flex;
+}
+
+.expanded-view-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5em;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.3s;
+  background: none;
+  border: none;
+  z-index: 301;
+}
+
+.expanded-view-close:hover {
+  color: var(--red-glow);
+}
+
+.expanded-feed-info {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.9em;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.expanded-feed-container {
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16/9;
+  background: #050505;
+  border: 1px solid rgba(139,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.expanded-feed-details {
+  max-width: 900px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  background: rgba(20,16,12,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.85em;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+/* === PLAYBACK SECTION === */
+.playback-section {
+  background: rgba(10,10,10,0.8);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 16px;
+  margin: 14px 0;
+}
+
+.playback-clip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 0.82em;
+  flex-wrap: wrap;
+}
+
+.playback-clip:hover {
+  background: rgba(139,0,0,0.06);
+}
+
+.playback-clip .clip-time {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.8em;
+  min-width: 100px;
+}
+
+.playback-clip .clip-cam {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-dim);
+  font-size: 0.75em;
+  min-width: 90px;
+}
+
+.playback-clip .clip-desc {
+  color: var(--text);
+  flex: 1;
+  min-width: 150px;
+}
+
+.playback-clip .clip-flag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.flag-motion { color: var(--amber); border-color: rgba(184,112,26,0.4); }
+.flag-anomaly { color: var(--red-mid); border-color: rgba(176,16,16,0.4); }
+.flag-reviewed { color: #4a6a3a; border-color: rgba(74,106,58,0.4); }
+
+/* === MOTION LOG PANEL === */
+.motion-log-panel {
+  background: rgba(5,5,5,0.9);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 14px;
+  margin: 14px 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72em;
+}
+
+.motion-log-panel h4 {
+  color: var(--amber);
+  font-size: 1em;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  font-weight: 400;
+}
+
+.motion-log-entry {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+
+.motion-log-entry .ml-time {
+  color: var(--amber);
+  min-width: 70px;
+}
+
+.motion-log-entry .ml-cam {
+  color: var(--text-dim);
+  min-width: 80px;
+}
+
+.motion-log-entry .ml-event {
+  color: var(--text);
+  flex: 1;
+}
+
+.motion-log-entry .ml-event.anomaly {
+  color: var(--red-mid);
+}
+
+/* === HIDDEN REVEAL TEXT === */
+.hidden-reveal {
+  color: #222;
+  background: #222;
+  cursor: pointer;
+  padding: 0 3px;
+  transition: color 0.5s, background 0.5s;
+  user-select: none;
+}
+
+.hidden-reveal:hover, .hidden-reveal.revealed {
+  color: var(--red-glow);
+  background: transparent;
+}
+
+/* === CLIP DETAIL MODAL === */
+.clip-detail-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.93);
+  z-index: 400;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.clip-detail-modal.active {
+  display: flex;
+}
+
+.clip-detail-content {
+  max-width: 700px;
+  width: 100%;
+  background: rgba(10,10,10,0.95);
+  border: 1px solid rgba(139,0,0,0.2);
+  padding: 30px;
+}
+
+.clip-detail-content h3 {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 1em;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  font-weight: 400;
+}
+
+.clip-detail-content .clip-meta {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.clip-detail-content .clip-body {
+  font-size: 0.88em;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.clip-detail-close {
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 2px;
+}
+
+.clip-detail-close:hover {
+  border-color: rgba(255,32,32,0.3);
+  color: var(--red-glow);
+}
+
+/* === VIEWED INDICATOR === */
+.camera-feed.viewed {
+  border-color: rgba(74,106,58,0.2);
+}
+.camera-feed.viewed::before {
+  content: '已查看';
+  position: absolute;
+  top: 20px;
+  right: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.45em;
+  color: #4a6a3a;
+  z-index: 5;
+  pointer-events: none;
+  background: rgba(0,0,0,0.6);
+  padding: 1px 4px;
+}
+
+/* === AMBIENT TIMESTAMP GLITCH === */
+.timestamp-glitch {
+  animation: tsGlitch 0.2s ease-out;
+}
+
+@keyframes tsGlitch {
+  0% { color: var(--red-glow); }
+  50% { opacity: 0.3; }
+  100% { color: var(--amber); opacity: 1; }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 700px) {
+  .top-nav { gap: 2px 6px; padding: 6px 8px !important; font-size: 10px !important; }
+  .system-bar { font-size: 0.7em; }
+  .playback-clip { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+
+/* === ROOM NUMBER GLITCH IN 404 DOOR FEED === */
+.room-number-glitch {
+  animation: roomNumGlitch 0.3s ease-out;
+}
+
+@keyframes roomNumGlitch {
+  0% { color: var(--red-glow); font-size: 1.3em; }
+  100% { color: var(--amber); font-size: 1em; }
+}
+
+/* === VIGNETTE OVERLAY ON FEEDS === */
+.feed-vignette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+}
+
+/* === BLINKING LIGHT IN FEED === */
+.blinking-light {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--red-mid);
+  z-index: 1;
+  pointer-events: none;
+  animation: blightFlicker 2s ease-in-out infinite;
+}
+
+@keyframes blightFlicker {
+  0%, 85%, 100% { opacity: 0.3; }
+  90% { opacity: 1; }
+  95% { opacity: 0.1; }
+}
+
+/* === CAMERA COUNT INDICATOR === */
+.cam-count-indicator {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 6px 0;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html">首页</a>
+  <a href="rules_main.html">住户守则</a>
+  <a href="elevator_rules.html">电梯规则</a>
+  <a href="floor_directory.html">楼层指南</a>
+  <a href="room_404.html">404房间</a>
+  <a href="basement.html">地下室</a>
+  <a href="surveillance.html" class="active" style="color:#c04040;">监控室</a>
+  <a href="neighbor_encounters.html">邻居</a>
+  <a href="manager_log.html">管理员日志</a>
+  <a href="phone_calls.html">电话记录</a>
+  <a href="mirror_rules.html">镜子规则</a>
+  <a href="midnight_shift.html">深夜值班</a>
+  <a href="missing_persons.html">失踪档案</a>
+  <a href="ritual_purification.html">净化仪式</a>
+  <a href="final_night.html">终局</a>
+</nav>
+
+<div class="main-container">
+
+  <!-- SYSTEM BAR -->
+  <div class="system-bar">
+    <span class="sys-label">监控系统</span>
+    <span class="sys-time" id="sysTime">2024-03-15 03:33:00</span>
+    <span>
+      <span class="rec-indicator"><span class="rec-dot"></span> REC</span>
+      &nbsp;|&nbsp;
+      <span class="sys-status">&#9679; 系统运行中</span>
+    </span>
+  </div>
+
+  <!-- SECTION: LIVE FEEDS -->
+  <div class="section-title">实时监控画面</div>
+  <div class="cam-count-indicator" id="camCountIndicator">9 个摄像头在线 | 0 个已查看 | 点击画面放大查看细节</div>
+
+  <!-- CAMERA GRID -->
+  <div class="camera-grid" id="cameraGrid">
+
+    <!-- CAM 1: 大堂 -->
+    <div class="camera-feed feed-lobby" data-cam="lobby" id="cam-lobby">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-01</span> 大堂</span>
+        <span class="cam-time" id="camTime-lobby">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          大堂 · 无人<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">前台灯光昏暗<br>电梯门关闭<br>大厅钟表显示 3:33</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Shadow that appears occasionally -->
+      <div style="position:absolute;bottom:20%;left:40%;width:15px;height:25px;background:#080808;border-radius:2px;opacity:0;z-index:1;pointer-events:none;transition:opacity 2s;" id="lobbyShadow"></div>
+    </div>
+
+    <!-- CAM 2: 电梯A -->
+    <div class="camera-feed feed-elevator" data-cam="elevator" id="cam-elevator">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-02</span> 电梯A</span>
+        <span class="cam-time" id="camTime-elevator">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          电梯A · 空轿厢<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">楼层显示: 4<br>镜面反射<br>疑似两个身影</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Mirror reflection figure -->
+      <div style="position:absolute;top:20%;right:20%;width:8px;height:20px;background:#0a0808;border-radius:1px;opacity:0;z-index:1;pointer-events:none;transition:opacity 4s;" id="elevatorReflection"></div>
+    </div>
+
+    <!-- CAM 3: 4楼走廊 -->
+    <div class="camera-feed feed-corridor4" data-cam="corridor4" id="cam-corridor4">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-03</span> 4楼走廊</span>
+        <span class="cam-time" id="camTime-corridor4">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          4F走廊<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">走廊尽头门虚掩<br>灯光闪烁<br>404房门紧闭</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Door at end of corridor -->
+      <div class="corridor-door" id="corridor4Door"></div>
+      <!-- Flickering light effect -->
+      <div style="position:absolute;top:5%;left:45%;width:20px;height:4px;background:rgba(184,160,100,0.3);z-index:1;pointer-events:none;animation:blightFlicker 3s ease-in-out infinite;" id="corridor4Light"></div>
+    </div>
+
+    <!-- CAM 4: 7楼走廊 -->
+    <div class="camera-feed feed-corridor7 static" data-cam="corridor7" id="cam-corridor7">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-04</span> 7楼走廊</span>
+        <span class="cam-time" id="camTime-corridor7">--:--:--</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#555;">
+          <span style="animation:signalLostFlicker 3s ease-in-out infinite;">无视频信号</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+    </div>
+
+    <!-- CAM 5: 地下室B1 -->
+    <div class="camera-feed feed-b1" data-cam="b1" id="cam-b1">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-05</span> 地下室B1</span>
+        <span class="cam-time" id="camTime-b1">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          地下室B1<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">荧光灯闪烁<br>储物单元排列整齐<br>远处有阴影移动</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Flickering fluorescent -->
+      <div style="position:absolute;top:8%;left:10%;width:40px;height:3px;background:rgba(184,160,100,0.2);z-index:1;pointer-events:none;animation:blightFlicker 1.5s ease-in-out infinite;"></div>
+      <div style="position:absolute;top:8%;left:50%;width:40px;height:3px;background:rgba(184,160,100,0.2);z-index:1;pointer-events:none;animation:blightFlicker 1.8s ease-in-out infinite 0.5s;"></div>
+    </div>
+
+    <!-- CAM 6: 地下室B2 -->
+    <div class="camera-feed feed-b2" data-cam="b2" id="cam-b2">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-06</span> 地下室B2</span>
+        <span class="cam-time" id="camTime-b2">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#333;">
+          地下室B2 · 几乎无光<br>
+          <span style="font-size:0.8em;color:#222;">████████████<br>████████████</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Shape that moves -->
+      <div style="position:absolute;bottom:15%;right:20%;width:10px;height:15px;background:#080808;border-radius:2px;opacity:0;z-index:1;pointer-events:none;transition:opacity 8s,right 15s;" id="b2Shape"></div>
+    </div>
+
+    <!-- CAM 7: 天台 -->
+    <div class="camera-feed feed-rooftop" data-cam="rooftop" id="cam-rooftop">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-07</span> 天台</span>
+        <span class="cam-time" id="camTime-rooftop">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          天台 · 夜空<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">无星<br>远处城市灯光微弱<br>天台边缘无人</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Figure at edge -->
+      <div style="position:absolute;top:45%;right:8%;width:6px;height:20px;background:#0a0a0a;border-radius:1px;opacity:0;z-index:1;pointer-events:none;transition:opacity 6s;" id="rooftopFigure"></div>
+    </div>
+
+    <!-- CAM 8: 404房门外 -->
+    <div class="camera-feed feed-404door" data-cam="404door" id="cam-404door">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-08</span> 404号房门外</span>
+        <span class="cam-time" id="camTime-404door">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          404号房门外<br>
+          <span style="font-size:0.8em;color:var(--text-dim);" id="room404Number">门牌号: 404<br>门紧闭<br>走廊空无一人</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+    </div>
+
+    <!-- CAM 9: 后巷 -->
+    <div class="camera-feed feed-alley" data-cam="alley" id="cam-alley">
+      <div class="camera-overlay">
+        <span><span class="rec-mini"></span> <span class="cam-id">CAM-09</span> 后巷</span>
+        <span class="cam-time" id="camTime-alley">03:33:17</span>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-text" style="color:#aaa;">
+          后巷<br>
+          <span style="font-size:0.8em;color:var(--text-dim);">路灯闪烁<br>有猫经过<br>垃圾桶旁有动静</span>
+        </div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+      <div class="signal-lost-overlay">信号丢失<br>SIGNAL LOST</div>
+      <!-- Cat/not-cat shape -->
+      <div style="position:absolute;bottom:10%;left:30%;width:8px;height:10px;background:#080808;border-radius:50% 50% 30% 30%;opacity:0.5;z-index:1;pointer-events:none;" id="alleyShape"></div>
+    </div>
+
+  </div><!-- end camera grid -->
+
+  <!-- === EXPANDED VIEW OVERLAY === -->
+  <div class="expanded-view-overlay" id="expandedView">
+    <button class="expanded-view-close" id="expandedViewClose">&times;</button>
+    <div class="expanded-feed-info" id="expandedFeedInfo">CAM-01 大堂</div>
+    <div class="expanded-feed-container" id="expandedFeedContainer">
+      <div class="feed-scene" id="expandedFeedScene">
+        <div class="scene-text"></div>
+      </div>
+      <div class="feed-vignette"></div>
+      <div class="feed-static"></div>
+    </div>
+    <div class="expanded-feed-details" id="expandedFeedDetails">
+      选择一个摄像头查看详情。
+    </div>
+  </div>
+
+  <!-- === PLAYBACK SECTION === -->
+  <div class="section-title">录像回放 — 标记片段</div>
+  <div class="playback-section">
+    <div class="playback-clip" data-clip="0">
+      <span class="clip-time">2024-03-14 03:33:00</span>
+      <span class="clip-cam">CAM-08 · 404房门外</span>
+      <span class="clip-desc">房门短暂开启约3秒后关闭。无人员进出记录。</span>
+      <span class="clip-flag flag-anomaly">异常</span>
+    </div>
+    <div class="playback-clip" data-clip="1">
+      <span class="clip-time">2024-03-13 23:47:00</span>
+      <span class="clip-cam">CAM-02 · 电梯A</span>
+      <span class="clip-desc">电梯在无召唤情况下从B1升至4楼，门开启，空轿厢。</span>
+      <span class="clip-flag flag-motion">运动检测</span>
+    </div>
+    <div class="playback-clip" data-clip="2">
+      <span class="clip-time">2024-03-12 01:15:00</span>
+      <span class="clip-cam">CAM-06 · 地下室B2</span>
+      <span class="clip-desc">探测到移动物体，体积约1.2米高，持续16秒后消失。</span>
+      <span class="clip-flag flag-anomaly">异常</span>
+    </div>
+    <div class="playback-clip" data-clip="3">
+      <span class="clip-time">2024-03-10 03:33:00</span>
+      <span class="clip-cam">CAM-01 · 大堂</span>
+      <span class="clip-desc">大堂出现一个人影——从电梯走出，径直走向大门，但大门未开启。人影消失在原地。</span>
+      <span class="clip-flag flag-anomaly">异常</span>
+    </div>
+    <div class="playback-clip" data-clip="4">
+      <span class="clip-time">2024-03-08 22:08:00</span>
+      <span class="clip-cam">CAM-07 · 天台</span>
+      <span class="clip-desc">天台边缘出现站立人影。持续约2分钟后人影消失。天台门禁系统显示当晚无人刷卡进入。</span>
+      <span class="clip-flag flag-anomaly">异常</span>
+    </div>
+    <div class="playback-clip" data-clip="5">
+      <span class="clip-time">2024-03-05 04:02:00</span>
+      <span class="clip-cam">CAM-04 · 7楼走廊</span>
+      <span class="clip-desc">信号短暂恢复约7秒。画面显示走廊尽头似乎有一扇不应存在的门。随后信号再次中断。</span>
+      <span class="clip-flag flag-review">已复核</span>
+    </div>
+    <div class="playback-clip" data-clip="6">
+      <span class="clip-time">2024-02-28 03:33:00</span>
+      <span class="clip-cam">CAM-03 · 4楼走廊</span>
+      <span class="clip-desc">走廊尽头的门自动打开约15度，停顿约4秒后关闭。无人经过该区域。</span>
+      <span class="clip-flag flag-motion">运动检测</span>
+    </div>
+  </div>
+
+  <!-- === MOTION LOG PANEL === -->
+  <div class="section-title">运动侦测日志</div>
+  <div class="motion-log-panel" id="motionLogPanel">
+    <h4>最近检测事件</h4>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:33:00</span>
+      <span class="ml-cam">CAM-08</span>
+      <span class="ml-event anomaly">404号房门牌号码变化: 404 → 405 → 404</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:32:47</span>
+      <span class="ml-cam">CAM-01</span>
+      <span class="ml-event">大堂区域检测到运动。来源未确认。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:31:15</span>
+      <span class="ml-cam">CAM-06</span>
+      <span class="ml-event anomaly">B2层探测到不明热源。持续时间: 3秒。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:28:00</span>
+      <span class="ml-cam">CAM-04</span>
+      <span class="ml-event">7楼走廊信号检测失败。摄像机仍在响应Ping。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:25:33</span>
+      <span class="ml-cam">CAM-02</span>
+      <span class="ml-event">电梯A楼层显示异常: 显示 "B3" (不存在)。持续2秒后恢复。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:22:10</span>
+      <span class="ml-cam">CAM-09</span>
+      <span class="ml-event">后巷运动检测。目标速度异常（估算: 40km/h）。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:19:44</span>
+      <span class="ml-cam">CAM-03</span>
+      <span class="ml-event">4楼走廊闪烁——疑似电力波动。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:17:00</span>
+      <span class="ml-cam">CAM-07</span>
+      <span class="ml-event anomaly">天台边缘检测到物体。尺寸: 约1.7米高。仅出现一帧。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:15:30</span>
+      <span class="ml-cam">CAM-05</span>
+      <span class="ml-event">B1层荧光灯闪烁。储物单元B1-05附近检测到振动。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:12:00</span>
+      <span class="ml-cam">CAM-08</span>
+      <span class="ml-event anomaly">404房门在无人时短暂开启缝隙。持续: 3.3秒。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:10:00</span>
+      <span class="ml-cam">CAM-01</span>
+      <span class="ml-event">大厅钟表指针出现闪动。时间显示为3:33。</span>
+    </div>
+    <div class="motion-log-entry">
+      <span class="ml-time">03:08:00</span>
+      <span class="ml-cam">CAM-06</span>
+      <span class="ml-event anomaly">B2红外探测显示温度骤降——局部降至约5°C。持续40秒。</span>
+    </div>
+  </div>
+
+  <!-- === CLIP DETAIL MODAL === -->
+  <div class="clip-detail-modal" id="clipDetailModal">
+    <div class="clip-detail-content">
+      <h3 id="clipDetailTitle">录像片段详情</h3>
+      <div class="clip-meta" id="clipDetailMeta"></div>
+      <div class="clip-body" id="clipDetailBody"></div>
+      <button class="clip-detail-close" id="clipDetailClose">关闭</button>
+    </div>
+  </div>
+
+</div><!-- end main-container -->
+
+<script>
+(function(){
+  'use strict';
+
+  // ========== SYSTEM TIME ==========
+  const sysTimeEl = document.getElementById('sysTime');
+
+  function updateSystemTime() {
+    const now = new Date();
+    // Use a fictional date anchored to the current real time but set in a creepy timeframe
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    sysTimeEl.textContent = yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + min + ':' + ss;
+
+    // Occasionally glitch
+    if (Math.random() < 0.03) {
+      sysTimeEl.classList.add('timestamp-glitch');
+      const original = sysTimeEl.textContent;
+      sysTimeEl.textContent = '20██-██-██ ██:██:██';
+      setTimeout(() => {
+        sysTimeEl.textContent = original;
+        sysTimeEl.classList.remove('timestamp-glitch');
+      }, 150 + Math.random() * 200);
+    }
+  }
+
+  setInterval(updateSystemTime, 1000);
+  updateSystemTime();
+
+  // ========== CAMERA TIME UPDATES ==========
+  function updateCameraTimes() {
+    const cameras = document.querySelectorAll('.cam-time');
+    cameras.forEach(el => {
+      if (el.textContent === '--:--:--') return; // skip static cams
+      const h = '03';
+      const m = '33';
+      const s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+      el.textContent = h + ':' + m + ':' + s;
+
+      // Occasional glitch on specific cams
+      if (el.id === 'camTime-404door' && Math.random() < 0.15) {
+        el.classList.add('timestamp-glitch');
+        el.textContent = '0█:3█:██';
+        setTimeout(() => {
+          el.classList.remove('timestamp-glitch');
+          el.textContent = h + ':' + m + ':' + s;
+        }, 200 + Math.random() * 400);
+      }
+    });
+  }
+
+  setInterval(updateCameraTimes, 3000);
+
+  // ========== CAMERA FEED CLICK TO ZOOM ==========
+  const cameraFeeds = document.querySelectorAll('.camera-feed');
+  const expandedView = document.getElementById('expandedView');
+  const expandedFeedInfo = document.getElementById('expandedFeedInfo');
+  const expandedFeedScene = document.getElementById('expandedFeedScene');
+  const expandedFeedDetails = document.getElementById('expandedFeedDetails');
+  const expandedViewClose = document.getElementById('expandedViewClose');
+  const expandedFeedContainer = document.getElementById('expandedFeedContainer');
+
+  // Camera detail data
+  const camDetails = {
+    lobby: {
+      title: 'CAM-01 · 大堂',
+      detail: '<p><strong>位置：</strong>一楼大堂正门入口上方，朝向电梯间。</p><p><strong>观察：</strong>当前时间显示大厅内无人员。钟表指针停在3:33。前台值班人员暂时离开（洗手间，预计返回时间03:45）。灯光系统设定为夜间模式（30%亮度）。</p><p><strong>历史异常：</strong>该摄像头多次在凌晨3:33前后捕捉到短暂的人影经过画面。人影移动方向总是从电梯走向大门，但大门感应器从未触发开启记录。最近一次记录：2024年3月10日。</p><p><strong>备注：</strong>前台工作人员曾报告，在值夜班时偶尔听到大厅里有脚步声——抬头看监控时却画面一切正常。</p><p style="color:var(--red-mid);font-size:0.85em;">管理员标记：监控数据保留期60天。2024年1月之前的录像已被覆盖。</p>'
+    },
+    elevator: {
+      title: 'CAM-02 · 电梯A',
+      detail: '<p><strong>位置：</strong>电梯A轿厢内部，安装于顶部角落，角度覆盖轿厢80%区域及电梯镜面。</p><p><strong>观察：</strong>电梯当前停在4楼——但4楼无召唤记录。轿厢空无一人。轿厢后壁为镜面不锈钢，从摄像头角度可以看到镜面反射——<span style="color:var(--red-mid);">在多次录像回顾中，镜面反射显示轿厢内有两人的身影，而实际画面中只有一人或空轿厢。</span></p><p><strong>历史异常：</strong>2024年2月，独立审核员在查看录像时注意到了镜面反射异常。她调取了同一时间的另一角度录像（无），并发现了一个规则：当电梯中人数为奇数时（1人），镜面显示偶数（2人）；当电梯空载时，镜面显示1人。电梯制造商检查了镜面，认为其为普通镜面，无技术问题。镜面已于2024年2月更换。新镜面表现相同。</p><p><strong>备注：</strong>电梯A在夜间偶尔会在无召唤的情况下自行在各楼层间移动。检修结果显示"电梯控制系统正常"。</p>'
+    },
+    corridor4: {
+      title: 'CAM-03 · 4楼走廊',
+      detail: '<p><strong>位置：</strong>四楼走廊东端，视角覆盖整个走廊及404号房间门。</p><p><strong>观察：</strong>走廊照明正常。404号房门紧闭。走廊尽头的安全门（通向楼梯间）处于虚掩状态——但门禁传感器显示门已锁闭。此不一致已记录。</p><p><strong>历史异常：</strong>走廊尽头安全门多次在无人的情况下自行打开约10—20厘米，停顿数秒后关闭。最近一次被记录的行为发生在2024年2月28日凌晨3:33。物业检修了门锁和闭门器——未发现故障。更换闭门器后行为继续。</p><p><strong>额外观察：</strong>2023年11月，一名夜班保安在巡逻时报告称，他在4楼走廊听到404房间内有"刮擦声"。他查看了门口——门关着且锁着。CAM-03录像在该时段显示走廊空无一人，但<span class="hidden-reveal" onclick="this.classList.toggle(\'revealed\')">音频轨道记录到了无法识别的低频振动</span>。</p>'
+    },
+    corridor7: {
+      title: 'CAM-04 · 7楼走廊',
+      detail: '<p><strong>位置：</strong>七楼走廊中部。CAM-04自2023年6月起持续报告"信号丢失"。</p><p><strong>技术状态：</strong>摄像头物理连接完好。供电正常（通过独立电路验证）。网络Ping响应时间正常。但视频数据流为空白/噪声。更换摄像头单元三次——每次更换后约48小时，信号再次丢失。</p><p><strong>间歇性信号恢复：</strong>在极少数情况下（约每2—3周一次，持续5—10秒），信号短暂恢复。在恢复期间捕捉到的最完整画面显示：走廊看起来正常，但走廊尽头似乎存在一扇额外的门——一扇不属于楼层平面图的门。当信号再次丢失时，这扇门也不见踪影。</p><p><strong>住户报告：</strong>7楼住户曾报告在走廊中听到"有人在走动"的声音，但开门查看时走廊空无一人。7楼目前仅有效住户3户——其余均空置。</p><p style="color:var(--red-mid);font-size:0.85em;">技术员备注："不想再修了。每次靠近7楼走廊尽头，都会感到有人在注视。"</p>'
+    },
+    b1: {
+      title: 'CAM-05 · 地下室B1',
+      detail: '<p><strong>位置：</strong>B1层走廊，视角覆盖储物单元区及洗衣房入口。</p><p><strong>观察：</strong>荧光灯照明。灯管偶尔闪烁——但电力检测显示电压稳定。储物单元排列整齐、锁闭。洗衣房门如规定的那样保持常开。</p><p><strong>历史异常：</strong>在多次夜间录像回顾中，观察到储物单元B1-05和B1-09附近有不太清晰的动作——类似阴影移动，但没有任何可识别的来源。CAM-05的运动检测灵敏度已降低以过滤这些报知。此外，洗衣房内偶尔传出"洗衣机在无人的情况下进水的音频"——派人查看后发现洗衣机内没有水，且插头已拔掉。</p><p><strong>最新观察：</strong>上周的录像显示B1-14储物单元的门似乎短暂地开了一条缝——但现场检查显示该单元上的密封封条仍然完好无损。</p>'
+    },
+    b2: {
+      title: 'CAM-06 · 地下室B2',
+      detail: '<p><strong>位置：</strong>B2层锅炉房入口附近。由于B2层照明极弱，画面几乎全黑。</p><p><strong>技术说明：</strong>CAM-06配备红外感应。在可见光极度不足时自动切换为红外模式。红外模式下偶尔探测到热源——但热源位置和大小不稳定。</p><p><strong>历史异常：</strong>(1) 2023年12月探测到一个约高1.2米的热源，从锅炉房区域移动至管道走廊方向，然后消失。(2) 2024年2月探测到多个小型热源——类似鼠类——但B2层从未有过害虫活动的报告。(3) 2024年3月，B2层温度在凌晨3:33左右准时骤降至约5°C——而建筑其余部分暖气正常运行。</p><p style="color:var(--red-mid);font-size:0.85em;">安全警告：未经授权不可进入B2层。CAM-06仅为监控存在，不替代人力巡检。</p>'
+    },
+    rooftop: {
+      title: 'CAM-07 · 天台',
+      detail: '<p><strong>位置：</strong>建筑天台东南角，覆盖天台约60%区域及天台边缘。</p><p><strong>观察：</strong>夜空无星。城市光污染微弱。天台空旷。天台门禁为刷卡进入，当晚无开启记录。</p><p><strong>历史异常：</strong>CAM-07多次记录到天台边缘出现站立人影。录像回顾显示人影出现在不同时间，有时面对天空，有时面对摄像头方向。每次人影持续时间不固定（约30秒至4分钟），随后消失——不是走开，而是原地消失，如同从未存在过。天台门禁记录与这些事件的时间完全不相关——没有任何同步的门禁开启记录。</p><p><strong>物理检查：</strong>天台检查未发现任何痕迹（烟蒂、脚印、遗留物）。天台围栏完好。天台边缘距地面约28米，无法从外部攀爬到达。</p><p style="color:var(--text-dim);font-size:0.85em;">安保备注：已建议提高天台围栏高度。建议被否决（"成本原因"）。</p>'
+    },
+    '404door': {
+      title: 'CAM-08 · 404号房门外',
+      detail: '<p><strong>位置：</strong>四楼404号房间门正对面，摄像头视角直接对向房门。</p><p><strong>技术异常：</strong>CAM-08的时钟与主系统时钟存在无法纠正的偏差。每次同步后，CAM-08的时钟会在24小时内自行漂移——最终总是趋向于显示3:33。该问题在三次更换摄像头硬件后仍然存在，表明问题不在于摄像头本身。</p><p><strong>历史异常：</strong>(1) 门牌号偶尔从"404"变为"405"，持续数秒后恢复。摄像头捕捉到17次此事件。(2) 房门在无人接近的情况下短暂开启（缝隙约5-10厘米），最近一次记录为2024年3月14日。(3) CAM-08音频（低频通道）录到类似敲门的声音——三下，间隔约2秒——房间内外均无人。音频分析表明敲门声的频率组成异常，含有次声波成分。</p><p><strong>附加：</strong>CAM-08的录像磁带在存档时偶尔变为空白——即使播放时仍显示录制内容，但提取到其他播放器后变为无信号。</p><p><strong>当前状态：</strong>404房间处于空置封闭状态。摄像头为主要监控手段。工作人员被指示每小时目视检查一次此摄像画面。</p>'
+    },
+    alley: {
+      title: 'CAM-09 · 后巷',
+      detail: '<p><strong>位置：</strong>建筑后巷，安装于后门上方，覆盖消防通道及垃圾存放区。</p><p><strong>观察：</strong>路灯正常工作。一只猫经过（常见）。垃圾桶排列整齐。</p><p><strong>历史异常：</strong>CAM-09偶尔捕捉到在巷子中移动的物体——但物体的移动方式不似猫或任何常见城市动物。运动轨迹呈"锯齿形"，速度时快时慢。某次录像中的物体在巷子中央停下，似乎在面向摄像头方向，然后以极快速度移出画面。生物学家被咨询后认为："运动模式与已知城市野生动物不符。建议增加照明。"</p><p><strong>后门记录：</strong>后门门锁和感应器工作正常。但发生过数次后门在无人操作的情况下被"从内部推开"的事件——门禁记录显示门锁未通电（正常锁闭状态），但监控录像显示门确实移动了。</p><p style="color:var(--text-dim);font-size:0.85em;">保安备注："后巷晚上不要去。不管听到什么声音都不要出去看。这是经验之谈。"</p>'
+    }
+  };
+
+  function openExpandedView(camId) {
+    const info = camDetails[camId];
+    if (!info) return;
+
+    expandedFeedInfo.textContent = info.title;
+    expandedFeedDetails.innerHTML = info.detail;
+    expandedView.classList.add('active');
+
+    // Set background class matching the feed
+    expandedFeedContainer.className = 'expanded-feed-container';
+    if (camId === 'lobby') expandedFeedContainer.classList.add('feed-lobby');
+    else if (camId === 'elevator') expandedFeedContainer.classList.add('feed-elevator');
+    else if (camId === 'corridor4') expandedFeedContainer.classList.add('feed-corridor4');
+    else if (camId === 'corridor7') expandedFeedContainer.classList.add('feed-corridor7');
+    else if (camId === 'b1') expandedFeedContainer.classList.add('feed-b1');
+    else if (camId === 'b2') expandedFeedContainer.classList.add('feed-b2');
+    else if (camId === 'rooftop') expandedFeedContainer.classList.add('feed-rooftop');
+    else if (camId === '404door') expandedFeedContainer.classList.add('feed-404door');
+    else if (camId === 'alley') expandedFeedContainer.classList.add('feed-alley');
+
+    // Add some scene text to expanded view
+    const sceneText = expandedFeedContainer.querySelector('.scene-text');
+    if (sceneText) {
+      switch(camId) {
+        case 'lobby':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">大堂 · 实时查看中<br><span style="font-size:0.7em;color:var(--text-dim);">前厅无人。钟表: 3:33。电梯: 停在4楼。</span></span>';
+          break;
+        case 'elevator':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">电梯轿厢内部<br><span style="font-size:0.7em;color:var(--text-dim);">注意: 镜面反射。</span></span>';
+          break;
+        case 'corridor4':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">4楼走廊——东向视角<br><span style="font-size:0.7em;color:var(--text-dim);">404室: 关。安全门: 虚掩? 灯光: 正常。</span></span>';
+          break;
+        case 'corridor7':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#555;animation:signalLostFlicker 3s ease-in-out infinite;">无视频信号<br><span style="font-size:0.6em;">CAM-04 · 信号中断中</span></span>';
+          break;
+        case 'b1':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">地下室B1<br><span style="font-size:0.7em;color:var(--text-dim);">储物单元 · 洗衣房 · 无异常</span></span>';
+          break;
+        case 'b2':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#333;">████████<br><span style="font-size:0.7em;color:#222;">低光照 · 红外模式</span></span>';
+          break;
+        case 'rooftop':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">天台 · 夜间<br><span style="font-size:0.7em;color:var(--text-dim);">无星。风速: 轻微。天台: 无人。</span></span>';
+          break;
+        case '404door':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">404号房门<br><span style="font-size:0.7em;color:var(--text-dim);">状态: 封闭。无人靠近。</span></span>';
+          break;
+        case 'alley':
+          sceneText.innerHTML = '<span style="font-size:1em;color:#aaa;">后巷<br><span style="font-size:0.7em;color:var(--text-dim);">猫可见。无其他活动。</span></span>';
+          break;
+      }
+    }
+
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeExpandedView() {
+    expandedView.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  cameraFeeds.forEach(feed => {
+    feed.addEventListener('click', function(e) {
+      const camId = this.dataset.cam;
+      if (!camId) return;
+
+      // Toggle zoom on grid (inline zoom)
+      const wasZoomed = this.classList.contains('zoomed');
+
+      // Remove zoom from all
+      cameraFeeds.forEach(f => f.classList.remove('zoomed'));
+
+      if (!wasZoomed) {
+        this.classList.add('zoomed');
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Mark as viewed
+        markFeedViewed(camId);
+      }
+
+      // Also open expanded detail view
+      openExpandedView(camId);
+    });
+  });
+
+  expandedViewClose.addEventListener('click', closeExpandedView);
+  expandedView.addEventListener('click', function(e) {
+    if (e.target === expandedView) closeExpandedView();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeExpandedView();
+      document.getElementById('clipDetailModal').classList.remove('active');
+      cameraFeeds.forEach(f => f.classList.remove('zoomed'));
+    }
+  });
+
+  // ========== MARK FEED AS VIEWED ==========
+  function markFeedViewed(camId) {
+    const feed = document.getElementById('cam-' + camId);
+    if (feed && !feed.classList.contains('viewed')) {
+      feed.classList.add('viewed');
+      updateViewedCount();
+
+      // Save to localStorage
+      const viewed = JSON.parse(localStorage.getItem('nf_surveillance_viewed') || '[]');
+      if (!viewed.includes(camId)) {
+        viewed.push(camId);
+        localStorage.setItem('nf_surveillance_viewed', JSON.stringify(viewed));
+      }
+    }
+  }
+
+  function updateViewedCount() {
+    const viewed = document.querySelectorAll('.camera-feed.viewed').length;
+    document.getElementById('camCountIndicator').textContent =
+      '9 个摄像头在线 | ' + viewed + ' 个已查看 | 点击画面放大查看细节';
+
+    if (viewed === 9) {
+      document.getElementById('camCountIndicator').textContent += ' | 全部已查看';
+      document.getElementById('camCountIndicator').style.color = '#4a6a3a';
+    }
+  }
+
+  // Restore viewed state from localStorage
+  function restoreViewedState() {
+    const viewed = JSON.parse(localStorage.getItem('nf_surveillance_viewed') || '[]');
+    viewed.forEach(camId => {
+      const feed = document.getElementById('cam-' + camId);
+      if (feed) feed.classList.add('viewed');
+    });
+    updateViewedCount();
+  }
+  restoreViewedState();
+
+  // ========== ANIMATED FEED EFFECTS ==========
+
+  // Lobby: shadow passes
+  function animateLobbyShadow() {
+    const shadow = document.getElementById('lobbyShadow');
+    if (!shadow || document.getElementById('cam-lobby').classList.contains('zoomed')) return;
+    if (Math.random() < 0.3) {
+      shadow.style.opacity = '0.5';
+      shadow.style.left = (30 + Math.random() * 40) + '%';
+      setTimeout(() => { shadow.style.opacity = '0'; }, 1500 + Math.random() * 2000);
+    }
+  }
+  setInterval(animateLobbyShadow, 8000);
+
+  // Elevator: mirror reflection
+  function animateElevatorReflection() {
+    const reflection = document.getElementById('elevatorReflection');
+    if (!reflection) return;
+    if (Math.random() < 0.4) {
+      reflection.style.opacity = '0.5';
+      setTimeout(() => { reflection.style.opacity = '0'; }, 2000 + Math.random() * 3000);
+    }
+  }
+  setInterval(animateElevatorReflection, 6000);
+
+  // 4F Corridor: door opens
+  function animateCorridorDoor() {
+    const door = document.getElementById('corridor4Door');
+    if (!door) return;
+    if (Math.random() < 0.35) {
+      door.classList.add('opening');
+      setTimeout(() => { door.classList.remove('opening'); }, 4000 + Math.random() * 2000);
+    }
+    // Also flicker the light
+    const light = document.getElementById('corridor4Light');
+    if (light && Math.random() < 0.5) {
+      light.style.opacity = '0.05';
+      setTimeout(() => { light.style.opacity = ''; }, 300 + Math.random() * 600);
+    }
+  }
+  setInterval(animateCorridorDoor, 10000);
+
+  // B2: shape movement
+  function animateB2Shape() {
+    const shape = document.getElementById('b2Shape');
+    if (!shape) return;
+    if (Math.random() < 0.3) {
+      shape.style.opacity = '0.4';
+      shape.style.right = (10 + Math.random() * 40) + '%';
+      setTimeout(() => { shape.style.opacity = '0'; }, 3000 + Math.random() * 5000);
+    }
+  }
+  setInterval(animateB2Shape, 12000);
+
+  // Rooftop: figure at edge
+  function animateRooftopFigure() {
+    const figure = document.getElementById('rooftopFigure');
+    if (!figure) return;
+    if (Math.random() < 0.25) {
+      figure.style.opacity = '0.5';
+      setTimeout(() => { figure.style.opacity = '0'; }, 3000 + Math.random() * 5000);
+    }
+  }
+  setInterval(animateRooftopFigure, 15000);
+
+  // 404 Door: room number glitch
+  function animate404Number() {
+    const numEl = document.getElementById('room404Number');
+    if (!numEl) return;
+    if (Math.random() < 0.2) {
+      numEl.classList.add('room-number-glitch');
+      numEl.innerHTML = '门牌号: <span style="color:var(--red-glow);">405</span><br>门紧闭<br>走廊空无一人';
+      setTimeout(() => {
+        numEl.innerHTML = '门牌号: 404<br>门紧闭<br>走廊空无一人';
+        numEl.classList.remove('room-number-glitch');
+      }, 800 + Math.random() * 1500);
+    }
+  }
+  setInterval(animate404Number, 6000);
+
+  // Alley: shape changes
+  function animateAlleyShape() {
+    const shape = document.getElementById('alleyShape');
+    if (!shape) return;
+    // Sometimes "not a cat" — elongate the shape
+    if (Math.random() < 0.2) {
+      shape.style.width = '6px';
+      shape.style.height = '22px';
+      shape.style.borderRadius = '10%';
+      shape.style.opacity = '0.3';
+      shape.style.left = (15 + Math.random() * 55) + '%';
+      setTimeout(() => {
+        shape.style.width = '8px';
+        shape.style.height = '10px';
+        shape.style.borderRadius = '50% 50% 30% 30%';
+        shape.style.opacity = '0.5';
+      }, 2000);
+    }
+  }
+  setInterval(animateAlleyShape, 9000);
+
+  // ========== PLAYBACK CLIP CLICK ==========
+  const clipData = [
+    {
+      title: '录像片段: 2024-03-14 03:33:00 | CAM-08',
+      meta: '时长: 4秒 | 触发: 运动检测 | 标记: 异常',
+      body: '<p>录制于2024年3月14日凌晨3点33分00秒。CAM-08（404号房门外）。</p><p>画面开始时404房门处于正常的关闭状态，门牌号"404"清晰可见。在第1秒，门牌号短暂变化为"405"，随后恢复为"404"。在第2秒，房门在没有可见外力作用的情况下自行开启了一道约8厘米的缝隙。缝隙内为完全黑暗——CAM-08的红外功能未探测到来自房间内部的任何热信号或反射。</p><p>门保持微开状态共3.3秒，然后自行关闭。关闭动作流畅自然，如同有人从内部拉动——但CAM-08视角覆盖的门内外两侧均无任何人影。</p><p>音频轨道记录到三次低沉的声音——类似于敲门声——分别在门开启前约2秒、开启瞬间及关闭后1秒。频率分析表明这三次声音与门在物理上的启动无关（声学传播时间不匹配）。</p><p style="color:var(--red-mid);">复查结论：无法解释。建议人工检查404房间。检查请求已提交（待批准）。</p>'
+    },
+    {
+      title: '录像片段: 2024-03-13 23:47:00 | CAM-02',
+      meta: '时长: 18秒 | 触发: 运动检测 | 标记: 运动检测',
+      body: '<p>录制于2024年3月13日晚11点47分。CAM-02（电梯A）。</p><p>电梯A在B1层停靠——当晚B1层无住户使用记录。电梯门开启，轿厢内照明正常。轿厢空无一人。门保持开启状态约8秒（标准等待时间），然后关闭。电梯随后无任何楼层按钮按下的情况下上升至4楼。</p><p>在4楼，电梯门再次开启约8秒。走廊无人——CAM-03画面确认同时段4楼走廊空无一人。门关闭后电梯保持静止在4楼。</p><p>电梯机械检查（次日）未发现故障。控制系统日志显示两次停靠均为"正常停靠"。无故障码。无电力异常。</p><p style="color:var(--amber);">复查结论：运动检测误触发——可能由电梯内部尘埃颗粒引起。但停靠行为无法解释。</p>'
+    },
+    {
+      title: '录像片段: 2024-03-12 01:15:00 | CAM-06',
+      meta: '时长: 19秒 | 触发: 红外感应 | 标记: 异常',
+      body: '<p>录制于2024年3月12日凌晨1点15分。CAM-06（地下室B2，红外模式）。</p><p>画面开始为B2层典型画面——几乎全黑，仅锅炉房方向的微弱红光可见。在第4秒，红外传感器探测到一个热源——约高1.2米，大致形状为类人形——出现在画面左侧（锅炉房方向）。该热源沿走廊水平移动约3米后停止，保持静止约6秒——似乎面朝摄像头方向。</p><p>热源随后继续移动，消失在管道走廊方向。红外信号在管道走廊入口处突然熄灭——不是逐渐消退，而是"瞬间切断"。总可见时间：约16秒。</p><p>现场检查（次日白班）未在B2层发现任何痕迹。B2层进出记录显示当晚无人进入。锅炉房温度记录未显示异常升温。</p><p style="color:var(--red-mid);">复查结论：无法解释的热信号。可能是设备故障。但B2层无其他热源可解释此红外反射。建议继续监控。</p>'
+    },
+    {
+      title: '录像片段: 2024-03-10 03:33:00 | CAM-01',
+      meta: '时长: 7秒 | 触发: 运动检测 | 标记: 异常',
+      body: '<p>录制于2024年3月10日凌晨3点33分。CAM-01（大堂）。</p><p>画面开始：大厅空无一人，灯光昏暗，钟表显示3:33。电梯门开启（电梯从4楼下至1楼——无召唤记录）。一个人形轮廓从电梯中走出——由于灯光角度和摄影机位置，轮廓的面部特征无法辨认。人影穿过大厅，径直走向前门。</p><p>在人影到达前门约1米距离时，它没有推门或停步——而是直接<strong>原地消失</strong>。消失过程持续约2帧（0.08秒），类似渐隐，但肉眼可见。前门感应器全程未触发。门禁系统无开启记录。</p><p>人影消失后，大厅恢复为空无一人状态。电梯门关闭，电梯返回4楼。</p><p style="color:var(--red-mid);">复查结论：无法解释。可能是光线折射或摄影机故障，但无法复制测试。此事件与2023年12月及2024年1月的两次类似事件模式一致。</p>'
+    },
+    {
+      title: '录像片段: 2024-03-08 22:08:00 | CAM-07',
+      meta: '时长: 140秒 | 触发: 运动检测 | 标记: 异常',
+      body: '<p>录制于2024年3月8日晚10点08分。CAM-07（天台）。</p><p>画面开始：天台空旷。夜空清晰（当晚天气良好）。在18秒标记处，一个高约1.7米的瘦长人影出现在天台东南边缘（最远端）。人影站立不动，面向建筑物外方向（城市方向）。人影轮廓清晰度足够确认其为人形，但无法辨认衣着或身体细节。</p><p>人影保持静止约2分钟10秒。随后在一帧之间（0.04秒）<strong>完全消失</strong>。不是走开、蹲下或跳出画面——是直接消失。天台边缘没有人影之后的任何余像或运动轨迹。</p><p>关键信息：天台门禁为刷卡进入系统。当晚（18:00以后）的门禁记录显示：<strong>无任何刷卡记录</strong>。天台门在物理检查中也被确认锁闭完好。围栏高度2.1米，无法从外部攀爬到达。天台地面无可追踪痕迹。</p><p style="color:var(--red-mid);">复查结论：严重安全漏洞或无法解释现象。天台门锁已更换，建议加装第二台摄像头。</p>'
+    },
+    {
+      title: '录像片段: 2024-03-05 04:02:00 | CAM-04',
+      meta: '时长: 7秒 | 触发: 信号恢复检测 | 标记: 已复核',
+      body: '<p>录制于2024年3月5日凌晨4点02分。CAM-04（7楼走廊）。</p><p>CAM-04自2023年6月起持续报告信号丢失——仅偶尔恢复。这是最近一次信号恢复事件。</p><p>在7秒的信号恢复窗口中，画面显示7楼走廊似乎一切正常——照明正常，无人员走动。然而，在走廊尽头（安全门所在位置附近），画面中出现了<strong>一扇不在建筑平面图上的门</strong>。这扇门看起来年代久远——暗色木门，带有一个老式金属把手。门的位置应在平面图上标记为实心混凝土墙。</p><p>在第7秒末尾，画面再次变为噪声——信号丢失。7秒中未捕捉到任何人通过这扇神秘的门进出。</p><p>7楼物理检查（次日白班）确认走廊尽头只有墙壁和安全门——没有那扇神秘的门。墙壁无损毁或最近施工的痕迹。墙体探测（声纳）未发现空腔。</p><p style="color:#4a6a3a;">复查结论：已复核。可能为摄影机故障或光线折射。继续监控。</p>'
+    },
+    {
+      title: '录像片段: 2024-02-28 03:33:00 | CAM-03',
+      meta: '时长: 11秒 | 触发: 运动检测 | 标记: 运动检测',
+      body: '<p>录制于2024年2月28日凌晨3点33分。CAM-03（4楼走廊）。</p><p>4楼走廊空无一人。所有房间门关闭。404号房门紧闭。在4秒标记处，走廊尽头的安全门在没有可见外力的情况下自行开启约15度（约25厘米）。门保持此位置约4秒，然后缓慢关闭——关闭速度比正常闭门器的速度更慢、更平滑。</p><p>整段录像中，走廊中无人员经过，无气流变化（走廊为封闭空间，无外窗），无其他门开启/关闭。安全门的运动检测为"单向"——只有从走廊侧观察到门移动，门另一侧的楼梯间CAM无同步记录。</p><p>门锁和闭门器次日检查正常。更换闭门器后行为在3月1日再次发生。</p><p style="color:var(--amber);">复查结论：运动检测正确触发。可能由管道气压变化引起——但楼梯间为独立防火分区，不应受到管道影响。</p>'
+    }
+  ];
+
+  const clipDetailModal = document.getElementById('clipDetailModal');
+  const clipDetailTitle = document.getElementById('clipDetailTitle');
+  const clipDetailMeta = document.getElementById('clipDetailMeta');
+  const clipDetailBody = document.getElementById('clipDetailBody');
+  const clipDetailClose = document.getElementById('clipDetailClose');
+
+  function openClipDetail(index) {
+    const clip = clipData[index];
+    if (!clip) return;
+    clipDetailTitle.textContent = clip.title;
+    clipDetailMeta.textContent = clip.meta;
+    clipDetailBody.innerHTML = clip.body;
+    clipDetailModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeClipDetail() {
+    clipDetailModal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  const playbackClips = document.querySelectorAll('.playback-clip');
+  playbackClips.forEach(clip => {
+    clip.addEventListener('click', function() {
+      const clipIndex = parseInt(this.dataset.clip);
+      openClipDetail(clipIndex);
+    });
+  });
+
+  clipDetailClose.addEventListener('click', closeClipDetail);
+  clipDetailModal.addEventListener('click', function(e) {
+    if (e.target === clipDetailModal) closeClipDetail();
+  });
+
+  // ========== MOTION LOG AUTO UPDATE ==========
+  function simulateMotionLogUpdate() {
+    const panel = document.getElementById('motionLogPanel');
+    if (!panel) return;
+    const entries = panel.querySelectorAll('.motion-log-entry');
+
+    // Occasionally highlight a random entry
+    if (Math.random() < 0.3) {
+      const randomEntry = entries[Math.floor(Math.random() * entries.length)];
+      if (randomEntry) {
+        randomEntry.style.background = 'rgba(139,0,0,0.08)';
+        randomEntry.style.transition = 'background 0.3s';
+        setTimeout(() => {
+          randomEntry.style.background = '';
+        }, 1500);
+      }
+    }
+
+    // Occasionally prepend a new entry
+    if (Math.random() < 0.15) {
+      const fakeEvents = [
+        { time: '03:33:00', cam: 'CAM-08', event: '404号房门微动检测', cls: 'anomaly' },
+        { time: '03:33:00', cam: 'CAM-01', event: '大厅运动检测——来源未确认', cls: '' },
+        { time: '03:32:00', cam: 'CAM-06', event: 'B2层红外触发', cls: 'anomaly' },
+        { time: '03:30:00', cam: 'CAM-03', event: '走廊灯光闪烁', cls: '' },
+      ];
+      const evt = fakeEvents[Math.floor(Math.random() * fakeEvents.length)];
+      const newEntry = document.createElement('div');
+      newEntry.className = 'motion-log-entry';
+      newEntry.innerHTML =
+        '<span class="ml-time">' + evt.time + '</span>' +
+        '<span class="ml-cam">' + evt.cam + '</span>' +
+        '<span class="ml-event' + (evt.cls ? ' ' + evt.cls : '') + '">' + evt.event + '</span>';
+      const firstEntry = panel.querySelector('.motion-log-entry');
+      if (firstEntry) {
+        panel.insertBefore(newEntry, firstEntry);
+      }
+
+      // Limit to 20 entries
+      const allEntries = panel.querySelectorAll('.motion-log-entry');
+      if (allEntries.length > 20) {
+        allEntries[allEntries.length - 1].remove();
+      }
+    }
+  }
+
+  setInterval(simulateMotionLogUpdate, 8000);
+
+  // ========== 7F CORRIDOR STATIC INTENSITY ==========
+  function vary7FStatic() {
+    const feed = document.getElementById('cam-corridor7');
+    if (!feed) return;
+    if (Math.random() < 0.1) {
+      // Briefly clear static
+      feed.classList.remove('static');
+      setTimeout(() => { feed.classList.add('static'); }, 2000 + Math.random() * 3000);
+    }
+  }
+  setInterval(vary7FStatic, 15000);
+
+  // ========== KEYBOARD SHORTCUTS ==========
+  document.addEventListener('keydown', function(e) {
+    // Number keys 1-9 to quickly view a camera
+    const camOrder = ['lobby','elevator','corridor4','corridor7','b1','b2','rooftop','404door','alley'];
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= 9) {
+      const camId = camOrder[num - 1];
+      if (camId) {
+        const feed = document.getElementById('cam-' + camId);
+        if (feed) {
+          feed.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          feed.classList.add('zoomed');
+          markFeedViewed(camId);
+          openExpandedView(camId);
+        }
+      }
+    }
+  });
+
+  // ========== INIT LOG ==========
+  console.log('%c夜色公寓 — 监控室系统已加载。',
+    'color:#b8701a;font-size:16px;');
+  console.log('%cCAM-01 至 CAM-09 在线 | 录像保留60天 | 运动检测: 活跃',
+    'color:#706860;font-size:12px;font-family:monospace;');
+  console.log('%c快捷键: 1-9 快速查看摄像头 | ESC 关闭放大视图',
+    'color:#555;font-size:11px;font-family:monospace;');
+})();
+</script>
+
+</body>
+</html>

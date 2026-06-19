@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地下室 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.8);
+  --surface2: #111;
+  --text: #c8c0b8;
+  --text-dim: #706860;
+  --red-dark: #8b0000;
+  --red-mid: #b01010;
+  --red-glow: #ff2020;
+  --amber: #b8701a;
+  --amber-light: #e0902a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grain/Noise Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.6;
+}
+
+/* Top Navigation */
+.top-nav {
+  background: rgba(10,10,10,0.95) !important;
+  border-bottom: 1px solid rgba(120,20,20,0.3) !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 14px !important;
+  justify-content: center !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  font-size: 12px !important;
+  font-family: 'Noto Serif SC', serif !important;
+}
+.top-nav a {
+  color: #888;
+  text-decoration: none;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.top-nav a:hover {
+  color: #e0c0c0;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+.top-nav a.active {
+  color: #c04040;
+  pointer-events: none;
+  font-weight: 600;
+}
+
+/* Main container */
+.main-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* === PAGE HEADER === */
+.page-header {
+  text-align: center;
+  padding: 30px 0 20px;
+  border-bottom: 1px solid rgba(139,0,0,0.2);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.page-header h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 2em;
+  font-weight: 700;
+  color: #b0a090;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+
+.page-header .subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-dim);
+  font-size: 0.85em;
+  letter-spacing: 3px;
+}
+
+/* === CLEARANCE LEVEL INDICATOR === */
+.clearance-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8em;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.clearance-level {
+  padding: 6px 16px;
+  border: 1px solid;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85em;
+  letter-spacing: 3px;
+}
+
+.clearance-b1 {
+  border-color: rgba(184,112,26,0.5);
+  color: var(--amber);
+  background: rgba(184,112,26,0.05);
+}
+
+.clearance-b2 {
+  border-color: rgba(176,16,16,0.5);
+  color: var(--red-mid);
+  background: rgba(139,0,0,0.1);
+  animation: clearancePulse 2s ease-in-out infinite;
+}
+
+@keyframes clearancePulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(176,16,16,0.3); }
+  50% { box-shadow: 0 0 15px rgba(255,32,32,0.5); }
+}
+
+/* === FLOOR INDICATOR === */
+.floor-indicator {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.floor-number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3em;
+  font-weight: 900;
+  letter-spacing: 8px;
+  display: block;
+}
+
+.floor-b1 { color: var(--amber); text-shadow: 0 0 20px rgba(184,112,26,0.3); }
+.floor-b2 { color: var(--red-glow); text-shadow: 0 0 30px rgba(255,32,32,0.4); animation: flickerText 4s ease-in-out infinite; }
+
+@keyframes flickerText {
+  0%, 100% { opacity: 1; }
+  3% { opacity: 0.4; }
+  6% { opacity: 1; }
+  46% { opacity: 1; }
+  48% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.floor-desc {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-dim);
+  font-size: 0.8em;
+  letter-spacing: 2px;
+  margin-top: 6px;
+}
+
+/* === SECTION TITLES === */
+.section-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #b0a090;
+  border-left: 3px solid var(--amber);
+  padding-left: 14px;
+  margin: 30px 0 16px;
+  letter-spacing: 2px;
+}
+
+.section-title.red-border { border-left-color: var(--red-dark); }
+
+/* === B1 STORAGE UNITS GRID === */
+.storage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.storage-unit {
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 12px;
+  font-size: 0.8em;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.storage-unit:hover {
+  border-color: rgba(184,112,26,0.3);
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+}
+
+.storage-unit .unit-number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75em;
+  color: var(--amber);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.storage-unit .unit-resident {
+  color: var(--text);
+  font-size: 0.9em;
+}
+
+.storage-unit .unit-status {
+  font-size: 0.7em;
+  color: var(--text-dim);
+  margin-top: 4px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.storage-unit.occupied { border-left: 2px solid rgba(184,112,26,0.5); }
+.storage-unit.vacant { border-left: 2px solid rgba(255,255,255,0.08); opacity: 0.7; }
+.storage-unit.sealed {
+  border-left: 2px solid rgba(176,16,16,0.5);
+  background: rgba(139,0,0,0.05);
+}
+
+.storage-unit.sealed .unit-number { color: var(--red-mid); }
+
+/* === LAUNDRY ROOM === */
+.laundry-instructions {
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 20px;
+  margin: 12px 0;
+}
+
+.laundry-instructions h4 {
+  font-family: 'Noto Serif SC', serif;
+  color: #b0a090;
+  font-size: 0.95em;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+
+.laundry-instructions ol {
+  list-style: none;
+  counter-reset: laundry;
+  padding-left: 0;
+}
+
+.laundry-instructions ol li {
+  counter-increment: laundry;
+  padding: 6px 0 6px 28px;
+  position: relative;
+  font-size: 0.85em;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.laundry-instructions ol li::before {
+  content: counter(laundry);
+  position: absolute;
+  left: 0;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.8em;
+}
+
+.laundry-instructions .faded-rule {
+  text-decoration: line-through;
+  color: var(--text-dim);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.laundry-instructions .added-rule {
+  color: var(--red-mid);
+  font-size: 0.8em;
+}
+
+/* === BULLETIN BOARD === */
+.bulletin-board {
+  background: #1a140c;
+  border: 2px solid #2a2010;
+  padding: 20px;
+  position: relative;
+  margin: 12px 0;
+}
+
+.bulletin-board::before {
+  content: '公告栏';
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  background: #1a140c;
+  padding: 2px 12px;
+  font-family: 'Noto Serif SC', serif;
+  color: var(--amber);
+  font-size: 0.8em;
+  letter-spacing: 3px;
+  border: 1px solid #2a2010;
+}
+
+.bulletin-notice {
+  background: rgba(255,255,240,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  font-size: 0.82em;
+  line-height: 1.7;
+  color: var(--text);
+  transform: rotate(calc(var(--notice-rotate, 0) * 1deg));
+  transition: transform 0.3s;
+}
+
+.bulletin-notice:hover {
+  transform: rotate(0deg);
+  border-color: rgba(184,112,26,0.2);
+}
+
+.bulletin-notice .notice-date {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.75em;
+  margin-bottom: 4px;
+}
+
+.bulletin-notice .notice-pin {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red-mid);
+  box-shadow: 0 0 6px rgba(176,16,16,0.5);
+  transform: translateX(-50%);
+}
+
+.bulletin-notice.faded { opacity: 0.5; }
+.bulletin-notice.torn { position: relative; }
+.bulletin-notice.torn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 60%;
+  height: 40%;
+  background: linear-gradient(135deg, transparent 50%, #1a140c 50%);
+}
+
+/* === LOST AND FOUND POSTER === */
+.lost-found-poster {
+  background: #0e0a04;
+  border: 1px solid rgba(184,112,26,0.2);
+  padding: 24px;
+  margin: 16px 0;
+  position: relative;
+}
+
+.lost-found-poster .poster-title {
+  text-align: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #a09070;
+  letter-spacing: 6px;
+  margin-bottom: 6px;
+}
+
+.lost-found-poster .poster-subtitle {
+  text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.lost-item {
+  display: flex;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+  font-size: 0.85em;
+}
+
+.lost-item .item-date {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75em;
+  color: var(--amber);
+  min-width: 80px;
+}
+
+.lost-item .item-desc {
+  color: var(--text);
+  flex: 1;
+}
+
+.lost-item .item-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  min-width: 60px;
+  text-align: right;
+}
+
+.item-unclaimed { color: var(--red-mid); }
+.item-claimed { color: #4a6a3a; }
+
+.lost-found-poster .torn-section {
+  position: relative;
+  padding: 14px;
+  margin-top: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px dashed rgba(255,255,255,0.06);
+}
+
+.lost-found-poster .torn-section::before {
+  content: '—— 以下内容已破损 ——';
+  display: block;
+  text-align: center;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* === B2 WARNING OVERLAY === */
+.b2-warning-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.8s;
+}
+
+.b2-warning-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.b2-warning-box {
+  text-align: center;
+  max-width: 500px;
+  padding: 40px;
+  border: 2px solid var(--red-dark);
+  background: rgba(10,0,0,0.8);
+  animation: warningBoxPulse 3s ease-in-out infinite;
+}
+
+@keyframes warningBoxPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(139,0,0,0.3); }
+  50% { box-shadow: 0 0 60px rgba(255,32,32,0.4); }
+}
+
+.b2-warning-box .warning-icon {
+  font-size: 4em;
+  display: block;
+  margin-bottom: 16px;
+  color: var(--red-glow);
+  animation: warningIconBlink 0.8s step-end infinite;
+}
+
+@keyframes warningIconBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.b2-warning-box h2 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--red-glow);
+  font-size: 1.4em;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+}
+
+.b2-warning-box .warning-text {
+  color: var(--text);
+  font-size: 0.9em;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.b2-warning-box .warning-text .red-line {
+  color: var(--red-mid);
+  font-weight: 600;
+}
+
+.b2-descend-btn {
+  padding: 14px 40px;
+  background: transparent;
+  border: 1px solid var(--red-dark);
+  color: var(--red-mid);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9em;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: all 0.4s;
+  text-transform: uppercase;
+}
+
+.b2-descend-btn:hover {
+  background: rgba(139,0,0,0.15);
+  box-shadow: 0 0 30px rgba(255,32,32,0.3);
+  color: var(--red-glow);
+}
+
+.b2-cancel-btn {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim);
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.b2-cancel-btn:hover {
+  border-color: rgba(255,255,255,0.3);
+  color: var(--text);
+}
+
+/* === B2 SECTION (initially hidden) === */
+.b2-section {
+  display: none;
+  opacity: 0;
+  transition: opacity 1s;
+}
+
+.b2-section.visible {
+  display: block;
+  opacity: 1;
+}
+
+/* B2 dark atmosphere */
+.b2-section.visible ~ .b1-section {
+  opacity: 0.3;
+  filter: brightness(0.4);
+  pointer-events: none;
+}
+
+/* === B2 AMBIENT FLICKER === */
+.b2-flicker {
+  animation: b2Flicker 8s ease-in-out infinite;
+}
+
+@keyframes b2Flicker {
+  0%, 94%, 100% { opacity: 1; }
+  95% { opacity: 0.5; }
+  96% { opacity: 0.9; }
+  97% { opacity: 0.6; }
+  98% { opacity: 1; }
+}
+
+/* === FLASHLIGHT EFFECT === */
+.flashlight {
+  position: fixed;
+  pointer-events: none;
+  z-index: 150;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,160,100,0.15) 0%, rgba(180,140,80,0.05) 30%, transparent 70%);
+  transform: translate(-50%, -50%);
+  display: none;
+  box-shadow: 0 0 80px rgba(184,160,100,0.08);
+}
+
+/* === BOILER ROOM === */
+.boiler-room-desc {
+  background: rgba(10,5,0,0.8);
+  border: 1px solid rgba(139,0,0,0.2);
+  padding: 24px;
+  margin: 14px 0;
+  font-size: 0.9em;
+  line-height: 1.9;
+}
+
+.boiler-room-desc .strange-detail {
+  color: var(--red-mid);
+}
+
+/* === MAINTENANCE LOG === */
+.maintenance-log {
+  font-family: 'Share Tech Mono', monospace;
+  background: rgba(5,5,5,0.9);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 20px;
+  margin: 14px 0;
+  font-size: 0.8em;
+}
+
+.maintenance-log .log-entry {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  display: flex;
+  gap: 12px;
+}
+
+.maintenance-log .log-date {
+  color: var(--amber);
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+.maintenance-log .log-worker {
+  color: var(--text-dim);
+  min-width: 70px;
+  font-size: 0.9em;
+}
+
+.maintenance-log .log-content {
+  color: var(--text);
+  flex: 1;
+}
+
+.maintenance-log .log-content.anomaly {
+  color: var(--red-mid);
+}
+
+/* === ITEMS FOUND LIST === */
+.items-found {
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 18px;
+  margin: 14px 0;
+}
+
+.items-found h4 {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.85em;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.items-found .found-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  font-size: 0.85em;
+}
+
+.found-item .found-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.4);
+  flex-shrink: 0;
+}
+
+.found-item .found-date {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.75em;
+  min-width: 75px;
+}
+
+.found-item .found-desc {
+  color: var(--text);
+  flex: 1;
+}
+
+.found-item .found-note {
+  font-size: 0.75em;
+  color: var(--red-mid);
+  font-style: italic;
+}
+
+/* === B2 FLOOR PLAN === */
+.floor-plan {
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 30px;
+  margin: 14px 0;
+  position: relative;
+  text-align: center;
+}
+
+.floor-plan .plan-grid {
+  display: inline-block;
+  position: relative;
+}
+
+.floor-plan .plan-room {
+  position: absolute;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55em;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center;
+}
+
+.floor-plan .plan-room.redacted-room {
+  border: 1px dashed rgba(255,32,32,0.4);
+  background: rgba(139,0,0,0.15);
+  color: var(--red-glow);
+  animation: redactedRoomPulse 3s ease-in-out infinite;
+  cursor: not-allowed;
+}
+
+@keyframes redactedRoomPulse {
+  0%, 100% { box-shadow: inset 0 0 10px rgba(139,0,0,0.3); }
+  50% { box-shadow: inset 0 0 25px rgba(255,32,32,0.5); }
+}
+
+.floor-plan .plan-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65em;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* === RED LIGHT PULSE === */
+.red-light-pulse {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--red-glow);
+  box-shadow: 0 0 15px rgba(255,32,32,0.6), 0 0 30px rgba(255,32,32,0.3), 0 0 60px rgba(255,32,32,0.15);
+  animation: redPulse 1.5s ease-in-out infinite;
+  z-index: 5;
+}
+
+@keyframes redPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* === RETURN TO SURFACE BUTTON === */
+.return-surface-btn {
+  display: block;
+  margin: 30px auto;
+  padding: 14px 36px;
+  background: rgba(184,112,26,0.08);
+  border: 1px solid rgba(184,112,26,0.4);
+  color: var(--amber);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85em;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: all 0.4s;
+  text-transform: uppercase;
+}
+
+.return-surface-btn:hover {
+  background: rgba(184,112,26,0.18);
+  box-shadow: 0 0 25px rgba(184,112,26,0.3);
+  color: var(--amber-light);
+}
+
+/* === B1 SECTION FADE === */
+.b1-section {
+  transition: opacity 0.6s, filter 0.6s;
+}
+
+.b1-section.dimmed {
+  opacity: 0.3;
+  filter: brightness(0.4);
+  pointer-events: none;
+}
+
+/* === GENERAL UTILITY === */
+.dim-text {
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8em;
+  letter-spacing: 1px;
+}
+
+.warning-strip {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(139,0,0,0.15),
+    rgba(139,0,0,0.15) 10px,
+    rgba(0,0,0,0.1) 10px,
+    rgba(0,0,0,0.1) 20px
+  );
+  padding: 12px;
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--red-mid);
+  font-size: 0.8em;
+  letter-spacing: 3px;
+  margin: 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .storage-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .maintenance-log .log-entry { flex-direction: column; gap: 2px; }
+  .top-nav { gap: 2px 6px; padding: 6px 8px !important; font-size: 10px !important; }
+}
+
+.ambient-corner-text {
+  position: fixed;
+  bottom: 8px;
+  left: 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6em;
+  color: rgba(255,255,255,0.08);
+  letter-spacing: 2px;
+  z-index: 0;
+}
+
+/* B2 crawl text */
+.crawl-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+
+.crawl-text span {
+  display: inline-block;
+  animation: crawl 25s linear infinite;
+}
+
+@keyframes crawl {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html">首页</a>
+  <a href="rules_main.html">住户守则</a>
+  <a href="elevator_rules.html">电梯规则</a>
+  <a href="floor_directory.html">楼层指南</a>
+  <a href="room_404.html">404房间</a>
+  <a href="basement.html" class="active" style="color:#c04040;">地下室</a>
+  <a href="surveillance.html">监控室</a>
+  <a href="neighbor_encounters.html">邻居</a>
+  <a href="manager_log.html">管理员日志</a>
+  <a href="phone_calls.html">电话记录</a>
+  <a href="mirror_rules.html">镜子规则</a>
+  <a href="midnight_shift.html">深夜值班</a>
+  <a href="missing_persons.html">失踪档案</a>
+  <a href="ritual_purification.html">净化仪式</a>
+  <a href="final_night.html">终局</a>
+</nav>
+
+<div class="main-container">
+
+  <!-- CLEARANCE INDICATOR -->
+  <div class="clearance-indicator" id="clearanceBar">
+    安全等级:
+    <span class="clearance-level clearance-b1" id="clearanceLevel">B1 — 住户级</span>
+  </div>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>夜 色 公 寓 · 地 下 室</h1>
+    <div class="subtitle">BASEMENT LEVELS — 授权进入区域</div>
+  </div>
+
+  <!-- FLOOR INDICATOR -->
+  <div class="floor-indicator" id="floorIndicator">
+    <span class="floor-number floor-b1" id="floorNumber">B1</span>
+    <div class="floor-desc" id="floorDesc">储物间 · 洗衣房 · 公告栏</div>
+  </div>
+
+  <!-- ==================== B1 SECTION ==================== -->
+  <div class="b1-section" id="b1Section">
+
+    <!-- WARNING STRIP -->
+    <div class="warning-strip">
+      注意：未经许可不得进入B2层 · 发现异常请立即报告管理员
+    </div>
+
+    <!-- STORAGE UNITS -->
+    <div class="section-title">储物单元</div>
+    <p style="font-size:0.8em;color:var(--text-dim);margin-bottom:8px;">B1层共24个储物单元。以下为当前分配情况。标记"密封"的单元未经物业批准不得开启。</p>
+
+    <div class="storage-grid">
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-01</div>
+        <div class="unit-resident">302室 王先生</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-02</div>
+        <div class="unit-resident">305室 李家</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit vacant">
+        <div class="unit-number">B1-03</div>
+        <div class="unit-resident">— 空置 —</div>
+        <div class="unit-status">可申请</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-04</div>
+        <div class="unit-resident">401室 赵女士</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit sealed">
+        <div class="unit-number">B1-05</div>
+        <div class="unit-resident">404室 [已故]</div>
+        <div class="unit-status">密封 — 勿开启</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-06</div>
+        <div class="unit-resident">502室 张先生</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit vacant">
+        <div class="unit-number">B1-07</div>
+        <div class="unit-resident">— 空置 —</div>
+        <div class="unit-status">可申请</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-08</div>
+        <div class="unit-resident">601室 刘先生</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit sealed">
+        <div class="unit-number">B1-09</div>
+        <div class="unit-resident">304室 [迁出/不明]</div>
+        <div class="unit-status">密封 — 勿开启</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-10</div>
+        <div class="unit-resident">503室 陈家</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-11</div>
+        <div class="unit-resident">701室 周先生</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit vacant">
+        <div class="unit-number">B1-12</div>
+        <div class="unit-resident">— 空置 —</div>
+        <div class="unit-status">可申请</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-13</div>
+        <div class="unit-resident">403室 孙女士</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit sealed">
+        <div class="unit-number">B1-14</div>
+        <div class="unit-resident">[姓名已移除]</div>
+        <div class="unit-status">密封 — 勿开启</div>
+      </div>
+      <div class="storage-unit occupied">
+        <div class="unit-number">B1-15</div>
+        <div class="unit-resident">203室 吴家</div>
+        <div class="unit-status">正常使用中</div>
+      </div>
+      <div class="storage-unit vacant">
+        <div class="unit-number">B1-16</div>
+        <div class="unit-resident">— 空置 —</div>
+        <div class="unit-status">可申请</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;"></div>
+
+    <!-- LAUNDRY ROOM -->
+    <div class="section-title">洗衣房使用须知</div>
+    <div class="laundry-instructions">
+      <h4>B1层 · 公共洗衣房 · 管理规定</h4>
+      <ol>
+        <li>洗衣房开放时间：每日 06:00 — 23:00。深夜时段请勿单独进入地下室。</li>
+        <li>每户每周限用两次。请在登记表上签名并注明使用时间。</li>
+        <li>洗衣机使用完毕后请保持盖子打开，以防霉菌滋生。</li>
+        <li>如发现洗衣机内有非您本人的衣物，请勿取出。通知管理员处理。</li>
+        <li class="faded-rule">遗失物品可在"失物招领"公告栏查找。——此条已失效，失物招领板已于1989年停止更新。</li>
+        <li>如听到洗衣机在无人使用时运转，请勿靠近。立即离开并报告管理员。</li>
+        <li>洗衣房内禁止晾晒衣物。</li>
+        <li class="added-rule">【新增 1992年】请勿将个人衣物放置在B1-05、B1-09、B1-14储物单元附近。原因不予说明。</li>
+        <li>如发现管道发出异常声响（敲击声、刮擦声、低频嗡鸣），请记录时间并通知管理员。</li>
+        <li>最后离开者请关灯，但<b>不要</b>锁洗衣房的门。物业需要保持该门常开。</li>
+      </ol>
+    </div>
+
+    <!-- BULLETIN BOARD -->
+    <div class="section-title">公告栏</div>
+    <div class="bulletin-board">
+      <div class="bulletin-notice" style="--notice-rotate:-1.5;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1983-06-15</div>
+        <strong>停水通知</strong><br>
+        由于管道维修，B1层将于6月18日（周六）上午8:00至下午4:00暂停供水。请各位住户提前做好准备。维修范围：B1层北侧管道。施工期间请勿靠近作业区域。<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——物业管理处</span>
+      </div>
+
+      <div class="bulletin-notice" style="--notice-rotate:1;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1985-11-02</div>
+        <strong>失物招领</strong><br>
+        在洗衣房内发现一串钥匙（三把，带蓝色塑料扣），请失主前来物业管理处领取。认领时需描述钥匙特征。<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——物业管理处</span>
+      </div>
+
+      <div class="bulletin-notice" style="--notice-rotate:-0.8;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1988-03-21</div>
+        <strong>关于B1层夜间异响的说明</strong><br>
+        近日多位住户反映B1层夜间有"类似脚步声"的响动。经物业工作人员现场检查，确认为老旧热水管道热胀冷缩所致。不存在安全隐患。感谢各位住户的关心和监督。如仍有疑虑，请于白天时段联系管理员。<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——物业管理处</span>
+      </div>
+
+      <div class="bulletin-notice torn" style="--notice-rotate:1.8;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1990-07-██</div>
+        <strong>紧急通知——B2层███</strong><br>
+        自即日起，B2层███区域███。未经███书面授权███不得███。违规进入者后果███。本通知即日生效███。<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——███</span>
+      </div>
+
+      <div class="bulletin-notice faded" style="--notice-rotate:-0.5;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1992-01-08</div>
+        <strong>新年检修通知</strong><br>
+        春节期间（1月20日—2月5日）B1及B2层将进行年度管道检修。检修期间B1层正常开放，B2层禁止进入。如发现B2层门锁损坏或门处于开启状态，请勿进入并立即报告。紧急联系电话：████████<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——物业管理处</span>
+      </div>
+
+      <div class="bulletin-notice" style="--notice-rotate:0.6;">
+        <div class="notice-pin"></div>
+        <div class="notice-date">1995-09-12</div>
+        <strong>住户须知</strong><br>
+        近期地下室内发现可疑人员逗留。物业已加强巡逻。如您在地下室遇见以下情况，请立即离开并通知保安：<br>
+        (1) 发现不认识的人在您的储物单元附近逗留。<br>
+        (2) 听到B2层方向传来人声或音乐。<br>
+        (3) 发现墙壁或地面有不属于建筑图纸的标记、涂鸦或液体痕迹。<br>
+        B2层为设备层，<b>无居住功能</b>。任何人声称"住在地下室"均为虚假信息。<br>
+        <span style="font-size:0.7em;color:var(--text-dim);">——物业管理处 安保科</span>
+      </div>
+    </div>
+
+    <!-- LOST & FOUND POSTER -->
+    <div class="section-title">失物招领</div>
+    <div class="lost-found-poster">
+      <div class="poster-title">失 物 招 领</div>
+      <div class="poster-subtitle">LOST &amp; FOUND — 夜色公寓地下室</div>
+
+      <div class="lost-item">
+        <span class="item-date">1984-03</span>
+        <span class="item-desc">一把生锈的铜钥匙，系有红色细绳，钥匙柄上刻有模糊的文字（无法辨认）</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1985-07</span>
+        <span class="item-desc">一张黑白家庭照片，照片中人物面部模糊不清。照片背面写有"1985.春"。</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1986-11</span>
+        <span class="item-desc">一本无字日记——棕色皮面，约200页，全部页面空白。封面内侧印有"夜色公寓"字样的水印。</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1988-02</span>
+        <span class="item-desc">一只儿童左脚布鞋，约适合3-4岁幼儿。鞋底有轻微磨损。在B1层楼梯间发现。</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1989-06</span>
+        <span class="item-desc">一副老花眼镜（金色金属框），在洗衣房洗衣机上方发现。</span>
+        <span class="item-status item-claimed">已认领（503室）</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1990-10</span>
+        <span class="item-desc">一条银项链，吊坠为圆形，内嵌照片（已褪色）。在B1层走廊发现。</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+      <div class="lost-item">
+        <span class="item-date">1993-01</span>
+        <span class="item-desc">一个未拆封的信封，收件人处写着"404号房间"，寄件人处空白。信封内似乎含有纸张。</span>
+        <span class="item-status item-unclaimed">未认领</span>
+      </div>
+
+      <div class="torn-section">
+        <div class="lost-item">
+          <span class="item-date">1994-██</span>
+          <span class="item-desc">████████████████████████████████████████████</span>
+          <span class="item-status item-unclaimed">未认领</span>
+        </div>
+        <div class="lost-item">
+          <span class="item-date">1995-██</span>
+          <span class="item-desc">████████████████████████████████████</span>
+          <span class="item-status item-unclaimed">未认领</span>
+        </div>
+        <div class="lost-item">
+          <span class="item-date">1996-██</span>
+          <span class="item-desc">██████████████ <span style="color:var(--red-mid);">"它在地下发████"</span> ██████████</span>
+          <span class="item-status item-unclaimed">未认领</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- B2 DESCEND PROMPT -->
+    <div class="warning-strip" style="margin-top:36px;">
+      B2层 — 设备间/锅炉房 — 仅限授权人员
+      <button id="descendPromptBtn" style="margin-left:16px;padding:6px 16px;background:transparent;border:1px solid var(--red-dark);color:var(--red-mid);font-family:'Orbitron',sans-serif;font-size:0.75em;letter-spacing:3px;cursor:pointer;transition:all 0.3s;"
+        onmouseover="this.style.background='rgba(139,0,0,0.2)';this.style.boxShadow='0 0 15px rgba(255,32,32,0.3)';"
+        onmouseout="this.style.background='transparent';this.style.boxShadow='none';">
+        申请进入 &#x25BC;
+      </button>
+    </div>
+
+  </div><!-- end B1 section -->
+
+  <!-- ==================== B2 SECTION ==================== -->
+  <div class="b2-section" id="b2Section">
+
+    <!-- Floor indicator for B2 -->
+    <div class="floor-indicator" style="margin-top:0;">
+      <span class="floor-number floor-b2">B2</span>
+      <div class="floor-desc">锅炉房 · 设备区 · 限制区域</div>
+    </div>
+
+    <!-- Red light pulse -->
+    <div class="red-light-pulse" id="redLightPulse"></div>
+
+    <!-- Crawl text -->
+    <div class="crawl-text" style="margin:10px 0;">
+      <span>WARNING — 限制区域 — 继续逗留将被记录 — 所有活动受监控 — 发现异常立即报告 — 禁止单独作业 — 安全第一 —</span>
+    </div>
+
+    <div class="b2-flicker">
+
+    <!-- BOILER ROOM DESCRIPTION -->
+    <div class="section-title red-border">锅炉房区域描述</div>
+    <div class="boiler-room-desc">
+      <p>B2层总面积约280平方米，主要包含以下区域：</p>
+      <p style="margin-top:10px;"><strong>1. 中央锅炉房</strong> — 配备两台燃气锅炉（型号CB-1972，分别于1972年和1978年安装）。锅炉为整栋建筑提供暖气和热水。管道系统复杂，部分管道走向与原始建筑图纸不符。1988年检修时发现一条<span class="strange-detail">直径40厘米的管道从锅炉房西墙延伸出去，但在建筑图纸上该方向应为实心混凝土基础</span>。检修人员沿管道前行约15米后，管道进入一个未在建筑图纸上标注的空间。该空间被描述为"走廊——宽约1.2米，两侧为光滑的混凝土墙壁，看上去年代比建筑本身更久远"。由于照明不足，未进入深处探察。此事后，该管道被标记为"待调查"。</p>
+      <p style="margin-top:8px;"><strong>2. 配电室</strong> — 位于B2层东南角。建筑总电力和备用发电机设于此。配电室内有一个老式配电盘，部分断路器上贴有手写标签。其中三个断路器标签已模糊不清，另一个标签上写着<span class="strange-detail">"不可关闭——持续供电——对象不明"</span>。1985年，一名电工在配电室工作时报告短暂看到"另一个人的影子出现在对面墙上"，但配电室内仅他一人。</p>
+      <p style="margin-top:8px;"><strong>3. 管道走廊</strong> — 一条长约22米的狭窄走廊，通往B2层最深处。两侧墙壁排列着各种管道。根据建筑图纸，走廊尽头应为一堵墙。但1981年以后，多位维护人员报告称走廊尽头"不像是一堵墙——而是一扇门"。技术上讲，该位置确实存在一个金属门框和门扇，但建筑图纸上此处标记为"死胡同/承重墙"。门上没有把手，没有锁孔，也没有任何标识。此门被物业标记为"B2-███"，进入禁令适用于所有人员。</p>
+      <p style="margin-top:8px;"><strong>4. ███室</strong> — 参见B2层平面图（下图）。此房间在所有建筑图纸上均有标注，但没有任何已知的入口。从B2层走廊和锅炉房都无法进入该区域。1990年声纳探测确认该空间确实存在——约4米×3米的矩形空腔。其用途不明，进入方式不明，内部状况不明。物业规定：<span class="strange-detail">任何情况下不得尝试进入███室。</span></p>
+    </div>
+
+    <!-- MAINTENANCE LOG -->
+    <div class="section-title red-border">维护日志（摘录）</div>
+    <div class="maintenance-log">
+      <div class="log-entry">
+        <span class="log-date">1983-01-15</span>
+        <span class="log-worker">陈工</span>
+        <span class="log-content">例行检查。锅炉运行正常。管道压力稳定。无异常。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1983-06-22</span>
+        <span class="log-worker">陈工</span>
+        <span class="log-content">更换锅炉房照明灯管（共4根）。处理了一处轻微漏水。一切正常。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1984-09-08</span>
+        <span class="log-worker">李工</span>
+        <span class="log-content">管道走廊东侧墙壁出现不明水渍。经检查，水渍非来自管道泄漏。干燥处理。建议后续观察。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1985-03-14</span>
+        <span class="log-worker">李工</span>
+        <span class="log-content anomaly">管道走廊尽头墙面温度异常——红外测温仪显示约11°C，而周围墙壁为19°C。声学测试：墙面另一侧似有空腔。报告上级。上级指示：不予处理。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1985-07-30</span>
+        <span class="log-worker">陈工</span>
+        <span class="log-content">继续观察。温度异常区域已扩大。墙面出现细微裂纹。裂纹排列似有规律。拍照存档。上级回复：不予处理，勿再上报。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1986-11-02</span>
+        <span class="log-worker">王工</span>
+        <span class="log-content anomaly">配电室断路器#"不可关闭"标签下方的开关在无人操作的情况下自行跳闸两次。第一次跳闸时，建筑内部分房间（404室及相邻单元）灯光闪烁约3秒。怀疑电力波动。更换断路器后48小时内再次跳闸。原因不明。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1987-04-18</span>
+        <span class="log-worker">王工</span>
+        <span class="log-content anomaly">凌晨巡检（约2:30）。经过管道走廊时听到走廊尽头方向传来"类似敲门的声音"。敲门声共三下，间隔约2秒。走近查看时声音停止。走廊尽头墙面无变化。在日志中记录后返回。上级批注：幻觉——疲劳工作所致。建议调整巡检时间。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1988-01-05</span>
+        <span class="log-worker">陈工</span>
+        <span class="log-content anomaly">在锅炉房和管道走廊地面发现一连串小脚印。脚印长约15厘米——约为儿童脚印大小。从锅炉房延伸至管道走廊尽头墙面处消失。脚印无返回路径。已拍照并报告。上级指示：不予理会。继续正常工作。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1989-09-12</span>
+        <span class="log-worker">李工</span>
+        <span class="log-content">陈工已于上月辞职。现在由我一人负责B2区域。近来锅炉运行声音出现异常——在凌晨3:00至3:40期间，锅炉发出规律的"嗡鸣声"，频率约为18Hz。这种频率接近人体共振频率，会使人感到不安。我已向经理申请携带耳塞工作。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1991-06-30</span>
+        <span class="log-worker">赵工</span>
+        <span class="log-content anomaly">新来的。第一天独自巡检B2。锅炉房一切正常。管道走廊...走到一半时，我确定有人在走廊尽头看着我。我用手电筒照了照——什么也没有。但我明确感到"有人"。快步离开后，发现自己在出汗。问老员工，他们说："习惯了就好。"我问习惯什么，他们没有回答。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1992-12-03</span>
+        <span class="log-worker">赵工</span>
+        <span class="log-content anomaly">我在配电室发现了一台不属于我们的设备。一个灰色金属盒，约30×20厘米，安装位置在其他设备后面。盒体上没有制造商标识，没有型号。上面只有一行手写字："待机中。勿关闭电源。"我测量了它的电力消耗——约40瓦。它不在任何设备清单上，也没有人知道它是什么时候安装的。我决定不管它。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1994-02-15</span>
+        <span class="log-worker">赵工</span>
+        <span class="log-content anomaly">昨晚我做了个梦。我站在B2管道走廊的尽头。那面墙消失了，取而代之的是一扇门——一扇看起来很旧的门，上面的油漆是暗红色的。在梦里，我把手放在门把手上。然后我醒了，发现自己站在公寓一楼的电梯前，赤着脚。时间是凌晨3:33。这不是开玩笑。我明天要去看医生。</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-date">1995-08-08</span>
+        <span class="log-worker">—无签名—</span>
+        <span class="log-content anomaly">（此条字迹与前不同——较大且潦草）</span><br>
+        <span class="log-content anomaly">不要信任管道。管道不只是管道。昨天我钻了一个检测孔，通过它看了看墙里面。墙里是空的——比建筑图纸上画的要空得多。我看到了光。在地下深处不应该有光的。我听到了声音。我可能做错了什么。</span>
+      </div>
+    </div>
+
+    <!-- ITEMS FOUND LIST -->
+    <div class="section-title red-border">发现物清单</div>
+    <div class="items-found">
+      <h4>物品登记 — 在B2层发现并移至证物室</h4>
+      <div class="found-item">
+        <div class="found-icon">[鞋]</div>
+        <span class="found-date">1983年</span>
+        <span class="found-desc">一只儿童右脚布鞋，约适合3-4岁幼儿。鞋内有轻微磨损痕迹。</span>
+        <span class="found-note">与B1失物招领处的左脚鞋疑似一对</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[戒]</div>
+        <span class="found-date">1985年</span>
+        <span class="found-desc">一枚金质婚戒，内圈刻有"1981.5.1"及两个字母"Z&L"。</span>
+        <span class="found-note">数据库中未匹配到住户</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[书]</div>
+        <span class="found-date">1987年</span>
+        <span class="found-desc">一本日记本，约60页有内容。记于1987年8月至10月。最后一条日记写到一半后中断——最后一个字只写了一半。</span>
+        <span class="found-note">日记中提到反复做同一个梦</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[钥]</div>
+        <span class="found-date">1989年</span>
+        <span class="found-desc">一把铜钥匙，系有红绳。钥匙柄上刻有"B2-███"。此密钥无法匹配建筑内任何已知门锁。</span>
+        <span class="found-note">尝试了所有门锁，均不匹配</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[信]</div>
+        <span class="found-date">1990年</span>
+        <span class="found-desc">一封信，装在未封口信封内。信纸泛黄，字迹潦草。内容无法完整阅读，可辨认的词句包括："...它一直在下面..."、"...不要相信管理员说的话..."、"...地下室不只两层..."</span>
+        <span class="found-note">笔迹鉴定：写信人手指有颤抖</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[表]</div>
+        <span class="found-date">1992年</span>
+        <span class="found-desc">一只机械手表，品牌不详。表盘有裂纹。手表仍在走动——停在3:33。更换发条后重新走动，但24小时内会再次停在3:33。</span>
+        <span class="found-note">重复出现五次相同的故障</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[纸]</div>
+        <span class="found-date">1993年</span>
+        <span class="found-desc">一张纸条，贴在配电室墙壁上。内容："我在这里工作了六年。我看到了一些东西。如果你在看这个，请小心。他们不喜欢有人知道太多。"</span>
+        <span class="found-note">无法确认纸条作者身份</span>
+      </div>
+      <div class="found-item">
+        <div class="found-icon">[骨]</div>
+        <span class="found-date">1995年</span>
+        <span class="found-desc">一小块白色物体，疑似骨质。尺寸约2×3厘米。在管道走廊地面上发现。</span>
+        <span class="found-note">实验室未能确定来源（"样本不足"）</span>
+      </div>
+    </div>
+
+    <!-- B2 FLOOR PLAN -->
+    <div class="section-title red-border">B2层 平面示意图</div>
+    <div class="floor-plan">
+      <div style="position:relative;width:100%;max-width:600px;height:420px;margin:0 auto;background:rgba(5,5,5,0.5);border:1px solid rgba(255,255,255,0.06);">
+
+        <!-- Electrical Room -->
+        <div style="position:absolute;top:20px;right:30px;width:90px;height:70px;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:0.55em;color:var(--text-dim);font-family:'Share Tech Mono',monospace;">配电室</div>
+
+        <!-- Boiler Room -->
+        <div style="position:absolute;top:130px;left:30px;width:160px;height:120px;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:0.55em;color:var(--text-dim);font-family:'Share Tech Mono',monospace;">锅炉房</div>
+
+        <!-- Pipe Corridor -->
+        <div style="position:absolute;top:270px;left:30px;width:300px;height:40px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:0.5em;color:var(--text-dim);font-family:'Share Tech Mono',monospace;">管道走廊</div>
+
+        <!-- Corridor end - the door -->
+        <div style="position:absolute;top:270px;left:340px;width:30px;height:40px;border:1px solid rgba(255,32,32,0.3);background:rgba(139,0,0,0.1);display:flex;align-items:center;justify-content:center;font-size:0.45em;color:var(--red-mid);font-family:'Share Tech Mono',monospace;">门?</div>
+
+        <!-- Stairs -->
+        <div style="position:absolute;top:50px;left:30px;width:40px;height:50px;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:0.5em;color:var(--amber);font-family:'Share Tech Mono',monospace;">至B1</div>
+
+        <!-- REDACTED ROOM -->
+        <div style="position:absolute;top:140px;right:80px;width:100px;height:80px;border:1px dashed rgba(255,32,32,0.4);background:rgba(139,0,0,0.12);display:flex;align-items:center;justify-content:center;font-size:0.8em;color:var(--red-glow);font-family:'Share Tech Mono',monospace;cursor:not-allowed;animation:redactedRoomPulse 3s ease-in-out infinite;text-align:center;">███室<br/><span style="font-size:0.6em;">无入口</span></div>
+
+        <!-- Scale note -->
+        <div style="position:absolute;bottom:8px;right:12px;font-size:0.5em;color:var(--text-dim);font-family:'Share Tech Mono',monospace;">示意 · 非精确比例</div>
+
+        <!-- Legend -->
+        <div style="position:absolute;bottom:8px;left:8px;font-size:0.45em;color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-align:left;">
+          ██ 已知区域<br>
+          <span style="color:var(--red-mid);">▣</span> ███室（不可进入）
+        </div>
+      </div>
+    </div>
+
+    <!-- RETURN TO SURFACE -->
+    <button class="return-surface-btn" id="returnSurfaceBtn">&#x25B2; 返回 B1 层</button>
+
+    </div><!-- end b2-flicker -->
+
+  </div><!-- end B2 section -->
+
+  <!-- Ambient corner text -->
+  <div class="ambient-corner-text">夜色公寓 · 地下室 · BASEMENT</div>
+
+</div><!-- end main-container -->
+
+<!-- ==================== B2 WARNING OVERLAY ==================== -->
+<div class="b2-warning-overlay" id="b2WarningOverlay">
+  <div class="b2-warning-box">
+    <span class="warning-icon">&#x26A0;</span>
+    <h2>警 告</h2>
+    <div class="warning-text">
+      <p>您正在尝试进入 <span class="red-line">B2层——设备区及限制区域</span>。</p>
+      <p style="margin-top:10px;">B2层包含高温管道、高压电力设备和未标记的结构空间。进入此区域存在物理危险。</p>
+      <p style="margin-top:10px;">此外，B2层自1990年起已列为<span class="red-line">限制进入区域</span>。继续访问将被记录。</p>
+      <p style="margin-top:10px;font-size:0.85em;color:var(--text-dim);">物业不鼓励、不建议、不授权非必要人员进入B2层。</p>
+    </div>
+    <button class="b2-descend-btn" id="descendBtn">确认进入 B2</button>
+    <br>
+    <button class="b2-cancel-btn" id="cancelDescendBtn">返回 B1</button>
+  </div>
+</div>
+
+<!-- FLASHLIGHT ELEMENT -->
+<div class="flashlight" id="flashlight"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ========== DOM REFS ==========
+  const b1Section = document.getElementById('b1Section');
+  const b2Section = document.getElementById('b2Section');
+  const b2WarningOverlay = document.getElementById('b2WarningOverlay');
+  const clearanceLevel = document.getElementById('clearanceLevel');
+  const floorNumber = document.getElementById('floorNumber');
+  const floorDesc = document.getElementById('floorDesc');
+  const flashlight = document.getElementById('flashlight');
+  const redLightPulse = document.getElementById('redLightPulse');
+
+  // ========== STATE ==========
+  let currentLevel = 'B1'; // 'B1' or 'B2'
+  let flashlightActive = false;
+
+  // ========== B2 WARNING OVERLAY ==========
+  function showB2Warning() {
+    b2WarningOverlay.classList.remove('hidden');
+  }
+
+  function hideB2Warning() {
+    b2WarningOverlay.classList.add('hidden');
+  }
+
+  // Ascend prompt on B1
+  document.getElementById('descendPromptBtn').addEventListener('click', showB2Warning);
+
+  // Descend button on warning overlay
+  document.getElementById('descendBtn').addEventListener('click', function(){
+    hideB2Warning();
+    descendToB2();
+  });
+
+  // Cancel button on warning overlay
+  document.getElementById('cancelDescendBtn').addEventListener('click', hideB2Warning);
+
+  // Return to surface button
+  document.getElementById('returnSurfaceBtn').addEventListener('click', returnToB1);
+
+  function descendToB2() {
+    currentLevel = 'B2';
+    b1Section.classList.add('dimmed');
+    b2Section.classList.add('visible');
+    clearanceLevel.textContent = 'B2 — 限制级';
+    clearanceLevel.className = 'clearance-level clearance-b2';
+    floorNumber.textContent = 'B2';
+    floorNumber.className = 'floor-number floor-b2';
+    floorDesc.textContent = '锅炉房 · 设备区 · 限制区域';
+    flashlightActive = true;
+    flashlight.style.display = 'block';
+    redLightPulse.style.display = 'block';
+
+    // Update URL hash for sharing
+    window.location.hash = 'B2';
+
+    // Scroll to B2 section
+    b2Section.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function returnToB1() {
+    currentLevel = 'B1';
+    b1Section.classList.remove('dimmed');
+    b2Section.classList.remove('visible');
+    clearanceLevel.textContent = 'B1 — 住户级';
+    clearanceLevel.className = 'clearance-level clearance-b1';
+    floorNumber.textContent = 'B1';
+    floorNumber.className = 'floor-number floor-b1';
+    floorDesc.textContent = '储物间 · 洗衣房 · 公告栏';
+    flashlightActive = false;
+    flashlight.style.display = 'none';
+    redLightPulse.style.display = 'none';
+
+    window.location.hash = 'B1';
+
+    b1Section.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ========== FLASHLIGHT EFFECT ==========
+  document.addEventListener('mousemove', function(e) {
+    if (!flashlightActive) return;
+    flashlight.style.left = e.clientX + 'px';
+    flashlight.style.top = e.clientY + 'px';
+  });
+
+  // ========== B2 SLOW FLICKER ==========
+  // Already handled by CSS animation on b2-flicker class
+
+  // ========== RED LIGHT PULSE RANDOMIZE ==========
+  function randomizeRedLight() {
+    if (currentLevel !== 'B2') return;
+    const el = redLightPulse;
+    const duration = 1.2 + Math.random() * 2.5;
+    el.style.animationDuration = duration + 's';
+    const size = 15 + Math.random() * 15;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  }
+
+  setInterval(randomizeRedLight, 4000);
+
+  // ========== PLAN REDACT ROOM HOVER ==========
+  const redactedRoom = document.querySelector('.floor-plan div[style*="redactedRoomPulse"]');
+  if (redactedRoom) {
+    redactedRoom.addEventListener('mouseenter', function() {
+      this.style.boxShadow = 'inset 0 0 40px rgba(255,32,32,0.7)';
+      this.style.transition = 'box-shadow 0.3s';
+    });
+    redactedRoom.addEventListener('mouseleave', function() {
+      this.style.boxShadow = '';
+    });
+  }
+
+  // ========== MAINTENANCE LOG ANOMALY HIGHLIGHT ==========
+  const anomalyEntries = document.querySelectorAll('.maintenance-log .log-content.anomaly');
+  anomalyEntries.forEach(entry => {
+    entry.addEventListener('mouseenter', function() {
+      this.style.background = 'rgba(139,0,0,0.1)';
+      this.style.paddingLeft = '8px';
+      this.style.transition = 'all 0.3s';
+    });
+    entry.addEventListener('mouseleave', function() {
+      this.style.background = '';
+      this.style.paddingLeft = '';
+    });
+  });
+
+  // ========== LOST ITEM CLICK TO REVEAL ==========
+  const lostItems = document.querySelectorAll('.lost-item');
+  lostItems.forEach(item => {
+    item.addEventListener('click', function() {
+      const desc = this.querySelector('.item-desc');
+      if (desc && desc.textContent.includes('█')) {
+        // Flash effect
+        this.style.background = 'rgba(184,112,26,0.05)';
+        setTimeout(() => { this.style.background = ''; }, 300);
+      }
+    });
+  });
+
+  // ========== BULLETIN NOTICE PEEL ==========
+  const bulletinNotices = document.querySelectorAll('.bulletin-notice');
+  bulletinNotices.forEach(notice => {
+    notice.addEventListener('click', function() {
+      // Subtle "pinned paper" wiggle
+      this.style.transform = 'rotate(' + (Math.random() * 3 - 1.5) + 'deg)';
+      setTimeout(() => {
+        this.style.transform = '';
+        this.style.transition = 'transform 0.5s ease-out';
+      }, 200);
+    });
+  });
+
+  // ========== URL HASH HANDLING ==========
+  function handleHash() {
+    const hash = window.location.hash;
+    if (hash === '#B2' && currentLevel === 'B1') {
+      showB2Warning();
+    } else if (hash === '#B1' && currentLevel === 'B2') {
+      returnToB1();
+    }
+  }
+
+  window.addEventListener('hashchange', handleHash);
+  // Check initial hash
+  if (window.location.hash === '#B2') {
+    setTimeout(showB2Warning, 500);
+  }
+
+  // ========== KEYBOARD SHORTCUTS ==========
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' && e.ctrlKey && currentLevel === 'B1') {
+      e.preventDefault();
+      showB2Warning();
+    }
+    if (e.key === 'ArrowUp' && e.ctrlKey && currentLevel === 'B2') {
+      e.preventDefault();
+      returnToB1();
+    }
+    // 'F' for flashlight toggle (when in B2)
+    if (e.key === 'f' && currentLevel === 'B2') {
+      flashlightActive = !flashlightActive;
+      flashlight.style.display = flashlightActive ? 'block' : 'none';
+    }
+  });
+
+  // ========== RANDOM AMBIENT TEXT FLICKER ==========
+  const ambientText = document.querySelector('.ambient-corner-text');
+  if (ambientText) {
+    setInterval(() => {
+      if (Math.random() < 0.08) {
+        ambientText.style.opacity = '0.3';
+        setTimeout(() => { ambientText.style.opacity = '1'; }, 150 + Math.random() * 300);
+      }
+    }, 4000);
+  }
+
+  // ========== STORAGE UNIT CLICK ==========
+  const sealedUnits = document.querySelectorAll('.storage-unit.sealed');
+  sealedUnits.forEach(unit => {
+    unit.addEventListener('click', function() {
+      // Brief red glow
+      this.style.boxShadow = 'inset 0 0 20px rgba(255,32,32,0.2)';
+      setTimeout(() => { this.style.boxShadow = ''; }, 500);
+      // Tiny shake
+      this.style.transform = 'translateX(2px)';
+      setTimeout(() => { this.style.transform = ''; }, 100);
+    });
+    unit.style.cursor = 'not-allowed';
+  });
+
+  // ========== INIT LOG ==========
+  console.log('%c夜色公寓 — 地下室档案已加载。',
+    'color:#b8701a;font-size:16px;');
+  console.log('%cB1层: 住户区域 | B2层: 限制区域 | 请遵守安全规定',
+    'color:#706860;font-size:12px;font-family:monospace;');
+  console.log('%c按 Ctrl+↓ 前往B2 | 按 Ctrl+↑ 返回B1 | B2中按 F 切换手电筒',
+    'color:#555;font-size:11px;font-family:monospace;');
+})();
+</script>
+
+</body>
+</html>

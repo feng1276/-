@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光学现象 · Nature Atlas</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-card: rgba(17, 22, 29, 0.82);
+            --glass-bg: rgba(10, 14, 20, 0.7);
+            --glass-border: rgba(0, 160, 220, 0.18);
+            --accent-ocean: #0099cc;
+            --accent-aurora: #4ecb71;
+            --accent-glow-aurora: rgba(78, 203, 113, 0.4);
+            --text-primary: #e2e6ea;
+            --text-secondary: #a8b4c0;
+            --text-muted: #6b7885;
+            --border-radius-xl: 1.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.55);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Source Sans 3', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image: radial-gradient(ellipse at 35% 20%, rgba(78, 203, 113, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 65% 50%, rgba(0, 160, 220, 0.04) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            overflow-x: hidden;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .logo .nat {
+            color: var(--accent-ocean);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-aurora);
+        }
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--accent-aurora);
+            text-shadow: 0 0 35px var(--accent-glow-aurora);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .optical-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .optical-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+        }
+        .optical-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent-aurora);
+            box-shadow: 0 0 40px var(--accent-glow-aurora), 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        .optical-img {
+            height: 190px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+        }
+        .optical-body {
+            padding: 1.5rem;
+        }
+        .optical-body h3 {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+        }
+        .optical-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+        .rare-tag {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            background: rgba(78, 203, 113, 0.15);
+            color: var(--accent-aurora);
+            border: 1px solid rgba(78, 203, 113, 0.3);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .optical-card {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        /* ===== NEW CSS: Prism/Rainbow Gradient Animation ===== */
+        @keyframes prismShift {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 100% 0%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes spectrumPulse {
+            0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+            50% { filter: hue-rotate(15deg) brightness(1.1); }
+        }
+        .rainbow-divider {
+            height: 3px;
+            background: linear-gradient(90deg, #ff0000, #ff8800, #ffdd00, #00cc44, #0088ff, #4400cc, #cc00ff);
+            background-size: 200% 100%;
+            animation: prismShift 8s ease-in-out infinite, spectrumPulse 4s ease-in-out infinite;
+            border-radius: 2px;
+            margin: 0.8rem auto;
+            width: 200px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.15);
+        }
+
+        /* ===== NEW CSS: Light Ray Beam Effect ===== */
+        @keyframes lightBeam {
+            0% { opacity: 0.02; transform: rotate(-3deg) scaleX(0.95); }
+            50% { opacity: 0.06; transform: rotate(3deg) scaleX(1.05); }
+            100% { opacity: 0.02; transform: rotate(-3deg) scaleX(0.95); }
+        }
+        .light-beam-overlay {
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            width: 60%;
+            height: 140%;
+            pointer-events: none;
+            z-index: 0;
+            background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(255,255,255,0.015) 15%,
+                rgba(200,220,255,0.025) 30%,
+                rgba(180,200,240,0.02) 50%,
+                rgba(200,220,255,0.015) 70%,
+                transparent 100%);
+            transform: translateX(-50%);
+            animation: lightBeam 14s ease-in-out infinite;
+        }
+
+        /* ===== NEW CSS: Spectrum Shift Keyframes ===== */
+        @keyframes spectrumBarShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+        .spectrum-bar-animated {
+            height: 20px;
+            border-radius: 10px;
+            background: linear-gradient(90deg,
+                #cc0000, #ff4400, #ff8800, #ffcc00, #ffff00, #aadd00, #44cc00,
+                #00cc66, #00aaaa, #0088ff, #0044ff, #4400cc, #8800cc, #cc00ff);
+            background-size: 300% 100%;
+            animation: spectrumBarShift 10s linear infinite;
+            margin: 0.5rem 0;
+        }
+
+        /* ===== NEW CSS: Section Headers ===== */
+        .section-header {
+            text-align: center;
+            padding: 3rem 1rem 1rem;
+        }
+        .section-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.9rem;
+            color: var(--accent-aurora);
+            text-shadow: 0 0 20px var(--accent-glow-aurora);
+        }
+
+        /* ===== NEW CSS: Refraction Diagram Styles ===== */
+        .diagram-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .diagram-section svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ===== NEW CSS: Spectrum Visualization ===== */
+        .spectrum-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .spectrum-wavelengths {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .spectrum-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .spectrum-info-card {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .spectrum-info-card .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin: 0 auto 0.5rem;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        /* ===== NEW CSS: Viewing Conditions Guide ===== */
+        .viewing-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .viewing-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .viewing-table th {
+            text-align: left;
+            padding: 0.8rem 1rem;
+            background: rgba(78, 203, 113, 0.1);
+            color: var(--accent-aurora);
+            font-weight: 600;
+            border-bottom: 2px solid rgba(78, 203, 113, 0.3);
+        }
+        .viewing-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+        }
+        .viewing-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* ===== NEW CSS: Classification Section ===== */
+        .class-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .class-card {
+            padding: 1.5rem;
+            border-radius: 1.2rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+            transition: all 0.3s ease;
+        }
+        .class-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .class-card.reflection { border-left: 3px solid #66bbff; }
+        .class-card.refraction { border-left: 3px solid #ff9944; }
+        .class-card.diffraction { border-left: 3px solid #cc88ff; }
+        .class-card.scattering { border-left: 3px solid #ff6699; }
+        .class-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .class-card p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        .class-card .examples {
+            margin-top: 0.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .class-card .example-tag {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.55rem;
+            border-radius: 1rem;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+        }
+
+        /* ===== NEW CSS: Rarity Scale ===== */
+        .rarity-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .rarity-scale {
+            display: flex;
+            gap: 0.4rem;
+            align-items: flex-end;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+        .rarity-level {
+            flex: 1;
+            min-width: 100px;
+            max-width: 140px;
+            text-align: center;
+            padding: 1rem 0.5rem;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        .rarity-level:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .rarity-level.rl-1 { background: rgba(78,203,113,0.12); border: 1px solid rgba(78,203,113,0.25); }
+        .rarity-level.rl-2 { background: rgba(150,210,50,0.12); border: 1px solid rgba(150,210,50,0.25); }
+        .rarity-level.rl-3 { background: rgba(220,180,40,0.12); border: 1px solid rgba(220,180,40,0.25); }
+        .rarity-level.rl-4 { background: rgba(255,140,40,0.12); border: 1px solid rgba(255,140,40,0.25); }
+        .rarity-level.rl-5 { background: rgba(255,60,60,0.12); border: 1px solid rgba(255,60,60,0.25); }
+        .rarity-level .rl-stars { font-size: 1.2rem; margin-bottom: 0.3rem; }
+        .rarity-level .rl-label { font-weight: 700; font-size: 0.85rem; }
+        .rarity-level .rl-desc { color: var(--text-muted); font-size: 0.7rem; margin-top: 0.2rem; }
+
+        /* ===== NEW CSS: Canvas Aurora ===== */
+        #auroraCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* ===== NEW CSS: Highlight boxes ===== */
+        .highlight-box {
+            display: inline-block;
+            padding: 0.3rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0.2rem;
+        }
+        .hl-common { background: rgba(78,203,113,0.2); color: #5edb7e; border: 1px solid rgba(78,203,113,0.3); }
+        .hl-occasional { background: rgba(200,200,40,0.2); color: #dddd44; border: 1px solid rgba(200,200,40,0.3); }
+        .hl-rare { background: rgba(255,140,40,0.2); color: #ffaa55; border: 1px solid rgba(255,140,40,0.3); }
+        .hl-extreme { background: rgba(255,60,60,0.2); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.3); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Light beam overlay -->
+    <div class="light-beam-overlay"></div>
+    <!-- Aurora canvas background -->
+    <canvas id="auroraCanvas"></canvas>
+
+    <nav class="navbar">
+        <div class="logo"><span class="nat">NATURE</span> ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="nature_home.html">首页</a></li>
+            <li><a href="phenomena.html">现象库</a></li>
+            <li><a href="weather.html">极端天气</a></li>
+            <li><a href="geology.html">地质现象</a></li>
+            <li><a href="ocean.html">海洋现象</a></li>
+            <li><a href="optical.html" class="active">光学现象</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间轴</a></li>
+            <li><a href="compare.html">数据对比</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🌈 光学现象</h1>
+        <p style="color:var(--text-muted);">光与大气交织出的自然奇观</p>
+    </div>
+
+    <div class="container">
+        <!-- Optical Phenomena Cards Grid -->
+        <div class="optical-grid" id="opticalGrid"></div>
+
+        <!-- ===== Light Refraction Diagram ===== -->
+        <div class="section-header">
+            <h2>🔬 光学现象形成原理</h2>
+            <div class="rainbow-divider"></div>
+            <p style="color:var(--text-muted);">不同光线路径如何创造出我们看到的奇观</p>
+        </div>
+        <div class="diagram-section">
+            <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="rainbowBeam" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ff0000" stop-opacity="0.9"/>
+                        <stop offset="16%" stop-color="#ffcc00" stop-opacity="0.85"/>
+                        <stop offset="33%" stop-color="#00cc44" stop-opacity="0.8"/>
+                        <stop offset="50%" stop-color="#00aacc" stop-opacity="0.75"/>
+                        <stop offset="66%" stop-color="#0044ff" stop-opacity="0.7"/>
+                        <stop offset="83%" stop-color="#8800cc" stop-opacity="0.65"/>
+                        <stop offset="100%" stop-color="#cc0044" stop-opacity="0.6"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                <!-- Sun -->
+                <circle cx="50" cy="80" r="30" fill="#ffee88" opacity="0.9" filter="url(#glow)"/>
+                <circle cx="50" cy="80" r="40" fill="#ffdd44" opacity="0.25"/>
+                <text x="50" y="130" fill="#ffcc66" font-size="11" font-family="'Source Sans 3',sans-serif" text-anchor="middle">太阳光</text>
+                <!-- Incoming white light -->
+                <line x1="80" y1="80" x2="220" y2="80" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="6 3" opacity="0.8"/>
+                <polygon points="220,70 240,80 220,90" fill="#ffffff" opacity="0.8"/>
+                <!-- Raindrop (prism) -->
+                <circle cx="300" cy="80" r="45" fill="rgba(100,180,255,0.25)" stroke="rgba(150,210,255,0.5)" stroke-width="2"/>
+                <text x="300" y="85" fill="#bbddff" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">雨滴/冰晶</text>
+                <!-- Refracted light fan -->
+                <line x1="340" y1="80" x2="500" y2="135" stroke="#ff0000" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="510" y2="120" stroke="#ffaa00" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="515" y2="105" stroke="#ffdd00" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="520" y2="90" stroke="#00cc44" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="515" y2="72" stroke="#0088cc" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="510" y2="58" stroke="#0044ff" stroke-width="2" opacity="0.85"/>
+                <line x1="340" y1="80" x2="500" y2="45" stroke="#8800cc" stroke-width="2" opacity="0.85"/>
+                <!-- Labels -->
+                <text x="540" y="140" fill="#ff6666" font-size="10" font-family="'Source Sans 3',sans-serif">红 650nm</text>
+                <text x="550" y="95" fill="#44dd66" font-size="10" font-family="'Source Sans 3',sans-serif">绿 532nm</text>
+                <text x="540" y="42" fill="#9955ff" font-size="10" font-family="'Source Sans 3',sans-serif">紫 405nm</text>
+                <!-- Refraction explanation area -->
+                <text x="55" y="180" fill="var(--text-primary)" font-size="12" font-weight="700" font-family="'Playfair Display',serif">折射 Refraction</text>
+                <text x="55" y="200" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">阳光进入水滴后不同波长弯曲角度不同，</text>
+                <text x="55" y="215" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">形成: 彩虹 · 幻日 · 环天顶弧</text>
+                <!-- Reflection area -->
+                <text x="55" y="260" fill="var(--text-primary)" font-size="12" font-weight="700" font-family="'Playfair Display',serif">反射 Reflection</text>
+                <text x="55" y="280" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">冰晶平面反射阳光形成垂直光柱，</text>
+                <text x="55" y="295" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">形成: 日柱 · 光柱 · 海市蜃楼</text>
+                <!-- Diffraction area -->
+                <text x="55" y="340" fill="var(--text-primary)" font-size="12" font-weight="700" font-family="'Playfair Display',serif">衍射 Diffraction</text>
+                <text x="55" y="360" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">光绕过微小水滴或冰晶边缘发生弯曲，</text>
+                <text x="55" y="375" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">形成: 日华 · 佛光 · 虹彩云</text>
+                <!-- Scattering area -->
+                <text x="55" y="400" fill="rgba(255,255,255,0.3)" font-size="9" font-family="'Source Sans 3',sans-serif">散射 Scattering → 曙暮光条 · 蓝天</text>
+                <!-- Right side: phenomenon mini-icons -->
+                <text x="620" y="180" fill="var(--text-primary)" font-size="12" font-weight="700" font-family="'Playfair Display',serif">常见光学现象</text>
+                <text x="620" y="205" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">🌞 折射类: 彩虹 · 幻日 · 晕 · 环天顶弧</text>
+                <text x="620" y="225" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">🪞 反射类: 日柱 · 光柱 · 幻景/海市蜃楼</text>
+                <text x="620" y="245" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">〰️ 衍射类: 日华 · 佛光 · 虹彩云 · 雾虹</text>
+                <text x="620" y="265" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">💨 散射类: 曙暮光条 · 蓝天 · 黄道光</text>
+                <text x="620" y="285" fill="var(--text-muted)" font-size="9" font-family="'Source Sans 3',sans-serif">⚡ 激发类: 极光(粒子碰撞激发大气)</text>
+            </svg>
+        </div>
+
+        <!-- ===== Light Spectrum Visualization ===== -->
+        <div class="section-header">
+            <h2>🌈 可见光谱</h2>
+            <div class="rainbow-divider"></div>
+            <p style="color:var(--text-muted);">电磁波谱中人类肉眼可见的狭窄波段</p>
+        </div>
+        <div class="spectrum-section">
+            <div class="spectrum-bar-animated"></div>
+            <div class="spectrum-wavelengths">
+                <span>380nm 紫</span><span>450nm 蓝</span><span>495nm 绿</span><span>570nm 黄</span><span>590nm 橙</span><span>620nm 红</span><span>750nm</span>
+            </div>
+            <div class="spectrum-info-grid">
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#cc44ff;color:#cc44ff;"></div>
+                    <strong style="color:#cc44ff;font-size:0.85rem;">紫外</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">10-380nm<br>不可见 · 导致晒伤</p>
+                </div>
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#4444ff;color:#4444ff;"></div>
+                    <strong style="color:#4444ff;font-size:0.85rem;">蓝紫光</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">380-495nm<br>散射最强 · 天空蓝色</p>
+                </div>
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#44cc44;color:#44cc44;"></div>
+                    <strong style="color:#44cc44;font-size:0.85rem;">绿光</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">495-570nm<br>太阳辐射峰值 · 人眼最敏感</p>
+                </div>
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#ffcc00;color:#ffcc00;"></div>
+                    <strong style="color:#ffcc00;font-size:0.85rem;">黄橙光</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">570-620nm<br>钠光灯 · 穿透雾霾强</p>
+                </div>
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#ff3333;color:#ff3333;"></div>
+                    <strong style="color:#ff3333;font-size:0.85rem;">红光</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">620-750nm<br>折射角最小 · 彩虹外圈</p>
+                </div>
+                <div class="spectrum-info-card">
+                    <div class="color-dot" style="background:#cc2222;color:#cc2222;"></div>
+                    <strong style="color:#cc2222;font-size:0.85rem;">红外</strong>
+                    <p style="color:var(--text-muted);font-size:0.7rem;">750nm-1mm<br>不可见 · 热辐射</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Best Viewing Conditions Guide ===== -->
+        <div class="section-header">
+            <h2>📋 最佳观测条件指南</h2>
+            <div class="rainbow-divider"></div>
+            <p style="color:var(--text-muted);">时机、位置与天气决定你能否目睹自然光学奇迹</p>
+        </div>
+        <div class="viewing-section">
+            <table class="viewing-table">
+                <thead>
+                    <tr>
+                        <th>现象</th>
+                        <th>最佳时间</th>
+                        <th>最佳地点</th>
+                        <th>天气条件</th>
+                        <th>太阳位置</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>🌈 彩虹</td><td>早晨或傍晚</td><td>背对太阳的开阔地</td><td>雨后初晴</td><td>太阳高度角 &lt;42°</td></tr>
+                    <tr><td>🌌 极光</td><td>21:00-02:00</td><td>北极圈/南极圈</td><td>晴朗无月夜</td><td>无需太阳(夜间)</td></tr>
+                    <tr><td>💫 日晕</td><td>全天可能</td><td>全球各地</td><td>高空卷云覆盖</td><td>太阳不被遮挡即可</td></tr>
+                    <tr><td>🔆 幻日</td><td>日出后或日落前</td><td>寒冷平原地区</td><td>高空冰晶云层</td><td>太阳在地平线附近</td></tr>
+                    <tr><td>🌈 环天顶弧</td><td>太阳高度角&lt;32°</td><td>极地和中纬度</td><td>卷云/卷层云</td><td>太阳高度角 15-25° 最佳</td></tr>
+                    <tr><td>💚 绿闪</td><td>日落最后瞬间</td><td>海平面/开阔地平线</td><td>晴朗无霾</td><td>太阳接近地平线0°</td></tr>
+                    <tr><td>👤 布罗肯幽灵</td><td>早晨</td><td>高山/飞机上</td><td>云雾在下方</td><td>太阳在观察者背后低处</td></tr>
+                    <tr><td>✨ 黄道光</td><td>春/秋黄昏后</td><td>赤道/低纬度暗夜区</td><td>无月无光污染</td><td>日落后1-2小时</td></tr>
+                    <tr><td>🌙 月虹</td><td>满月前后夜晚</td><td>大型瀑布附近</td><td>月光充足+水雾</td><td>满月在背后低处</td></tr>
+                    <tr><td>🏝️ 海市蜃楼</td><td>正午</td><td>沙漠/海面/公路</td><td>气温梯度大</td><td>强烈日照加热地面</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== Optical Phenomenon Classification ===== -->
+        <div class="section-header">
+            <h2>📐 光学现象分类</h2>
+            <div class="rainbow-divider"></div>
+            <p style="color:var(--text-muted);">按物理机制分类——理解光的四种行为</p>
+        </div>
+        <div class="class-section">
+            <div class="class-grid">
+                <div class="class-card refraction">
+                    <h4 style="color:#ff9944;">折射 Refraction</h4>
+                    <p>光线从一种介质进入另一种介质时发生偏折。不同波长的光偏折角度不同，导致色散。</p>
+                    <div class="examples">
+                        <span class="example-tag">🌈 彩虹</span>
+                        <span class="example-tag">🌞 幻日</span>
+                        <span class="example-tag">🌈 环天顶弧</span>
+                        <span class="example-tag">💫 日晕</span>
+                        <span class="example-tag">🌙 月晕</span>
+                        <span class="example-tag">🏝️ 海市蜃楼</span>
+                        <span class="example-tag">💚 绿闪</span>
+                        <span class="example-tag">🔮 切弧</span>
+                    </div>
+                </div>
+                <div class="class-card reflection">
+                    <h4 style="color:#66bbff;">反射 Reflection</h4>
+                    <p>光线在冰晶或水滴表面反弹。冰晶的平面取向决定了反射光的方向和形态。</p>
+                    <div class="examples">
+                        <span class="example-tag">🔆 日柱</span>
+                        <span class="example-tag">💡 光柱</span>
+                        <span class="example-tag">🌅 太阳反射</span>
+                        <span class="example-tag">🏝️ 下现蜃景</span>
+                    </div>
+                </div>
+                <div class="class-card diffraction">
+                    <h4 style="color:#cc88ff;">衍射 Diffraction</h4>
+                    <p>光线绕过微小障碍物（水滴、冰晶）边缘时发生弯曲，产生干涉图样。</p>
+                    <div class="examples">
+                        <span class="example-tag">👑 日华/月华</span>
+                        <span class="example-tag">😇 佛光/光环</span>
+                        <span class="example-tag">☁️ 虹彩云</span>
+                        <span class="example-tag">🌫️ 雾虹</span>
+                    </div>
+                </div>
+                <div class="class-card scattering">
+                    <h4 style="color:#ff6699;">散射 Scattering</h4>
+                    <p>光线被大气分子或气溶胶粒子向各个方向重新分配，不改变波长（弹性散射）。</p>
+                    <div class="examples">
+                        <span class="example-tag">☀️ 曙暮光条</span>
+                        <span class="example-tag">🌌 反曙暮光条</span>
+                        <span class="example-tag">✨ 黄道光</span>
+                        <span class="example-tag">🔵 蓝天</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Rarity Scale Explanation ===== -->
+        <div class="section-header">
+            <h2>⭐ 现象稀有度等级</h2>
+            <div class="rainbow-divider"></div>
+            <p style="color:var(--text-muted);">从每日可见到一生难遇</p>
+        </div>
+        <div class="rarity-section">
+            <div class="rarity-scale">
+                <div class="rarity-level rl-1">
+                    <div class="rl-stars">⭐</div>
+                    <div class="rl-label" style="color:#5edb7e;">常见</div>
+                    <div class="rl-desc">几乎每天可见<br>彩虹 · 蓝天</div>
+                </div>
+                <div class="rarity-level rl-2">
+                    <div class="rl-stars">⭐⭐</div>
+                    <div class="rl-label" style="color:#aadd44;">偶见</div>
+                    <div class="rl-desc">每月可见数次<br>日晕 · 曙暮光条</div>
+                </div>
+                <div class="rarity-level rl-3">
+                    <div class="rl-stars">⭐⭐⭐</div>
+                    <div class="rl-label" style="color:#ddcc44;">罕见</div>
+                    <div class="rl-desc">每年可见数次<br>幻日 · 环天顶弧 · 虹彩云</div>
+                </div>
+                <div class="rarity-level rl-4">
+                    <div class="rl-stars">⭐⭐⭐⭐</div>
+                    <div class="rl-label" style="color:#ffaa44;">珍贵</div>
+                    <div class="rl-desc">一生可见数次<br>绿闪 · 佛光 · 黄道光</div>
+                </div>
+                <div class="rarity-level rl-5">
+                    <div class="rl-stars">⭐⭐⭐⭐⭐</div>
+                    <div class="rl-label" style="color:#ff5555;">极珍稀</div>
+                    <div class="rl-desc">一生仅一两次<br>月虹 · 布罗肯幽灵</div>
+                </div>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.75rem; text-align:center; margin-top:1rem;">稀有度评定基于全球平均观测概率 · 实际可见频率因地理位置差异极大 · 极光在极地为"常见"但在赤道为"极珍稀"</p>
+        </div>
+    </div>
+
+    <script>
+        const opticalData = [
+            { id: 'aurora', name: '极光', icon: '🌌', rarity: '极地常见', bestLocation: '北极圈/南极圈',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=500&h=300&fit=crop',
+                desc: '太阳风粒子与地球磁场碰撞，在极地夜空绘出绚丽的彩色光幕。' },
+            { id: 'rainbow', name: '彩虹', icon: '🌈', rarity: '常见', bestLocation: '全球',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=500&h=300&fit=crop',
+                desc: '阳光经雨滴折射与反射后分解为七色光谱的弧形光带。' },
+            { id: 'mirage', name: '海市蜃楼', icon: '🏝️', rarity: '偶见', bestLocation: '沙漠/海面/公路',
+                img: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=500&h=300&fit=crop',
+                desc: '光线在不同温度空气层中折射，使远处物体出现虚幻影像。' },
+            { id: 'halo', name: '日晕/月晕', icon: '💫', rarity: '偶见', bestLocation: '全球',
+                img: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=500&h=300&fit=crop',
+                desc: '高空卷云中的冰晶折射阳光或月光，在太阳/月亮周围形成光环。' },
+            { id: 'sunpillar', name: '日柱', icon: '🔆', rarity: '罕见', bestLocation: '寒冷地区',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '日出或日落时，冰晶反射阳光形成垂直光柱，宛如天梯。' },
+            { id: 'glory', name: '佛光/光环', icon: '😇', rarity: '罕见', bestLocation: '高山/飞机上',
+                img: 'https://images.unsplash.com/photo-1454789548928-9efd52dc4031?w=500&h=300&fit=crop',
+                desc: '观察者的影子投射在云雾上，周围出现彩色光环的奇妙现象。' },
+            { id: 'sun_dog', name: '幻日', icon: '🌞', rarity: '罕见', bestLocation: '寒冷平原/极地',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '太阳两侧22°处出现明亮光斑，形如三个太阳同时悬挂空中。由六角形冰晶折射形成。' },
+            { id: 'circumzenithal_arc', name: '环天顶弧', icon: '🌈', rarity: '罕见', bestLocation: '极地/高纬度',
+                img: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=500&h=300&fit=crop',
+                desc: '天顶附近出现的倒挂彩虹，色彩比普通彩虹更鲜艳，被誉为"天空的微笑"。' },
+            { id: 'green_flash', name: '绿闪', icon: '💚', rarity: '珍贵', bestLocation: '开阔海平面',
+                img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop',
+                desc: '日落最后一瞬间或日出第一瞬间，太阳顶部闪现绿色光芒，仅持续1-2秒。' },
+            { id: 'brocken_spectre', name: '布罗肯幽灵', icon: '👤', rarity: '极珍稀', bestLocation: '高山之巅',
+                img: 'https://images.unsplash.com/photo-1454789548928-9efd52dc4031?w=500&h=300&fit=crop',
+                desc: '观察者的巨大影子投射在下方云雾上，头部周围环绕彩色光环，得名于德国布罗肯峰。' },
+            { id: 'light_pillar', name: '光柱', icon: '💡', rarity: '罕见', bestLocation: '寒冷城市/极地',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '地面灯光或阳光被冰晶垂直反射形成的彩色光柱，如无数光剑直刺夜空。' },
+            { id: 'moonbow', name: '月虹', icon: '🌙', rarity: '极珍稀', bestLocation: '大型瀑布附近',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=500&h=300&fit=crop',
+                desc: '满月或接近满月时月光经水滴折射形成的彩虹，肉眼看为白色，长曝光摄影可见彩色。' },
+            { id: 'fata_morgana', name: '法塔·莫甘娜', icon: '🏰', rarity: '珍贵', bestLocation: '极地海域/海峡',
+                img: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=500&h=300&fit=crop',
+                desc: '最复杂的海市蜃楼形式，远处物体被拉伸扭曲成城堡状，得名于亚瑟王传说中的女巫。' },
+            { id: 'zodiacal_light', name: '黄道光', icon: '✨', rarity: '珍贵', bestLocation: '赤道暗夜区',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=500&h=300&fit=crop',
+                desc: '春分秋分前后日落后/日出前，沿黄道面可见的三角形微光，由行星际尘埃散射阳光形成。' },
+            { id: 'corona', name: '日华/月华', icon: '👑', rarity: '偶见', bestLocation: '全球',
+                img: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=500&h=300&fit=crop',
+                desc: '薄云遮挡日月时出现的彩色同心光环，比晕更紧密，由水滴衍射而非冰晶折射形成。' },
+            { id: 'iridescent_cloud', name: '虹彩云', icon: '☁️', rarity: '罕见', bestLocation: '中纬度',
+                img: 'https://images.unsplash.com/photo-1534081333815-ae5019106622?w=500&h=300&fit=crop',
+                desc: '云层边缘出现的珠母般彩虹色斑块，由微小水滴或冰晶衍射阳光形成。' },
+            { id: 'crepuscular_ray', name: '曙暮光条', icon: '☀️', rarity: '常见', bestLocation: '全球',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '云层缝隙中射出的扇形光束，俗称"耶稣光"或"上帝之光"，由阳光被云影遮挡形成明暗条纹。' },
+            { id: 'anticrepuscular_ray', name: '反曙暮光条', icon: '🌅', rarity: '罕见', bestLocation: '开阔地平线',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '曙暮光条的对日点版本——在太阳正对面的地平线上汇聚的暗影条纹，极难观察到。' },
+            { id: 'alexanders_dark_band', name: '亚历山大暗带', icon: '🌑', rarity: '常见', bestLocation: '全球(彩虹之间)',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=500&h=300&fit=crop',
+                desc: '主虹与副虹(霓)之间的暗色天空区域，因该角度范围内无折射光线到达人眼而形成。' },
+            { id: 'fogbow', name: '雾虹', icon: '🌫️', rarity: '罕见', bestLocation: '多雾山区/海岸',
+                img: 'https://images.unsplash.com/photo-1454789548928-9efd52dc4031?w=500&h=300&fit=crop',
+                desc: '雾中微小水滴形成的白色弧形光带，几乎无色，被称为"白色彩虹"或"鬼虹"。' },
+            { id: 'dewbow', name: '露虹', icon: '💧', rarity: '珍贵', bestLocation: '草地/田野(清晨)',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=500&h=300&fit=crop',
+                desc: '清晨露珠折射阳光在草地表面形成的彩虹，呈双曲线形状而非弧形，极其精致短暂。' },
+            { id: 'tangent_arc', name: '切弧', icon: '🔮', rarity: '罕见', bestLocation: '极地/高纬度',
+                img: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=500&h=300&fit=crop',
+                desc: '与22°日晕相切的上切弧或下切弧，形如展翅海鸥，由柱状冰晶折射形成。' },
+            { id: 'parry_arc', name: '帕里弧', icon: '🪝', rarity: '极珍稀', bestLocation: '极地',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '位于上切弧上方的凹面弧形光带，由特殊取向的冰晶形成，以极地探险家威廉·帕里命名。' },
+            { id: 'perihelion', name: '近幻日', icon: '✨', rarity: '珍贵', bestLocation: '寒冷地区',
+                img: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=500&h=300&fit=crop',
+                desc: '紧邻太阳边缘出现的极亮光斑，比普通幻日更近、更亮、更短暂，对观测角度要求极为苛刻。' },
+        ];
+
+        document.getElementById('opticalGrid').innerHTML = opticalData.map((o, i) => `
+        <div class="optical-card" style="animation-delay:${i*0.05}s;" onclick="window.location.href='detail.html?phenomenon=${o.id}'">
+          <div class="optical-img" style="background-image:url('${o.img}');">
+            <span style="font-size:2.5rem;">${o.icon}</span>
+          </div>
+          <div class="optical-body">
+            <h3>${o.name}</h3>
+            <span class="rare-tag">🔮 ${o.rarity}</span>
+            <span style="color:var(--text-muted); font-size:0.75rem; margin-left:0.5rem;">📍 ${o.bestLocation}</span>
+            <p>${o.desc}</p>
+          </div>
+        </div>
+      `).join('');
+
+        // ===== Canvas Aurora Borealis Animation =====
+        (function() {
+            const canvas = document.getElementById('auroraCanvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const auroraBands = [];
+            const bandCount = 4;
+            for (let i = 0; i < bandCount; i++) {
+                auroraBands.push({
+                    baseY: height * (0.08 + i * 0.06),
+                    amplitude: 30 + Math.random() * 70,
+                    frequency: 0.003 + Math.random() * 0.005,
+                    speed: 0.3 + Math.random() * 0.7,
+                    phase: Math.random() * Math.PI * 2,
+                    hue: 100 + i * 30 + Math.random() * 60,
+                    opacity: 0.06 + Math.random() * 0.08,
+                });
+            }
+
+            function drawAurora(timestamp) {
+                ctx.clearRect(0, 0, width, height);
+                const t = timestamp * 0.001;
+
+                for (const band of auroraBands) {
+                    // Aurora glow gradient
+                    const gradient = ctx.createLinearGradient(0, band.baseY - 80, 0, band.baseY + 120);
+                    gradient.addColorStop(0, `hsla(${band.hue}, 80%, 50%, 0)`);
+                    gradient.addColorStop(0.3, `hsla(${band.hue}, 70%, 55%, ${band.opacity * 1.2})`);
+                    gradient.addColorStop(0.6, `hsla(${band.hue + 20}, 60%, 50%, ${band.opacity})`);
+                    gradient.addColorStop(1, `hsla(${band.hue + 40}, 50%, 40%, 0)`);
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, band.baseY);
+
+                    for (let x = 0; x <= width; x += 4) {
+                        const y = band.baseY
+                            + Math.sin(x * band.frequency + t * band.speed + band.phase) * band.amplitude
+                            + Math.sin(x * band.frequency * 2.3 + t * band.speed * 0.7 + band.phase) * band.amplitude * 0.4
+                            + Math.sin(x * band.frequency * 0.5 + t * band.speed * 1.8) * band.amplitude * 0.6;
+                        ctx.lineTo(x, y);
+                    }
+
+                    ctx.lineTo(width, band.baseY + 120);
+                    ctx.lineTo(0, band.baseY + 120);
+                    ctx.closePath();
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+
+                    // Brighter shimmer line
+                    ctx.beginPath();
+                    ctx.moveTo(0, band.baseY);
+                    for (let x = 0; x <= width; x += 4) {
+                        const y = band.baseY
+                            + Math.sin(x * band.frequency + t * band.speed + band.phase) * band.amplitude
+                            + Math.sin(x * band.frequency * 2.3 + t * band.speed * 0.7 + band.phase) * band.amplitude * 0.4
+                            + Math.sin(x * band.frequency * 0.5 + t * band.speed * 1.8) * band.amplitude * 0.6;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.strokeStyle = `hsla(${band.hue + 20}, 80%, 70%, ${band.opacity * 1.5})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                requestAnimationFrame(drawAurora);
+            }
+            requestAnimationFrame(drawAurora);
+        })();
+
+        console.log('🌈 光学现象页面已加载 — 24个现象 · 折射原理图 · 可见光谱 · 观测指南 · 分类体系 · 稀有度等级');
+    </script>
+</body>
+</html>

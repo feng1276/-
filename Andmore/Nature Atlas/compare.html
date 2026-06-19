@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据对比 · Nature Atlas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-card: rgba(17, 22, 29, 0.82);
+            --glass-bg: rgba(10, 14, 20, 0.7);
+            --glass-border: rgba(0, 160, 220, 0.18);
+            --accent-ocean: #0099cc;
+            --accent-storm: #e8793e;
+            --accent-magma: #e0553d;
+            --accent-aurora: #4ecb71;
+            --accent-gold: #f0c040;
+            --text-primary: #e2e6ea;
+            --text-secondary: #a8b4c0;
+            --text-muted: #6b7885;
+            --border-radius-xl: 1.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.55);
+            --font-body: 'Source Sans 3', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+        .navbar {
+            position: sticky; top:10px; margin:10px 20px; padding:0.7rem 1.8rem;
+            display:flex; align-items:center; justify-content:space-between;
+            background: var(--glass-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 3rem;
+            z-index: 100; flex-wrap:wrap; gap:1rem;
+        }
+        .logo { font-family: var(--font-heading); font-size:1.3rem; font-weight:700; cursor:pointer; }
+        .logo .nat { color: var(--accent-ocean); }
+        .nav-links { display:flex; gap:1rem; list-style:none; flex-wrap:wrap; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration:none; font-size:0.8rem; transition:0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent-ocean); }
+        .page-header { text-align:center; padding:3rem 1rem 1.5rem; }
+        .page-header h1 { font-family: var(--font-heading); font-size:2.5rem; }
+        .container { max-width:1000px; margin:0 auto; padding:0 1.5rem; }
+
+        /* Quick Info Cards */
+        .info-cards-row {
+            display:flex; gap:1rem; margin:1.5rem 0; justify-content:center; flex-wrap:wrap;
+        }
+        .info-card {
+            background: var(--bg-card); border:1px solid var(--glass-border);
+            border-radius:1.2rem; padding:1rem 1.5rem; min-width:200px; flex:1;
+            box-shadow: var(--shadow-card); transition:0.3s;
+        }
+        .info-card:hover { border-color: var(--accent-ocean); }
+        .info-card .ic-icon { font-size:1.8rem; }
+        .info-card .ic-name { font-family: var(--font-heading); font-size:1rem; font-weight:600; margin:0.3rem 0; }
+        .info-card .ic-stats { font-size:0.7rem; color: var(--text-muted); line-height:1.5; }
+
+        /* Selector Row */
+        .selector-row {
+            display:flex; justify-content:center; align-items:center; gap:1rem; margin:1.5rem 0;
+            flex-wrap:wrap;
+        }
+        select {
+            padding:0.8rem 1.5rem; border-radius:3rem; background: var(--bg-card);
+            border:1px solid var(--glass-border); color: var(--text-primary);
+            font-family: var(--font-body); font-size:1rem; cursor:pointer;
+            transition:0.3s;
+        }
+        select:focus { outline:none; border-color:var(--accent-ocean); box-shadow:0 0 10px var(--accent-glow-ocean); }
+        .vs-badge {
+            font-family: var(--font-heading); font-size:1.8rem; font-weight:700; color:var(--accent-storm);
+        }
+
+        /* Buttons */
+        .btn-row { display:flex; justify-content:center; gap:0.8rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+        .btn {
+            padding:0.55rem 1.2rem; border-radius:3rem; font-family: var(--font-body);
+            font-size:0.8rem; cursor:pointer; transition:0.3s; border:none;
+        }
+        .btn-share { background: var(--accent-ocean); color:#fff; }
+        .btn-share:hover { background:#00b3e6; box-shadow:0 0 15px rgba(0,160,220,0.5); }
+        .btn-random { background: var(--bg-card); color: var(--accent-storm); border:1px solid var(--accent-storm); }
+        .btn-random:hover { background: rgba(232,121,62,0.1); box-shadow:0 0 15px rgba(232,121,62,0.3); }
+        .btn-copied { background: var(--accent-aurora) !important; }
+
+        /* Chart Row */
+        .chart-row {
+            display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:1.5rem;
+        }
+        .chart-box {
+            background: var(--bg-card); border:1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl); padding:1.2rem; box-shadow: var(--shadow-card);
+        }
+        .chart-box h3 { text-align:center; color:var(--accent-ocean); margin-bottom:0.8rem; font-size:0.9rem; }
+
+        /* Comparison Table */
+        .compare-table {
+            width:100%; border-collapse:collapse; background: var(--bg-card);
+            border-radius:var(--border-radius-xl); overflow:hidden;
+            box-shadow:var(--shadow-card); border:1px solid var(--glass-border);
+        }
+        .compare-table th, .compare-table td {
+            padding:0.8rem 1.2rem; text-align:center; border-bottom:1px solid var(--glass-border);
+        }
+        .compare-table th {
+            background:rgba(0,160,220,0.1); color:var(--accent-ocean); font-size:0.8rem;
+        }
+        .compare-table td { font-size:0.85rem; }
+        .compare-table .winner-a { color:var(--accent-ocean); font-weight:700; }
+        .compare-table .winner-b { color:var(--accent-storm); font-weight:700; }
+        .compare-table .winner-a::after { content:' ◀'; font-size:0.65rem; }
+        .compare-table .winner-b::after { content:' ▶'; font-size:0.65rem; }
+
+        /* Winner indicator highlight */
+        @keyframes winGlow { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        .win-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; animation:winGlow 1.5s ease-in-out infinite; }
+
+        /* Insights */
+        .insights-box {
+            background: var(--bg-card); border:1px solid var(--glass-border);
+            border-radius:var(--border-radius-xl); padding:1.5rem 2rem; margin-top:1.5rem;
+            box-shadow:var(--shadow-card);
+        }
+        .insights-box h3 { font-family:var(--font-heading); color:var(--accent-aurora); margin-bottom:0.8rem; }
+        .insights-box p { color:var(--text-secondary); font-size:0.88rem; line-height:1.7; margin-bottom:0.5rem; }
+
+        @media (max-width:768px) {
+            .chart-row { grid-template-columns:1fr; }
+        }
+        @media (max-width:500px) {
+            .info-cards-row { flex-direction:column; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><span class="nat">NATURE</span> ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="nature_home.html">首页</a></li>
+            <li><a href="phenomena.html">现象库</a></li>
+            <li><a href="weather.html">极端天气</a></li>
+            <li><a href="geology.html">地质现象</a></li>
+            <li><a href="ocean.html">海洋现象</a></li>
+            <li><a href="optical.html">光学现象</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间轴</a></li>
+            <li><a href="compare.html" class="active">数据对比</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>📊 现象数据对比</h1>
+        <p style="color:var(--text-muted);">多维度比较两种自然现象的强度与特征</p>
+    </div>
+
+    <div class="container">
+        <!-- Quick Info Cards -->
+        <div class="info-cards-row" id="infoCards"></div>
+
+        <!-- Selectors -->
+        <div class="selector-row">
+            <select id="phenASelect"></select>
+            <span class="vs-badge">VS</span>
+            <select id="phenBSelect"></select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-row">
+            <button class="btn btn-random" onclick="randomComparison()">🎲 随机对比</button>
+            <button class="btn btn-share" id="shareBtn" onclick="shareComparison()">🔗 分享此对比</button>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>📊 雷达图对比</h3>
+                <canvas id="radarChart" height="250"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>📊 柱状图对比</h3>
+                <canvas id="barChart" height="250"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>🍩 极地图面积对比</h3>
+                <canvas id="polarChart" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <table class="compare-table" id="compareTable">
+            <thead><tr><th>对比维度</th><th id="headerA">现象A</th><th id="headerB">现象B</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+        <!-- Comparison Insights -->
+        <div class="insights-box" id="insightsBox">
+            <h3>💡 对比洞察</h3>
+            <div id="insightsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============ EXPANDED DATABASE (25+ phenomena) ============
+        const compareDB = {
+            tornado: {
+                name:'龙卷风', icon:'🌪️', category:'天气', wind:480, area:5, duration:2,
+                frequency:1000, deaths:60, energyRelease:'medium', globalOccurrence:'中等',
+                predictionAccuracy:'低', recoveryTime:'数月至数年', economicImpact:'中等 (数亿美元)',
+                summary:'地球上最强风力的天气现象，但范围极小。风速最高可达480km/h。'
+            },
+            hurricane: {
+                name:'飓风/台风', icon:'🌀', category:'天气', wind:350, area:500, duration:240,
+                frequency:85, deaths:500, energyRelease:'very-high', globalOccurrence:'高 (热带海域)',
+                predictionAccuracy:'中等', recoveryTime:'数月至数年', economicImpact:'极高 (数百亿美元)',
+                summary:'大型热带气旋系统，持续数天至数周，可造成大范围风灾与洪涝。'
+            },
+            volcano: {
+                name:'火山喷发', icon:'🌋', category:'地质', wind:0, area:50, duration:720,
+                frequency:60, deaths:800, energyRelease:'extreme', globalOccurrence:'中等 (板块边界)',
+                predictionAccuracy:'中等', recoveryTime:'数年至数十年', economicImpact:'高 (数十亿美元+航空)',
+                summary:'地球内部能量剧烈释放，喷发柱可达平流层，影响全球气候。'
+            },
+            tsunami: {
+                name:'海啸', icon:'🌊', category:'海洋', wind:0, area:2000, duration:12,
+                frequency:2, deaths:4000, energyRelease:'very-high', globalOccurrence:'低 (主要太平洋)',
+                predictionAccuracy:'高 (有预警系统)', recoveryTime:'数月至数年', economicImpact:'极高 (数百亿美元)',
+                summary:'由海底地震/滑坡引发，波浪传播速度达800km/h，跨洋冲击力惊人。'
+            },
+            earthquake: {
+                name:'地震', icon:'🏚️', category:'地质', wind:0, area:500, duration:0.05,
+                frequency:500000, deaths:10000, energyRelease:'extreme', globalOccurrence:'极高 (板块边界)',
+                predictionAccuracy:'极低', recoveryTime:'数月至数十年', economicImpact:'极高 (可达千亿美元)',
+                summary:'地壳应力突然释放，每年感测超50万次，大震可摧毁整个城市。'
+            },
+            // === NEW ENTRIES ===
+            dustStorm: {
+                name:'沙尘暴', icon:'🏜️', category:'天气', wind:120, area:5000, duration:48,
+                frequency:90, deaths:5, energyRelease:'low', globalOccurrence:'高 (干旱/半干旱区)',
+                predictionAccuracy:'中等', recoveryTime:'数天至数周', economicImpact:'中等 (航空/农业)',
+                summary:'强风卷起大量沙尘，能见度骤降，影响呼吸健康与交通。'
+            },
+            aurora: {
+                name:'极光', icon:'✨', category:'光学', wind:0, area:1000000, duration:8,
+                frequency:200, deaths:0, energyRelease:'n/a', globalOccurrence:'极地高纬度',
+                predictionAccuracy:'中等', recoveryTime:'即时', economicImpact:'正面 (旅游业)',
+                summary:'太阳风与地球磁场相互作用产生的发光现象，无破坏性。'
+            },
+            drought: {
+                name:'干旱', icon:'☀️', category:'气候', wind:0, area:500000, duration:8760,
+                frequency:30, deaths:5000, energyRelease:'n/a', globalOccurrence:'极高 (全球)',
+                predictionAccuracy:'中等', recoveryTime:'数月至数年', economicImpact:'极高 (农业损失)',
+                summary:'长期降水不足导致的缓慢灾害，影响作物与水供应。'
+            },
+            heatWave: {
+                name:'热浪', icon:'🔥', category:'气候', wind:0, area:100000, duration:240,
+                frequency:15, deaths:2000, energyRelease:'low', globalOccurrence:'逐渐增加',
+                predictionAccuracy:'高', recoveryTime:'数天至数周', economicImpact:'高 (电网/农业)',
+                summary:'持续极端高温天气，死亡率居气象灾害之首。'
+            },
+            blizzard: {
+                name:'暴风雪', icon:'❄️', category:'天气', wind:150, area:5000, duration:24,
+                frequency:40, deaths:50, energyRelease:'low', globalOccurrence:'中高纬度',
+                predictionAccuracy:'高', recoveryTime:'数天', economicImpact:'中等',
+                summary:'强风+大雪+低能见度，可导致交通瘫痪与电力中断。'
+            },
+            wildfire: {
+                name:'野火/丛林大火', icon:'🔥', category:'灾害', wind:80, area:10000, duration:720,
+                frequency:5000, deaths:100, energyRelease:'high', globalOccurrence:'极高 (全球)',
+                predictionAccuracy:'中等', recoveryTime:'数年至数十年', economicImpact:'高',
+                summary:'干燥+高温+强风驱动，火势蔓延极快，生态系统需要多年恢复。'
+            },
+            landslide: {
+                name:'山体滑坡', icon:'⛰️', category:'地质', wind:0, area:2, duration:0.1,
+                frequency:10000, deaths:1000, energyRelease:'medium', globalOccurrence:'陡峭山区',
+                predictionAccuracy:'低', recoveryTime:'数月', economicImpact:'中等',
+                summary:'重力驱动的大规模土石滑动，常由暴雨或地震触发。'
+            },
+            flood: {
+                name:'洪水', icon:'🌊', category:'水文', wind:0, area:100000, duration:240,
+                frequency:200, deaths:3000, energyRelease:'medium', globalOccurrence:'极高 (全球)',
+                predictionAccuracy:'中等', recoveryTime:'数月至数年', economicImpact:'极高',
+                summary:'最常见且损失最大的自然灾害之一，由暴雨/融雪/风暴潮引起。'
+            },
+            hail: {
+                name:'冰雹', icon:'🧊', category:'天气', wind:100, area:50, duration:0.5,
+                frequency:10000, deaths:2, energyRelease:'low', globalOccurrence:'大陆性气候区',
+                predictionAccuracy:'中等', recoveryTime:'即时', economicImpact:'中等 (农业)',
+                summary:'强对流云中形成的冰粒，大雹可砸毁农作物与车辆。'
+            },
+            fog: {
+                name:'浓雾', icon:'🌫️', category:'天气', wind:10, area:1000, duration:8,
+                frequency:500, deaths:10, energyRelease:'n/a', globalOccurrence:'极高',
+                predictionAccuracy:'中等', recoveryTime:'即时', economicImpact:'低 (航空延误)',
+                summary:'近地面水汽凝结，能见度极低，对交通影响显著。'
+            },
+            lightning: {
+                name:'雷电', icon:'⚡', category:'天气', wind:0, area:0.01, duration:0.001,
+                frequency:30000000, deaths:24000, energyRelease:'medium', globalOccurrence:'极高',
+                predictionAccuracy:'中等', recoveryTime:'即时', economicImpact:'中等 (火灾/损坏)',
+                summary:'云间或云地间放电，全球每天约800万次闪电。'
+            },
+            coralBleaching: {
+                name:'珊瑚白化', icon:'🪸', category:'海洋', wind:0, area:5000, duration:2160,
+                frequency:10, deaths:0, energyRelease:'n/a', globalOccurrence:'热带珊瑚礁',
+                predictionAccuracy:'中等', recoveryTime:'十年至不可恢复', economicImpact:'极高 (渔业/旅游)',
+                summary:'海水升温导致珊瑚排出共生藻，全球珊瑚礁面临严重威胁。'
+            },
+            elNino: {
+                name:'厄尔尼诺', icon:'🌡️', category:'气候', wind:50, area:50000000, duration:8760,
+                frequency:0.25, deaths:2000, energyRelease:'very-high', globalOccurrence:'太平洋主导',
+                predictionAccuracy:'中等', recoveryTime:'数月', economicImpact:'极高 (全球)',
+                summary:'太平洋海温异常升高的全球性气候现象，影响全球天气模式。'
+            },
+            laNina: {
+                name:'拉尼娜', icon:'❄️', category:'气候', wind:50, area:50000000, duration:8760,
+                frequency:0.25, deaths:500, energyRelease:'very-high', globalOccurrence:'太平洋主导',
+                predictionAccuracy:'中等', recoveryTime:'数月', economicImpact:'极高 (全球)',
+                summary:'与厄尔尼诺相反的海温异常下降，同样改变全球天气格局。'
+            },
+            sunDog: {
+                name:'幻日/假日', icon:'🌈', category:'光学', wind:0, area:0, duration:2,
+                frequency:100, deaths:0, energyRelease:'n/a', globalOccurrence:'全球',
+                predictionAccuracy:'高', recoveryTime:'即时', economicImpact:'无',
+                summary:'大气冰晶折射阳光形成的光学现象，太阳两侧出现光斑。'
+            },
+            waterspout: {
+                name:'水龙卷', icon:'🌪️', category:'海洋', wind:150, area:0.1, duration:0.3,
+                frequency:400, deaths:2, energyRelease:'medium', globalOccurrence:'温暖海域',
+                predictionAccuracy:'低', recoveryTime:'即时', economicImpact:'低',
+                summary:'水面上的旋转气柱，通常比陆上龙卷风弱但可威胁船只。'
+            },
+            sandstorm: {
+                name:'沙漠沙暴', icon:'🏜️', category:'天气', wind:100, area:10000, duration:12,
+                frequency:50, deaths:10, energyRelease:'low', globalOccurrence:'沙漠地区',
+                predictionAccuracy:'中等', recoveryTime:'数小时', economicImpact:'低',
+                summary:'沙漠地区强风掀起沙尘，视觉与呼吸道危害显著。'
+            },
+            avalanche: {
+                name:'雪崩', icon:'🏔️', category:'地质', wind:0, area:1, duration:0.05,
+                frequency:100000, deaths:150, energyRelease:'medium', globalOccurrence:'雪山地区',
+                predictionAccuracy:'中等', recoveryTime:'即时', economicImpact:'低 (局部)',
+                summary:'积雪层不稳定崩塌，高速下滑的雪流可摧毁一切路径上的物体。'
+            },
+            limnicEruption: {
+                name:'湖泊喷发', icon:'💨', category:'地质', wind:0, area:50, duration:0.2,
+                frequency:0.01, deaths:1700, energyRelease:'medium', globalOccurrence:'极罕见 (非洲裂谷湖)',
+                predictionAccuracy:'极低', recoveryTime:'数十年', economicImpact:'低',
+                summary:'深层湖水溶解的CO₂突然释放，仅记录过两次(尼奥斯湖1986)。'
+            },
+            swarmQuake: {
+                name:'地震群', icon:'📊', category:'地质', wind:0, area:20, duration:720,
+                frequency:50, deaths:10, energyRelease:'medium', globalOccurrence:'板块边界/火山',
+                predictionAccuracy:'极低', recoveryTime:'数周', economicImpact:'低',
+                summary:'短时间内连续发生大量小到中震，与火山活动相关。'
+            },
+            derecho: {
+                name:'德雷科风暴', icon:'💨', category:'天气', wind:200, area:10000, duration:10,
+                frequency:20, deaths:20, energyRelease:'high', globalOccurrence:'北美/欧洲',
+                predictionAccuracy:'低', recoveryTime:'数周', economicImpact:'高',
+                summary:'长寿命直线风暴，产生广泛破坏性大风，路径可达1000公里。'
+            },
+        };
+
+        // ============ DIMENSION LABELS ============
+        const dimensions = [
+            { key:'wind', label:'最大风速(km/h)', icon:'💨', higherBetter:true, scale:48 },
+            { key:'area', label:'影响范围(km²)', icon:'📐', higherBetter:true, scale:200 },
+            { key:'duration', label:'持续时间(小时)', icon:'⏱️', higherBetter:true, scale:72 },
+            { key:'frequency', label:'年均发生次数', icon:'🔄', higherBetter:true, scale:5000 },
+            { key:'deaths', label:'历史年均死亡', icon:'💀', higherBetter:false, scale:1000 },
+            { key:'energyRelease', label:'能量释放等级', icon:'⚡', higherBetter:true, scale:'ordinal' },
+            { key:'globalOccurrence', label:'全球分布', icon:'🌍', higherBetter:true, scale:'ordinal' },
+            { key:'predictionAccuracy', label:'预测准确度', icon:'🎯', higherBetter:true, scale:'ordinal' },
+            { key:'recoveryTime', label:'恢复时间', icon:'🔄', higherBetter:false, scale:'ordinal' },
+            { key:'economicImpact', label:'经济影响', icon:'💰', higherBetter:false, scale:'ordinal' },
+        ];
+
+        const ordinalValues = {
+            'n/a':0, '极低':1, '低':1.5, '中等':2.5, '高':3.5, '极高':5,
+            'very-high':4.5, 'extreme':6, 'medium':2.5, 'low':1.5, 'high':3.5,
+            '即时':0.5, '数天':1, '数天至数周':1.5, '数周':2, '数月':3,
+            '数月至数年':4, '数年':5, '数年至数十年':6, '十年至不可恢复':8,
+            '无':0, '正面 (旅游业)':0, '低 (航空延误)':1, '低 (局部)':1.5,
+            '低 (航空/农业)':1.5, '中等':2.5, '中等 (农业)':2.5,
+            '中等 (航空/农业)':2.5, '中等 (数亿美元)':2.5, '中等 (航空延误)':1.5,
+            '中等 (火灾/损坏)':2.5, '高':3.5, '高 (电网/农业)':3.5,
+            '高 (数十亿美元+航空)':4, '极高':5, '极高 (数百亿美元)':5.5,
+            '极高 (千亿美元)':6, '极高 (全球)':6, '极高 (农业损失)':5.5,
+            '极高 (渔业/旅游)':5, '极地高纬度':2, '全球':4, '极高 (全球)':4.5,
+            '高 (热带海域)':3.5, '陡峭山区':2, '大陆性气候区':2.5,
+            '沙漠地区':2, '干旱/半干旱区':2.5, '中高纬度':3, '温暖海域':2.5,
+            '热带珊瑚礁':1.5, '太平洋主导':1.5, '极罕见 (非洲裂谷湖)':0.5,
+            '北美/欧洲':2, '板块边界/火山':2, '逐渐增加':3,
+            '低 (主要太平洋)':1.5, '极高 (板块边界)':5, '中等 (板块边界)':2.5,
+            '雪山地区':2,
+        };
+
+        function getOrdinalValue(val) {
+            if (typeof val === 'number') return val;
+            if (ordinalValues[val] !== undefined) return ordinalValues[val];
+            return 2.5; // default
+        }
+
+        function normalizeValue(key, val) {
+            const dim = dimensions.find(d => d.key === key);
+            if (!dim || dim.scale === 'ordinal') return getOrdinalValue(val) / 6;
+            if (typeof val === 'number') return val / dim.scale;
+            return 0;
+        }
+
+        // ============ POPULATE SELECTORS ============
+        const phenKeys = Object.keys(compareDB);
+        function buildOption(key, selected) {
+            const p = compareDB[key];
+            return `<option value="${key}" ${selected?'selected':''}>${p.icon} ${p.name}</option>`;
+        }
+        document.getElementById('phenASelect').innerHTML = phenKeys.map(k => buildOption(k, k==='tornado')).join('');
+        document.getElementById('phenBSelect').innerHTML = phenKeys.map(k => buildOption(k, k==='hurricane')).join('');
+
+        // ============ CHARTS ============
+        let radarChart, barChart, polarChart;
+
+        function update() {
+            const aKey = document.getElementById('phenASelect').value;
+            const bKey = document.getElementById('phenBSelect').value;
+            const a = compareDB[aKey];
+            const b = compareDB[bKey];
+
+            // === QUICK INFO CARDS ===
+            document.getElementById('infoCards').innerHTML = `
+                <div class="info-card" style="border-left:3px solid var(--accent-ocean);">
+                    <div class="ic-icon">${a.icon}</div>
+                    <div class="ic-name">${a.name}</div>
+                    <div class="ic-stats">类型: ${a.category}<br>${a.summary}</div>
+                </div>
+                <div class="info-card" style="border-left:3px solid var(--accent-storm);">
+                    <div class="ic-icon">${b.icon}</div>
+                    <div class="ic-name">${b.name}</div>
+                    <div class="ic-stats">类型: ${b.category}<br>${b.summary}</div>
+                </div>
+            `;
+
+            // === HEADERS ===
+            document.getElementById('headerA').textContent = a.name;
+            document.getElementById('headerB').textContent = b.name;
+
+            // === TABLE WITH WINNER INDICATORS ===
+            const tableRows = [];
+            let scoreA = 0, scoreB = 0;
+            const chartLabels = [];
+            const chartDataA = [];
+            const chartDataB = [];
+            const chartLabelsFull = dimensions.map(d => d.label);
+
+            dimensions.forEach(dim => {
+                const aVal = a[dim.key];
+                const bVal = b[dim.key];
+                const aNum = normalizeValue(dim.key, aVal);
+                const bNum = normalizeValue(dim.key, bVal);
+
+                chartLabels.push(dim.label);
+                chartDataA.push(aNum);
+                chartDataB.push(bNum);
+
+                let winner = '';
+                if (dim.higherBetter === false) {
+                    // Lower is better (deaths, recovery, economic impact)
+                    if (aNum < bNum) { winner = 'winner-a'; scoreA++; }
+                    else if (bNum < aNum) { winner = 'winner-b'; scoreB++; }
+                } else {
+                    if (aNum > bNum) { winner = 'winner-a'; scoreA++; }
+                    else if (bNum > aNum) { winner = 'winner-b'; scoreB++; }
+                }
+
+                const displayA = typeof aVal === 'number' ? (aVal >= 1000 ? aVal.toLocaleString() : aVal) : aVal;
+                const displayB = typeof bVal === 'number' ? (bVal >= 1000 ? bVal.toLocaleString() : bVal) : bVal;
+
+                tableRows.push(`
+                    <tr>
+                        <td>${dim.icon} ${dim.label}</td>
+                        <td class="${winner==='winner-a'?winner:''}">${displayA}</td>
+                        <td class="${winner==='winner-b'?winner:''}">${displayB}</td>
+                    </tr>
+                `);
+            });
+            document.getElementById('tableBody').innerHTML = tableRows.join('');
+
+            // === RADAR CHART ===
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(radarCtx, {
+                type:'radar',
+                data:{
+                    labels: chartLabelsFull,
+                    datasets:[
+                        { label:a.name, data:chartDataA, borderColor:'#0099cc', backgroundColor:'rgba(0,153,204,0.2)', borderWidth:2 },
+                        { label:b.name, data:chartDataB, borderColor:'#e8793e', backgroundColor:'rgba(232,121,62,0.2)', borderWidth:2 },
+                    ]
+                },
+                options:{ responsive:true, maintainAspectRatio:true,
+                    plugins:{ legend:{ labels:{ color:'#a8b4c0', font:{size:10} } } },
+                    scales:{ r:{ ticks:{ color:'#6b7885', font:{size:8}, backdropColor:'transparent' },
+                        grid:{ color:'rgba(255,255,255,0.05)' },
+                        pointLabels:{ color:'#e2e6ea', font:{size:9} } } }
+                }
+            });
+
+            // === BAR CHART ===
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if (barChart) barChart.destroy();
+            barChart = new Chart(barCtx, {
+                type:'bar',
+                data:{
+                    labels: chartLabelsFull,
+                    datasets:[
+                        { label:a.name, data:chartDataA, backgroundColor:'rgba(0,153,204,0.6)', borderRadius:4 },
+                        { label:b.name, data:chartDataB, backgroundColor:'rgba(232,121,62,0.6)', borderRadius:4 },
+                    ]
+                },
+                options:{ responsive:true, maintainAspectRatio:true,
+                    plugins:{ legend:{ labels:{ color:'#a8b4c0', font:{size:10} } } },
+                    scales:{ y:{ ticks:{ color:'#6b7885', font:{size:8} }, grid:{ color:'rgba(255,255,255,0.05)' } },
+                        x:{ ticks:{ color:'#e2e6ea', font:{size:8}, maxRotation:45 } } }
+                }
+            });
+
+            // === POLAR AREA CHART (third chart type) ===
+            const polarCtx = document.getElementById('polarChart').getContext('2d');
+            if (polarChart) polarChart.destroy();
+            // Show combined relative magnitude
+            const combinedData = dimensions.map((dim, i) => {
+                return Math.max(chartDataA[i], chartDataB[i]);
+            });
+            polarChart = new Chart(polarCtx, {
+                type:'polarArea',
+                data:{
+                    labels: chartLabelsFull,
+                    datasets:[{
+                        data: combinedData,
+                        backgroundColor: chartDataA.map((v,i) =>
+                            v >= chartDataB[i] ? 'rgba(0,153,204,0.55)' : 'rgba(232,121,62,0.55)'
+                        ),
+                        borderColor: chartDataA.map((v,i) =>
+                            v >= chartDataB[i] ? 'rgba(0,153,204,0.8)' : 'rgba(232,121,62,0.8)'
+                        ),
+                        borderWidth: 1,
+                    }]
+                },
+                options:{ responsive:true, maintainAspectRatio:true,
+                    plugins:{ legend:{ display:false },
+                        tooltip:{ callbacks:{ label:function(ctx){ return chartLabelsFull[ctx.dataIndex]+': '+(ctx.raw*100).toFixed(0)+'%'; } } }
+                    },
+                    scales:{ r:{ ticks:{ color:'#6b7885', font:{size:8}, backdropColor:'transparent' },
+                        grid:{ color:'rgba(255,255,255,0.05)' } } }
+                }
+            });
+
+            // === INSIGHTS ===
+            generateInsights(a, b, scoreA, scoreB, aKey, bKey);
+        }
+
+        function generateInsights(a, b, scoreA, scoreB, aKey, bKey) {
+            const totalDims = dimensions.length;
+            let insights = [];
+
+            // Overall winner
+            if (scoreA > scoreB) {
+                insights.push(`<strong>${a.name}</strong> 在 ${scoreA}/${totalDims} 个维度中占优，整体表现更强。`);
+            } else if (scoreB > scoreA) {
+                insights.push(`<strong>${b.name}</strong> 在 ${scoreB}/${totalDims} 个维度中占优，整体表现更强。`);
+            } else {
+                insights.push(`<strong>${a.name}</strong> 与 <strong>${b.name}</strong> 旗鼓相当 (${scoreA}:${scoreB})，各有优势领域。`);
+            }
+
+            // Category comparison
+            if (a.category === b.category) {
+                insights.push(`两者同属<strong>${a.category}</strong>类现象，但表现特征差异显著。`);
+            } else {
+                insights.push(`<strong>${a.name}</strong> 属于${a.category}类，<strong>${b.name}</strong> 属于${b.category}类，跨类别对比揭示了不同自然力量的特性。`);
+            }
+
+            // Energy analysis
+            const aEnergy = getOrdinalValue(a.energyRelease);
+            const bEnergy = getOrdinalValue(b.energyRelease);
+            if (aEnergy > bEnergy && aEnergy >= 4) {
+                insights.push(`<strong>${a.name}</strong> 的能量释放等级 (${a.energyRelease}) 远超 ${b.name}，单次事件释放能量惊人。`);
+            } else if (bEnergy > aEnergy && bEnergy >= 4) {
+                insights.push(`<strong>${b.name}</strong> 的能量释放等级 (${b.energyRelease}) 远超 ${a.name}。`);
+            }
+
+            // Frequency vs Impact
+            const aFreq = a.frequency || 0;
+            const bFreq = b.frequency || 0;
+            const aDeath = a.deaths || 0;
+            const bDeath = b.deaths || 0;
+            if (aFreq > bFreq * 10 && bDeath > aDeath * 5) {
+                insights.push(`${a.name} 虽然发生频率极高 (${aFreq.toLocaleString()}次/年)，但 ${b.name} 的单次致死性更高。`);
+            } else if (bFreq > aFreq * 10 && aDeath > bDeath * 5) {
+                insights.push(`${b.name} 虽然更频繁，但 ${a.name} 的单次破坏力更大。`);
+            }
+
+            // Prediction note
+            if (a.predictionAccuracy === '极低' || b.predictionAccuracy === '极低') {
+                const unpred = [a, b].find(x => x.predictionAccuracy === '极低');
+                insights.push(`⚠️ <strong>${unpred.name}</strong> 的预测准确度为极低，是防灾减灾的主要挑战。`);
+            }
+
+            document.getElementById('insightsContent').innerHTML = insights.map(s => `<p>• ${s}</p>`).join('');
+        }
+
+        // ============ RANDOM COMPARISON ============
+        function randomComparison() {
+            const keys = Object.keys(compareDB);
+            let aIdx, bIdx;
+            do {
+                aIdx = Math.floor(Math.random() * keys.length);
+                bIdx = Math.floor(Math.random() * keys.length);
+            } while (aIdx === bIdx);
+            document.getElementById('phenASelect').value = keys[aIdx];
+            document.getElementById('phenBSelect').value = keys[bIdx];
+            update();
+        }
+
+        // ============ SHARE COMPARISON ============
+        function shareComparison() {
+            const aKey = document.getElementById('phenASelect').value;
+            const bKey = document.getElementById('phenBSelect').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('a', aKey);
+            url.searchParams.set('b', bKey);
+            window.history.replaceState({}, '', url.toString());
+
+            navigator.clipboard.writeText(url.toString()).then(() => {
+                const btn = document.getElementById('shareBtn');
+                const origText = btn.textContent;
+                btn.textContent = '✅ 已复制链接!';
+                btn.classList.add('btn-copied');
+                setTimeout(() => {
+                    btn.textContent = origText;
+                    btn.classList.remove('btn-copied');
+                }, 2000);
+            }).catch(() => {
+                alert('链接已更新: ' + url.toString());
+            });
+        }
+
+        // ============ LOAD FROM URL PARAMS ============
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const aParam = params.get('a');
+            const bParam = params.get('b');
+            if (aParam && compareDB[aParam]) document.getElementById('phenASelect').value = aParam;
+            if (bParam && compareDB[bParam]) document.getElementById('phenBSelect').value = bParam;
+        }
+
+        document.getElementById('phenASelect').addEventListener('change', update);
+        document.getElementById('phenBSelect').addEventListener('change', update);
+        loadFromURL();
+        update();
+        console.log('📊 数据对比页面已加载 · 共'+Object.keys(compareDB).length+'种现象 · '+dimensions.length+'个维度');
+    </script>
+</body>
+</html>

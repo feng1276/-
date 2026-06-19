@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS - Interactive City Map</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:system-ui,-apple-system,sans-serif;
+  background:#030814;
+  color:#c8d6e5;
+  display:flex;flex-direction:column;
+  min-height:100vh;position:relative;
+}
+body::before{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(circle,rgba(0,212,255,0.04) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;opacity:0.3;
+}
+#topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(3,8,20,0.95);
+  border-bottom:1px solid rgba(0,212,255,0.15);
+  padding:10px 24px;display:flex;align-items:center;justify-content:space-between;
+  backdrop-filter:blur(12px);font-size:13px;letter-spacing:0.5px;
+}
+#topbar .brand{color:#00d4ff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px}
+#topbar .brand .dot{width:8px;height:8px;background:#00ff88;border-radius:50%;animation:pulse-dot 2s infinite}
+#topbar .info{color:#6b7d95;display:flex;gap:28px;flex-wrap:wrap}
+#topbar .info span{color:#c8d6e5}
+#topbar .clock{color:#00d4ff;font-family:'Consolas','Courier New',monospace;font-size:14px}
+#main-layout{display:flex;flex:1;position:relative;z-index:1;min-height:0}
+#sidebar{
+  width:200px;min-width:200px;
+  background:rgba(6,15,40,0.6);border-right:1px solid rgba(0,212,255,0.1);
+  backdrop-filter:blur(8px);padding:16px 0;display:flex;flex-direction:column;
+}
+#sidebar a{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;color:#6b7d95;text-decoration:none;
+  font-size:13px;letter-spacing:0.3px;border-left:3px solid transparent;transition:all 0.25s;
+}
+#sidebar a:hover{background:rgba(0,212,255,0.06);color:#c8d6e5;border-left-color:#00d4ff}
+#sidebar a.active{background:rgba(0,212,255,0.08);color:#00d4ff;border-left-color:#00d4ff}
+#sidebar .nav-icon{width:18px;text-align:center;font-size:14px}
+#content{flex:1;padding:20px;overflow-y:auto;max-height:calc(100vh - 90px);display:flex;flex-direction:column;gap:20px}
+.page-header{display:flex;align-items:center;gap:16px}
+.page-header .icon{font-size:36px}
+.page-header h1{font-size:24px;font-weight:700;color:#c8d6e5}
+.page-header .sub{color:#6b7d95;font-size:14px;margin-top:2px}
+.panel{
+  background:rgba(6,15,40,0.8);border:1px solid rgba(0,212,255,0.12);
+  border-radius:8px;backdrop-filter:blur(10px);
+  box-shadow:0 0 20px rgba(0,212,255,0.05);padding:20px;
+}
+.panel h2{font-size:16px;color:#00d4ff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel h2 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.map-wrapper{display:flex;gap:20px;flex-wrap:wrap}
+#map-container{flex:1;min-width:620px}
+#map-grid{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  grid-template-rows:repeat(6,1fr);
+  gap:3px;
+  aspect-ratio:8/6;
+  min-height:420px;
+}
+.map-cell{
+  border-radius:3px;cursor:pointer;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);
+  text-align:center;transition:all 0.25s;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08);
+  user-select:none;letter-spacing:0.5px;flex-direction:column;gap:1px;
+}
+.map-cell:hover{transform:scale(1.04);z-index:10;border-color:rgba(0,212,255,0.5);box-shadow:0 0 16px rgba(0,212,255,0.25)}
+.map-cell .cell-label{font-size:10px}
+.map-cell .cell-icon{font-size:14px;line-height:1}
+.map-cell.active-cell{animation:cell-pulse 2s infinite;z-index:5}
+.map-cell.selected-cell{border:2px solid #fff!important;box-shadow:0 0 20px rgba(255,255,255,0.3)!important;z-index:11}
+.map-cell .marker-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%}
+.map-cell .marker-star{position:absolute;top:2px;right:2px;font-size:8px}
+#detail-panel{
+  width:320px;min-width:280px;display:none;
+  background:rgba(6,15,40,0.9);border:1px solid rgba(0,212,255,0.15);
+  border-radius:8px;padding:20px;backdrop-filter:blur(10px);
+  box-shadow:0 0 24px rgba(0,212,255,0.08);animation:fade-in-right 0.3s ease-out;
+}
+#detail-panel.visible{display:block}
+#detail-panel h3{font-size:18px;color:#00d4ff;margin-bottom:12px}
+#detail-panel .detail-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid rgba(0,212,255,0.06)}
+#detail-panel .detail-row .dl{color:#6b7d95}
+#detail-panel .detail-row .dv{color:#c8d6e5;font-family:'Consolas',monospace}
+#detail-panel .detail-section{margin-top:12px}
+#detail-panel .detail-section h4{font-size:13px;color:#00ffcc;margin-bottom:6px}
+#detail-panel .detail-section p{font-size:11px;color:#6b7d95;line-height:1.5}
+#layer-controls{display:flex;gap:10px;flex-wrap:wrap}
+.layer-btn{
+  padding:7px 14px;border-radius:16px;border:1px solid rgba(0,212,255,0.2);
+  background:rgba(6,15,40,0.6);color:#6b7d95;font-size:11px;
+  cursor:pointer;transition:all 0.25s;letter-spacing:0.5px;
+}
+.layer-btn:hover{color:#c8d6e5;border-color:rgba(0,212,255,0.4)}
+.layer-btn.active{background:rgba(0,212,255,0.12);color:#00d4ff;border-color:#00d4ff;box-shadow:0 0 12px rgba(0,212,255,0.2)}
+#legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7d95}
+.legend-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.15)}
+#mini-dashboard{
+  display:flex;gap:20px;flex-wrap:wrap;padding:12px 0;
+  font-size:11px;color:#6b7d95;
+}
+#mini-dashboard .mini-stat{display:flex;align-items:center;gap:6px}
+#mini-dashboard .mini-val{color:#00d4ff;font-family:'Consolas',monospace;font-weight:700;font-size:14px}
+#skyline-section{margin-top:10px}
+#skyline{
+  display:flex;align-items:flex-end;gap:3px;height:160px;
+  padding:8px 12px;position:relative;overflow:hidden;
+}
+.sky-bldg{border-radius:2px 2px 0 0;transition:all 0.5s;position:relative}
+.sky-bldg:hover{filter:brightness(1.5);transform:scaleY(1.05);transform-origin:bottom}
+.sky-bldg .window-row{display:flex;gap:2px;justify-content:center;padding:2px 4px 0;flex-wrap:wrap}
+.sky-bldg .win{width:3px;height:2px;background:rgba(0,255,204,0.5);border-radius:0.5px}
+.sky-bldg .win.lit{background:rgba(0,255,204,0.9);animation:window-flicker 4s infinite}
+.sky-bldg .win.off{background:rgba(0,255,204,0.1)}
+#statusbar{
+  background:rgba(3,8,20,0.95);border-top:1px solid rgba(0,212,255,0.12);
+  padding:8px 24px;font-size:11px;color:#6b7d95;
+  display:flex;align-items:center;gap:20px;z-index:100;position:relative;
+}
+#statusbar .scroll{overflow:hidden;white-space:nowrap;flex:1}
+#statusbar .scroll-inner{display:inline-block;animation:scroll-text 30s linear infinite}
+#statusbar .bar-dot{width:6px;height:6px;border-radius:50%;background:#00ff88;display:inline-block;margin-right:6px;flex-shrink:0}
+.cell-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity 0.3s}
+.cell-overlay.traffic{opacity:0.5;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,183,0,0.25) 3px,rgba(255,183,0,0.25) 6px)}
+.cell-overlay.energy{opacity:0.4;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,0.2) 2px,rgba(0,255,136,0.2) 4px)}
+.cell-overlay.population{opacity:0.35;background:radial-gradient(circle at center,rgba(179,71,234,0.3),transparent 70%)}
+.cell-overlay.security{opacity:0.45;background:radial-gradient(circle at 30% 30%,rgba(0,212,255,0.25) 2px,transparent 2px);background-size:12px 12px}
+.cell-overlay.enviro{opacity:0.4;background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(0,255,204,0.15) 4px,rgba(0,255,204,0.15) 8px)}
+/* Cell colors */
+.cell-cbd{background:linear-gradient(135deg,#3d3520,#4a3a15)}       /* Yellow/gold */
+.cell-tech{background:linear-gradient(135deg,#1a1a3e,#0d1a4a)}      /* Blue/purple */
+.cell-res{background:linear-gradient(135deg,#0d2a15,#0a3018)}       /* Green */
+.cell-ind{background:linear-gradient(135deg,#3a2510,#4a2a0a)}       /* Orange/amber */
+.cell-port{background:linear-gradient(135deg,#0a2a2a,#0a3035)}      /* Cyan */
+.cell-eco{background:linear-gradient(135deg,#0a1a0a,#0a2510)}       /* Dark green */
+.cell-suburb{background:linear-gradient(135deg,#1a1a22,#141428)}    /* Dark/suburban */
+.cell-water{background:linear-gradient(135deg,#0a1a2a,#081830)}     /* Water blue */
+.cell-park{background:linear-gradient(135deg,#0a1a0d,#0d200d)}      /* Park green */
+.cell-rural{background:linear-gradient(135deg,#15151a,#10101a)}     /* Rural dark */
+.cell-commercial{background:linear-gradient(135deg,#2a2a1a,#333018)}/* Commercial */
+.cell-util{background:linear-gradient(135deg,#1a1a20,#252525)}      /* Utility */
+.cell-transit{background:linear-gradient(135deg,#1a2025,#182028)}   /* Transit */
+.cell-fringe{background:linear-gradient(135deg,#181820,#121218)}    /* Fringe */
+/* Animations */
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes cell-pulse{0%,100%{box-shadow:inset 0 0 8px rgba(255,255,255,0.05)}50%{box-shadow:inset 0 0 20px rgba(255,255,255,0.12)}}
+@keyframes fade-in-right{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scroll-text{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+@keyframes window-flicker{0%,100%{opacity:0.9}3%{opacity:0.3}6%{opacity:0.9}45%{opacity:0.9}47%{opacity:0.2}49%{opacity:0.9}}
+@keyframes skyline-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)}}
+@keyframes marker-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes detail-blink{0%,100%{border-color:rgba(0,212,255,0.15)}50%{border-color:rgba(0,212,255,0.4)}}
+@keyframes status-blink{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes layer-pulse{0%,100%{box-shadow:0 0 8px rgba(0,212,255,0.15)}50%{box-shadow:0 0 18px rgba(0,212,255,0.35)}}
+@keyframes count-pulse{0%,100%{transform:scale(1)}30%{transform:scale(1.08)}}
+@keyframes water-shimmer{0%,100%{opacity:0.6}50%{opacity:0.9}}
+@keyframes fade-in-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes border-pulse{0%,100%{border-color:rgba(0,212,255,0.12)}50%{border-color:rgba(0,212,255,0.35)}}
+#content .panel{animation:fade-in-up 0.4s ease-out}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{
+  background:rgba(6,15,40,0.5);border:1px solid rgba(0,212,255,0.08);
+  border-radius:6px;padding:12px;text-align:center;transition:all 0.3s;
+}
+.stat-card:hover{border-color:rgba(0,212,255,0.25);box-shadow:0 0 12px rgba(0,212,255,0.07)}
+.stat-card .stat-val{font-size:20px;font-weight:700;font-family:'Consolas',monospace;color:#00d4ff}
+.stat-card .stat-lbl{font-size:10px;color:#6b7d95;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.tooltip-popup{
+  position:fixed;background:rgba(6,15,40,0.95);border:1px solid rgba(0,212,255,0.3);
+  border-radius:6px;padding:10px 14px;font-size:11px;color:#c8d6e5;
+  pointer-events:none;z-index:200;opacity:0;transition:opacity 0.2s;
+  box-shadow:0 0 18px rgba(0,212,255,0.12);max-width:220px;
+}
+.tooltip-popup.show{opacity:1}
+.map-cell .cell-pop-badge{
+  position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  font-size:7px;color:rgba(255,255,255,0.5);display:none;white-space:nowrap;
+}
+.map-cell:hover .cell-pop-badge{display:block}
+/* Additional animations */
+@keyframes cell-hover-glow{0%,100%{box-shadow:inset 0 0 4px rgba(255,255,255,0.03)}50%{box-shadow:inset 0 0 12px rgba(255,255,255,0.08)}}
+@keyframes landmark-ping{0%{transform:scale(0.8);opacity:0.7}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:0.9}}
+@keyframes float-up{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-40px);opacity:0}}
+@keyframes progress-grow{from{width:0%}to{width:var(--target-width)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@media(max-width:1000px){.map-wrapper{flex-direction:column}#detail-panel{width:100%}}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="brand"><div class="dot"></div>NEO CITY OS v3.7</div>
+  <div class="info">
+    <span>&#9679; SYSTEM ONLINE</span>
+    <span>STABILITY: 98.2%</span>
+    <span>AI CORE ACTIVE</span>
+    <span class="clock" id="live-clock">--</span>
+  </div>
+</div>
+
+<div id="main-layout">
+  <nav id="sidebar">
+    <a href="dashboard.html"><span class="nav-icon">&#9678;</span> Dashboard</a>
+    <a href="traffic.html"><span class="nav-icon">&#9758;</span> Traffic</a>
+    <a href="energy.html"><span class="nav-icon">&#9889;</span> Energy</a>
+    <a href="population.html"><span class="nav-icon">&#9787;</span> Population</a>
+    <a href="weather.html"><span class="nav-icon">&#9730;</span> Weather</a>
+    <a href="security.html"><span class="nav-icon">&#9888;</span> Security</a>
+    <a href="map.html" class="active"><span class="nav-icon">&#8982;</span> Map</a>
+    <a href="ai.html"><span class="nav-icon">&#10025;</span> AI Core</a>
+  </nav>
+
+  <div id="content">
+
+    <div class="page-header">
+      <div class="icon">&#128506;</div>
+      <div>
+        <h1>&#22478;&#24066;&#21306;&#22495;&#22320;&#22270; | CITY MAP SYSTEM</h1>
+        <div class="sub">Interactive zone map with real-time overlays, landmark tracking, and sector analytics</div>
+      </div>
+    </div>
+
+    <!-- City Overview Stats -->
+    <div class="panel" style="padding:16px 20px">
+      <h2 style="margin-bottom:10px"><span class="dot" style="background:#00ffcc"></span> City Overview &mdash; Map Statistics</h2>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="stat-val" style="color:#00d4ff">48</div><div class="stat-lbl">Total Sectors Mapped</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#00ff88">6</div><div class="stat-lbl">Primary Zones</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#b347ea">15</div><div class="stat-lbl">Landmarks Placed</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#ffb700">5</div><div class="stat-lbl">Layer Overlays</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#00ffcc">24</div><div class="stat-lbl">Skyline Buildings</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#ff3366">3</div><div class="stat-lbl">Active Alerts</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#c8d6e5">412,400</div><div class="stat-lbl">Total City Population</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#00ff88">2,847</div><div class="stat-lbl">Total Area (km&sup2;)</div></div>
+      </div>
+    </div>
+
+    <!-- Layer Controls -->
+    <div class="panel" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-size:13px;font-weight:600;color:#c8d6e5">&#9776; Map Layers:</div>
+        <div id="layer-controls">
+          <button class="layer-btn" data-layer="traffic" onclick="toggleLayer('traffic')">&#128677; Traffic</button>
+          <button class="layer-btn" data-layer="energy" onclick="toggleLayer('energy')">&#9889; Energy Grid</button>
+          <button class="layer-btn" data-layer="population" onclick="toggleLayer('population')">&#128101; Population</button>
+          <button class="layer-btn" data-layer="security" onclick="toggleLayer('security')">&#128247; Security</button>
+          <button class="layer-btn" data-layer="enviro" onclick="toggleLayer('enviro')">&#127793; Environment</button>
+        </div>
+        <button onclick="resetLayers()" style="padding:5px 12px;border-radius:12px;border:1px solid rgba(255,51,102,0.3);background:rgba(255,51,102,0.08);color:#ff3366;font-size:10px;cursor:pointer">Reset All</button>
+      </div>
+    </div>
+
+    <!-- Map + Detail Panel -->
+    <div class="map-wrapper">
+      <div id="map-container" class="panel">
+        <h2><span class="dot" style="background:#00d4ff"></span> Interactive City Grid &mdash; 8x6 Sector Map</h2>
+        <div id="map-grid"></div>
+        <div id="mini-dashboard">
+          <div class="mini-stat">&#128204; Selected: <span class="mini-val" id="mini-sector">&mdash;</span></div>
+          <div class="mini-stat">&#128101; Population: <span class="mini-val" id="mini-pop">&mdash;</span></div>
+          <div class="mini-stat">&#9889; Energy: <span class="mini-val" id="mini-eng">&mdash;</span></div>
+          <div class="mini-stat">&#128308; Status: <span class="mini-val" id="mini-status">&mdash;</span></div>
+          <div class="mini-stat">&#128247; Cameras: <span class="mini-val" id="mini-cam">&mdash;</span></div>
+        </div>
+      </div>
+
+      <div id="detail-panel">
+        <h3 id="dp-title">Select a sector</h3>
+        <div id="dp-rows"></div>
+        <div class="detail-section">
+          <h4>Landmarks &amp; Buildings</h4>
+          <p id="dp-landmarks">Click any map cell to view details.</p>
+        </div>
+        <div class="detail-section">
+          <h4>Recent Events</h4>
+          <p id="dp-events">No sector selected.</p>
+        </div>
+        <div class="detail-section">
+          <h4>Energy Consumption</h4>
+          <p id="dp-energy">--</p>
+        </div>
+        <div class="detail-section">
+          <h4>Traffic & Transport</h4>
+          <p id="dp-traffic">--</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Legend -->
+    <div class="panel" style="padding:14px 20px">
+      <h2 style="margin-bottom:10px"><span class="dot" style="background:#00ffcc"></span> Map Legend</h2>
+      <div id="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#3d3520,#4a3a15)"></div> CBD (Zone A)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#1a1a3e,#0d1a4a)"></div> Tech Park (Zone D)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#0d2a15,#0a3018)"></div> Residential (Zone B)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#3a2510,#4a2a0a)"></div> Industrial (Zone C)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#0a2a2a,#0a3035)"></div> Port (Zone E)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#0a1a0a,#0a2510)"></div> Eco (Zone F)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#1a1a22,#141428)"></div> Suburban</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#0a1a2a,#081830)"></div> Water</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#0a1a0d,#0d200d)"></div> Park/Recreation</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#2a2a1a,#333018)"></div> Commercial</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#15151a,#10101a)"></div> Rural/Fringe</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#1a1a20,#252525)"></div> Utility/Infrastructure</div>
+        <div class="legend-item"><span style="font-size:10px">&#11088;</span> Landmark</div>
+        <div class="legend-item"><span style="font-size:10px;color:#ffb700">&#9889;</span> Power Station</div>
+        <div class="legend-item"><span style="font-size:10px;color:#ff3366">&#127973;</span> Hospital</div>
+      </div>
+    </div>
+
+    <!-- City Skyline -->
+    <div class="panel" id="skyline-section">
+      <h2><span class="dot" style="background:#b347ea"></span> City 3D Skyline &mdash; NEO CITY Panorama</h2>
+      <div id="skyline"></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#6b7d95;padding:0 12px;margin-top:4px">
+        <span>Zone F Eco</span><span>Zone E Port</span><span>Zone C Industrial</span><span>Zone B Residential</span><span>Zone A CBD</span><span>Zone D Tech Park</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="statusbar">
+  <div class="bar-dot" style="animation:pulse-dot 1.5s infinite"></div>
+  <div class="scroll"><div class="scroll-inner" id="scroll-msg">
+    &#128506; Interactive map active &mdash; Click any sector for details |
+    &#128247; 5,692 cameras tracking city-wide movement |
+    &#128677; Traffic layer: 4 active congestion zones |
+    &#9889; Energy grid: 98.7% nominal across all sectors |
+    &#127793; Environmental sensors: All zones within AQI threshold |
+    &#128204; Map updated in real-time &mdash; Data refresh interval: 5 seconds
+  </div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ===== LIVE CLOCK =====
+function updateClock(){
+  var now=new Date();
+  var y=now.getUTCFullYear();
+  var mo=String(now.getUTCMonth()+1).padStart(2,'0');
+  var d=String(now.getUTCDate()).padStart(2,'0');
+  var h=String(now.getUTCHours()).padStart(2,'0');
+  var mi=String(now.getUTCMinutes()).padStart(2,'0');
+  var s=String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('live-clock').textContent=y+'-'+mo+'-'+d+' '+h+':'+mi+':'+s+' UTC';
+}
+updateClock();setInterval(updateClock,1000);
+
+// ===== GRID DATA =====
+var gridData=[
+  // Row 0
+  {id:'S-N1',label:'S-N1',zone:'Suburban North',type:'suburb',status:'normal',pop:12400,energy:'42 MW',cameras:87,landmarks:[],desc:'Northern suburban residential area with low-density housing and community facilities.',events:'Routine patrol completed at 14:00. No incidents reported.'},
+  {id:'A1',label:'A1',zone:'CBD Core',type:'cbd',status:'normal',pop:52000,energy:'187 MW',cameras:412,landmarks:[{icon:'🏛',name:'City Hall'},{icon:'🏢',name:'Neo Tower'}],desc:'Central Business District core sector. Houses City Hall, Neo Tower, and financial district headquarters. Highest population density in the city during business hours.',events:'Morning peak traffic cleared at 09:47. Minor signal adjustment at A1/A2 intersection at 12:15.'},
+  {id:'A2',label:'A2',zone:'CBD Commercial',type:'cbd',status:'normal',pop:38500,energy:'156 MW',cameras:378,landmarks:[{icon:'🚉',name:'Central Station'}],desc:'CBD commercial extension featuring Central Station, shopping arcades, and corporate offices. Major transit hub connecting all six city zones.',events:'Train arrivals on schedule. Platform CCTV maintenance completed at 08:30. Retail footfall: 47,200 today.'},
+  {id:'S-N2',label:'S-N2',zone:'Commercial North',type:'commercial',status:'normal',pop:18900,energy:'73 MW',cameras:145,landmarks:[{icon:'🛒',name:'Mega Mall'}],desc:'Northern commercial district anchored by the Mega Mall complex. Mixed retail, dining, and entertainment venues across 42 city blocks.',events:'Mega Mall security reported minor shoplifting incident at 11:20. Resolved by mall security. No injuries.'},
+  {id:'S-N3',label:'S-N3',zone:'Transit Corridor North',type:'transit',status:'normal',pop:8500,energy:'38 MW',cameras:96,landmarks:[],desc:'Transit corridor connecting northern suburbs to CBD via elevated rail and express bus lanes. Peak hour throughput: 24,000 passengers per hour.',events:'Signal test on Express Line 3 completed at 06:00. All systems nominal.'},
+  {id:'D1',label:'D1',zone:'Tech Park Core',type:'tech',status:'monitoring',pop:22400,energy:'142 MW',cameras:578,landmarks:[{icon:'🎓',name:'University'}],desc:'Technology Park core sector housing the University campus, AI research laboratories, and startup incubator facilities. Home to 47 tech companies.',events:'Network anomaly detected at 13:58. CyberSec team investigating. Perimeter security enhanced. No data breach confirmed.'},
+  {id:'D2',label:'D2',zone:'Tech Park R&D',type:'tech',status:'normal',pop:16300,energy:'118 MW',cameras:494,landmarks:[{icon:'🏗',name:'Research Lab'},{icon:'🗼',name:'Comms Tower'}],desc:'Research and development sector with advanced computing facilities, quantum lab, and the central communications tower serving the entire city network.',events:'Quantum computing maintenance window scheduled for 22:00. Comms tower signal strength: 99.7%. All research facilities operating normally.'},
+  {id:'S-N4',label:'S-N4',zone:'Suburban Northeast',type:'suburb',status:'normal',pop:10800,energy:'36 MW',cameras:72,landmarks:[],desc:'Northeastern suburban district featuring mixed residential communities, two primary schools, and a community health center.',events:'Community health center reported no emergencies. School zones active during 07:30-08:30 and 15:00-16:00.'},
+
+  // Row 1
+  {id:'A3',label:'A3',zone:'CBD Retail',type:'cbd',status:'normal',pop:29600,energy:'128 MW',cameras:356,landmarks:[],desc:'Retail and entertainment sector of the CBD. Features luxury shopping, theaters, and the convention center. Pedestrian traffic peaks at 12:00-14:00 and 17:00-20:00.',events:'Convention center hosting tech expo with 3,200 attendees. Security screening at all entrances. No incidents.'},
+  {id:'A4',label:'A4',zone:'CBD Government',type:'cbd',status:'normal',pop:18300,energy:'98 MW',cameras:301,landmarks:[],desc:'Government administrative sector housing municipal courts, tax offices, and city planning department. High-security zone with biometric access controls.',events:'City council session in progress. Visitor screening active. All government systems operational.'},
+  {id:'S-C1',label:'S-C1',zone:'Central Mixed Use',type:'commercial',status:'normal',pop:21300,energy:'82 MW',cameras:167,landmarks:[],desc:'Central mixed-use zone bridging CBD and surrounding districts. Contains offices, apartments, restaurants, and two major hotels with 1,200 combined rooms.',events:'Hotel occupancy: 87%. Fire safety inspection completed at Hotel Grand on Level 14. All clear.'},
+  {id:'S-C2',label:'S-C2',zone:'Transport Hub',type:'transit',status:'normal',pop:7400,energy:'45 MW',cameras:134,landmarks:[],desc:'Central transport interchange connecting subway Lines 1-3 with bus rapid transit. Underground parking for 3,400 vehicles. Air quality monitoring station on Level 3.',events:'Subway Line 2 experiencing 3-minute delay due to signal recalibration. Expected resolution: 10 minutes. All other lines on schedule.'},
+  {id:'S-C3',label:'S-C3',zone:'Infrastructure Zone',type:'util',status:'normal',pop:3100,energy:'62 MW',cameras:89,landmarks:[],desc:'Critical infrastructure zone housing the city water treatment plant, electrical substation Node 7, and the municipal data backup facility. Restricted access area.',events:'Water treatment plant operating at 78% capacity. Electrical substation Node 7 temperature: 42C (normal range). No anomalies.'},
+  {id:'D3',label:'D3',zone:'Tech Park East',type:'tech',status:'normal',pop:14100,energy:'104 MW',cameras:512,landmarks:[],desc:'Eastern Tech Park sector with data center campus, cloud computing facilities, and the NEO CITY AI core server farm. 24/7 redundant power and cooling systems.',events:'Data center cooling system cycle 3 maintenance completed at 10:00. Server farm load: 62%. All redundant systems online.'},
+  {id:'D4',label:'D4',zone:'Tech Park Innovation',type:'tech',status:'normal',pop:11200,energy:'91 MW',cameras:419,landmarks:[],desc:'Innovation district with biotech labs, robotics research center, and the advanced manufacturing prototype facility. Collaboration space for 34 partner organizations.',events:'Robotics lab demonstration scheduled for 16:00. Biotech containment protocols verified at 09:00. All safety systems green.'},
+  {id:'S-E1',label:'S-E1',zone:'Suburban East',type:'suburb',status:'normal',pop:14200,energy:'44 MW',cameras:81,landmarks:[],desc:'Eastern suburban zone with residential communities, three schools, and the Eastside Sports Complex. Connected via Express Bus Route E-2.',events:'Eastside Sports Complex hosting youth soccer tournament. 420 attendees. Medical tent on standby. All clear.'},
+
+  // Row 2
+  {id:'B1',label:'B1',zone:'Residential North',type:'res',status:'normal',pop:34100,energy:'85 MW',cameras:245,landmarks:[{icon:'🏥',name:'Central Hospital'}],desc:'Northern residential sector including Central Hospital, community parks, and medium-density apartment complexes. Population: 34,100 residents across 12 neighborhoods.',events:'Central Hospital ER: 24 patients treated today. Ambulance dispatch: 8 calls. All departments operating normally. Community health fair ongoing in Sector 3.'},
+  {id:'B2',label:'B2',zone:'Residential Central',type:'res',status:'normal',pop:28700,energy:'72 MW',cameras:218,landmarks:[{icon:'🏟',name:'Stadium'}],desc:'Central residential district featuring the City Stadium, public library, and family housing zones. Strong community watch program with 34 active members.',events:'Stadium preparing for weekend athletics meet. Seating capacity: 28,000. Security screening checkpoints being installed. Library reported 1,420 visitors today.'},
+  {id:'P1',label:'P1',zone:'City Park North',type:'park',status:'normal',pop:500,energy:'8 MW',cameras:56,landmarks:[{icon:'🌳',name:'Grand Park'}],desc:'Northern section of Grand Park spanning 240 acres. Features botanical gardens, walking trails, three lakes, and an outdoor amphitheater. Wildlife monitoring sensors active.',events:'Park visitor count today: 3,840. Amphitheater setup for evening concert (capacity: 5,000). Wildlife sensors: 14 bird species detected, all within normal range.'},
+  {id:'P2',label:'P2',zone:'City Park South',type:'park',status:'normal',pop:320,energy:'6 MW',cameras:42,landmarks:[],desc:'Southern Grand Park extension with sports fields, picnic areas, and the childrens discovery zone. Connected to northern section via pedestrian bridge over Lake Serenity.',events:'Sports field reservations: 12 bookings today. Picnic area occupancy: 65%. Childrens zone hosting school field trip (120 students). All facilities open.'},
+  {id:'S-C4',label:'S-C4',zone:'Utility Corridor',type:'util',status:'normal',pop:1800,energy:'95 MW',cameras:108,landmarks:[],desc:'Primary utility corridor carrying high-voltage transmission lines, gas mains, and fiber optic trunk cables serving Zones A, B, and C. Underground tunnel network accessible for maintenance.',events:'Fiber optic monitoring: Signal loss 0.02 dB/km (within spec). Gas main pressure: 42 PSI nominal. Transmission line thermal scan completed at 06:00. No hot spots detected.'},
+  {id:'C1',label:'C1',zone:'Industrial Core',type:'ind',status:'caution',pop:9800,energy:'234 MW',cameras:198,landmarks:[{icon:'🏭',name:'Fusion Plant'}],desc:'Primary industrial zone housing the Fusion Power Plant, heavy manufacturing facilities, and raw materials processing. Employs 9,800 workers across 67 industrial facilities.',events:'Fusion Plant output: 847 MW (92% capacity). Substation 3 reported voltage fluctuation at 14:32. Engineering team investigating. Backup routing engaged. No service disruption.'},
+  {id:'C2',label:'C2',zone:'Industrial East',type:'ind',status:'normal',pop:11200,energy:'198 MW',cameras:176,landmarks:[],desc:'Eastern industrial sector with automotive assembly, electronics manufacturing, and logistics warehousing. Connected to Port Zone E via dedicated freight rail line.',events:'Automated assembly Line 4 maintenance completed at 12:00. Warehouse inventory drones: 842 pallets scanned today. Freight rail departures: 6 scheduled, all on time.'},
+  {id:'S-E2',label:'S-E2',zone:'Suburban Southeast',type:'suburb',status:'normal',pop:9700,energy:'32 MW',cameras:67,landmarks:[],desc:'Southeastern suburban area with affordable housing, two shopping plazas, and the Southeast Community College campus serving 4,200 students.',events:'Community College summer session underway. 1,840 students on campus today. Campus security: routine patrols, no incidents. Shopping plaza footfall: 6,300 today.'},
+
+  // Row 3
+  {id:'B3',label:'B3',zone:'Residential South',type:'res',status:'normal',pop:25300,energy:'68 MW',cameras:203,landmarks:[{icon:'🎭',name:'Arts Center'}],desc:'Southern residential district with the NEO CITY Arts Center, performing arts theater, and mixed-income housing developments. Active neighborhood association with bi-weekly community events.',events:'Arts Center: Modern art exhibition with 840 visitors today. Theater: Rehearsal for upcoming production. Community garden harvest event at 17:00. All neighborhood watch patrols normal.'},
+  {id:'B4',label:'B4',zone:'Residential West',type:'res',status:'normal',pop:19600,energy:'52 MW',cameras:164,landmarks:[],desc:'Western residential area with senior living communities, medical clinics, and the City Archive building. Quieter residential zone with extensive green spaces and walking paths.',events:'Senior center: Weekly social event with 120 participants. Medical clinic: 38 patients today, all routine visits. City Archive: Digitization project at 47% completion.'},
+  {id:'P3',label:'P3',zone:'Recreation Zone',type:'park',status:'normal',pop:600,energy:'10 MW',cameras:48,landmarks:[],desc:'Active recreation zone with swimming complex, tennis courts, skate park, and indoor climbing facility. Open 06:00-22:00 daily. Average daily visitors: 2,800.',events:'Swimming complex: 340 visitors today. Water quality tests passed at 08:00. Climbing facility: All safety equipment inspected and certified. Skate park: Minor first-aid incident, treated on-site.'},
+  {id:'P4',label:'P4',zone:'Urban Farm',type:'park',status:'normal',pop:200,energy:'12 MW',cameras:38,landmarks:[],desc:'Urban agriculture zone with community gardens, hydroponic greenhouses, and the city composting facility. Produces 4.2 tons of fresh produce monthly for local distribution.',events:'Greenhouse 3 irrigation system maintenance completed at 09:30. Today harvest yield: 185 kg vegetables distributed to community centers. Compost facility processing at 62% capacity.'},
+  {id:'S-C5',label:'S-C5',zone:'Infrastructure South',type:'util',status:'normal',pop:2200,energy:'78 MW',cameras:94,landmarks:[],desc:'Southern infrastructure hub with the municipal waste processing plant, recycling center, and emergency water reservoir holding 850 million liters. Redundant power feeds from two substations.',events:'Waste processing: 1,420 tonnes processed today. Recycling sort rate: 94.3% efficiency. Reservoir level: 83% (710M liters). All pumps operational. Water quality within all parameters.'},
+  {id:'C3',label:'C3',zone:'Industrial South',type:'ind',status:'caution',pop:8400,energy:'176 MW',cameras:158,landmarks:[],desc:'Southern industrial zone with chemical processing plants, textile manufacturing, and the fire department training academy. 24-hour operations with three shift rotations.',events:'Chemical plant safety inspection passed at 07:00 (score: 96/100). Fire academy: Live burn training exercise completed at 11:00. Warehouse 7: Fire alarm false trigger at 11:42, resolved. Smoke detector SD-C7-14 being replaced.'},
+  {id:'C4',label:'C4',zone:'Industrial West',type:'ind',status:'normal',pop:7800,energy:'155 MW',cameras:142,landmarks:[],desc:'Western industrial sector with food processing plants, cold storage facilities, and the NEO CITY distribution hub. Temperature-controlled logistics serving all city zones.',events:'Cold storage: All 24 units at target temperature (-22C to +4C). Distribution hub: 847 pallets dispatched today. Food safety inspection: 3 facilities passed. Truck departures: 142 today.'},
+  {id:'S-E3',label:'S-E3',zone:'Suburban South',type:'suburb',status:'normal',pop:11500,energy:'38 MW',cameras:74,landmarks:[],desc:'Southern suburban district with family housing, two elementary schools, and the Southside Community Center. Active neighborhood watch program with evening patrols.',events:'Elementary schools: Dismissal at 15:00, all students accounted for. Community Center: Evening programs running. Neighborhood watch patrols: 3 routes covered. No incidents.'},
+
+  // Row 4
+  {id:'S-S1',label:'S-S1',zone:'Southern Fringe',type:'fringe',status:'normal',pop:6200,energy:'24 MW',cameras:45,landmarks:[],desc:'Southern fringe area with low-density housing, agricultural land, and wind monitoring stations. Transition zone between urban and rural areas.',events:'Wind monitoring: Average 14 km/h from SW. Agricultural sensors: Soil moisture 38% (optimal). Crop health index: Green across all monitored fields.'},
+  {id:'E1',label:'E1',zone:'Port Terminal',type:'port',status:'normal',pop:4100,energy:'112 MW',cameras:235,landmarks:[{icon:'🚢',name:'Port Terminal'}],desc:'Primary port terminal handling container shipping, bulk cargo, and passenger ferry services. 12 vessels currently docked. Customs and border security checkpoints active.',events:'Container throughput today: 3,420 TEU processed. Passenger ferry: 4 arrivals, 4 departures scheduled. Customs inspection: 2 shipments flagged for secondary screening. All security clearances current.'},
+  {id:'E2',label:'E2',zone:'Port Industrial',type:'port',status:'normal',pop:3800,energy:'98 MW',cameras:198,landmarks:[{icon:'💧',name:'Water Plant'}],desc:'Port industrial zone with ship repair dry docks, container freight station, and the desalination water plant providing 120 million liters of fresh water daily to the city grid.',events:'Dry Dock 2: Vessel repair in progress (estimated completion: 2 days). Desalination plant output: 118 ML/day (98.3% capacity). Water quality tests: All 14 parameters within specification. Freight station: 247 containers processed.'},
+  {id:'W1',label:'W1',zone:'Harbor Basin',type:'water',status:'normal',pop:0,energy:'3 MW',cameras:34,landmarks:[],desc:'Inner harbor basin with marina for 340 pleasure craft, water taxi services, and the harbor patrol station. Depth: 12-18 meters. Tidal range: 2.4 meters.',events:'Marina occupancy: 287 of 340 berths (84%). Water taxi: 1,240 passengers today. Harbor patrol: Routine sweep completed at 14:00. Water quality: All samples within recreational limits. Tide: Rising, next high at 18:42.'},
+  {id:'W2',label:'W2',zone:'Coastal Waters',type:'water',status:'normal',pop:0,energy:'2 MW',cameras:22,landmarks:[],desc:'Coastal waters zone extending 3 nautical miles from shore. Marine sanctuary with protected reef system. Monitored by environmental sensors and coastal radar. Fishing permitted in designated areas.',events:'Coastal radar: 14 vessels detected in zone. Marine sanctuary sensors: Water temperature 23.4C, salinity 35.2 PSU. Reef health index: 87/100. No unauthorized fishing activity detected.'},
+  {id:'F1',label:'F1',zone:'Eco Zone North',type:'eco',status:'normal',pop:1200,energy:'18 MW',cameras:87,landmarks:[{icon:'⚡',name:'Solar Farm'}],desc:'Northern ecological zone with the 340-hectare Solar Farm (generating 210 MW peak), wind turbines (14 units, 42 MW combined), and the Environmental Research Station.',events:'Solar Farm: 187 MW current output (89% of peak). Cloud cover: 22%. Wind turbines: 37 MW output (88% capacity). Research station: Air quality sampling in progress. AQI: 34 (Good).'},
+  {id:'F2',label:'F2',zone:'Eco Zone Central',type:'eco',status:'normal',pop:900,energy:'14 MW',cameras:65,landmarks:[],desc:'Central ecological preserve with old-growth forest (1,800 hectares), hiking trails, wildlife corridors, and 12 environmental monitoring stations tracking biodiversity indicators.',events:'Wildlife cameras: 27 species recorded today including 3 deer, 2 foxes, and 14 bird species. Trail counter: 620 hikers today. Environmental stations: All 12 reporting nominal data. Forest fire risk: LOW.'},
+  {id:'W3',label:'W3',zone:'Wetlands',type:'water',status:'normal',pop:0,energy:'1 MW',cameras:18,landmarks:[],desc:'Protected wetland ecosystem spanning 940 hectares. Critical habitat for migratory birds and aquatic species. Boardwalk trails for public access. Water level monitoring stations active.',events:'Bird migration count: 1,420 individuals from 32 species observed today. Water level: 1.42m (seasonal average: 1.35m). Boardwalk visitor count: 280. All monitoring stations reporting. Conservation status: Stable.'},
+  {id:'S-S2',label:'S-S2',zone:'Southern Rural',type:'rural',status:'normal',pop:3400,energy:'16 MW',cameras:28,landmarks:[],desc:'Southern rural zone with agricultural operations, vineyards, and the city southern border checkpoint. Low-density development with protected agricultural land designation.',events:'Border checkpoint: 1,840 vehicle crossings today. Agricultural report: Grape harvest 78% complete, estimated yield 240 tonnes. Soil monitoring: All sensors within parameters. Livestock: All accounted for.'},
+
+  // Row 5
+  {id:'R1',label:'R1',zone:'Rural West',type:'rural',status:'normal',pop:2800,energy:'12 MW',cameras:22,landmarks:[],desc:'Western rural zone with organic farms, orchards, and the western approach roadway. Sparse development with large agricultural plots and windbreak tree lines.',events:'Orchard monitoring: Apple harvest 92% complete. Organic farm certification inspection: Passed (score: 98/100). Weather station: 24.2C, humidity 54%. No agricultural alerts.'},
+  {id:'S-W1',label:'S-W1',zone:'Southwest Fringe',type:'fringe',status:'normal',pop:4500,energy:'18 MW',cameras:32,landmarks:[],desc:'Southwestern fringe area with warehouses, light industry, and the southern logistics hub. Zoned for future expansion with infrastructure pre-installed.',events:'Logistics hub: 124 truck movements today. Warehouse inventory check: All facilities secure. Fringe patrol: Sweep completed at 13:30. No unauthorized access detected.'},
+  {id:'W4',label:'W4',zone:'Lake Serenity',type:'water',status:'normal',pop:100,energy:'1 MW',cameras:14,landmarks:[],desc:'Lake Serenity recreational water body (surface area: 340 hectares, max depth: 28m). Features boating, fishing piers, and the lakeside promenade. Water sourced from natural springs and rainfall.',events:'Lake level: 97.4% of capacity. Boating permits: 84 issued today. Fishing report: 7 species caught, all within regulation. Water quality: Excellent (Trophic State Index: 32). Lifeguard stations: All staffed.'},
+  {id:'W5',label:'W5',zone:'Reservoir',type:'water',status:'normal',pop:0,energy:'2 MW',cameras:16,landmarks:[],desc:'City reservoir with 2.4 billion liter capacity supplying 32% of city water needs. Protected watershed area with restricted public access. Water treatment intake station on north shore.',events:'Reservoir level: 84.2% (2.02B liters). Inflow rate: 1,240 L/s. Outflow to treatment: 980 L/s. Water quality sensors: All 22 parameters within specification. Security perimeter: All sensors operational.'},
+  {id:'N1',label:'N1',zone:'Nature Reserve',type:'eco',status:'normal',pop:150,energy:'4 MW',cameras:28,landmarks:[],desc:'Protected nature reserve with native grassland ecosystem, endangered species habitat, and scientific research stations. Limited public access via guided tours only.',events:'Research station: Butterfly population survey underway (420 individuals counted). Endangered plant monitoring: All 14 tagged specimens healthy. Tour groups: 3 today (45 visitors total). No poaching alerts.'},
+  {id:'N2',label:'N2',zone:'Conservation Area',type:'eco',status:'normal',pop:80,energy:'2 MW',cameras:22,landmarks:[],desc:'Wildlife conservation area with reforestation project (47,000 trees planted since 2023), bee sanctuary (84 hives), and the city carbon offset monitoring station.',events:'Reforestation: Survival rate 94.2% for 2025 planting season. Bee sanctuary: Honey production 1,420 kg this season. Carbon monitoring: City carbon offset at 18.4% of target. All conservation metrics trending positive.'},
+  {id:'N3',label:'N3',zone:'Eco Buffer Zone',type:'eco',status:'normal',pop:220,energy:'3 MW',cameras:18,landmarks:[],desc:'Ecological buffer zone between urban development and protected areas. Features greenbelt corridors, wildlife underpasses, and noise barrier vegetation. Essential for maintaining urban-wildlife balance.',events:'Wildlife underpass camera: 8 species crossings recorded today. Greenbelt health: 94% vegetation index. Noise monitoring: 42 dB average (below 55 dB threshold). Buffer integrity: All zones intact.'},
+  {id:'S-S3',label:'S-S3',zone:'Southeast Rural',type:'rural',status:'normal',pop:3100,energy:'14 MW',cameras:24,landmarks:[],desc:'Southeastern rural zone with grazing land, equestrian facilities, and the city southern approach. Scenic countryside with B&B accommodations and agritourism operations.',events:'Equestrian center: 24 horses, all healthy. Riding lessons: 18 sessions today. B&B occupancy: 14 of 22 rooms (64%). Southern approach: 1,620 vehicle crossings today. All quiet.'}
+];
+
+// ===== LANDMARK MAP (quick lookup) =====
+var landmarkMap={};
+gridData.forEach(function(cell){
+  if(cell.landmarks&&cell.landmarks.length>0){
+    cell.landmarks.forEach(function(lm){
+      if(!landmarkMap[cell.id])landmarkMap[cell.id]=[];
+      landmarkMap[cell.id].push(lm);
+    });
+  }
+});
+
+// ===== ACTIVE CELLS (animated) =====
+var activeCells=['A1','D1','C1','E1','A2','D2'];
+
+// ===== RENDER MAP =====
+function renderMap(){
+  var grid=document.getElementById('map-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  gridData.forEach(function(cell){
+    var div=document.createElement('div');
+    div.className='map-cell cell-'+cell.type;
+    div.setAttribute('data-id',cell.id);
+    div.setAttribute('data-zone',cell.zone);
+    div.title=cell.label+' &mdash; '+cell.zone+' ('+cell.type+')';
+    if(activeCells.indexOf(cell.id)!==-1){
+      div.classList.add('active-cell');
+    }
+
+    var label=document.createElement('span');
+    label.className='cell-label';
+    label.textContent=cell.label;
+    div.appendChild(label);
+
+    // Landmark icons
+    if(cell.landmarks&&cell.landmarks.length>0){
+      var icons=document.createElement('span');
+      icons.className='cell-icon';
+      icons.textContent=cell.landmarks.map(function(l){return l.icon;}).join('');
+      div.appendChild(icons);
+    }
+
+    // Special markers
+    if(cell.landmarks&&cell.landmarks.length>0){
+      var hasStar=cell.landmarks.some(function(l){return l.icon==='🏛'||l.icon==='🏢'||l.icon==='🎭'||l.icon==='🏟'||l.icon==='🎓';});
+      if(hasStar){
+        var star=document.createElement('span');
+        star.className='marker-star';
+        star.textContent='⭐';
+        div.appendChild(star);
+      }
+      var hasPower=cell.landmarks.some(function(l){return l.icon==='🏭'||l.icon==='⚡';});
+      if(hasPower){
+        var power=document.createElement('span');
+        power.className='marker-star';
+        power.textContent='⚡';
+        power.style.right='14px';
+        div.appendChild(power);
+      }
+      var hasHosp=cell.landmarks.some(function(l){return l.icon==='🏥';});
+      if(hasHosp){
+        var hosp=document.createElement('span');
+        hosp.className='marker-star';
+        hosp.textContent='🏥';
+        hosp.style.right='26px';
+        div.appendChild(hosp);
+      }
+    }
+
+    // Layer overlays
+    ['traffic','energy','population','security','enviro'].forEach(function(layer){
+      var overlay=document.createElement('div');
+      overlay.className='cell-overlay '+layer;
+      div.appendChild(overlay);
+    });
+
+    // Click handler
+    div.addEventListener('click',function(){selectCell(cell);});
+
+    grid.appendChild(div);
+  });
+}
+
+// ===== SELECT CELL =====
+var selectedCellId=null;
+function selectCell(cell){
+  // Deselect previous
+  var prev=document.querySelector('.map-cell.selected-cell');
+  if(prev)prev.classList.remove('selected-cell');
+  // Select new
+  var el=document.querySelector('.map-cell[data-id="'+cell.id+'"]');
+  if(el)el.classList.add('selected-cell');
+  selectedCellId=cell.id;
+  updateDetailPanel(cell);
+  updateMiniDashboard(cell);
+}
+
+// ===== UPDATE DETAIL PANEL =====
+function updateDetailPanel(cell){
+  var panel=document.getElementById('detail-panel');
+  panel.classList.add('visible');
+  document.getElementById('dp-title').textContent=cell.label+' &mdash; '+cell.zone;
+
+  var rows=document.getElementById('dp-rows');
+  rows.innerHTML='';
+  var fields=[
+    {l:'Sector ID',v:cell.id},
+    {l:'Zone Type',v:cell.zone.charAt(0).toUpperCase()+cell.zone.slice(1)},
+    {l:'Category',v:cell.type.charAt(0).toUpperCase()+cell.type.slice(1)},
+    {l:'Population',v:cell.pop>0?cell.pop.toLocaleString():'Uninhabited'},
+    {l:'Energy Consumption',v:cell.energy},
+    {l:'Security Cameras',v:cell.cameras},
+    {l:'Status',v:cell.status.toUpperCase()}
+  ];
+  fields.forEach(function(f){
+    var row=document.createElement('div');
+    row.className='detail-row';
+    row.innerHTML='<span class="dl">'+f.l+'</span><span class="dv" style="'+(f.l==='Status'?(cell.status==='caution'||cell.status==='monitoring'?'color:#ffb700':'color:#00ff88'):'')+'">'+f.v+'</span>';
+    rows.appendChild(row);
+  });
+
+  // Landmarks
+  var lmEl=document.getElementById('dp-landmarks');
+  if(cell.landmarks&&cell.landmarks.length>0){
+    lmEl.innerHTML=cell.landmarks.map(function(l){return l.icon+' <b>'+l.name+'</b>';}).join(' &bull; ');
+  }else{
+    lmEl.textContent='No major landmarks in this sector.';
+  }
+
+  // Events
+  document.getElementById('dp-events').textContent=cell.events;
+
+  // Energy
+  var energyBar='';
+  var mwMatch=cell.energy.match(/(\d+)\s*MW/);
+  if(mwMatch){
+    var mw=parseInt(mwMatch[1]);
+    var pct=Math.min(100,Math.round((mw/250)*100));
+    energyBar='<div class="progress-bar" style="margin-top:4px"><div class="fill blue" style="width:'+pct+'%"></div></div>';
+  }
+  document.getElementById('dp-energy').innerHTML='Current draw: '+cell.energy+'. '+cell.desc+energyBar;
+
+  // Traffic info (generated)
+  var trafficInfo=generateTrafficInfo(cell);
+  document.getElementById('dp-traffic').textContent=trafficInfo;
+
+  // Pulse animation
+  panel.style.animation='none';
+  panel.offsetHeight;
+  panel.style.animation='fade-in-right 0.3s ease-out';
+}
+
+function generateTrafficInfo(cell){
+  var types=['Light traffic flowing smoothly','Moderate congestion during peak hours','Heavy vehicle movement, expect delays','Normal flow with periodic signal adjustments','Restricted access, authorized vehicles only','Pedestrian priority zone, vehicle speed limited','Freight corridor active, watch for large vehicles','Transit priority lane in operation'];
+  var idx=cell.id.charCodeAt(0)+cell.id.charCodeAt(cell.id.length-1);
+  var flow=types[idx%types.length];
+  var speed=20+Math.floor(idx%45);
+  return flow+'. Average vehicle speed: '+speed+' km/h. Public transit stops: '+(2+idx%8)+' in this sector.';
+}
+
+// ===== UPDATE MINI DASHBOARD =====
+function updateMiniDashboard(cell){
+  document.getElementById('mini-sector').textContent=cell.label+' ('+cell.zone+')';
+  document.getElementById('mini-pop').textContent=cell.pop>0?cell.pop.toLocaleString():'N/A';
+  document.getElementById('mini-eng').textContent=cell.energy;
+  var statusColor=cell.status==='caution'||cell.status==='monitoring'?'#ffb700':'#00ff88';
+  document.getElementById('mini-status').textContent=cell.status.toUpperCase();
+  document.getElementById('mini-status').style.color=statusColor;
+  document.getElementById('mini-cam').textContent=cell.cameras;
+}
+
+// ===== LAYER TOGGLES =====
+var activeLayers={};
+function toggleLayer(layer){
+  if(activeLayers[layer]){
+    activeLayers[layer]=false;
+  }else{
+    activeLayers[layer]=true;
+  }
+  updateLayerUI();
+  updateLayerOverlays();
+}
+
+function updateLayerUI(){
+  var btns=document.querySelectorAll('.layer-btn');
+  btns.forEach(function(b){
+    var l=b.getAttribute('data-layer');
+    if(activeLayers[l]){b.classList.add('active');}
+    else{b.classList.remove('active');}
+  });
+}
+
+function updateLayerOverlays(){
+  var cells=document.querySelectorAll('.map-cell');
+  cells.forEach(function(cell){
+    ['traffic','energy','population','security','enviro'].forEach(function(layer){
+      var overlay=cell.querySelector('.cell-overlay.'+layer);
+      if(overlay){
+        overlay.style.opacity=activeLayers[layer]?'0.5':'0';
+      }
+    });
+  });
+}
+
+function resetLayers(){
+  activeLayers={};
+  updateLayerUI();
+  updateLayerOverlays();
+}
+
+// ===== RENDER SKYLINE =====
+function renderSkyline(){
+  var sky=document.getElementById('skyline');
+  if(!sky)return;
+  sky.innerHTML='';
+
+  var buildings=[
+    {h:22,w:28,color:'#1a2a1a',glow:'rgba(0,255,136,0.1)',windows:4,lit:0.3,zone:'Eco'},
+    {h:28,w:24,color:'#1a3020',glow:'rgba(0,255,136,0.12)',windows:5,lit:0.35,zone:'Eco'},
+    {h:35,w:22,color:'#0a2a2a',glow:'rgba(0,255,204,0.15)',windows:6,lit:0.5,zone:'Port'},
+    {h:42,w:18,color:'#0a3030',glow:'rgba(0,255,204,0.18)',windows:7,lit:0.55,zone:'Port'},
+    {h:48,w:20,color:'#0a2838',glow:'rgba(0,255,204,0.2)',windows:8,lit:0.6,zone:'Port'},
+    {h:38,w:26,color:'#0d2a3a',glow:'rgba(0,255,204,0.16)',windows:6,lit:0.5,zone:'Port'},
+    {h:55,w:16,color:'#3a2510',glow:'rgba(255,136,0,0.12)',windows:9,lit:0.55,zone:'Industrial'},
+    {h:62,w:14,color:'#4a2a0a',glow:'rgba(255,136,0,0.15)',windows:10,lit:0.6,zone:'Industrial'},
+    {h:45,w:22,color:'#3a2510',glow:'rgba(255,136,0,0.1)',windows:7,lit:0.5,zone:'Industrial'},
+    {h:70,w:18,color:'#352515',glow:'rgba(255,136,0,0.14)',windows:11,lit:0.55,zone:'Industrial'},
+    {h:52,w:20,color:'#0d2a15',glow:'rgba(0,255,136,0.08)',windows:8,lit:0.5,zone:'Residential'},
+    {h:58,w:16,color:'#0a3018',glow:'rgba(0,255,136,0.1)',windows:9,lit:0.6,zone:'Residential'},
+    {h:44,w:18,color:'#0d2a15',glow:'rgba(0,255,136,0.07)',windows:7,lit:0.55,zone:'Residential'},
+    {h:65,w:15,color:'#0a3018',glow:'rgba(0,255,136,0.12)',windows:10,lit:0.65,zone:'Residential'},
+    {h:80,w:22,color:'#3d3520',glow:'rgba(255,183,0,0.15)',windows:13,lit:0.7,zone:'CBD'},
+    {h:95,w:18,color:'#4a3a15',glow:'rgba(255,183,0,0.2)',windows:15,lit:0.75,zone:'CBD'},
+    {h:72,w:20,color:'#3d3520',glow:'rgba(255,183,0,0.13)',windows:12,lit:0.65,zone:'CBD'},
+    {h:88,w:16,color:'#4a3a15',glow:'rgba(255,183,0,0.18)',windows:14,lit:0.7,zone:'CBD'},
+    {h:100,w:24,color:'#3d3520',glow:'rgba(255,183,0,0.22)',windows:17,lit:0.8,zone:'CBD'},
+    {h:78,w:20,color:'#4a3a15',glow:'rgba(255,183,0,0.16)',windows:12,lit:0.7,zone:'CBD'},
+    {h:92,w:14,color:'#1a1a3e',glow:'rgba(179,71,234,0.2)',windows:15,lit:0.8,zone:'Tech'},
+    {h:85,w:18,color:'#0d1a4a',glow:'rgba(179,71,234,0.18)',windows:14,lit:0.75,zone:'Tech'},
+    {h:68,w:16,color:'#1a1a3e',glow:'rgba(179,71,234,0.14)',windows:11,lit:0.65,zone:'Tech'},
+    {h:76,w:14,color:'#0d1a4a',glow:'rgba(179,71,234,0.16)',windows:12,lit:0.7,zone:'Tech'}
+  ];
+
+  buildings.forEach(function(b,i){
+    var bldg=document.createElement('div');
+    bldg.className='sky-bldg';
+    bldg.style.cssText=
+      'height:'+b.h+'px;width:'+b.w+'px;'+
+      'background:linear-gradient(180deg,'+b.color+' 0%,'+b.color.replace('1a','0d').replace('2a','18').replace('25','1a').replace('35','20').replace('3d','28').replace('4a','30').replace('0a','05')+' 100%);'+
+      'box-shadow:0 0 '+Math.floor(b.h/4)+'px '+b.glow+';'+
+      'flex-shrink:0;';
+    bldg.title='Building #'+(i+1)+' &mdash; '+b.zone+' Zone &mdash; '+b.h+'m';
+
+    // Windows
+    var rowCount=Math.floor(b.h/6)-1;
+    for(var r=0;r<rowCount;r++){
+      var wRow=document.createElement('div');
+      wRow.className='window-row';
+      var winCount=Math.floor(b.w/5);
+      for(var c=0;c<winCount;c++){
+        var win=document.createElement('div');
+        win.className='win';
+        if(Math.random()<b.lit){
+          win.classList.add('lit');
+        }else{
+          win.classList.add('off');
+        }
+        wRow.appendChild(win);
+      }
+      bldg.appendChild(wRow);
+    }
+    sky.appendChild(bldg);
+  });
+
+  // Skyline glow animation
+  sky.style.animation='skyline-glow 6s infinite';
+}
+
+// ===== RANDOM ACTIVITY SIMULATION =====
+function simulateActivity(){
+  var cells=document.querySelectorAll('.map-cell.active-cell');
+  if(cells.length===0)return;
+  var idx=Math.floor(Math.random()*cells.length);
+  var cell=cells[idx];
+  cell.style.filter='brightness(1.4)';
+  cell.style.transition='filter 0.15s';
+  setTimeout(function(){cell.style.filter='brightness(1)';},300);
+}
+
+// ===== STATUS BAR MESSAGE CYCLE =====
+var msgs=[
+  '🗺 Interactive map active -- Click any sector for details',
+  '📷 5,692 cameras tracking city-wide movement across all 48 sectors',
+  '🚦 Traffic layer: 4 active congestion zones, 2 signal maintenance events',
+  '⚡ Energy grid: 98.7% nominal across all sectors, Fusion Plant at 92% capacity',
+  '🌿 Environmental sensors: All zones within AQI threshold, air quality GOOD',
+  '📍 Map updated in real-time -- Data refresh interval: 5 seconds',
+  '🏗 24 building skyline representing all 6 city zones',
+  '🔄 48 sectors monitored | 15+ landmarks tracked | Layer overlays available'
+];
+var msgIdx=0;
+setInterval(function(){
+  msgIdx=(msgIdx+1)%msgs.length;
+  var el=document.getElementById('scroll-msg');
+  if(el)el.textContent=msgs[msgIdx];
+},8000);
+
+// ===== TOOLTIP ON HOVER =====
+var tooltipEl=null;
+function createTooltip(){
+  tooltipEl=document.createElement('div');
+  tooltipEl.className='tooltip-popup';
+  document.body.appendChild(tooltipEl);
+}
+function showTooltip(cell,e){
+  if(!tooltipEl)createTooltip();
+  tooltipEl.innerHTML='<b>'+cell.label+'</b> &mdash; '+cell.zone+'<br>Pop: '+(cell.pop>0?cell.pop.toLocaleString():'N/A')+' | Energy: '+cell.energy+'<br>Status: <span style="color:'+(cell.status==='normal'?'#00ff88':'#ffb700')+'">'+cell.status.toUpperCase()+'</span>';
+  tooltipEl.style.left=(e.clientX+16)+'px';
+  tooltipEl.style.top=(e.clientY+16)+'px';
+  tooltipEl.classList.add('show');
+}
+function hideTooltip(){
+  if(tooltipEl)tooltipEl.classList.remove('show');
+}
+
+// ===== ENHANCED CELL RENDERING =====
+function enhanceCellRendering(){
+  var cells=document.querySelectorAll('.map-cell');
+  cells.forEach(function(cellDiv){
+    var id=cellDiv.getAttribute('data-id');
+    var cell=gridData.find(function(c){return c.id===id;});
+    if(!cell)return;
+
+    // Add pop badge
+    if(cell.pop>0){
+      var badge=document.createElement('span');
+      badge.className='cell-pop-badge';
+      badge.textContent=cell.pop>=1000?(cell.pop/1000).toFixed(0)+'k':cell.pop;
+      cellDiv.appendChild(badge);
+    }
+
+    // Hover tooltip
+    cellDiv.addEventListener('mouseenter',function(e){showTooltip(cell,e);});
+    cellDiv.addEventListener('mousemove',function(e){
+      if(tooltipEl&&tooltipEl.classList.contains('show')){
+        tooltipEl.style.left=(e.clientX+16)+'px';
+        tooltipEl.style.top=(e.clientY+16)+'px';
+      }
+    });
+    cellDiv.addEventListener('mouseleave',hideTooltip);
+  });
+}
+
+// ===== ZONE HIGHLIGHT =====
+function highlightZone(zoneType){
+  var cells=document.querySelectorAll('.map-cell');
+  cells.forEach(function(c){
+    var id=c.getAttribute('data-id');
+    var cellData=gridData.find(function(d){return d.id===id;});
+    if(cellData&&cellData.type===zoneType){
+      c.style.borderColor='rgba(255,255,255,0.5)';
+      c.style.boxShadow='0 0 12px rgba(255,255,255,0.2)';
+      setTimeout(function(){c.style.borderColor='';c.style.boxShadow='';},1500);
+    }
+  });
+}
+
+// ===== LEGEND ITEM CLICK (HIGHLIGHT ZONES) =====
+function initLegendClicks(){
+  var legendItems=document.querySelectorAll('.legend-item');
+  legendItems.forEach(function(item){
+    item.style.cursor='pointer';
+    item.addEventListener('click',function(){
+      var swatch=item.querySelector('.legend-swatch');
+      if(!swatch)return;
+      var bg=swatch.style.background||'';
+      var zoneMap={
+        '3d3520':'cbd','4a3a15':'cbd',
+        '1a1a3e':'tech','0d1a4a':'tech',
+        '0d2a15':'res','0a3018':'res',
+        '3a2510':'ind','4a2a0a':'ind',
+        '0a2a2a':'port','0a3035':'port',
+        '0a1a0a':'eco','0a2510':'eco',
+        '1a1a22':'suburb','141428':'suburb',
+        '0a1a2a':'water','081830':'water',
+        '0a1a0d':'park','0d200d':'park',
+        '2a2a1a':'commercial','333018':'commercial',
+        '15151a':'rural','10101a':'rural',
+        '1a1a20':'util','252525':'util'
+      };
+      for(var key in zoneMap){
+        if(bg.indexOf(key)!==-1){highlightZone(zoneMap[key]);break;}
+      }
+    });
+  });
+}
+
+// ===== SEARCH SECTOR =====
+function searchSector(query){
+  if(!query||query.trim()==='')return;
+  query=query.toUpperCase().trim();
+  var found=gridData.find(function(c){
+    return c.id.toUpperCase()===query||c.label.toUpperCase()===query||c.zone.toUpperCase().indexOf(query)!==-1;
+  });
+  if(found){
+    selectCell(found);
+    var el=document.querySelector('.map-cell[data-id="'+found.id+'"]');
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.style.boxShadow='0 0 24px rgba(0,212,255,0.6)';
+      el.style.borderColor='#00d4ff';
+      setTimeout(function(){el.style.boxShadow='';el.style.borderColor='';},2000);
+    }
+  }else{
+    alert('Sector not found. Try: A1, B1, C1, D1, E1, F1, CBD, Tech, Residential, Industrial, Port, Eco');
+  }
+}
+
+// ===== DOUBLE CLICK ZOOM TO ZONE =====
+var zoomToZone=null;
+document.addEventListener('dblclick',function(e){
+  var cell=e.target.closest('.map-cell');
+  if(!cell)return;
+  var id=cell.getAttribute('data-id');
+  var cellData=gridData.find(function(c){return c.id===id;});
+  if(!cellData)return;
+
+  if(zoomToZone===cellData.type){
+    // Reset zoom - show all
+    zoomToZone=null;
+    var allCells=document.querySelectorAll('.map-cell');
+    allCells.forEach(function(c){c.style.opacity='1';c.style.transform='scale(1)';});
+    return;
+  }
+
+  zoomToZone=cellData.type;
+  var allCells=document.querySelectorAll('.map-cell');
+  allCells.forEach(function(c){
+    var cid=c.getAttribute('data-id');
+    var cd=gridData.find(function(d){return d.id===cid;});
+    if(cd&&cd.type===zoomToZone){
+      c.style.opacity='1';
+      c.style.transform='scale(1.04)';
+      c.style.zIndex='5';
+      c.style.transition='all 0.3s';
+    }else{
+      c.style.opacity='0.3';
+      c.style.transform='scale(0.96)';
+      c.style.zIndex='1';
+      c.style.transition='all 0.3s';
+    }
+  });
+});
+
+// ===== INIT =====
+function init(){
+  renderMap();
+  renderSkyline();
+  updateLayerUI();
+  enhanceCellRendering();
+  initLegendClicks();
+
+  // Simulate random activity every few seconds
+  setInterval(simulateActivity,4000);
+
+  // Periodic population/camera count animation
+  setInterval(function(){
+    var vals=document.querySelectorAll('.stat-card .stat-val');
+    if(vals.length>=7){
+      var popEl=vals[6];
+      popEl.style.animation='count-pulse 0.4s ease-out';
+      setTimeout(function(){popEl.style.animation='';},400);
+    }
+  },15000);
+
+  // Auto-select first CBD cell after a short delay
+  setTimeout(function(){
+    var a1=gridData.find(function(c){return c.id==='A1';});
+    if(a1)selectCell(a1);
+  },600);
+
+  console.log('NEO CITY OS Map System v3.7 initialized.');
+  console.log('48 sectors rendered | 15+ landmarks placed | 24-building skyline active');
+  console.log('5 layer overlays available: Traffic, Energy, Population, Security, Environment');
+  console.log('Click any sector to explore details. Toggle layers with control buttons.');
+  console.log('Double-click a cell to zoom to its zone. Type searchSector("ID") in console to find a sector.');
+  console.log('Try: searchSector("C1") or searchSector("CBD")');
+}
+
+// ===== KEYBOARD NAVIGATION =====
+document.addEventListener('keydown',function(e){
+  if(!selectedCellId)return;
+  var idx=gridData.findIndex(function(c){return c.id===selectedCellId;});
+  if(idx===-1)return;
+  var newIdx=idx;
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    e.preventDefault();
+    newIdx=e.key==='ArrowRight'?Math.min(idx+1,gridData.length-1):Math.max(idx-1,0);
+  }else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    newIdx=e.key==='ArrowDown'?Math.min(idx+8,gridData.length-1):Math.max(idx-8,0);
+  }else if(e.key==='Escape'){
+    e.preventDefault();
+    zoomToZone=null;
+    var allCells=document.querySelectorAll('.map-cell');
+    allCells.forEach(function(c){c.style.opacity='1';c.style.transform='scale(1)';c.style.zIndex='';});
+  }else if(e.key==='f'||e.key==='F'){
+    e.preventDefault();
+    var query=prompt('Search sector (e.g., A1, B1, C1, CBD, Tech, Residential, Industrial, Port, Eco):');
+    if(query)searchSector(query);
+  }
+  if(newIdx!==idx){
+    selectCell(gridData[newIdx]);
+    var el=document.querySelector('.map-cell[data-id="'+gridData[newIdx].id+'"]');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+});
+
+// ===== EXPOSE SEARCH GLOBALLY =====
+window.searchSector=searchSector;
+window.highlightZone=highlightZone;
+
+init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>夜色公寓 — 终局</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.85);
+  --surface-alt: #111;
+  --text: #c8c0b8;
+  --text-dim: #706860;
+  --red: #8b0000;
+  --red-bright: #b01010;
+  --red-glow: #ff2020;
+  --amber: #b8701a;
+  --amber-bright: #e0902a;
+  --gold: #aa8820;
+  --gold-bright: #d4a020;
+  --font-body: 'Noto Serif SC', serif;
+  --font-numbers: 'Orbitron', monospace;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  transition: all 0.8s ease;
+}
+
+/* CRT Scanline */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grain */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.4;
+}
+
+/* STATUS BAR */
+.status-bar {
+  position: sticky;
+  top: 36px;
+  z-index: 99;
+  background: rgba(6,6,6,0.95);
+  border-bottom: 1px solid rgba(120,20,20,0.25);
+  padding: 6px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-numbers);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-bar .time-display {
+  color: var(--red-bright);
+  font-weight: 700;
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(200,20,20,0.5);
+  animation: slowGlow 3s ease-in-out infinite;
+}
+
+.status-bar .status-label {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.status-bar .pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red-glow);
+  margin-right: 6px;
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+/* Navigation */
+.top-nav {
+  background: rgba(10,10,10,0.95);
+  border-bottom: 1px solid rgba(120,20,20,0.3);
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  font-size: 12px;
+}
+.top-nav a {
+  color: #888;
+  text-decoration: none;
+  transition: all 0.3s;
+  font-family: var(--font-body);
+  letter-spacing: 0.5px;
+}
+.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+.top-nav a.active {
+  color: #c04040 !important;
+  text-shadow: 0 0 6px rgba(200,40,40,0.4);
+}
+
+/* KEYFRAMES */
+@keyframes slowGlow {
+  0%, 100% { text-shadow: 0 0 8px rgba(200,20,20,0.3), 0 0 16px rgba(200,20,20,0.1); }
+  50% { text-shadow: 0 0 16px rgba(255,32,32,0.5), 0 0 32px rgba(200,20,20,0.3); }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(255,32,32,0.5); }
+  50% { opacity: 0.3; box-shadow: 0 0 12px rgba(255,32,32,0.8); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-6px, 3px); }
+  20% { transform: translate(7px, -4px); }
+  30% { transform: translate(-5px, -2px); }
+  40% { transform: translate(3px, 6px); }
+  50% { transform: translate(-8px, -3px); }
+  60% { transform: translate(6px, 2px); }
+  70% { transform: translate(-2px, -5px); }
+  80% { transform: translate(5px, 4px); }
+  90% { transform: translate(-3px, -1px); }
+}
+
+@keyframes screenShakeHeavy {
+  0%, 100% { transform: translate(0, 0); }
+  5% { transform: translate(-10px, 6px); }
+  10% { transform: translate(12px, -8px); }
+  15% { transform: translate(-8px, -4px); }
+  20% { transform: translate(6px, 10px); }
+  25% { transform: translate(-14px, -5px); }
+  30% { transform: translate(10px, 3px); }
+  35% { transform: translate(-4px, -9px); }
+  40% { transform: translate(8px, 7px); }
+  45% { transform: translate(-6px, -2px); }
+  50% { transform: translate(11px, -6px); }
+  55% { transform: translate(-9px, 4px); }
+  60% { transform: translate(5px, -3px); }
+  65% { transform: translate(-12px, -7px); }
+  70% { transform: translate(7px, 8px); }
+  75% { transform: translate(-3px, -5px); }
+  80% { transform: translate(9px, 2px); }
+  85% { transform: translate(-7px, -6px); }
+  90% { transform: translate(4px, 5px); }
+  95% { transform: translate(-5px, -3px); }
+}
+
+@keyframes staticBurst {
+  0% { background-position: 0% 0%; opacity: 0; }
+  5% { opacity: 0.9; }
+  15% { opacity: 0.5; }
+  25% { opacity: 0.7; }
+  35% { opacity: 0.2; }
+  45% { opacity: 0.6; }
+  55% { opacity: 0.9; }
+  65% { opacity: 0.3; }
+  75% { opacity: 0.1; }
+  85% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes typewriterBlink {
+  0%, 100% { border-right-color: var(--red-bright); }
+  50% { border-right-color: transparent; }
+}
+
+@keyframes redPulse {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(180,16,16,0.2), 0 0 60px rgba(180,16,16,0.1);
+    background: rgba(139,0,0,0.1);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(255,32,32,0.4), 0 0 100px rgba(200,20,20,0.2);
+    background: rgba(139,0,0,0.2);
+  }
+}
+
+@keyframes redGlowBorder {
+  0%, 100% { border-color: rgba(180,16,16,0.3); box-shadow: 0 0 10px rgba(180,16,16,0.1); }
+  50% { border-color: rgba(255,32,32,0.6); box-shadow: 0 0 25px rgba(200,20,20,0.3); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.04); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.03); }
+  56% { transform: scale(1); }
+  70% { transform: scale(1.02); }
+  84% { transform: scale(1); }
+}
+
+@keyframes knockEffect {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: 0 0 20px rgba(200,20,20,0.3), inset 0 0 20px rgba(200,20,20,0.1); }
+  60% { box-shadow: none; }
+  80% { box-shadow: 0 0 15px rgba(200,20,20,0.2), inset 0 0 15px rgba(200,20,20,0.05); }
+}
+
+@keyframes bloodDrip {
+  0% { height: 0; opacity: 0.8; }
+  100% { height: 120px; opacity: 0; }
+}
+
+@keyframes creepIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes phaseTransition {
+  0% { opacity: 1; filter: brightness(1); }
+  40% { opacity: 0; filter: brightness(0) blur(4px); }
+  60% { opacity: 0; filter: brightness(0) blur(4px); }
+  100% { opacity: 1; filter: brightness(1) blur(0); }
+}
+
+@keyframes floatText {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes ominousGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(200,20,20,0.2), 0 0 20px rgba(200,20,20,0.1);
+  }
+  25% {
+    text-shadow: 0 0 20px rgba(255,32,32,0.5), 0 0 40px rgba(255,32,32,0.3), 0 0 60px rgba(200,20,20,0.2);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(200,20,20,0.1), 0 0 15px rgba(200,20,20,0.05);
+  }
+  75% {
+    text-shadow: 0 0 25px rgba(255,32,32,0.6), 0 0 50px rgba(255,32,32,0.4), 0 0 80px rgba(200,20,20,0.3);
+  }
+}
+
+@keyframes creditsRoll {
+  from { transform: translateY(100vh); }
+  to { transform: translateY(-200vh); }
+}
+
+/* Container */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 24px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Phase container */
+.phase {
+  display: none;
+  animation: fadeInUp 1s ease-out;
+}
+
+.phase.active {
+  display: block;
+}
+
+.phase.transitioning {
+  animation: phaseTransition 2s ease-out;
+}
+
+/* Static overlay */
+.static-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.04),
+    rgba(0,0,0,0.06) 2px,
+    rgba(255,255,255,0.03) 3px,
+    rgba(0,0,0,0.04) 5px
+  );
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.static-overlay.active {
+  animation: staticBurst 1s ease-out forwards;
+}
+
+/* Blood drip */
+.blood-drip {
+  position: fixed;
+  top: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(139,0,0,0.8), rgba(139,0,0,0));
+  pointer-events: none;
+  z-index: 9996;
+  animation: bloodDrip 4s ease-in forwards;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  padding: 24px 28px;
+  margin: 16px 0;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.card.red-border {
+  border-color: rgba(180,16,16,0.3);
+  animation: redGlowBorder 4s ease-in-out infinite;
+}
+
+.card.center { text-align: center; }
+
+/* Phase title */
+.phase-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 36px);
+  text-align: center;
+  margin: 20px 0 10px;
+  letter-spacing: 0.08em;
+}
+
+.phase-title.red { color: var(--red-bright); text-shadow: 0 0 20px rgba(200,20,20,0.3); }
+
+.phase-subtitle {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+}
+
+/* Typewriter text */
+.typewriter {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  border-right: 2px solid var(--red-bright);
+  animation: typewriterBlink 0.8s step-end infinite;
+  display: inline;
+}
+
+.typewriter.finished {
+  border-right: none;
+  animation: none;
+}
+
+/* Narrative text */
+.narrative {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 2.2;
+  color: var(--text);
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+.narrative .emphasis {
+  color: var(--amber-bright);
+  font-weight: 400;
+}
+
+.narrative .red-text {
+  color: var(--red-bright);
+}
+
+.narrative .dim {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* Choice buttons */
+.choice-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 500px;
+  margin: 24px auto;
+  align-items: center;
+}
+
+.choice-btn {
+  width: 100%;
+  padding: 14px 24px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(20,16,12,0.6);
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+  transition: left 0.6s;
+}
+
+.choice-btn:hover::before { left: 100%; }
+
+.choice-btn:hover {
+  background: rgba(30,20,14,0.8);
+  border-color: rgba(200,160,80,0.3);
+  color: var(--amber-bright);
+  box-shadow: 0 0 20px rgba(224,144,42,0.1);
+}
+
+.choice-btn.danger {
+  border-color: rgba(180,16,16,0.4);
+  color: var(--red-bright);
+}
+
+.choice-btn.danger:hover {
+  background: rgba(139,0,0,0.15);
+  border-color: rgba(255,32,32,0.6);
+  color: var(--red-glow);
+  box-shadow: 0 0 24px rgba(200,20,20,0.25);
+}
+
+.choice-btn.extreme {
+  border-color: rgba(200,20,20,0.7);
+  color: var(--red-glow);
+  background: rgba(139,0,0,0.15);
+  animation: redPulse 3s ease-in-out infinite;
+}
+
+.choice-btn.extreme:hover {
+  background: rgba(139,0,0,0.35);
+  box-shadow: 0 0 35px rgba(255,32,32,0.5);
+}
+
+/* Knock animation */
+.knock-indicator {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 2px solid rgba(180,16,16,0.4);
+  background: rgba(139,0,0,0.1);
+  animation: knockEffect 5s ease-in-out infinite;
+  font-family: var(--font-numbers);
+  font-size: 18px;
+  color: var(--red-bright);
+  margin: 12px 0;
+}
+
+/* Mirror effect */
+.mirror-frame {
+  display: inline-block;
+  padding: 20px;
+  border: 3px solid rgba(180,112,26,0.3);
+  background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(20,16,12,0.4));
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+  font-style: italic;
+  color: var(--text-dim);
+  text-align: center;
+  min-width: 200px;
+  margin: 16px 0;
+}
+
+/* Ending screen */
+.ending-screen {
+  display: none;
+  position: relative;
+  animation: fadeInUp 2s ease-out;
+}
+
+.ending-screen.active {
+  display: block;
+}
+
+.ending-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 36px;
+  text-align: center;
+  margin: 40px 0 20px;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 30px rgba(200,20,20,0.4);
+}
+
+.ending-type {
+  font-family: var(--font-numbers);
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 24px;
+}
+
+.ending-content {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 2.4;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ending-content .highlight {
+  color: var(--red-bright);
+  font-weight: 600;
+}
+
+.ending-content .gold {
+  color: var(--gold-bright);
+}
+
+/* Credits */
+.credits-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000;
+  z-index: 500;
+  display: none;
+  overflow: hidden;
+  font-family: var(--font-body);
+}
+
+.credits-container.active {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.credits-scroll {
+  text-align: center;
+  animation: creditsRoll 25s linear forwards;
+  padding-top: 100vh;
+}
+
+.credits-scroll h2 {
+  font-size: 24px;
+  color: var(--text);
+  margin-bottom: 40px;
+  letter-spacing: 0.1em;
+}
+
+.credits-scroll p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 2.5;
+  letter-spacing: 0.05em;
+}
+
+.credits-scroll .name {
+  font-size: 16px;
+  color: var(--text);
+  margin: 8px 0;
+}
+
+.credits-scroll .section-header-c {
+  font-size: 14px;
+  color: var(--red-bright);
+  margin: 30px 0 10px;
+  letter-spacing: 0.15em;
+}
+
+/* Reset button */
+.btn-reset {
+  display: inline-block;
+  padding: 12px 32px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: 1px solid rgba(200,160,80,0.3);
+  background: rgba(20,16,12,0.5);
+  color: var(--text-dim);
+  transition: all 0.3s;
+  text-decoration: none;
+  margin: 8px;
+}
+
+.btn-reset:hover {
+  border-color: rgba(200,160,80,0.6);
+  color: var(--amber-bright);
+  background: rgba(20,16,12,0.7);
+  box-shadow: 0 0 15px rgba(224,144,42,0.15);
+}
+
+/* RESULT CONTAINER after choices */
+.result-reveal {
+  display: none;
+  margin-top: 20px;
+  padding: 20px;
+  border-left: 3px solid rgba(180,16,16,0.4);
+  background: rgba(139,0,0,0.06);
+  animation: fadeIn 1s ease-out;
+}
+
+.result-reveal.visible {
+  display: block;
+}
+
+/* Evacuation warning */
+.evacuation-warning {
+  text-align: center;
+  padding: 30px;
+  border: 2px solid rgba(255,32,32,0.5);
+  background: rgba(139,0,0,0.12);
+  animation: redPulse 2s ease-in-out infinite;
+  margin: 20px 0;
+}
+
+.evacuation-warning h3 {
+  font-size: 22px;
+  color: var(--red-glow);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+/* Midnight clock */
+.midnight-clock {
+  text-align: center;
+  margin: 30px 0;
+}
+
+.midnight-clock .clock-time {
+  font-family: var(--font-numbers);
+  font-size: clamp(48px, 10vw, 84px);
+  font-weight: 900;
+  color: var(--red-bright);
+  text-shadow: 0 0 30px rgba(255,32,32,0.5), 0 0 60px rgba(200,20,20,0.3);
+  letter-spacing: 0.08em;
+  display: block;
+}
+
+.midnight-clock .clock-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-top: 4px;
+}
+
+/* Flicker light bulb */
+.flicker-bulb {
+  display: inline-block;
+  animation: candleFlicker 0.3s ease-in-out infinite;
+  font-size: 24px;
+}
+
+@keyframes candleFlicker {
+  0%, 100% { opacity: 1; }
+  20% { opacity: 0.3; }
+  30% { opacity: 0.9; }
+  40% { opacity: 0.5; }
+  50% { opacity: 0.2; }
+  60% { opacity: 0.8; }
+  70% { opacity: 0.4; }
+  80% { opacity: 0.95; }
+  90% { opacity: 0.15; }
+}
+
+/* Divider */
+.phase-divider {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  margin: 30px 0;
+  opacity: 0.5;
+}
+
+.phase-divider::before,
+.phase-divider::after {
+  content: ' — ';
+  color: rgba(180,16,16,0.3);
+}
+
+/* Breathing room animation */
+.breathing-room {
+  animation: breathe 6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 15px rgba(139,0,0,0.1), inset 0 0 10px rgba(139,0,0,0.05); }
+  50% { box-shadow: 0 0 30px rgba(139,0,0,0.25), inset 0 0 20px rgba(139,0,0,0.1); }
+}
+
+/* Final flash */
+.final-flash {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #fff;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.final-flash.active {
+  opacity: 1;
+  transition: opacity 0.05s;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: rgba(139,0,0,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139,0,0,0.6); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container { padding: 10px 12px; }
+  .card { padding: 16px 14px; }
+  .choice-btn { padding: 12px 16px; font-size: 13px; }
+  .ending-title { font-size: 24px; }
+  .status-bar { font-size: 9px; padding: 4px 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Static Overlay -->
+<div class="static-overlay" id="staticOverlay"></div>
+
+<!-- Final Flash -->
+<div class="final-flash" id="finalFlash"></div>
+
+<!-- Credits Container -->
+<div class="credits-container" id="creditsContainer">
+  <div class="credits-scroll" id="creditsScroll">
+    <h2>夜 色 公 寓</h2>
+    <p class="section-header-c">— 终局 —</p>
+    <p>你在这栋大楼里度过了最后一夜</p>
+    <p style="margin-top:20px;">每一个选择都在这里汇聚</p>
+    <p>每一条规则都曾保护过你</p>
+    <p>每一个房间都记住了你的名字</p>
+    <p class="section-header-c">住户</p>
+    <p class="name">你</p>
+    <p>以及所有在你之前来过的人</p>
+    <p>和所有在你之后会来的人</p>
+    <p class="section-header-c">管理员</p>
+    <p class="name">█████</p>
+    <p>他在这里的时间比大楼更久</p>
+    <p>他还会继续在这里</p>
+    <p class="section-header-c">404房间</p>
+    <p>门关着</p>
+    <p>但它在等你</p>
+    <p class="section-header-c">镜子</p>
+    <p>它们是门</p>
+    <p>它们是窗</p>
+    <p>它们是笼子</p>
+    <p class="section-header-c">规则</p>
+    <p>它们被写下</p>
+    <p>它们被遵守</p>
+    <p>它们被打破</p>
+    <p>它们被重写</p>
+    <p class="section-header-c">夜色公寓</p>
+    <p>不是一栋楼</p>
+    <p>是一个故事</p>
+    <p>而故事不会结束</p>
+    <p style="margin-top:40px;color:var(--red-bright);font-size:16px;">感谢你的入住</p>
+    <p style="color:var(--text-dim);">欢迎随时回来</p>
+    <p style="color:var(--text-dim);">大楼会记得你</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<nav class="top-nav">
+  <a href="apartment_home.html">首页</a>
+  <a href="rules_main.html">住户守则</a>
+  <a href="elevator_rules.html">电梯规则</a>
+  <a href="floor_directory.html">楼层指南</a>
+  <a href="room_404.html">404房间</a>
+  <a href="basement.html">地下室</a>
+  <a href="surveillance.html">监控室</a>
+  <a href="neighbor_encounters.html">邻居</a>
+  <a href="manager_log.html">管理员日志</a>
+  <a href="phone_calls.html">电话记录</a>
+  <a href="mirror_rules.html">镜子规则</a>
+  <a href="midnight_shift.html">深夜值班</a>
+  <a href="missing_persons.html">失踪档案</a>
+  <a href="ritual_purification.html" style="color:#c04040;">净化仪式</a>
+  <a href="final_night.html" class="active" style="color:#c04040;">终局</a>
+</nav>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span><span class="pulse-dot"></span>夜色公寓监控系统</span>
+  <span class="status-label">当前时间</span>
+  <span class="time-display" id="clockDisplay">--:--</span>
+  <span class="status-label" id="phaseLabel">初始化中</span>
+</div>
+
+<!-- Main Container -->
+<div class="container" id="mainContainer">
+
+  <!-- ==================== PHASE 1: THE WARNING ==================== -->
+  <div class="phase active" id="phase1">
+    <div class="midnight-clock">
+      <span class="clock-time" id="mainClock">23:47</span>
+      <span class="clock-label">最后一天 — 最后一夜</span>
+    </div>
+
+    <h2 class="phase-title">第一阶<span style="color:var(--red-bright);">段</span></h2>
+    <p class="phase-subtitle">警告 — 23:47 至 23:55</p>
+
+    <div class="card red-border breathing-room">
+      <p class="narrative">
+        你已经在这栋大楼里住了<span class="emphasis">足够久</span>了。
+      </p>
+      <p class="narrative" style="margin-top:10px;">
+        你知道规则。你知道哪些走廊不该走。你知道不要回应三声敲门。你知道凌晨2点到3点半之间不要看镜子。你知道电梯有时候有自己的想法。
+      </p>
+      <p class="narrative" style="margin-top:10px;">
+        但今晚<span class="red-text">不同</span>。
+      </p>
+      <p class="narrative dim" style="margin-top:16px;">
+        你感觉到了吗？墙壁在轻微震动——一种不规则的、像心跳一样的节奏。灯泡比平时更频繁地闪烁。走廊里传来声音——不是说话声，而是某种拖曳的声音，像重物在地板上被缓慢拖过。
+      </p>
+      <p class="narrative dim">
+        大楼今晚是<span class="emphasis">活跃的</span>。比以往任何时候都更活跃。
+      </p>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <p class="narrative" style="text-align:center;">
+        房间里的灯光开始闪烁。
+      </p>
+      <p style="text-align:center;font-size:32px;margin:10px 0;">
+        <span class="flicker-bulb">&#x1F4A1;</span>
+      </p>
+      <p class="narrative" style="text-align:center;font-size:13px;color:var(--text-dim);">
+        一次。两次。三次。<br>
+        然后停了三秒。<br>
+        然后又闪了三次。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        这不是电路问题。<span class="red-text">这是一个信号。</span>
+      </p>
+    </div>
+
+    <div class="card red-border">
+      <p class="narrative">
+        电话响了。
+      </p>
+      <p class="narrative" style="margin-top:8px;">
+        只响了一声就停了。当你看向手机时——屏幕是黑的。但它刚刚确实响了。你确定。
+      </p>
+      <p class="narrative" style="margin-top:8px;">
+        房间里的所有镜面——窗户、电视屏幕、水杯的表面——同时起了一层雾气。就像有人对着它们呼吸过。
+      </p>
+      <p class="narrative" style="margin-top:8px;">
+        然后你想起了规则。<br>
+        <span class="red-text">规则第七条：如果所有镜面同时起雾——待在原地。不要走动。</span>
+      </p>
+    </div>
+
+    <div class="card red-border" style="text-align:center;">
+      <p class="narrative" style="text-align:center;">
+        然后你听到了。
+      </p>
+      <div class="knock-indicator">
+        &#9636; &#9636; &#9636;
+      </div>
+      <p class="narrative" style="text-align:center;">
+        <span class="red-text">三声敲门。</span><br>
+        从你的房门传来。
+      </p>
+      <p class="narrative dim" style="text-align:center;font-size:13px;">
+        规则说：不要回应三声敲门。<br>
+        规则说：如果是三声——不要开门。<br>
+        规则说：等它离开。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:12px;">
+        但又响了三声。<br>
+        更响了。更近了。<br>
+        就像敲门的人——或东西——<span class="emphasis">已经穿过了第一扇门</span>。
+      </p>
+    </div>
+
+    <div class="choice-container" id="phase1Choices">
+      <p style="text-align:center;color:var(--text-dim);font-size:13px;margin-bottom:4px;">你必须选择：</p>
+      <button class="choice-btn danger" onclick="phase1_choice('open_door')">
+        &#9636; 开门 — 面对走廊里的东西
+      </button>
+      <button class="choice-btn" onclick="phase1_choice('dont_open')">
+        &#9636; 不开门 — 遵守规则，无视敲门
+      </button>
+    </div>
+
+    <!-- Phase 1 result reveals -->
+    <div class="result-reveal" id="phase1ResultOpen">
+      <div class="card red-border">
+        <p class="narrative" style="text-align:center;">
+          你打开了门。
+        </p>
+        <p class="narrative dim" style="text-align:center;">
+          规则说不要这样做。
+        </p>
+        <p class="narrative" style="margin-top:12px;">
+          门外是走廊。<br>
+          但走廊<span class="red-text">比平时长了三倍</span>。走廊尽头的灯光变成了暗红色，墙壁似乎在轻微地膨胀和收缩。就像走廊在呼吸。
+        </p>
+        <p class="narrative" style="margin-top:8px;">
+          在走廊的尽头——站着一个人影。<br>
+          不。不完全是人影。它太高了。它的四肢角度不对。它在看着你。<br>
+          它在<span class="emphasis">向你走来</span>。不是走路——是滑动。脚不沾地。
+        </p>
+        <p class="narrative" style="margin-top:8px;">
+          你猛地关上了门。<br>
+          但门关上的那一刻——你听到了走廊里传来<span class="red-text">笑声</span>。低沉。湿润。像是从水下传来的。
+        </p>
+        <p class="narrative dim" style="margin-top:12px;">
+          你低头看门缝。<br>
+          影子从下面渗进来了。
+        </p>
+      </div>
+    </div>
+
+    <div class="result-reveal" id="phase1ResultDontOpen">
+      <div class="card red-border">
+        <p class="narrative" style="text-align:center;">
+          你没有开门。<br>
+          你遵守了规则。
+        </p>
+        <p class="narrative" style="margin-top:12px;">
+          敲门声又响了一次——然后停了。寂静持续了大约十秒。你可以听到自己的心跳。
+        </p>
+        <p class="narrative" style="margin-top:8px;">
+          然后——<span class="red-text">从你身后的房间里</span>——传来了同样的三声敲门。
+        </p>
+        <p class="narrative" style="margin-top:8px;">
+          它已经进来了。<br>
+          它不是从门进来的。<br>
+          它一直都在里面。在等。
+        </p>
+        <p class="narrative" style="margin-top:8px;">
+          你没有转身。<br>
+          因为你记得另一条规则：<br>
+          <span class="emphasis">如果你听到身后有声音但你明明是独自一人——不要转头。用余光看。</span>
+        </p>
+        <p class="narrative dim" style="margin-top:12px;">
+          你的余光捕捉到了什么。<br>
+          在房间的角落里。<br>
+          很高。很暗。<br>
+          一动不动。
+        </p>
+      </div>
+    </div>
+
+    <div class="phase-divider">&#9670; 阶段一结束 &#9670;</div>
+  </div>
+
+
+  <!-- ==================== PHASE 2: THE MIDDLE HOURS ==================== -->
+  <div class="phase" id="phase2">
+    <div class="midnight-clock">
+      <span class="clock-time" style="font-size:48px;color:var(--red-glow);">00:00</span>
+      <span class="clock-label">午夜 — 大楼最活跃的时刻</span>
+    </div>
+
+    <h2 class="phase-title red">第二阶<span style="color:var(--text);">段</span></h2>
+    <p class="phase-subtitle">暗涌 — 00:00 至 02:00</p>
+
+    <div class="card red-border">
+      <p class="narrative">
+        午夜到了。
+      </p>
+      <p class="narrative" style="margin-top:8px;">
+        大楼在零点准时"醒"了过来。墙壁里的管道开始发出有节奏的敲击声——不是水流，不是气压。是某种<span class="emphasis">有意识的</span>节奏。像摩斯电码。像心跳。像骨头敲击金属。
+      </p>
+      <p class="narrative" style="margin-top:8px;">
+        灯光已经完全变成了琥珀色——不是你的灯泡的问题。每一个房间、每一条走廊里的灯都变成了这个颜色。温暖的。不健康的。像陈旧的蜂蜜。
+      </p>
+      <p class="narrative dim" style="margin-top:12px;">
+        在这种光线下，所有的影子都变得很长。包括那些不应该存在的影子。
+      </p>
+    </div>
+
+    <div class="card">
+      <p class="narrative" style="text-align:center;">
+        你想起了邻居们。
+      </p>
+      <p class="narrative dim" style="text-align:center;">
+        那些你在大楼里遇到过的人——或者看起来像人的东西。
+      </p>
+      <p class="narrative" style="margin-top:10px;">
+        隔壁的女士，总是在凌晨3点拖地。但你从来没见过她的脸。
+      </p>
+      <p class="narrative">
+        楼上的男人，每天都跟你打招呼。但每次他的声音听起来都像从更远的地方传来。
+      </p>
+      <p class="narrative">
+        404房间——那个门总是虚掩着的房间。里面有时传来声音。像很多人在同时低语。
+      </p>
+      <p class="narrative dim" style="margin-top:12px;">
+        今晚——你会听到他们在走廊里。<br>
+        全部。<br>
+        同时。
+      </p>
+    </div>
+
+    <div class="card red-border" style="text-align:center;">
+      <p class="narrative" style="text-align:center;">
+        <span class="flicker-bulb">&#x1F4DE;</span>
+      </p>
+      <p class="narrative" style="text-align:center;">
+        电话又响了。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        你接起来。因为你记得规则里没有说不能接电话。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        电话那头是<span class="red-text">你自己的声音</span>。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:4px;font-family:var(--font-mono);font-size:13px;color:var(--amber-bright);">
+        "我知道你在哪里。我一直在看你。你做得很好。但你需要知道一件事。"
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:4px;">
+        你屏住呼吸。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:4px;font-family:var(--font-mono);font-size:13px;color:var(--red-bright);">
+        "你不在这里。你从来没有离开过。你已经在这里很久很久了。"
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        电话断了。<br>
+        通话记录显示：<span class="emphasis">来自：你自己。时长：00:00。</span>
+      </p>
+    </div>
+
+    <div class="card red-border">
+      <p class="narrative" style="text-align:center;">
+        电梯在你的楼层停下了。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        你听到那熟悉的"叮"的一声。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        你没有按过电梯。现在也没人应该使用它。<br>
+        但门开了。
+      </p>
+      <p class="narrative" style="text-align:center;margin-top:8px;">
+        电梯里灯光明亮。温暖。正常。<br>
+        它在邀请你。
+      </p>
+      <div class="mirror-frame">
+        电梯按钮上——<br>
+        只有两个楼层亮着：<br>
+        <span style="color:var(--amber-bright);font-family:var(--font-numbers);">B4</span> 和
+        <span style="color:var(--red-bright);font-family:var(--font-numbers);">4</span>
+      </div>
+    </div>
+
+    <div class="choice-container" id="phase2Choices">
+      <p style="text-align:center;color:var(--text-dim);font-size:13px;margin-bottom:4px;">午夜之后的抉择：</p>
+      <button class="choice-btn danger" onclick="phase2_choice('follow_rules')">
+        &#9636; 遵守规则 — 留在房间内，无视一切
+      </button>
+      <button class="choice-btn" onclick="phase2_choice('use_stairs')">
+        &#9636; 走楼梯 — 尝试逃离大楼
+      </button>
+      <button class="choice-btn extreme" onclick="phase2_choice('go_404')">
+        &#9636; 去404房间 — 面对源头
+      </button>
+      <button class="choice-btn" onclick="phase2_choice('use_ritual')" id="ritualChoiceBtn" style="display:none;">
+        &#9636; 执行净化仪式 — 使用你学到的方法
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ==================== PHASE 3: THE CRUCIAL CHOICE ==================== -->
+  <div class="phase" id="phase3">
+    <div class="midnight-clock">
+      <span class="clock-time" style="font-size:56px;color:var(--red-glow);">02:00</span>
+      <span class="clock-label">关键时刻 — 抉择</span>
+    </div>
+
+    <h2 class="phase-title red">第三阶段</h2>
+    <p class="phase-subtitle">深渊 — 02:00 至 03:33</p>
+
+    <div class="card red-border" id="phase3Content">
+      <!-- Content inserted dynamically based on choices -->
+    </div>
+
+    <div class="evacuation-warning" id="phase3Warning" style="display:none;">
+      <h3>&#9762; 最后机会</h3>
+      <p style="color:var(--text);margin-top:8px;">
+        这是你做出最终决定的机会。<br>
+        一旦选择——无法回头。
+      </p>
+    </div>
+
+    <div class="choice-container" id="phase3Choices">
+      <!-- Dynamic choices inserted by JS -->
+    </div>
+  </div>
+
+
+  <!-- ==================== PHASE 4: ENDING ==================== -->
+  <div class="phase" id="phase4">
+    <!-- Ending screens -->
+    <div class="ending-screen" id="endingA">
+      <div class="ending-type">ENDING A</div>
+      <div class="ending-title">&#9670; 幸存 &#9670;</div>
+      <div class="ending-content">
+        <p>你遵守了每一条规则。</p>
+        <p style="margin-top:12px;">你没有开门。你没有看镜子。你没有回应任何声音。你待在房间的正中心——规则里说这是最安全的位置——从午夜一直等到天亮。</p>
+        <p style="margin-top:12px;">凌晨3:33，大楼"安静"了。那种安静不是正常的安静。是像一头巨大的野兽在吞咽之后的安静——餍足的。沉重的。</p>
+        <p style="margin-top:12px;">凌晨5:42，第一缕阳光从窗帘缝隙中透过。灰白色的。不像正常的阳光那么温暖。但这是<span class="gold">真实的光</span>——来自大楼之外。</p>
+        <p style="margin-top:12px;">6:00。门锁自动打开了。所有门。同时。像一声叹息。</p>
+        <p style="margin-top:12px;">你走出房间。走廊正常了。电梯正常了。一切看起来都正常。</p>
+        <p style="margin-top:12px;">你走过前台。管理员不在。但桌上有一张纸条，上面的笔迹是你的：</p>
+        <p style="margin-top:8px;font-family:var(--font-mono);font-size:13px;color:var(--amber-bright);text-align:center;">
+          "你会回来的。他们都会。"
+        </p>
+        <p style="margin-top:12px;">你离开大楼。外面是清晨。空气闻起来不像你记忆中那么清新。天空的颜色有些不对。阳光照在皮肤上的感觉——<span class="red-text">像被什么东西轻轻舔舐</span>。</p>
+        <p style="margin-top:12px;color:var(--text-dim);font-style:italic;text-align:center;">
+          你活过了这一夜。就像之前的很多住户一样。<br>
+          但你会回来的。<br>
+          他们都会回来。
+        </p>
+      </div>
+      <div class="choice-container" style="margin-top:30px;">
+        <a href="apartment_home.html" class="btn-reset" style="text-align:center;">离开夜色公寓</a>
+        <button class="btn-reset" onclick="showCredits()">观看片尾</button>
+        <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">重新开始</button>
+      </div>
+    </div>
+
+    <div class="ending-screen" id="endingB">
+      <div class="ending-type">ENDING B</div>
+      <div class="ending-title">&#9670; 逃脱 &#9670;</div>
+      <div class="ending-content">
+        <p>你跑了。</p>
+        <p style="margin-top:12px;">你没有等天亮。你没有遵守规则。你冲出了房间，沿着走廊奔向楼梯——你记得楼梯在大楼的西侧，靠近电梯间。</p>
+        <p style="margin-top:12px;">但楼梯<span class="emphasis">不是</span>你记忆中的样子。它一直向下延伸——比大楼的层数多得多。你跑了一层又一层。每一层的门上有不同的数字：3、4、4、7、4、13、4、-1、4、404。</p>
+        <p style="margin-top:12px;">走廊不断延伸。门通往更多门。你打开一扇门，发现自己在同一个楼层——但墙壁的颜色变了，地毯上的花纹反了，空气中有一种说不出的<span class="red-text">错误感</span>。</p>
+        <p style="margin-top:12px;">然后——一扇门打开了。通向外面。真正的外面。</p>
+        <p style="margin-top:12px;">你冲了出去。摔倒在地上。闻到了草地和泥土的味道。你抬头看天空——星星在上面。</p>
+        <p style="margin-top:12px;">你回头看着大楼。一栋普通的旧公寓楼。窗户是黑的。但——<span class="red-text">每一扇窗户后面</span>都站着一个黑影。数十个黑影。在一动不动地看着你。</p>
+        <p style="margin-top:12px;">你逃出去了。</p>
+        <p style="margin-top:12px;color:var(--text-dim);font-style:italic;text-align:center;">
+          但你带走了它的一部分。<br>
+          在你的影子里。<br>
+          在镜子里。<br>
+          在你记忆的角落里。<br>
+          你永远是大楼的一部分了。
+        </p>
+      </div>
+      <div class="choice-container" style="margin-top:30px;">
+        <a href="apartment_home.html" class="btn-reset" style="text-align:center;">走向黎明</a>
+        <button class="btn-reset" onclick="showCredits()">观看片尾</button>
+        <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">重新开始</button>
+      </div>
+    </div>
+
+    <div class="ending-screen" id="endingC">
+      <div class="ending-type">ENDING C</div>
+      <div class="ending-title">&#9670; 面对 &#9670;</div>
+      <div class="ending-content">
+        <p>你去了404房间。</p>
+        <p style="margin-top:12px;">门像往常一样虚掩着。你推开了它。</p>
+        <p style="margin-top:12px;">房间是空的。<br>或者说——看起来是空的。</p>
+        <p style="margin-top:12px;">然后空的感觉变了。就像空气突然有了重量。就像房间的每一个角落都在看着你。</p>
+        <p style="margin-top:12px;">你不是一个人。</p>
+        <p style="margin-top:16px;">一个声音——不是从任何特定的方向，而是从所有方向同时——对你说：</p>
+        <p style="margin-top:8px;font-family:var(--font-mono);font-size:14px;color:var(--amber-bright);text-align:center;line-height:1.8;">
+          "你终于来了。比我想象的晚了一些。但没关系。<br>
+          时间在这里没有意义。至少——没有你们理解的那种意义。"
+        </p>
+        <p style="margin-top:12px;">你问它是什么。它笑了。不是恶意的。是疲惫的。</p>
+        <p style="margin-top:8px;font-family:var(--font-mono);font-size:14px;color:var(--amber-bright);text-align:center;line-height:1.8;">
+          "我不需要住户。我需要被记住。被恐惧。被讲述。<br>
+          我是故事——而故事不会死。"
+        </p>
+        <p style="margin-top:12px;">你明白了。大楼以注意力为食。以恐惧为食。以规则为食。每一代住户都在不知不觉中喂养它。规则越多，它越强大。恐惧越深，它越真实。</p>
+        <p style="margin-top:12px;">声音最后说：</p>
+        <p style="margin-top:8px;font-family:var(--font-mono);font-size:14px;color:var(--red-bright);text-align:center;line-height:1.8;">
+          "你可以离开。或者——你可以留下。不是作为住户。<br>
+          而是作为新的管理员。旧的那位——已经很老了。<br>
+          他在等待替代者。等待了很久。"
+        </p>
+        <p style="margin-top:12px;color:var(--text-dim);font-style:italic;text-align:center;">
+          你有了一个选择。<br>
+          成为喂养者——或者继续做食物。
+        </p>
+      </div>
+      <div class="choice-container" style="margin-top:30px;">
+        <a href="manager_log.html" class="btn-reset" style="text-align:center;color:var(--amber-bright);">成为新的管理员</a>
+        <a href="apartment_home.html" class="btn-reset" style="text-align:center;">离开 — 但记住一切</a>
+        <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">重新开始</button>
+      </div>
+    </div>
+
+    <div class="ending-screen" id="endingD">
+      <div class="ending-type">ENDING D</div>
+      <div class="ending-title">&#9670; 循环 &#9670;</div>
+      <div class="ending-content">
+        <p>你做出了你的选择。然后——</p>
+        <p style="margin-top:12px;">你<span class="emphasis">记起来了</span>。</p>
+        <p style="margin-top:12px;">这不是你第一次做这个选择。这不是你第一次站在这个时刻——站在午夜和黎明之间，在大楼的心脏跳动得最响的时刻，面对那些门和那些声音。</p>
+        <p style="margin-top:12px;">这是<span class="red-text">第七次</span>。</p>
+        <p style="margin-top:12px;">你想起了一切。每一世。每一个身份。你曾经是住户——害怕走廊和镜子。你曾经是受害者——在404房间里留下了你的名字。你曾经是管理员——在日志里书写那些你明知道是谎言的记录。你曾经是调查者——试图揭露真相，然后成为真相的一部分。</p>
+        <p style="margin-top:12px;">你甚至曾经是大楼本身——在黑暗的管道和墙壁之间，感受每一个住户的恐惧，品尝每一种规则被打破时的颤栗。</p>
+        <p style="margin-top:12px;">循环不会自己结束。<br>除非没有人记得这栋楼。</p>
+        <p style="margin-top:12px;color:var(--text-dim);text-align:center;">
+          但你已经在看这些文字了。<br>
+          你已经在想了。<br>
+          所以你也成了循环的一部分。
+        </p>
+        <p style="margin-top:12px;font-family:var(--font-mono);font-size:13px;color:var(--amber-bright);text-align:center;">
+          "第七次了。你能打破它吗？还是你会继续？"
+        </p>
+      </div>
+      <div class="choice-container" style="margin-top:30px;">
+        <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">打破循环 — 重新开始</button>
+        <a href="apartment_home.html" class="btn-reset" style="text-align:center;">继续循环</a>
+      </div>
+    </div>
+
+    <div class="ending-screen" id="endingE">
+      <div class="ending-type">ENDING E</div>
+      <div class="ending-title">&#9670; 真相 &#9670;</div>
+      <div class="ending-content">
+        <p>这一切的最后一页。一切的结束——也是开始。</p>
+        <p style="margin-top:16px;">你现在知道了。你阅读了关于夜色公寓的一切。你知道了规则——那些保护你的，那些误导你的，那些本身就是陷阱的。你知道了房间——404的、地下室的、每一面镜子后面的。你知道了那些名字——住户的、管理员的、失踪者的。</p>
+        <p style="margin-top:16px;"><span class="red-text">你告诉了别人吗？</span></p>
+        <p style="margin-top:8px;">你把链接发给了朋友？你让更多人来看了这个故事？你在深夜的聊天中讲述了你在这里读到的东西？</p>
+        <p style="margin-top:8px;"><span class="highlight">很好。</span></p>
+        <p style="margin-top:16px;">大楼会记住你的贡献。</p>
+        <p style="margin-top:16px;">夜色公寓不需要地址。它不需要在一个特定的城市或街道上。它只需要<span class="emphasis">被知道</span>。每一个读过这些文字的人，每一个记得这些规则的人，每一个对那个午夜走廊产生过一丝恐惧的人——都在喂养它。</p>
+        <p style="margin-top:16px;">你已经进入了夜色公寓。在你看这段话的时候。在你理解这段话的时候。在你害怕这段话的时候。</p>
+        <p style="margin-top:16px;text-align:center;font-size:18px;color:var(--red-glow);">
+          欢迎入住。
+        </p>
+        <p style="margin-top:16px;color:var(--text-dim);text-align:center;font-style:italic;">
+          你的房间已经准备好了。<br>
+          规则在桌上。<br>
+          管理员在等你来签字。<br>
+          你的第一个夜晚——很快就会开始。
+        </p>
+        <p style="margin-top:24px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">
+          这个网页已被记录。<br>
+          你的IP已被纳入大楼档案。<br>
+          你的访问时间：<span id="accessTime"></span><br>
+          欢迎回来。一如既往。
+        </p>
+      </div>
+      <div class="choice-container" style="margin-top:30px;">
+        <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">重新开始 — 如果你能做到的话</button>
+      </div>
+    </div>
+
+    <!-- Generic ending choices -->
+    <div class="choice-container" style="margin-top:30px;" id="genericEndingButtons" style="display:none;">
+      <button class="btn-reset" onclick="showCredits()">观看片尾</button>
+      <button class="btn-reset" onclick="resetEverything()" style="color:var(--red-bright);border-color:rgba(180,16,16,0.4);">重新开始</button>
+    </div>
+  </div>
+
+</div><!-- End Container -->
+
+<!-- Blood drip elements container -->
+<div id="effectsContainer" style="position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:9995;"></div>
+
+<script>
+// ============ GAME STATE ============
+const gameState = {
+  currentPhase: 1,
+  currentTime: { hour: 23, minute: 47 },
+  choices: {},
+  endingType: null,
+  phase1Resolved: false,
+  phase2Resolved: false,
+  phase3Resolved: false
+};
+
+// Clock interval
+let clockInterval = null;
+
+// ============ LOCALSTORAGE LOADING ============
+function loadExternalState() {
+  const state = {
+    rulesAcknowledged: 0,
+    ritualPerformed: false,
+    ritualResult: null,
+    casesViewed: 0,
+    visitedPages: []
+  };
+
+  try {
+    // Check for rules acknowledged count
+    const rulesData = localStorage.getItem('nightfall_rules_acknowledged');
+    if (rulesData) {
+      state.rulesAcknowledged = parseInt(rulesData) || 0;
+    }
+
+    // Check if ritual was performed
+    const ritualDone = localStorage.getItem('nightfall_ritual_performed');
+    if (ritualDone === 'true') {
+      state.ritualPerformed = true;
+    }
+
+    // Get ritual result
+    const ritualResultData = localStorage.getItem('nightfall_ritual_result_text');
+    if (ritualResultData) {
+      try {
+        state.ritualResult = JSON.parse(ritualResultData);
+      } catch(e) {}
+    }
+
+    // Check cases viewed
+    const casesData = localStorage.getItem('nightfall_cases_viewed');
+    if (casesData) {
+      state.casesViewed = parseInt(casesData) || 0;
+    }
+
+    // Any other data we can gather
+    const visitedPagesData = localStorage.getItem('nightfall_visited_pages');
+    if (visitedPagesData) {
+      try {
+        state.visitedPages = JSON.parse(visitedPagesData);
+      } catch(e) {}
+    }
+
+    // Also check individual page visits
+    const pageKeys = [
+      'nightfall_visited_home',
+      'nightfall_visited_rules',
+      'nightfall_visited_elevator',
+      'nightfall_visited_floor',
+      'nightfall_visited_404',
+      'nightfall_visited_basement',
+      'nightfall_visited_surveillance',
+      'nightfall_visited_neighbors',
+      'nightfall_visited_manager',
+      'nightfall_visited_phone',
+      'nightfall_visited_mirror',
+      'nightfall_visited_midnight',
+      'nightfall_visited_missing'
+    ];
+
+    pageKeys.forEach(key => {
+      if (localStorage.getItem(key) === 'true' && !state.visitedPages.includes(key)) {
+        state.visitedPages.push(key);
+      }
+    });
+
+  } catch(e) {
+    console.log('Could not load external state:', e);
+  }
+
+  return state;
+}
+
+const externalState = loadExternalState();
+
+// ============ TRACK VISIT ============
+localStorage.setItem('nightfall_visited_final', 'true');
+try {
+  const existing = JSON.parse(localStorage.getItem('nightfall_visited_pages') || '[]');
+  if (!existing.includes('final_night')) {
+    existing.push('final_night');
+    localStorage.setItem('nightfall_visited_pages', JSON.stringify(existing));
+  }
+} catch(e) {}
+
+// ============ PHASE TRANSITIONS ============
+function transitionToPhase(phaseNum) {
+  const oldPhase = document.getElementById('phase' + gameState.currentPhase);
+  const newPhase = document.getElementById('phase' + phaseNum);
+
+  // Static burst transition
+  triggerStaticBurst();
+
+  if (oldPhase) {
+    oldPhase.classList.add('transitioning');
+    setTimeout(() => {
+      oldPhase.classList.remove('active', 'transitioning');
+      if (newPhase) {
+        newPhase.classList.add('active');
+        newPhase.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 800);
+  } else {
+    if (newPhase) {
+      newPhase.classList.add('active');
+      newPhase.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  gameState.currentPhase = phaseNum;
+  updateStatusBar();
+}
+
+function updateStatusBar() {
+  const h = String(gameState.currentTime.hour).padStart(2, '0');
+  const m = String(gameState.currentTime.minute).padStart(2, '0');
+  document.getElementById('clockDisplay').textContent = h + ':' + m;
+
+  const labels = {
+    1: 'PHASE 1: 警告',
+    2: 'PHASE 2: 暗涌',
+    3: 'PHASE 3: 抉择',
+    4: 'PHASE 4: 终局'
+  };
+  document.getElementById('phaseLabel').textContent = labels[gameState.currentPhase] || '';
+
+  if (document.getElementById('mainClock')) {
+    document.getElementById('mainClock').textContent = h + ':' + m;
+  }
+}
+
+// ============ CLOCK ADVANCEMENT ============
+function advanceClock() {
+  gameState.currentTime.minute += 1;
+  if (gameState.currentTime.minute >= 60) {
+    gameState.currentTime.minute = 0;
+    gameState.currentTime.hour += 1;
+    if (gameState.currentTime.hour >= 24) {
+      gameState.currentTime.hour = 0;
+    }
+  }
+  updateStatusBar();
+}
+
+// ============ STATIC BURST ============
+function triggerStaticBurst() {
+  const overlay = document.getElementById('staticOverlay');
+  overlay.classList.remove('active');
+  void overlay.offsetWidth; // Force reflow
+  overlay.classList.add('active');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+  }, 1000);
+}
+
+// ============ SCREEN SHAKE ============
+function triggerShake(duration = 800) {
+  document.body.style.animation = `screenShake ${duration}ms ease-out`;
+  setTimeout(() => {
+    document.body.style.animation = '';
+  }, duration);
+}
+
+function triggerHeavyShake() {
+  document.body.style.animation = 'screenShakeHeavy 1.5s ease-out';
+  setTimeout(() => {
+    document.body.style.animation = '';
+  }, 1500);
+}
+
+// ============ BLOOD DRIP EFFECT ============
+function spawnBloodDrip() {
+  const container = document.getElementById('effectsContainer');
+  const drip = document.createElement('div');
+  drip.className = 'blood-drip';
+  drip.style.left = Math.random() * 100 + '%';
+  drip.style.top = Math.random() * 30 + '%';
+  container.appendChild(drip);
+
+  setTimeout(() => {
+    if (drip.parentNode) drip.parentNode.removeChild(drip);
+  }, 5000);
+}
+
+// ============ FINAL FLASH ============
+function triggerFinalFlash() {
+  const flash = document.getElementById('finalFlash');
+  flash.classList.add('active');
+  setTimeout(() => {
+    flash.classList.remove('active');
+  }, 200);
+}
+
+// ============ PHASE 1 CHOICES ============
+function phase1_choice(choice) {
+  if (gameState.phase1Resolved) return;
+  gameState.phase1Resolved = true;
+  gameState.choices.phase1 = choice;
+
+  // Hide all choice buttons
+  document.getElementById('phase1Choices').style.display = 'none';
+
+  // Show result
+  if (choice === 'open_door') {
+    document.getElementById('phase1ResultOpen').classList.add('visible');
+  } else {
+    document.getElementById('phase1ResultDontOpen').classList.add('visible');
+  }
+
+  // Effects
+  triggerShake(600);
+  triggerStaticBurst();
+  if (choice === 'open_door') {
+    spawnBloodDrip();
+  }
+
+  // Advance clock
+  gameState.currentTime = { hour: 23, minute: 55 };
+  updateStatusBar();
+
+  // Transition to phase 2 after a delay
+  setTimeout(() => {
+    transitionToPhase(2);
+    gameState.currentTime = { hour: 0, minute: 0 };
+    updateStatusBar();
+    // Show ritual option if performed
+    if (externalState.ritualPerformed) {
+      const ritualBtn = document.getElementById('ritualChoiceBtn');
+      if (ritualBtn) ritualBtn.style.display = 'block';
+    }
+  }, 6000);
+}
+
+// ============ PHASE 2 CHOICES ============
+function phase2_choice(choice) {
+  if (gameState.phase2Resolved) return;
+  gameState.phase2Resolved = true;
+  gameState.choices.phase2 = choice;
+
+  document.getElementById('phase2Choices').style.display = 'none';
+  triggerHeavyShake();
+  triggerStaticBurst();
+  spawnBloodDrip();
+  spawnBloodDrip();
+
+  gameState.currentTime = { hour: 2, minute: 0 };
+  updateStatusBar();
+
+  setTimeout(() => {
+    transitionToPhase(3);
+    setupPhase3(choice);
+  }, 3000);
+}
+
+// ============ PHASE 3 SETUP ============
+function setupPhase3(phase2Choice) {
+  const contentDiv = document.getElementById('phase3Content');
+  const choicesDiv = document.getElementById('phase3Choices');
+  const warningDiv = document.getElementById('phase3Warning');
+
+  warningDiv.style.display = 'block';
+
+  let contentHTML = '';
+  let choicesHTML = '';
+
+  switch(phase2Choice) {
+    case 'follow_rules':
+      contentHTML = `
+        <p class="narrative" style="text-align:center;">
+          你选择遵守规则。你回到了房间的中心位置，背对着墙壁——
+          这样你就不会被从后面接近。你闭上眼睛，不去看任何镜面。
+        </p>
+        <p class="narrative dim" style="text-align:center;margin-top:12px;">
+          但规则没有覆盖到所有可能性。<br>
+          墙壁在变化。地板在微微起伏。空气在变厚。<br>
+          你闭着眼睛——但你知道有什么东西在你面前。<br>
+          很近。<br>
+          在呼吸。
+        </p>
+      `;
+      choicesHTML = `
+        <button class="choice-btn" onclick="phase3_final('endure')">
+          &#9636; 坚持到底 — 无论如何，等到天亮
+        </button>
+        <button class="choice-btn danger" onclick="phase3_final('open_eyes')">
+          &#9636; 睁开眼睛 — 看看是什么在你面前
+        </button>
+      `;
+      break;
+
+    case 'use_stairs':
+      contentHTML = `
+        <p class="narrative" style="text-align:center;">
+          你选择逃离。你冲向楼梯间——门在你身后自动关上，发出沉重的回音。
+          楼梯向下延伸。无尽地向下。每一层的数字都不同：4, 4, 404, 0, -1, -4, 4A, 4B, 4...
+        </p>
+        <p class="narrative dim" style="text-align:center;margin-top:12px;">
+          跑了很久之后——你意识到你根本没有移动。<br>
+          楼梯在你脚下移动——把你保持在同一个位置。<br>
+          就像仓鼠的轮子。<br>
+          大楼在玩弄你。
+        </p>
+      `;
+      choicesHTML = `
+        <button class="choice-btn danger" onclick="phase3_final('keep_running')">
+          &#9636; 继续跑 — 总有一扇门通向外面
+        </button>
+        <button class="choice-btn" onclick="phase3_final('stop_and_face')">
+          &#9636; 停下来 — 转身面对追你的东西
+        </button>
+        <button class="choice-btn extreme" onclick="phase3_final('jump')">
+          &#9636; 翻越栏杆 — 跳入楼层之间的黑暗
+        </button>
+      `;
+      break;
+
+    case 'go_404':
+      contentHTML = `
+        <p class="narrative" style="text-align:center;">
+          你走向404房间。走廊在你周围变形——墙壁上的油漆剥落，露出下面更旧的颜色。不同时代的壁纸一层一层叠加。每一个时代都有人在害怕同一个东西。
+        </p>
+        <p class="narrative dim" style="text-align:center;margin-top:12px;">
+          404的门虚掩着。门缝里透出光——不是电灯的光。是蜡烛的光。七支蜡烛。<br>
+          里面有声音。很轻。像很多人在同时低语。<br>
+          他们在等。
+        </p>
+      `;
+      choicesHTML = `
+        <button class="choice-btn danger" onclick="phase3_final('enter_404')">
+          &#9636; 进去 — 面对房间里的存在
+        </button>
+        <button class="choice-btn" onclick="phase3_final('talk_through_door')">
+          &#9636; 在门外说话 — 看看它会不会回应
+        </button>
+        <button class="choice-btn" onclick="phase3_final('run_from_404')">
+          &#9636; 转身就跑 — 你还没准备好
+        </button>
+      `;
+      break;
+
+    case 'use_ritual':
+      contentHTML = `
+        <p class="narrative" style="text-align:center;">
+          你决定使用净化仪式。你回到房间，按照记忆中的步骤准备：七面镜子排成圆圈，七支蜡烛——
+          但你只有五分钟。已经没有时间按照规则一步一步来。
+        </p>
+        <p class="narrative dim" style="text-align:center;margin-top:12px;color:var(--red-bright);">
+          仓促的仪式比没有仪式更危险。<br>
+          但你已经别无选择。
+        </p>
+      `;
+      choicesHTML = `
+        <button class="choice-btn extreme" onclick="phase3_final('rush_ritual')">
+          &#9636; 仓促执行仪式 — 赌上一切
+        </button>
+        <button class="choice-btn" onclick="phase3_final('abandon_ritual')">
+          &#9636; 放弃仪式 — 回到遵守规则
+        </button>
+      `;
+      break;
+  }
+
+  contentDiv.innerHTML = contentHTML;
+  choicesDiv.innerHTML = choicesHTML;
+}
+
+// ============ PHASE 3 FINAL CHOICE ============
+function phase3_final(finalChoice) {
+  if (gameState.phase3Resolved) return;
+  gameState.phase3Resolved = true;
+  gameState.choices.phase3 = finalChoice;
+
+  document.getElementById('phase3Choices').style.display = 'none';
+  document.getElementById('phase3Warning').style.display = 'none';
+
+  triggerHeavyShake();
+  triggerStaticBurst();
+  triggerFinalFlash();
+  spawnBloodDrip();
+  spawnBloodDrip();
+  spawnBloodDrip();
+
+  // Update content with dramatic pre-ending
+  const contentDiv = document.getElementById('phase3Content');
+  contentDiv.innerHTML = `
+    <p class="narrative" style="text-align:center;color:var(--red-glow);font-size:18px;">
+      你做出了选择。
+    </p>
+    <p class="narrative dim" style="text-align:center;margin-top:12px;">
+      大楼感受到了你的决定。<br>
+      一切都安静了下来。<br>
+      然后——
+    </p>
+  `;
+
+  gameState.currentTime = { hour: 3, minute: 33 };
+  updateStatusBar();
+
+  // Determine ending
+  setTimeout(() => {
+    determineEnding();
+  }, 4000);
+}
+
+// ============ ENDING DETERMINATION ============
+function determineEnding() {
+  const choices = gameState.choices;
+  const ext = externalState;
+
+  // Check for Ending E (Truth): viewed all case files + performed ritual + read all rules
+  if (ext.ritualPerformed &&
+      ext.rulesAcknowledged >= 5 &&
+      ext.casesViewed >= 3 &&
+      ext.visitedPages.length >= 8) {
+    gameState.endingType = 'E';
+    showEnding('E');
+    return;
+  }
+
+  // Ending C: Confrontation (went to 404 and entered or talked)
+  if (choices.phase2 === 'go_404' &&
+      (choices.phase3 === 'enter_404' || choices.phase3 === 'talk_through_door')) {
+    gameState.endingType = 'C';
+    showEnding('C');
+    return;
+  }
+
+  // Ending D: Loop (if ritual was performed and they chose ritual path)
+  if (ext.ritualPerformed && choices.phase2 === 'use_ritual') {
+    gameState.endingType = 'D';
+    showEnding('D');
+    return;
+  }
+
+  // Ending B: Escape (ran away)
+  if (choices.phase2 === 'use_stairs' &&
+      (choices.phase3 === 'keep_running' || choices.phase3 === 'jump')) {
+    gameState.endingType = 'B';
+    showEnding('B');
+    return;
+  }
+
+  // If user ran from 404 or stopped to face
+  if (choices.phase3 === 'run_from_404' || choices.phase3 === 'stop_and_face') {
+    gameState.endingType = 'B';
+    showEnding('B');
+    return;
+  }
+
+  // Default: Ending A (Survival) for rule-followers, abandon-ritual, or others
+  gameState.endingType = 'A';
+  showEnding('A');
+}
+
+// ============ SHOW ENDING ============
+function showEnding(endingLetter) {
+  transitionToPhase(4);
+
+  gameState.currentTime = { hour: 6, minute: 0 };
+  updateStatusBar();
+
+  // Hide all endings
+  document.querySelectorAll('.ending-screen').forEach(el => el.classList.remove('active'));
+
+  // Show specific ending
+  const endingEl = document.getElementById('ending' + endingLetter);
+  if (endingEl) {
+    endingEl.classList.add('active');
+  }
+
+  // Additional effects based on ending
+  switch(endingLetter) {
+    case 'E':
+      // Set access time
+      const now = new Date();
+      document.getElementById('accessTime').textContent =
+        now.toLocaleString('zh-CN', { hour12: false });
+      triggerFinalFlash();
+      setTimeout(() => triggerFinalFlash(), 1000);
+      setTimeout(() => triggerFinalFlash(), 2000);
+      // Mark that user has "entered" the building
+      localStorage.setItem('nightfall_user_entered', 'true');
+      localStorage.setItem('nightfall_entry_time', now.toISOString());
+      break;
+    case 'C':
+      spawnBloodDrip();
+      setTimeout(() => spawnBloodDrip(), 2000);
+      break;
+    case 'D':
+      triggerHeavyShake();
+      break;
+  }
+
+  // Scroll to ending
+  setTimeout(() => {
+    endingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 500);
+
+  // Save ending to localStorage
+  localStorage.setItem('nightfall_final_ending', endingLetter);
+  try {
+    const endings = JSON.parse(localStorage.getItem('nightfall_endings_seen') || '[]');
+    if (!endings.includes(endingLetter)) {
+      endings.push(endingLetter);
+      localStorage.setItem('nightfall_endings_seen', JSON.stringify(endings));
+    }
+  } catch(e) {}
+
+  // Spawn ambient effects
+  const effectInterval = setInterval(() => {
+    if (Math.random() < 0.2) spawnBloodDrip();
+    if (Math.random() < 0.1) triggerStaticBurst();
+  }, 8000);
+
+  // Stop after a minute
+  setTimeout(() => clearInterval(effectInterval), 60000);
+}
+
+// ============ CREDITS ============
+function showCredits() {
+  const container = document.getElementById('creditsContainer');
+  container.classList.add('active');
+
+  // Stop credits after animation
+  setTimeout(() => {
+    container.classList.remove('active');
+  }, 26000);
+}
+
+// ============ RESET EVERYTHING ============
+function resetEverything() {
+  triggerFinalFlash();
+  triggerHeavyShake();
+
+  if (confirm('你确定要重新开始吗？\n\n这将清除你在夜色公寓中的所有记录。\n一切都会回到最初。\n\n但大楼会记得你。它总是记得。')) {
+    // Clear all nightfall-related localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('nightfall_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Dramatic exit
+    document.body.style.transition = 'all 1s ease';
+    document.body.style.opacity = '0';
+    document.body.style.filter = 'brightness(0) blur(8px)';
+
+    setTimeout(() => {
+      window.location.href = 'apartment_home.html';
+    }, 1500);
+  }
+}
+
+// ============ INITIALIZATION ============
+document.addEventListener('DOMContentLoaded', () => {
+  updateStatusBar();
+
+  // Show ritual button if applicable
+  if (externalState.ritualPerformed) {
+    const ritualBtn = document.getElementById('ritualChoiceBtn');
+    if (ritualBtn) ritualBtn.style.display = 'block';
+  }
+
+  // Start clock
+  clockInterval = setInterval(() => {
+    advanceClock();
+  }, 15000); // Advance every 15 seconds for dramatic effect
+
+  // Ambient effects
+  setInterval(() => {
+    if (Math.random() < 0.1) {
+      triggerStaticBurst();
+    }
+  }, 30000);
+
+  // Periodic subtle shake
+  setInterval(() => {
+    if (Math.random() < 0.05 && gameState.currentPhase >= 2) {
+      triggerShake(400);
+    }
+  }, 25000);
+
+  console.log('%c夜色公寓 — 终局 %c已加载',
+    'color:#ff2020;font-size:24px;font-weight:bold;',
+    'color:#706860;');
+  console.log('%c外部数据:',
+    'color:#c8c0b8;');
+  console.log('%c  规则确认: ' + externalState.rulesAcknowledged,
+    'color:#b8701a;');
+  console.log('%c  净化仪式: ' + (externalState.ritualPerformed ? '已执行' : '未执行'),
+    'color:#b01010;');
+  console.log('%c  案件查阅: ' + externalState.casesViewed,
+    'color:#b8701a;');
+  console.log('%c  访问页面: ' + externalState.visitedPages.length,
+    'color:#b8701a;');
+  console.log('%c大楼正在注视着你。',
+    'color:#ff2020;font-style:italic;');
+});
+
+// Cleanup
+window.addEventListener('beforeunload', () => {
+  if (clockInterval) clearInterval(clockInterval);
+});
+</script>
+
+</body>
+</html>

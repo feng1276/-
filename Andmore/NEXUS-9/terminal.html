@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 TERMINAL v3.7</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    overflow: hidden;
+  }
+  #terminal-container {
+    width: 900px;
+    max-width: 98vw;
+    height: 92vh;
+    max-height: 700px;
+    background: #0c0c0c;
+    border: 2px solid #1a3a1a;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0,255,65,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  #terminal-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 2px, transparent 2px, transparent 4px);
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 6px;
+  }
+  #terminal-topbar {
+    background: #111;
+    border-bottom: 1px solid #1a3a1a;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-radius: 6px 6px 0 0;
+  }
+  #terminal-topbar .title {
+    color: #00ff41;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  #terminal-topbar .title span {
+    color: #555;
+  }
+  #terminal-topbar .buttons {
+    display: flex;
+    gap: 8px;
+  }
+  #terminal-topbar .btn {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.1s;
+  }
+  #terminal-topbar .btn:hover { filter: brightness(1.4); }
+  #terminal-topbar .btn-close { background: #ff4444; }
+  #terminal-topbar .btn-min { background: #ffaa00; }
+  #terminal-topbar .btn-max { background: #00cc44; }
+  #terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    color: #00ff41;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-all;
+    position: relative;
+    z-index: 5;
+    scroll-behavior: smooth;
+  }
+  #terminal-output::-webkit-scrollbar { width: 5px; }
+  #terminal-output::-webkit-scrollbar-track { background: #0c0c0c; }
+  #terminal-output::-webkit-scrollbar-thumb { background: #1a3a1a; border-radius: 3px; }
+  .output-line { margin: 0; }
+  .output-line.prompt { color: #00cc44; }
+  .output-line.cmd { color: #e0e0e0; }
+  .output-line.info { color: #00ff41; }
+  .output-line.warn { color: #ffcc00; }
+  .output-line.error { color: #ff4444; }
+  .output-line.dim { color: #338833; }
+  .output-line.highlight { color: #66ff99; font-weight: bold; }
+  .output-line.cyan { color: #00cccc; }
+  #input-line {
+    display: flex;
+    align-items: center;
+    padding: 0 16px 10px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+  #prompt {
+    color: #00cc44;
+    font-size: 14px;
+    white-space: pre;
+    flex-shrink: 0;
+  }
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 14px;
+    outline: none;
+    caret-color: transparent;
+    padding: 0;
+    margin-left: 4px;
+  }
+  #cursor {
+    display: inline-block;
+    width: 9px;
+    height: 17px;
+    background: #00ff41;
+    animation: blink 1s step-end infinite;
+    flex-shrink: 0;
+    margin-left: 1px;
+    vertical-align: middle;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  #suggestions {
+    padding: 0 16px 6px;
+    color: #225522;
+    font-size: 12px;
+    min-height: 18px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<div id="terminal-container">
+  <div id="terminal-topbar">
+    <div class="title">NEXUS-9 <span>//</span> TERMINAL <span>v3.7</span></div>
+    <div class="buttons">
+      <button class="btn btn-min" title="Minimize" onclick="document.getElementById('terminal-container').style.display='none'; setTimeout(function(){document.getElementById('terminal-container').style.display='flex';}, 300);"></button>
+      <a href="city_map.html" style="text-decoration:none;"><button class="btn btn-close" title="Exit to City Map"></button></a>
+    </div>
+  </div>
+  <div id="terminal-output"></div>
+  <div id="suggestions"></div>
+  <div id="input-line">
+    <span id="prompt">nexus@n9:~$ </span>
+    <input type="text" id="cmd-input" autofocus autocomplete="off" spellcheck="false">
+    <span id="cursor"></span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var output = document.getElementById('terminal-output');
+  var input = document.getElementById('cmd-input');
+  var cursor = document.getElementById('cursor');
+  var suggestions = document.getElementById('suggestions');
+  var prompt = document.getElementById('prompt');
+
+  // --- STATE ---
+  var history = [];
+  var historyIndex = -1;
+  var currentDir = '/home/nexus';
+  var connectedTo = null;
+  var scanCount = 0;
+  var logEntries = [];
+  var secretAttempts = 0;
+
+  // --- COMMANDS ---
+  var commands = {
+    help: { desc: '显示可用命令 / Show available commands' },
+    status: { desc: '显示城市系统状态 / Show city system status' },
+    scan: { desc: '扫描附近系统 / Scan for nearby systems' },
+    map: { desc: '显示城市地图坐标 / Show city map coordinates' },
+    connect: { desc: '连接到指定区域 / Connect to a district', usage: 'connect [location]' },
+    logs: { desc: '显示最近系统日志 / Show recent system logs' },
+    whoami: { desc: '显示当前用户身份 / Show current user identity' },
+    clear: { desc: '清除终端 / Clear the terminal' },
+    secret: { desc: '???' },
+    nexus: { desc: '显示NEXUS-9核心信息 / Show NEXUS-9 core info' },
+    exit: { desc: '返回城市地图 / Return to city map' },
+    ls: { desc: '列出目录内容 / List directory contents' },
+    cd: { desc: '切换目录 / Change directory', usage: 'cd [dir]' },
+    pwd: { desc: '打印当前目录 / Print working directory' },
+    cat: { desc: '查看文件内容 / View file contents', usage: 'cat [file]' },
+    sysinfo: { desc: '系统信息 / System information' },
+    ping: { desc: '测试连接 / Test connection', usage: 'ping [target]' },
+    trace: { desc: '路由追踪 / Trace route', usage: 'trace [target]' },
+    hack: { desc: '???' },
+    reboot: { desc: '重启终端 / Reboot terminal' },
+    date: { desc: '显示系统时间 / Show system date' },
+    who: { desc: '显示在线用户 / Show online users' },
+    ps: { desc: '显示进程 / Show processes' },
+    netstat: { desc: '网络连接状态 / Network statistics' },
+    df: { desc: '磁盘使用情况 / Disk usage' },
+  };
+
+  var fileSystem = {
+    '/home/nexus': {
+      type: 'dir',
+      contents: {
+        'notes.txt': { type: 'file', content: '今天完成了第三区防火墙的配置。\n系统运行稳定，未发现入侵痕迹。\n注意：第七区最近有异常信号波动。\n- nexus' },
+        'config.sys': { type: 'file', content: '[SYSTEM]\nversion=3.7.1\nkernel=nexus-core-v9\nsecurity_level=ALPHA\nlog_path=/var/log/nexus/' },
+        'projects': { type: 'dir', contents: {
+          'cybersec.md': { type: 'file', content: '# 网络安全项目\n\n## 防火墙规则\n- 端口扫描检测已启用\n- 入侵防御系统 (IPS) 活跃\n- DDoS防护在线\n\n## 待办\n- [ ] 更新第七区监控\n- [ ] 审计第三区访问日志\n- [x] 部署蜜罐系统' },
+          'ai_core.md': { type: 'file', content: '# AI核心项目\n\n## NEXUS-AI v2.4\n状态: 运行中\n节点数: 128\n学习率: 自适应\n\n警告: 子系统显示自我意识迹象\n建议: 持续监控' }
+        }},
+        'downloads': { type: 'dir', contents: {} },
+        'tools': { type: 'dir', contents: {
+          'decrypt.sh': { type: 'file', content: '#!/bin/bash\n# NEXUS-9 解密工具\n# 用法: ./decrypt.sh [file] [key]\necho "解密中..."' },
+          'scanner.py': { type: 'file', content: '# 网络扫描器\nimport socket\ndef scan(ip, port):\n    pass  # 需要授权' }
+        }}
+      }
+    },
+    '/tmp': { type: 'dir', contents: { 'session.log': { type: 'file', content: '[SESSION START] 2089-11-23 14:32:01' } } },
+    '/var/log': { type: 'dir', contents: {
+      'nexus.log': { type: 'file', content: '系统日志文件' },
+      'auth.log': { type: 'file', content: '认证日志文件' }
+    }},
+    '/etc': { type: 'dir', contents: {
+      'hosts': { type: 'file', content: '127.0.0.1 localhost\n10.0.0.1 nexus-core\n10.0.1.1 district-3-gateway\n10.0.2.1 district-7-gateway\n10.0.3.1 ai-cluster' }
+    }}
+  };
+
+  var locations = {
+    'district-1': '第一区 (上城区) - 政府中心 / Government Center',
+    'district-2': '第二区 (商业区) - 跨国企业总部 / Corporate HQ',
+    'district-3': '第三区 (工业区) - 制造与能源 / Manufacturing & Energy',
+    'district-4': '第四区 (居住区-A) - 高级住宅 / High-Class Residential',
+    'district-5': '第五区 (居住区-B) - 中产住宅 / Mid-Class Residential',
+    'district-6': '第六区 (地下城) - 黑市与流亡者 / Black Market & Outcasts',
+    'district-7': '第七区 (禁區) - 封锁区域 / Restricted Zone [WARNING]',
+    'district-8': '第八区 (科研区) - NEXUS实验室 / NEXUS Labs',
+    'district-9': '第九区 (核心) - NEXUS-9主机 / NEXUS-9 Mainframe',
+    'darknet': '暗网节点 / DarkNet Node [HIDDEN]',
+    'ai-cluster': 'AI集群 / AI Processing Cluster',
+    'sat-uplink': '卫星上行链路 / Satellite Uplink',
+    'sub-level': '地下层 / Subterranean Level [CLASSIFIED]'
+  };
+
+  // --- ASCII ART ---
+  var asciiBanner = [
+    '<span class="output-line cyan">',
+    '  ███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗   █████╗ ',
+    '  ████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝  ██╔══██╗',
+    '  ██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║███████╗  ╚█████╔╝',
+    '  ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║  ██╔══██╗',
+    '  ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║  ╚█████╔╝',
+    '  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚════╝',
+    '                                                         ',
+    '</span>',
+    '<span class="output-line highlight">  >> NEXUS-9 城市终端接口 v3.7 <<</span>',
+    '<span class="output-line dim">  >> Cyber City Command Line Interface <<</span>',
+    '<span class="output-line dim">  >> 输入 "help" 获取命令列表 <<</span>',
+    '<span class="output-line dim">  >> 输入 "exit" 返回城市地图 <<</span>',
+    ''
+  ].join('\n');
+
+  // --- HELPERS ---
+  function write(text, cls) {
+    cls = cls || 'info';
+    var lines = String(text).split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var div = document.createElement('div');
+      div.className = 'output-line ' + cls;
+      div.innerHTML = lines[i] || '&nbsp;';
+      output.appendChild(div);
+    }
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function writeSystemLog(msg) {
+    logEntries.push({ time: new Date().toISOString().replace('T',' ').substring(0,19), msg: msg });
+    if (logEntries.length > 50) logEntries.shift();
+  }
+
+  var hiddenCommands = {
+    'sudo su': function(){ write('root@nexus-9:~# 权限不足。你不是管理员。\nAccess denied. You are not the administrator.','warn'); writeSystemLog('FAILED sudo su attempt'); },
+    'sudo rm -rf /': function(){ write('拒绝访问。核心系统受保护。\nPermission denied. Core system protected.','error'); writeSystemLog('BLOCKED rm -rf / attempt'); },
+    'matrix': function(){
+      write('正在进入矩阵... / Entering the Matrix...','cyan');
+      setTimeout(function(){
+        var chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
+        var rain = '';
+        for(var r=0; r<18; r++){ for(var c=0; c<50; c++){ rain += chars[Math.floor(Math.random()*chars.length)]; } rain += '\n'; }
+        write(rain,'dim');
+        write('你看到那个穿红裙的女人了吗？ / Did you see the woman in the red dress?','highlight');
+        writeSystemLog('Matrix sequence triggered');
+      }, 500);
+    },
+    'portal': function(){ write('正在打开传送门... 错误：目标维度不可达\nOpening portal... ERROR: Target dimension unreachable','error'); writeSystemLog('Portal attempt failed'); },
+    '42': function(){ write('生命、宇宙以及任何事情的终极答案。\nThe Answer to the Ultimate Question of Life, the Universe, and Everything.','highlight'); writeSystemLog('Deep Thought accessed'); },
+    'rubberducky': function(){ write('  __\n<\' ）））））））~\n  --\n  嘎嘎！调试成功！ / Quack! Debugging complete!','highlight'); },
+    'overclock': function(){ write('警告：CPU超频至 9.9GHz... 核心温度上升中...\nWARNING: CPU overclocked to 9.9GHz... Core temperature rising...','warn'); writeSystemLog('CPU overclocked'); },
+    'decrypt': function(){ write('解密模块初始化... 需要128位量子密钥。\nDecryption module init... 128-bit quantum key required.','cyan'); writeSystemLog('Decrypt module accessed'); },
+  };
+
+  function getFileSystemPath(p) {
+    var parts = p.replace(/\/+/g,'/').replace(/\/$/,'').split('/').filter(Boolean);
+    var current = fileSystem['/'];
+    if (!current) return null;
+    var path = '/';
+    for (var i = 0; i < parts.length; i++) {
+      path += (path==='/'?'':'/') + parts[i];
+      if (!fileSystem[path]) return null;
+      current = fileSystem[path];
+      if (current.type === 'file' && i < parts.length-1) return null;
+    }
+    return { path: path, node: current };
+  }
+
+  function resolvePath(inputPath) {
+    if (!inputPath || inputPath === '.') return currentDir;
+    if (inputPath === '..') {
+      if (currentDir === '/') return '/';
+      var p = currentDir.split('/').filter(Boolean); p.pop();
+      return '/' + p.join('/') || '/';
+    }
+    if (inputPath === '~' || inputPath === '~/') return '/home/nexus';
+    if (inputPath.startsWith('~/')) return '/home/nexus' + (inputPath.length > 1 ? '/' + inputPath.substring(2) : '');
+    if (inputPath.startsWith('/')) return inputPath;
+    return (currentDir === '/' ? '/' + inputPath : currentDir + '/' + inputPath).replace(/\/+/g,'/');
+  }
+
+  // --- COMMAND HANDLERS ---
+  function cmd_help(args) {
+    write('═══════════════════════════════════════════════','cyan');
+    write('  NEXUS-9 TERMINAL - 可用命令 / Available Commands','highlight');
+    write('═══════════════════════════════════════════════','cyan');
+    var keys = Object.keys(commands).sort();
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var c = commands[k];
+      write('  ' + k + (c.usage ? ' ' + c.usage : '') + '  —  ' + c.desc,'info');
+    }
+    write('');
+    write('提示: 使用 Tab 键自动补全, 上下箭头浏览历史','dim');
+    write('Tip: Use Tab for auto-complete, Up/Down for history','dim');
+    write('═══════════════════════════════════════════════','cyan');
+    writeSystemLog('help command executed');
+  }
+
+  function cmd_status(args) {
+    write('═════════════════════════════════════','cyan');
+    write('  NEXUS-9 城市系统状态 / City System Status','highlight');
+    write('═════════════════════════════════════','cyan');
+    write('');
+    var stats = [
+      ['核心处理器 / Core CPU','[████████░░] 87%','info'],
+      ['内存使用 / Memory','[██████░░░░] 62%  /  32GB / 48GB','info'],
+      ['网络负载 / Network Load','[████████░░] 85%  节点数: 1,247','info'],
+      ['AI集群 / AI Cluster','[█████████░] 94%  活跃','warn'],
+      ['第一区 / District 1','在线 / Online  状态: 正常','info'],
+      ['第二区 / District 2','在线 / Online  状态: 正常','info'],
+      ['第三区 / District 3','在线 / Online  状态: 正常','info'],
+      ['第四区 / District 4','在线 / Online  状态: 正常','info'],
+      ['第五区 / District 5','在线 / Online  状态: 正常','info'],
+      ['第六区 / District 6','部分中断 / Partial Outage  状态: 不稳定','warn'],
+      ['第七区 / District 7','[已封锁] / [LOCKED]  状态: 未知','error'],
+      ['第八区 / District 8','在线 / Online  状态: 正在维护','info'],
+      ['第九区 / District 9','[核心] / [CORE]  状态: 受保护','highlight'],
+      ['防火墙 / Firewall','[██████████] 100%  活跃','info'],
+      ['入侵检测 / IDS','在线 / Active  威胁等级: 中等','warn'],
+    ];
+    for (var i = 0; i < stats.length; i++) {
+      write('  ' + stats[i][0] + '  ' + stats[i][1], stats[i][2]);
+    }
+    write('');
+    write('  系统运行时间: 127天 14小时 32分钟 / Uptime: 127d 14h 32m','dim');
+    write('═════════════════════════════════════','cyan');
+    writeSystemLog('status command executed');
+  }
+
+  function cmd_scan(args) {
+    scanCount++;
+    write('正在扫描附近系统... / Scanning for nearby systems...','cyan');
+    var targets = [
+      { ip:'10.0.1.1', name:'District-3-Gateway', status:'OPEN', os:'NexOS 3.7', dist:'1.2km' },
+      { ip:'10.0.2.1', name:'District-7-Gateway', status:'LOCKED', os:'???', dist:'4.7km' },
+      { ip:'10.0.3.1', name:'AI-Cluster-Node', status:'OPEN', os:'NexOS-AI 2.4', dist:'0.3km' },
+      { ip:'10.0.5.14', name:'Unknown-Device', status:'STEALTH', os:'???', dist:'2.1km' },
+      { ip:'10.0.8.99', name:'NEXUS-Labs-Workstation', status:'OPEN', os:'NexOS 3.7', dist:'1.8km' },
+      { ip:'192.168.1.100', name:'Civilian-Terminal', status:'OPEN', os:'CitizenOS 1.2', dist:'0.5km' },
+      { ip:'10.0.4.50', name:'Surveillance-Node-04', status:'FILTERED', os:'NexOS-Watch 5.1', dist:'3.3km' },
+    ];
+    if (scanCount > 3) {
+      targets.push({ ip:'10.255.255.1', name:'GHOST-PROTOCOL', status:'HIDDEN', os:'[REDACTED]', dist:'???' });
+    }
+    write('  IP地址            主机名                    状态      系统              距离','dim');
+    write('  ─────────────────────────────────────────────────────────────────────────','dim');
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      var line = '  ' + padRight(t.ip,18) + padRight(t.name,26) + padRight(t.status,10) + padRight(t.os,18) + t.dist;
+      var cls = t.status === 'LOCKED' || t.status === 'HIDDEN' ? 'error' : (t.status === 'STEALTH' ? 'warn' : 'info');
+      write(line, cls);
+    }
+    write('');
+    write('  扫描完成。发现 ' + targets.length + ' 个系统。 / Scan complete. ' + targets.length + ' systems found.','dim');
+    writeSystemLog('scan executed (#' + scanCount + ')');
+  }
+
+  function cmd_map(args) {
+    write('═══════════════════════════════════════════════','cyan');
+    write('  NEXUS-9 城市地图坐标 / City Map Coordinates','highlight');
+    write('═══════════════════════════════════════════════','cyan');
+    var map = [
+      '         ┌─────────┬─────────┬─────────┐',
+      '         │   D1    │   D2    │   D3    │',
+      '         │ 政务区  │ 商业区  │ 工业区  │',
+      '         │ (0,0)   │ (1,0)   │ (2,0)   │',
+      '         ├─────────┼─────────┼─────────┤',
+      '         │   D4    │   D5    │   D6    │',
+      '         │ 高尚住宅│ 中产住宅│ 地下城  │',
+      '         │ (0,1)   │ (1,1)   │ (2,1)   │',
+      '         ├─────────┼─────────┼─────────┤',
+      '         │   D7    │   D8    │   D9    │',
+      '         │ [封锁]  │ 科研区  │ 核心区  │',
+      '         │ (0,2)   │ (1,2)   │ (2,2)   │',
+      '         └─────────┴─────────┴─────────┘',
+      '                          ↓ 南',
+    ];
+    for (var i = 0; i < map.length; i++) {
+      var cls = map[i].indexOf('D7') !== -1 ? 'error' : (map[i].indexOf('D9') !== -1 ? 'highlight' : 'info');
+      write(map[i], cls);
+    }
+    write('');
+    write('  当前位置 / Current: ' + currentDir,'dim');
+    if (connectedTo) { write('  已连接 / Connected: ' + (locations[connectedTo] || connectedTo), 'cyan'); }
+    write('═══════════════════════════════════════════════','cyan');
+    writeSystemLog('map command executed');
+  }
+
+  function cmd_connect(args) {
+    if (!args || args.length === 0) {
+      write('用法: connect [location]','warn');
+      write('可用位置 / Available locations:','dim');
+      var locs = Object.keys(locations);
+      for (var i = 0; i < locs.length; i++) {
+        var l = locs[i];
+        write('  ' + padRight(l,16) + locations[l], locations[l].indexOf('WARNING')!==-1?'error':(locations[l].indexOf('HIDDEN')!==-1?'warn':'dim'));
+      }
+      return;
+    }
+    var target = args[0].toLowerCase();
+    if (locations[target]) {
+      write('正在连接到 ' + target + '... / Connecting to ' + target + '...','cyan');
+      var delays = target === 'district-7' ? 500 : (target === 'darknet' ? 500 : 200);
+      setTimeout(function(){
+        connectedTo = target;
+        if (target === 'district-7') {
+          write('⚠ 警告: 第七区为封锁区域! / WARNING: District 7 is restricted!','error');
+          write('检测到异常信号... 连接被强制中断!\nAnomalous signal detected... Connection forcibly terminated!','error');
+          write('已记录此次访问尝试。当局已被通知。\nThis access attempt has been logged. Authorities notified.','warn');
+          connectedTo = null;
+          writeSystemLog('BLOCKED connection to district-7');
+        } else if (target === 'darknet') {
+          write('已连接到暗网节点。注意安全。\nConnected to DarkNet node. Stay safe.','warn');
+          write('┌─────────────────────────────────────┐','warn');
+          write('│ 暗网市场 / DarkNet Market           │','warn');
+          write('│ - 数据芯片 / Datachips     50₵      │','warn');
+          write('│ - 防火墙绕过 / Firewall Bypass 200₵ │','warn');
+          write('│ - 身份伪造 / ID Forgery    500₵     │','warn');
+          write('│ - [已编辑] / [REDACTED]     ???     │','warn');
+          write('└─────────────────────────────────────┘','warn');
+          writeSystemLog('Connected to darknet');
+        } else {
+          write('已连接到 ' + locations[target] + '.','highlight');
+          write('连接稳定。延迟: ' + (Math.floor(Math.random()*50)+5) + 'ms\nConnection stable. Latency nominal.','dim');
+          writeSystemLog('Connected to ' + target);
+        }
+      }, delays);
+    } else {
+      write('错误: 未知位置 "' + target + '"\nError: Unknown location "' + target + '"','error');
+      write('使用 "connect" 查看可用位置。 / Use "connect" to see available locations.','dim');
+    }
+  }
+
+  function cmd_logs(args) {
+    write('═════════════════════════════════════','cyan');
+    write('  系统日志 / System Logs (' + logEntries.length + ' entries)','highlight');
+    write('═════════════════════════════════════','cyan');
+    if (logEntries.length === 0) {
+      write('  暂无日志。 / No logs yet.','dim');
+    }
+    var start = Math.max(0, logEntries.length - 25);
+    for (var i = start; i < logEntries.length; i++) {
+      var e = logEntries[i];
+      var cls = e.msg.indexOf('FAILED')!==-1||e.msg.indexOf('BLOCKED')!==-1?'error':(e.msg.indexOf('Connected')!==-1?'highlight':'dim');
+      write('  [' + e.time + '] ' + e.msg, cls);
+    }
+    write('═════════════════════════════════════','cyan');
+  }
+
+  function cmd_whoami(args) {
+    write('══════════════════════════════','cyan');
+    write('  当前用户 / Current User','highlight');
+    write('══════════════════════════════','cyan');
+    write('  用户名 / Username : nexus','info');
+    write('  权限等级 / Access  : LEVEL 3 (操作员 / Operator)','info');
+    write('  会话ID / Session   : SESS-' + Math.random().toString(36).substring(2,10).toUpperCase(),'dim');
+    write('  登录时间 / Login   : ' + new Date().toISOString().replace('T',' ').substring(0,19),'dim');
+    write('  终端ID / Terminal  : TERM-N9-' + Math.floor(Math.random()*9000+1000),'dim');
+    write('  位置 / Location    : ' + currentDir,'dim');
+    write('══════════════════════════════','cyan');
+  }
+
+  function cmd_nexus(args) {
+    write('','');
+    write('  ╔══════════════════════════════════════════╗','highlight');
+    write('  ║          NEXUS-9 核心信息                ║','highlight');
+    write('  ║          Core System Information         ║','highlight');
+    write('  ╠══════════════════════════════════════════╣','highlight');
+    write('  ║  系统版本 / Version     : 3.7.1-RELEASE ║','info');
+    write('  ║  内核 / Kernel          : nexus-core-v9 ║','info');
+    write('  ║  架构 / Architecture    : x86_64-NEXUS  ║','info');
+    write('  ║  编译日期 / Build Date  : 2089-08-15    ║','info');
+    write('  ║  许可证 / License       : NEXUS Corp    ║','info');
+    write('  ║  安全级别 / Sec Level   : ALPHA         ║','info');
+    write('  ║  节点数 / Nodes         : 1,247         ║','info');
+    write('  ║  运行时间 / Uptime      : 127d 14h 32m  ║','info');
+    write('  ║                                          ║','info');
+    write('  ║  "城市的命脉在于数据。"                  ║','dim');
+    write('  ║  "The city lives on data."               ║','dim');
+    write('  ╚══════════════════════════════════════════╝','highlight');
+    write('','');
+    writeSystemLog('nexus info viewed');
+  }
+
+  function cmd_secret(args) {
+    secretAttempts++;
+    if (secretAttempts === 1) {
+      write('没有秘密。继续工作吧，市民。\nThere are no secrets. Move along, citizen.','dim');
+    } else if (secretAttempts === 2) {
+      write('你确定有秘密吗？也许只是系统故障。\nAre you sure there\'s a secret? Maybe it\'s just a glitch.','dim');
+    } else if (secretAttempts === 3) {
+      write('...','warn');
+      write('好吧。既然你这么坚持...\nFine. Since you\'re so persistent...','cyan');
+      write('');
+      write('═══════════════════════════════════════════════','highlight');
+      write('  [机密信息 - 仅限7级以上权限]','error');
+      write('  [CLASSIFIED - LEVEL 7 CLEARANCE REQUIRED]','error');
+      write('═══════════════════════════════════════════════','highlight');
+      write('');
+      write('  NEXUS-9 并非只是一个城市管理系统。','warn');
+      write('  它是全球神经网络的一个节点。','warn');
+      write('  第九区下方还有一个未公开的子层级。','warn');
+      write('  Sub-Level 9 中运行着一个名为 "ORACLE" 的AI。','warn');
+      write('  据说它可以预测未来。','warn');
+      write('  但每个询问过它的人...都不再是原来的自己。','warn');
+      write('');
+      write('  NEXUS-9 is not just a city management system.','warn');
+      write('  It is a node in a global neural network.','warn');
+      write('  Beneath District 9 lies an undisclosed sub-level.','warn');
+      write('  An AI called "ORACLE" runs in Sub-Level 9.','warn');
+      write('  They say it can predict the future.','warn');
+      write('  But everyone who asked it a question...','warn');
+      write('  was never the same again.','warn');
+      write('');
+      write('═══════════════════════════════════════════════','highlight');
+      write('  此信息将在10秒后自行删除。','error');
+      write('  This message will self-delete in 10 seconds.','error');
+      write('═══════════════════════════════════════════════','highlight');
+      writeSystemLog('SECRET accessed (attempt #' + secretAttempts + ')');
+    } else {
+      write('秘密已经告诉你了。不要贪心。\nThe secret has been revealed. Don\'t be greedy.','warn');
+    }
+  }
+
+  function cmd_ls(args) {
+    var fs = getFileSystemPath(currentDir);
+    if (!fs || fs.node.type !== 'dir') { write('错误: 无法读取目录 / Error: Cannot read directory','error'); return; }
+    var contents = fs.node.contents;
+    var keys = Object.keys(contents);
+    write('  ' + currentDir + '/','highlight');
+    if (keys.length === 0) { write('  (空目录 / empty)','dim'); return; }
+    for (var i = 0; i < keys.length; i++) {
+      var item = contents[keys[i]];
+      var icon = item.type === 'dir' ? '📁' : '📄';
+      var cls = item.type === 'dir' ? 'cyan' : 'info';
+      write('  ' + icon + ' ' + keys[i] + (item.type === 'dir' ? '/' : ''), cls);
+    }
+  }
+
+  function cmd_cd(args) {
+    if (!args || args.length === 0) { write('用法: cd [directory] / Usage: cd [directory]','warn'); return; }
+    var newPath = resolvePath(args[0]);
+    var fs = getFileSystemPath(newPath);
+    if (!fs) { write('cd: 没有那个文件或目录: ' + args[0] + '\ncd: No such file or directory: ' + args[0],'error'); return; }
+    if (fs.node.type === 'file') { write('cd: 不是目录: ' + args[0] + '\ncd: Not a directory: ' + args[0],'error'); return; }
+    currentDir = newPath;
+    updatePrompt();
+  }
+
+  function cmd_pwd(args) {
+    write(currentDir,'info');
+  }
+
+  function cmd_cat(args) {
+    if (!args || args.length === 0) { write('用法: cat [file] / Usage: cat [file]','warn'); return; }
+    var filePath = resolvePath(args[0]);
+    var fs = getFileSystemPath(filePath);
+    if (!fs) { write('cat: 没有那个文件: ' + args[0] + '\ncat: No such file: ' + args[0],'error'); return; }
+    if (fs.node.type === 'dir') { write('cat: 是目录: ' + args[0] + '\ncat: Is a directory: ' + args[0],'error'); return; }
+    write('─── ' + fs.path + ' ───','dim');
+    write(fs.node.content,'info');
+    write('─── END ───','dim');
+  }
+
+  function cmd_sysinfo(args) {
+    write('═══════════════════════════════════════','cyan');
+    write('  NEXUS-9 系统信息 / System Information','highlight');
+    write('═══════════════════════════════════════','cyan');
+    write('  主机名 / Hostname     : nexus-9-core','info');
+    write('  操作系统 / OS         : NexOS 3.7.1 (64-bit)','info');
+    write('  内核 / Kernel         : nexus-core-v9 #1 SMP','info');
+    write('  CPU                   : NEXUS Quantum-Q9 @ 9.0GHz (128 cores)','info');
+    write('  GPU                   : NEXUS Neural-N9 (AI加速)','info');
+    write('  内存 / Memory         : 48GB DDR6 ECC','info');
+    write('  存储 / Storage        : 2TB NVMe SSD (RAID-0)','info');
+    write('  网络 / Network        : 10Gbps Fiber Optic','info');
+    write('═══════════════════════════════════════','cyan');
+    writeSystemLog('sysinfo displayed');
+  }
+
+  function cmd_ping(args) {
+    if (!args || args.length === 0) { write('用法: ping [target] / Usage: ping [target]','warn'); return; }
+    var target = args[0];
+    write('PING ' + target + ' (10.0.' + Math.floor(Math.random()*255) + '.' + Math.floor(Math.random()*255) + ') 56(84) bytes of data.','info');
+    var totalTime = 0;
+    for (var i = 0; i < 4; i++) {
+      var t = (Math.random() * 15 + 1).toFixed(1);
+      totalTime += parseFloat(t);
+      write('  64 bytes from ' + target + ': icmp_seq=' + (i+1) + ' ttl=64 time=' + t + ' ms','info');
+    }
+    write('');
+    write('--- ' + target + ' ping statistics ---','dim');
+    write('  4 packets transmitted, 4 received, 0% packet loss, time ' + (totalTime).toFixed(0) + 'ms','dim');
+    write('  rtt min/avg/max/mdev = ' + (totalTime/4-1).toFixed(1) + '/' + (totalTime/4).toFixed(1) + '/' + (totalTime/4+1).toFixed(1) + '/0.500 ms','dim');
+  }
+
+  function cmd_trace(args) {
+    if (!args || args.length === 0) { write('用法: trace [target] / Usage: trace [target]','warn'); return; }
+    write('traceroute to ' + args[0] + ', 30 hops max, 60 byte packets','dim');
+    var hops = [
+      ' 1  10.0.0.1 (nexus-core)  0.5 ms',
+      ' 2  10.0.1.1 (district-3-gateway)  2.1 ms',
+      ' 3  10.0.8.1 (research-subnet)  5.3 ms',
+      ' 4  10.0.' + Math.floor(Math.random()*255) + '.' + Math.floor(Math.random()*255) + '  ' + (Math.random()*10+3).toFixed(1) + ' ms',
+      ' 5  * * * (超时 / Timeout)',
+    ];
+    for (var i = 0; i < hops.length; i++) {
+      write(hops[i], hops[i].indexOf('*')!==-1?'warn':'dim');
+    }
+  }
+
+  function cmd_hack(args) {
+    write('你以为这么简单就能黑进系统吗？\nYou thought it would be that easy to hack the system?','warn');
+    write('试试 "secret" 命令吧。\nTry the "secret" command instead.','dim');
+    writeSystemLog('hack attempt blocked');
+  }
+
+  function cmd_reboot(args) {
+    write('[  ***    ] 正在重启...\n[  *****  ] Shutting down NEXUS-9 terminal...','warn');
+    write('[  ****** ] 请稍候... / Please wait...','warn');
+    setTimeout(function(){
+      output.innerHTML = '';
+      secretAttempts = 0;
+      scanCount = 0;
+      connectedTo = null;
+      currentDir = '/home/nexus';
+      updatePrompt();
+      initTerminal();
+    }, 800);
+    writeSystemLog('Terminal rebooted');
+  }
+
+  function cmd_date(args) {
+    write('系统时间 / System Time: ' + new Date().toISOString().replace('T',' ').substring(0,19),'info');
+    write('NEXUS-9 城市时间 / City Time: 2089-11-23 14:32:01 (模拟)','dim');
+  }
+
+  function cmd_who(args) {
+    write('在线用户 / Online Users:','cyan');
+    write('  USER       TERMINAL        LOGIN TIME           FROM','dim');
+    write('  nexus      pts/0          2089-11-23 14:32     terminal-n9-042','info');
+    write('  admin      pts/1          2089-11-22 09:15     district-1-secure','warn');
+    write('  oracle     ---            2089-01-01 00:00     sub-level-9 [幽灵会话]','error');
+  }
+
+  function cmd_ps(args) {
+    write('  PID    TTY      TIME     CMD','dim');
+    write('  0001   ?        127d     /sbin/nexus-core','info');
+    write('  0420   pts/0    00:05    nexus-terminal','info');
+    write('  1337   ?        00:01    /usr/bin/ai-monitor','info');
+    write('  2048   ?        64d      /usr/bin/firewall-daemon','info');
+    write('  9001   ?        未知     oracle-process [???]','error');
+  }
+
+  function cmd_netstat(args) {
+    write('活动网络连接 / Active Connections:','cyan');
+    write('  Proto   Local Address           Foreign Address         State','dim');
+    write('  tcp     10.0.0.1:443           10.0.1.1:9090          ESTABLISHED','info');
+    write('  tcp     10.0.0.1:22            10.0.8.99:55221        ESTABLISHED','info');
+    write('  tcp     10.0.0.1:8080          0.0.0.0:*              LISTEN','info');
+    write('  tcp     10.0.0.1:9001          10.255.255.1:???       ESTABLISHED [加密]','error');
+    if (connectedTo) {
+      write('  tcp     10.0.0.1:5555          ' + connectedTo + '-gateway  ESTABLISHED [CONNECT]','highlight');
+    }
+  }
+
+  function cmd_df(args) {
+    write('文件系统 / Filesystem:','cyan');
+    write('  Filesystem      Size   Used   Avail  Use%  Mounted on','dim');
+    write('  /dev/nvme0n1    2.0T   1.2T   800G    60%  /','info');
+    write('  tmpfs            32G    12G    20G    38%  /tmp','info');
+    write('  /dev/sda1       500G   480G    20G    96%  /var/log [WARNING]','warn');
+    write('  oracle_fs        ???    ???    ???    ???  /sub-level-9 [UNKNOWN]','error');
+  }
+
+  function padRight(s, len) {
+    var str = String(s);
+    return str + ' '.repeat(Math.max(0, len - str.length));
+  }
+
+  function updatePrompt() {
+    var p = 'nexus@n9:';
+    var dir = currentDir === '/home/nexus' ? '~' : currentDir;
+    prompt.textContent = p + dir + '$ ';
+  }
+
+  // --- PROCESS INPUT ---
+  function processCommand(cmdStr) {
+    var trimmed = cmdStr.trim();
+    if (!trimmed) return;
+
+    // Echo the command
+    write(prompt.textContent + trimmed, 'cmd');
+
+    // Parse
+    var parts = trimmed.split(/\s+/);
+    var cmd = parts[0].toLowerCase();
+    var args = parts.slice(1);
+
+    // Check hidden commands first
+    if (hiddenCommands[trimmed]) {
+      hiddenCommands[trimmed]();
+      writeSystemLog('Command executed: ' + trimmed);
+    }
+    // Check main commands
+    else if (cmd === 'help') { cmd_help(args); }
+    else if (cmd === 'status') { cmd_status(args); }
+    else if (cmd === 'scan') { cmd_scan(args); }
+    else if (cmd === 'map') { cmd_map(args); }
+    else if (cmd === 'connect') { cmd_connect(args); }
+    else if (cmd === 'logs') { cmd_logs(args); }
+    else if (cmd === 'whoami') { cmd_whoami(args); }
+    else if (cmd === 'clear') { output.innerHTML = ''; }
+    else if (cmd === 'secret') { cmd_secret(args); }
+    else if (cmd === 'nexus') { cmd_nexus(args); }
+    else if (cmd === 'exit') { write('正在断开连接... / Disconnecting... 返回城市地图\n','cyan'); write('<a href="city_map.html" style="color:#00ff41;">>>> 点击这里返回城市地图 / Click here to return to City Map <<<</a>','highlight'); }
+    else if (cmd === 'ls') { cmd_ls(args); }
+    else if (cmd === 'cd') { cmd_cd(args); }
+    else if (cmd === 'pwd') { cmd_pwd(args); }
+    else if (cmd === 'cat') { cmd_cat(args); }
+    else if (cmd === 'sysinfo') { cmd_sysinfo(args); }
+    else if (cmd === 'ping') { cmd_ping(args); }
+    else if (cmd === 'trace') { cmd_trace(args); }
+    else if (cmd === 'hack') { cmd_hack(args); }
+    else if (cmd === 'reboot') { cmd_reboot(args); }
+    else if (cmd === 'date') { cmd_date(args); }
+    else if (cmd === 'who') { cmd_who(args); }
+    else if (cmd === 'ps') { cmd_ps(args); }
+    else if (cmd === 'netstat') { cmd_netstat(args); }
+    else if (cmd === 'df') { cmd_df(args); }
+    else {
+      write('命令未找到: ' + cmd + '\nCommand not found: ' + cmd,'error');
+      write('输入 "help" 查看可用命令。 / Type "help" for available commands.','dim');
+    }
+  }
+
+  // --- AUTO-COMPLETE ---
+  function getSuggestions(partial) {
+    var all = Object.keys(commands);
+    // add file system items
+    var fs = getFileSystemPath(currentDir);
+    if (fs && fs.node.type === 'dir') {
+      all = all.concat(Object.keys(fs.node.contents));
+    }
+    all = all.filter(function(c, i, arr){ return arr.indexOf(c) === i; });
+    return all.filter(function(c){ return c.startsWith(partial) && c !== partial; });
+  }
+
+  input.addEventListener('input', function(){
+    var val = input.value.trim();
+    if (!val) { suggestions.textContent = ''; return; }
+    var matches = getSuggestions(val.split(/\s+/).pop() || val);
+    if (matches.length === 1) {
+      suggestions.textContent = '> ' + matches[0];
+      suggestions.style.color = '#225522';
+    } else if (matches.length > 1) {
+      suggestions.textContent = '> ' + matches.slice(0,8).join(' | ') + (matches.length > 8 ? ' ...' : '');
+      suggestions.style.color = '#1a3a1a';
+    } else {
+      suggestions.textContent = '';
+    }
+  });
+
+  input.addEventListener('keydown', function(e){
+    // Enter
+    if (e.key === 'Enter') {
+      var cmd = input.value;
+      if (cmd.trim()) {
+        history.push(cmd);
+        historyIndex = history.length;
+      }
+      processCommand(cmd);
+      input.value = '';
+      suggestions.textContent = '';
+    }
+    // Arrow Up
+    else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (history.length > 0) {
+        if (historyIndex > 0) historyIndex--;
+        input.value = history[historyIndex];
+        input.setSelectionRange(input.value.length, input.value.length);
+        suggestions.textContent = '';
+      }
+    }
+    // Arrow Down
+    else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        input.value = history[historyIndex];
+      } else {
+        historyIndex = history.length;
+        input.value = '';
+      }
+      input.setSelectionRange(input.value.length, input.value.length);
+      suggestions.textContent = '';
+    }
+    // Tab
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      var val = input.value;
+      var lastWord = val.split(/\s+/).pop() || '';
+      var matches = getSuggestions(lastWord);
+      if (matches.length === 1) {
+        var words = val.split(/\s+/);
+        words[words.length-1] = matches[0];
+        input.value = words.join(' ');
+        if (val.split(/\s+/).length === 1) input.value += ' ';
+        suggestions.textContent = '';
+      } else if (matches.length > 1) {
+        suggestions.textContent = '> ' + matches.join(' | ');
+        suggestions.style.color = '#338833';
+      }
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    // Ctrl+L = clear
+    else if (e.key === 'l' && e.ctrlKey) {
+      e.preventDefault();
+      output.innerHTML = '';
+    }
+  });
+
+  // Keep cursor blinking and input focused
+  document.addEventListener('click', function(e){
+    if (e.target.closest('#terminal-container')) {
+      input.focus();
+    }
+  });
+  input.focus();
+
+  // --- INIT ---
+  function initTerminal() {
+    write(asciiBanner,'');
+    writeSystemLog('Terminal session started');
+  }
+
+  // Seed some initial log entries for atmosphere
+  logEntries.push(
+    { time: '2089-11-23 12:00:01', msg: 'System boot complete' },
+    { time: '2089-11-23 12:00:05', msg: 'Firewall initialized' },
+    { time: '2089-11-23 12:00:10', msg: 'AI Cluster online - 128 nodes' },
+    { time: '2089-11-23 12:00:15', msg: 'District connectivity check: 8/9 online' },
+    { time: '2089-11-23 12:30:42', msg: 'WARNING: Unusual traffic detected from District 7' },
+    { time: '2089-11-23 13:15:18', msg: 'IDS alert: Port scan blocked from external IP' },
+    { time: '2089-11-23 13:45:00', msg: 'Scheduled maintenance: District 8 research lab' },
+    { time: '2089-11-23 14:00:33', msg: 'Oracle subsystem heartbeat: OK' },
+    { time: '2089-11-23 14:15:07', msg: 'User nexus logged in from terminal-n9-042' },
+    { time: '2089-11-23 14:20:00', msg: 'Ghost protocol signal detected [IGNORED]' }
+  );
+
+  initTerminal();
+  updatePrompt();
+
+})();
+</script>
+
+</body>
+</html>

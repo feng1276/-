@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深夜值班 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-deep: #060606;
+  --bg-surface: #0a0a0a;
+  --card-bg: rgba(20,16,12,0.8);
+  --card-alt: #111;
+  --text-main: #c8c0b8;
+  --text-dim: #706860;
+  --red-dark: #8b0000;
+  --red-mid: #b01010;
+  --red-glow: #ff2020;
+  --amber-dark: #b8701a;
+  --amber-mid: #e0902a;
+  --font-body: 'Noto Serif SC', serif;
+  --font-code: 'Orbitron', monospace;
+  --font-log: 'Share Tech Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.15) 0px,
+    rgba(0,0,0,0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none; z-index: 9999; opacity: 0.6;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9998; opacity: 0.5;
+}
+
+nav.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.85; }
+  10% { opacity: 1; }
+  15% { opacity: 0.9; }
+  20% { opacity: 1; }
+  50% { opacity: 1; }
+  52% { opacity: 0.75; }
+  54% { opacity: 1; }
+  80% { opacity: 1; }
+  82% { opacity: 0.7; }
+  84% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes glitch-text {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes red-pulse {
+  0%, 100% { text-shadow: 0 0 4px var(--red-dark), 0 0 8px var(--red-dark); }
+  50% { text-shadow: 0 0 8px var(--red-glow), 0 0 16px var(--red-glow), 0 0 24px var(--red-mid); }
+}
+
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scanline-move {
+  0% { top: -100%; }
+  100% { top: 100%; }
+}
+
+@keyframes cctv-flicker {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.7; }
+  53% { opacity: 0.95; }
+  56% { opacity: 0.75; }
+  100% { opacity: 0.9; }
+}
+
+@keyframes clock-pulse {
+  0%, 100% { color: var(--amber-mid); }
+  50% { color: var(--red-glow); text-shadow: 0 0 12px rgba(255,32,32,0.6); }
+}
+
+@keyframes coffee-stain {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.18; }
+}
+
+@keyframes text-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes page-turn {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(-5deg) translateX(-10px); }
+  100% { transform: rotateY(0deg); }
+}
+
+@keyframes alert-blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes monitor-static {
+  0%, 100% { background-position: 0 0; }
+  50% { background-position: 100% 100%; }
+}
+
+.container {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 20px;
+  animation: flicker 10s infinite;
+}
+
+/* Header */
+.page-header {
+  text-align: center;
+  padding: 40px 20px 30px;
+  border-bottom: 1px solid rgba(120,20,20,0.3);
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.page-header h1 {
+  font-family: var(--font-body);
+  font-size: 2.6em;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.08em;
+}
+
+.page-header .subtitle {
+  font-family: var(--font-code);
+  font-size: 0.85em;
+  color: var(--text-dim);
+  letter-spacing: 0.25em;
+  margin-top: 8px;
+}
+
+.page-header .guard-name {
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  color: var(--amber-mid);
+  margin-top: 12px;
+}
+
+/* Night Shift Clock */
+.shift-clock-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  position: sticky;
+  top: 52px;
+  z-index: 50;
+  padding: 8px 0;
+  pointer-events: none;
+}
+
+.shift-clock {
+  background: rgba(10,10,10,0.9);
+  border: 1px solid rgba(150,100,20,0.3);
+  padding: 10px 18px;
+  font-family: var(--font-code);
+  font-size: 1.8em;
+  color: var(--amber-mid);
+  letter-spacing: 0.1em;
+  animation: clock-pulse 8s infinite;
+  text-align: center;
+  min-width: 140px;
+}
+
+.shift-clock .shift-label {
+  font-size: 0.4em;
+  display: block;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-bottom: 4px;
+}
+
+.shift-clock .shift-day {
+  font-size: 0.45em;
+  display: block;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-top: 4px;
+}
+
+.shift-clock.glitching {
+  animation: glitch-text 0.2s infinite;
+  color: var(--red-glow);
+}
+
+/* Warning Banner */
+.warning-banner {
+  background: rgba(180,0,0,0.1);
+  border: 1px solid rgba(180,16,16,0.4);
+  border-left: 4px solid var(--red-mid);
+  padding: 16px 20px;
+  margin: 20px 0 30px;
+  font-size: 0.95em;
+  color: #e0b0b0;
+}
+
+/* Guard Desk Layout */
+.desk-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  margin: 20px 0;
+}
+
+@media (max-width: 900px) {
+  .desk-layout { grid-template-columns: 1fr; }
+}
+
+.desk-main {
+  min-width: 0;
+}
+
+.desk-sidebar {
+  min-width: 0;
+}
+
+/* Logbook */
+.logbook {
+  background: var(--card-bg);
+  border: 1px solid rgba(80,60,40,0.3);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.logbook::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 60% 40%, rgba(80,50,20,0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.logbook-header {
+  background: rgba(30,20,10,0.9);
+  border-bottom: 2px solid rgba(120,80,40,0.3);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logbook-header h2 {
+  font-family: var(--font-body);
+  font-size: 1.3em;
+  color: var(--text-main);
+}
+
+.logbook-header .log-meta {
+  font-family: var(--font-log);
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.logbook-pages {
+  max-height: 700px;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.log-entry {
+  background: rgba(18,14,10,0.7);
+  border-left: 2px solid rgba(100,70,40,0.3);
+  padding: 14px 16px;
+  margin: 0 0 12px 0;
+  position: relative;
+  transition: all 0.3s ease;
+  font-family: var(--font-log);
+  font-size: 0.85em;
+  line-height: 1.7;
+}
+
+.log-entry:hover {
+  border-left-color: var(--amber-dark);
+  background: rgba(25,18,12,0.8);
+}
+
+.log-entry .entry-date {
+  display: flex;
+  justify-content: space-between;
+  color: var(--amber-dark);
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.log-entry .entry-round {
+  color: var(--text-dim);
+  font-size: 0.85em;
+  margin-bottom: 6px;
+}
+
+.log-entry .entry-body {
+  color: var(--text-main);
+}
+
+.log-entry.normal { border-left-color: rgba(80,150,80,0.3); }
+.log-entry.strange { border-left-color: rgba(200,160,40,0.4); }
+.log-entry.disturbing { border-left-color: rgba(200,100,40,0.5); }
+.log-entry.terror { border-left-color: rgba(200,40,40,0.6); }
+.log-entry.critical {
+  border-left-color: var(--red-glow);
+  background: rgba(30,8,8,0.7);
+  animation: red-pulse 5s infinite;
+}
+
+/* Coffee stains */
+.coffee-stain {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(80,50,20,0.12) 0%, rgba(80,50,20,0.05) 50%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: coffee-stain 8s ease-in-out infinite;
+}
+
+.coffee-stain.stain1 { width: 90px; height: 70px; top: 80px; right: 30px; }
+.coffee-stain.stain2 { width: 50px; height: 40px; bottom: 120px; left: 40px; animation-delay: 2s; }
+.coffee-stain.stain3 { width: 65px; height: 55px; top: 250px; left: 60%; animation-delay: 4s; transform: rotate(15deg); }
+
+/* CCTV Monitor */
+.cctv-monitor {
+  background: #0a0808;
+  border: 3px solid #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 16px 0;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+  animation: cctv-flicker 6s infinite;
+  position: relative;
+}
+
+.cctv-header {
+  background: #111;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+}
+
+.cctv-header .cam-label {
+  font-family: var(--font-log);
+  font-size: 0.7em;
+  color: #4a4;
+  letter-spacing: 0.1em;
+}
+
+.cctv-header .rec-dot {
+  width: 8px; height: 8px;
+  background: #f22;
+  border-radius: 50%;
+  animation: alert-blink 1s infinite;
+}
+
+.cctv-screen {
+  aspect-ratio: 16/10;
+  background: #020202;
+  position: relative;
+  overflow: hidden;
+}
+
+.cctv-static {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='static'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23static)' opacity='0.08'/%3E%3C/svg%3E");
+  animation: monitor-static 0.5s steps(10) infinite;
+}
+
+.cctv-text {
+  position: absolute;
+  top: 10px; left: 10px;
+  font-family: var(--font-log);
+  font-size: 0.65em;
+  color: rgba(200,200,200,0.7);
+  letter-spacing: 0.1em;
+}
+
+.cctv-overlay {
+  position: absolute;
+  bottom: 10px; right: 10px;
+  font-family: var(--font-code);
+  font-size: 0.6em;
+  color: rgba(200,200,200,0.5);
+  letter-spacing: 0.1em;
+}
+
+.cctv-info {
+  padding: 8px 12px;
+  border-top: 1px solid #222;
+  font-family: var(--font-log);
+  font-size: 0.7em;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Rounds Schedule */
+.schedule-section {
+  margin: 20px 0;
+}
+
+.section-title {
+  font-family: var(--font-body);
+  font-size: 1.4em;
+  color: var(--text-main);
+  border-left: 3px solid var(--red-mid);
+  padding-left: 14px;
+  margin: 30px 0 16px;
+}
+
+.round-timeline {
+  position: relative;
+  padding-left: 24px;
+}
+
+.round-timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom,
+    rgba(100,80,60,0.5) 0%,
+    rgba(100,80,60,0.2) 46%,
+    rgba(200,40,40,0.6) 46%,
+    rgba(200,40,40,0.8) 48%,
+    rgba(200,40,40,0.6) 50%,
+    rgba(100,80,60,0.2) 52%,
+    rgba(100,80,60,0.5) 100%
+  );
+}
+
+.round-block {
+  background: rgba(20,16,12,0.7);
+  border: 1px solid rgba(80,60,40,0.25);
+  padding: 14px 16px;
+  margin: 10px 0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.round-block::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--amber-dark);
+  border: 2px solid rgba(80,60,40,0.5);
+}
+
+.round-block.danger::before {
+  background: var(--red-mid);
+  border-color: rgba(200,40,40,0.6);
+  box-shadow: 0 0 8px rgba(200,40,40,0.4);
+}
+
+.round-block:hover {
+  border-color: rgba(120,80,20,0.5);
+  box-shadow: 0 0 15px rgba(100,50,0,0.1);
+}
+
+.round-time {
+  font-family: var(--font-code);
+  font-size: 1.1em;
+  color: var(--amber-mid);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.round-location {
+  color: var(--text-dim);
+  font-size: 0.85em;
+  margin: 2px 0;
+}
+
+.round-normal {
+  color: #8ab88a;
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+.round-sometimes {
+  color: #c0a060;
+  font-size: 0.85em;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+.round-block.danger {
+  background: rgba(30,10,10,0.7);
+  border-color: rgba(200,40,40,0.3);
+}
+
+.round-block.danger .round-time { color: var(--red-glow); }
+.round-block.danger .round-sometimes { color: #e08080; }
+
+.round-specific {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  color: var(--red-glow);
+  margin-top: 6px;
+  animation: red-pulse 5s infinite;
+}
+
+/* Guard Equipment */
+.equipment-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+@media (max-width: 500px) {
+  .equipment-cards { grid-template-columns: 1fr; }
+}
+
+.equip-card {
+  background: var(--card-alt);
+  border: 1px solid rgba(80,60,40,0.25);
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.equip-card:hover {
+  border-color: rgba(120,80,20,0.4);
+  box-shadow: 0 0 12px rgba(100,50,0,0.1);
+}
+
+.equip-icon {
+  font-size: 1.5em;
+  margin-bottom: 6px;
+}
+
+.equip-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  font-size: 1em;
+}
+
+.equip-desc {
+  font-size: 0.85em;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.equip-warning {
+  font-size: 0.8em;
+  color: #c08080;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Previous Guards */
+.guards-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.85em;
+}
+
+.guards-table th {
+  background: rgba(30,15,10,0.8);
+  color: var(--text-dim);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8em;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(100,60,40,0.3);
+}
+
+.guards-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(80,60,40,0.15);
+  color: var(--text-main);
+  font-size: 0.85em;
+}
+
+.guards-table tr:hover td {
+  background: rgba(30,20,10,0.4);
+}
+
+.guards-table .reason-bad {
+  color: #d08080;
+  font-weight: 600;
+}
+
+.shifts-counter {
+  background: var(--card-alt);
+  border: 1px solid rgba(150,100,20,0.2);
+  padding: 14px 18px;
+  margin: 16px 0;
+  text-align: center;
+  font-family: var(--font-code);
+}
+
+.shifts-counter .count {
+  font-size: 2.4em;
+  color: var(--amber-mid);
+  font-weight: 700;
+}
+
+.shifts-counter .label {
+  color: var(--text-dim);
+  font-size: 0.75em;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.counter-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.counter-btn {
+  background: rgba(50,30,10,0.5);
+  border: 1px solid rgba(150,100,20,0.3);
+  color: var(--text-main);
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: var(--font-code);
+  font-size: 0.75em;
+  transition: all 0.3s;
+}
+
+.counter-btn:hover {
+  background: rgba(80,40,10,0.5);
+  border-color: var(--amber-dark);
+}
+
+/* CCTV monitor sidebar widget */
+.sidebar-monitor {
+  background: #0c0808;
+  border: 2px solid #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 20px 0;
+  box-shadow: 0 0 15px rgba(0,0,0,0.7);
+}
+
+.sidebar-monitor-header {
+  background: #161616;
+  padding: 6px 10px;
+  font-family: var(--font-log);
+  font-size: 0.65em;
+  color: #555;
+  letter-spacing: 0.1em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar-monitor-screen {
+  height: 160px;
+  background: #020202;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-monitor-screen .corridor-view {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #0a0a0a 0%, #080808 60%, #050505 100%);
+  position: relative;
+}
+
+.corridor-text {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  font-family: var(--font-log);
+  font-size: 0.55em;
+  color: rgba(100,180,100,0.6);
+}
+
+.sidebar-monitor-info {
+  padding: 6px 10px;
+  border-top: 1px solid #1a1a1a;
+  font-family: var(--font-log);
+  font-size: 0.6em;
+  color: #444;
+}
+
+/* Page Footer */
+.page-footer {
+  text-align: center;
+  padding: 30px;
+  border-top: 1px solid rgba(120,20,20,0.2);
+  margin-top: 40px;
+  color: var(--text-dim);
+  font-size: 0.85em;
+}
+
+.page-footer .ominous {
+  color: var(--red-mid);
+  animation: red-pulse 8s infinite;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a1a1a; }
+
+.log-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.filter-btn {
+  background: rgba(20,16,12,0.6);
+  border: 1px solid rgba(100,80,60,0.25);
+  color: var(--text-dim);
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: var(--font-log);
+  font-size: 0.7em;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  border-color: var(--amber-dark);
+  color: var(--amber-mid);
+  background: rgba(30,20,10,0.7);
+}
+</style>
+</head>
+<body>
+
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html" style="color:#888;text-decoration:none;">首页</a>
+  <a href="rules_main.html" style="color:#888;text-decoration:none;">住户守则</a>
+  <a href="elevator_rules.html" style="color:#888;text-decoration:none;">电梯规则</a>
+  <a href="floor_directory.html" style="color:#888;text-decoration:none;">楼层指南</a>
+  <a href="room_404.html" style="color:#888;text-decoration:none;">404房间</a>
+  <a href="basement.html" style="color:#888;text-decoration:none;">地下室</a>
+  <a href="surveillance.html" style="color:#888;text-decoration:none;">监控室</a>
+  <a href="neighbor_encounters.html" style="color:#888;text-decoration:none;">邻居</a>
+  <a href="manager_log.html" style="color:#888;text-decoration:none;">管理员日志</a>
+  <a href="phone_calls.html" style="color:#888;text-decoration:none;">电话记录</a>
+  <a href="mirror_rules.html" style="color:#888;text-decoration:none;">镜子规则</a>
+  <a href="midnight_shift.html" style="color:#c04040;text-decoration:none;">深夜值班</a>
+  <a href="missing_persons.html" style="color:#888;text-decoration:none;">失踪档案</a>
+  <a href="ritual_purification.html" style="color:#888;text-decoration:none;">净化仪式</a>
+  <a href="final_night.html" style="color:#c04040;text-decoration:none;">终局</a>
+</nav>
+
+<div class="shift-clock-wrapper">
+  <div class="shift-clock" id="shiftClock">
+    <span class="shift-label">夜班时间 NIGHT SHIFT</span>
+    <span id="clockTime">22:00</span>
+    <span class="shift-day" id="clockDay">第 1 夜</span>
+  </div>
+</div>
+
+<div class="container">
+
+<header class="page-header">
+  <h1>深 夜 值 班</h1>
+  <p class="subtitle">NIGHT GUARD LOG // NIGHTFALL APARTMENTS</p>
+  <p class="guard-name">值班员：王建国 （老王）· 工号 NS-0714 · 入职 2024年9月</p>
+</header>
+
+<div class="warning-banner">
+  <strong>⚠ 内部文件 —— 仅授权人员可见：</strong>
+  以下为夜色公寓新任夜班保安的日志记录。交接时应向下一任夜班人员出示。老王的离职原因标注为"个人选择"——
+  但在他的更衣柜中发现的最终笔记建议：<strong>"告诉下一个人——值夜班的时候，不要回头看。"</strong>
+  本文件附带了部分前夜班人员的档案摘要，以供新任夜班人员了解岗位历史。长夜漫漫。祝好运。
+</div>
+
+<div class="desk-layout">
+  <div class="desk-main">
+
+    <!-- LOG FILTER -->
+    <div class="log-filter">
+      <button class="filter-btn active" onclick="filterLogs('all')">全部日志</button>
+      <button class="filter-btn" onclick="filterLogs('normal')">日常记录</button>
+      <button class="filter-btn" onclick="filterLogs('strange')">轻微异常</button>
+      <button class="filter-btn" onclick="filterLogs('disturbing')">中度异常</button>
+      <button class="filter-btn" onclick="filterLogs('terror')">高度异常</button>
+      <button class="filter-btn" onclick="filterLogs('critical')">严重事件</button>
+    </div>
+
+    <!-- LOGBOOK -->
+    <div class="logbook" id="logbook">
+      <div class="coffee-stain stain1"></div>
+      <div class="coffee-stain stain2"></div>
+      <div class="coffee-stain stain3"></div>
+      <div class="logbook-header">
+        <h2>夜班巡逻日志</h2>
+        <div class="log-meta">记录载体：2B铅笔 · 硬皮本 · 共37页</div>
+      </div>
+      <div class="logbook-pages" id="logbookPages">
+
+        <!-- Night 1 -->
+        <div class="log-entry normal" data-type="normal">
+          <div class="entry-date"><span>第1夜 · 9月3日</span><span>22:15</span></div>
+          <div class="entry-round">巡逻：一楼大厅 → 电梯A</div>
+          <div class="entry-body">入职第一天。老刘带我走了一遍路线。他说这个楼晚上比较安静，大部分住户都早睡了。一楼大厅的灯有点闪——老刘说不用管，"有些灯就是修不好"。大厅入口的地砖有点松动。记录完毕。</div>
+        </div>
+
+        <div class="log-entry normal" data-type="normal">
+          <div class="entry-date"><span>第1夜 · 9月3日</span><span>23:45</span></div>
+          <div class="entry-round">巡逻：二至四楼走廊</div>
+          <div class="entry-body">二楼正常。三楼正常。四楼——为什么四楼走廊尽头的墙上挂着一面被黑布遮住的镜子？问了老刘。老刘说那面镜子不能看。我问为什么。他换了个话题。新工作新人。我决定暂时不深究。</div>
+        </div>
+
+        <div class="log-entry normal" data-type="normal">
+          <div class="entry-date"><span>第1夜 · 9月4日</span><span>01:30</span></div>
+          <div class="entry-round">巡逻：地下B1停车场</div>
+          <div class="entry-body">B1正常。车辆大约一半。没有异常声响。不过有辆车的后备箱好像是开着的——走近了发现关着。灯光原因吧。这栋楼的灯确实有些暗。</div>
+        </div>
+
+        <div class="log-entry normal" data-type="normal">
+          <div class="entry-date"><span>第1夜 · 9月4日</span><span>05:50</span></div>
+          <div class="entry-round">结束巡逻 · 交班准备</div>
+          <div class="entry-body">第一夜结束。挺安静的。比我想象的轻松。老刘说头几天都这样。我说什么意思。他说你去倒杯水吧。他说话总是说一半。</div>
+        </div>
+
+        <!-- Night 3 -->
+        <div class="log-entry strange" data-type="strange">
+          <div class="entry-date"><span>第3夜 · 9月5日</span><span>23:10</span></div>
+          <div class="entry-round">巡逻：一楼大厅</div>
+          <div class="entry-body">大厅的地灯今晚不闪了。但我经过时——地砖的松动处好像多了一块。我昨天只看到一块松动的地砖。今天有四块。可能是我之前没注意。大厅的镜子里我的倒影好像……比平时暗一些。大概是我的制服颜色原因。</div>
+        </div>
+
+        <div class="log-entry strange" data-type="strange">
+          <div class="entry-date"><span>第3夜 · 9月6日</span><span>02:10</span></div>
+          <div class="entry-round">巡逻：电梯B 及周围</div>
+          <div class="entry-body">电梯B停在三楼。我正准备上去——电梯自己在动了。灯没亮。我看着楼层面板从3变到2变到1变到B1。门没有开。我按了上行键。门开了。轿厢里是黑的。灯闪了三次才亮。电梯里的镜子——我没敢看。我记得入住须知里有一条：电梯里的镜子只能看自己的脚。</div>
+        </div>
+
+        <!-- Night 5 -->
+        <div class="log-entry strange" data-type="strange">
+          <div class="entry-date"><span>第5夜 · 9月7日</span><span>00:30</span></div>
+          <div class="entry-round">巡逻：三楼走廊</div>
+          <div class="entry-body">三楼的走廊有点长。我走到一半时回头看了一下——走廊尽头应该有出口指示灯。但是灯光偏红。我走到尽头确认：指示灯是绿色的。刚才看到的是红色的。可能是视觉残留。我要相信科学。虽然这栋楼不太擅长科学。</div>
+        </div>
+
+        <div class="log-entry strange" data-type="strange">
+          <div class="entry-date"><span>第5夜 · 9月8日</span><span>03:00</span></div>
+          <div class="entry-round">保安室休息</div>
+          <div class="entry-body">在保安室听到走廊里有脚步声。不是住户——所有住户的门都关着。脚步声来回走。走了大概十分钟。我开门看——走廊空无一人。脚步声停了。关上门。脚步声又开始了。这次更快。更近。我把门锁上了。</div>
+        </div>
+
+        <!-- Night 8 -->
+        <div class="log-entry strange" data-type="strange">
+          <div class="entry-date"><span>第8夜 · 9月10日</span><span>22:45</span></div>
+          <div class="entry-round">巡逻：四楼 · 避开走廊尽头</div>
+          <div class="entry-body">按老刘的建议——四楼走廊尽头不要走过去。我今天故意绕了——但绕路的时候路过了404。404的门是开着的。门缝里没有光。但有空气——有冷风从门缝里渗出来。我试着关上门。关不上。锁舌弹不进去。门就像被什么东西从里面顶住了。我放手走开了。走了几步后回头看——404的门是关着的。我确定我没有关它。</div>
+        </div>
+
+        <!-- Night 10 -->
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第10夜 · 9月12日</span><span>01:15</span></div>
+          <div class="entry-round">巡逻：地下室B1→B2</div>
+          <div class="entry-body">今晚第一次听到地下室有声音。像是有人在水管后面缓慢移动物件。B2区的杂物间门是开的——但我记得上过锁。手电往里面照了一圈：地上有一些脚印。湿的。通向杂物间最里面。没有跟进去。</div>
+        </div>
+
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第10夜 · 9月13日</span><span>02:55</span></div>
+          <div class="entry-round">保安室内</div>
+          <div class="entry-body">监控画面出问题了。不是我碰的。四楼走廊的摄像头画面变成了雪花——然后雪花中似乎有人影。人影在走廊尽头——那面镜子的位置。画面恢复时走廊空无一人。我不确定我看到的人影是站在镜子前——还是站在镜子里面。老刘说监控室在周日会有人检查。周一才会有人来。老刘……我忘了，老刘是白班的人。</div>
+        </div>
+
+        <!-- Night 13 -->
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第13夜 · 9月15日</span><span>23:30</span></div>
+          <div class="entry-round">巡逻：五楼</div>
+          <div class="entry-body">502室。我以为是空房——但我走过时听到了电视的声音。老式电视——没有信号时的白噪音。敲了门。没有回应。电视声继续。我大声说："管理员，请开门。"电视声停了。然后是——有人从门的另一端也敲了门。节奏和我敲门一样。但晚了约三秒。好像是什么东西在门外听到了我的敲门声并把它传到了门的另一侧——但那里不应该有"门外"。</div>
+        </div>
+
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第13夜 · 9月16日</span><span>03:33</span></div>
+          <div class="entry-round">全楼——静止</div>
+          <div class="entry-body">老刘说过：凌晨3:33，所有门会同时锁上。我坐在保安室等着。时钟跳到3:33——我听到了全楼的锁舌声。不是一把。是几十把。一齐。同时。然后——安静。空气在挤压。只有一分钟。但那一分钟，走廊里好像有很多人在走路。但没有任何一个脚步声落在具体的方位上。就是一整个走路的"氛围"——在你的四面八方。门在3:34弹开。弹开的声音整齐到不像是机械行为。像是所有人同时放开了什么。</div>
+        </div>
+
+        <!-- Night 16 -->
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第16夜 · 9月18日</span><span>00:50</span></div>
+          <div class="entry-round">巡逻：二楼走廊</div>
+          <div class="entry-body">今晚走廊似乎比平时长。我从电梯口走到二楼走廊东端的消防门——按以往步数约需40步。今晚我走了74步才到。走廊没有扩建的痕迹。两边公寓的位置似乎稍微偏移了——有些门的位置比我记忆中更远。我在消防门前停顿了一下。回头看。走廊像一条无尽的隧道。灯在尽头很遥远。我走回电梯口用了37步。这不是错觉。它缩短了。</div>
+        </div>
+
+        <!-- Night 18 -->
+        <div class="log-entry disturbing" data-type="disturbing">
+          <div class="entry-date"><span>第18夜 · 9月20日</span><span>02:20</span></div>
+          <div class="entry-round">电梯A轿厢</div>
+          <div class="entry-body">电梯自己停在B1然后去了一个——"B3"。面板上不存在的楼层。到了之后门开了——外面是黑暗。完全的、厚重的黑暗。和普通的走廊黑暗不一样。这个黑暗无法被手电穿透。我的手电照进去像被吞噬了。门关了。电梯回到一楼。我想我应该报告这个。但怎么报告？"电梯去了一个地下三层但建筑图纸只有两层"？表格上没有这个栏目。</div>
+        </div>
+
+        <!-- Night 21 -->
+        <div class="log-entry terror" data-type="terror">
+          <div class="entry-date"><span>第21夜 · 9月23日</span><span>23:05</span></div>
+          <div class="entry-round">巡逻：一楼大厅 · 入口镜前</div>
+          <div class="entry-body">镜子里的我不是我。我今晚看了一秒钟——我的倒影在镜子里面对着我，没有穿制服。穿着我不知道的衣服——一件大衣。镜中的我脸色很白。它看到我盯着它了。它把手指放在嘴唇上——"嘘"。我转身。大堂空无一人。转回去——镜中的我还在。它现在在笑。不是友善的笑。它在对我做了个手势——像是叫我过去。我后退了。它不笑了。它看起来很失望。然后它从镜子里转过身，背对着我，走向了一个我看不到的方向。镜面恢复了。我看到了自己——穿着制服。时间是23:06。我呆站了整整一分钟。</div>
+        </div>
+
+        <div class="log-entry terror" data-type="terror">
+          <div class="entry-date"><span>第21夜 · 9月24日</span><span>03:33</span></div>
+          <div class="entry-round">保安室 · 门窗紧闭</div>
+          <div class="entry-body">门锁了。窗子锁了。时钟显示3:33。我坐在椅子上——我听到保安室门外有人在小声说话。不是一个人的声音——至少有三四个人。他们在讨论"他在里面吗"。"他"是指我吗。我不确定。我屏住呼吸。他们敲了门。三下。停。再三下。停。再三下。然后在门缝下面——比地面还低的位置——塞进来一张字条。字条上写着："我们看到你的光。"我没有开灯。我的台灯在3:30就关掉了。什么光。</div>
+        </div>
+
+        <!-- Night 24 -->
+        <div class="log-entry terror" data-type="terror">
+          <div class="entry-date"><span>第24夜 · 9月26日</span><span>01:40</span></div>
+          <div class="entry-round">四楼——意外范围</div>
+          <div class="entry-body">手电灭了。电池是满的。它就是不亮。我站在四楼走廊中间——被黑布遮住的镜子在走廊尽头。黑布掉在地上。那面镜子——不像是镜子。更暗。更深。像是一个暗井浮在墙面上。我不该看。我看了。镜面里没有我的倒影。但我看到一个房间。房间里有一个小孩坐在床上。背对着镜子。孩子在写字。它慢慢地转过了头。它在看我。它变成了我小时候的样子。我的手电突然亮了。走廊是空的。镜子被黑布遮着。我跑回了一楼。我不确定我真的跑回来了——还是我还在走廊里，在镜子前面，只是"以为"自己跑了回来。我捏了自己一拳。疼。疼就是真的。对吧？对吧。</div>
+        </div>
+
+        <!-- Night 26 -->
+        <div class="log-entry terror" data-type="terror">
+          <div class="entry-date"><span>第26夜 · 9月28日</span><span>02:00</span></div>
+          <div class="entry-round">全楼——静止</div>
+          <div class="entry-body">2:00到2:30之间不要巡逻。老刘的话。我今晚经过了走廊——走廊里几乎每一扇门都开了一条缝。门缝里——眼睛。很多眼睛。不眨。有高有低。小孩子的高度。大人的高度。都贴在门缝往外看。我走过去时眼睛们没有跟着我——它们看着某个我身后的东西。我回头看——走廊是空的。回身——所有门都关着。2:30。一切正常。好像我做了一场梦。但梦不会让你膝盖打颤。</div>
+        </div>
+
+        <!-- Night 28 -->
+        <div class="log-entry terror" data-type="terror">
+          <div class="entry-date"><span>第28夜 · 9月30日</span><span>03:15</span></div>
+          <div class="entry-round">保安室</div>
+          <div class="entry-body">对讲机收到信号了。一个女人在说："保安在吗？"我回答："在。请问什么情况？"她说："我在402。请上来一下。"我拿着手电到了四楼——402的门。敲了。没有人应。对讲机里："我看到你了。你在门口。"我问："你在哪？"她说："在房间里。"我问："你房间有人吗？"她顿了一顿："多得很。"声音传来了敲门声——不是从对讲机里听到的。是从一楼保安室门口来的。对讲机里她说："有些人在外面敲你的门。"我还在四楼。我立刻下到了一楼。保安室门口没有人。对讲机里她说："下次值班时带点东西防身。它们不听你的口令。但打火机可以拖延时间。"此后402室的住户——一个独居老妇人——告诉我，那天晚上她睡得早，没有用过对讲机。她的对讲机被拔掉了电源。</div>
+        </div>
+
+        <!-- Night 30 - FINAL -->
+        <div class="log-entry critical" data-type="critical">
+          <div class="entry-date"><span>第30夜 · 10月2日</span><span>22:00</span></div>
+          <div class="entry-round">最后一班 · 交班准备</div>
+          <div class="entry-body">这是最后一班。我答应做到月底。我不干了。告诉下一个人——值夜班的时候，不要回头看。手电不亮是正常的。钥匙多出几把是正常的。电梯自己去一个不存在的楼层是正常的。这些都是正常的。不正常的是你哪天觉得这些是正常的。不正常的是你习惯了。当你开始觉得走廊比昨天长几米"也没什么"，当你经过四楼走廊尽头不再心跳加速——那才是最危险的。不是危险即将来临。而是你已经变成危险的一部分。你没有注意到，但镜子里的你或许已经——算了。到此为止。我写到这。本子留给下一人。</div>
+        </div>
+
+        <div class="log-entry critical" data-type="critical">
+          <div class="entry-date"><span>第30夜 · 10月2日</span><span>05:55</span></div>
+          <div class="entry-round">交班 · 本记录终结</div>
+          <div class="entry-body">五点五十五分。太阳马上要升起来了。这一夜我坐在保安室里，门外有人在走廊上走了一整夜。走了多少圈我记不得。它走到门口时脚步会停。停顿大约半分钟。然后继续。五点半开始脚步声逐渐稀疏。现在停了。我该收拾东西了。等六点钟换班的人来。但保安室的门外有人在地上放了一个杯子——一杯还冒着热气的水。不是我的杯子。是白天班老赵的杯子——老赵退休两年了。他死于2005年，从B2楼梯摔下去的那次。我把杯子推到了门外。再见。夜色公寓。不见。最好是不见。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROUNDS SCHEDULE -->
+    <h2 class="section-title">每夜巡值时间表</h2>
+    <p style="color:var(--text-dim);font-size:0.85em;margin-bottom:14px;">
+      以下时间表供夜班人员参考。标注为"红区"的时段，不强制也不建议任何巡逻行为。
+      夜间保安室的监控系统会自动记录你在各个区域的滞留时间。我们注意到一些异常情况——安保主管曾在监控回看中看到值班员出现在两个不同的楼层"同时"。
+      后经证实监控录像未经篡改，但值班员坚称自己一直待在一个地方。我们选择相信值班员。或者我们选择不相信监控。我们还没有最终决定哪个选择更安全。
+    </p>
+
+    <div class="round-timeline" id="roundTimeline">
+      <!-- Rounds will be injected by JS -->
+    </div>
+
+    <!-- GUARD EQUIPMENT -->
+    <h2 class="section-title">夜班人员装备清单</h2>
+    <div class="equipment-cards">
+      <div class="equip-card">
+        <div class="equip-icon">🔦</div>
+        <div class="equip-name">军用手电筒</div>
+        <div class="equip-desc">型号：SupFire L6。防水。400流明。电池为充电式锂电池，理论续航八小时。在夜色公寓的实际续航约为三到四小时——有时更短。电池耗电速度在某些楼层显著加快，尤其在地下室和四楼走廊。</div>
+        <div class="equip-warning">注意：手电偶尔不亮——特别是你在需要它的时候。在前任夜班人员的非正式交流中，换用手持蜡烛在某些场合被验证有效。管理层不建议使用明火。</div>
+      </div>
+
+      <div class="equip-card">
+        <div class="equip-icon">🗝️</div>
+        <div class="equip-name">楼层钥匙串</div>
+        <div class="equip-desc">包含公共区域门的钥匙共计18把。每天交班时需要清点——必须18把，不能多也不能少。如果多了，将多余的钥匙锁进储藏室B的第三个保险箱，不要尝试找到它的锁孔。如果少了，报告主管，但不要在凌晨时分去搜寻。丢的钥匙通常会在第二天早上出现在一楼的灭火器箱上。我们不知道是谁放的。</div>
+        <div class="equip-warning">注意：有些钥匙不知道开哪扇门。钥匙上没有编号的不要尝试。尤其在夜晚。凌晨时分的钥匙串偶尔会轻微震动——像是远处有锁在响应什么。</div>
+      </div>
+
+      <div class="equip-card">
+        <div class="equip-icon">📻</div>
+        <div class="equip-name">对讲机 / 无线电</div>
+        <div class="equip-desc">Motorola GP328 Plus。频率已预设。范围覆盖全楼及地下两层。备用频道2和3请勿使用——1号频道的管理员曾在2号频道里收到一段重复的求救信号，信号源被定位在建筑内部，但无法对应到任何实际楼层。声纹分析显示发出信号的人是该管理员本人。</div>
+        <div class="equip-warning">注意：深夜偶尔会收到不属于任何频道的信号。声音清晰，内容为片段：有人说"你好"，有人说"请开门"，有人说一个逐渐远离的脚步声。不要回应。对讲机那头不是人。或者说，不是还能称为"人"的人。</div>
+      </div>
+
+      <div class="equip-card">
+        <div class="equip-icon">📖</div>
+        <div class="equip-name">值夜日志本</div>
+        <div class="equip-desc">硬皮笔记本。编号 NS-LOG-2024-C。内页为浅黄色纸。必须用铅笔记录。已知在凌晨两点后，钢笔和圆珠笔的墨水会无故消散——字迹会在次日早上只剩下空页。铅笔字可以保留，但有时会多出不属于书写者的字。如果发现多出的内容，不要擦除——那是……为你留的。</div>
+        <div class="equip-warning">注意：有些前任夜班人员的日志中包含了他们本人明确否认写过的段落。这些段落的内容总是关于"注意身后"、"别信镜子"、"它在门后"。最后一词重复出现：一直在。一直都在。</div>
+      </div>
+    </div>
+
+  </div><!-- /desk-main -->
+
+  <div class="desk-sidebar">
+
+    <!-- CCTV Sidebar Monitor -->
+    <div class="sidebar-monitor">
+      <div class="sidebar-monitor-header">
+        <span>CAM-04 · 四楼走廊</span>
+        <span style="color:#422;">● REC</span>
+      </div>
+      <div class="sidebar-monitor-screen">
+        <div class="corridor-view">
+          <div class="cctv-static" style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='static2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23static2)' opacity='0.08'/%3E%3C/svg%3E");animation:monitor-static 0.5s steps(10) infinite;"></div>
+          <div class="corridor-text">04F CORRIDOR / 2024-10-02 03:33:17</div>
+        </div>
+      </div>
+      <div class="sidebar-monitor-info">
+        状态：离线（最后一次信号于2小时前） · 卡号: 04F-END-B
+      </div>
+    </div>
+
+    <!-- PREVIOUS GUARDS -->
+    <h2 class="section-title" style="font-size:1.15em;margin-top:24px;">历任夜班人员档案</h2>
+    <p style="color:var(--text-dim);font-size:0.75em;margin-bottom:8px;">档案来源：人事部特别文件夹 — 存取受限</p>
+    <table class="guards-table">
+      <thead>
+        <tr><th>姓名</th><th>工号</th><th>任职期间</th><th>离职原因</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>李成德</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0001</td><td>1987.01 — 1987.03</td><td class="reason-bad">失踪</td></tr>
+        <tr><td>赵卫国</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0002</td><td>1987.03 — 1987.04</td><td class="reason-bad">失踪（第四夜）</td></tr>
+        <tr><td>孙志强</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0003</td><td>1987.05 — 1987.08</td><td class="reason-bad">精神崩溃</td></tr>
+        <tr><td>周明辉</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0004</td><td>1987.09 — 1987.09</td><td class="reason-bad">拒绝再次进入建筑</td></tr>
+        <tr><td>吴天华</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0005</td><td>1987.10 — 1988.01</td><td class="reason-bad">失踪</td></tr>
+        <tr><td>郑家乐</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0010</td><td>1992.02 — 1992.05</td><td class="reason-bad">失踪（三个月）</td></tr>
+        <tr><td>许博文</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0011</td><td>1992.06 — 1992.08</td><td class="reason-bad">未知</td></tr>
+        <tr><td>林建国</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0012</td><td>1992.09 — 1992.09</td><td class="reason-bad">抢救无效</td></tr>
+        <tr><td>黄建平</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0020</td><td>2001.03 — 2001.04</td><td class="reason-bad">失踪</td></tr>
+        <tr><td>马文军</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0021</td><td>2001.05 — 2001.06</td><td class="reason-bad">拒绝再次进入建筑</td></tr>
+        <tr><td>朱承志</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0029</td><td>2005.01 — 2005.04</td><td style="color:#a0a0a0;">自愿离职（最后一位存活离职者）</td></tr>
+        <tr><td>赵德山</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0030</td><td>2005.05 — 2005.05</td><td class="reason-bad">失踪（从B2楼梯坠落）</td></tr>
+        <tr><td>何永强</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0041</td><td>2015.08 — 2015.10</td><td class="reason-bad">精神崩溃</td></tr>
+        <tr><td>罗大明</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0042</td><td>2015.11 — 2015.12</td><td class="reason-bad">失踪</td></tr>
+        <tr><td>谢志远</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0065</td><td>2020.01 — 2020.01</td><td class="reason-bad">拒绝再次进入（第二夜）</td></tr>
+        <tr><td>韩建国</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0070</td><td>2022.03 — 2022.04</td><td class="reason-bad">失踪</td></tr>
+        <tr><td>陈永发</td><td style="font-family:var(--font-log);font-size:0.8em;">NS-0071</td><td>2022.05 — 2022.05</td><td class="reason-bad">未知</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--text-dim);font-size:0.7em;margin-top:4px;">注：NS-0071后大量人事档案已被移交至"特别事务办公室"——该办公室于2023年3月被解散。档案下落不明。</p>
+
+    <!-- Shifts Counter -->
+    <div class="shifts-counter">
+      <div class="count" id="shiftCount">0</div>
+      <div class="label">已完成夜班次数</div>
+      <div class="counter-buttons">
+        <button class="counter-btn" onclick="addShift()">+ 记一次夜班</button>
+        <button class="counter-btn" onclick="resetShifts()">重置</button>
+      </div>
+      <p style="color:var(--text-dim);font-size:0.65em;margin-top:6px;" id="shiftMessage"></p>
+    </div>
+
+  </div><!-- /desk-sidebar -->
+</div><!-- /desk-layout -->
+
+<footer class="page-footer">
+  <p>夜色公寓人事部 · 夜班人员笔记 · NS-LOG-2024</p>
+  <p style="font-size:0.8em;margin-top:6px;">本档案可能包含令人不适的内容。新任夜班人员阅读后果自负。</p>
+  <p class="ominous" style="margin-top:10px;">最后提醒：每班结束时可听到早班钟声，但钟在建筑内并无安装。确认你走出的是同一扇门。确认外面是白天。</p>
+</footer>
+
+</div>
+
+<script>
+// ============================================
+// NIGHT SHIFT CLOCK
+// ============================================
+const clockTime = document.getElementById('clockTime');
+const clockDay = document.getElementById('clockDay');
+const shiftClock = document.getElementById('shiftClock');
+
+// Simulated night shift time starts at 22:00
+let simHour = 22;
+let simMinute = 0;
+let simDay = parseInt(localStorage.getItem('night_shift_day') || '1');
+let clockRunning = true;
+
+function updateClock() {
+  if (!clockRunning) return;
+
+  simMinute += 4; // Speed up: 1 real second = 4 simulated minutes
+  if (simMinute >= 60) {
+    simMinute = 0;
+    simHour++;
+  }
+  if (simHour >= 6 || (simHour >= 30)) {
+    // Beyond 6am, loop back
+    simHour = 22;
+    simMinute = 0;
+    simDay++;
+    localStorage.setItem('night_shift_day', simDay.toString());
+  }
+
+  const h = simHour.toString().padStart(2, '0');
+  const m = simMinute.toString().padStart(2, '0');
+  clockTime.textContent = `${h}:${m}`;
+  clockDay.textContent = `第 ${simDay} 夜`;
+
+  // Glitch effect around 3:33
+  if (simHour === 3 && simMinute === 33) {
+    shiftClock.classList.add('glitching');
+    setTimeout(() => shiftClock.classList.remove('glitching'), 2000);
+  }
+
+  // Warning colors for 2-4am
+  if (simHour >= 2 && simHour < 4) {
+    clockTime.style.color = 'var(--red-glow)';
+  } else {
+    clockTime.style.color = 'var(--amber-mid)';
+  }
+}
+
+setInterval(updateClock, 1000);
+
+// Interactive clock click - pause/resume
+shiftClock.addEventListener('click', () => {
+  clockRunning = !clockRunning;
+  if (!clockRunning) {
+    shiftClock.style.opacity = '0.5';
+  } else {
+    shiftClock.style.opacity = '1';
+  }
+});
+
+// ============================================
+// LOG FILTERING
+// ============================================
+function filterLogs(type) {
+  const entries = document.querySelectorAll('.log-entry');
+  const buttons = document.querySelectorAll('.filter-btn');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  entries.forEach(entry => {
+    if (type === 'all') {
+      entry.style.display = 'block';
+    } else {
+      entry.style.display = entry.dataset.type === type ? 'block' : 'none';
+    }
+  });
+}
+
+// ============================================
+// ROUNDS SCHEDULE
+// ============================================
+const rounds = [
+  {
+    time: '22:00 — 22:30',
+    location: '一楼大厅 · 入口区 · 保安室交接',
+    normal: '检查前台；接收白班日志；确认所有公共区域门锁状态；检查灭火器',
+    sometimes: '白班留下的日志有时包含不合理的记录：如"夜间听到墙壁内滴水声"。白班人员无法解释这些记录——他们不记得写过。',
+    danger: false
+  },
+  {
+    time: '22:30 — 23:00',
+    location: '二至三楼 · 走廊 · 垃圾房',
+    normal: '逐一检查各楼层公共走廊照明；确认垃圾房已清空；检查楼道窗户是否关闭。',
+    sometimes: '三楼靠近电梯的走廊灯偶尔会自己调暗。灯泡是LED的，不支持调光。灯泡是新的。',
+    danger: false
+  },
+  {
+    time: '23:00 — 00:00',
+    location: '四至五楼 · 走廊 · 公共通道',
+    normal: '检查四楼和五楼走廊。不要去走廊尽头被黑布遮住的区域。记录404室的门是否紧闭。',
+    sometimes: '404室的门偶尔出现不应存在的状态——开一条缝，门内没有光。有时门从内侧传出几不可闻的呼吸声。不要试图敲门。你可能不想知道谁会回应。',
+    danger: false
+  },
+  {
+    time: '00:00 — 01:00',
+    location: '地下室B1 · 停车场 · 设备间',
+    normal: '检查停车场照明；确认所有停放的车辆门窗关闭；检查水泵和供电设备运行状态。',
+    sometimes: 'B1区停放着一辆1989年款的黑色轿车。它没有任何车主的登记记录。它偶尔会自己亮起车内的小灯——虽然它的电池早已被拆除。设备间水泵偶尔发出有规律的敲击声。不是水流的问题——敲击形成了有组织的节奏，像是在和什么东西通信。',
+    danger: false
+  },
+  {
+    time: '01:00 — 02:00',
+    location: '地下室B2 · 旧储藏室 · 水管夹层',
+    normal: '检查B2储藏室门锁；确认水管无泄漏；清理任何异常杂物的堆放。',
+    sometimes: 'B2杂物间尽头有一扇被砖块完全封死的门。没有记录显示那里曾经有门——但红外测温显示门后的区域比周围低约八度。有时——可以透过砖缝听到有人在门的另外一边用指甲刮门板。',
+    danger: false
+  },
+  {
+    time: '02:00 — 03:00',
+    location: '保安室 · 全体静止',
+    normal: '不建议离开保安室。监控画面自动巡检。收音机调到任意一个只有噪音的频道。',
+    sometimes: '2:00-3:00之间，走廊偶尔有人声。不是住户——住户都应睡着。声音像是一群人在不远处聚会——但你开门后声音立即消失，关上门就重新出现。监控画面偶尔会变成黑色，然后在黑色中隐约可见人形轮廓。轮廓似乎在改变位置。',
+    danger: true
+  },
+  {
+    time: '03:00 — 03:33',
+    location: '全楼 · 锁定前半小时',
+    normal: '如果还在巡值中——立即返回保安室。如果不在保安室——找最近的一个空房间，锁上门，不要出声。',
+    sometimes: '3:00到3:33之间，所有不在户内的值班人员都有概率看见：走廊拐角处掠过的人影；电梯自行上行但无任何楼层亮灯；手电筒照射的光束中出现不该存在的影子——有人站在你身后但你身后是墙。',
+    danger: true
+  },
+  {
+    time: '03:33 — 03:34',
+    location: '全楼 · 门锁同步',
+    normal: '全楼所有可锁的门会同时锁上。不要恐慌。持续一分钟。不要在此期间尝试开启任何门。',
+    sometimes: '锁上的那一分钟里——在某些房间可以听见多声呼吸。不是一个人的。像是整个房间在呼吸。',
+    danger: true
+  },
+  {
+    time: '03:34 — 04:00',
+    location: '全楼 · 锁定期后',
+    normal: '所有门恢复。可以进行一次快速走廊巡查——但依然不被建议。',
+    sometimes: '锁定期后的走廊与之前略有不同。家具的布置、挂画的位置可能会微妙地移动。如果你注意到，不要纠正。天亮后一切会恢复。如果你尝试当场纠正——你的手指上可能会沾到一些不该出现的物质。不，不是灰尘。',
+    danger: true
+  },
+  {
+    time: '04:00 — 05:00',
+    location: '保安室 · 一楼大厅',
+    normal: '可以恢复一楼大厅巡查。检查入口门。确认外部天色——如果能看到。',
+    sometimes: '一楼的时钟可能与保安室的时钟不同步。两个时钟的秒针有时逆向——相向运行。它们总在某一刻"错开"一秒，然后各自正常运行。曾经有人尝试同步它们，但两小时后它们再次偏差。不是机械故障。时间在这个建筑里——偏薄。',
+    danger: false
+  },
+  {
+    time: '05:00 — 06:00',
+    location: '全面巡查 · 准备交班',
+    normal: '可以恢复正常巡查节奏。将日志本整理好，确认钥匙串为18把；检查对讲机；记录一晚详情。',
+    sometimes: '早晨五点半后可在走廊听到钢琴声。夜色公寓没有钢琴。琴声来自——不确定。四路方向。不确定哪个房间。走近则停止。离开则继续。没有住户对此有抱怨。问及此事，住户们都会不自觉地回避。',
+    danger: false
+  }
+];
+
+function renderRounds() {
+  const timeline = document.getElementById('roundTimeline');
+  let html = '';
+  rounds.forEach(r => {
+    const dangerClass = r.danger ? ' danger' : '';
+    html += `<div class="round-block${dangerClass}">`;
+    html += `<div class="round-time">${r.time}</div>`;
+    html += `<div class="round-location">${r.location}</div>`;
+    html += `<div class="round-normal">常规：${r.normal}</div>`;
+    html += `<div class="round-sometimes">偶发：${r.sometimes}</div>`;
+    if (r.time.includes('03:33')) {
+      html += `<div class="round-specific">▲ 三时三十三分——全楼门锁同步。不要尝试移动。持续一分钟。</div>`;
+    }
+    if (r.time.includes('02:00')) {
+      html += `<div class="round-specific">▲ 这段时间不要巡视。不管监控上看到什么。</div>`;
+    }
+    html += `</div>`;
+  });
+  timeline.innerHTML = html;
+}
+renderRounds();
+
+// ============================================
+// SHIFTS COUNTER
+// ============================================
+let shiftsCompleted = parseInt(localStorage.getItem('shifts_completed') || '0');
+
+function updateShiftDisplay() {
+  document.getElementById('shiftCount').textContent = shiftsCompleted;
+  const msg = document.getElementById('shiftMessage');
+  if (shiftsCompleted >= 100) {
+    msg.textContent = '你怎么还在这里？这么多夜班了……你应该已经注意到了吧？它们一直在看着你。';
+  } else if (shiftsCompleted >= 50) {
+    msg.textContent = '五十班已过。你已不再是新人了。夜晚在你眼中是不是变短了？——不是变短了，是你开始适应了。适应不是好事。';
+  } else if (shiftsCompleted >= 30) {
+    msg.textContent = '老王的总班次。你已走过了他的路。接下来，你只能自己走。';
+  } else if (shiftsCompleted >= 20) {
+    msg.textContent = '你开始记得哪扇门不该开了。但也开始忘记为什么不该开。小心。';
+  } else if (shiftsCompleted >= 10) {
+    msg.textContent = '十个夜班了。走廊长度你已经记不清了。钥匙串上是否多了一把？';
+  } else if (shiftsCompleted >= 5) {
+    msg.textContent = '才五个夜班。你还觉得手电不亮只是电池问题。很快你就不会这么想了。';
+  } else if (shiftsCompleted === 0) {
+    msg.textContent = '记得带备用电池。记得1:55前回到保安室。记得凌晨两点后不要喝保安室的水。';
+  } else {
+    msg.textContent = '每一个夜班都在你身上留下印记。不是你能看到的印记。镜子能看到。';
+  }
+}
+
+function addShift() {
+  shiftsCompleted++;
+  localStorage.setItem('shifts_completed', shiftsCompleted.toString());
+  updateShiftDisplay();
+
+  // Random disturbing effect on adding shifts
+  if (shiftsCompleted === 30) {
+    document.body.style.animation = 'shake 0.8s ease-in-out';
+    setTimeout(() => { document.body.style.animation = 'flicker 10s infinite'; }, 800);
+  }
+}
+
+function resetShifts() {
+  if (confirm('确定要重置夜班计数吗？注意：重置计数不会重置已经发生的事。')) {
+    shiftsCompleted = 0;
+    localStorage.setItem('shifts_completed', shiftsCompleted.toString());
+    updateShiftDisplay();
+  }
+}
+
+updateShiftDisplay();
+
+// ============================================
+// EASTER EGGS & DISTURBING BEHAVIORS
+// ============================================
+
+// Random cctv flicker intensification
+setInterval(() => {
+  const monitors = document.querySelectorAll('.sidebar-monitor-screen, .cctv-screen');
+  if (Math.random() < 0.1) {
+    monitors.forEach(m => {
+      m.style.animation = 'none';
+      m.offsetHeight;
+      m.style.animation = 'cctv-flicker 0.3s infinite';
+      setTimeout(() => {
+        m.style.animation = 'cctv-flicker 6s infinite';
+      }, 1500);
+    });
+  }
+}, 20000);
+
+// Keyboard easter eggs
+let keySeq = '';
+document.addEventListener('keydown', (e) => {
+  keySeq += e.key.toLowerCase();
+  if (keySeq.length > 30) keySeq = keySeq.slice(-30);
+
+  if (keySeq.includes('dontlookback')) {
+    document.body.style.animation = 'shake 1s ease-in-out';
+    setTimeout(() => { document.body.style.animation = 'flicker 10s infinite'; }, 1000);
+    keySeq = '';
+  }
+
+  if (keySeq.includes('333')) {
+    shiftClock.classList.add('glitching');
+    clockTime.textContent = '33:33';
+    setTimeout(() => {
+      shiftClock.classList.remove('glitching');
+      clockTime.textContent = `${simHour.toString().padStart(2, '0')}:${simMinute.toString().padStart(2, '0')}`;
+    }, 2000);
+    keySeq = '';
+  }
+});
+
+// Clock auto-correction after glitch
+setInterval(() => {
+  if (clockTime.textContent === '33:33' && !shiftClock.classList.contains('glitching')) {
+    clockTime.textContent = `${simHour.toString().padStart(2, '0')}:${simMinute.toString().padStart(2, '0')}`;
+  }
+}, 5000);
+
+// Page title flicker
+setInterval(() => {
+  if (Math.random() < 0.06) {
+    const orig = document.title;
+    const glitched = orig.replace('夜', '  ');
+    document.title = glitched;
+    setTimeout(() => { document.title = orig; }, 200);
+  }
+}, 15000);
+
+console.log('%c夜色公寓 · 深夜值班记录已加载',
+  'color:#b8701a;font-size:16px;');
+console.log('%c当前时间：模拟夜班模式。在外面，现在是白天。不出去的话，白天不存在。',
+  'color:#706860;font-size:12px;');
+console.log('%c老王给下一任的话：带防身的。不要回头看。凌晨两点后保安室外的脚步声不是住户。',
+  'color:#706860;font-size:12px;');
+</script>
+
+</body>
+</html>

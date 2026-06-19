@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS | 交通系统监控 | TRAFFIC CONTROL SYSTEM</title>
+<style>
+:root {
+  --bg: #030814;
+  --panel-bg: rgba(6,15,40,0.8);
+  --border: rgba(0,212,255,0.12);
+  --neon-blue: #00d4ff;
+  --neon-purple: #b347ea;
+  --neon-cyan: #00ffcc;
+  --neon-green: #00ff88;
+  --alert-red: #ff3366;
+  --alert-yellow: #ffb700;
+  --text-primary: #c8d6e5;
+  --text-secondary: #6b7d95;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Consolas','Courier New',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text-primary);
+  font-family:var(--font-ui);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image: radial-gradient(circle,rgba(0,212,255,0.06) 1px,transparent 1px);
+  background-size:22px 22px;
+  pointer-events:none;
+  z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;
+  z-index:9999;
+  animation:scanlines 8s linear infinite;
+}
+@keyframes scanlines{0%{background-position:0 0}100%{background-position:0 100vh}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 5px rgba(0,212,255,0.3),0 0 15px rgba(0,212,255,0.1)}50%{box-shadow:0 0 10px rgba(0,212,255,0.5),0 0 30px rgba(0,212,255,0.2)}}
+@keyframes borderGlow{0%,100%{border-color:rgba(0,212,255,0.12)}50%{border-color:rgba(0,212,255,0.35)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes barGrow{from{width:0}to{width:var(--bar-width)}}
+@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-180%)}}
+@keyframes particleFloat{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(0.8);opacity:0}}
+@keyframes numberFlip{0%{transform:rotateX(90deg);opacity:0}100%{transform:rotateX(0deg);opacity:1}}
+@keyframes dotBlink{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes statusPulse{0%,100%{box-shadow:0 0 4px currentColor}50%{box-shadow:0 0 12px currentColor,0 0 24px currentColor}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes gaugeFill{from{stroke-dashoffset:339}to{stroke-dashoffset:var(--gauge-offset)}}
+@keyframes alertFlash{0%,100%{background:rgba(255,51,102,0.1)}50%{background:rgba(255,51,102,0.3)}}
+.top-bar{
+  position:fixed;
+  top:0;left:0;right:0;
+  height:42px;
+  background:rgba(3,8,20,0.95);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  z-index:10000;
+  backdrop-filter:blur(10px);
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:0.5px;
+}
+.top-bar .brand{color:var(--neon-cyan);font-weight:700;font-size:13px}
+.top-bar .status-dot{display:inline-block;width:8px;height:8px;background:var(--neon-green);border-radius:50%;margin-right:6px;animation:statusPulse 2s infinite}
+.top-bar .info-group{display:flex;gap:24px;align-items:center}
+.top-bar .info-group span{color:var(--text-secondary)}
+.top-bar .info-group .val{color:var(--text-primary)}
+.top-bar .clock{color:var(--neon-blue);font-weight:700}
+.sidebar{
+  position:fixed;
+  top:42px;left:0;bottom:28px;
+  width:200px;
+  background:rgba(3,8,20,0.9);
+  border-right:1px solid var(--border);
+  backdrop-filter:blur(10px);
+  z-index:9998;
+  padding:16px 0;
+  display:flex;
+  flex-direction:column;
+}
+.sidebar .nav-label{
+  color:var(--text-secondary);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  padding:8px 20px 4px;
+  font-family:var(--font-mono);
+}
+.sidebar nav{display:flex;flex-direction:column;gap:2px}
+.sidebar nav a{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 20px;
+  color:var(--text-secondary);
+  text-decoration:none;
+  font-size:13px;
+  font-family:var(--font-mono);
+  transition:all 0.3s;
+  border-left:2px solid transparent;
+  position:relative;
+}
+.sidebar nav a:hover{
+  color:var(--neon-cyan);
+  background:rgba(0,212,255,0.05);
+  border-left-color:var(--neon-cyan);
+  text-shadow:0 0 8px rgba(0,255,204,0.5);
+}
+.sidebar nav a.active{
+  color:var(--neon-cyan);
+  background:rgba(0,212,255,0.08);
+  border-left-color:var(--neon-cyan);
+  font-weight:700;
+}
+.sidebar nav a .icon{font-size:16px;width:20px;text-align:center}
+.main{
+  margin:42px 0 28px 200px;
+  padding:20px 24px;
+  position:relative;
+  z-index:1;
+}
+.page-title{
+  font-family:var(--font-mono);
+  font-size:22px;
+  font-weight:700;
+  color:var(--neon-blue);
+  margin-bottom:20px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+  text-shadow:0 0 20px rgba(0,212,255,0.4);
+  animation:fadeInUp 0.6s ease-out;
+}
+.cards-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.card{
+  background:var(--panel-bg);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:18px;
+  backdrop-filter:blur(10px);
+  transition:all 0.3s;
+  animation:fadeInUp 0.6s ease-out;
+  animation-fill-mode:both;
+}
+.card:nth-child(1){animation-delay:0.05s}
+.card:nth-child(2){animation-delay:0.1s}
+.card:nth-child(3){animation-delay:0.15s}
+.card:nth-child(4){animation-delay:0.2s}
+.card:hover{
+  border-color:rgba(0,212,255,0.4);
+  box-shadow:0 0 20px rgba(0,212,255,0.15),0 0 40px rgba(0,212,255,0.05);
+  transform:translateY(-2px);
+}
+.card .card-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:6px;font-family:var(--font-mono)}
+.card .card-value{font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--neon-blue)}
+.card .card-sub{font-size:12px;color:var(--text-secondary);margin-top:4px}
+.card .card-icon{font-size:24px;float:right;opacity:0.6}
+.card.val-green .card-value{color:var(--neon-green)}
+.card.val-yellow .card-value{color:var(--alert-yellow)}
+.card.val-purple .card-value{color:var(--neon-purple)}
+.section-title{
+  font-family:var(--font-mono);
+  font-size:16px;
+  font-weight:600;
+  color:var(--neon-cyan);
+  margin:20px 0 12px;
+  padding-bottom:6px;
+  border-bottom:1px solid rgba(0,255,204,0.15);
+}
+.panel{
+  background:var(--panel-bg);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:20px;
+  backdrop-filter:blur(10px);
+  margin-bottom:20px;
+  transition:all 0.3s;
+}
+.panel:hover{border-color:rgba(0,212,255,0.3);box-shadow:0 0 15px rgba(0,212,255,0.08)}
+table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px}
+thead th{
+  text-align:left;
+  padding:10px 12px;
+  border-bottom:2px solid rgba(0,212,255,0.2);
+  color:var(--neon-cyan);
+  font-weight:600;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+tbody td{padding:9px 12px;border-bottom:1px solid rgba(0,212,255,0.06);color:var(--text-primary)}
+tbody tr{transition:all 0.25s}
+tbody tr:hover{background:rgba(0,212,255,0.04)}
+.badge{
+  display:inline-block;
+  padding:3px 10px;
+  border-radius:12px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.5px;
+  font-family:var(--font-mono);
+}
+.badge-green{background:rgba(0,255,136,0.15);color:var(--neon-green);border:1px solid rgba(0,255,136,0.3)}
+.badge-yellow{background:rgba(255,183,0,0.15);color:var(--alert-yellow);border:1px solid rgba(255,183,0,0.3)}
+.badge-red{background:rgba(255,51,102,0.15);color:var(--alert-red);border:1px solid rgba(255,51,102,0.3)}
+.badge-blue{background:rgba(0,212,255,0.15);color:var(--neon-blue);border:1px solid rgba(0,212,255,0.3)}
+.badge-purple{background:rgba(179,71,234,0.15);color:var(--neon-purple);border:1px solid rgba(179,71,234,0.3)}
+.road-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.road-card{
+  background:rgba(6,15,40,0.5);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:14px;
+  transition:all 0.3s;
+}
+.road-card:hover{border-color:rgba(0,212,255,0.4);box-shadow:0 0 12px rgba(0,212,255,0.1)}
+.road-card .road-name{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--neon-blue);margin-bottom:8px}
+.road-card .road-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.road-card .road-stat{}
+.road-card .road-stat .stat-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase}
+.road-card .road-stat .stat-val{font-family:var(--font-mono);font-size:12px;color:var(--text-primary)}
+.road-card .road-stat .stat-val.speed-green{color:var(--neon-green)}
+.road-card .road-stat .stat-val.speed-yellow{color:var(--alert-yellow)}
+.road-card .road-stat .stat-val.speed-red{color:var(--alert-red)}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:160px;padding:10px 0;border-bottom:1px solid rgba(0,212,255,0.15)}
+.bar-chart .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;position:relative}
+.bar-chart .bar{
+  width:100%;
+  max-width:32px;
+  border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,var(--neon-blue),rgba(0,212,255,0.3));
+  transition:all 0.4s;
+  position:relative;
+  animation:barGrow 1s ease-out forwards;
+}
+.bar-chart .bar:hover{filter:brightness(1.4);box-shadow:0 0 15px rgba(0,212,255,0.5)}
+.bar-chart .bar-label{font-family:var(--font-mono);font-size:9px;color:var(--text-secondary);margin-top:6px;text-align:center}
+.bar-chart .bar-val{font-family:var(--font-mono);font-size:9px;color:var(--neon-blue);position:absolute;top:-16px;left:50%;transform:translateX(-50%)}
+.signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.signal-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  background:rgba(6,15,40,0.5);
+  border:1px solid var(--border);
+  border-radius:6px;
+  transition:all 0.3s;
+}
+.signal-item:hover{border-color:rgba(0,212,255,0.4)}
+.signal-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.signal-dot.green{background:var(--neon-green);box-shadow:0 0 8px var(--neon-green);animation:statusPulse 2s infinite}
+.signal-dot.yellow{background:var(--alert-yellow);box-shadow:0 0 8px var(--alert-yellow);animation:statusPulse 1.5s infinite}
+.signal-dot.red{background:var(--alert-red);box-shadow:0 0 8px var(--alert-red);animation:alertFlash 1s infinite}
+.signal-name{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metro-table td:first-child{font-weight:600;color:var(--neon-cyan)}
+.av-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.av-card{
+  background:rgba(6,15,40,0.5);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:16px;
+  text-align:center;
+  transition:all 0.3s;
+}
+.av-card:hover{border-color:rgba(179,71,234,0.5);box-shadow:0 0 20px rgba(179,71,234,0.12)}
+.av-card .av-icon{font-size:28px;margin-bottom:6px}
+.av-card .av-value{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--neon-purple)}
+.av-card .av-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase;margin-top:4px}
+.bottom-bar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:28px;
+  background:rgba(3,8,20,0.95);
+  border-top:1px solid var(--border);
+  z-index:10000;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  backdrop-filter:blur(10px);
+}
+.bottom-bar .ticker{
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--text-secondary);
+  white-space:nowrap;
+  animation:tickerScroll 45s linear infinite;
+}
+.bottom-bar .ticker .tick-sep{color:var(--neon-blue);margin:0 18px}
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+.chart-legend{display:flex;gap:16px;margin-bottom:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary)}
+.chart-legend span{display:flex;align-items:center;gap:4px}
+.chart-legend .legend-dot{width:8px;height:8px;border-radius:2px}
+.progress-bar{
+  height:6px;
+  background:rgba(0,212,255,0.1);
+  border-radius:3px;
+  overflow:hidden;
+  margin-top:4px;
+}
+.progress-bar .fill{
+  height:100%;
+  border-radius:3px;
+  transition:width 0.8s ease-out;
+}
+.progress-bar .fill.green{background:linear-gradient(90deg,var(--neon-green),var(--neon-cyan))}
+.progress-bar .fill.blue{background:linear-gradient(90deg,var(--neon-blue),var(--neon-cyan))}
+.progress-bar .fill.yellow{background:linear-gradient(90deg,var(--alert-yellow),var(--neon-green))}
+.progress-bar .fill.red{background:linear-gradient(90deg,var(--alert-red),var(--alert-yellow))}
+.progress-bar .fill.purple{background:linear-gradient(90deg,var(--neon-purple),var(--neon-blue))}
+@media(max-width:1200px){.cards-row{grid-template-columns:repeat(2,1fr)}.road-grid{grid-template-columns:1fr}.signal-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.cards-row{grid-template-columns:1fr}.signal-grid{grid-template-columns:repeat(2,1fr)}.av-cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">NEO CITY OS v3.7</div>
+  <div class="info-group">
+    <span><span class="status-dot"></span>SYSTEM ONLINE</span>
+    <span>STABILITY: <span class="val">98.2%</span></span>
+    <span>AI CORE <span class="val" style="color:var(--neon-green)">ACTIVE</span></span>
+    <span>TRAFFIC NODES: <span class="val">12,847</span></span>
+    <span class="clock" id="clock">00:00:00 UTC</span>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="nav-label">NAVIGATION</div>
+  <nav>
+    <a href="dashboard.html"><span class="icon">◈</span>Overview</a>
+    <a href="traffic.html" class="active"><span class="icon">🚦</span>Traffic</a>
+    <a href="energy.html"><span class="icon">⚡</span>Energy</a>
+    <a href="population.html"><span class="icon">👥</span>Population</a>
+    <a href="weather.html"><span class="icon">🌤</span>Weather</a>
+    <a href="security.html"><span class="icon">🛡</span>Security</a>
+    <a href="map.html"><span class="icon">🗺</span>Map</a>
+    <a href="ai.html"><span class="icon">🧠</span>AI Core</a>
+  </nav>
+</div>
+
+<div id="particles"></div>
+
+<div class="main">
+
+<h1 class="page-title">🚦 交通系统监控 | TRAFFIC CONTROL SYSTEM</h1>
+
+<div class="cards-row">
+  <div class="card">
+    <div class="card-icon">🚗</div>
+    <div class="card-label">Total Vehicles On Road</div>
+    <div class="card-value" id="totalVehicles">847,291</div>
+    <div class="card-sub">Real-time count across all monitored arteries</div>
+  </div>
+  <div class="card val-green">
+    <div class="card-icon">📊</div>
+    <div class="card-label">Average Speed</div>
+    <div class="card-value" id="avgSpeed">47.3 <span style="font-size:14px">km/h</span></div>
+    <div class="card-sub">City-wide weighted average</div>
+  </div>
+  <div class="card val-yellow">
+    <div class="card-icon">⚠</div>
+    <div class="card-label">Congestion Index</div>
+    <div class="card-value" id="congestionIdx">31<span style="font-size:14px">%</span></div>
+    <div class="card-sub">Moderate congestion — 12 zones affected</div>
+    <div class="progress-bar"><div class="fill yellow" style="width:31%"></div></div>
+  </div>
+  <div class="card val-purple">
+    <div class="card-icon">🤖</div>
+    <div class="card-label">Autonomous Vehicles</div>
+    <div class="card-value" id="avCount">234,156</div>
+    <div class="card-sub">32.7% of total fleet — 4,823 joining today</div>
+  </div>
+</div>
+
+<h2 class="section-title">🛣 ROAD NETWORK STATUS</h2>
+<div class="panel">
+  <div class="road-grid" id="roadGrid">
+    <div class="road-card">
+      <div class="road-name">A-1 环城高速 Outer Ring Expressway</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--neon-green)">● CLEAR</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-green">81.2 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--neon-green)">LOW 12%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">34,210</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--neon-green)">0 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">22 min (full loop)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill green" style="width:12%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">A-2 中央大道 Central Boulevard</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--alert-yellow)">● CONGESTED</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-yellow">28.7 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--alert-yellow)">HIGH 73%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">128,450</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--alert-yellow)">2 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">47 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill yellow" style="width:73%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">B-3 滨海快速 Coastal Expressway</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--neon-green)">● SMOOTH</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-green">72.5 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--neon-green)">LOW 18%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">41,330</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--neon-green)">0 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">31 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill green" style="width:18%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">C-1 工业走廊 Industrial Corridor</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--alert-red)">● HEAVY CONGESTION</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-red">12.4 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--alert-red)">CRITICAL 92%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">67,890</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--alert-red)">3 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">64 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill red" style="width:92%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">D-5 科技大道 Tech Boulevard</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--neon-green)">● FLOWING</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-green">65.8 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--neon-green)">LOW 15%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">22,100</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--neon-green)">0 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">18 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill green" style="width:15%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">E-2 港口通道 Port Access Route</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--alert-yellow)">● MODERATE</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-yellow">38.2 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--alert-yellow)">MEDIUM 52%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">53,440</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--alert-yellow)">1 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">40 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill yellow" style="width:52%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">F-1 机场快线 Airport Expressway</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--neon-green)">● CLEAR</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-green">88.7 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--neon-green)">LOW 8%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">9,870</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--neon-green)">0 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">14 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill green" style="width:8%"></div></div>
+    </div>
+    <div class="road-card">
+      <div class="road-name">G-4 跨区干道 Inter-District Arterial</div>
+      <div class="road-stats">
+        <div class="road-stat"><span class="stat-label">Status</span><span class="stat-val" style="color:var(--alert-yellow)">● SLOW</span></div>
+        <div class="road-stat"><span class="stat-label">Avg Speed</span><span class="stat-val speed-yellow">31.6 km/h</span></div>
+        <div class="road-stat"><span class="stat-label">Congestion</span><span class="stat-val" style="color:var(--alert-yellow)">HIGH 67%</span></div>
+        <div class="road-stat"><span class="stat-label">Vehicles</span><span class="stat-val">89,550</span></div>
+        <div class="road-stat"><span class="stat-label">Incidents</span><span class="stat-val" style="color:var(--alert-yellow)">1 active</span></div>
+        <div class="road-stat"><span class="stat-label">Travel Time</span><span class="stat-val">52 min (end-to-end)</span></div>
+      </div>
+      <div class="progress-bar"><div class="fill yellow" style="width:67%"></div></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="section-title">🚇 METRO / SUBWAY SYSTEM STATUS</h2>
+<div class="panel">
+  <table class="metro-table">
+    <thead>
+      <tr><th>Line</th><th>Name</th><th>Status</th><th>Headway</th><th>Load</th><th>Stations Active</th><th>Next Arrival</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>M1</td><td>红磡线 Hung Hom Line</td>
+        <td><span class="badge badge-green">OPERATIONAL</span></td>
+        <td>3.2 min</td>
+        <td>78%<div class="progress-bar"><div class="fill yellow" style="width:78%"></div></div></td>
+        <td>24 / 24</td>
+        <td style="color:var(--neon-green)">Platform 2 — 1:42</td>
+      </tr>
+      <tr>
+        <td>M2</td><td>蓝湾线 Blue Bay Line</td>
+        <td><span class="badge badge-green">OPERATIONAL</span></td>
+        <td>4.0 min</td>
+        <td>52%<div class="progress-bar"><div class="fill green" style="width:52%"></div></div></td>
+        <td>18 / 18</td>
+        <td style="color:var(--neon-green)">Platform 1 — 2:15</td>
+      </tr>
+      <tr>
+        <td>M3</td><td>科技园线 Tech Park Line</td>
+        <td><span class="badge badge-yellow">DELAYED</span></td>
+        <td>7.5 min</td>
+        <td>91%<div class="progress-bar"><div class="fill red" style="width:91%"></div></div></td>
+        <td>15 / 15</td>
+        <td style="color:var(--alert-yellow)">Platform 3 — 5:33</td>
+      </tr>
+      <tr>
+        <td>M4</td><td>机场快轨 Airport Express</td>
+        <td><span class="badge badge-green">OPERATIONAL</span></td>
+        <td>10.0 min</td>
+        <td>35%<div class="progress-bar"><div class="fill green" style="width:35%"></div></div></td>
+        <td>8 / 8</td>
+        <td style="color:var(--neon-green)">Platform 1 — 4:08</td>
+      </tr>
+      <tr>
+        <td>M5</td><td>环城线 Ring Line</td>
+        <td><span class="badge badge-red">MAINTENANCE</span></td>
+        <td>15.0 min</td>
+        <td>N/A<div class="progress-bar"><div class="fill red" style="width:5%"></div></div></td>
+        <td>20 / 28</td>
+        <td style="color:var(--alert-red)">Sections C-D Closed</td>
+      </tr>
+      <tr>
+        <td>M6</td><td>滨海轻轨 Coastal Light Rail</td>
+        <td><span class="badge badge-green">OPERATIONAL</span></td>
+        <td>5.5 min</td>
+        <td>61%<div class="progress-bar"><div class="fill blue" style="width:61%"></div></div></td>
+        <td>12 / 12</td>
+        <td style="color:var(--neon-green)">Platform 2 — 3:50</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="section-title">📈 24-HOUR TRAFFIC VOLUME TREND</h2>
+<div class="panel">
+  <div class="chart-legend">
+    <span><span class="legend-dot" style="background:var(--neon-blue)"></span> Vehicles per Hour (thousands)</span>
+    <span><span class="legend-dot" style="background:var(--neon-purple)"></span> Peak Threshold</span>
+    <span><span class="legend-dot" style="background:var(--alert-yellow)"></span> Congestion Zone</span>
+  </div>
+  <div class="bar-chart" id="trafficChart">
+    <!-- Generated by JS -->
+  </div>
+</div>
+
+<h2 class="section-title">🤖 AUTONOMOUS VEHICLE FLEET STATUS</h2>
+<div class="panel">
+  <div class="av-cards">
+    <div class="av-card">
+      <div class="av-icon">🚘</div>
+      <div class="av-value" id="avActive">198,423</div>
+      <div class="av-label">Active On Road</div>
+      <div class="progress-bar"><div class="fill green" style="width:84.7%"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">84.7% of AV fleet</div>
+    </div>
+    <div class="av-card">
+      <div class="av-icon">🔋</div>
+      <div class="av-value" id="avCharging">18,732</div>
+      <div class="av-label">Charging / Refueling</div>
+      <div class="progress-bar"><div class="fill blue" style="width:8%"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">8.0% of AV fleet</div>
+    </div>
+    <div class="av-card">
+      <div class="av-icon">🔧</div>
+      <div class="av-value" id="avMaintenance">12,044</div>
+      <div class="av-label">In Maintenance</div>
+      <div class="progress-bar"><div class="fill yellow" style="width:5.1%"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">5.1% of AV fleet</div>
+    </div>
+    <div class="av-card">
+      <div class="av-icon">⚡</div>
+      <div class="av-value">94.7<span style="font-size:12px">%</span></div>
+      <div class="av-label">Average Efficiency</div>
+      <div class="progress-bar"><div class="fill purple" style="width:94.7%"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">+2.3% vs last week</div>
+    </div>
+    <div class="av-card">
+      <div class="av-icon">🛣</div>
+      <div class="av-value" id="avKm">4,821,337</div>
+      <div class="av-label">Total km Today</div>
+      <div class="progress-bar"><div class="fill green" style="width:72%"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">72% of daily projection</div>
+    </div>
+  </div>
+</div>
+
+<h2 class="section-title">🚨 INCIDENT LOG</h2>
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Location</th><th>Type</th><th>Severity</th><th>Status</th><th>Response</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--neon-blue)">14:32 UTC</td>
+        <td>C-1 工业走廊 km 18.7</td>
+        <td><span class="badge badge-red">ACCIDENT</span></td>
+        <td style="color:var(--alert-red)">CRITICAL</td>
+        <td><span class="badge badge-red">Responding</span></td>
+        <td style="color:var(--neon-green)">3.2 min</td>
+      </tr>
+      <tr>
+        <td style="color:var(--neon-blue)">14:15 UTC</td>
+        <td>A-2 中央大道 / 人民广场交叉口</td>
+        <td><span class="badge badge-yellow">CONGESTION</span></td>
+        <td style="color:var(--alert-yellow)">MAJOR</td>
+        <td><span class="badge badge-yellow">Monitoring</span></td>
+        <td style="color:var(--alert-yellow)">8.7 min</td>
+      </tr>
+      <tr>
+        <td style="color:var(--neon-blue)">13:48 UTC</td>
+        <td>G-4 跨区干道 南段桥梁</td>
+        <td><span class="badge badge-blue">ROADWORK</span></td>
+        <td style="color:var(--alert-yellow)">MODERATE</td>
+        <td><span class="badge badge-blue">Ongoing</span></td>
+        <td style="color:var(--text-secondary)">Planned</td>
+      </tr>
+      <tr>
+        <td style="color:var(--neon-blue)">13:22 UTC</td>
+        <td>E-2 港口通道 集装箱区</td>
+        <td><span class="badge badge-yellow">CONGESTION</span></td>
+        <td style="color:var(--alert-yellow)">MAJOR</td>
+        <td><span class="badge badge-yellow">Rerouting</span></td>
+        <td style="color:var(--neon-green)">5.1 min</td>
+      </tr>
+      <tr>
+        <td style="color:var(--neon-blue)">12:55 UTC</td>
+        <td>D-5 科技大道 / 创新路交叉口</td>
+        <td><span class="badge badge-red">ACCIDENT</span></td>
+        <td style="color:var(--alert-yellow)">MODERATE</td>
+        <td><span class="badge badge-green">Resolved</span></td>
+        <td style="color:var(--neon-green)">4.8 min</td>
+      </tr>
+      <tr>
+        <td style="color:var(--neon-blue)">12:10 UTC</td>
+        <td>A-1 环城高速 北段隧道</td>
+        <td><span class="badge badge-yellow">CONGESTION</span></td>
+        <td style="color:var(--neon-green)">MINOR</td>
+        <td><span class="badge badge-green">Clearing</span></td>
+        <td style="color:var(--neon-green)">2.3 min</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="section-title">🚥 TRAFFIC SIGNAL SYSTEM — INTERSECTION STATUS</h2>
+<div class="panel">
+  <div class="signal-grid">
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">人民广场 Renmin Square</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">中央大道 / 复兴路 Central-Fuxing</span></div>
+    <div class="signal-item"><span class="signal-dot yellow"></span><span class="signal-name">科技园南门 Tech Park South Gate</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">机场高速入口 Airport Express Entry</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">滨海大道 / 港口路 Coastal-Port</span></div>
+    <div class="signal-item"><span class="signal-dot red"></span><span class="signal-name">工业区北门 Industrial North Gate</span></div>
+    <div class="signal-item"><span class="signal-dot yellow"></span><span class="signal-name">环城高速西立交 Ring Road W Interchange</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">大学城主路 University City Main</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">商业中心东门 Commerce Center East</span></div>
+    <div class="signal-item"><span class="signal-dot yellow"></span><span class="signal-name">跨区干道中段 Inter-District Mid</span></div>
+    <div class="signal-item"><span class="signal-dot green"></span><span class="signal-name">体育场馆区 Stadium District</span></div>
+    <div class="signal-item"><span class="signal-dot red"></span><span class="signal-name">老城区西街 Old Town West Street</span></div>
+  </div>
+  <div style="display:flex;gap:20px;margin-top:14px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">
+    <span><span class="signal-dot green" style="display:inline-block;vertical-align:middle;margin-right:4px"></span> Normal (8)</span>
+    <span><span class="signal-dot yellow" style="display:inline-block;vertical-align:middle;margin-right:4px"></span> Adaptive Mode (3)</span>
+    <span><span class="signal-dot red" style="display:inline-block;vertical-align:middle;margin-right:4px"></span> Fault / Maintenance (2)</span>
+  </div>
+</div>
+
+</div>
+
+<div class="bottom-bar">
+  <div class="ticker" id="ticker">
+    <span class="tick-sep">◆</span> TRAFFIC BULLETIN: A-1 Outer Ring Expressway — all lanes clear, speed 81.2 km/h
+    <span class="tick-sep">◆</span> ALERT: C-1 Industrial Corridor experiencing critical congestion at km 18.7 — emergency services dispatched, ETA 4 minutes
+    <span class="tick-sep">◆</span> METRO: M3 Tech Park Line delayed due to signal maintenance at Huajing Station — shuttle buses deployed
+    <span class="tick-sep">◆</span> AV FLEET: 2,847 new autonomous units registered today — total fleet now 234,156
+    <span class="tick-sep">◆</span> WEATHER ADVISORY: Light rain expected in eastern districts at 17:00 — reduce speed, increase following distance
+    <span class="tick-sep">◆</span> M5 Ring Line maintenance: Sections C-D closed until 22:00 UTC, replacement bus service active on Route BR-5
+    <span class="tick-sep">◆</span> TRAFFIC SIGNAL: Intersections at Industrial North Gate and Old Town West Street reporting controller faults — manual override engaged
+    <span class="tick-sep">◆</span> PEAK ADVISORY: Evening rush hour expected 17:00-19:00 — congestion index projected to reach 58%
+    <span class="tick-sep">◆</span> PORT ACCESS: E-2 cargo truck volume increasing — additional lanes opening at Container Terminal 4
+    <span class="tick-sep">◆</span> SYSTEM: AI traffic prediction model updated at 14:00 UTC, accuracy improved to 94.3% for 30-minute forecasts
+    <span class="tick-sep">◆</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Live UTC Clock
+  function updateClock(){
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toISOString().slice(11,19) + ' UTC';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Particle background
+  const particlesEl = document.getElementById('particles');
+  for(let i=0;i<50;i++){
+    const p = document.createElement('div');
+    const size = Math.random()*3+1;
+    const colors = ['#00d4ff','#b347ea','#00ffcc','#00ff88'];
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    p.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:${color};border-radius:50%;left:${Math.random()*100}%;animation:particleFloat ${Math.random()*10+8}s linear infinite;animation-delay:${Math.random()*8}s;opacity:${Math.random()*0.5+0.1};`;
+    particlesEl.appendChild(p);
+  }
+
+  // Live counter variation
+  function fluctuate(elId, base, range){
+    setInterval(function(){
+      const el = document.getElementById(elId);
+      if(!el) return;
+      const variation = Math.floor((Math.random()-0.5)*range*2);
+      const val = base + variation;
+      const txt = el.textContent.replace(/[\d,]+/g, function(m){
+        return val.toLocaleString();
+      });
+      // Only update numeric content, preserve other HTML
+      if(elId==='totalVehicles') el.textContent = val.toLocaleString();
+      else if(elId==='avgSpeed') el.innerHTML = (base + (Math.random()-0.5)*2).toFixed(1) + ' <span style="font-size:14px">km/h</span>';
+      else if(elId==='congestionIdx') el.innerHTML = Math.round(base + (Math.random()-0.5)*6) + '<span style="font-size:14px">%</span>';
+      else if(elId==='avCount') el.textContent = (base + Math.floor((Math.random()-0.5)*200)).toLocaleString();
+      else if(elId==='avActive') el.textContent = (198423 + Math.floor((Math.random()-0.5)*300)).toLocaleString();
+      else if(elId==='avCharging') el.textContent = (18732 + Math.floor((Math.random()-0.5)*100)).toLocaleString();
+      else if(elId==='avMaintenance') el.textContent = (12044 + Math.floor((Math.random()-0.5)*80)).toLocaleString();
+      else if(elId==='avKm') el.textContent = (4821337 + Math.floor((Math.random()-0.5)*5000)).toLocaleString();
+    },3000);
+  }
+  fluctuate('totalVehicles',847291,5000);
+  fluctuate('avgSpeed',47.3,2);
+  fluctuate('congestionIdx',31,3);
+  fluctuate('avCount',234156,200);
+  fluctuate('avActive',198423,300);
+  fluctuate('avCharging',18732,100);
+  fluctuate('avMaintenance',12044,80);
+  fluctuate('avKm',4821337,5000);
+
+  // 24-hour bar chart
+  const chartEl = document.getElementById('trafficChart');
+  const hourlyData = [
+    {h:'00:00',v:142},{h:'01:00',v:98},{h:'02:00',v:67},{h:'03:00',v:48},
+    {h:'04:00',v:41},{h:'05:00',v:73},{h:'06:00',v:156},{h:'07:00',v:289},
+    {h:'08:00',v:412},{h:'09:00',v:356},{h:'10:00',v:278},{h:'11:00',v:245},
+    {h:'12:00',v:234},{h:'13:00',v:251},{h:'14:00',v:267},{h:'15:00',v:289},
+    {h:'16:00',v:312},{h:'17:00',v:378},{h:'18:00',v:401},{h:'19:00',v:345},
+    {h:'20:00',v:278},{h:'21:00',v:212},{h:'22:00',v:178},{h:'23:00',v:156}
+  ];
+  const maxV = 412;
+  hourlyData.forEach(function(d){
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    const pct = (d.v/maxV)*100;
+    bar.style.height = pct + '%';
+    bar.style.setProperty('--bar-width', pct + '%');
+    const color = d.v > 350 ? 'var(--alert-yellow)' : d.v > 250 ? 'var(--neon-purple)' : 'var(--neon-blue)';
+    bar.style.background = 'linear-gradient(180deg,' + color + ',rgba(0,212,255,0.2))';
+    const val = document.createElement('span');
+    val.className = 'bar-val';
+    val.textContent = d.v + 'k';
+    bar.appendChild(val);
+    const label = document.createElement('span');
+    label.className = 'bar-label';
+    label.textContent = d.h;
+    group.appendChild(bar);
+    group.appendChild(label);
+    chartEl.appendChild(group);
+  }
+
+  // Ticker animation reset
+  const ticker = document.getElementById('ticker');
+  ticker.addEventListener('animationiteration',function(){
+    ticker.style.animation = 'none';
+    ticker.offsetHeight;
+    ticker.style.animation = 'tickerScroll 45s linear infinite';
+  });
+
+  // Road card hover ripple
+  document.querySelectorAll('.road-card').forEach(function(card){
+    card.addEventListener('mouseenter',function(){
+      this.style.transform = 'translateY(-3px)';
+    });
+    card.addEventListener('mouseleave',function(){
+      this.style.transform = 'translateY(0)';
+    });
+  });
+
+  // AV card number animation
+  document.querySelectorAll('.av-card').forEach(function(card,i){
+    card.style.animation = 'fadeInUp 0.5s ease-out forwards';
+    card.style.animationDelay = (0.3 + i*0.08) + 's';
+    card.style.opacity = '0';
+  });
+
+  console.log('NEO CITY OS v3.7 | Traffic Control System initialized.');
+  console.log('Monitoring: 8 road arteries, 6 metro lines, 12 signalized intersections');
+  console.log('Autonomous fleet: 234,156 units | Real-time data refresh: 3s');
+})();
+</script>
+
+</body>
+</html>

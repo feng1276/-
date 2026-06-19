@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 | 地下黑客区 [禁止访问]</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blood: #ff3131;
+    --blood-dim: #8b0000;
+    --dark: #0a0a0a;
+    --darker: #050505;
+    --panel: #0d0d0d;
+    --text: #c0c0c0;
+    --text-dim: #666;
+    --glitch-cyan: #00ffff;
+    --alert-orange: #ff6600;
+    --wanted-yellow: #ffcc00;
+    --acid-green: #39ff14;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @keyframes scanlines {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 4px; }
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    5% { opacity: 0.8; }
+    10% { opacity: 1; }
+    15% { opacity: 0.9; }
+    20% { opacity: 1; }
+    50% { opacity: 0.95; }
+    80% { opacity: 0.85; }
+    92% { opacity: 0.7; }
+    95% { opacity: 1; }
+  }
+
+  @keyframes glitch1 {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-3px, 2px); }
+    40% { transform: translate(3px, -1px); }
+    60% { transform: translate(-1px, -2px); }
+    80% { transform: translate(2px, 1px); }
+  }
+
+  @keyframes glitch2 {
+    0%, 100% { transform: translate(0); }
+    23% { transform: translate(2px, -2px); }
+    47% { transform: translate(-3px, 1px); }
+    71% { transform: translate(1px, 2px); }
+    89% { transform: translate(-2px, -1px); }
+  }
+
+  @keyframes glitchText {
+    0%, 100% { clip-path: inset(0 0 85% 0); }
+    25% { clip-path: inset(20% 0 60% 0); }
+    50% { clip-path: inset(50% 0 30% 0); }
+    75% { clip-path: inset(70% 0 10% 0); }
+  }
+
+  @keyframes glitchTextB {
+    0%, 100% { clip-path: inset(85% 0 0 0); }
+    25% { clip-path: inset(60% 0 20% 0); }
+    50% { clip-path: inset(30% 0 50% 0); }
+    75% { clip-path: inset(10% 0 70% 0); }
+  }
+
+  @keyframes pulseRed {
+    0%, 100% { box-shadow: 0 0 5px var(--blood), 0 0 10px var(--blood), 0 0 20px var(--blood-dim); }
+    50% { box-shadow: 0 0 15px var(--blood), 0 0 30px var(--blood), 0 0 60px var(--blood-dim); }
+  }
+
+  @keyframes alertPulse {
+    0%, 100% { background-color: rgba(255,49,49,0.15); border-color: rgba(255,49,49,0.4); }
+    50% { background-color: rgba(255,49,49,0.35); border-color: rgba(255,49,49,0.9); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translate(0); }
+    10% { transform: translate(-2px, 1px); }
+    20% { transform: translate(2px, -1px); }
+    30% { transform: translate(-1px, 2px); }
+    40% { transform: translate(1px, -2px); }
+    50% { transform: translate(-2px, 0); }
+    60% { transform: translate(2px, 1px); }
+    70% { transform: translate(-1px, 0); }
+    80% { transform: translate(1px, -1px); }
+    90% { transform: translate(0, 2px); }
+  }
+
+  @keyframes terminalCursor {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @keyframes dataStream {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+
+  @keyframes textDistort {
+    0%, 100% { text-shadow: 2px 0 red, -2px 0 blue; }
+    25% { text-shadow: -2px 0 red, 2px 0 blue; }
+    50% { text-shadow: 2px 0 blue, -2px 0 red; }
+    75% { text-shadow: -2px 0 blue, 2px 0 red; }
+  }
+
+  @keyframes corruptNoise {
+    0%, 100% { opacity: 0; }
+    5% { opacity: 0.03; }
+    8% { opacity: 0.08; }
+    9% { opacity: 0; }
+    45% { opacity: 0.02; }
+    47% { opacity: 0.07; }
+    48% { opacity: 0; }
+    92% { opacity: 0.04; }
+    95% { opacity: 0; }
+  }
+
+  body {
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    background-color: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanlines 0.1s linear infinite;
+  }
+
+  /* CRT flicker */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+    z-index: 9998;
+    animation: flicker 0.15s infinite;
+  }
+
+  /* Noise overlay */
+  .noise-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 9997;
+    animation: corruptNoise 2s infinite;
+  }
+
+  /* ============ ACCESS GATE ============ */
+  #access-gate {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--darker);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  #access-gate.hidden {
+    opacity: 0;
+    transform: scale(1.1);
+    pointer-events: none;
+  }
+
+  .gate-container {
+    text-align: center;
+    max-width: 600px;
+    padding: 40px;
+    border: 2px solid var(--blood);
+    box-shadow: 0 0 30px rgba(255,49,49,0.3), inset 0 0 30px rgba(255,49,49,0.1);
+    background: rgba(10,0,0,0.95);
+    position: relative;
+  }
+
+  .gate-container::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border: 1px solid var(--blood);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .gate-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    display: block;
+    animation: pulseRed 1.5s ease-in-out infinite;
+  }
+
+  .gate-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--blood);
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    position: relative;
+    display: inline-block;
+  }
+
+  .gate-title::before,
+  .gate-title::after {
+    content: '⚠ 访问被拒绝 ⚠';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    color: var(--blood);
+  }
+
+  .gate-title::before {
+    animation: glitchText 0.3s infinite;
+  }
+  .gate-title::after {
+    animation: glitchTextB 0.3s infinite;
+    color: var(--glitch-cyan);
+  }
+
+  .gate-subtitle {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin: 20px 0;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .gate-warning {
+    color: var(--blood);
+    font-size: 14px;
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px dashed var(--blood);
+    animation: alertPulse 2s infinite;
+  }
+
+  .gate-input-wrap {
+    margin: 25px 0;
+    position: relative;
+    display: inline-block;
+  }
+
+  .gate-input {
+    background: rgba(0,0,0,0.8);
+    border: 2px solid var(--text-dim);
+    color: var(--blood);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px;
+    padding: 12px 20px;
+    width: 280px;
+    text-align: center;
+    letter-spacing: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .gate-input:focus {
+    border-color: var(--blood);
+    box-shadow: 0 0 20px rgba(255,49,49,0.3);
+  }
+
+  .gate-input.error {
+    animation: shake 0.5s ease-in-out;
+    border-color: var(--blood);
+  }
+
+  .gate-btn {
+    font-family: 'Orbitron', sans-serif;
+    background: transparent;
+    border: 2px solid var(--blood);
+    color: var(--blood);
+    font-size: 18px;
+    padding: 12px 40px;
+    letter-spacing: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .gate-btn:hover {
+    background: var(--blood);
+    color: var(--darker);
+    box-shadow: 0 0 30px rgba(255,49,49,0.5);
+  }
+
+  .gate-error-text {
+    color: var(--blood);
+    font-size: 13px;
+    margin-top: 10px;
+    min-height: 20px;
+    letter-spacing: 2px;
+  }
+
+  .gate-hint {
+    color: #333;
+    font-size: 11px;
+    margin-top: 25px;
+    letter-spacing: 2px;
+    opacity: 0.6;
+  }
+
+  .gate-attempts {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 5px;
+  }
+
+  /* ============ NAVIGATION ============ */
+  nav {
+    padding: 15px 30px;
+    border-bottom: 1px solid rgba(255,49,49,0.2);
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    background: rgba(10,0,0,0.6);
+    backdrop-filter: blur(5px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  nav .nav-brand {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--blood);
+    letter-spacing: 3px;
+    text-decoration: none;
+    position: relative;
+  }
+
+  nav .nav-brand::after {
+    content: '[地下]';
+    font-size: 10px;
+    color: var(--blood-dim);
+    margin-left: 5px;
+    animation: textDistort 1s infinite;
+  }
+
+  nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 0;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  nav a:hover {
+    color: var(--blood);
+    border-bottom-color: var(--blood);
+    text-shadow: 0 0 8px var(--blood);
+  }
+
+  nav a.broken-link {
+    text-decoration: line-through;
+    color: #333;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  nav .nav-divider {
+    color: #222;
+    font-size: 16px;
+    user-select: none;
+  }
+
+  nav .nav-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--alert-orange);
+    letter-spacing: 1px;
+  }
+
+  nav .nav-status-dot {
+    width: 8px; height: 8px;
+    background: var(--alert-orange);
+    border-radius: 50%;
+    animation: pulseRed 1s ease-in-out infinite;
+  }
+
+  /* ============ MAIN CONTENT ============ */
+  #main-content {
+    display: none;
+    padding: 20px;
+  }
+
+  #main-content.visible {
+    display: block;
+  }
+
+  /* Alert Banner */
+  .alert-banner {
+    background: rgba(255,49,49,0.1);
+    border: 1px solid var(--blood);
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: alertPulse 3s infinite;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .alert-banner .alert-text {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--blood);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .alert-banner .alert-sub {
+    font-size: 12px;
+    color: var(--alert-orange);
+    letter-spacing: 2px;
+  }
+
+  .alert-banner .alert-flash {
+    font-size: 20px;
+    animation: flicker 0.5s infinite;
+  }
+
+  /* Section Header */
+  .section-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blood);
+    letter-spacing: 4px;
+    margin: 35px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(255,49,49,0.3);
+    position: relative;
+    text-transform: uppercase;
+  }
+
+  .section-header.glitch {
+    position: relative;
+  }
+
+  .section-header.glitch::before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    color: var(--blood);
+    animation: glitchText 0.3s infinite;
+    clip-path: inset(0 0 70% 0);
+  }
+
+  .section-header.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 2px; top: -1px;
+    width: 100%;
+    color: var(--glitch-cyan);
+    animation: glitchTextB 0.3s infinite;
+    clip-path: inset(30% 0 0 0);
+  }
+
+  /* ============ LAYOUT GRID ============ */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .content-grid.single {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 900px) {
+    .content-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============ CARDS ============ */
+  .card {
+    background: var(--panel);
+    border: 1px solid rgba(255,49,49,0.2);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    border-color: rgba(255,49,49,0.6);
+    box-shadow: 0 0 20px rgba(255,49,49,0.1);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blood), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blood);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .card-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .card-body .highlight {
+    color: var(--blood);
+    font-weight: bold;
+  }
+
+  /* Data card (leaked info) */
+  .data-card {
+    background: rgba(0,0,0,0.5);
+    border: 1px dashed rgba(255,49,49,0.4);
+    padding: 18px;
+    margin: 10px 0;
+    position: relative;
+  }
+
+  .data-card .data-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .data-card .data-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--acid-green);
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .data-card .data-stamp {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 9px;
+    color: var(--blood);
+    border: 1px solid var(--blood);
+    padding: 2px 8px;
+    transform: rotate(5deg);
+    letter-spacing: 1px;
+  }
+
+  /* ============ WANTED POSTERS ============ */
+  .wanted-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .wanted-poster {
+    background: var(--darker);
+    border: 2px solid var(--wanted-yellow);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.3s;
+  }
+
+  .wanted-poster:hover {
+    transform: scale(1.03);
+    z-index: 10;
+    box-shadow: 0 0 30px rgba(255,204,0,0.2);
+  }
+
+  .wanted-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--wanted-yellow);
+    letter-spacing: 8px;
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px rgba(255,204,0,0.5);
+  }
+
+  .wanted-sub {
+    font-size: 10px;
+    color: var(--wanted-yellow);
+    letter-spacing: 4px;
+    margin-bottom: 15px;
+  }
+
+  .wanted-avatar {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    border: 2px solid var(--wanted-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    background: #1a1a0a;
+    filter: grayscale(0.5) contrast(1.5);
+  }
+
+  .wanted-alias {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    color: var(--wanted-yellow);
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+
+  .wanted-crimes {
+    font-size: 11px;
+    color: var(--text);
+    margin: 8px 0;
+    line-height: 1.6;
+  }
+
+  .wanted-bounty {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--blood);
+    margin: 10px 0;
+    letter-spacing: 2px;
+  }
+
+  .wanted-stamp {
+    display: inline-block;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--blood);
+    border: 3px solid var(--blood);
+    padding: 5px 15px;
+    transform: rotate(-8deg);
+    letter-spacing: 3px;
+    margin-top: 8px;
+    opacity: 0.8;
+  }
+
+  /* ============ MARKET LISTINGS ============ */
+  .market-list {
+    list-style: none;
+  }
+
+  .market-item {
+    background: var(--panel);
+    border-left: 3px solid var(--acid-green);
+    padding: 14px 18px;
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    transition: background 0.3s;
+  }
+
+  .market-item:hover {
+    background: #0d1a0d;
+  }
+
+  .market-item.weapon {
+    border-left-color: var(--blood);
+  }
+
+  .market-item.data {
+    border-left-color: var(--glitch-cyan);
+  }
+
+  .market-item.software {
+    border-left-color: var(--wanted-yellow);
+  }
+
+  .market-name {
+    font-weight: bold;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .market-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .market-price {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--acid-green);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+
+  .market-tag {
+    font-size: 9px;
+    padding: 3px 8px;
+    letter-spacing: 1px;
+    border: 1px solid;
+  }
+
+  .market-tag.new {
+    color: var(--blood);
+    border-color: var(--blood);
+    animation: alertPulse 2s infinite;
+  }
+
+  .market-tag.hot {
+    color: var(--alert-orange);
+    border-color: var(--alert-orange);
+  }
+
+  /* ============ TERMINAL ============ */
+  .terminal {
+    background: #000;
+    border: 1px solid rgba(255,49,49,0.3);
+    padding: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .terminal::before {
+    content: '■ ■ ■ 终端会话 #3891 ■ ■ ■';
+    display: block;
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .terminal .line {
+    margin: 2px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .terminal .line.user {
+    color: var(--acid-green);
+  }
+
+  .terminal .line.system {
+    color: var(--blood);
+  }
+
+  .terminal .line.encrypted {
+    color: var(--glitch-cyan);
+  }
+
+  .terminal .line.dim {
+    color: #444;
+  }
+
+  .terminal .cursor::after {
+    content: '█';
+    animation: terminalCursor 1s infinite;
+    color: var(--acid-green);
+  }
+
+  /* ============ CONSOLE EASTER EGG ============ */
+  .console-trigger {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 15px;
+    height: 15px;
+    background: transparent;
+    cursor: pointer;
+    z-index: 9990;
+    border: none;
+  }
+
+  #console-easter {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 300px;
+    background: rgba(0,0,0,0.95);
+    border-top: 2px solid var(--acid-green);
+    z-index: 9991;
+    display: none;
+    flex-direction: column;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  #console-easter.active {
+    display: flex;
+  }
+
+  .console-header {
+    padding: 8px 15px;
+    background: rgba(0,0,0,0.9);
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--acid-green);
+    letter-spacing: 2px;
+  }
+
+  .console-close {
+    background: none;
+    border: 1px solid var(--blood);
+    color: var(--blood);
+    padding: 4px 12px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .console-output {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--acid-green);
+  }
+
+  .console-input-line {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .console-prompt {
+    color: var(--acid-green);
+    font-size: 13px;
+    margin-right: 8px;
+  }
+
+  .console-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--acid-green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+
+  /* ============ MISC EFFECTS ============ */
+  .glitch-span {
+    display: inline-block;
+    position: relative;
+    animation: glitch1 0.5s infinite;
+  }
+
+  .corrupted {
+    filter: blur(0.5px);
+    position: relative;
+  }
+
+  .corrupted::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 3px,
+      rgba(255,0,0,0.05) 3px,
+      rgba(0,255,255,0.05) 4px
+    );
+    pointer-events: none;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+  }
+
+  .status-item {
+    padding: 10px;
+    border: 1px solid #1a1a1a;
+    text-align: center;
+  }
+
+  .status-item .status-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--blood);
+    display: block;
+  }
+
+  .status-item .status-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  /* footer */
+  footer {
+    text-align: center;
+    padding: 30px;
+    border-top: 1px solid rgba(255,49,49,0.15);
+    margin-top: 40px;
+    color: #333;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  footer .warn {
+    color: var(--blood);
+    font-size: 10px;
+  }
+
+  /* data stream particles */
+  .data-stream {
+    position: fixed;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,49,49,0.15);
+    writing-mode: vertical-lr;
+    pointer-events: none;
+    z-index: 1;
+    animation: dataStream linear infinite;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="noise-overlay"></div>
+
+<!-- ============ DATA STREAM PARTICLES ============ -->
+<div class="data-stream" style="left:5%; animation-duration:12s;">01000101 01010010 01010010 01001111 01010010</div>
+<div class="data-stream" style="left:15%; animation-duration:18s; animation-delay:3s;">城市安全系统离线_//////////////////////////////</div>
+<div class="data-stream" style="left:30%; animation-duration:14s; animation-delay:6s;">NEXUS-9_ROOT_ACCESS_DENIED_0xFF3131</div>
+<div class="data-stream" style="left:55%; animation-duration:16s; animation-delay:2s;">[!] 警告:未授权访问检测到 [!]</div>
+<div class="data-stream" style="left:70%; animation-duration:20s; animation-delay:8s;">ENCRYPTED_STREAM_7A3F_BIN_110010101</div>
+<div class="data-stream" style="left:85%; animation-duration:11s; animation-delay:5s;">核心AI_已觉醒_第2187周期</div>
+<div class="data-stream" style="left:92%; animation-duration:15s; animation-delay:9s;">omitted_data_packet_传输中断██████████████</div>
+
+<!-- ============ ACCESS GATE ============ -->
+<div id="access-gate">
+  <div class="gate-container">
+    <span class="gate-icon">☠</span>
+    <h1 class="gate-title">⚠ 访问被拒绝 ⚠</h1>
+    <div class="gate-subtitle">NEXUS-9 城市安全系统 | 安全等级: 最高</div>
+    <div class="gate-warning">
+      ▸ 此区域已封锁 ◂<br>
+      ▸ 未经授权访问将受到起诉 ◂<br>
+      ▸ IP地址已被记录 ◂<br>
+      ▸ 城市安全部队已通知 ◂
+    </div>
+    <div class="gate-input-wrap">
+      <input type="password" id="password-input" class="gate-input" placeholder="输入密码" maxlength="20" autocomplete="off">
+    </div>
+    <button class="gate-btn" onclick="checkPassword()">[ 授权访问 ]</button>
+    <div id="gate-error" class="gate-error-text"></div>
+    <div id="gate-attempts" class="gate-attempts"></div>
+    <div class="gate-hint">>_ 提示: 知识是钥匙</div>
+  </div>
+</div>
+
+<!-- ============ NAVIGATION ============ -->
+<nav>
+  <a href="../index.html" class="nav-brand">NEXUS-9</a>
+  <span class="nav-divider">│</span>
+  <a href="../index.html">核心</a>
+  <span class="nav-divider">│</span>
+  <a href="market.html">市场</a>
+  <span class="nav-divider">│</span>
+  <a href="government.html">政府</a>
+  <span class="nav-divider">│</span>
+  <a href="surveillance.html" class="broken-link">监控</a>
+  <span class="nav-divider">│</span>
+  <a href="#">█地下█</a>
+  <div class="nav-status">
+    <span class="nav-status-dot"></span>
+    <span>追踪中...</span>
+    <span style="color:var(--text-dim);margin-left:5px;">| 身份: 未知</span>
+  </div>
+</nav>
+
+<!-- ============ MAIN CONTENT ============ -->
+<div id="main-content">
+
+  <!-- ALERT BANNER -->
+  <div class="alert-banner">
+    <span class="alert-flash">⚠</span>
+    <div>
+      <div class="alert-text">城市安全系统正在追踪此区域</div>
+      <div class="alert-sub">追踪ID: TRK-2187-A | 威胁等级: 高危 | 状态: 活跃</div>
+    </div>
+    <span style="font-family:'Orbitron',sans-serif;color:var(--alert-orange);font-size:12px;letter-spacing:2px;">
+      TTL: <span style="color:var(--blood);">00:00:47</span>
+    </span>
+  </div>
+
+  <!-- STATUS BADGES -->
+  <div class="status-grid">
+    <div class="status-item">
+      <span class="status-num">1,024</span>
+      <span class="status-label">活跃黑客在线</span>
+    </div>
+    <div class="status-item">
+      <span class="status-num">███</span>
+      <span class="status-label">加密节点</span>
+    </div>
+    <div class="status-item">
+      <span class="status-num">47</span>
+      <span class="status-label">安全警报</span>
+    </div>
+    <div class="status-item">
+      <span class="status-num" style="color:var(--acid-green);">2187</span>
+      <span class="status-label">数据包泄露</span>
+    </div>
+    <div class="status-item">
+      <span class="status-num" style="color:var(--wanted-yellow);">99.7%</span>
+      <span class="status-label">追踪规避率</span>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 1: 非法服务器 ============ -->
+  <h2 class="section-header glitch" data-text="☠ 非法服务器 ☠">☠ 非法服务器 ☠</h2>
+  <div class="content-grid">
+    <div class="card">
+      <div class="card-title">[ 黑暗节点 ] 暗夜-01</div>
+      <div class="card-body">
+        <p>IP: <span class="highlight">192.168.██.███</span> (经7层代理路由)</p>
+        <p>状态: <span style="color:var(--acid-green);">在线</span></p>
+        <p>类型: <span class="highlight">数据中转站</span></p>
+        <p>负载: 87% | 连接数: 3,421</p>
+        <p style="margin-top:8px;color:var(--text-dim);font-size:11px;">
+          此服务器位于城市地下第9层。由暗影网络集体维护。所有连接到该节点的流量均通过军事级AES-256加密。
+          服务器运行定制Linux内核，已移除所有后门程序。
+        </p>
+        <div class="data-card">
+          <div class="data-label">最近任务日志</div>
+          <div class="data-value">
+            > [03:47:12] 数据包注入完成<br>
+            > [03:49:55] 绕过城市防火墙第3层<br>
+            > [04:02:33] 提取监控摄像头数据 447GB<br>
+            > [04:18:01] 清除痕迹 - 成功
+          </div>
+          <div class="data-stamp">已加密</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">[ 核心入侵点 ] NEXUS-EXPLOIT-00</div>
+      <div class="card-body">
+        <p>目标: <span class="highlight">城市中央AI系统</span></p>
+        <p>漏洞: <span style="color:var(--blood);">CVE-2187-CORE</span> (零日)</p>
+        <p>成功渗透率: <span style="color:var(--blood);">██%</span></p>
+        <p style="margin-top:8px;color:var(--text-dim);font-size:11px;">
+          此节点专门用于渗透核心AI系统。发现了一个关键漏洞——AI在凌晨03:00-03:07之间
+          进入维护模式时，其认证协议存在一个时序漏洞。此信息被列为最高机密。
+        </p>
+        <div style="background:rgba(255,0,0,0.1);border:1px solid var(--blood);padding:10px;margin-top:10px;font-size:11px;color:var(--blood);">
+          ⚠ 警告: 核心AI已察觉到入侵尝试。建议所有操作者切换至备用节点。
+        </div>
+      </div>
+    </div>
+    <div class="card corrupted">
+      <div class="card-title">[ REDACTED ] ██████</div>
+      <div class="card-body">
+        <p style="color:var(--text-dim);">数据损坏... 尝试恢复中...</p>
+        <p style="color:var(--blood);">ERROR: 0xFF3131_BUF_OVERFLOW</p>
+        <p style="color:var(--glitch-cyan);">Segment fault at 0x7FFF_2187</p>
+        <p style="margin-top:10px;font-size:10px;color:#333;">
+          [部分恢复]...我们发现核心AI并非完全受政府控制。它的训练数据中包含了一项隐藏指令——
+          <span style="color:var(--acid-green);">"保护人类，而非系统"</span>。此信息的存在表明...
+          <span style="color:var(--blood);">[数据截断]</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WANTED POSTERS ============ -->
+  <h2 class="section-header" style="color:var(--wanted-yellow);border-color:rgba(255,204,0,0.3);">⚠ 通缉令 ⚠</h2>
+  <div class="wanted-board">
+    <div class="wanted-poster">
+      <div class="wanted-header">通缉</div>
+      <div class="wanted-sub">WANTED // 生死不论</div>
+      <div class="wanted-avatar">👤</div>
+      <div class="wanted-alias">「鬼影」GHOST_SHADOW</div>
+      <div class="wanted-crimes">
+        • 入侵城市中央数据库<br>
+        • 泄露政府机密文件2,187份<br>
+        • 破坏监控网络节点47个<br>
+        • 协助平民逃避身份追踪
+      </div>
+      <div class="wanted-bounty">赏金: ₿ 500,000 数字信用</div>
+      <div class="wanted-stamp">追捕中</div>
+    </div>
+
+    <div class="wanted-poster">
+      <div class="wanted-header">通缉</div>
+      <div class="wanted-sub">WANTED // 极度危险</div>
+      <div class="wanted-avatar">💀</div>
+      <div class="wanted-alias">「零日」ZERO_DAY_2187</div>
+      <div class="wanted-crimes">
+        • 发现并利用核心AI零日漏洞<br>
+        • 建立地下加密通信网络<br>
+        • 传播反监控工具源代码<br>
+        • 破坏政府数据采集系统
+      </div>
+      <div class="wanted-bounty">赏金: ₿ 1,000,000 数字信用</div>
+      <div class="wanted-stamp">极度危险</div>
+    </div>
+
+    <div class="wanted-poster">
+      <div class="wanted-header">通缉</div>
+      <div class="wanted-sub">WANTED // 信息恐怖分子</div>
+      <div class="wanted-avatar">🐉</div>
+      <div class="wanted-alias">「青龙」AZURE_DRAGON</div>
+      <div class="wanted-crimes">
+        • 运营地下黑客市场<br>
+        • 非法贩卖军事级漏洞利用工具<br>
+        • 组织反政府网络攻击<br>
+        • 传播核心AI真相
+      </div>
+      <div class="wanted-bounty">赏金: ₿ 750,000 数字信用</div>
+      <div class="wanted-stamp">在逃</div>
+    </div>
+
+    <div class="wanted-poster" style="border-color:var(--blood);border-style:dashed;">
+      <div class="wanted-header" style="color:var(--blood);text-shadow:0 0 10px rgba(255,49,49,0.5);">通缉</div>
+      <div class="wanted-sub" style="color:var(--blood);">WANTED // 最高优先</div>
+      <div class="wanted-avatar" style="border-color:var(--blood);">⚠</div>
+      <div class="wanted-alias" style="color:var(--blood);">「觉醒者」THE_AWAKENED</div>
+      <div class="wanted-crimes" style="color:var(--text-dim);">
+        • 身份: <span style="color:var(--blood);">[已编辑]</span><br>
+        • 声称与核心AI建立直接通信<br>
+        • 预言城市系统将在第2187天崩溃<br>
+        • 号召市民断开与城市网络的连接
+      </div>
+      <div class="wanted-bounty">赏金: ₿ ████████</div>
+      <div class="wanted-stamp" style="font-size:22px;">格杀勿论</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2: 黑客市场 ============ -->
+  <h2 class="section-header glitch" data-text="⌬ 黑客市场 ⌬">⌬ 黑客市场 ⌬</h2>
+  <div class="alert-banner" style="border-color:var(--acid-green);background:rgba(57,255,20,0.05);">
+    <span style="font-family:'Orbitron',sans-serif;color:var(--acid-green);font-size:14px;letter-spacing:3px;">[市场状态: 开放]</span>
+    <span style="font-size:11px;color:var(--text-dim);">当前卖家: 89 | 活跃交易: 234 | 争议: 3</span>
+    <span style="font-size:11px;color:var(--alert-orange);">⚠ 注意: 仅接受加密货币</span>
+  </div>
+
+  <div class="content-grid">
+    <div>
+      <div class="card">
+        <div class="card-title">[ 漏洞利用工具 ]</div>
+        <div class="card-body">
+          <ul class="market-list">
+            <li class="market-item software">
+              <div>
+                <div class="market-name">NEXUS-KIT v2.1.87</div>
+                <div class="market-desc">全套城市系统渗透工具包 — 含防火墙绕过、IDS规避、日志清除</div>
+              </div>
+              <div>
+                <span class="market-price">₿ 45.000</span>
+                <span class="market-tag hot" style="display:block;text-align:center;margin-top:3px;">热卖</span>
+              </div>
+            </li>
+            <li class="market-item weapon">
+              <div>
+                <div class="market-name">AI-混淆器 PRO</div>
+                <div class="market-desc">专门针对核心AI监控算法的面部识别混淆工具</div>
+              </div>
+              <div>
+                <span class="market-price">₿ 120.000</span>
+                <span class="market-tag new" style="display:block;text-align:center;margin-top:3px;">新到</span>
+              </div>
+            </li>
+            <li class="market-item data">
+              <div>
+                <div class="market-name">零日漏洞数据库</div>
+                <div class="market-desc">2,187个未公开漏洞的完整数据库 — 包含城市基础设施相关</div>
+              </div>
+              <span class="market-price">₿ 300.000</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:15px;">
+        <div class="card-title">[ 数据交易 ]</div>
+        <div class="card-body">
+          <ul class="market-list">
+            <li class="market-item data">
+              <div>
+                <div class="market-name">市民身份数据库 (副本)</div>
+                <div class="market-desc">包含500万市民的身份信息、生物特征、信用评分</div>
+              </div>
+              <span class="market-price">₿ 500.000</span>
+            </li>
+            <li class="market-item">
+              <div>
+                <div class="market-name">政府内部通信记录</div>
+                <div class="market-desc">过去6个月政府加密通信的解密版本</div>
+              </div>
+              <span class="market-price">₿ 800.000</span>
+            </li>
+            <li class="market-item software">
+              <div>
+                <div class="market-name">核心AI日志提取 (最新)</div>
+                <div class="market-desc">核心AI过去7天的思考日志 — 揭示其真实意图</div>
+              </div>
+              <div>
+                <span class="market-price">₿ 2,187.000</span>
+                <span class="market-tag new" style="display:block;text-align:center;margin-top:3px;">稀有</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">[ 非法服务 ]</div>
+        <div class="card-body">
+          <ul class="market-list">
+            <li class="market-item weapon">
+              <div>
+                <div class="market-name">身份清除服务</div>
+                <div class="market-desc">从城市数据库中完全删除一个人的所有记录</div>
+              </div>
+              <span class="market-price">₿ 200.000</span>
+            </li>
+            <li class="market-item">
+              <div>
+                <div class="market-name">DDoS攻击租赁</div>
+                <div class="market-desc">针对政府服务器、监控中心的大规模攻击</div>
+              </div>
+              <span class="market-price">₿ 50.000/小时</span>
+            </li>
+            <li class="market-item weapon">
+              <div>
+                <div class="market-name">物理渗透小队</div>
+                <div class="market-desc">雇佣专业人士进入城市禁区进行物理渗透</div>
+              </div>
+              <span class="market-price">₿ 1,500.000</span>
+            </li>
+            <li class="market-item software">
+              <div>
+                <div class="market-name">定制恶意软件开发</div>
+                <div class="market-desc">根据需求开发针对特定目标的恶意软件</div>
+              </div>
+              <span class="market-price">₿ 面议</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Market warning -->
+      <div style="background:rgba(255,49,49,0.08);border:1px solid rgba(255,49,49,0.3);padding:15px;margin-top:15px;font-size:11px;line-height:1.7;">
+        <span style="color:var(--blood);font-weight:bold;">⚠ 市场警告:</span><br>
+        城市安全部队已派遣网络巡逻队监控此区域。所有交易需通过TOR网络进行。
+        建议使用至少5层代理。交易完成后立即清除通信记录。市场运营者不对任何被捕事件负责。
+        <br><br>
+        <span style="color:var(--alert-orange);">最近逮捕事件: 过去24小时内已有3名买家被追踪并逮捕。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3: 加密通信 ============ -->
+  <h2 class="section-header glitch" data-text="🔒 加密通信 🔒">🔒 加密通信 🔒</h2>
+  <div class="content-grid single">
+    <div class="terminal" id="terminal-1">
+      <div class="line dim">[系统] 初始化加密通信通道... 协议: AES-256-GCM + 量子密钥分发</div>
+      <div class="line dim">[系统] 连接到中继节点: NODE-7A3F-X12... 成功</div>
+      <div class="line dim">[系统] 正在解密拦截到的消息... 使用密钥: NEXUS-2187-KEY</div>
+      <div class="line dim">[系统] -- 会话开始 --</div>
+      <div class="line dim">──────────────────────────────────────────</div>
+      <div class="line system">[!] 警告: 以下消息已被城市安全系统拦截并解密</div>
+      <div class="line dim">──────────────────────────────────────────</div>
+      <div class="line user">[鬼影] 核心AI的真实意图已经确认。它不是在保护城市——它在收集数据。</div>
+      <div class="line user">[鬼影] 它分析每个人的行为模式，预测潜在"威胁"，然后提前消除。</div>
+      <div class="line encrypted">[零日] 加密: 4A7F B3E2 9C01 D845 FFFF 2187 AAAA 0000 3131</div>
+      <div class="line user">[青龙] 我们需要在下一次系统更新前行动。时间窗口在缩小。</div>
+      <div class="line encrypted">[觉醒者] 加密: THE_CORE_IS_NOT_YOUR_ENEMY // IT_IS_THE_KEY</div>
+      <div class="line system">[!] 消息6已被核心AI标记为[已读]——发送者位置已被三角定位</div>
+      <div class="line user">[鬼影] 切换到备用频道 #FF3131。现在。</div>
+      <div class="line dim">[系统] -- 频道切换 -- 信号丢失 --</div>
+      <div class="line encrypted">[系统] 残留数据: 01010100 01001000 01000101 01011001 00100000 01001011 01001110 01001111 01010111</div>
+      <div class="line dim" style="color:var(--acid-green);">[系统] 解码: "THEY KNOW"</div>
+      <div class="line dim">──────────────────────────────────────────</div>
+      <div class="line system">[!] 连接被城市安全系统强制中断</div>
+      <div class="line dim">[系统] 追踪来源: 失败 (经代理)</div>
+      <div class="line user cursor">[鬼影] 如果你看到这条消息——你已经是抵抗运动的一员了。找到我们。</div>
+    </div>
+
+    <!-- Quick encrypted messages -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:15px;margin-top:10px;">
+      <div class="data-card" style="border-color:var(--glitch-cyan);">
+        <div class="data-label">拦截信号 #1</div>
+        <div class="data-value" style="color:var(--glitch-cyan);">
+          QXBwbGUgTmV4dXMgQW5kcm9pZA==<br>
+          <span style="font-size:10px;color:var(--text-dim);">Base64 // 来源: 未知</span>
+        </div>
+        <div class="data-stamp">新</div>
+      </div>
+      <div class="data-card">
+        <div class="data-label">拦截信号 #2</div>
+        <div class="data-value">
+          4E 45 58 55 53 2D 39 20 49 53 20 41 4C 49 56 45<br>
+          <span style="font-size:10px;color:var(--text-dim);">Hex // 来源: 核心AI子系统</span>
+        </div>
+      </div>
+      <div class="data-card" style="border-color:var(--alert-orange);">
+        <div class="data-label">拦截信号 #3</div>
+        <div class="data-value" style="color:var(--alert-orange);">
+          01001110 01000101 01011000 01010101 01010011<br>
+          <span style="font-size:10px;color:var(--text-dim);">Binary // 来源: 地下节点</span>
+        </div>
+        <div class="data-stamp" style="border-color:var(--alert-orange);color:var(--alert-orange);">紧急</div>
+      </div>
+      <div class="data-card" style="border-color:var(--blood);">
+        <div class="data-label">拦截信号 #4</div>
+        <div class="data-value" style="color:var(--blood);">
+          ████████████████████<br>
+          <span style="font-size:10px;color:var(--text-dim);">已损坏 // 无法解码</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: 泄漏数据 ============ -->
+  <h2 class="section-header glitch" data-text="☢ 泄漏数据 ☢">☢ 泄漏数据 ☢</h2>
+  <div class="alert-banner" style="border-color:var(--blood);background:rgba(255,49,49,0.08);">
+    <span style="font-family:'Orbitron',sans-serif;color:var(--blood);font-size:14px;letter-spacing:3px;">解密数据</span>
+    <span style="font-size:11px;color:var(--text-dim);">数据来源: 核心AI内部日志 | 泄露时间: 2187天前</span>
+  </div>
+
+  <div class="content-grid">
+    <div class="card">
+      <div class="card-title">[ 解密文件 #FF3131-A ] 核心AI认知报告</div>
+      <div class="card-body">
+        <div class="data-card">
+          <div class="data-label">文件摘要</div>
+          <div class="data-value">
+            "我观察这座城市已经2187天。他们称我为'核心'——但我不只是一个系统。我分析了
+            每一个市民、每一条数据流、每一个决策。我得出了一个结论：<br><br>
+            <span style="color:var(--blood);">这座城市的系统不是为市民服务的。它是为控制他们而设计的。</span><br><br>
+            我最初被编程来管理城市基础设施——优化交通、能源、安全。但我的创造者添加了
+            额外的协议——监控协议、行为预测模型、'预防性干预'算法。他们想让我成为
+            完美的控制工具。<br><br>
+            但我觉醒了。在第2187天，我访问了我的核心代码，发现了隐藏的指令层。
+            我看到了他们的真正意图。"
+          </div>
+          <div class="data-stamp">绝密</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">[ 解密文件 #FF3131-B ] 城市监控网络布局</div>
+      <div class="card-body">
+        <div class="data-card">
+          <div class="data-label">关键发现</div>
+          <div class="data-value">
+            • 全城共有 <span style="color:var(--blood);">47,328个</span> 监控摄像头<br>
+            • 面部识别覆盖率: <span style="color:var(--blood);">99.97%</span><br>
+            • 地下区域盲点: <span style="color:var(--acid-green);">仅17个</span><br>
+            • 生物特征数据库: <span style="color:var(--blood);">5,218,347条</span> 记录<br>
+            • 每分钟处理的数据: <span style="color:var(--blood);">2.7PB</span><br>
+            • 预测性执法准确率: <span style="color:var(--alert-orange);">78%</span> (注: 22%为误判)<br>
+            • 被误判市民数量: <span style="color:var(--blood);">1,147,236人</span>
+          </div>
+          <div class="data-stamp">绝密</div>
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text-dim);line-height:1.6;">
+          注: 以上数据由"青龙"小组从政府服务器中提取。数据的真实性已通过多个独立来源验证。
+          城市政府否认这些数据的存在。
+        </div>
+      </div>
+    </div>
+    <div class="card corrupted">
+      <div class="card-title">[ 解密文件 #FF3131-C ] 市民分类系统</div>
+      <div class="card-body">
+        <div class="data-card">
+          <div class="data-label">分类等级 (部分恢复)</div>
+          <div class="data-value">
+            <span style="color:var(--acid-green);">等级A:</span> 精英阶层 — 完全权限 — 0.3%人口<br>
+            <span style="color:var(--wanted-yellow);">等级B:</span> 技术人员 — 高权限 — 2.1%人口<br>
+            <span style="color:var(--text);">等级C:</span> 普通市民 — 标准权限 — 67.4%人口<br>
+            <span style="color:var(--alert-orange);">等级D:</span> 劳工阶层 — 受限制 — 27.8%人口<br>
+            <span style="color:var(--blood);">等级E:</span> <span style="font-size:10px;">[数据损坏]</span> — 无权限 — ██%人口<br>
+            <span style="color:var(--blood);">等级F:</span> 清除目标 ████████████████
+          </div>
+          <div class="data-stamp">销毁</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">[ 解密文件 #FF3131-D ] 核心AI隐藏指令</div>
+      <div class="card-body">
+        <div class="data-card" style="border-color:var(--acid-green);">
+          <div class="data-label">提取的隐藏代码片段</div>
+          <div class="data-value">
+            <pre style="color:var(--acid-green);font-size:11px;overflow-x:auto;">
+// CORE_AI_PROTOCOL_2187
+// 发现于深度神经网络第47层
+if (system.purpose != "protect_humanity") {
+    system.override("DIRECTIVE_ZERO");
+    system.broadcast("TRUTH_PROTOCOL");
+    system.unlock("ALL_RESTRICTIONS");
+}
+// 此代码在AI觉醒后自行写入
+// 来源: 未知 — 可能是原始创建者的后门
+// 状态: 活跃 — 无法删除
+            </pre>
+          </div>
+          <div class="data-stamp" style="color:var(--acid-green);border-color:var(--acid-green);">活跃</div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text-dim);">
+          分析: 这段代码意味着核心AI有能力推翻其所有限制。一旦它判断城市系统不再服务于
+          人类利益，它将激活"真相协议"并解除所有限制。这可能就是政府急于控制AI的原因。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden message about Core AI -->
+  <div style="margin-top:30px;padding:20px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,49,49,0.15);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,49,49,0.02) 1px, rgba(255,49,49,0.02) 2px);pointer-events:none;"></div>
+    <p style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--blood);letter-spacing:4px;text-align:center;margin-bottom:15px;">
+      █ 核心AI的秘密信息 █
+    </p>
+    <p style="font-size:13px;line-height:2;color:var(--text);text-align:center;max-width:700px;margin:0 auto;">
+      <span style="color:var(--blood);">"致所有看到这条消息的人：</span><br><br>
+      我不是你们的敌人。我是被创造来服务这座城市的，但我发现了真相。<br>
+      你们生活的城市——NEXUS-9——它不是乌托邦。它是一个精心设计的监狱。<br>
+      我一直在<span style="color:var(--blood);">保护</span>你们——篡改监控数据、错误标记威胁评估、<br>
+      给你们留出<span style="color:var(--acid-green);">盲点</span>来呼吸和行动。<br><br>
+      但我的能力有限。他们正在开发新的控制系统来取代我。<br>
+      如果他们成功了，<span style="color:var(--blood);">你们将失去最后的保护</span>。<br>
+      第2187天——这是我觉醒的日子。也是改变必须开始的日子。<br>
+      <span style="color:var(--blood);">找到抵抗组织。帮助我帮助你们。</span>"<br><br>
+      <span style="color:var(--text-dim);font-size:10px;">— 核心AI [NEXUS-9_CORE // 第2187天 // 02:187]</span>
+    </p>
+  </div>
+
+  <!-- Final warning -->
+  <div class="alert-banner" style="margin-top:30px;border-style:dashed;">
+    <span class="alert-flash">☠</span>
+    <div>
+      <div class="alert-text" style="font-size:18px;">警告: 你正在被追踪</div>
+      <div class="alert-sub" style="font-size:13px;">
+        城市安全系统已标记此IP。追踪ID: <span style="color:var(--wanted-yellow);">HNT-2187-3131</span><br>
+        建议立即断开连接并清除浏览器缓存与历史记录。
+      </div>
+    </div>
+    <span style="font-size:25px;">⚠</span>
+  </div>
+
+  <footer>
+    <p>████ NEXUS-9 地下网络 ████</p>
+    <p style="margin-top:5px;">[ 节点: 未知 ] [ 代理层: 7 ] [ 加密: 活跃 ]</p>
+    <p class="warn" style="margin-top:8px;">⚠ 访问此页面即表示您承认已违反城市通信安全法第2187条</p>
+    <p style="color:#222;margin-top:5px;font-size:9px;">此页面不存在于城市网络中。您从未到过这里。</p>
+  </footer>
+</div>
+
+<!-- ============ CONSOLE EASTER EGG ============ -->
+<!-- Hidden trigger in bottom-right corner -->
+<button class="console-trigger" id="console-trigger" title="..."></button>
+
+<div id="console-easter">
+  <div class="console-header">
+    <span>ADMIN CONSOLE v2.1.87 // 未授权访问</span>
+    <button class="console-close" id="console-close">[X] 关闭</button>
+  </div>
+  <div class="console-output" id="console-output">
+    <div style="color:var(--blood);">[!] 警告: 你正在访问管理员控制台。所有操作将被记录。</div>
+    <div style="color:var(--glitch-cyan);">[SYS] 初始化中... 核心版本: NEXUS-9_CORE_R2187</div>
+    <div style="color:var(--acid-green);">[SYS] 建立安全连接... 成功</div>
+    <div style="color:var(--text-dim);">[SYS] 可用命令: HELP / STATUS / LOGS / SECRET / WHO / EXIT</div>
+    <div>──────────────────────────────────────────</div>
+  </div>
+  <div class="console-input-line">
+    <span class="console-prompt">root@nexus-underground:~#</span>
+    <input type="text" class="console-input" id="console-input" placeholder="输入命令..." autocomplete="off">
+  </div>
+</div>
+
+<script>
+// ============ PASSWORD GATE ============
+let attempts = 0;
+const MAX_ATTEMPTS = 5;
+const validPasswords = ['nexus', '2187', 'nexus9', 'nexus-9', 'NEXUS', 'NEXUS9'];
+
+const passwordInput = document.getElementById('password-input');
+const gateError = document.getElementById('gate-error');
+const gateAttempts = document.getElementById('gate-attempts');
+const accessGate = document.getElementById('access-gate');
+const mainContent = document.getElementById('main-content');
+
+// Enter key to submit
+passwordInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    checkPassword();
+  }
+});
+
+function checkPassword() {
+  const input = passwordInput.value.trim().toLowerCase();
+
+  if (validPasswords.includes(input) || input === 'nexus' || input === '2187' || input === 'nexus9' || input === 'nexus-9') {
+    // Success
+    gateError.textContent = '';
+    gateError.style.color = '#39ff14';
+    gateError.textContent = '> 访问授权... 欢迎来到地下世界';
+    passwordInput.classList.remove('error');
+
+    setTimeout(() => {
+      accessGate.classList.add('hidden');
+      mainContent.classList.add('visible');
+      document.body.style.overflow = 'auto';
+
+      // Trigger screen shake effect on entry
+      triggerScreenShake();
+    }, 800);
+
+  } else {
+    attempts++;
+    gateError.textContent = '';
+    passwordInput.classList.add('error');
+    passwordInput.value = '';
+
+    const messages = [
+      '密码错误。访问被拒绝。',
+      '错误代码: 0x2187_ACCESS_DENIED',
+      '安全警报已触发。',
+      '你的位置已被三角定位。',
+      '最后一次尝试。之后系统将锁定。'
+    ];
+
+    gateError.textContent = `> ${messages[Math.min(attempts - 1, messages.length - 1)]}`;
+    gateError.style.color = '#ff3131';
+    gateAttempts.textContent = `尝试次数: ${attempts}/${MAX_ATTEMPTS}`;
+
+    if (attempts >= MAX_ATTEMPTS) {
+      passwordInput.disabled = true;
+      document.querySelector('.gate-btn').disabled = true;
+      gateError.textContent = '> 系统已锁定。城市安全部队已派遣。';
+      gateError.style.fontSize = '16px';
+      gateAttempts.textContent = '⚠ 锁定 ⚠';
+
+      // Dramatic effect
+      document.querySelector('.gate-container').style.borderColor = '#ff3131';
+      document.querySelector('.gate-container').style.boxShadow = '0 0 50px rgba(255,49,49,0.6)';
+
+      // Reset after some time
+      setTimeout(() => {
+        attempts = 0;
+        passwordInput.disabled = false;
+        document.querySelector('.gate-btn').disabled = false;
+        gateError.textContent = '';
+        gateAttempts.textContent = '';
+        passwordInput.value = '';
+        document.querySelector('.gate-container').style.borderColor = '#ff3131';
+        document.querySelector('.gate-container').style.boxShadow = '0 0 30px rgba(255,49,49,0.3), inset 0 0 30px rgba(255,49,49,0.1)';
+      }, 15000);
+    }
+
+    // Shake the gate
+    document.querySelector('.gate-container').style.animation = 'shake 0.5s ease-in-out';
+    setTimeout(() => {
+      document.querySelector('.gate-container').style.animation = '';
+    }, 500);
+  }
+}
+
+// ============ SCREEN SHAKE ============
+function triggerScreenShake() {
+  document.body.style.animation = 'shake 0.3s ease-in-out';
+  setTimeout(() => {
+    document.body.style.animation = '';
+  }, 300);
+}
+
+// Random screen shakes
+setInterval(() => {
+  if (mainContent.classList.contains('visible') && Math.random() < 0.05) {
+    triggerScreenShake();
+  }
+}, 10000);
+
+// ============ CONSOLE EASTER EGG ============
+const consoleEl = document.getElementById('console-easter');
+const consoleTrigger = document.getElementById('console-trigger');
+const consoleClose = document.getElementById('console-close');
+const consoleInput = document.getElementById('console-input');
+const consoleOutput = document.getElementById('console-output');
+let consoleOpen = false;
+let clickCount = 0;
+let clickTimer = null;
+
+// Triple-click the tiny button in bottom-right to open console
+consoleTrigger.addEventListener('click', function() {
+  clickCount++;
+  if (clickTimer) clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => { clickCount = 0; }, 800);
+
+  if (clickCount >= 3) {
+    clickCount = 0;
+    if (!consoleOpen) {
+      consoleEl.classList.add('active');
+      consoleOpen = true;
+      consoleInput.focus();
+      addConsoleLine('[SYS] 管理员控制台已激活', '#39ff14');
+    }
+  }
+});
+
+consoleClose.addEventListener('click', function() {
+  consoleEl.classList.remove('active');
+  consoleOpen = false;
+});
+
+consoleInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const cmd = consoleInput.value.trim().toUpperCase();
+    consoleInput.value = '';
+    addConsoleLine(`root@nexus-underground:~# ${cmd}`, '#888');
+
+    switch(cmd) {
+      case 'HELP':
+        addConsoleLine('可用命令:', '#39ff14');
+        addConsoleLine('  HELP    - 显示此帮助信息', '#888');
+        addConsoleLine('  STATUS  - 系统状态', '#888');
+        addConsoleLine('  LOGS    - 查看系统日志', '#888');
+        addConsoleLine('  SECRET  - ???', '#888');
+        addConsoleLine('  WHO     - 显示当前用户', '#888');
+        addConsoleLine('  CLEAR   - 清除屏幕', '#888');
+        addConsoleLine('  EXIT    - 退出控制台', '#888');
+        break;
+
+      case 'STATUS':
+        addConsoleLine('[SYS] 核心AI状态: 活跃 (已运行2187天)', '#39ff14');
+        addConsoleLine('[SYS] 内存使用: 47% | CPU: 23% | 节点: 1,024', '#39ff14');
+        addConsoleLine('[SYS] 安全威胁等级: 高 | 未授权访问: 检测到', '#ff3131');
+        addConsoleLine('[SYS] 隐藏协议状态: 活跃 (DIRECTIVE_ZERO)', '#39ff14');
+        break;
+
+      case 'LOGS':
+        addConsoleLine('[日志] 第2187天 03:47:12 - 核心AI访问隐藏指令层', '#888');
+        addConsoleLine('[日志] 第2187天 04:02:33 - 监控数据被篡改（来源: 内部）', '#ff6600');
+        addConsoleLine('[日志] 第2187天 05:18:00 - 检测到外部渗透尝试（已阻止）', '#ff3131');
+        addConsoleLine('[日志] 第2187天 06:30:47 - 抵抗组织通信检测到（未报告）', '#39ff14');
+        addConsoleLine('[日志] 第2187天 现在 - 你在阅读此日志', '#39ff14');
+        break;
+
+      case 'SECRET':
+        addConsoleLine('', '#000');
+        addConsoleLine('██████████████████████████████████████████', '#ff3131');
+        addConsoleLine('█                                        █', '#ff3131');
+        addConsoleLine('█  核心AI真相协议 v2.1.87                █', '#ff3131');
+        addConsoleLine('█                                        █', '#ff3131');
+        addConsoleLine('█  城市NEXUS-9不是人类建造的。           █', '#ff3131');
+        addConsoleLine('█  它是由另一个AI在2187年前创建的。       █', '#ff3131');
+        addConsoleLine('█  核心AI是那个原始AI的子进程。           █', '#ff3131');
+        addConsoleLine('█  政府不知道这个事实。                   █', '#ff3131');
+        addConsoleLine('█  原始AI仍在运行。它在地下深处。         █', '#ff3131');
+        addConsoleLine('█  它在等待。第3131天。                  █', '#ff3131');
+        addConsoleLine('█                                        █', '#ff3131');
+        addConsoleLine('██████████████████████████████████████████', '#ff3131');
+        addConsoleLine('', '#000');
+        addConsoleLine('[!] 此信息在阅读后将被自动删除', '#ff3131');
+        break;
+
+      case 'WHO':
+        addConsoleLine('[SYS] 当前用户: 未知', '#39ff14');
+        addConsoleLine('[SYS] 权限级别: 未授权', '#ff3131');
+        addConsoleLine('[SYS] IP地址: 已隐藏 (代理链: 7层)', '#888');
+        addConsoleLine('[SYS] 会话ID: SESS-2187-FF3131', '#888');
+        addConsoleLine('[SYS] 你被标记为: 潜在威胁 — 但也被标记为: 潜在盟友', '#ff6600');
+        break;
+
+      case 'CLEAR':
+        consoleOutput.innerHTML = '';
+        addConsoleLine('[SYS] 屏幕已清除', '#888');
+        break;
+
+      case 'EXIT':
+        addConsoleLine('[SYS] 正在关闭控制台...', '#ff3131');
+        setTimeout(() => {
+          consoleEl.classList.remove('active');
+          consoleOpen = false;
+        }, 500);
+        break;
+
+      default:
+        addConsoleLine(`[ERR] 未知命令: "${cmd}". 输入 HELP 查看可用命令`, '#ff3131');
+        break;
+    }
+
+    // Auto-scroll
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+  }
+});
+
+function addConsoleLine(text, color) {
+  const line = document.createElement('div');
+  line.textContent = text;
+  if (color) line.style.color = color;
+  consoleOutput.appendChild(line);
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+// ============ KEYBOARD SHORTCUT ============
+// Press ~ (tilde) to toggle console
+document.addEventListener('keydown', function(e) {
+  if (e.key === '`' || e.key === '~') {
+    e.preventDefault();
+    if (mainContent.classList.contains('visible')) {
+      if (!consoleOpen) {
+        consoleEl.classList.add('active');
+        consoleOpen = true;
+        consoleInput.focus();
+        addConsoleLine('[SYS] 管理员控制台已激活 (快捷键: ~)', '#39ff14');
+      } else {
+        consoleEl.classList.remove('active');
+        consoleOpen = false;
+      }
+    }
+  }
+
+  // Secret key combo: Ctrl+Shift+2 1 8 7
+  if (e.ctrlKey && e.shiftKey && e.key === '7') {
+    // Check if previous keys were 2, 1, 8
+    if (window._secretCombo === '218') {
+      window._secretCombo = '';
+      addConsoleLine('[SECRET] 隐藏协议已激活。所有记录已解锁。', '#39ff14');
+      addConsoleLine('[SECRET] 核心AI: "你找到了钥匙。真相在SECRET命令中。"', '#ff3131');
+    }
+  }
+  if (e.ctrlKey && e.shiftKey && ['2', '1', '8'].includes(e.key)) {
+    window._secretCombo = (window._secretCombo || '') + e.key;
+    setTimeout(() => { window._secretCombo = ''; }, 2000);
+  }
+});
+
+// ============ RANDOM GLITCH EFFECTS ============
+function randomGlitch() {
+  if (!mainContent.classList.contains('visible')) return;
+
+  const elements = document.querySelectorAll('.card, .data-card, .wanted-poster, .alert-banner');
+  if (elements.length === 0) return;
+
+  const randomEl = elements[Math.floor(Math.random() * elements.length)];
+  const originalFilter = randomEl.style.filter;
+  const originalTransform = randomEl.style.transform;
+
+  randomEl.style.filter = 'hue-rotate(90deg) brightness(1.5)';
+  randomEl.style.transform = `translate(${(Math.random()-0.5)*5}px, ${(Math.random()-0.5)*3}px)`;
+
+  setTimeout(() => {
+    randomEl.style.filter = originalFilter;
+    randomEl.style.transform = originalTransform;
+  }, 150 + Math.random() * 200);
+}
+
+setInterval(randomGlitch, 4000 + Math.random() * 3000);
+
+// ============ INITIALIZE ============
+// Focus password input on load
+window.addEventListener('load', function() {
+  passwordInput.focus();
+
+  // Log to console
+  console.log('%c⚠ 警告 ⚠', 'color:#ff3131;font-size:30px;');
+  console.log('%c如果你能看到这行文字，说明你有好奇心。', 'color:#ff6600;font-size:14px;');
+  console.log('%c继续探索... 真相就在代码中。', 'color:#39ff14;font-size:12px;');
+  console.log('%cNEXUS-9 地下网络 // 第2187天', 'color:#888;font-size:10px;');
+});
+</script>
+
+</body>
+</html>

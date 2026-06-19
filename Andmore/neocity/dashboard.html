@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS v3.7 — City Control Dashboard</title>
+<style>
+/* ============================================================
+   NEO CITY OS — DESIGN SYSTEM & CSS
+   ============================================================ */
+:root {
+  --bg-deep: #030814;
+  --panel-bg: rgba(6, 15, 40, 0.8);
+  --panel-border: rgba(0, 212, 255, 0.12);
+  --neon-blue: #00d4ff;
+  --neon-purple: #b347ea;
+  --neon-cyan: #00ffcc;
+  --neon-green: #00ff88;
+  --alert-red: #ff3366;
+  --alert-yellow: #ffb700;
+  --text-primary: #c8d6e5;
+  --text-secondary: #6b7d95;
+  --font-ui: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+  --glow-blue: 0 0 8px rgba(0, 212, 255, 0.25), 0 0 2px rgba(0, 212, 255, 0.15);
+  --glow-purple: 0 0 8px rgba(179, 71, 234, 0.25), 0 0 2px rgba(179, 71, 234, 0.15);
+  --glow-green: 0 0 8px rgba(0, 255, 136, 0.25), 0 0 2px rgba(0, 255, 136, 0.15);
+  --glow-cyan: 0 0 8px rgba(0, 255, 204, 0.25), 0 0 2px rgba(0, 255, 204, 0.15);
+  --glow-red: 0 0 8px rgba(255, 51, 102, 0.25), 0 0 2px rgba(255, 51, 102, 0.15);
+}
+
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---- Grid Dot Background ---- */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(0,212,255,0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Scanline Overlay ---- */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanline 8s linear infinite;
+}
+
+/* ---- Particle Canvas ---- */
+#particleCanvas {
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ---- Main Layout Grid ---- */
+#mainGrid {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 300px;
+  grid-template-rows: 44px 1fr 36px;
+  width: 100%; height: 100vh;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(0, 212, 255, 0.04);
+}
+
+/* ---- Panel Base ---- */
+.panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  animation: floatPanel 6s ease-in-out infinite;
+}
+
+.panel:nth-child(odd) { animation-delay: -2s; }
+.panel:nth-child(even) { animation-delay: -4s; }
+
+/* ---- TOP STATUS BAR ---- */
+#topBar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: linear-gradient(180deg, rgba(6, 20, 50, 0.95) 0%, var(--panel-bg) 100%);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: var(--glow-blue);
+}
+
+#topBar .sys-title {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--neon-blue);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: textFlicker 5s ease-in-out infinite;
+}
+
+#topBar .sys-version {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--neon-green);
+}
+
+.status-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 6px var(--neon-green), 0 0 12px rgba(0, 255, 136, 0.5);
+  animation: pulse2 1.5s ease-in-out infinite;
+}
+
+.status-separator {
+  width: 1px; height: 18px;
+  background: rgba(0, 212, 255, 0.25);
+  margin: 0 6px;
+}
+
+.metric-small {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 11px;
+}
+
+.metric-small .label { color: var(--text-secondary); font-size: 10px; }
+.metric-small .value { color: var(--neon-cyan); font-weight: 600; }
+
+.cpu-bar-wrap {
+  width: 80px; height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px; overflow: hidden;
+  margin-left: 4px;
+}
+
+.cpu-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* ---- LEFT SIDEBAR ---- */
+#leftSidebar {
+  grid-column: 1; grid-row: 2;
+  display: flex; flex-direction: column;
+  padding: 8px 0;
+  gap: 2px;
+}
+
+.nav-section-title {
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 12px 16px 6px;
+  border-top: 1px solid rgba(0,212,255,0.08);
+  margin-top: 4px;
+}
+
+.nav-section-title:first-of-type {
+  border-top: none; margin-top: 0;
+}
+
+.nav-item {
+  display: flex; align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: var(--font-ui); font-size: 13px;
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+  transition: all 0.25s ease;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  color: var(--neon-blue);
+  background: rgba(0, 212, 255, 0.06);
+  border-left-color: var(--neon-blue);
+  box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.04);
+}
+
+.nav-item.active {
+  color: var(--neon-blue);
+  background: rgba(0, 212, 255, 0.08);
+  border-left: 2px solid var(--neon-blue);
+  box-shadow: var(--glow-blue);
+}
+
+.nav-item .nav-icon {
+  font-size: 16px;
+  width: 24px; text-align: center;
+}
+
+.nav-item .nav-badge {
+  margin-left: auto;
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--neon-cyan);
+}
+
+.nav-item .nav-badge.warn {
+  background: rgba(255, 179, 0, 0.15);
+  color: var(--alert-yellow);
+}
+
+.nav-item .nav-badge.alert {
+  background: rgba(255, 51, 102, 0.15);
+  color: var(--alert-red);
+}
+
+/* ---- CENTRAL AREA ---- */
+#centralArea {
+  grid-column: 2; grid-row: 2;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Quick Stats Row */
+.quick-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.stat-card {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+  transform: translateY(-2px);
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.stat-card:hover::after { opacity: 1; }
+
+.stat-card .stat-icon {
+  font-size: 22px; margin-bottom: 6px;
+}
+
+.stat-card .stat-value {
+  font-family: var(--font-mono); font-size: 22px;
+  font-weight: 700; color: var(--neon-cyan);
+  letter-spacing: 1px;
+}
+
+.stat-card .stat-label {
+  font-size: 11px; color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.stat-card .stat-trend {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 11px;
+  margin-top: 4px;
+}
+
+.stat-card .stat-trend.up { color: var(--neon-green); }
+.stat-card .stat-trend.down { color: var(--alert-red); }
+.stat-card .stat-trend.stable { color: var(--alert-yellow); }
+
+.stat-card .sparkline {
+  display: flex; align-items: flex-end;
+  gap: 2px; height: 28px; margin-top: 10px;
+}
+
+.stat-card .sparkline .bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--neon-blue), rgba(0,212,255,0.1));
+  border-radius: 1px 1px 0 0;
+  animation: sparkPulse 1.2s ease-in-out infinite;
+}
+
+.stat-card:nth-child(2) .sparkline .bar { background: linear-gradient(180deg, var(--neon-purple), rgba(179,71,234,0.1)); }
+.stat-card:nth-child(3) .sparkline .bar { background: linear-gradient(180deg, var(--alert-yellow), rgba(255,183,0,0.1)); }
+.stat-card:nth-child(4) .sparkline .bar { background: linear-gradient(180deg, var(--neon-green), rgba(0,255,136,0.1)); }
+
+/* Zone Grid */
+.section-header {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--neon-blue); letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 4px 2px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(0,212,255,0.3), transparent);
+}
+
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.zone-card {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.zone-card:hover {
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+  transform: translateY(-2px);
+}
+
+.zone-card .zone-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+
+.zone-card .zone-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.zone-dot.active { background: var(--neon-blue); color: var(--neon-blue); }
+.zone-dot.stable { background: var(--neon-green); color: var(--neon-green); }
+.zone-dot.caution { background: var(--alert-yellow); color: var(--alert-yellow); }
+.zone-dot.optimal { background: var(--neon-cyan); color: var(--neon-cyan); }
+
+.zone-card .zone-name {
+  font-family: var(--font-ui); font-size: 14px;
+  font-weight: 600; color: var(--text-primary);
+}
+
+.zone-card .zone-subtitle {
+  font-size: 10px; color: var(--text-secondary);
+}
+
+.zone-card .zone-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.zone-card .zone-stat {
+  display: flex; flex-direction: column;
+}
+
+.zone-card .zone-stat-label {
+  font-size: 9px; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.zone-card .zone-stat-value {
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--neon-cyan);
+}
+
+.zone-card .zone-bar-wrap {
+  margin-top: 8px;
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px; overflow: hidden;
+}
+
+.zone-card .zone-bar-fill {
+  height: 100%; border-radius: 2px;
+  transition: width 1s ease;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan));
+}
+
+.zone-card:nth-child(3) .zone-bar-fill { background: linear-gradient(90deg, var(--alert-yellow), #ff9900); }
+
+/* Alert Ticker */
+.alert-ticker-wrap {
+  background: rgba(255, 51, 102, 0.06);
+  border: 1px solid rgba(255, 51, 102, 0.15);
+  border-radius: 4px;
+  padding: 6px 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.alert-ticker-wrap::before {
+  content: '⚠ ALERTS';
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--alert-red);
+  font-weight: 700; letter-spacing: 1px;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(3,8,20,0.95), transparent 80%);
+  padding-right: 20px;
+}
+
+.alert-ticker-inner {
+  white-space: nowrap;
+  animation: tickerScroll 25s linear infinite;
+  padding-left: 110px;
+}
+
+.alert-ticker-inner span {
+  display: inline-block;
+  margin-right: 48px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-primary);
+}
+
+.alert-ticker-inner span.warn { color: var(--alert-red); }
+.alert-ticker-inner span.info { color: var(--neon-blue); }
+.alert-ticker-inner span.ok { color: var(--neon-green); }
+
+/* Event Log */
+.event-log {
+  display: flex; flex-direction: column;
+  gap: 1px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.event-row {
+  display: grid;
+  grid-template-columns: 56px 120px 1fr 80px;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(0,212,255,0.04);
+  color: var(--text-secondary);
+  transition: background 0.2s;
+  align-items: center;
+}
+
+.event-row:hover { background: rgba(0,212,255,0.04); }
+
+.event-row .evt-time {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--neon-blue);
+}
+
+.event-row .evt-type {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 3px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.evt-type.sys { background: rgba(0,212,255,0.12); color: var(--neon-blue); }
+.evt-type.warn { background: rgba(255,179,0,0.12); color: var(--alert-yellow); }
+.evt-type.alert { background: rgba(255,51,102,0.12); color: var(--alert-red); }
+.evt-type.ok { background: rgba(0,255,136,0.12); color: var(--neon-green); }
+.evt-type.info { background: rgba(0,255,204,0.12); color: var(--neon-cyan); }
+
+.event-row .evt-desc { color: var(--text-primary); }
+.event-row .evt-status { font-family: var(--font-mono); font-size: 10px; }
+
+/* ---- RIGHT PANEL ---- */
+#rightPanel {
+  grid-column: 3; grid-row: 2;
+  display: flex; flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.data-display {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  transition: all 0.3s ease;
+}
+
+.data-display:hover {
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+}
+
+.data-display .data-header {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 4px;
+}
+
+.data-display .data-icon { font-size: 14px; }
+
+.data-display .data-label {
+  font-size: 10px; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+.data-display .data-value {
+  font-family: var(--font-mono); font-size: 28px;
+  font-weight: 700; color: var(--neon-cyan);
+  letter-spacing: 1px;
+  transition: color 0.5s;
+}
+
+.data-display .data-unit {
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--text-secondary); margin-left: 4px;
+}
+
+.data-display .data-sub {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px;
+  font-size: 10px; color: var(--text-secondary);
+}
+
+.data-display .data-trend {
+  font-family: var(--font-mono); font-size: 10px;
+}
+
+.data-display .mini-bar {
+  height: 3px; border-radius: 2px;
+  margin-top: 6px;
+  transition: width 0.5s ease;
+}
+
+.data-gauge {
+  position: relative;
+  height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.05);
+  margin-top: 6px; overflow: hidden;
+}
+
+.data-gauge::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ---- BOTTOM BAR ---- */
+#bottomBar {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex; align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-secondary);
+  border-top: 1px solid rgba(0, 212, 255, 0.15);
+  box-shadow: 0 -1px 8px rgba(0, 212, 255, 0.06);
+}
+
+#bottomBar .sys-log-wrap {
+  flex: 1; overflow: hidden; position: relative;
+}
+
+#bottomBar .sys-log-inner {
+  white-space: nowrap;
+  animation: tickerScroll 40s linear infinite;
+}
+
+#bottomBar .sys-log-inner span {
+  margin-right: 40px;
+}
+
+.bottom-sep {
+  width: 1px; height: 16px;
+  background: rgba(0,212,255,0.15);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,212,255,0.2);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.4); }
+
+/* ============================================================
+   ANIMATIONS — 16 distinct @keyframes
+   ============================================================ */
+
+/* 1. scanline — scrolls scanline overlay down */
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 8px; }
+}
+
+/* 2. pulse2 — status dot heartbeat */
+@keyframes pulse2 {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* 3. glow-pulse — panel border glow */
+@keyframes glowPulse {
+  0%, 100% { border-color: rgba(0, 212, 255, 0.12); }
+  50% { border-color: rgba(0, 212, 255, 0.28); }
+}
+
+/* 4. textFlicker — glitchy text effect */
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; }
+  2% { opacity: 0.85; }
+  4% { opacity: 1; }
+  10% { opacity: 0.92; }
+  12% { opacity: 1; }
+  45% { opacity: 0.96; }
+  47% { opacity: 1; }
+}
+
+/* 5. slideUp — card entrance */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 6. fadeIn — general fade */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 7. progressGrow — bar fill */
+@keyframes progressGrow {
+  from { width: 0%; }
+}
+
+/* 8. tickerScroll — horizontal scroll */
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 9. numberFlip — subtle number change */
+@keyframes numberFlip {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0.85); }
+  100% { transform: scaleY(1); }
+}
+
+/* 10. floatPanel — subtle floating */
+@keyframes floatPanel {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* 11. dataFlow — border data dots */
+@keyframes dataFlow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* 12. rotate — loading spinner */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 13. heartbeat — attention pulse */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.15); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  60% { transform: scale(1); }
+}
+
+/* 14. sparkPulse — sparkline bars */
+@keyframes sparkPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 15. borderGlowTravel — traveling border glow */
+@keyframes borderGlowTravel {
+  0% { box-shadow: 0 0 4px var(--neon-blue), inset 0 0 4px rgba(0,212,255,0.1); }
+  50% { box-shadow: 0 0 12px var(--neon-blue), inset 0 0 8px rgba(0,212,255,0.15); }
+  100% { box-shadow: 0 0 4px var(--neon-blue), inset 0 0 4px rgba(0,212,255,0.1); }
+}
+
+/* 16. rippleOut — ripple effect */
+@keyframes rippleOut {
+  from { box-shadow: 0 0 0 0 rgba(0,212,255,0.5); }
+  to { box-shadow: 0 0 0 12px rgba(0,212,255,0); }
+}
+</style>
+</head>
+<body>
+
+<!-- Particle Background Canvas -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- MAIN GRID -->
+<div id="mainGrid">
+
+  <!-- ========== TOP STATUS BAR ========== -->
+  <div id="topBar" class="panel">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="sys-title">⬡ NEO CITY OS</span>
+      <span class="sys-version">v3.7.2</span>
+      <span class="status-separator"></span>
+      <span class="status-indicator">
+        <span class="status-dot"></span> ● ONLINE
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="metric-small">
+        <span class="label">STABILITY</span>
+        <span class="value" id="stabilityVal">98.2%</span>
+      </div>
+      <span class="status-separator"></span>
+      <div class="metric-small">
+        <span class="label">AI CORE</span>
+        <span class="value" style="color:#b347ea;">ACTIVE</span>
+      </div>
+      <span class="status-separator"></span>
+      <div class="metric-small">
+        <span class="label">UTC</span>
+        <span class="value" id="utcClock">2087-11-15 14:32:08</span>
+      </div>
+      <span class="status-separator"></span>
+      <div class="metric-small">
+        <span class="label">CPU</span>
+        <div class="cpu-bar-wrap">
+          <div class="cpu-bar-fill" id="cpuBar" style="width:42%;"></div>
+        </div>
+        <span class="value" id="cpuPct" style="width:32px;">42%</span>
+      </div>
+      <span class="status-separator"></span>
+      <div class="metric-small">
+        <span class="label">MEM</span>
+        <div class="cpu-bar-wrap">
+          <div class="cpu-bar-fill" id="memBar" style="width:61%;background:linear-gradient(90deg,#b347ea,#00d4ff);"></div>
+        </div>
+        <span class="value" id="memPct" style="width:32px;">61%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LEFT SIDEBAR ========== -->
+  <div id="leftSidebar" class="panel">
+    <div class="nav-section-title">MAIN NAVIGATION</div>
+    <a class="nav-item active" href="dashboard.html">
+      <span class="nav-icon">📊</span> 总览 Overview
+      <span class="nav-badge">LIVE</span>
+    </a>
+    <a class="nav-item" href="traffic.html">
+      <span class="nav-icon">🚦</span> 交通 Traffic
+      <span class="nav-badge warn">MED</span>
+    </a>
+    <a class="nav-item" href="energy.html">
+      <span class="nav-icon">⚡</span> 能源 Energy
+      <span class="nav-badge">87%</span>
+    </a>
+    <a class="nav-item" href="population.html">
+      <span class="nav-icon">👥</span> 人口 Population
+    </a>
+    <div class="nav-section-title">MONITORING</div>
+    <a class="nav-item" href="weather.html">
+      <span class="nav-icon">🌦</span> 天气 Weather
+    </a>
+    <a class="nav-item" href="security.html">
+      <span class="nav-icon">🚨</span> 安全 Security
+      <span class="nav-badge alert">2</span>
+    </a>
+    <a class="nav-item" href="map.html">
+      <span class="nav-icon">🗺</span> 地图 Map
+    </a>
+    <a class="nav-item" href="ai.html">
+      <span class="nav-icon">🧠</span> AI分析 AI Analysis
+      <span class="nav-badge">ON</span>
+    </a>
+  </div>
+
+  <!-- ========== CENTRAL AREA ========== -->
+  <div id="centralArea">
+
+    <!-- Quick Stats Row -->
+    <div class="quick-stats-row">
+      <div class="stat-card" style="animation:slideUp 0.6s ease-out;">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="totalPop">12,458,392</div>
+        <div class="stat-label">Total Population</div>
+        <div class="stat-trend up">↑ +0.3% <span style="font-size:9px;color:#6b7d95;">vs last cycle</span></div>
+        <div class="sparkline">
+          <div class="bar" style="height:14px;"></div><div class="bar" style="height:18px;"></div>
+          <div class="bar" style="height:16px;"></div><div class="bar" style="height:22px;"></div>
+          <div class="bar" style="height:20px;"></div><div class="bar" style="height:24px;"></div>
+          <div class="bar" style="height:19px;"></div><div class="bar" style="height:23px;"></div>
+          <div class="bar" style="height:21px;"></div><div class="bar" style="height:26px;"></div>
+          <div class="bar" style="height:23px;"></div><div class="bar" style="height:28px;"></div>
+          <div class="bar" style="height:25px;"></div><div class="bar" style="height:27px;"></div>
+          <div class="bar" style="height:24px;"></div><div class="bar" style="height:28px;"></div>
+        </div>
+      </div>
+      <div class="stat-card" style="animation:slideUp 0.6s ease-out 0.1s;animation-fill-mode:both;">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-value" id="energyOutput">847.2 <span style="font-size:13px;">MW</span></div>
+        <div class="stat-label">Energy Output</div>
+        <div class="stat-trend up">↗ 64% <span style="font-size:9px;color:#6b7d95;">renewable share</span></div>
+        <div class="sparkline">
+          <div class="bar" style="height:20px;"></div><div class="bar" style="height:18px;"></div>
+          <div class="bar" style="height:22px;"></div><div class="bar" style="height:19px;"></div>
+          <div class="bar" style="height:25px;"></div><div class="bar" style="height:21px;"></div>
+          <div class="bar" style="height:24px;"></div><div class="bar" style="height:20px;"></div>
+          <div class="bar" style="height:26px;"></div><div class="bar" style="height:22px;"></div>
+          <div class="bar" style="height:25px;"></div><div class="bar" style="height:23px;"></div>
+          <div class="bar" style="height:27px;"></div><div class="bar" style="height:24px;"></div>
+          <div class="bar" style="height:28px;"></div>
+        </div>
+      </div>
+      <div class="stat-card" style="animation:slideUp 0.6s ease-out 0.2s;animation-fill-mode:both;">
+        <div class="stat-icon">🚦</div>
+        <div class="stat-value" id="trafficIdx">31<span style="font-size:13px;">%</span></div>
+        <div class="stat-label">Traffic Congestion Index</div>
+        <div class="stat-trend stable">● Moderate <span style="font-size:9px;color:#6b7d95;">city-wide avg</span></div>
+        <div class="sparkline">
+          <div class="bar" style="height:12px;"></div><div class="bar" style="height:15px;"></div>
+          <div class="bar" style="height:18px;"></div><div class="bar" style="height:14px;"></div>
+          <div class="bar" style="height:20px;"></div><div class="bar" style="height:17px;"></div>
+          <div class="bar" style="height:22px;"></div><div class="bar" style="height:19px;"></div>
+          <div class="bar" style="height:16px;"></div><div class="bar" style="height:21px;"></div>
+          <div class="bar" style="height:18px;"></div><div class="bar" style="height:23px;"></div>
+          <div class="bar" style="height:20px;"></div><div class="bar" style="height:19px;"></div>
+        </div>
+      </div>
+      <div class="stat-card" style="animation:slideUp 0.6s ease-out 0.3s;animation-fill-mode:both;">
+        <div class="stat-icon">🌿</div>
+        <div class="stat-value" id="aqiVal">42</div>
+        <div class="stat-label">Air Quality Index</div>
+        <div class="stat-trend up" style="color:#00ff88;">● Good <span style="font-size:9px;color:#6b7d95;">PM2.5: 9.2 µg/m³</span></div>
+        <div class="sparkline">
+          <div class="bar" style="height:10px;"></div><div class="bar" style="height:8px;"></div>
+          <div class="bar" style="height:12px;"></div><div class="bar" style="height:9px;"></div>
+          <div class="bar" style="height:11px;"></div><div class="bar" style="height:7px;"></div>
+          <div class="bar" style="height:13px;"></div><div class="bar" style="height:10px;"></div>
+          <div class="bar" style="height:8px;"></div><div class="bar" style="height:11px;"></div>
+          <div class="bar" style="height:9px;"></div><div class="bar" style="height:12px;"></div>
+          <div class="bar" style="height:10px;"></div><div class="bar" style="height:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone Status Section -->
+    <div class="section-header">◆ CITY ZONES — REAL-TIME STATUS</div>
+    <div class="zone-grid">
+      <!-- Zone A -->
+      <div class="zone-card" data-zone="A" onclick="showZoneInfo('A')" style="animation:slideUp 0.5s ease-out 0.05s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot active"></div>
+          <div>
+            <div class="zone-name">Zone A — CBD / 商业中心</div>
+            <div class="zone-subtitle">Central Business District</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#00d4ff;">ACTIVE</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">HIGH · 8,420/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">78% · 142 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#00ff88;">0</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:78%;"></div></div>
+      </div>
+
+      <!-- Zone B -->
+      <div class="zone-card" data-zone="B" onclick="showZoneInfo('B')" style="animation:slideUp 0.5s ease-out 0.1s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot stable"></div>
+          <div>
+            <div class="zone-name">Zone B — 住宅区</div>
+            <div class="zone-subtitle">Residential District</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#00ff88;">STABLE</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">MED · 3,150/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">45% · 89 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#00ff88;">0</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:45%;background:linear-gradient(90deg,#00ff88,#00ffcc);"></div></div>
+      </div>
+
+      <!-- Zone C -->
+      <div class="zone-card" data-zone="C" onclick="showZoneInfo('C')" style="animation:slideUp 0.5s ease-out 0.15s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot caution"></div>
+          <div>
+            <div class="zone-name">Zone C — 工业区</div>
+            <div class="zone-subtitle">Industrial Sector</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#ffb700;">CAUTION</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">LOW · 420/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">92% · 215 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#ff3366;">2</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:92%;background:linear-gradient(90deg,#ffb700,#ff9900);"></div></div>
+      </div>
+
+      <!-- Zone D -->
+      <div class="zone-card" data-zone="D" onclick="showZoneInfo('D')" style="animation:slideUp 0.5s ease-out 0.2s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot optimal"></div>
+          <div>
+            <div class="zone-name">Zone D — 科技园区</div>
+            <div class="zone-subtitle">Tech Innovation Park</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#00ffcc;">OPTIMAL</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">MED · 2,840/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">63% · 98 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#00ff88;">0</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:63%;background:linear-gradient(90deg,#00ffcc,#00d4ff);"></div></div>
+      </div>
+
+      <!-- Zone E -->
+      <div class="zone-card" data-zone="E" onclick="showZoneInfo('E')" style="animation:slideUp 0.5s ease-out 0.25s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot active"></div>
+          <div>
+            <div class="zone-name">Zone E — 港口/物流</div>
+            <div class="zone-subtitle">Port & Logistics Hub</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#00d4ff;">ACTIVE</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">MED · 1,960/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">81% · 164 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#ffb700;">1</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:81%;"></div></div>
+      </div>
+
+      <!-- Zone F -->
+      <div class="zone-card" data-zone="F" onclick="showZoneInfo('F')" style="animation:slideUp 0.5s ease-out 0.3s;animation-fill-mode:both;">
+        <div class="zone-header">
+          <div class="zone-dot stable"></div>
+          <div>
+            <div class="zone-name">Zone F — 生态绿地</div>
+            <div class="zone-subtitle">Ecological Green Belt</div>
+          </div>
+        </div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="zone-stat-label">Status</span>
+            <span class="zone-stat-value" style="color:#00ff88;">STABLE</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Pop. Density</span>
+            <span class="zone-stat-value">V. LOW · 84/km²</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Energy Load</span>
+            <span class="zone-stat-value">12% · 8 MW</span>
+          </div>
+          <div class="zone-stat">
+            <span class="zone-stat-label">Active Alerts</span>
+            <span class="zone-stat-value" style="color:#00ff88;">0</span>
+          </div>
+        </div>
+        <div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:12%;background:linear-gradient(90deg,#00ff88,#00ffcc);"></div></div>
+      </div>
+    </div>
+
+    <!-- Alert Ticker -->
+    <div class="alert-ticker-wrap">
+      <div class="alert-ticker-inner" id="alertTicker">
+        <span class="warn">⚠ Zone C power fluctuation detected at 14:32:15 — grid stabilizer engaged</span>
+        <span class="ok">✓ Zone D grid optimization cycle completed successfully at 14:28:44</span>
+        <span class="info">ℹ Routine maintenance scheduled for Sector 7 — ETA 2087-11-16 06:00 UTC</span>
+        <span class="warn">⚠ Traffic congestion spike detected at Junction B7-K9 — rerouting active</span>
+        <span class="ok">✓ Water purification plant efficiency at 99.7% — all parameters nominal</span>
+        <span class="info">ℹ AI predictive model updated with 2.4M new data points — accuracy now 97.3%</span>
+        <span class="warn">⚠ Zone C industrial exhaust sensor PHI-7 threshold warning at 14:15:02</span>
+        <span class="ok">✓ Backup power grid integrity test passed — all 14 nodes respond within 0.4ms</span>
+        <span class="info">ℹ Population census data sync completed — 12,458,392 verified residents</span>
+        <span class="warn">⚠ Minor seismic activity detected at Sector 12 — magnitude 2.1, no action required</span>
+        <span class="ok">✓ Zone D quantum computing node #4 back online after firmware patch</span>
+        <span class="info">ℹ Atmospheric carbon capture system running at 84% capacity — 4,200 tons/day</span>
+        <span class="warn">⚠ Zone C power fluctuation detected at 14:32:15 — grid stabilizer engaged</span>
+        <span class="ok">✓ Zone D grid optimization cycle completed successfully at 14:28:44</span>
+        <span class="info">ℹ Routine maintenance scheduled for Sector 7 — ETA 2087-11-16 06:00 UTC</span>
+        <span class="warn">⚠ Traffic congestion spike detected at Junction B7-K9 — rerouting active</span>
+        <span class="ok">✓ Water purification plant efficiency at 99.7% — all parameters nominal</span>
+        <span class="info">ℹ AI predictive model updated with 2.4M new data points — accuracy now 97.3%</span>
+        <span class="warn">⚠ Zone C industrial exhaust sensor PHI-7 threshold warning at 14:15:02</span>
+        <span class="ok">✓ Backup power grid integrity test passed — all 14 nodes respond within 0.4ms</span>
+      </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="section-header">◆ SYSTEM EVENT LOG</div>
+    <div class="event-log">
+      <div class="event-row">
+        <span class="evt-time">14:32:15</span>
+        <span class="evt-type warn">WARNING</span>
+        <span class="evt-desc">Power fluctuation detected in Zone C — Grid Stabilizer Node C-7 auto-activated. Surge suppressed within 0.8 seconds. All downstream systems remain nominal.</span>
+        <span class="evt-status" style="color:#ffb700;">RESOLVING</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">14:28:44</span>
+        <span class="evt-type ok">SUCCESS</span>
+        <span class="evt-desc">Zone D grid energy optimization cycle completed. Efficiency improved by 2.3%. Estimated annual savings: 14,200 MWh. Report filed to Central Energy Repository.</span>
+        <span class="evt-status" style="color:#00ff88;">COMPLETE</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">14:22:09</span>
+        <span class="evt-type info">INFO</span>
+        <span class="evt-desc">Routine diagnostics completed on Traffic Control AI subsystem. All 48 intersection controllers responding. Average response latency: 12ms. No anomalies detected.</span>
+        <span class="evt-status" style="color:#00ffcc;">DONE</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">14:15:02</span>
+        <span class="evt-type warn">WARNING</span>
+        <span class="evt-desc">Zone C industrial exhaust particulate sensor PHI-7 reading elevated: 42 µg/m³ (threshold: 40 µg/m³). Environmental control notified. Secondary verification in progress.</span>
+        <span class="evt-status" style="color:#ffb700;">MONITORING</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">14:08:37</span>
+        <span class="evt-type sys">SYSTEM</span>
+        <span class="evt-desc">Automated backup completed on all 6 central data nodes. 847 TB data secured. Checksum validated. Replication to off-site facility at 98.4% progress.</span>
+        <span class="evt-status" style="color:#00d4ff;">COMPLETE</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">14:01:55</span>
+        <span class="evt-type alert">ALERT</span>
+        <span class="evt-desc">Security subsystem detected unauthorized access attempt at Perimeter Node N-3 (Zone E). Intrusion Prevention System blocked request. Source IP traced and blacklisted. Security level elevated to YELLOW for Zone E.</span>
+        <span class="evt-status" style="color:#ff3366;">CONTAINED</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">13:56:21</span>
+        <span class="evt-type ok">SUCCESS</span>
+        <span class="evt-desc">Water reservoir levels verified across all 12 municipal tanks. Average fill: 87.3%. Pump station #4 maintenance window closed. All water quality parameters within safe range.</span>
+        <span class="evt-status" style="color:#00ff88;">VERIFIED</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">13:49:08</span>
+        <span class="evt-type sys">SYSTEM</span>
+        <span class="evt-desc">Waste management neural network model retrained on 1.8M new sorting images. Classification accuracy improved from 94.1% to 96.7%. Deployed to all 28 sorting facilities.</span>
+        <span class="evt-status" style="color:#00d4ff;">DEPLOYED</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">13:42:44</span>
+        <span class="evt-type info">INFO</span>
+        <span class="evt-desc">Weather control mesh calibration cycle initiated. Atmospheric ionization nodes 1-16 reporting. Humidity regulation target: 52% ±3%. Forecast models updated for next 72 hours.</span>
+        <span class="evt-status" style="color:#00ffcc;">RUNNING</span>
+      </div>
+      <div class="event-row">
+        <span class="evt-time">13:35:19</span>
+        <span class="evt-type ok">SUCCESS</span>
+        <span class="evt-desc">Public transit network synchronization completed. 214 autonomous buses, 68 metro trains, 912 shared vehicles all reporting online. Fleet efficiency score: 94.2/100.</span>
+        <span class="evt-status" style="color:#00ff88;">SYNCED</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== RIGHT PANEL ========== -->
+  <div id="rightPanel" class="panel">
+
+    <!-- Population -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">👥</span>
+        <span class="data-label">Population — Live Count</span>
+      </div>
+      <div>
+        <span class="data-value" id="livePop">12,458,392</span>
+        <span class="data-unit">residents</span>
+      </div>
+      <div class="data-sub">
+        <span class="data-trend" style="color:#00ff88;">↑ +127 today</span>
+        <span>|</span>
+        <span>Density: 4,216/km²</span>
+      </div>
+      <div class="data-gauge"><div class="mini-bar" style="width:82%;background:linear-gradient(90deg,#00d4ff,#00ffcc);height:100%;"></div></div>
+    </div>
+
+    <!-- Energy -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">⚡</span>
+        <span class="data-label">Energy Grid Load</span>
+      </div>
+      <div>
+        <span class="data-value" id="energyPct">67.4</span>
+        <span class="data-unit">% of capacity</span>
+      </div>
+      <div class="data-sub">
+        <span class="data-trend" style="color:#00ff88;">Renewable: 64.2%</span>
+        <span>|</span>
+        <span>Peak: 847 MW</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" id="energyGauge" style="width:67.4%;background:linear-gradient(90deg,#b347ea,#00d4ff);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Traffic -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">🚦</span>
+        <span class="data-label">Traffic Congestion</span>
+      </div>
+      <div>
+        <span class="data-value" id="trafficPct">31.2</span>
+        <span class="data-unit">% congested</span>
+      </div>
+      <div class="data-sub">
+        <span class="data-trend" style="color:#ffb700;">● Moderate flow</span>
+        <span>|</span>
+        <span>2.4M trips/hr</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" id="trafficGauge" style="width:31.2%;background:linear-gradient(90deg,#00ff88,#ffb700);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Air Quality -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">🌿</span>
+        <span class="data-label">Air Quality Index</span>
+      </div>
+      <div>
+        <span class="data-value" id="aqiLive" style="color:#00ff88;">42</span>
+        <span class="data-unit">AQI — Good</span>
+      </div>
+      <div class="data-sub">
+        <span>PM2.5: 9.2 µg/m³</span>
+        <span>|</span>
+        <span>O₃: 38 ppb</span>
+        <span>|</span>
+        <span>NO₂: 12 ppb</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" style="width:14%;background:linear-gradient(90deg,#00ff88,#00ffcc);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Crime Rate -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">🚨</span>
+        <span class="data-label">Crime Rate — per 100k</span>
+      </div>
+      <div>
+        <span class="data-value" id="crimeRate" style="color:#00d4ff;">186</span>
+        <span class="data-unit">incidents</span>
+      </div>
+      <div class="data-sub">
+        <span class="data-trend" style="color:#00ff88;">↓ -8.2% YoY</span>
+        <span>|</span>
+        <span>Clearance: 94.1%</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" style="width:18.6%;background:linear-gradient(90deg,#00ff88,#00d4ff);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Water Supply -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">💧</span>
+        <span class="data-label">Water Supply Status</span>
+      </div>
+      <div>
+        <span class="data-value" id="waterLvl" style="color:#00ffcc;">87.3</span>
+        <span class="data-unit">% reservoir</span>
+      </div>
+      <div class="data-sub">
+        <span>Consumption: 2.1B L/day</span>
+        <span>|</span>
+        <span>Quality: 99.7%</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" style="width:87.3%;background:linear-gradient(90deg,#00d4ff,#00ffcc);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Waste Management -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">♻</span>
+        <span class="data-label">Waste Management</span>
+      </div>
+      <div>
+        <span class="data-value" id="wasteEff" style="color:#b347ea;">96.7</span>
+        <span class="data-unit">% efficiency</span>
+      </div>
+      <div class="data-sub">
+        <span class="data-trend" style="color:#00ff88;">↑ +2.6% this cycle</span>
+        <span>|</span>
+        <span>Recycle: 84.3%</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" style="width:96.7%;background:linear-gradient(90deg,#b347ea,#00ffcc);height:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Network Latency -->
+    <div class="data-display">
+      <div class="data-header">
+        <span class="data-icon">🌐</span>
+        <span class="data-label">CityNet Latency</span>
+      </div>
+      <div>
+        <span class="data-value" id="netLatency">14.2</span>
+        <span class="data-unit">ms avg</span>
+      </div>
+      <div class="data-sub">
+        <span>Nodes online: <span id="nodesOnline">1,247</span></span>
+        <span>|</span>
+        <span>Throughput: <span id="throughput">4.8</span> TB/s</span>
+      </div>
+      <div class="data-gauge">
+        <div class="mini-bar" style="width:5.7%;background:linear-gradient(90deg,#00ff88,#00ffcc);height:100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== BOTTOM STATUS BAR ========== -->
+  <div id="bottomBar" class="panel">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="color:#00d4ff;">◆</span>
+      <span style="color:#6b7d95;">SYSLOG:</span>
+    </div>
+    <div class="sys-log-wrap">
+      <div class="sys-log-inner" id="bottomLog">
+        <span>[14:32:15] Grid stabilizer C-7 activated — Zone C power normalized</span>
+        <span style="color:#00ff88;">[14:31:02] All 1,247 CityNet nodes responding — mesh integrity 100%</span>
+        <span style="color:#00d4ff;">[14:30:00] AI Core inference cycle #84721 completed — 0 errors</span>
+        <span>[14:29:18] Traffic flow optimization applied to corridors A3, B7, D2</span>
+        <span style="color:#ffb700;">[14:28:44] Energy distribution algorithm recalculated — Zone D +2.3% efficiency</span>
+        <span>[14:27:55] Weather control mesh: all ionization nodes nominal</span>
+        <span style="color:#00ff88;">[14:27:01] Backup verification: 847 TB data integrity confirmed</span>
+        <span>[14:26:33] Public transit: 98.7% on-time performance across all routes</span>
+        <span style="color:#00d4ff;">[14:25:47] Neural network model v4.2.1 deployed to edge nodes</span>
+        <span>[14:25:02] Water quality sensors recalibrated — drift within 0.02% tolerance</span>
+        <span style="color:#ffb700;">[14:24:19] Security subsystem: perimeter scan completed — 0 intrusions</span>
+        <span style="color:#00ff88;">[14:23:40] Ecological sensors report: Zone F biodiversity index stable</span>
+        <span>[14:32:15] Grid stabilizer C-7 activated — Zone C power normalized</span>
+        <span style="color:#00ff88;">[14:31:02] All 1,247 CityNet nodes responding — mesh integrity 100%</span>
+        <span style="color:#00d4ff;">[14:30:00] AI Core inference cycle #84721 completed — 0 errors</span>
+        <span>[14:29:18] Traffic flow optimization applied to corridors A3, B7, D2</span>
+        <span style="color:#ffb700;">[14:28:44] Energy distribution algorithm recalculated — Zone D +2.3% efficiency</span>
+      </div>
+    </div>
+    <span class="bottom-sep"></span>
+    <span>NET: <span style="color:#00ff88;">●</span> <span id="netStatus">STABLE</span></span>
+    <span class="bottom-sep"></span>
+    <span>NODES: <span style="color:#00d4ff;" id="connectedNodes">1,247</span> connected</span>
+    <span class="bottom-sep"></span>
+    <span>BACKUP: <span style="color:#00ffcc;" id="lastBackup">14:08 UTC</span></span>
+    <span class="bottom-sep"></span>
+    <span>DATA: <span style="color:#b347ea;" id="dataRate">4.82 TB/s</span></span>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  // ---- PARTICLE SYSTEM (Canvas) ----
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 80;
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  class Particle {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 1.6 + 0.4;
+      this.speedX = (Math.random() - 0.5) * 0.4;
+      this.speedY = (Math.random() - 0.5) * 0.4;
+      this.opacity = Math.random() * 0.5 + 0.15;
+      this.fadeDir = Math.random() > 0.5 ? 1 : -1;
+      this.fadeSpeed = Math.random() * 0.004 + 0.001;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.opacity += this.fadeDir * this.fadeSpeed;
+      if (this.opacity >= 0.6) this.fadeDir = -1;
+      if (this.opacity <= 0.08) this.fadeDir = 1;
+      if (this.x < -10) this.x = canvas.width + 10;
+      if (this.x > canvas.width + 10) this.x = -10;
+      if (this.y < -10) this.y = canvas.height + 10;
+      if (this.y > canvas.height + 10) this.y = -10;
+    }
+    draw() {
+      ctx.fillStyle = 'rgba(0,212,255,' + this.opacity + ')';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push(new Particle());
+  }
+
+  function drawConnections() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 140) {
+          ctx.strokeStyle = 'rgba(0,212,255,' + (0.08 * (1 - dist / 140)) + ')';
+          ctx.lineWidth = 0.4;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    drawConnections();
+  }
+
+  // ---- LIVE CLOCK ----
+  function updateClock() {
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(now.getUTCDate()).padStart(2, '0');
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mi = String(now.getUTCMinutes()).padStart(2, '0');
+    const ss = String(now.getUTCSeconds()).padStart(2, '0');
+    document.getElementById('utcClock').textContent = yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + mi + ':' + ss;
+  }
+  updateClock();
+
+  // ---- CPU & MEMORY BARS ----
+  function updateSystemBars() {
+    const cpu = 38 + Math.floor(Math.random() * 18);
+    const mem = 56 + Math.floor(Math.random() * 14);
+    document.getElementById('cpuBar').style.width = cpu + '%';
+    document.getElementById('cpuPct').textContent = cpu + '%';
+    document.getElementById('memBar').style.width = mem + '%';
+    document.getElementById('memPct').textContent = mem + '%';
+  }
+  updateSystemBars();
+
+  // ---- POPULATION COUNTER (fluctuates) ----
+  let basePop = 12458392;
+  function updatePopulation() {
+    const delta = Math.floor(Math.random() * 9) - 2;
+    basePop += delta;
+    const formatted = basePop.toLocaleString('en-US');
+    document.getElementById('totalPop').textContent = formatted;
+    document.getElementById('livePop').textContent = formatted;
+    // Animate
+    const el = document.getElementById('livePop');
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'numberFlip 0.3s ease';
+  }
+
+  // ---- RANDOM METRIC UPDATES ----
+  function updateMetrics() {
+    // Energy output
+    const energyOut = (840 + Math.random() * 15).toFixed(1);
+    document.getElementById('energyOutput').innerHTML = energyOut + ' <span style="font-size:13px;">MW</span>';
+
+    // Traffic index
+    const traffic = (29 + Math.random() * 6).toFixed(1);
+    document.getElementById('trafficIdx').innerHTML = Math.round(traffic) + '<span style="font-size:13px;">%</span>';
+
+    // AQI
+    const aqi = 38 + Math.floor(Math.random() * 10);
+    document.getElementById('aqiVal').textContent = aqi;
+    document.getElementById('aqiLive').textContent = aqi;
+
+    // Energy percentage
+    const energyP = (64 + Math.random() * 7).toFixed(1);
+    document.getElementById('energyPct').textContent = energyP;
+    document.getElementById('energyGauge').style.width = energyP + '%';
+
+    // Traffic percentage
+    const trafficP = (29 + Math.random() * 6).toFixed(1);
+    document.getElementById('trafficPct').textContent = trafficP;
+    document.getElementById('trafficGauge').style.width = trafficP + '%';
+
+    // Crime rate
+    const crime = 182 + Math.floor(Math.random() * 9);
+    document.getElementById('crimeRate').textContent = crime;
+
+    // Water level
+    const water = (86 + Math.random() * 3).toFixed(1);
+    document.getElementById('waterLvl').textContent = water;
+
+    // Waste efficiency
+    const waste = (96 + Math.random() * 2).toFixed(1);
+    document.getElementById('wasteEff').textContent = waste;
+
+    // Network latency
+    const latency = (12 + Math.random() * 6).toFixed(1);
+    document.getElementById('netLatency').textContent = latency;
+
+    // Stability
+    const stability = (97.5 + Math.random() * 2).toFixed(1);
+    document.getElementById('stabilityVal').textContent = stability + '%';
+
+    // Nodes online
+    const nodes = 1240 + Math.floor(Math.random() * 15);
+    document.getElementById('nodesOnline').textContent = nodes.toLocaleString();
+    document.getElementById('connectedNodes').textContent = nodes.toLocaleString();
+
+    // Throughput
+    const tp = (4.5 + Math.random() * 0.8).toFixed(2);
+    document.getElementById('throughput').textContent = tp;
+    document.getElementById('dataRate').textContent = tp + ' TB/s';
+  }
+  updateMetrics();
+
+  // ---- ZONE CARD CLICK ----
+  window.showZoneInfo = function(zoneId) {
+    const zoneNames = {
+      'A': 'Zone A — CBD / Central Business District',
+      'B': 'Zone B — Residential District',
+      'C': 'Zone C — Industrial Sector',
+      'D': 'Zone D — Tech Innovation Park',
+      'E': 'Zone E — Port & Logistics Hub',
+      'F': 'Zone F — Ecological Green Belt'
+    };
+    const zoneDetails = {
+      'A': 'Status: ACTIVE | Population: 842,000 | Buildings: 214 | Energy: 78% | Subway stations: 18 | Hospitals: 7 | Schools: 42 | Parks: 14',
+      'B': 'Status: STABLE | Population: 3,420,000 | Buildings: 5,800 | Energy: 45% | Subway stations: 42 | Hospitals: 14 | Schools: 127 | Parks: 86',
+      'C': 'Status: CAUTION | Population: 94,000 | Factories: 47 | Energy: 92% | Active warnings: 2 | Emissions: monitored | Safety level: YELLOW',
+      'D': 'Status: OPTIMAL | Population: 568,000 | Tech firms: 312 | Energy: 63% | R&D centers: 24 | Patents filed: 1,847/yr | Innovation index: 94.2',
+      'E': 'Status: ACTIVE | Population: 392,000 | Cargo throughput: 4.2M tons/day | Energy: 81% | Docks: 28 | Warehouses: 64 | Customs clearance: 98.4%',
+      'F': 'Status: STABLE | Area: 84 km² | Forest cover: 72% | Energy: 12% | Lakes: 6 | Biodiversity index: 87.3 | Carbon capture: 4,200 tons/day'
+    };
+    alert(zoneNames[zoneId] + '\n\n' + zoneDetails[zoneId]);
+  };
+
+  // ---- INTERVALS ----
+  // 1. Clock update every second
+  setInterval(updateClock, 1000);
+
+  // 2. Population fluctuation every 3-7 seconds
+  setInterval(updatePopulation, 3000 + Math.random() * 4000);
+
+  // 3. Metric updates every 4 seconds
+  setInterval(updateMetrics, 4000);
+
+  // 4. System bars update every 5 seconds
+  setInterval(updateSystemBars, 5000);
+
+  // 5. Particle animation loop (~60fps)
+  setInterval(animateParticles, 1000 / 60);
+
+  // ---- ADDITIONAL ANIMATIONS ----
+
+  // 6. Periodic glow pulse on zone cards
+  let glowTarget = 0;
+  setInterval(function() {
+    const cards = document.querySelectorAll('.zone-card');
+    cards.forEach(function(c) { c.style.boxShadow = 'none'; });
+    const target = cards[glowTarget % cards.length];
+    if (target) {
+      target.style.boxShadow = '0 0 16px rgba(0,212,255,0.3)';
+      setTimeout(function() { target.style.boxShadow = ''; }, 800);
+    }
+    glowTarget++;
+  }, 3000);
+
+  // 7. CPU bar pulse animation
+  setInterval(function() {
+    const cpuBar = document.getElementById('cpuBar');
+    cpuBar.style.boxShadow = '0 0 8px rgba(0,255,136,0.5)';
+    setTimeout(function() { cpuBar.style.boxShadow = ''; }, 400);
+  }, 4000);
+
+  // 8. Random status dot color shift
+  setInterval(function() {
+    const dot = document.querySelector('.status-dot');
+    const colors = ['#00ff88', '#00ffcc', '#00d4ff'];
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    dot.style.background = c;
+    dot.style.boxShadow = '0 0 6px ' + c + ', 0 0 12px rgba(0,255,136,0.5)';
+  }, 8000);
+
+  // 9. Network latency pulse on data displays
+  setInterval(function() {
+    const displays = document.querySelectorAll('.data-display');
+    const target = displays[Math.floor(Math.random() * displays.length)];
+    target.style.borderColor = 'rgba(0,255,204,0.4)';
+    setTimeout(function() { target.style.borderColor = ''; }, 600);
+  }, 2500);
+
+  // 10. Bottom log color cycling
+  let logColorIdx = 0;
+  setInterval(function() {
+    const logSpans = document.querySelectorAll('#bottomLog span');
+    const colors = ['#c8d6e5', '#00d4ff', '#00ff88', '#ffb700', '#b347ea'];
+    if (logSpans.length > 0) {
+      const s = logSpans[logColorIdx % logSpans.length];
+      const orig = s.style.color;
+      s.style.color = colors[Math.floor(Math.random() * colors.length)];
+      setTimeout(function() { s.style.color = orig; }, 1500);
+      logColorIdx++;
+    }
+  }, 5000);
+
+  // 11. Sparkline bar height animation
+  setInterval(function() {
+    const sparkBars = document.querySelectorAll('.sparkline .bar');
+    sparkBars.forEach(function(bar) {
+      const h = 6 + Math.floor(Math.random() * 22);
+      bar.style.height = h + 'px';
+    });
+  }, 2000);
+
+  // 12. Title flicker random trigger
+  setInterval(function() {
+    const title = document.querySelector('.sys-title');
+    title.style.opacity = '0.85';
+    setTimeout(function() { title.style.opacity = ''; }, 80 + Math.random() * 60);
+  }, 7000 + Math.random() * 5000);
+
+  // ---- INITIAL ANIMATION SEQUENCE ----
+  // Staggered panel entrance
+  const allPanels = document.querySelectorAll('.panel');
+  allPanels.forEach(function(panel, i) {
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(10px)';
+    panel.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    setTimeout(function() {
+      panel.style.opacity = '';
+      panel.style.transform = '';
+    }, i * 40);
+  });
+
+  console.log('NEO CITY OS v3.7.2 — Dashboard initialized successfully.');
+  console.log('CityNet nodes: 1,247 | AI Core: ACTIVE | Stability: 98.2%');
+  console.log('All subsystems nominal. Awaiting user interaction.');
+})();
+</script>
+
+</body>
+</html>

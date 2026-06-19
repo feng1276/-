@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 | 城市地图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-magenta: #ff00ff;
+    --neon-yellow: #ffe600;
+    --neon-green: #00ff41;
+    --neon-red: #ff3131;
+    --neon-blue: #0066ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #020812;
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.012) 2px, rgba(0,240,255,0.012) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== TOP BAR ===== */
+  #top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: rgba(0,0,0,0.9);
+    border-bottom: 1px solid rgba(0,240,255,0.2);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+  }
+  #top-bar .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px var(--neon-cyan);
+  }
+  #top-bar .nav-links {
+    display: flex;
+    gap: 30px;
+    font-size: 12px;
+  }
+  #top-bar .nav-links a {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    transition: all 0.3s;
+    letter-spacing: 2px;
+  }
+  #top-bar .nav-links a:hover {
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px var(--neon-magenta);
+  }
+
+  /* ===== MAP CONTAINER ===== */
+  #map-wrapper {
+    position: fixed;
+    top: 50px; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  #map-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(0,240,255,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(255,0,255,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 50% 30%, rgba(0,100,255,0.03) 0%, transparent 50%);
+  }
+
+  /* Grid */
+  #map-grid {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      linear-gradient(90deg, rgba(0,240,255,0.05) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(0,240,255,0.05) 1px, transparent 1px);
+    background-size: 80px 80px;
+    animation: gridShift 20s linear infinite;
+  }
+  @keyframes gridShift {
+    0% { background-position: 0 0; }
+    100% { background-position: 80px 80px; }
+  }
+
+  /* Roads */
+  .road {
+    position: absolute;
+    background: rgba(0,240,255,0.08);
+    z-index: 2;
+  }
+  .road::before {
+    content: '';
+    position: absolute;
+    background: repeating-linear-gradient(90deg, var(--neon-cyan) 0px, var(--neon-cyan) 8px, transparent 8px, transparent 24px);
+    height: 1px;
+    top: 50%;
+    width: 100%;
+    opacity: 0.5;
+    animation: roadFlow 1s linear infinite;
+  }
+  .road.vertical::before {
+    background: repeating-linear-gradient(0deg, var(--neon-cyan) 0px, var(--neon-cyan) 8px, transparent 8px, transparent 24px);
+    width: 1px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+  }
+  @keyframes roadFlow {
+    to { background-position: -32px 0; }
+  }
+  .road.vertical::before {
+    animation: roadFlowV 1s linear infinite;
+  }
+  @keyframes roadFlowV {
+    to { background-position: 0 -32px; }
+  }
+
+  /* ===== BUILDING MARKERS ===== */
+  .building-marker {
+    position: absolute;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .building-marker:hover {
+    z-index: 50;
+    transform: scale(1.1);
+  }
+
+  .marker-glow {
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--neon-cyan);
+    background: rgba(0,240,255,0.05);
+    position: relative;
+    animation: markerPulse 2s ease-in-out infinite;
+    transition: all 0.3s;
+  }
+  .building-marker:hover .marker-glow {
+    border-color: #fff;
+    background: rgba(0,240,255,0.2);
+    box-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(0,240,255,0.3);
+  }
+
+  .building-marker.magenta .marker-glow {
+    border-color: var(--neon-magenta);
+    background: rgba(255,0,255,0.05);
+    animation: markerPulseM 2.5s ease-in-out infinite;
+  }
+  .building-marker.yellow .marker-glow {
+    border-color: var(--neon-yellow);
+    background: rgba(255,230,0,0.05);
+    animation: markerPulseY 3s ease-in-out infinite;
+  }
+
+  @keyframes markerPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+    50% { box-shadow: 0 0 25px rgba(0,240,255,0.6); }
+  }
+  @keyframes markerPulseM {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,0,255,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,0,255,0.6); }
+  }
+  @keyframes markerPulseY {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,230,0,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,230,0,0.6); }
+  }
+
+  .marker-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px currentColor;
+    pointer-events: none;
+  }
+
+  .marker-icon {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    pointer-events: none;
+  }
+
+  /* ===== BUILDING INFO PANEL ===== */
+  #info-panel {
+    position: fixed;
+    top: 80px;
+    right: -350px;
+    width: 320px;
+    background: rgba(0,0,0,0.9);
+    border: 1px solid var(--neon-cyan);
+    border-right: none;
+    padding: 25px;
+    z-index: 200;
+    transition: right 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+    box-shadow: -5px 0 30px rgba(0,240,255,0.2);
+  }
+  #info-panel.active {
+    right: 0;
+  }
+  #info-panel h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    margin-bottom: 10px;
+    letter-spacing: 3px;
+  }
+  #info-panel .info-type {
+    font-size: 10px;
+    color: var(--neon-magenta);
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+  }
+  #info-panel .info-desc {
+    font-size: 12px;
+    line-height: 1.8;
+    color: #aaccdd;
+    margin-bottom: 20px;
+  }
+  #info-panel .info-btn {
+    display: inline-block;
+    padding: 10px 30px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #000;
+    background: var(--neon-cyan);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+    transition: all 0.3s;
+  }
+  #info-panel .info-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 20px var(--neon-cyan);
+  }
+  #panel-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--neon-cyan);
+  }
+
+  /* ===== SCAN LINE EFFECT ===== */
+  .scan-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(0,240,255,0.3);
+    animation: scanDown 4s linear infinite;
+    pointer-events: none;
+    z-index: 15;
+  }
+  @keyframes scanDown {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  /* ===== HOLOGRAPHIC RING ===== */
+  .holo-ring {
+    position: absolute;
+    border: 1px solid rgba(0,240,255,0.2);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 3;
+    animation: holoSpin 20s linear infinite;
+  }
+  @keyframes holoSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== LEGEND ===== */
+  #legend {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 200;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid rgba(0,240,255,0.2);
+    padding: 15px 20px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* ===== COORDINATES DISPLAY ===== */
+  #coords-display {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 200;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(0,240,255,0.6);
+    letter-spacing: 2px;
+    pointer-events: none;
+  }
+
+  /* ===== PARTICLES ===== */
+  .map-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    width: 2px;
+    height: 2px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    animation: floatUp 6s linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.2; }
+    100% { transform: translateY(-300px) scale(0); opacity: 0; }
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    #top-bar { padding: 0 15px; height: 40px; }
+    #top-bar .logo { font-size: 14px; }
+    #top-bar .nav-links { gap: 15px; font-size: 10px; }
+    #info-panel { width: 260px; right: -290px; }
+    #legend { bottom: 10px; left: 10px; font-size: 9px; padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div class="logo">◈ NEXUS-9 :: CITY MAP</div>
+  <div class="nav-links">
+    <a href="nexus_home.html">🌃 城市入口</a>
+    <a href="metro_system.html">🚇 地铁系统</a>
+    <a href="terminal.html">💻 终端</a>
+    <a href="quests.html">📋 任务</a>
+    <a href="archive.html">📁 档案</a>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="map-wrapper">
+  <div id="map-bg"></div>
+  <div id="map-grid"></div>
+
+  <!-- Scan line -->
+  <div class="scan-line"></div>
+
+  <!-- Holographic rings -->
+  <div class="holo-ring" style="top:15%;left:18%;width:400px;height:400px;animation-duration:18s;"></div>
+  <div class="holo-ring" style="top:25%;right:15%;width:300px;height:300px;animation-duration:22s;animation-direction:reverse;"></div>
+  <div class="holo-ring" style="bottom:20%;left:40%;width:500px;height:500px;animation-duration:25s;"></div>
+
+  <!-- ROADS - Horizontal -->
+  <div class="road" style="top:35%;left:0;width:100%;height:2px;"></div>
+  <div class="road" style="top:55%;left:0;width:100%;height:2px;"></div>
+  <div class="road" style="top:72%;left:0;width:100%;height:1px;"></div>
+
+  <!-- ROADS - Vertical -->
+  <div class="road vertical" style="left:20%;top:0;height:100%;width:2px;"></div>
+  <div class="road vertical" style="left:42%;top:0;height:100%;width:2px;"></div>
+  <div class="road vertical" style="left:65%;top:0;height:100%;width:1px;"></div>
+  <div class="road vertical" style="left:82%;top:0;height:100%;width:2px;"></div>
+
+  <!-- BUILDING: AI Research Institute -->
+  <div class="building-marker" style="left:12%;top:18%;width:90px;height:90px;"
+       onclick="showInfo('ai')" onmouseenter="highlightRoads('ai')">
+    <div class="marker-glow" style="border-radius:12px;">
+      <span class="marker-label" style="color:var(--neon-cyan);">🏢 AI研究院</span>
+      <span class="marker-icon">🧠</span>
+    </div>
+  </div>
+
+  <!-- BUILDING: Data Bank -->
+  <div class="building-marker magenta" style="left:65%;top:15%;width:80px;height:110px;"
+       onclick="showInfo('bank')">
+    <div class="marker-glow" style="border-radius:8px;">
+      <span class="marker-label" style="color:var(--neon-magenta);">🏦 数据银行</span>
+      <span class="marker-icon">🔐</span>
+    </div>
+  </div>
+
+  <!-- BUILDING: Info Tower -->
+  <div class="building-marker yellow" style="left:38%;top:12%;width:60px;height:150px;"
+       onclick="showInfo('tower')">
+    <div class="marker-glow" style="border-radius:4px;">
+      <span class="marker-label" style="color:var(--neon-yellow);">🛰 信息塔</span>
+      <span class="marker-icon">📡</span>
+    </div>
+  </div>
+
+  <!-- BUILDING: Network Plaza -->
+  <div class="building-marker" style="left:25%;top:50%;width:100px;height:70px;"
+       onclick="showInfo('plaza')">
+    <div class="marker-glow" style="border-radius:50%;">
+      <span class="marker-label" style="color:var(--neon-cyan);">🌐 网络广场</span>
+      <span class="marker-icon">💬</span>
+    </div>
+  </div>
+
+  <!-- BUILDING: Quantum Factory -->
+  <div class="building-marker magenta" style="left:72%;top:45%;width:100px;height:80px;"
+       onclick="showInfo('factory')">
+    <div class="marker-glow">
+      <span class="marker-label" style="color:var(--neon-magenta);">🏭 量子工厂</span>
+      <span class="marker-icon">⚛️</span>
+    </div>
+  </div>
+
+  <!-- BUILDING: Metro Station -->
+  <div class="building-marker yellow" style="left:50%;top:62%;width:70px;height:50px;"
+       onclick="showInfo('metro')">
+    <div class="marker-glow" style="border-radius:20px;">
+      <span class="marker-label" style="color:var(--neon-yellow);">🚇 地铁站</span>
+      <span class="marker-icon">🚇</span>
+    </div>
+  </div>
+
+  <!-- SECRET: Underground entrance -->
+  <div class="building-marker" style="left:85%;bottom:12%;width:50px;height:50px; cursor:help;"
+       onclick="showInfo('secret')" title="???">
+    <div class="marker-glow" style="border-color:rgba(255,49,49,0.4); background:rgba(255,49,49,0.02); animation:none;">
+      <span class="marker-label" style="color:rgba(255,49,49,0.5);">⚠ ???</span>
+      <span class="marker-icon" style="opacity:0.6;">🚫</span>
+    </div>
+  </div>
+
+  <!-- SECRET: Abandoned District -->
+  <div class="building-marker" style="left:8%;bottom:10%;width:55px;height:45px; cursor:help;"
+       onclick="showInfo('abandoned')" title="???">
+    <div class="marker-glow" style="border-color:rgba(100,100,100,0.3); background:rgba(50,50,50,0.05); animation:none;">
+      <span class="marker-label" style="color:rgba(150,150,150,0.5);">🏚 废弃区</span>
+      <span class="marker-icon" style="opacity:0.4;">💀</span>
+    </div>
+  </div>
+</div>
+
+<!-- INFO PANEL -->
+<div id="info-panel">
+  <span id="panel-close" onclick="closePanel()">✕</span>
+  <h3 id="panel-title">选择建筑</h3>
+  <div class="info-type" id="panel-type"></div>
+  <div class="info-desc" id="panel-desc">点击城市中的建筑以查看详细信息。</div>
+  <a id="panel-link" href="#" class="info-btn">进 入</a>
+</div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:var(--neon-cyan);box-shadow:0 0 8px var(--neon-cyan);"></span> 核心设施</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--neon-magenta);box-shadow:0 0 8px var(--neon-magenta);"></span> 商业区域</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--neon-yellow);box-shadow:0 0 8px var(--neon-yellow);"></span> 公共设施</div>
+  <div class="legend-item"><span class="legend-dot" style="background:rgba(255,49,49,0.5);box-shadow:0 0 8px rgba(255,49,49,0.3);"></span> 未知区域</div>
+</div>
+
+<!-- COORDS -->
+<div id="coords-display">COORDS: N33°27'18" E121°09'42" | SECTOR 7G | POP: ???</div>
+
+<!-- STATUS BAR -->
+<div style="position:fixed;bottom:0;left:0;right:0;height:24px;background:rgba(0,0,0,0.9);border-top:1px solid rgba(0,240,255,0.2);z-index:9000;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:10px;font-family:'Share Tech Mono',monospace;color:var(--neon-cyan);">
+  <span>🟢 MAP SYSTEM ACTIVE</span>
+  <span id="map-clock"></span>
+  <span>THREAT: NOMINAL</span>
+</div>
+
+<script>
+// ===== CLOCK =====
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('map-clock').textContent =
+    `2187.06.19 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+}, 1000);
+
+// ===== BUILDING DATA =====
+const buildings = {
+  ai: {
+    title: 'AI 研究院',
+    type: '核心研究设施 | 安全等级: 3',
+    desc: 'NEXUS-9的核心人工智能研究机构。这里汇集了2187年最前沿的AI技术、神经网络架构以及量子计算研究。进入需通过身份验证。',
+    link: 'ai_institute.html',
+    color: '#00f0ff'
+  },
+  bank: {
+    title: '数据银行',
+    type: '金融数据中心 | 安全等级: 5',
+    desc: '全城数据存储与交易中心。采用量子加密技术保护用户数据。提供记忆存储、意识备份等服务。虹膜扫描验证进入。',
+    link: 'data_bank.html',
+    color: '#ff00ff'
+  },
+  tower: {
+    title: '信息塔',
+    type: '通讯枢纽 | 安全等级: 2',
+    desc: '城市最高建筑，负责全城数据传输与广播。顶部设有全息广告系统，24小时不间断播放城市资讯与商业广告。',
+    link: 'info_tower.html',
+    color: '#ffe600'
+  },
+  plaza: {
+    title: '网络广场',
+    type: '公共社交空间 | 安全等级: 0',
+    desc: '市民交流中心。设有留言板、聊天室、社区论坛。实时NPC数据流不断刷新，营造出永不眠的虚拟都市感。',
+    link: 'network_plaza.html',
+    color: '#00f0ff'
+  },
+  factory: {
+    title: '量子工厂',
+    type: '工业/开发区域 | 安全等级: 3',
+    desc: '城市的生产与开发中心。运行着最新一代量子处理器。展示项目、开发日志、技能树均在此处。机器24小时不停运转。',
+    link: 'quantum_factory.html',
+    color: '#ff00ff'
+  },
+  metro: {
+    title: '地铁系统',
+    type: '城市交通 | 安全等级: 0',
+    desc: '连接各区域的地下交通网络。高速磁悬浮列车提供城市内快速移动。搭乘时请欣赏车窗外的城市风景。',
+    link: 'metro_system.html',
+    color: '#ffe600'
+  },
+  secret: {
+    title: '⚠ 限制区域',
+    type: '访问受限 | 需要密码',
+    desc: '此区域已被封锁。检测到异常数据活动。未经授权的访问将被记录并上报城市安全系统。你知道密码吗？',
+    link: 'underground.html',
+    color: '#ff3131'
+  },
+  abandoned: {
+    title: '废弃城区',
+    type: '废弃/未知 | 无数据',
+    desc: '这个区域在地图上几乎没有标注。信号微弱，建筑破损。据说这里藏着城市建立之初的秘密...以及不该被发现的东西。',
+    link: 'abandoned_district.html',
+    color: '#888888'
+  }
+};
+
+function showInfo(buildingId) {
+  const data = buildings[buildingId];
+  const panel = document.getElementById('info-panel');
+  document.getElementById('panel-title').textContent = data.title;
+  document.getElementById('panel-title').style.color = data.color;
+  document.getElementById('panel-type').textContent = data.type;
+  document.getElementById('panel-desc').textContent = data.desc;
+  document.getElementById('panel-link').href = data.link;
+  document.getElementById('panel-link').style.background = data.color;
+  panel.classList.add('active');
+
+  // Flash effect on the selected building
+  const marker = event.currentTarget;
+  marker.style.filter = 'brightness(2)';
+  setTimeout(() => { marker.style.filter = ''; }, 300);
+}
+
+function closePanel() {
+  document.getElementById('info-panel').classList.remove('active');
+}
+
+// ===== PARTICLES =====
+function createMapParticle() {
+  const p = document.createElement('div');
+  p.className = 'map-particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.top = (40 + Math.random() * 60) + '%';
+  p.style.animationDuration = (4 + Math.random() * 8) + 's';
+  document.getElementById('map-wrapper').appendChild(p);
+  setTimeout(() => p.remove(), 12000);
+}
+setInterval(createMapParticle, 500);
+
+// ===== MOUSE COORDINATES =====
+document.addEventListener('mousemove', (e) => {
+  const x = ((e.clientX / window.innerWidth) * 100).toFixed(1);
+  const y = ((e.clientY / window.innerHeight) * 100).toFixed(1);
+  document.getElementById('coords-display').textContent =
+    `CURSOR: ${x}%,${y}% | SECTOR ${String.fromCharCode(65+Math.floor(x/10))}${Math.floor(y/10)} | ZOOM: 1.0x`;
+});
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+  switch(e.key.toLowerCase()) {
+    case '1': showInfo('ai'); break;
+    case '2': showInfo('bank'); break;
+    case '3': showInfo('tower'); break;
+    case '4': showInfo('plaza'); break;
+    case '5': showInfo('factory'); break;
+    case '6': showInfo('metro'); break;
+    case 'escape': closePanel(); break;
+    case 'h': window.location.href = 'nexus_home.html'; break;
+    case 'm': window.location.href = 'metro_system.html'; break;
+    case 't': window.location.href = 'terminal.html'; break;
+  }
+});
+
+console.log('%c[NEXUS-9 MAP] %c全息地图已激活。按 1-6 快速查看建筑。按 ESC 关闭面板。',
+  'color:#00f0ff;', 'color:#aaa;');
+</script>
+</body>
+</html>

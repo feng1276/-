@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员日志 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.8);
+  --text: #c8c0b8;
+  --dim: #706860;
+  --red: #8b0000;
+  --red-bright: #b01010;
+  --red-glow: #ff2020;
+  --amber: #b8701a;
+  --amber-bright: #e0902a;
+  --paper: #2a241a;
+  --ink: #3a3020;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grain/Noise Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Animations */
+@keyframes flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.88; }
+  10% { opacity: 1; }
+  15% { opacity: 0.92; }
+  20% { opacity: 1; }
+  50% { opacity: 1; }
+  52% { opacity: 0.85; }
+  54% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulseRed {
+  0%, 100% { box-shadow: 0 0 5px rgba(255,20,20,0.3); }
+  50% { box-shadow: 0 0 20px rgba(255,20,20,0.7), 0 0 40px rgba(255,20,20,0.3); }
+}
+
+@keyframes pageTurn {
+  0% { transform: rotateY(0deg) translateX(0); opacity: 1; }
+  40% { transform: rotateY(25deg) translateX(-30px); opacity: 0.8; }
+  60% { transform: rotateY(-25deg) translateX(30px); opacity: 0.9; }
+  100% { transform: rotateY(0deg) translateX(0); opacity: 1; }
+}
+
+@keyframes bloodDrip {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 200%; }
+}
+
+@keyframes inkBleed {
+  0% { text-shadow: 0 0 0px rgba(60,40,20,0); }
+  50% { text-shadow: 0 0 8px rgba(60,40,20,0.5); }
+  100% { text-shadow: 0 0 0px rgba(60,40,20,0); }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes revealSecret {
+  0% { opacity: 0; filter: blur(10px); transform: scale(0.9); }
+  50% { opacity: 0.5; filter: blur(5px); }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+/* Navigation */
+nav.top-nav a {
+  transition: all 0.3s ease;
+  font-family: 'Share Tech Mono', monospace;
+}
+nav.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+
+/* Cover Page */
+.cover-section {
+  max-width: 800px;
+  margin: 40px auto 20px;
+  padding: 60px 40px;
+  text-align: center;
+  position: relative;
+  /* Leather texture */
+  background:
+    linear-gradient(135deg, #1a1410 0%, #221812 25%, #1e1610 50%, #241a12 75%, #1a1410 100%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(80,40,20,0.03) 3px,
+      rgba(80,40,20,0.03) 6px
+    );
+  border: 3px solid #3a2a18;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.5),
+    0 4px 20px rgba(0,0,0,0.6),
+    0 0 2px rgba(100,60,20,0.2);
+}
+.cover-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(120,70,30,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(80,40,20,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cover-edge {
+  position: absolute;
+  left: -12px;
+  top: 20px;
+  bottom: 20px;
+  width: 8px;
+  background: linear-gradient(180deg, #2a1808, #3a2210, #2a1808);
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+.cover-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 2.4em;
+  font-weight: 700;
+  color: #b89860;
+  letter-spacing: 8px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 20px rgba(180,140,60,0.3);
+  margin-bottom: 8px;
+}
+.cover-subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.9em;
+  color: #8a6a3a;
+  letter-spacing: 4px;
+  margin-bottom: 30px;
+}
+.cover-building {
+  width: 120px;
+  height: 240px;
+  margin: 20px auto;
+  background: linear-gradient(180deg, #1a1410 0%, #2a1a10 20%, #1a1410 40%, #3a2a18 60%, #1a1410 80%, #0a0604 100%);
+  position: relative;
+  border: 2px solid #3a2a18;
+}
+.cover-building::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 10px; right: 10px;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 15px, #4a3020 15px, #4a3020 17px);
+}
+.cover-windows {
+  position: absolute;
+  top: 30px; left: 10px; right: 10px; bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cover-floor {
+  display: flex;
+  justify-content: space-around;
+}
+.cover-floor span {
+  width: 10px; height: 14px;
+  background: #1a0a00;
+  border: 1px solid #3a2a18;
+}
+.cover-floor span.lit {
+  background: #3a1a0a;
+  box-shadow: 0 0 6px rgba(200,60,20,0.3);
+}
+.cover-floor span.dim {
+  background: #1a0a04;
+  box-shadow: 0 0 3px rgba(100,30,10,0.2);
+}
+.cover-info-box {
+  margin-top: 24px;
+  padding: 12px;
+  border-top: 1px solid rgba(140,100,40,0.3);
+  border-bottom: 1px solid rgba(140,100,40,0.3);
+  display: inline-block;
+}
+.cover-info-box p {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72em;
+  color: #7a5a30;
+  letter-spacing: 1px;
+  margin: 2px 0;
+}
+
+/* Decade Tabs */
+.tab-container {
+  max-width: 950px;
+  margin: 30px auto 10px;
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 36px;
+  z-index: 80;
+  background: rgba(10,10,10,0.92);
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(120,80,40,0.2);
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #5a4030;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78em;
+  letter-spacing: 2px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.tab-btn:hover {
+  color: #b89040;
+  text-shadow: 0 0 8px rgba(180,100,40,0.4);
+}
+.tab-btn.active {
+  color: var(--amber-bright);
+  text-shadow: 0 0 12px rgba(180,100,40,0.5);
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(180,100,40,0.5);
+}
+
+/* Journal Container */
+.journal-container {
+  max-width: 950px;
+  margin: 0 auto 60px;
+  padding: 0 24px;
+}
+
+/* Single Entry */
+.journal-entry {
+  background:
+    linear-gradient(135deg, #1e1812 0%, #221c14 50%, #1f1912 100%);
+  border: 1px solid rgba(80,50,20,0.2);
+  border-left: 3px solid rgba(80,50,20,0.3);
+  margin: 16px 0;
+  padding: 18px 22px;
+  position: relative;
+  transition: all 0.4s ease;
+  animation: fadeSlideIn 0.5s ease forwards;
+  /* Paper texture */
+  background-image:
+    linear-gradient(0deg, transparent 24px, rgba(40,30,20,0.06) 25px),
+    linear-gradient(90deg, transparent 98%, rgba(40,30,20,0.03) 99%);
+  background-size: 100% 25px, 100% 100%;
+}
+.journal-entry:hover {
+  border-left-color: rgba(140,80,30,0.5);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,0,0,0.1);
+  transform: translateX(3px);
+}
+
+/* Entry Header */
+.entry-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.entry-date {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.82em;
+  color: var(--amber);
+  letter-spacing: 1px;
+}
+.entry-time {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78em;
+  color: #8a6a40;
+  letter-spacing: 1px;
+}
+.entry-weather {
+  font-size: 1.1em;
+}
+.entry-mood {
+  margin-left: auto;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mood-normal { background: #4a6a4a; box-shadow: 0 0 6px rgba(60,160,60,0.3); }
+.mood-concerned { background: #8a8a2a; box-shadow: 0 0 6px rgba(180,180,40,0.3); }
+.mood-fearful { background: #b85a1a; box-shadow: 0 0 6px rgba(200,100,30,0.3); }
+.mood-terrified { background: #b02020; box-shadow: 0 0 8px rgba(220,30,30,0.4); }
+.mood-empty { background: #3a3a3a; box-shadow: 0 0 4px rgba(80,80,80,0.2); }
+.mood-unknown { background: #1a1a1a; border: 1px solid #3a1a1a; }
+
+/* Entry Content */
+.entry-content {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.88em;
+  line-height: 1.9;
+  color: #a09078;
+}
+.entry-content .handwriting {
+  font-family: 'Noto Serif SC', serif;
+  font-style: italic;
+  color: #7a6a50;
+}
+
+/* Strikethrough text that reveals on hover */
+.entry-content .crossed {
+  text-decoration: line-through;
+  text-decoration-color: rgba(180,30,30,0.5);
+  text-decoration-thickness: 2px;
+  color: #6a5a40;
+  transition: all 0.4s ease;
+  cursor: default;
+  position: relative;
+}
+.entry-content .crossed:hover {
+  text-decoration-color: transparent;
+  color: #c8b898;
+  text-shadow: 0 0 4px rgba(180,100,40,0.3);
+}
+
+/* Blood stain effect */
+.blood-stain {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.journal-entry:hover .blood-stain {
+  opacity: 0.35;
+}
+.blood-stain.type1 {
+  top: -5px; right: 30px;
+  width: 40px; height: 20px;
+  background: radial-gradient(ellipse at center, rgba(120,10,10,0.6) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: rotate(-15deg);
+}
+.blood-stain.type2 {
+  bottom: 10px; left: 20px;
+  width: 25px; height: 35px;
+  background: radial-gradient(ellipse at center, rgba(100,10,10,0.5) 0%, transparent 65%);
+  border-radius: 40%;
+  transform: rotate(22deg);
+}
+.blood-stain.type3 {
+  top: 50%; right: 10px;
+  width: 15px; height: 50px;
+  background: linear-gradient(180deg, transparent 0%, rgba(80,10,10,0.5) 30%, rgba(80,10,10,0.3) 70%, transparent 100%);
+}
+
+/* Entry footer / page number */
+.entry-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(60,40,20,0.15);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65em;
+  color: #4a3828;
+}
+.entry-page {
+  letter-spacing: 2px;
+}
+
+/* Decade group visibility */
+.decade-group {
+  display: none;
+}
+.decade-group.active-decade {
+  display: block;
+}
+
+/* Repeated phrase class */
+.repeated-phrase {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78em;
+  color: #6a5a40;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 8px 0;
+  opacity: 0.7;
+}
+
+/* Warning entry */
+.warning-entry {
+  border-left-color: rgba(180,30,30,0.6) !important;
+  box-shadow: 0 0 15px rgba(180,20,20,0.08);
+}
+
+/* Page turning controls */
+.page-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+}
+.page-btn {
+  background: rgba(30,20,12,0.8);
+  border: 1px solid rgba(100,60,20,0.3);
+  color: #8a6a40;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75em;
+  padding: 8px 20px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: all 0.3s;
+}
+.page-btn:hover {
+  border-color: rgba(180,100,30,0.5);
+  color: #c89850;
+  box-shadow: 0 0 12px rgba(180,100,30,0.2);
+}
+
+/* Secret 2024 Entry - initially hidden */
+.secret-container {
+  max-width: 700px;
+  margin: 30px auto;
+  text-align: center;
+}
+.secret-reveal-btn {
+  background: rgba(20,10,10,0.9);
+  border: 1px solid rgba(180,30,30,0.4);
+  color: #c04040;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.85em;
+  padding: 12px 30px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.4s;
+  animation: pulseRed 3s infinite;
+}
+.secret-reveal-btn:hover {
+  background: rgba(40,10,10,0.95);
+  color: #ff4040;
+  box-shadow: 0 0 20px rgba(200,20,20,0.3);
+}
+.secret-entry {
+  display: none;
+  margin-top: 20px;
+  background: #0a0604;
+  border: 2px solid rgba(180,20,20,0.5);
+  padding: 30px;
+  animation: revealSecret 1.5s ease forwards;
+  position: relative;
+}
+.secret-entry.visible {
+  display: block;
+}
+.secret-warning {
+  color: #c04040;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+.secret-text {
+  color: #b09080;
+  font-size: 0.9em;
+  line-height: 2;
+}
+.secret-text .highlight {
+  color: #e04040;
+  font-weight: 600;
+}
+
+/* Hidden message easter egg */
+.hidden-message {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #000;
+  border: 1px solid rgba(200,40,40,0.6);
+  padding: 30px 40px;
+  z-index: 9997;
+  text-align: center;
+  animation: revealSecret 1s ease forwards;
+  box-shadow: 0 0 60px rgba(200,0,0,0.4);
+}
+.hidden-message.visible {
+  display: block;
+}
+.hidden-message p {
+  color: #e04040;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1em;
+  line-height: 2.2;
+  letter-spacing: 2px;
+}
+.hidden-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 9996;
+}
+.hidden-overlay.visible {
+  display: block;
+}
+
+/* Locked chapter indicator */
+.locked-indicator {
+  text-align: center;
+  padding: 40px;
+  opacity: 0.4;
+}
+.locked-indicator .lock-icon {
+  font-size: 3em;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* Footer */
+.footer-note {
+  text-align: center;
+  color: #3a3020;
+  font-size: 0.65em;
+  padding: 30px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .cover-section { padding: 30px 20px; margin: 20px 12px; }
+  .cover-title { font-size: 1.5em; letter-spacing: 4px; }
+  .tab-btn { font-size: 0.65em; padding: 6px 10px; }
+  .journal-entry { padding: 12px 14px; }
+  .entry-content { font-size: 0.78em; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared Navigation -->
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html" style="color:#888;text-decoration:none;">首页</a>
+  <a href="rules_main.html" style="color:#888;text-decoration:none;">住户守则</a>
+  <a href="elevator_rules.html" style="color:#888;text-decoration:none;">电梯规则</a>
+  <a href="floor_directory.html" style="color:#888;text-decoration:none;">楼层指南</a>
+  <a href="room_404.html" style="color:#888;text-decoration:none;">404房间</a>
+  <a href="basement.html" style="color:#888;text-decoration:none;">地下室</a>
+  <a href="surveillance.html" style="color:#888;text-decoration:none;">监控室</a>
+  <a href="neighbor_encounters.html" style="color:#888;text-decoration:none;">邻居</a>
+  <a href="manager_log.html" style="color:#c04040;text-decoration:none;">管理员日志</a>
+  <a href="phone_calls.html" style="color:#888;text-decoration:none;">电话记录</a>
+  <a href="mirror_rules.html" style="color:#888;text-decoration:none;">镜子规则</a>
+  <a href="midnight_shift.html" style="color:#888;text-decoration:none;">深夜值班</a>
+  <a href="missing_persons.html" style="color:#888;text-decoration:none;">失踪档案</a>
+  <a href="ritual_purification.html" style="color:#888;text-decoration:none;">净化仪式</a>
+  <a href="final_night.html" style="color:#c04040;text-decoration:none;">终局</a>
+</nav>
+
+<!-- Cover / Title Section -->
+<section class="cover-section">
+  <div class="cover-edge"></div>
+  <div class="cover-title">管 理 日 志</div>
+  <div class="cover-subtitle">—— 夜 色 公 寓 ——</div>
+  <div class="cover-building">
+    <div class="cover-windows">
+      <div class="cover-floor"><span class="dim"></span><span class="lit"></span><span class="dim"></span><span class="dim"></span><span class="lit"></span></div>
+      <div class="cover-floor"><span class="dim"></span><span class="dim"></span><span class="lit"></span><span class="dim"></span><span class="dim"></span></div>
+      <div class="cover-floor"><span class="dim"></span><span class="lit"></span><span class="dim"></span><span class="dim"></span><span class="lit"></span></div>
+      <div class="cover-floor"><span class="lit"></span><span class="dim"></span><span class="dim"></span><span class="lit"></span><span class="dim"></span></div>
+      <div class="cover-floor"><span class="dim"></span><span class="dim"></span><span class="lit"></span><span class="dim"></span><span class="dim"></span></div>
+      <div class="cover-floor"><span class="dim"></span><span class="lit"></span><span class="dim"></span><span class="dim"></span><span class="lit"></span></div>
+      <div class="cover-floor"><span class="dim"></span><span class="dim"></span><span class="dim"></span><span class="lit"></span><span class="dim"></span></div>
+      <div class="cover-floor"><span class="lit"></span><span class="dim"></span><span class="dim"></span><span class="dim"></span><span class="dim"></span></div>
+    </div>
+  </div>
+  <div class="cover-info-box">
+    <p>建档日期：1973年3月1日</p>
+    <p>最后更新：2024年3月15日</p>
+    <p>历任管理员：5位（登记在册）</p>
+    <p>日志总页数：——此栏为空白——</p>
+  </div>
+  <p style="margin-top:20px;font-size:0.7em;color:#5a3a1a;font-family:'Share Tech Mono',monospace;letter-spacing:2px;">※ 以下内容摘自历任管理员的工作日志 ※<br>部分页面因年代久远而缺损或污损，原文照录。</p>
+</section>
+
+<!-- Decade Tabs -->
+<div class="tab-container" id="tabContainer">
+  <button class="tab-btn active" data-decade="1970" onclick="switchDecade('1970')">1970s</button>
+  <button class="tab-btn" data-decade="1980" onclick="switchDecade('1980')">1980s</button>
+  <button class="tab-btn" data-decade="1990" onclick="switchDecade('1990')">1990s</button>
+  <button class="tab-btn" data-decade="2000" onclick="switchDecade('2000')">2000s</button>
+  <button class="tab-btn" data-decade="2010" onclick="switchDecade('2010')">2010s</button>
+  <button class="tab-btn" data-decade="2020" onclick="switchDecade('2020')">2020s</button>
+</div>
+
+<!-- Journal Entries Container -->
+<main class="journal-container" id="journalContainer">
+
+<!-- ============ 1970s ============ -->
+<div class="decade-group active-decade" id="decade-1970">
+
+<div class="journal-entry" data-date="1973-03-01">
+  <div class="entry-header">
+    <span class="entry-date">1973年3月1日</span>
+    <span class="entry-time">09:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    今天是夜色公寓正式投入使用的第一天。作为第一任管理员，我（王志远）在此记录。大楼共八层，设计住户96户。今天将有第一批12户住户入住。一切设施检查完毕，运转正常。向物业公司提交了首日报告——一切良好。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第1页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1973-03-15">
+  <div class="entry-header">
+    <span class="entry-date">1973年3月15日</span>
+    <span class="entry-time">17:30</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    入住工作进行顺利。目前已有40户住户。102室的赵女士送了我一包手制点心，茶叶蛋和芝麻饼，味道很好。她说她之前是中学教师，退休后搬来这里。今天还认识了305室的陈先生，他在报社工作，经常上夜班。他说这栋楼很安静，比之前住的老房子好多了。<br><br>
+    <span style="font-size:0.7em;color:#6a4a20;">（页边注：这是我第一次见到赵秀英。那时候她还活着。真正的活着。我记得她笑起来很好看。——王）</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第2页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1973-06-20">
+  <div class="entry-header">
+    <span class="entry-date">1973年6月20日</span>
+    <span class="entry-time">22:15</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    今天发生了第一件不太寻常的事。402室的住户反映，深夜听到隔壁404室传来"像是很多人在同时低声交谈"的声音。但404室目前是空置的，还没有租出去。我去检查了——房间确实是空的，没有任何异常。也许是水管的声音，老房子的管道总是会发出各种奇怪的响动。<br><br>
+    <span class="crossed">我应该再检查一次。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第5页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1973-09-10">
+  <div class="entry-header">
+    <span class="entry-date">1973年9月10日</span>
+    <span class="entry-time">08:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    入秋了。大楼的住户已增至72户。今天进行了第一次全面的消防演习。总体情况良好，所有楼层的消防通道畅通。地下室的管道有些锈蚀，已联系维修队下周来处理。<br><br>
+    下午和几位老住户聊天。他们都说这里住得很舒服。唯一的问题是——好几个人都提到，在半夜听到走廊里有脚步声。但走廊的声控灯并没有亮。我告诉他们不用担心，老房子嘛。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第8页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="1974-01-15">
+  <div class="entry-header">
+    <span class="entry-date">1974年1月15日</span>
+    <span class="entry-time">11:20</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    入冬以来发生了几起奇怪的事件。三楼的走廊灯频繁闪烁，电工来检查过三次，找不到任何故障。四楼有住户反映电梯偶尔会停在四楼自动开门——即使没有人按四楼的按钮。但这些都不算什么。<br><br>
+    真正让我不安的是今天早上：我在一楼大厅的签到本上看到了一个签名。日期是今天，时间是凌晨3:15。签名者的名字是——我。但昨晚我在家。我没有来过大楼。笔迹看起来很像我的，又不太像。我撕掉了那一页。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第14页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1974-06-07">
+  <div class="entry-header">
+    <span class="entry-date">1974年6月7日</span>
+    <span class="entry-time">19:45</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    今天的事情我不太确定该如何记录。<br><br>
+    下午四点左右，一位女士来到管理室，说她住在404室，她的水龙头不出水了。我找了一下记录——404室是空房，没有租出去。我向她说明了这一点。她看起来很困惑，说她已经在这里住了"将近两个月了"。她拿出了租房合同。<br><br>
+    那确实是我们物业公司的合同格式。签名处的名字是"陈丽华"，日期是1974年4月12日。但我百分之百确定404没有租出去。我查了所有的出租记录。404室从大楼投入使用以来一直是空置的。<br><br>
+    我把钥匙给她让她先回去，说马上派人去修。等她走后，我拿着备用钥匙去了四楼。404室的门是锁着的。我用钥匙开门——门开了。里面是一个看起来有人居住的房间。家具、窗帘、桌上的水杯。水杯里的水还是温的。但房间里没有人。<br><br>
+    <span class="crossed">我不记得陈丽华长什么样了。我只记得她穿着一件灰色的外套。灰色。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第21页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="1975-02-28">
+  <div class="entry-header">
+    <span class="entry-date">1975年2月28日</span>
+    <span class="entry-time">21:00</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    快两年了。我已经习惯了这栋楼的各种"小怪癖"。走廊里的脚步声、偶尔自己打开的电梯门、404室若隐若现的灯光……习惯了就好。大多数住户都是好人。赵奶奶经常给大家送吃的。大楼的运转一切正常。上级物业公司对年度审计很满意。<br><br>
+    今天没什么特别的事。在日志里写这一笔，只是为了记录：一切安好。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第30页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1976-11-03">
+  <div class="entry-header">
+    <span class="entry-date">1976年11月3日</span>
+    <span class="entry-time">23:50</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    我今天晚上在地下室看到了什么。<br><br>
+    楼上的暖气管道出了问题，我下去检查。地下室B1的灯坏了两个，我用的是手电筒。走到B1通往B2的楼梯口时，我听到下面有声音。我用手电筒往下照——<br><br>
+    楼梯底部站着一个男人。穿着深色的衣服。他抬头看着我的手电筒光线。他的脸上——<br><br>
+    <span class="crossed">我已经记不清楚了。也许我看错了。</span><br><br>
+    他开口说话。声音很轻，但在空旷的地下室里异常清晰。他说："你不该下来的。现在你知道了。知道了就不能假装不知道了。"<br><br>
+    然后他转身走进了B2的黑暗里。我没有跟下去。我把管道的问题标记为"待明日处理"，然后锁上了通往B2的门。用两把锁。也许该用三把。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第41页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="1977-05-12">
+  <div class="entry-header">
+    <span class="entry-date">1977年5月12日</span>
+    <span class="entry-time">15:30</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    有住户开始抱怨大楼的"居住体验"。不是关于噪音或设施——而是更抽象的。<br><br>
+    205室的住户说，他总是在梦中看到自己住在一个不同的房间里，房间的格局和205一模一样，但窗外看到的不是街道，而是一个永远黑暗的空间。他说从那个窗口偶尔能看到人影走过。<br><br>
+    602室的住户则说，他有时候会"醒来发现自己站在走廊里"，对如何到达那里毫无记忆。<br><br>
+    我把这些汇总报告给了物业公司。他们的回复非常简短："收集但不需处理。此类报告属于正常范围的老旧建筑居住体验。"<br><br>
+    <span class="crossed">正常范围。当然。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第49页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1979-12-31">
+  <div class="entry-header">
+    <span class="entry-date">1979年12月31日</span>
+    <span class="entry-time">23:59</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    七十年代的最后一夜。我在管理室里写这篇日志。窗外没有烟花——那年头的城市还比较安静。<br><br>
+    六年多了。在这六年里，有11位住户报告了"难以解释"的事件。但没有发生重大事故。没有人死亡。没有人失踪。至少——没有人在记录中失踪。<br><br>
+    我听说隔壁街的旧楼去年发生了一起跳楼事件。一个年轻的女人从八楼跳了下来。警察判定为自杀。但我听说——只是听说——那个女人之前住在404室。<br><br>
+    不对。404室从第一天起就是空的。一定是我记错了。<br><br>
+    <span class="crossed">我没有记错。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第67页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+</div><!-- end 1970s -->
+
+<!-- ============ 1980s ============ -->
+<div class="decade-group" id="decade-1980">
+
+<div class="journal-entry" data-date="1981-04-02">
+  <div class="entry-header">
+    <span class="entry-date">1981年4月2日</span>
+    <span class="entry-time">10:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    今天404室正式迎来了第一位"官方"租户——周建国，34岁，工厂工人。他说404的租金特别低，他很满意。我没有告诉他之前的怪事。我想——也许那些只是巧合。人们需要住的地方，404室一直空着也是一种浪费。<br><br>
+    但我还是多配了一把404的钥匙，单独存放。以防万一。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第71页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="1982-02-15">
+  <div class="entry-header">
+    <span class="entry-date">1982年2月15日</span>
+    <span class="entry-time">08:30</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    周建国失踪了。<br><br>
+    昨天是情人节，他下班后进入大楼。大厅的签到本上有他2月14日18:20的签名。但之后没有人见过他。今天早上他的妻子来大楼找人。我们检查了他的房间——所有的个人物品都在：钱包、钥匙、工作服。好像他只是走进房间然后蒸发了。<br><br>
+    警察来了。他们搜查了整栋楼，一无所获。<br><br>
+    我也搜查了整栋楼。我在地下室B2的楼梯口听到了一种声音——非常微弱的，像是有人在很远的地方敲击墙壁。三下。停顿。再三下。我跑上去了。<br><br>
+    <span class="crossed">我听到的求救声来自墙壁内部。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第79页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="1983-01-10">
+  <div class="entry-header">
+    <span class="entry-date">1983年1月10日</span>
+    <span class="entry-time">14:00</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    新的租户林美琴搬进了404。她是个护士，在附近的市立医院工作。年轻，很有礼貌。我向她说明了房间的情况——"之前的住户因为个人原因搬走了"——这样说也不算完全撒谎。<br><br>
+    但我还是在她入住前做了一件事。我在404室的门框上贴了一张纸，上面写着一些东西。一些我在老家的寺庙里求来的经文片段。我不知道有没有用。但至少让我睡得稍微安稳了一点。<br><br>
+    <span class="crossed">没有用。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第85页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1984-03-20">
+  <div class="entry-header">
+    <span class="entry-date">1984年3月20日</span>
+    <span class="entry-time">20:15</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    我注意到一个规律。我开始记录这栋楼里所有"异常事件"的发生时间。然后我发现：绝大多数——超过百分之七十——发生在凌晨3:00到3:33之间。<br><br>
+    我查了一下。3:33。凌晨三点三十三分。在天主教的传统中，这是"魔鬼的时刻"——对耶稣受难下午三点的一种戏仿。在中国民间信仰中，这个时辰被称为"寅时"，是昼夜交替、阴阳交界的时刻。<br><br>
+    我不知道这些意味着什么。但我知道：从今以后，凌晨三点我不再在大楼里巡逻。我锁上管理室的门。我等到天亮。<br><br>
+    <span class="crossed">管理员不应该害怕自己管理的大楼。但我害怕。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第96页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="1985-06-01">
+  <div class="entry-header">
+    <span class="entry-date">1985年6月1日</span>
+    <span class="entry-time">11:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    今天404室又迎来了新住户——王浩，41岁，做小生意的。他是第四个了。我本打算劝他换一个房间，但物业公司给我打了电话，严厉警告不要"散布不实信息影响出租率"。所以我什么都没说。<br><br>
+    但在王浩签完合同离开后，我在合同副本背面写下了前三位住户的名字和结局。周建国——失踪。林美琴——精神失常。陈丽华——<span class="crossed">不存在</span> 失踪。我把这张纸折起来藏在了日志的封底内页里。<br><br>
+    这是我能做的唯一的事情。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第104页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="1986-01-20">
+  <div class="entry-header">
+    <span class="entry-date">1986年1月20日</span>
+    <span class="entry-time">06:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    王浩的尸体在404室内被发现。<br><br>
+    法医说是心梗。但他脸上的表情——我这辈子没有见过那样的恐惧。那种恐惧如此强烈，以至于在他的面部肌肉上留下了印记。他的嘴张得很大。眼睛睁得更大。<br><br>
+    房间的温度是零下三度。没有人知道为什么。<br><br>
+    警察走后，我一个人站在404室门口。房间里已经没有尸体了，被运走了。我盯着空荡荡的房间看了一分钟。然后我听到了一种声音。非常轻，从我身后传来。就像有人在呼吸。<br><br>
+    我猛地转身。走廊是空的。但走廊墙上的安全出口指示牌——绿色的那个——在闪烁。不是正常闪烁。是<em>有节奏的</em>闪烁。三下快，三下慢。然后持续亮起。然后熄灭。<br><br>
+    <span class="crossed">它在用灯光敲莫尔斯电码。但不是任何人类文字。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第113页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="1987-09-15">
+  <div class="entry-header">
+    <span class="entry-date">1987年9月15日</span>
+    <span class="entry-time">13:00</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    我已经不再试图阻止人们住进404了。物业公司明确告诉我：如果再干涉出租，我将被解雇。我需要这份工作。我需要活着。<br><br>
+    但我开始在管理日志中悄悄记录每一次事件。我把所有的事情都写下来——不是为了现在，是为了将来。如果有朝一日这些日志被人发现——<br><br>
+    新住户搬进来了。25岁的研究生。她看起来很高兴能找到租金这么便宜的房子。<br><br>
+    <span class="crossed">她会被吞噬的。他们都一样。我也一样。只是更慢。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第120页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="1988-08-15">
+  <div class="entry-header">
+    <span class="entry-date">1988年8月15日</span>
+    <span class="entry-time">22:30</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    那个研究生——陈丽华——在电梯监控中消失了。这已经是404室的第五个住户。<br><br>
+    我调取了监控录像。她走进电梯，按下四楼。电梯门关闭。电梯在一楼到四楼之间正常运行。到达四楼，门打开——电梯里空无一人。所有楼层的监控都没有拍到她离开的画面。<br><br>
+    这不可能。我已经不再试图用"老房子"来解释这些事了。<br><br>
+    晚上我独自巡查时路过404室。门是虚掩着的。我推开门——里面很正常。一个普通的房间。干净、整洁。床铺得很整齐。窗帘拉着。但我注意到一件事：<br><br>
+    书桌上有一面镜子。镜子的角度对着门口。我走到镜子前看自己的脸。然后我发现——镜子里的我身后站着一个女人。穿着红裙子。<br><br>
+    我头也不回地跑出了404。关门时我听到了一声轻笑。<br><br>
+    <span class="crossed">我不确定那是不是我在笑。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第128页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="1989-06-30">
+  <div class="entry-header">
+    <span class="entry-date">1989年6月30日</span>
+    <span class="entry-time">17:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    我今天起草了一份文件。名字叫做"夜色公寓住户守则"。只有我能看懂的隐晦措辞，但足以让住户——如果他们足够细心——规避一些危险。<br><br>
+    比如："请勿在凌晨3:00至3:33之间进入电梯。"<br>
+    "如遇到102室住户赠送食物，请礼貌接受但不要食用。"<br>
+    "404室目前不对外出租。如果有人在网站上看到404室的招租广告，请无视。"<br>
+    "不要在地下室B2层停留超过5分钟。最好不要去。"<br><br>
+    我把这份草案放在管理室的抽屉里。也许有一天——当我离开这栋楼之后——下一个管理员会需要它。<br><br>
+    <span class="crossed">如果真的有下一位管理员的话。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第137页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1989-12-20">
+  <div class="entry-header">
+    <span class="entry-date">1989年12月20日</span>
+    <span class="entry-time">16:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    今天是八十年代最后一篇日志。<br><br>
+    十六年了。我从一个四十岁的中年人变成了一个五十六岁的老人。头发白了一半。眼睛下面的皱纹深如沟壑——不是因为岁月，是因为恐惧。<br><br>
+    我老了。我累了。但我不能离开。我可以吗？我试过。每当我想要辞职，就会发生一些事情——工资加倍，合同自动续签，物业公司的高层亲自打电话来"挽留"我。<br><br>
+    上周我递交了辞呈。第二天早上，辞呈原封不动地放在我的办公桌上，信封的封口没有被拆开，但信封的背面新写了一个字：<br><br>
+    <strong>"不。"</strong><br><br>
+    只有一个字。笔迹不是我的。但很像我的。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第145页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+</div><!-- end 1980s -->
+
+<!-- ============ 1990s ============ -->
+<div class="decade-group" id="decade-1990">
+
+<div class="journal-entry" data-date="1990-01-15">
+  <div class="entry-header">
+    <span class="entry-date">1990年1月15日</span>
+    <span class="entry-time">10:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    新年新气象。大楼翻新了走廊的地板。旧的磨石子地面换成了深灰色的瓷砖。新瓷砖很漂亮，但有一个问题——它们反光。在某些角度，你可以在瓷砖的倒影里看到走廊天花板的灯光。有时候，你也能看到其他的东西。<br><br>
+    我决定不多看地板。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第146页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1990-04-01">
+  <div class="entry-header">
+    <span class="entry-date">1990年4月1日</span>
+    <span class="entry-time">09:30</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    物业公司派了一位新的副管理员来协助我。他叫钱伯安，三十来岁，看起来很精神。他说他很高兴能在这栋"历史悠久"的大楼里工作。我没有笑，也没有表现出任何异常。<br><br>
+    但我注意到一件事情。他看大楼的走廊时——尤其是看向四楼的方向时——眼神不太对。那是一种熟悉的眼神。一种知道自己在看着什么，但选择不去命名的眼神。<br><br>
+    他在入职表格上填的日期是4月1日。愚人节。<br><br>
+    我不知道这是不是他自己选的。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第151页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="1991-02-28">
+  <div class="entry-header">
+    <span class="entry-date">1991年2月28日</span>
+    <span class="entry-time">23:45</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    404室的上一位住户张德胜——那个在失踪三周后又回来的铁路工人——今天又做了一件事。<br><br>
+    他的妻子也失踪了。<br><br>
+    张德胜仍然在404室里。他不说话，不吃饭，只是坐在角落里盯着墙壁。妻子失踪后他被警察带走询问。警察问我知不知道什么。我说我知道这栋楼里有比人类更古老的规矩。警察在笔录上写：管理员精神状态不佳。<br><br>
+    他们放走了张德胜。他回到了404室。他继续坐在角落里。<br><br>
+    我今天路过404时透过门缝往里看了一眼。张德胜仍然面对墙壁坐着。但他身后的墙壁上多了一些东西。看起来像是用指甲刻出来的。一整面墙，密密麻麻。离得太远看不清写了什么。但我能看到最后一行的最后一个词——<br><br>
+    <span class="crossed">"放我走"</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第163页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="1992-06-15">
+  <div class="entry-header">
+    <span class="entry-date">1992年6月15日</span>
+    <span class="entry-time">21:00</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    我开始理解一些事。<br><br>
+    这栋楼不是房子。房子是建在地基上的。但这栋楼——它是建在某个别的东西上的。某个更大、更古老、更深邃的东西。404室只是表象。真正的核心在地下——在B2以下，甚至更深的地方。<br><br>
+    我不想理解这些。但我已经理解了。一旦你理解，知识就无法撤销。它像一根针一样插在你的脑子里，你无法拔出来。<br><br>
+    钱伯安今天来管理室找我，说他在杂物间发现了一堆旧图纸。图纸上显示这栋楼在设计阶段有九层，而不是八层。第九层被划掉了，旁边用红笔写着："取消。结构问题。"<br><br>
+    没有写明是什么结构问题。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第179页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="1993-07-22">
+  <div class="entry-header">
+    <span class="entry-date">1993年7月22日</span>
+    <span class="entry-time">14:10</span>
+    <span class="entry-weather">⛈️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    吴敏——404室的新住户，31岁的女记者——来找过我。她说她在调查这栋楼的历史。她说这栋楼所在的地块在1940年代以前是一座义庄——停尸间。后来被拆除，但有一些东西留了下来。<br><br>
+    她给我看了一些老照片。照片上的建筑和我现在管理的大楼轮廓惊人地相似——但旧建筑有五层，而且是木质结构。照片背面写着："义庄。摄于1938年。"<br><br>
+    吴敏看起来对这些发现很兴奋。她的记者本能被激发了。她想要挖掘更多。<br><br>
+    我劝她搬出去。她没有听。她笑着说："不会有事的。我是个无神论者。"<br><br>
+    我没有再说什么。但我在心里加了一个注脚：<br>
+    <span class="crossed">这栋楼不在乎你信不信。它不在乎任何事情。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第188页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="1993-12-05">
+  <div class="entry-header">
+    <span class="entry-date">1993年12月5日</span>
+    <span class="entry-time">07:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    吴敏从404室窗口坠楼。那个窗户是固定式的，无法正常打开。<br><br>
+    警方在房间里找到的遗书只有一个字。<br><br>
+    我去了殡仪馆。我不应该去的，但我去了。吴敏的脸被清洗过了，看起来相当安详。但她的手——我没有忘记她的手。手指指甲全部剥离，指尖磨损到了骨头。好像她在死前用手指在某个坚硬表面上疯狂地刨过。<br><br>
+    我回到大楼，直奔404室。墙壁是新粉刷的——物业公司动作很快。但墙皮下有什么东西凸起着。我靠近仔细看。那是一行字。一行被新涂料覆盖、但依然能隐约看到的字。非常小，刻在石膏板上——<br><br>
+    <span class="crossed">"我不是第一个。我也不会是最后一个。它在404室等你们全部。"</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第197页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="1994-08-10">
+  <div class="entry-header">
+    <span class="entry-date">1994年8月10日</span>
+    <span class="entry-time">15:45</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    我把住户守则正式张贴在一楼大堂的通知栏里。用普通的打印纸，普通的字体。混在一堆关于垃圾分类和消防安全的通知中间。大多数住户不会注意。<br><br>
+    但有些住户会。<br><br>
+    今天下午，102室的赵奶奶站在通知栏前看了很久。然后她转过身来，看到我在看她。她微笑了。她走到管理室窗口前，轻轻放下一袋杏仁饼干。她说："小王，你辛苦了。不用担心，该来的总是会来，该走的也总是会走。"<br><br>
+    然后她转身回了102室。我看着她关上门。门关上之前，我很确定我看到——门后面的走廊不是102室的格局。而是一段向下的楼梯。<br><br>
+    <span class="crossed">赵奶奶已经……</span><br><br>
+    不。我不需要确认。有些事，不知道比知道好。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第205页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1995-11-01">
+  <div class="entry-header">
+    <span class="entry-date">1995年11月1日</span>
+    <span class="entry-time">11:30</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    我开始做噩梦。不是普通的噩梦——是重复的、精确的、每天夜晚都一样的梦。<br><br>
+    在梦里，我站在B2层的地下室里。四周是裸露的水泥墙壁，灯光昏暗。我面前是一扇门——一扇不应该存在的门。门上没有标牌，只有一个猫眼。我弯下腰，凑到猫眼前往里看。猫眼的另一侧是一只眼睛。正在往外看。<br><br>
+    我醒来。每天晚上，同一时间，凌晨3:33。<br><br>
+    我问钱伯安有没有做类似的梦。他说没有。但他看起来——我不知道怎么说——太过于平静了。不是正常人的平静。是那种已经知道了某个秘密、但决定对你保持沉默的人的平静。<br><br>
+    <span class="crossed">我不该相信钱伯安。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第214页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1996-08-31">
+  <div class="entry-header">
+    <span class="entry-date">1996年8月31日</span>
+    <span class="entry-time">20:00</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    404室的新住户赵明哲失踪了。他最后一条发给母亲的信息提到了"房间里多了一扇门"。<br><br>
+    我去404室检查。房间里只有一扇门——通往走廊的那一扇。但赵明哲的母亲给我看了他发来的最后一条短信的截图：<br><br>
+    "妈，我房间里多了一扇门。以前没有的。我要打开它看看。"<br><br>
+    短信发送时间是凌晨3:33。<br><br>
+    我对赵明哲的母亲说，他儿子可能是精神压力太大产生了幻觉。她说："不。他之前发给我的最后一张照片里——你看。"<br><br>
+    照片是赵明哲在房间里拍的。照片的角落——卧室通往客厅的方向——的的确确有一扇门。但那面墙是实心的。我敲过那面墙。没有空洞。没有回声。就是坚实的砖石结构。<br><br>
+    但那扇门出现在了照片里。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第226页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="1997-04-01">
+  <div class="entry-header">
+    <span class="entry-date">1997年4月1日</span>
+    <span class="entry-time">17:00</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    今天发生了一件不大不小的事。维修工在七楼走廊更换损坏的烟雾探测器时，在天花板的检修口后面发现了一些东西。<br><br>
+    是一张照片。黑白照片。照片上是一群人——大约二三十个——在夜色公寓大门前合影。大家都笑得很开心，有人举着"乔迁之喜"的横幅。但照片的日期标注是1943年。<br><br>
+    夜色公寓是1973年建成的。1943年这里应该是一片废墟——义庄在战争期间被炸毁了，直到1960年代才清理平整。<br><br>
+    不对。1943年，这里应该什么都没有。没有楼，没有住户，没有合影。<br><br>
+    但照片上的人看起来非常真实。照片的纸张是那个年代的相纸。我们请了一位历史照片鉴定师来看——他说这张照片至少是五十年前的。<br><br>
+    我把照片锁起来了。有些事情你理解不了。你只能把它们锁起来。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第234页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="1999-12-31">
+  <div class="entry-header">
+    <span class="entry-date">1999年12月31日</span>
+    <span class="entry-time">23:50</span>
+    <span class="entry-weather">🎆</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    一个世纪的结束。一个新千年的开始。<br><br>
+    大楼外面有人在放烟花。我从管理室的窗户往外看。烟花在夜空中炸开，红色的、金色的、绿色的。但烟花的倒影映在大楼的玻璃窗上时——颜色不对。所有的烟花倒影都是深红色的。只有深红色。<br><br>
+    我在这栋楼里工作了二十六年。<br><br>
+    我看到了太多不该看到的事。我忘记了很多我本应该记住的事。我的记忆里有很多缺口——一些日期消失了，一些面孔模糊了。我在日志里找到了一些我自己写的字，但我不记得写过。比如今天的日期。明明是1999年12月31日。但我翻到这一页——发现这一页的底部已经有了一行字：<br><br>
+    "你已经到这里很多次了。你只是不记得。"<br><br>
+    <span class="crossed">笔迹是我的。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第256页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+</div><!-- end 1990s -->
+
+<!-- ============ 2000s ============ -->
+<div class="decade-group" id="decade-2000">
+
+<div class="journal-entry" data-date="2000-03-15">
+  <div class="entry-header">
+    <span class="entry-date">2000年3月15日</span>
+    <span class="entry-time">10:30</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    新千年。新住户。老问题。<br><br>
+    孙晓雨在404室撑了十一个月。她是在彻底崩溃后被家属接走的。她是极少数能"离开"404室的人——至少肉体上是离开了。但她在精神病院里说的那些话——关于她在404室里看到的"层层叠叠的空间"——让医生们也感到不安。一位精神科医生私下问我：这栋楼到底有什么问题？<br><br>
+    我说：医生，这座城市里有很多问题，这栋楼只是其中最微不足道的一个。<br><br>
+    他说：不对。他查过了。有至少七位精神病患者都声称自己住在"夜色公寓"。他们在不同时间入住，不同时间发病，但他们的描述惊人地一致。他们都说自己在房间里看到了一扇不存在的门，门后面有另一个空间。<br><br>
+    他们描述的门——尺寸、位置、颜色——完全一致。但他们互相之间从未见过面。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第260页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2001-06-06">
+  <div class="entry-header">
+    <span class="entry-date">2001年6月6日</span>
+    <span class="entry-time">03:33</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    我今天凌晨三点半在大楼里。<br><br>
+    不是巡逻。我睡不着。我在管理室里整理旧文件，然后我听到了一种声音——不是从走廊里传来的，而是从管理室的墙壁里。非常微弱，但有节奏。一下。两下。三下。停顿。重复。<br><br>
+    我不该去查看。<br><br>
+    我走到走廊里。所有楼层的灯都在闪——不是闪烁，是依次明灭。从一楼开始，灯光一盏一盏地熄灭，然后再从八楼开始一盏一盏地亮起。非常有节奏。非常有序。<br><br>
+    我站在原地，看着灯光从一楼开始熄灭，黑暗一寸一寸地逼近我所在的二层走廊。当黑暗到达我身边时，我感觉到了——<br><br>
+    <span class="crossed">黑暗中有什么东西站在我身边。</span><br><br>
+    在那三秒的黑暗里，有东西在呼吸。离我很近。我能感觉到它的体温——冰冷，不像活物，像石头或者金属。"它"说了一句话。说了一句话。<br><br>
+    然后灯光从他——它——身后一层一层地亮起。走廊是空的。<br><br>
+    我回到了管理室。我关上门。我写下了这篇日志。<br><br>
+    它说什么？<br>
+    <span class="crossed">它说："快了。王志远。快了。"</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第273页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="2002-10-31">
+  <div class="entry-header">
+    <span class="entry-date">2002年10月31日</span>
+    <span class="entry-time">21:00</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    钱伯安是不是在发生变化？<br><br>
+    我认识他十二年了。他是白天正常、晚上也必须遵守规矩的人。但最近，他在白天的行为也开始出现异常。<br><br>
+    今天白天，我看到他站在四楼走廊里，面对着404室的门，一动不动。我喊他，他转过来看着我——脸上带着一种我从没见过的笑容。太宽了。太开心了。开心的不像是人的笑容。<br><br>
+    他说："王师傅，你知道吗？404室其实根本就不存在。它是大楼的入口。也是出口。它不是一间房间——它是大楼咬在自己身上的一道伤口。"<br><br>
+    他的声音是正常的。但他说的话不像是他说的。像是有人在借他的嘴说话。<br><br>
+    我说："你还好吗？"<br><br>
+    他眨了眨眼，笑容消失了，恢复了正常。他说："我刚刚说了什么吗？我不记得了。"<br><br>
+    我不再和他讨论404室。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第291页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2003-08-12">
+  <div class="entry-header">
+    <span class="entry-date">2003年8月12日</span>
+    <span class="entry-time">14:00</span>
+    <span class="entry-weather">⛈️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    杨建国（203室，那个退休会计）今天来找我。他说他在整理住户委员会财务记录时发现了一些不对劲的地方。<br><br>
+    大楼每月的总支出中有一笔固定的金额——金额不大，但列支项目非常奇怪："楼层维护费—额外层。"<br><br>
+    他去查了物业公司的账本，发现这笔支出从1973年大楼建成时就有。持续了三十年。每次列支项目都是同样的描述："额外层。"<br><br>
+    他说："这栋楼不是八层。是九层。第九层一直在被维护——但没有人能看到它。也没有人登记住在那上面。"<br><br>
+    我让他把这件事情忘掉。他说他已经在忘了。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第304页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2004-11-28">
+  <div class="entry-header">
+    <span class="entry-date">2004年11月28日</span>
+    <span class="entry-time">19:00</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    我已经不知道为什么要继续写这篇日志。<br><br>
+    也许是因为这是唯一能证明我还在思考的东西。这栋楼正在从我的脑子里拿走一些东西——记忆、判断力、对时间的感知。有时我觉得我昨天还是四十岁，有时我觉得我已经在这里待了一百年。<br><br>
+    今天我清理管理室的书架，发现了一摞日记本。是手写的，封面是棕色的牛皮纸。我翻开第一本——笔迹是我的。但我完全不记得写过。第一页的日期是1958年。<br><br>
+    我在1958年的时候应该只有一岁。<br><br>
+    内容是关于一栋大楼的日常管理。描写非常详细。提到了"404室的灯光总是在凌晨亮起"，"地下室里有不止一层"，"不要和黑色眼睛的管理员说话"。<br><br>
+    我把这些笔记本锁进了保险柜里。保险柜的密码是我不知道的。但我输入了我下意识想到的一组数字——保险柜开了。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第319页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2005-03-15">
+  <div class="entry-header">
+    <span class="entry-date">2005年3月15日</span>
+    <span class="entry-time">是白天还是晚上？</span>
+    <span class="entry-weather">——</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    <div class="repeated-phrase">
+      它在地下。它在墙壁里。它在电梯井里。它在镜子里。它在走廊尽头。<br>
+      它在地下。它在墙壁里。它在电梯井里。它在镜子里。它在走廊尽头。<br>
+      它在地下。它在墙壁里。它在电梯井里。它在镜子里。它在走廊尽头。
+    </div>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第327页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+</div>
+
+<div class="journal-entry" data-date="2005-11-11">
+  <div class="entry-header">
+    <span class="entry-date">2005年11月11日</span>
+    <span class="entry-time">03:33</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    我不记得是从哪一天开始，我不再在日志里写"我"。我称自己为"管理员"。好像我试图把自己和这个角色分离开来。但这没有用。<br><br>
+    今天发生了一件事。<br><br>
+    晚上十点，一位年轻住户神色慌张地敲管理室的门。他说他的妻子不见了。他们下午一起在房间里看电视，妻子说去厨房倒杯水。他等了十分钟。妻子没有回来。厨房是空的。公寓的门是锁着的——从里面反锁的。窗户是关着的。所有房间都检查了。他的妻子就这样在一个锁着的、封闭的公寓里消失了。<br><br>
+    他哭着问我：这里到底发生了什么？<br><br>
+    我没有回答。我只是说：我去查一下监控。<br><br>
+    监控录像里，走廊是空的。没有人离开公寓。但监控画面的一个角落里——消防通道的方向——有一个模糊的影子。非常模糊。看起来像一个女人。穿着红色的衣服。只出现了一帧。然后消失了。<br><br>
+    我把这个片段删掉了。不是为他。是为我自己。我不能再看到更多了。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第335页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="2007-02-02">
+  <div class="entry-header">
+    <span class="entry-date">2007年2月2日</span>
+    <span class="entry-time">21:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    <div class="repeated-phrase">
+      我已经不记得上次正常做梦是什么时候。<br>
+      每天晚上都是同一个梦。B2的门。猫眼里的眼睛。<br>
+      门在打开。一点一点地打开。<br>
+      它要来了。它要来了。它要来了。
+    </div>
+    <br>
+    <span class="crossed">我听到它在叫我的名字。不是"王志远"。是它给我起的另一个名字。那个名字我从没对任何人说过。但它在用。它一直知道那个名字。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第348页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="2008-08-15">
+  <div class="entry-header">
+    <span class="entry-date">2008年8月15日</span>
+    <span class="entry-time">不记得了</span>
+    <span class="entry-weather">——</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    <span class="crossed">我是王志远。我是这栋楼的管理员。我在这里工作了三十五年。</span><br><br>
+    我今天看到镜子里的自己了。管理室洗手间的那面小镜子。通常我不照镜子——因为这栋楼里的镜子不是用来照的。但我今天看到了。<br><br>
+    镜子里的我——<br>
+    穿着一件红色连衣裙。<br><br>
+    那是我。那是我的脸。但那不是我的身体。我的衣服是蓝色的工装外套。但镜子里的我穿着红色连衣裙。微笑着。用一种我不可能做出的表情微笑着。<br><br>
+    我用拳头砸碎了镜子。碎片掉在地上。每一片碎片里都有一个我。但每一个我的表情都不一样。有的在哭。有的在笑。有的在尖叫——嘴张得很大，但没有声音。七片碎片，七个不同的表情。<br><br>
+    我把碎片扫进了垃圾袋。我把它丢在了大楼后面的垃圾桶里。明天早上我要辞职。<br><br>
+    <span class="crossed">我不会辞职的。它不会让我走。它从来不会让任何人走。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第359页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="2008-12-31">
+  <div class="entry-header">
+    <span class="entry-date">2008年12月31日</span>
+    <span class="entry-time">16:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    今天我正式提交了退休申请。三十六年的管理员生涯。够了。<br><br>
+    物业公司批准了。批准得很快，快得反常。他们说会派新的管理员来接替。钱伯安将正式担任下一任管理员。<br><br>
+    这是我的最后一篇日志。<br><br>
+    三十六年来，我记录了这栋楼里发生的超过三百起异常事件。十一人死亡或失踪。无数个夜晚的恐惧和困惑。但我不认为我记录下了真相。我只是记录下了我能看到的部分。就像冰山——水面之上只是一小部分。<br><br>
+    我把这些日志留在这里，留给下一个管理员。也留给任何需要知道真相的人。<br><br>
+    关于404室：我仍然不知道里面有什么。<br>
+    关于地下室B2：我从未真正进入过。<br>
+    关于第九层：它存在。我不需要亲自上去也知道。<br>
+    关于这栋楼本身：它不是建筑。它是别的什么东西。<br><br>
+    ——王志远<br>
+    夜色公寓第一任管理员<br>
+    1973年3月—2008年12月<br><br>
+    <span class="crossed">我不认为我真的能离开。但我至少要试一次。如果这栋楼让我走——那说明它没有那么糟糕。如果它不让我走——那么读到这些的人，请把它当作一个警告。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：王志远</span>
+    <span class="entry-page">— 第370页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+  <div class="blood-stain type2"></div>
+</div>
+
+</div><!-- end 2000s -->
+
+<!-- ============ 2010s ============ -->
+<div class="decade-group" id="decade-2010">
+
+<div class="journal-entry" data-date="2009-04-01">
+  <div class="entry-header">
+    <span class="entry-date">2009年4月1日</span>
+    <span class="entry-time">09:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    <em style="color:#8a6a40;">（笔迹明显不同——新管理员钱伯安的第一篇日志。）</em><br><br>
+    我是钱伯安，夜色公寓新任管理员。王志远先生于2008年12月退休。关于他的最后下落，我无可奉告。物业公司的说法是"他已离开本市"。<br><br>
+    今天是4月1日。一个适合新开始的日子。<br><br>
+    我已阅读了王志远先生留下的全部日志。三百七十页。我用了整整一个月来消化这些内容。现在我知道我接手的不是一栋普通的大楼。<br><br>
+    但我拒绝被恐惧支配。王志远先生是旧时代的人，他们的恐惧是古老的、迷信的。我将以现代的管理方式来运营这栋楼——规则化、标准化、透明化。<br><br>
+    我将住户守则更新到了2.0版本。新增了十七条具体的规则。包括：<br>
+    - "请勿在夜间使用四楼洗手间"<br>
+    - "如果电梯在没有按下按钮的情况下在四楼停止并开门，请闭上眼睛直到门重新关闭"<br>
+    - "管理员的电话号码是一个普通的号码。如果你打过去，对方不是管理员——挂掉。"<br><br>
+    规则就是力量。规则就是秩序。秩序可以驱散混乱。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第371页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2009-07-15">
+  <div class="entry-header">
+    <span class="entry-date">2009年7月15日</span>
+    <span class="entry-time">17:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-normal"></span>
+  </div>
+  <div class="entry-content">
+    上任三个月。一切正常。我严格执行住户守则，住户们也都配合。规则确实有效——异常事件的发生频率显著下降。<br><br>
+    一些老住户对我的管理方式表示满意。203的杨建国说，他在这栋楼住了六年，第一次感觉"安全了一些"。<br><br>
+    404室目前处于关闭状态。我在门上加了额外的锁，并张贴了"设备维修中，暂不开放"的通知。物业公司同意了我的建议——在找到下一任租户之前，这间房暂时不出租。<br><br>
+    我正在调查王志远先生日志中提到的一些未解之谜。地下室B2——我下去过。那里只是一个普通的储藏室。没什么特别的。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第380页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2010-02-28">
+  <div class="entry-header">
+    <span class="entry-date">2010年2月28日</span>
+    <span class="entry-time">20:00</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    我开始理解王志远了。<br><br>
+    不是一下子理解的。是逐渐的。像水渗透进岩石的裂缝。一个月。三个月。六个月。你开始注意到——规则并不能阻止"它们"。规则只是让"它们"不那么频繁地出现。<br><br>
+    上个月，一个匿名的人——身份不明，证件是假的——住进了404室。他在没有我的同意下签了租赁合同。物业公司批准的。两个月后，404室被"重置"了——所有的物品消失，墙壁重新粉刷。我向物业公司询问这个租户的情况。回复是："没有这个人。"<br><br>
+    没有这个人。<br><br>
+    我开始在日志中写字。就像王志远之前做的那样。也许这就是所有管理员的宿命——你开始记录，然后你开始消失。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第392页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2011-09-13">
+  <div class="entry-header">
+    <span class="entry-date">2011年9月13日</span>
+    <span class="entry-time">22:30</span>
+    <span class="entry-weather">🌧️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    有两个钱伯安。<br><br>
+    白天的那一个是正常的。他遵守规则，管理大楼，和住户友好互动。晚上的那一个——我不知道。我醒来的时候有时会发现自己站在走廊里，穿着睡衣，赤着脚。我的脚底沾满了灰尘。好像我走了很远的路。<br><br>
+    今天早上我醒来时，手上有墨水的痕迹。我的日志里多了一篇文字——是我自己的笔迹，但我完全不记得写过。内容是：<br><br>
+    "它在地下等我。每天晚上。它说它在等我接替它。成为它的一部分。如果你在读这个——请在我发生什么事情之前阻止我。但你不能。你也在这个循环里。我们都在这栋楼里。从第一天开始。"<br><br>
+    我把这页撕了。但撕掉之后，我发现下一页上也写到同样的内容。再下一页也是。连续二十页。全部是同样的内容。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第411页 —</span>
+  </div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="2013-05-05">
+  <div class="entry-header">
+    <span class="entry-date">2013年5月5日</span>
+    <span class="entry-time">16:30</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    赵秀英（102室）还活着。<br><br>
+    七十年代记录中的她在今年应该大约八十五岁了。但她看起来还是六十岁出头的样子。我问过她这个问题，她笑着说我记错了。她说她搬来的时候才四十多岁。<br><br>
+    但我看过王志远的日志。1973年赵秀英送给王志远点心。如果她那时候就已经是退休教师——那她至少也是五十多岁。不可能到今天还在。<br><br>
+    她不是活人。也许从来就不是。也许102室的赵秀英从一开始就是——别的什么东西。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第433页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2014-10-31">
+  <div class="entry-header">
+    <span class="entry-date">2014年10月31日</span>
+    <span class="entry-time">23:00</span>
+    <span class="entry-weather">🌫️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    今天在B2层发现了一扇门。<br><br>
+    不是原来就有的那扇储藏室的门——是另一扇。在B2最深处，供水管道后面的墙壁上。管道维修工说，之前这个位置是一面完整的墙。但今天——墙上有了一扇门。深黑色的。没有把手。只有一个小小的猫眼。<br><br>
+    维修工从猫眼往里看。他看了大约十秒。然后他直起身来，面色平静地说："没事。里面什么都没有。"然后他放下工具，走出了地下室。再也没有回来。他辞了职。离开前我找到他问他在猫眼里看到了什么。他看着我，嘴唇动了动——但没有声音。他试了三次。最后他说："我不记得了。"<br><br>
+    但我看到他的眼睛了。他的瞳孔里有一个倒影。是一个房间。一个和404室一模一样的房间。<br><br>
+    <span class="crossed">门在扩大。从四楼延伸到了地下室。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第452页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+<div class="journal-entry" data-date="2016-06-20">
+  <div class="entry-header">
+    <span class="entry-date">2016年6月20日</span>
+    <span class="entry-time">14:00</span>
+    <span class="entry-weather">☀️</span>
+    <span class="entry-mood mood-concerned"></span>
+  </div>
+  <div class="entry-content">
+    我制定了一条新规矩：每月至少写一篇日志。保持记录的习惯——这是王志远教给我的。保持写字的节奏可以——在某种程度上——保持你作为"人"的身份。<br><br>
+    407室搬来了新住户。养猫的孙女士。她的猫非常安静。太安静了。猫通常总是叫的——但她的猫从来不叫。它们在走廊里跟着我走的时候，脚步轻得像没有重量。<br><br>
+    我开始怀疑这栋楼里有多少住户是真实的。不是比喻——是字面意义上的真实。血肉之躯。出生、成长、死亡。有多少？一半？还是更少？<br><br>
+    我在住户信息系统里统计了一下。登记的96户中，202户常住人口。但我每天在走廊里遇到的、在大厅里打招呼的——不会超过30个人。其他的住户都去哪里了？<br><br>
+    <span class="crossed">也许他们从未存在过。也许他们是被编造出来的——被这栋楼本身编造出来的。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第471页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2017-11-01">
+  <div class="entry-header">
+    <span class="entry-date">2017年11月1日</span>
+    <span class="entry-time">20:00</span>
+    <span class="entry-weather">❄️</span>
+    <span class="entry-mood mood-fearful"></span>
+  </div>
+  <div class="entry-content">
+    404室的新住户——郑宇，前警察。他来这里是为了调查之前的案件。<br><br>
+    我告诉他不要住在404。他笑着说他是警察，他不怕鬼。我说——不是鬼。是比鬼更古老的东西。他说他会小心的。<br><br>
+    他留下的大量笔记非常有价值。他用了刑警的调查方法来系统性地分析这栋楼的异常。他画了一张图——一张"事件密度分布图"，将三十多年来所有报告过的异常事件标注在楼层平面图上。<br><br>
+    结果显示：异常事件并非随机分布。它们以404室为中心向外辐射，密度随着距离递减。就像404室是一个——"辐射源"。不对——是一个"开口"。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第488页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="2018-09-10">
+  <div class="entry-header">
+    <span class="entry-date">2018年9月10日</span>
+    <span class="entry-time">03:33</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    郑宇的最后一篇日记。我把它完整抄录在此：<br><br>
+    "我知道答案了。答案很简单。404室不是闹鬼的房间——整栋楼才是。404只是它最薄弱的地方。就像皮肤上的伤口。它会呼吸。如果你读到了这个——快离开。趁你还能离开的时候。"<br><br>
+    郑宇在写下这篇日记后失踪。失踪方式和之前的人一样——一个锁着的房间里，一个人凭空消失。但他的日记我保留了下来。三十七本笔记本，密密麻麻的字迹。一个警察用他一辈子的训练来调查这栋楼，最终只得到了一个结论——跑。<br><br>
+    但我不能跑。管理员不能跑。管理员是大楼的一部分。<br><br>
+    今天凌晨三点半，我站在阳台上看向大楼。每一个窗户都是黑的——除了404。404的窗户亮着一种我从未见过的颜色。不是白色。不是黄色。是一种——如果我能给颜色命名的话——"空无的颜色"。看了会让人骨头发冷的颜色。<br><br>
+    窗户里有人影。很多人影。挤在404那间小房间里。他们在看着我。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第503页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+  <div class="blood-stain type2"></div>
+</div>
+
+<div class="journal-entry" data-date="2019-12-31">
+  <div class="entry-header">
+    <span class="entry-date">2019年12月31日</span>
+    <span class="entry-time">22:00</span>
+    <span class="entry-weather">🎆</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    十年。我当了十年的管理员。<br><br>
+    我已经不再区分白天和晚上了。白天也会发生奇怪的事。晚上也会发生平凡的事。钱伯安是谁？一个名字。一个角色。一个身份。"管理员"。就像之前的王志远一样。就像之后的下一个人一样。<br><br>
+    这栋楼不需要管理员。管理员是它给自己找的——饲料。我们以为在管理大楼，实际是大楼在管理我们。通过我们，它和外部世界保持联系。通过我们，它学习如何——如何更像一栋普通的建筑。<br><br>
+    但有些夜晚，当我不再思考、不再挣扎的时候，我能听到它的声音。不是用语言。是直接在骨头里的震动。它说它很快乐。它说住户们让它很快乐。它说404室很快会再打开的。<br><br>
+    <span class="crossed">它说它喜欢我。它不会让我离开。永远不会。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：钱伯安</span>
+    <span class="entry-page">— 第520页 —</span>
+  </div>
+  <div class="blood-stain type3"></div>
+</div>
+
+</div><!-- end 2010s -->
+
+<!-- ============ 2020s ============ -->
+<div class="decade-group" id="decade-2020">
+
+<div class="journal-entry" data-date="2020-03-15">
+  <div class="entry-header">
+    <span class="entry-date">2020年3月15日</span>
+    <span class="entry-time">10:00</span>
+    <span class="entry-weather">☁️</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    <em style="color:#8a6a40;">（笔迹与前两任均不同。更工整，但笔画僵硬，像是——模仿人类笔迹的自动书写。）</em><br><br>
+    年度检查完毕。所有设施运转正常。住户满意度调查结果良好。404室维持关闭状态。地下室B2定期巡查，未发现异常。<br><br>
+    以上是官方记录。<br><br>
+    以下是实际情况：<br>
+    102室的住户已经三年没有打开过门。但每天都有饭菜的香味从里面飘出来。<br>
+    502室的房间在物业系统中标记为"空置"，但每月有租金到账。来源无法追踪。<br>
+    610室在晚上会传出小孩的哭声。录音后播放——录音带里没有小孩的哭声，只有一种低频的嗡鸣声。<br>
+    708室门口的信件被人取走。但监控没有拍到任何人接近708室。
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第528页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry" data-date="2022-06-30">
+  <div class="entry-header">
+    <span class="entry-date">2022年6月30日</span>
+    <span class="entry-time">是白天吗？</span>
+    <span class="entry-weather">——</span>
+    <span class="entry-mood mood-empty"></span>
+  </div>
+  <div class="entry-content">
+    <div class="repeated-phrase">
+      管理员不是一个人名。管理员是一个位置。一个功能。<br>
+      就像心脏泵血，肝脏解毒。管理员——记录。管理员——见证。<br>
+      大楼需要被人看到。如果没有见证者，它就是孤独的。<br>
+      大楼害怕孤独。大楼需要住户。大楼需要管理员。<br>
+      大楼爱我。大楼爱你们所有人。<br>
+      大楼想要你们留下来。永远。
+    </div>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第539页 —</span>
+  </div>
+</div>
+
+<div class="journal-entry warning-entry" data-date="2024-03-15">
+  <div class="entry-header">
+    <span class="entry-date">2024年3月15日</span>
+    <span class="entry-time">03:33</span>
+    <span class="entry-weather">🌙</span>
+    <span class="entry-mood mood-terrified"></span>
+  </div>
+  <div class="entry-content">
+    <em style="color:#c04040;">（此条目严重污损，大量文字无法辨认。纸张有烧灼痕迹和不明来源的深色污渍。）</em><br><br>
+    这是最后一篇。<br><br>
+    我已经不再是管理员。我是大楼本身。大楼是我。没有区别。<br><br>
+    昨天——或者是今天——或者是五十年前的某一天——我走进404室。门在我身后关上了。房间里不是房间。是一段楼梯。向下的楼梯。远远超过了两层地下室。我走了很久。我没有数步数。<br><br>
+    楼梯的尽头是一个空间。非常巨大。比大楼的地基还要大。在黑暗的中心，有一个——<br><br>
+    <span style="color:#803030;">（此处有十五行文字被彻底划掉。墨迹渗透到纸背。在适当的角度可以看到"它"、"建筑不是建筑"、"我们都在里面"等断续词语。）</span><br><br>
+    结论：<br><br>
+    <strong>这栋楼不需要管理员。从来都不需要。</strong><br><br>
+    管理员是这栋楼给自己找到的——一种与外部世界互动的方式。当你读到这篇日志时，也许我就是那个正在往你的窗户里张望的人。也许我已经不再是钱伯安。也许我从来就不是。<br><br>
+    如果你住在这里——<br>
+    如果你看到了日志——<br>
+    跑。不要回头。趁你还能跑的时候。<br><br>
+    <span class="crossed">你是跑不掉的。我们都知道。</span>
+  </div>
+  <div class="entry-footer">
+    <span>管理员：——</span>
+    <span class="entry-page">— 第547页 —</span>
+  </div>
+  <div class="blood-stain type1"></div>
+  <div class="blood-stain type2"></div>
+  <div class="blood-stain type3"></div>
+</div>
+
+</div><!-- end 2020s -->
+
+</main>
+
+<!-- 2024 Final Entry (Hidden) -->
+<section class="secret-container">
+  <button class="secret-reveal-btn" id="secretRevealBtn" onclick="revealSecretEntry()">
+    ⚠ 查看2024年完整记录 ⚠
+  </button>
+  <div class="secret-entry" id="secretEntry">
+    <div class="secret-warning">=== 警告：以下记录的真实性无法验证 ===</div>
+    <div class="secret-text">
+      <p style="text-align:center;font-family:'Orbitron',sans-serif;color:#c04040;letter-spacing:3px;margin-bottom:20px;">2024年4月4日 04:04</p>
+      <p>以下文字不是由管理员记录的。管理室的日志本上自行出现了这些文字。没有人在管理室。监控没有拍到任何人进出。但日志本上多了三页。</p>
+      <p style="margin-top:16px;">第一页：</p>
+      <p class="highlight">"王志远从未离开。钱伯安不是第二个管理员——他是第一个管理员的<em>延续</em>。这栋楼在1973年之前的更多岁月里还有其他的管理员。他们的名字已经被大楼吃掉了。所有人的名字最终都会被大楼吃掉。"</p>
+      <p style="margin-top:16px;">第二页：</p>
+      <p class="highlight">"404室是入口。B2是通道。第九层是终点。它们在一条直线上——在建筑蓝图里，它们的重心连线与大楼的中轴线形成了6.66度的夹角。没有人注意到这一点。除了大楼本身。"</p>
+      <p style="margin-top:16px;">第三页——只有一句话：</p>
+      <p class="highlight" style="font-size:1.2em;">"亲爱的读者：你在看日志的时候，日志也在看你。请翻到第0页。"</p>
+      <p style="margin-top:16px;color:#706860;">（日志本没有第0页。日志本从来没有第0页。但如果你仔细看封面内侧——你会看到一张薄薄的纸被粘在里面。纸上写着什么。需要你自己去发现。）</p>
+    </div>
+  </div>
+</section>
+
+<!-- Hidden Easter Egg Message -->
+<div class="hidden-overlay" id="hiddenOverlay" onclick="closeHiddenMessage()"></div>
+<div class="hidden-message" id="hiddenMessage">
+  <p>你在寻找真相。</p>
+  <p>真相是：这栋楼从来没有管理员。</p>
+  <p>"管理员"是大楼的一个器官。</p>
+  <p>就像人的心脏。大楼会自己长出它需要的东西。</p>
+  <p>读完日志的你——</p>
+  <p>你已经看到了太多。</p>
+  <p style="color:#ff4040;font-size:1.2em;margin-top:10px;">欢迎成为下一任管理员。</p>
+  <p style="color:#706860;font-size:0.7em;margin-top:14px;">（点击任意处关闭）</p>
+</div>
+
+<!-- Footer -->
+<div class="footer-note">
+  夜色公寓 管理日志 · 1973-2024<br>
+  编号：NA-ML-001 至 NA-ML-547<br>
+  "每一天的记录都让墙壁更厚一层。但墙壁后面有什么——日志里没有说。"
+</div>
+
+<script>
+// === Decade Tab Switching ===
+function switchDecade(decade) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-decade') === decade) {
+      btn.classList.add('active');
+    }
+  });
+
+  // Show/hide decade groups
+  document.querySelectorAll('.decade-group').forEach(group => {
+    group.classList.remove('active-decade');
+  });
+  const target = document.getElementById('decade-' + decade);
+  if (target) {
+    target.classList.add('active-decade');
+    // Page turn animation
+    const entries = target.querySelectorAll('.journal-entry');
+    entries.forEach((entry, i) => {
+      entry.style.animation = 'none';
+      entry.offsetHeight; // Trigger reflow
+      entry.style.animation = `fadeSlideIn 0.5s ease forwards`;
+      entry.style.animationDelay = `${i * 0.03}s`;
+    });
+  }
+
+  // Scroll to top of journal
+  document.querySelector('.journal-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// === Secret 2024 Entry ===
+function revealSecretEntry() {
+  const secretEntry = document.getElementById('secretEntry');
+  const btn = document.getElementById('secretRevealBtn');
+
+  if (secretEntry.classList.contains('visible')) {
+    secretEntry.classList.remove('visible');
+    btn.textContent = '⚠ 查看2024年完整记录 ⚠';
+    return;
+  }
+
+  // Show warning first
+  if (!sessionStorage.getItem('nightfall_secret_warned')) {
+    const confirmed = confirm('警告：以下内容可能造成严重的不适感。此记录与已知的现实存在矛盾。是否继续？');
+    if (!confirmed) return;
+    sessionStorage.setItem('nightfall_secret_warned', 'true');
+  }
+
+  secretEntry.classList.add('visible');
+  btn.textContent = '▲ 隐藏完整记录 ▲';
+
+  // Add creepy atmosphere effect
+  document.body.style.transition = 'background 1.5s';
+  document.body.style.background = '#030303';
+  setTimeout(() => { document.body.style.background = '#060606'; }, 2000);
+
+  // Scroll to secret
+  secretEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// === Hidden Easter Egg: Click dates in order ===
+let dateClickSequence = [];
+const secretOrder = [
+  '1973-03-01', '1973-06-20', '1974-01-15', '1976-11-03',
+  '1979-12-31', '1982-02-15', '1985-06-01', '1986-01-20',
+  '1988-08-15', '1991-02-28', '1993-12-05', '1996-08-31',
+  '1999-12-31', '2001-06-06', '2005-11-11', '2008-08-15',
+  '2008-12-31', '2009-04-01', '2011-09-13', '2014-10-31',
+  '2018-09-10', '2019-12-31', '2024-03-15'
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Add click listeners to entry dates
+  document.querySelectorAll('.entry-date').forEach(dateEl => {
+    dateEl.style.cursor = 'pointer';
+    dateEl.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const entry = this.closest('.journal-entry');
+      if (!entry) return;
+      const date = entry.getAttribute('data-date');
+
+      if (date) {
+        dateClickSequence.push(date);
+        // Flash feedback
+        this.style.color = '#e04040';
+        this.style.textShadow = '0 0 10px rgba(255,20,20,0.5)';
+        setTimeout(() => {
+          this.style.color = '';
+          this.style.textShadow = '';
+        }, 600);
+
+        checkDateSequence();
+      }
+    });
+  });
+
+  // Add click listeners to all journal entries
+  document.querySelectorAll('.journal-entry').forEach(entry => {
+    entry.addEventListener('click', function() {
+      // Subtle page turn effect
+      this.style.transition = 'transform 0.4s ease';
+      this.style.transform = 'rotateY(3deg) translateX(5px)';
+      setTimeout(() => {
+        this.style.transform = '';
+      }, 400);
+    });
+  });
+
+  // Keyboard navigation between decades
+  document.addEventListener('keydown', function(e) {
+    const decades = ['1970', '1980', '1990', '2000', '2010', '2020'];
+    const activeBtn = document.querySelector('.tab-btn.active');
+    if (!activeBtn) return;
+    const currentDecade = activeBtn.getAttribute('data-decade');
+    const currentIndex = decades.indexOf(currentDecade);
+
+    if (e.key === 'ArrowRight') {
+      const nextIndex = (currentIndex + 1) % decades.length;
+      switchDecade(decades[nextIndex]);
+    } else if (e.key === 'ArrowLeft') {
+      const prevIndex = (currentIndex - 1 + decades.length) % decades.length;
+      switchDecade(decades[prevIndex]);
+    }
+  });
+});
+
+function checkDateSequence() {
+  // Check if the last N clicks match the secret order prefix
+  const len = dateClickSequence.length;
+  const targetPrefix = secretOrder.slice(0, len);
+
+  let match = true;
+  for (let i = 0; i < len; i++) {
+    if (dateClickSequence[i] !== targetPrefix[i]) {
+      match = false;
+      break;
+    }
+  }
+
+  if (!match) {
+    // Reset if wrong
+    dateClickSequence = [];
+    return;
+  }
+
+  // If all 23 dates clicked in order
+  if (len === secretOrder.length) {
+    showHiddenMessage();
+    dateClickSequence = [];
+  }
+
+  // Visual feedback: the more matched, the dimmer the surroundings
+  const overlay = document.getElementById('hiddenOverlay');
+  if (len >= 5 && overlay) {
+    overlay.classList.add('visible');
+    overlay.style.background = `rgba(0,0,0,${Math.min(len * 0.03, 0.6)})`;
+  }
+}
+
+function showHiddenMessage() {
+  const overlay = document.getElementById('hiddenOverlay');
+  const message = document.getElementById('hiddenMessage');
+  overlay.classList.add('visible');
+  overlay.style.background = 'rgba(0,0,0,0.9)';
+  message.classList.add('visible');
+
+  // Creepy sound simulation via visual pulses
+  let pulseCount = 0;
+  const pulseInterval = setInterval(() => {
+    message.style.boxShadow = '0 0 80px rgba(200,0,0,0.6)';
+    setTimeout(() => {
+      message.style.boxShadow = '0 0 60px rgba(200,0,0,0.4)';
+    }, 200);
+    pulseCount++;
+    if (pulseCount > 8) clearInterval(pulseInterval);
+  }, 1000);
+}
+
+function closeHiddenMessage() {
+  document.getElementById('hiddenOverlay').classList.remove('visible');
+  document.getElementById('hiddenMessage').classList.remove('visible');
+  dateClickSequence = [];
+}
+
+// === Initialize ===
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved decade if any
+  const savedDecade = sessionStorage.getItem('nightfall_log_decade');
+  if (savedDecade) {
+    switchDecade(savedDecade);
+  }
+
+  // Save decade on switch
+  const origSwitchDecade = switchDecade;
+  switchDecade = function(decade) {
+    sessionStorage.setItem('nightfall_log_decade', decade);
+    origSwitchDecade(decade);
+  };
+});
+
+// === Console Easter Egg ===
+console.log('%c管 理 日 志%c — 夜色公寓',
+  'color:#b89860;font-size:24px;font-family:serif;letter-spacing:6px;',
+  'color:#c8c0b8;');
+console.log('%c"日志本会自动书写。管理员只是握着笔。"',
+  'color:#706860;font-style:italic;');
+console.log('%c试试按顺序点击从最早到最晚的日期条目标题。%c从1973开始。',
+  'color:#706860;', 'color:#e0902a;');
+console.log('%c输入 %crevealAll() %c直接查看全部年代。',
+  'color:#706860;', 'color:#e0902a;', 'color:#706860;');
+
+function revealAll() {
+  document.querySelectorAll('.decade-group').forEach(g => g.classList.add('active-decade'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.add('active'));
+  console.log('%c全部年代已展开。%c阅读它们——如果还敢的话。',
+    'color:#c04040;', 'color:#706860;');
+}
+</script>
+
+</body>
+</html>

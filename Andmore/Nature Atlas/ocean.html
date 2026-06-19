@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海洋现象 · Nature Atlas</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-card: rgba(17, 22, 29, 0.82);
+            --glass-bg: rgba(10, 14, 20, 0.7);
+            --glass-border: rgba(0, 160, 220, 0.18);
+            --accent-ocean: #0099cc;
+            --accent-glow-ocean: rgba(0, 160, 220, 0.4);
+            --text-primary: #e2e6ea;
+            --text-secondary: #a8b4c0;
+            --text-muted: #6b7885;
+            --border-radius-xl: 1.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.55);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Source Sans 3', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image: radial-gradient(ellipse at 50% 20%, rgba(0, 160, 220, 0.06) 0%, transparent 55%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            overflow-x: hidden;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .logo .nat {
+            color: var(--accent-ocean);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-ocean);
+        }
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--accent-ocean);
+            text-shadow: 0 0 35px var(--accent-glow-ocean);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .ocean-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+        .ocean-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+            border-top: 3px solid var(--accent-ocean);
+        }
+        .ocean-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 0 40px var(--accent-glow-ocean), 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        .ocean-img {
+            height: 190px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+        }
+        .ocean-body {
+            padding: 1.5rem;
+        }
+        .ocean-body h3 {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+        }
+        .ocean-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+        .wave-tag {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            background: rgba(0, 153, 204, 0.15);
+            color: var(--accent-ocean);
+            border: 1px solid rgba(0, 153, 204, 0.3);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .ocean-card {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        /* ===== NEW CSS: Underwater Light Ray Effect ===== */
+        @keyframes lightRay {
+            0% { opacity: 0.03; transform: translateX(-5%) rotate(-2deg); }
+            50% { opacity: 0.08; transform: translateX(5%) rotate(2deg); }
+            100% { opacity: 0.03; transform: translateX(-5%) rotate(-2deg); }
+        }
+        .light-ray-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background: repeating-linear-gradient(
+                15deg,
+                transparent,
+                transparent 80px,
+                rgba(0, 180, 240, 0.015) 80px,
+                rgba(0, 180, 240, 0.015) 82px
+            );
+            animation: lightRay 18s ease-in-out infinite;
+        }
+
+        /* ===== NEW CSS: Wave Ripple Animation ===== */
+        @keyframes waveRipple {
+            0% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.08); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.6; }
+        }
+        @keyframes waveDrift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .section-header {
+            text-align: center;
+            padding: 3rem 1rem 1rem;
+        }
+        .section-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.9rem;
+            color: var(--accent-ocean);
+            text-shadow: 0 0 20px var(--accent-glow-ocean);
+        }
+        .section-header .divider {
+            width: 80px;
+            height: 3px;
+            background: var(--accent-ocean);
+            margin: 0.8rem auto;
+            border-radius: 2px;
+            box-shadow: 0 0 15px var(--accent-glow-ocean);
+            animation: waveRipple 3s ease-in-out infinite;
+        }
+
+        /* ===== NEW CSS: Bubble Particle Effect ===== */
+        @keyframes bubbleRise {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.7; }
+            25% { transform: translateY(-30px) translateX(15px) scale(1.2); opacity: 0.5; }
+            50% { transform: translateY(-60px) translateX(-10px) scale(0.9); opacity: 0.3; }
+            75% { transform: translateY(-90px) translateX(20px) scale(1.1); opacity: 0.15; }
+            100% { transform: translateY(-120px) translateX(0) scale(0.6); opacity: 0; }
+        }
+        .bubbles-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            bottom: -30px;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 200, 255, 0.5), rgba(0, 120, 180, 0.15));
+            border-radius: 50%;
+            animation: bubbleRise 8s linear infinite;
+        }
+
+        /* ===== NEW CSS: Depth Chart Styles ===== */
+        .depth-chart-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .depth-bar-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 320px;
+            padding: 1rem 0;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .depth-bar-item {
+            flex: 1;
+            min-width: 50px;
+            max-width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .depth-bar-item:hover .depth-bar-fill {
+            filter: brightness(1.5);
+            box-shadow: 0 0 20px var(--accent-glow-ocean);
+        }
+        .depth-bar-fill {
+            width: 100%;
+            background: linear-gradient(to top, #004466, #0099cc, #33ccff);
+            border-radius: 6px 6px 0 0;
+            transition: all 0.4s ease;
+            min-height: 6px;
+            position: relative;
+        }
+        .depth-bar-label {
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 0.4rem;
+            line-height: 1.2;
+        }
+        .depth-bar-value {
+            color: var(--accent-ocean);
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        /* ===== NEW CSS: Ocean Layers SVG Styles ===== */
+        .ocean-layers-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+            text-align: center;
+        }
+        .ocean-layers-section svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .ocean-layer-label {
+            fill: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+        }
+        .ocean-layer-depth {
+            fill: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 0.6rem;
+        }
+
+        /* ===== NEW CSS: Currents Map Styles ===== */
+        .currents-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .currents-section svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ===== NEW CSS: Canvas Background ===== */
+        #oceanCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
+        }
+
+        /* ===== NEW CSS: Deep Sea Mysteries ===== */
+        .deep-sea-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: linear-gradient(180deg, rgba(0, 40, 70, 0.7) 0%, rgba(0, 10, 25, 0.9) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card), inset 0 0 80px rgba(0, 80, 140, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .deep-sea-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(0, 200, 255, 0.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 80%, rgba(0, 100, 180, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .deep-sea-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .deep-sea-card {
+            background: rgba(0, 30, 55, 0.7);
+            border: 1px solid rgba(0, 140, 200, 0.25);
+            border-radius: 1.2rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .deep-sea-card:hover {
+            border-color: var(--accent-ocean);
+            box-shadow: 0 0 25px rgba(0, 160, 220, 0.2);
+            transform: translateY(-4px);
+        }
+        .deep-sea-card .mystery-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .deep-sea-card h4 {
+            font-family: var(--font-heading);
+            color: var(--accent-ocean);
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .deep-sea-card p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        /* ===== NEW CSS: Marine Safety Section ===== */
+        .safety-section {
+            margin: 3rem 0;
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 140, 60, 0.3);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+            border-left: 4px solid #ff8c3c;
+        }
+        .safety-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+        @media (max-width: 768px) {
+            .safety-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .rip-current-steps {
+            list-style: none;
+            counter-reset: step;
+        }
+        .rip-current-steps li {
+            counter-increment: step;
+            padding: 1rem 1rem 1rem 3.5rem;
+            margin: 0.8rem 0;
+            background: rgba(255, 140, 60, 0.08);
+            border-radius: 1rem;
+            position: relative;
+            border: 1px solid rgba(255, 140, 60, 0.15);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .rip-current-steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2rem;
+            height: 2rem;
+            background: #ff8c3c;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .safety-warning {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(255, 140, 60, 0.15);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 140, 60, 0.35);
+            color: #ffb07a;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ===== NEW CSS: Mini-map pulse ===== */
+        @keyframes currentFlow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -20; }
+        }
+        .current-flow-line {
+            stroke-dasharray: 8 4;
+            animation: currentFlow 2s linear infinite;
+        }
+
+        /* ===== NEW CSS: Highlight tags ===== */
+        .highlight-box {
+            display: inline-block;
+            padding: 0.3rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0.2rem;
+        }
+        .hl-danger { background: rgba(255, 80, 60, 0.2); color: #ff6b5b; border: 1px solid rgba(255, 80, 60, 0.3); }
+        .hl-warn { background: rgba(255, 180, 40, 0.2); color: #ffb833; border: 1px solid rgba(255, 180, 40, 0.3); }
+        .hl-info { background: rgba(0, 160, 220, 0.2); color: #33bbee; border: 1px solid rgba(0, 160, 220, 0.3); }
+        .hl-safe { background: rgba(78, 203, 113, 0.2); color: #5edb7e; border: 1px solid rgba(78, 203, 113, 0.3); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Underwater light ray overlay -->
+    <div class="light-ray-overlay"></div>
+    <!-- Bubble particles -->
+    <div class="bubbles-container" id="bubblesContainer"></div>
+    <!-- Canvas wave animation background -->
+    <canvas id="oceanCanvas"></canvas>
+
+    <nav class="navbar">
+        <div class="logo"><span class="nat">NATURE</span> ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="nature_home.html">首页</a></li>
+            <li><a href="phenomena.html">现象库</a></li>
+            <li><a href="weather.html">极端天气</a></li>
+            <li><a href="geology.html">地质现象</a></li>
+            <li><a href="ocean.html" class="active">海洋现象</a></li>
+            <li><a href="optical.html">光学现象</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间轴</a></li>
+            <li><a href="compare.html">数据对比</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🌊 海洋现象</h1>
+        <p style="color:var(--text-muted);">覆盖地球70%面积的蓝色世界之谜</p>
+    </div>
+
+    <div class="container">
+        <!-- Ocean Phenomena Cards Grid -->
+        <div class="ocean-grid" id="oceanGrid"></div>
+
+        <!-- ===== Ocean Layers SVG Cross-Section ===== -->
+        <div class="section-header">
+            <h2>🌊 海洋深度分层</h2>
+            <div class="divider"></div>
+            <p style="color:var(--text-muted);">从阳光普照的表层到永恒的黑暗深渊</p>
+        </div>
+        <div class="ocean-layers-section">
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="layerGrad0" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#4dc9f6" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#1a8fc4" stop-opacity="0.85"/>
+                    </linearGradient>
+                    <linearGradient id="layerGrad1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#1a8fc4" stop-opacity="0.85"/>
+                        <stop offset="100%" stop-color="#0d5f8a" stop-opacity="0.8"/>
+                    </linearGradient>
+                    <linearGradient id="layerGrad2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#0d5f8a" stop-opacity="0.8"/>
+                        <stop offset="100%" stop-color="#06314f" stop-opacity="0.85"/>
+                    </linearGradient>
+                    <linearGradient id="layerGrad3" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#06314f" stop-opacity="0.85"/>
+                        <stop offset="100%" stop-color="#021526" stop-opacity="0.9"/>
+                    </linearGradient>
+                    <linearGradient id="layerGrad4" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#021526" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#000510" stop-opacity="0.95"/>
+                    </linearGradient>
+                    <filter id="glowLayer">
+                        <feGaussianBlur stdDeviation="2" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                <!-- Water surface -->
+                <rect x="40" y="30" width="720" height="12" rx="6" fill="rgba(77,201,246,0.6)" filter="url(#glowLayer)"/>
+                <text x="770" y="42" fill="#4dc9f6" font-size="11" font-family="'Source Sans 3',sans-serif" text-anchor="end">0m 海平面</text>
+                <!-- Sun beams at top -->
+                <polygon points="120,30 200,120 80,120" fill="rgba(255,255,200,0.04)"/>
+                <polygon points="350,30 450,140 300,140" fill="rgba(255,255,200,0.03)"/>
+                <polygon points="580,30 680,100 530,100" fill="rgba(255,255,200,0.04)"/>
+                <!-- Epipelagic (0-200m) -->
+                <rect x="60" y="42" width="680" height="80" rx="8" fill="url(#layerGrad0)" stroke="rgba(77,201,246,0.4)" stroke-width="1"/>
+                <text x="400" y="70" fill="#e2f5ff" font-size="14" font-weight="700" font-family="'Playfair Display',serif" text-anchor="middle">表层带 Epipelagic</text>
+                <text x="400" y="90" fill="rgba(200,230,250,0.75)" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">0-200m · 阳光充足 · 光合作用活跃</text>
+                <text x="400" y="108" fill="rgba(180,220,245,0.6)" font-size="9" font-family="'Source Sans 3',sans-serif" text-anchor="middle">🐟 浮游生物 · 珊瑚礁 · 绝大多数海洋生物</text>
+                <!-- Mesopelagic (200-1000m) -->
+                <rect x="60" y="122" width="680" height="70" rx="8" fill="url(#layerGrad1)" stroke="rgba(26,143,196,0.35)" stroke-width="1"/>
+                <text x="400" y="148" fill="#b8ddf0" font-size="14" font-weight="700" font-family="'Playfair Display',serif" text-anchor="middle">中层带 Mesopelagic</text>
+                <text x="400" y="166" fill="rgba(170,210,235,0.7)" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">200-1000m · 暮光区 · 光线微弱</text>
+                <text x="400" y="182" fill="rgba(150,200,230,0.55)" font-size="9" font-family="'Source Sans 3',sans-serif" text-anchor="middle">🦑 生物发光生物 · 灯笼鱼 · 抹香鲸潜水范围</text>
+                <!-- Bathypelagic (1000-4000m) -->
+                <rect x="60" y="192" width="680" height="65" rx="8" fill="url(#layerGrad2)" stroke="rgba(13,95,138,0.3)" stroke-width="1"/>
+                <text x="400" y="216" fill="#8bbcd6" font-size="14" font-weight="700" font-family="'Playfair Display',serif" text-anchor="middle">深层带 Bathypelagic</text>
+                <text x="400" y="234" fill="rgba(130,180,210,0.65)" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">1000-4000m · 完全黑暗 · 水温2-4°C</text>
+                <text x="400" y="250" fill="rgba(110,165,200,0.5)" font-size="9" font-family="'Source Sans 3',sans-serif" text-anchor="middle">🐙 巨型鱿鱼 · 鮟鱇鱼 · 深海热泉生物群落</text>
+                <!-- Abyssopelagic (4000-6000m) -->
+                <rect x="60" y="257" width="680" height="55" rx="8" fill="url(#layerGrad3)" stroke="rgba(6,49,79,0.3)" stroke-width="1"/>
+                <text x="400" y="278" fill="#6b9ab8" font-size="14" font-weight="700" font-family="'Playfair Display',serif" text-anchor="middle">深渊带 Abyssopelagic</text>
+                <text x="400" y="296" fill="rgba(100,145,175,0.6)" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">4000-6000m · 水温接近冰点 · 压力超600atm</text>
+                <text x="400" y="308" fill="rgba(85,135,165,0.45)" font-size="9" font-family="'Source Sans 3',sans-serif" text-anchor="middle">🦀 深海海参 · 管虫 · 锰结核矿场</text>
+                <!-- Hadal (6000-11000m) -->
+                <rect x="60" y="312" width="680" height="50" rx="8" fill="url(#layerGrad4)" stroke="rgba(2,21,38,0.3)" stroke-width="1"/>
+                <text x="400" y="332" fill="#4a7090" font-size="14" font-weight="700" font-family="'Playfair Display',serif" text-anchor="middle">超深渊带 Hadal</text>
+                <text x="400" y="350" fill="rgba(70,110,135,0.55)" font-size="10" font-family="'Source Sans 3',sans-serif" text-anchor="middle">6000-11000m · 海沟专属 · 极端压力 >1000atm</text>
+                <text x="400" y="360" fill="rgba(60,100,125,0.4)" font-size="9" font-family="'Source Sans 3',sans-serif" text-anchor="middle">🔬 极端微生物 · 马里亚纳海沟11034m · 人类仅3次到达</text>
+                <!-- Depth markers -->
+                <line x1="60" y1="42" x2="60" y2="362" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 6"/>
+                <text x="50" y="116" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="end">200m</text>
+                <text x="50" y="186" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="end">1000m</text>
+                <text x="50" y="252" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="end">4000m</text>
+                <text x="50" y="310" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="end">6000m</text>
+                <text x="50" y="357" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="end">11000m</text>
+            </svg>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-top:0.6rem;">海洋垂直分层结构 · 每一层都有独特的生态环境和生物群落</p>
+        </div>
+
+        <!-- ===== Global Ocean Currents Mini-Map ===== -->
+        <div class="section-header">
+            <h2>🌐 全球洋流系统</h2>
+            <div class="divider"></div>
+            <p style="color:var(--text-muted);">驱动地球气候的海洋传送带</p>
+        </div>
+        <div class="currents-section">
+            <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="warmCurrent" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#ff6633" stop-opacity="0.7"/>
+                        <stop offset="100%" stop-color="#ff9933" stop-opacity="0.5"/>
+                    </linearGradient>
+                    <linearGradient id="coldCurrent" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#3399ff" stop-opacity="0.7"/>
+                        <stop offset="100%" stop-color="#66bbff" stop-opacity="0.5"/>
+                    </linearGradient>
+                </defs>
+                <!-- Simplified world map outline -->
+                <rect x="50" y="40" width="700" height="320" rx="10" fill="rgba(5,15,30,0.6)" stroke="rgba(0,140,200,0.2)" stroke-width="1"/>
+                <!-- Continent silhouettes (simplified) -->
+                <ellipse cx="160" cy="120" rx="55" ry="60" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- N America -->
+                <ellipse cx="150" cy="250" rx="30" ry="40" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- S America -->
+                <ellipse cx="370" cy="110" rx="45" ry="40" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- Europe -->
+                <ellipse cx="400" cy="180" rx="60" ry="75" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- Africa -->
+                <ellipse cx="590" cy="130" rx="55" ry="50" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- Asia -->
+                <ellipse cx="650" cy="280" rx="40" ry="30" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- Australia -->
+                <rect x="360" y="340" rx="3" width="140" height="10" fill="rgba(20,40,60,0.5)" stroke="rgba(0,160,220,0.15)" stroke-width="0.5"/> <!-- Antarctica -->
+                <!-- Warm currents (red/orange arrows) -->
+                <path d="M 180 160 Q 250 120 340 100 Q 380 90 400 95" fill="none" stroke="url(#warmCurrent)" stroke-width="3" class="current-flow-line" marker-end="url(#arrowWarm)"/>
+                <defs><marker id="arrowWarm" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff6633"/></marker></defs>
+                <path d="M 160 280 Q 200 260 240 230 Q 280 200 300 180" fill="none" stroke="url(#warmCurrent)" stroke-width="3" class="current-flow-line"/>
+                <path d="M 450 100 Q 520 80 610 90 Q 660 100 700 120" fill="none" stroke="url(#warmCurrent)" stroke-width="3" class="current-flow-line"/>
+                <path d="M 450 240 Q 500 270 560 260 Q 640 240 680 260" fill="none" stroke="url(#warmCurrent)" stroke-width="3" class="current-flow-line"/>
+                <!-- Cold currents (blue arrows) -->
+                <path d="M 120 180 Q 100 200 110 240 Q 125 275 145 290" fill="none" stroke="url(#coldCurrent)" stroke-width="3" class="current-flow-line"/>
+                <path d="M 220 100 Q 200 120 195 155" fill="none" stroke="url(#coldCurrent)" stroke-width="3" class="current-flow-line"/>
+                <path d="M 680 100 Q 670 130 650 170 Q 630 210 630 250" fill="none" stroke="url(#coldCurrent)" stroke-width="3" class="current-flow-line"/>
+                <path d="M 560 300 Q 540 320 520 340 Q 500 350 480 355" fill="none" stroke="url(#coldCurrent)" stroke-width="3" class="current-flow-line"/>
+                <!-- Legend -->
+                <rect x="60" y="365" width="12" height="12" rx="2" fill="#ff6633" opacity="0.7"/>
+                <text x="78" y="375" fill="var(--text-secondary)" font-size="10" font-family="'Source Sans 3',sans-serif">暖流 (Warm Current)</text>
+                <rect x="200" y="365" width="12" height="12" rx="2" fill="#3399ff" opacity="0.7"/>
+                <text x="218" y="375" fill="var(--text-secondary)" font-size="10" font-family="'Source Sans 3',sans-serif">寒流 (Cold Current)</text>
+                <!-- Key labels -->
+                <text x="320" y="72" fill="rgba(255,140,50,0.8)" font-size="9" font-family="'Source Sans 3',sans-serif">黑潮 Kuroshio</text>
+                <text x="530" y="82" fill="rgba(255,140,50,0.8)" font-size="9" font-family="'Source Sans 3',sans-serif">湾流 Gulf Stream</text>
+                <text x="100" y="225" fill="rgba(100,180,255,0.8)" font-size="9" font-family="'Source Sans 3',sans-serif">加利福尼亚寒流</text>
+                <text x="620" y="230" fill="rgba(100,180,255,0.8)" font-size="9" font-family="'Source Sans 3',sans-serif">秘鲁寒流</text>
+            </svg>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-top:0.6rem;">全球温盐环流系统 · 暖流（橙红）输送热量 · 寒流（蓝色）调节气候 · 又称"大洋传送带"</p>
+        </div>
+
+        <!-- ===== Ocean Depth Comparison Bar Chart ===== -->
+        <div class="section-header">
+            <h2>📊 海洋现象波高/深度对比</h2>
+            <div class="divider"></div>
+            <p style="color:var(--text-muted);">不同海洋现象的尺度比较（对数参考）</p>
+        </div>
+        <div class="depth-chart-section">
+            <div class="depth-bar-container" id="depthBarChart"></div>
+            <p style="color:var(--text-muted); font-size:0.7rem; text-align:center; margin-top:0.8rem;">数据为典型值或历史最大值 · 海啸波高与海洋深度使用不同参考系 · 仅作相对比较</p>
+        </div>
+
+        <!-- ===== Deep Sea Mysteries ===== -->
+        <div class="section-header">
+            <h2>🔍 深海未解之谜</h2>
+            <div class="divider"></div>
+            <p style="color:var(--text-muted);">人类对火星表面的了解超过对深海的认识</p>
+        </div>
+        <div class="deep-sea-section">
+            <div class="deep-sea-grid">
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">🗺️</div>
+                    <h4>95%未探索</h4>
+                    <p>全球海洋只有约5%被详细测绘。我们对海底地形的了解远不如对月球和火星表面的了解。</p>
+                </div>
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">🐙</div>
+                    <h4>未知物种</h4>
+                    <p>科学家估计还有约100万-200万种海洋生物未被发现，深海中可能隐藏着远古孑遗物种。</p>
+                </div>
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">🔊</div>
+                    <h4>Bloop 怪声</h4>
+                    <p>1997年NOAA在太平洋记录到超低频强声"Bloop"，后来推测为巨大冰山崩裂声，至今无定论。</p>
+                </div>
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">🏛️</div>
+                    <h4>水下遗迹</h4>
+                    <p>日本与那国岛海底结构、古巴西北海域疑似沉没城市——是自然地质还是失落文明的证据？</p>
+                </div>
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">💎</div>
+                    <h4>深海矿产</h4>
+                    <p>太平洋克拉里昂-克利珀顿区的多金属结核富含钴、镍、稀土——是资源宝库还是生态定时炸弹？</p>
+                </div>
+                <div class="deep-sea-card">
+                    <div class="mystery-icon">🌡️</div>
+                    <h4>海底甲烷冰</h4>
+                    <p>大陆架边缘封存着巨量可燃冰，其融化释放可能曾触发二叠纪末大灭绝事件。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Marine Safety Section ===== -->
+        <div class="section-header">
+            <h2>🛟 海洋安全指南</h2>
+            <div class="divider"></div>
+            <p style="color:var(--text-muted);">了解危险 · 保护生命</p>
+        </div>
+        <div class="safety-section">
+            <div class="safety-grid">
+                <div>
+                    <h3 style="font-family:var(--font-heading); color:#ff8c3c; margin-bottom:0.5rem;">🏊 离岸流逃生指南</h3>
+                    <div class="safety-warning">
+                        <span style="font-size:1.5rem;">⚠️</span>
+                        <span>离岸流（Rip Current）每年致死人数超过鲨鱼攻击、海啸和台风的总和</span>
+                    </div>
+                    <ol class="rip-current-steps">
+                        <li><strong>保持冷静</strong> — 离岸流不会把人拖下水底，它只是在表面流向大海。恐慌是最大的敌人。</li>
+                        <li><strong>不要对抗水流</strong> — 离岸流速度可达2.5m/s，比奥运游泳冠军还快。试图逆流游回岸边只会耗尽体力。</li>
+                        <li><strong>平行海岸游动</strong> — 离岸流宽度通常只有10-30米。向两侧任一方向平行游动，脱离流道后再游回岸边。</li>
+                        <li><strong>如无法脱困，漂浮求救</strong> — 仰面漂浮保存体力，挥动手臂发出求救信号，等待救援人员到来。</li>
+                        <li><strong>识别离岸流</strong> — 注意观察海面：两道浪花之间颜色较深、水面较平静的区域，或有泡沫、海藻向外海漂流的通道。</li>
+                    </ol>
+                </div>
+                <div>
+                    <h3 style="font-family:var(--font-heading); color:#ff8c3c; margin-bottom:0.5rem;">⚠️ 海洋危险等级速查</h3>
+                    <div style="display:flex;flex-direction:column;gap:0.8rem;">
+                        <div style="background:rgba(255,80,60,0.1);padding:1rem;border-radius:1rem;border:1px solid rgba(255,80,60,0.2);">
+                            <span class="highlight-box hl-danger">极高危险</span>
+                            <p style="color:var(--text-secondary);font-size:0.8rem;margin-top:0.4rem;">海啸 · 疯狗浪 · 离岸流 · 冰海啸 — 立即撤离海岸区域</p>
+                        </div>
+                        <div style="background:rgba(255,180,40,0.1);padding:1rem;border-radius:1rem;border:1px solid rgba(255,180,40,0.2);">
+                            <span class="highlight-box hl-warn">高度警惕</span>
+                            <p style="color:var(--text-secondary);font-size:0.8rem;margin-top:0.4rem;">风暴潮 · 大漩涡 · 赤潮 · 水龙卷 — 远离水域，关注预警</p>
+                        </div>
+                        <div style="background:rgba(0,160,220,0.1);padding:1rem;border-radius:1rem;border:1px solid rgba(0,160,220,0.2);">
+                            <span class="highlight-box hl-info">中等风险</span>
+                            <p style="color:var(--text-secondary);font-size:0.8rem;margin-top:0.4rem;">激潮 · 内波 · 假潮 — 注意海洋预报，避免单独行动</p>
+                        </div>
+                        <div style="background:rgba(78,203,113,0.1);padding:1rem;border-radius:1rem;border:1px solid rgba(78,203,113,0.2);">
+                            <span class="highlight-box hl-safe">可观赏</span>
+                            <p style="color:var(--text-secondary);font-size:0.8rem;margin-top:0.4rem;">生物荧光海 · 珊瑚礁 · 潮汐涌潮 — 遵守当地导览规定</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const oceanData = [
+            { id: 'tsunami', name: '海啸', icon: '🌊', maxHeight: '最高524m', speed: '800km/h(深海)',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=500&h=300&fit=crop',
+                desc: '由海底地震或火山引发的巨大海浪，在近海可达数十米高。' },
+            { id: 'waterspout', name: '水龙卷', icon: '💧', maxHeight: '可达1000m', speed: '80-200km/h',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=300&fit=crop',
+                desc: '水面上形成的龙卷风，将水吸上天空形成壮观水柱。' },
+            { id: 'bioluminescence', name: '生物荧光海', icon: '✨', maxHeight: 'N/A', speed: 'N/A',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500&h=300&fit=crop',
+                desc: '海洋浮游生物发出蓝绿色荧光，将海浪染成梦幻光芒。' },
+            { id: 'rogue_wave', name: '疯狗浪', icon: '🏄', maxHeight: '最高30m', speed: '突发性',
+                img: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=500&h=300&fit=crop',
+                desc: '在相对平静海面突然出现的巨大孤立波浪，对船只威胁极大。' },
+            { id: 'maelstrom', name: '大漩涡', icon: '🌀', maxHeight: '直径数十米', speed: '流速极快',
+                img: 'https://images.unsplash.com/photo-1439405326854-014607f694d7?w=500&h=300&fit=crop',
+                desc: '潮汐或水流交汇形成的巨大漩涡系统，挪威 Saltstraumen 漩涡最为著名。' },
+            { id: 'storm_surge', name: '风暴潮', icon: '🏠', maxHeight: '最高10m+', speed: '与台风同步',
+                img: 'https://images.unsplash.com/photo-1500995617113-cf265edbe09e?w=500&h=300&fit=crop',
+                desc: '台风或飓风推动海水涌向海岸，造成沿海地区严重洪水。' },
+            { id: 'algal_bloom', name: '藻华', icon: '🟢', maxHeight: '表面现象', speed: '快速扩散',
+                img: 'https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=500&h=300&fit=crop',
+                desc: '藻类在富营养水体中爆发性繁殖，可将海面染成绿色、红色或棕色。' },
+            { id: 'brine_pool', name: '深海卤水池', icon: '🫧', maxHeight: '海底凹陷', speed: '静止',
+                img: 'https://images.unsplash.com/photo-1583212292454-9fe2e3d5c99d?w=500&h=300&fit=crop',
+                desc: '海底高盐度卤水聚集形成的"水下湖泊"，盐度是正常海水的5-8倍，有独特的"湖岸线"。' },
+            { id: 'seiche', name: '假潮', icon: '〰️', maxHeight: '可达数米', speed: '周期振荡',
+                img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop',
+                desc: '封闭或半封闭水域中，由气压变化或地震引发的驻波振荡，湖水如盆中水般来回晃动。' },
+            { id: 'whirlpool', name: '漩涡系统', icon: '🔄', maxHeight: '直径可达百米', speed: '15km/h+',
+                img: 'https://images.unsplash.com/photo-1476610182048-b716b8515aae?w=500&h=300&fit=crop',
+                desc: '海洋中大型旋转水流系统，老 sow 漩涡和科里弗雷肯漩涡是世界上最危险的航行区域之一。' },
+            { id: 'meteotsunami', name: '气象海啸', icon: '🌩️', maxHeight: '可达6m', speed: '与天气系统同步',
+                img: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=500&h=300&fit=crop',
+                desc: '由大气压力骤变或强风切变引发的类海啸波浪，常被误认为地震海啸。地中海地区最为常见。' },
+            { id: 'cold_seep', name: '冷泉', icon: '💨', maxHeight: '海底地貌', speed: '缓慢释放',
+                img: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=500&h=300&fit=crop',
+                desc: '海底甲烷或硫化氢气体缓慢渗出的区域，支撑着不依赖阳光的化学合成生态系统。' },
+            { id: 'tidal_bore', name: '涌潮', icon: '🏞️', maxHeight: '最高9m', speed: '15-40km/h',
+                img: 'https://images.unsplash.com/photo-1484821582734-6c7c9e83c25f?w=500&h=300&fit=crop',
+                desc: '涨潮时潮水涌入河口形成的逆流波浪。中国钱塘江大潮和巴西波洛罗卡涌潮最为壮观。' },
+            { id: 'internal_wave', name: '内波', icon: '〰️', maxHeight: '可达170m(水下)', speed: '海底慢速',
+                img: 'https://images.unsplash.com/photo-1439405326854-014607f694d7?w=500&h=300&fit=crop',
+                desc: '不同密度海水层界面上的巨大波浪，表面看不到但可在水下掀起百米高的内部分层振荡。' },
+            { id: 'deep_sea_brine_lake', name: '深海盐湖', icon: '🏞️', maxHeight: '海底地貌', speed: '静止水底',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500&h=300&fit=crop',
+                desc: '墨西哥湾海底发现的超盐度"湖泊"，有清晰湖岸、波浪和潮汐，但含剧毒硫化氢。' },
+            { id: 'hydrothermal_vent', name: '深海热泉', icon: '♨️', maxHeight: '烟囱高达60m', speed: '喷流370°C+',
+                img: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=500&h=300&fit=crop',
+                desc: '海底地壳裂缝喷出超高温富矿物质热水，黑烟囱周围孕育着地球上最古老的生态系统。' },
+            { id: 'submarine_volcano', name: '海底火山', icon: '🌋', maxHeight: '山体数千米', speed: '喷发剧烈',
+                img: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=500&h=300&fit=crop',
+                desc: '海底火山喷发可形成新岛屿，如2022年汤加海底火山喷发产生了有史以来最强的自然爆炸。' },
+            { id: 'coral_bleaching', name: '珊瑚白化', icon: '🪸', maxHeight: '浅海珊瑚礁', speed: '数周内',
+                img: 'https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=500&h=300&fit=crop',
+                desc: '海水温度升高导致珊瑚排出共生虫黄藻，珊瑚变白死亡。大堡礁2016-2024年经历了五次大规模白化。' },
+            { id: 'el_nino', name: '厄尔尼诺', icon: '🌡️', maxHeight: '气候尺度', speed: '2-7年周期',
+                img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop',
+                desc: '太平洋赤道海域异常增温现象，引发全球极端天气：干旱、洪水、飓风路径改变。' },
+            { id: 'la_nina', name: '拉尼娜', icon: '❄️', maxHeight: '气候尺度', speed: '与厄尔尼诺相反',
+                img: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=500&h=300&fit=crop',
+                desc: '太平洋赤道海域异常降温现象，通常带来更强的信风、更多的台风和东南亚暴雨。' },
+            { id: 'ocean_gyre', name: '大洋环流', icon: '🔄', maxHeight: '数千公里宽', speed: '数cm/s',
+                img: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=500&h=300&fit=crop',
+                desc: '全球五大副热带环流系统，是塑料垃圾聚集形成"垃圾带"的主要区域。北大西洋垃圾带面积相当于三个法国。' },
+            { id: 'dead_zone', name: '死亡区', icon: '☠️', maxHeight: '海底缺氧层', speed: '季节性或永久',
+                img: 'https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=500&h=300&fit=crop',
+                desc: '富营养化导致的海水缺氧区域，生物无法生存。墨西哥湾死亡区面积超过22000平方公里。' },
+            { id: 'red_tide', name: '赤潮', icon: '🔴', maxHeight: '表面现象', speed: '数日内扩散',
+                img: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=500&h=300&fit=crop',
+                desc: '特定藻类（如甲藻）爆发性繁殖，海水呈红褐色，释放的毒素可杀死鱼类并危害人类健康。' },
+            { id: 'ice_tsunami', name: '冰海啸', icon: '🧊', maxHeight: '冰墙高12m+', speed: '缓慢推进',
+                img: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=500&h=300&fit=crop',
+                desc: '强风将湖冰或海冰推上岸，冰层如推土机般缓慢碾压沿岸建筑，在北美五大湖区最为常见。' },
+            { id: 'sneaker_wave', name: '偷袭浪', icon: '👟', maxHeight: '可达10m', speed: '突发无预警',
+                img: 'https://images.unsplash.com/photo-1500995617113-cf265edbe09e?w=500&h=300&fit=crop',
+                desc: '看似平静的海面突然涌出巨浪将岸上的人卷入海中。美国太平洋西北海岸因"偷袭浪"年均致死数人。' },
+            { id: 'rip_current', name: '离岸流', icon: '🏊', maxHeight: '表面流', speed: '2.5m/s',
+                img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop',
+                desc: '海岸附近的狭窄强流将海水快速带向外海，是全球海滩游泳事故的首要原因，年致死数百人。' },
+        ];
+
+        document.getElementById('oceanGrid').innerHTML = oceanData.map((o, i) => `
+        <div class="ocean-card" style="animation-delay:${i*0.05}s;" onclick="window.location.href='detail.html?phenomenon=${o.id}'">
+          <div class="ocean-img" style="background-image:url('${o.img}');">
+            <span style="font-size:2.5rem;">${o.icon}</span>
+          </div>
+          <div class="ocean-body">
+            <h3>${o.name}</h3>
+            <span class="wave-tag">📏 ${o.maxHeight}</span>
+            <span style="color:var(--text-muted); font-size:0.75rem; margin-left:0.5rem;">⚡ ${o.speed}</span>
+            <p>${o.desc}</p>
+          </div>
+        </div>
+      `).join('');
+
+        // ===== Depth Bar Chart =====
+        const depthData = [
+            { name: '海啸\n最高波高', value: 524, color: '#cc3300' },
+            { name: '内波', value: 170, color: '#3388cc' },
+            { name: '疯狗浪', value: 30, color: '#ff7744' },
+            { name: '冰海啸\n(冰墙高度)', value: 12, color: '#99ccff' },
+            { name: '风暴潮', value: 10, color: '#ff9944' },
+            { name: '偷袭浪', value: 10, color: '#ffbb66' },
+            { name: '涌潮\n(钱塘江)', value: 9, color: '#66aadd' },
+            { name: '气象海啸', value: 6, color: '#88bbee' },
+            { name: '假潮', value: 4, color: '#55aaaa' },
+            { name: '普通浪', value: 1.5, color: '#44ccaa' },
+        ];
+        const maxVal = 550;
+        document.getElementById('depthBarChart').innerHTML = depthData.map(d => {
+            const pct = (d.value / maxVal * 100);
+            return `<div class="depth-bar-item" title="${d.name.replace('\n',' ')}: ${d.value}m">
+              <div class="depth-bar-value">${d.value}m</div>
+              <div class="depth-bar-fill" style="height:${pct}%; background:linear-gradient(to top, ${d.color}44, ${d.color});"></div>
+              <div class="depth-bar-label">${d.name}</div>
+            </div>`;
+        }).join('');
+
+        // ===== Canvas Ocean Wave Animation =====
+        (function() {
+            const canvas = document.getElementById('oceanCanvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const waves = [];
+            const waveCount = 5;
+            for (let i = 0; i < waveCount; i++) {
+                waves.push({
+                    amplitude: 12 + Math.random() * 25,
+                    period: 0.008 + Math.random() * 0.012,
+                    speed: 0.015 + Math.random() * 0.025,
+                    phase: Math.random() * Math.PI * 2,
+                    y: height * 0.55 + i * 60,
+                    color: `rgba(0, ${140 + i * 15}, ${200 + i * 10}, ${0.2 - i * 0.03})`,
+                });
+            }
+
+            function draw(timestamp) {
+                ctx.clearRect(0, 0, width, height);
+                const t = timestamp * 0.001;
+
+                for (const w of waves) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, w.y);
+                    for (let x = 0; x <= width; x += 3) {
+                        const y = w.y + Math.sin(x * w.period + t * w.speed + w.phase) * w.amplitude
+                                  + Math.sin(x * w.period * 0.4 + t * w.speed * 1.7) * w.amplitude * 0.5;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.strokeStyle = w.color;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+        })();
+
+        // ===== Bubble Particles =====
+        (function() {
+            const container = document.getElementById('bubblesContainer');
+            function spawnBubble() {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = 3 + Math.random() * 10;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 90 + '%';
+                bubble.style.animationDuration = (7 + Math.random() * 12) + 's';
+                bubble.style.animationDelay = '0s';
+                container.appendChild(bubble);
+                setTimeout(() => { bubble.remove(); }, 13000);
+            }
+            for (let i = 0; i < 25; i++) {
+                setTimeout(() => spawnBubble(), i * 400);
+            }
+            setInterval(() => spawnBubble(), 2000);
+        })();
+
+        console.log('🌊 海洋现象页面已加载 — 26个现象 · 深度分层 · 洋流系统 · 波高对比 · 深海之谜 · 安全指南');
+    </script>
+</body>
+</html>

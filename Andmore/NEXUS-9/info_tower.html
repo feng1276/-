@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS-9 信息塔 · Information Tower</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --yellow: #ffe600;
+            --cyan: #00f0ff;
+            --bg: #0a0a0c;
+            --bg-card: #0d0d14;
+            --bg-panel: #111118;
+            --text: #c8c8d0;
+            --red: #ff3344;
+            --green: #00ff66;
+            --border-yellow: #ffe60044;
+            --border-cyan: #00f0ff44;
+            --glow-yellow: 0 0 10px rgba(255,230,0,0.5);
+            --glow-cyan: 0 0 10px rgba(0,240,255,0.5);
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Share Tech Mono', 'SimHei', 'Microsoft YaHei', monospace;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* ── Scanlines Overlay ── */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.08) 2px,
+                rgba(0,0,0,0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ── CRT flicker ── */
+        @keyframes flicker {
+            0%   { opacity: 1; }
+            3%   { opacity: 0.9; }
+            6%   { opacity: 1; }
+            50%  { opacity: 1; }
+            51%  { opacity: 0.97; }
+            52%  { opacity: 1; }
+            90%  { opacity: 1; }
+            91%  { opacity: 0.96; }
+            92%  { opacity: 1; }
+        }
+        body { animation: flicker 8s infinite; }
+
+        /* ── Top Navigation Bar ── */
+        .topnav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 52px;
+            background: linear-gradient(180deg, rgba(10,10,14,0.98) 0%, rgba(10,10,14,0.92) 100%);
+            border-bottom: 1px solid var(--border-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            font-family: 'Orbitron', 'SimHei', sans-serif;
+            box-shadow: 0 2px 20px rgba(255,230,0,0.08);
+        }
+        .topnav .logo {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--yellow);
+            text-shadow: var(--glow-yellow);
+            letter-spacing: 2px;
+        }
+        .topnav .logo span { color: var(--cyan); }
+        .topnav nav { display: flex; gap: 28px; }
+        .topnav nav a {
+            color: #999;
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 1px;
+            transition: color 0.3s, text-shadow 0.3s;
+            text-transform: uppercase;
+        }
+        .topnav nav a:hover, .topnav nav a.active {
+            color: var(--yellow);
+            text-shadow: var(--glow-yellow);
+        }
+        .topnav .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 4px var(--green); }
+            50% { box-shadow: 0 0 14px var(--green); }
+        }
+
+        /* ── News Ticker ── */
+        .news-ticker {
+            position: fixed;
+            top: 52px; left: 0; right: 0;
+            height: 36px;
+            background: #0d0d16;
+            border-bottom: 1px solid var(--border-yellow);
+            z-index: 999;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .news-ticker .ticker-label {
+            background: var(--yellow);
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 4px 14px;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            z-index: 2;
+            text-transform: uppercase;
+        }
+        .news-ticker .ticker-track {
+            display: flex;
+            animation: ticker-scroll 40s linear infinite;
+            white-space: nowrap;
+        }
+        .news-ticker .ticker-item {
+            display: inline-block;
+            padding: 0 48px;
+            font-size: 13px;
+            color: #bbb;
+            letter-spacing: 0.5px;
+        }
+        .news-ticker .ticker-item.urgent { color: var(--yellow); }
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ── Main Content Area ── */
+        .main-content {
+            padding-top: 88px;
+            padding-bottom: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        /* ── Hero Holographic Billboard ── */
+        .holo-billboard {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border-yellow);
+            background: radial-gradient(ellipse at center, rgba(255,230,0,0.04) 0%, transparent 70%);
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: 0 0 40px rgba(255,230,0,0.06), inset 0 0 60px rgba(0,0,0,0.5);
+        }
+        .holo-billboard .holo-frame {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .holo-billboard .holo-frame::before,
+        .holo-billboard .holo-frame::after {
+            content: "";
+            position: absolute;
+            background: var(--yellow);
+        }
+        .holo-billboard .holo-frame::before {
+            top: 0; left: 20px; right: 20px; height: 1px;
+            box-shadow: 0 0 8px var(--yellow);
+        }
+        .holo-billboard .holo-frame::after {
+            bottom: 0; left: 20px; right: 20px; height: 1px;
+            box-shadow: 0 0 8px var(--yellow);
+        }
+        .holo-billboard .corner {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: var(--yellow);
+            border-style: solid;
+            z-index: 6;
+            pointer-events: none;
+        }
+        .corner.tl { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+        .corner.tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+        .corner.bl { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+        .corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+        .holo-billboard .ad-slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            padding: 40px;
+            text-align: center;
+        }
+        .holo-billboard .ad-slide.active { opacity: 1; z-index: 2; }
+        .holo-billboard .ad-slide .ad-brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 52px;
+            font-weight: 900;
+            color: var(--yellow);
+            text-shadow: 0 0 30px rgba(255,230,0,0.6), 0 0 80px rgba(255,230,0,0.3);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+        .holo-billboard .ad-slide .ad-sub {
+            font-size: 16px;
+            color: var(--cyan);
+            letter-spacing: 4px;
+            margin-top: 8px;
+        }
+        .holo-billboard .ad-slide .ad-desc {
+            font-size: 15px;
+            color: #999;
+            margin-top: 16px;
+            max-width: 600px;
+            letter-spacing: 1px;
+        }
+        .holo-billboard .ad-indicators {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .holo-billboard .ad-indicators .dot {
+            width: 10px; height: 10px;
+            border: 1px solid var(--yellow);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .holo-billboard .ad-indicators .dot.active {
+            background: var(--yellow);
+            box-shadow: var(--glow-yellow);
+        }
+
+        /* ── Glitch Effect ── */
+        @keyframes glitch {
+            0%  { transform: translate(0); }
+            20% { transform: translate(-3px, 2px); }
+            40% { transform: translate(3px, -2px); }
+            60% { transform: translate(-1px, -1px); }
+            80% { transform: translate(2px, 1px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-active .ad-brand {
+            animation: glitch 0.3s ease;
+        }
+        .glitch-active .ad-brand::before,
+        .glitch-active .ad-brand::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            opacity: 0.8;
+        }
+        .glitch-active .ad-brand::before {
+            color: var(--cyan);
+            z-index: -1;
+            animation: glitch 0.25s ease reverse;
+        }
+        .glitch-active .ad-brand::after {
+            color: #ff0044;
+            z-index: -2;
+            animation: glitch 0.35s ease 0.05s;
+        }
+
+        /* ── Section Grid ── */
+        .sections-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* ── Panel Style ── */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-yellow);
+            border-radius: 4px;
+            padding: 24px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,230,0,0.2);
+        }
+        .panel-header .icon {
+            font-size: 22px;
+            color: var(--yellow);
+        }
+        .panel-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--yellow);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .panel-header .chinese {
+            font-size: 14px;
+            color: #666;
+            letter-spacing: 2px;
+            margin-left: auto;
+        }
+
+        /* ── News Articles ── */
+        .news-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+        .news-list li {
+            padding: 14px 16px;
+            background: rgba(255,230,0,0.03);
+            border-left: 3px solid var(--border-yellow);
+            transition: background 0.3s, border-color 0.3s;
+            cursor: pointer;
+        }
+        .news-list li:hover {
+            background: rgba(255,230,0,0.06);
+            border-left-color: var(--yellow);
+        }
+        .news-list li .news-meta {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .news-list li .news-meta .tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            border-radius: 2px;
+            letter-spacing: 1px;
+        }
+        .news-list li .news-meta .tag.breaking {
+            border-color: var(--yellow);
+            color: var(--yellow);
+            animation: pulse-tag 1.5s infinite;
+        }
+        @keyframes pulse-tag {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .news-list li h4 {
+            font-size: 15px;
+            color: #ddd;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .news-list li p {
+            font-size: 12px;
+            color: #777;
+            line-height: 1.6;
+        }
+
+        /* ── Announcement Board ── */
+        .announcements { display: flex; flex-direction: column; gap: 12px; }
+        .announcement-item {
+            padding: 12px 16px;
+            background: rgba(255,230,0,0.04);
+            border: 1px solid rgba(255,230,0,0.15);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        .announcement-item.urgent {
+            border-color: rgba(255,230,0,0.4);
+            animation: urgent-border 2s infinite;
+        }
+        @keyframes urgent-border {
+            0%, 100% { border-color: rgba(255,230,0,0.4); }
+            50% { border-color: rgba(255,230,0,0.9); }
+        }
+        .announcement-item .anno-level {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        .announcement-item .anno-level.warn { color: var(--yellow); }
+        .announcement-item .anno-level.info { color: var(--cyan); }
+        .announcement-item .anno-title {
+            font-size: 14px;
+            color: #ddd;
+            margin-bottom: 2px;
+        }
+        .announcement-item .anno-time {
+            font-size: 11px;
+            color: #555;
+        }
+
+        /* ── Signal Wave / Oscilloscope ── */
+        .signal-section {
+            grid-column: 1 / -1;
+        }
+        .signal-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: #000;
+            border: 1px solid var(--border-cyan);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .signal-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .signal-overlay {
+            position: absolute;
+            top: 8px; left: 16px;
+            font-size: 10px;
+            color: var(--cyan);
+            letter-spacing: 1px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* ── Signal Strength Meters ── */
+        .meters-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .meter {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-yellow);
+            border-radius: 4px;
+            padding: 16px;
+            text-align: center;
+        }
+        .meter .meter-label {
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .meter .meter-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 60px;
+            margin-bottom: 6px;
+        }
+        .meter .meter-bars .bar {
+            width: 8px;
+            background: var(--yellow);
+            border-radius: 2px;
+            box-shadow: 0 0 6px rgba(255,230,0,0.4);
+            transition: height 0.5s ease;
+        }
+        .meter .meter-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            color: var(--yellow);
+            letter-spacing: 1px;
+        }
+
+        /* ── Bottom Status Bar ── */
+        .status-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 32px;
+            background: linear-gradient(0deg, rgba(10,10,14,0.98) 0%, rgba(10,10,14,0.9) 100%);
+            border-top: 1px solid var(--border-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 1px;
+            z-index: 1000;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .status-bar .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-bar .status-dot-live {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        /* ── City Broadcast ── */
+        .broadcast-panel { grid-column: 1 / -1; }
+        .broadcast-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .broadcast-channel {
+            padding: 16px;
+            background: rgba(0,240,255,0.03);
+            border: 1px solid var(--border-cyan);
+            border-radius: 3px;
+            transition: border-color 0.3s;
+        }
+        .broadcast-channel:hover { border-color: var(--cyan); }
+        .broadcast-channel .ch-freq {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .broadcast-channel .ch-name {
+            font-size: 14px;
+            color: #ddd;
+            margin-bottom: 4px;
+        }
+        .broadcast-channel .ch-status {
+            font-size: 11px;
+            color: var(--green);
+            letter-spacing: 1px;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .sections-grid { grid-template-columns: 1fr; }
+            .meters-row { grid-template-columns: repeat(2, 1fr); }
+            .broadcast-grid { grid-template-columns: 1fr; }
+            .holo-billboard { height: 280px; }
+            .holo-billboard .ad-slide .ad-brand { font-size: 32px; }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border-yellow); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════ TOP NAVIGATION BAR ═══════════════ -->
+    <div class="topnav">
+        <div class="logo">NEXUS<span>-9</span> ◆ 信息塔</div>
+        <nav>
+            <a href="nexus_home.html">城市主页</a>
+            <a href="city_map.html">城市地图</a>
+            <a href="metro_system.html">地铁系统</a>
+            <a href="info_tower.html" class="active">信息塔</a>
+        </nav>
+        <div class="status-dot" title="系统在线"></div>
+    </div>
+
+    <!-- ═══════════════ NEWS TICKER ═══════════════ -->
+    <div class="news-ticker">
+        <div class="ticker-label">◆ 实时快讯 LIVE</div>
+        <div class="ticker-track" id="tickerTrack">
+            <span class="ticker-item urgent">⚠ 城市戒备等级提升至黄色 · 请市民注意安全</span>
+            <span class="ticker-item">神舆集团发布新一代神经接口芯片 NX-9000</span>
+            <span class="ticker-item">地铁7号线因维护暂停运营 · 预计明日恢复</span>
+            <span class="ticker-item urgent">⚡ 第4区发生大规模停电 · 维修队伍已出动</span>
+            <span class="ticker-item">黑曜科技宣布完成量子通讯试验 · 延迟降至0.3ms</span>
+            <span class="ticker-item">城市年度庆典将于下月在中央广场举行</span>
+            <span class="ticker-item urgent">⚠ 网络入侵警报 · 请更新您的防火墙协议</span>
+            <span class="ticker-item">第12区新开设全息娱乐中心 · 24小时开放</span>
+            <!-- Duplicate for seamless scroll -->
+            <span class="ticker-item urgent">⚠ 城市戒备等级提升至黄色 · 请市民注意安全</span>
+            <span class="ticker-item">神舆集团发布新一代神经接口芯片 NX-9000</span>
+            <span class="ticker-item">地铁7号线因维护暂停运营 · 预计明日恢复</span>
+            <span class="ticker-item urgent">⚡ 第4区发生大规模停电 · 维修队伍已出动</span>
+            <span class="ticker-item">黑曜科技宣布完成量子通讯试验 · 延迟降至0.3ms</span>
+            <span class="ticker-item">城市年度庆典将于下月在中央广场举行</span>
+            <span class="ticker-item urgent">⚠ 网络入侵警报 · 请更新您的防火墙协议</span>
+            <span class="ticker-item">第12区新开设全息娱乐中心 · 24小时开放</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+    <div class="main-content">
+
+        <!-- ═══ HOLOGRAPHIC BILLBOARD ═══ -->
+        <div class="holo-billboard" id="holoBillboard">
+            <div class="holo-frame"></div>
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br"></div>
+
+            <div class="ad-slide active" data-index="0">
+                <div class="ad-brand">NEXUS-9</div>
+                <div class="ad-sub">明日之城 · CITY OF TOMORROW</div>
+                <div class="ad-desc">欢迎来到 NEXUS-9 信息中枢。这里是城市通讯的核心节点，掌控着全城的数据流与信息分发网络。</div>
+            </div>
+            <div class="ad-slide" data-index="1">
+                <div class="ad-brand">SYNAPSE</div>
+                <div class="ad-sub">神经链接 · 无限可能</div>
+                <div class="ad-desc">神舆集团 SYN-OS v9.3 现已上线。支持全脑沉浸式体验，延迟低于5毫秒。你的思想，就是界面。</div>
+            </div>
+            <div class="ad-slide" data-index="2">
+                <div class="ad-brand">OBSIDIAN</div>
+                <div class="ad-sub">黑曜科技 · 突破极限</div>
+                <div class="ad-desc">量子加密通讯现已覆盖全城。零信任架构，光子级加密。你的数据，无人可及。</div>
+            </div>
+            <div class="ad-slide" data-index="3">
+                <div class="ad-brand">AETHER</div>
+                <div class="ad-sub">以太能源 · 点亮未来</div>
+                <div class="ad-desc">第四代聚变反应堆投入运营。清洁能源供应提升300%。NEXUS-9 的天空，永远明亮。</div>
+            </div>
+            <div class="ad-slide" data-index="4">
+                <div class="ad-brand">CHROMA</div>
+                <div class="ad-sub">全息娱乐 · 超越现实</div>
+                <div class="ad-desc">新一代全息投影技术发布。8K分辨率，360度无死角。体验从未有过的真实。</div>
+            </div>
+
+            <div class="ad-indicators" id="adIndicators">
+                <div class="dot active" data-idx="0"></div>
+                <div class="dot" data-idx="1"></div>
+                <div class="dot" data-idx="2"></div>
+                <div class="dot" data-idx="3"></div>
+                <div class="dot" data-idx="4"></div>
+            </div>
+        </div>
+
+        <!-- ═══ SIGNAL STRENGTH METERS ═══ -->
+        <div class="meters-row">
+            <div class="meter">
+                <div class="meter-label">主频段信号 MAIN</div>
+                <div class="meter-bars" id="meterMain"></div>
+                <div class="meter-value" id="meterMainVal">98.2%</div>
+            </div>
+            <div class="meter">
+                <div class="meter-label">量子频道 QUANTUM</div>
+                <div class="meter-bars" id="meterQuantum"></div>
+                <div class="meter-value" id="meterQuantumVal">87.5%</div>
+            </div>
+            <div class="meter">
+                <div class="meter-label">应急广播 EMERGENCY</div>
+                <div class="meter-bars" id="meterEmerg"></div>
+                <div class="meter-value" id="meterEmergVal">100%</div>
+            </div>
+            <div class="meter">
+                <div class="meter-label">全息传输 HOLO</div>
+                <div class="meter-bars" id="meterHolo"></div>
+                <div class="meter-value" id="meterHoloVal">92.1%</div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTIONS GRID ═══ -->
+        <div class="sections-grid">
+
+            <!-- 新闻中心 -->
+            <div class="panel" style="grid-row: span 2;">
+                <div class="panel-header">
+                    <span class="icon">📰</span>
+                    <h2>新闻中心</h2>
+                    <span class="chinese">News Center</span>
+                </div>
+                <ul class="news-list">
+                    <li>
+                        <div class="news-meta">
+                            <span>2089.06.19 08:30</span>
+                            <span class="tag breaking">突发</span>
+                        </div>
+                        <h4>神舆集团宣布成功开发 AGI 核心</h4>
+                        <p>全球首个通用人工智能核心「天枢-T1」在 NEXUS-9 诞生。据称该核心具备完全自主意识，已通过图灵测试高级版。神舆集团股价单日暴涨47%。伦理委员会要求召开紧急听证会。</p>
+                    </li>
+                    <li>
+                        <div class="news-meta">
+                            <span>2089.06.18 22:15</span>
+                            <span class="tag">科技</span>
+                        </div>
+                        <h4>量子网络覆盖全城：延迟降至0.1毫秒</h4>
+                        <p>黑曜科技今日宣布，NEXUS-9 成为全球首个实现全域量子通讯覆盖的城市。新网络采用光子纠缠技术，理论带宽无限大。市民可前往任一服务中心免费升级终端设备。</p>
+                    </li>
+                    <li>
+                        <div class="news-meta">
+                            <span>2089.06.18 14:00</span>
+                            <span class="tag">经济</span>
+                        </div>
+                        <h4>城市数字货币 NXC 突破历史新高</h4>
+                        <p>NEXUS-9 官方数字货币 NXC 今日兑美元汇率达到 1:8472，创历史新高。分析师指出，近期科技突破和政策利好是主要推动因素。市民消费指数同步上升12%。</p>
+                    </li>
+                    <li>
+                        <div class="news-meta">
+                            <span>2089.06.17 19:45</span>
+                            <span class="tag breaking">突发</span>
+                        </div>
+                        <h4>第9区地下发现未知信号源</h4>
+                        <p>城市监控系统在第9区地下300米处探测到异常信号。信号模式与已知通讯协议均不匹配。NEXUS-9 安全局已封锁该区域，调查正在进行中。官方呼吁市民避免前往该区域。</p>
+                    </li>
+                    <li>
+                        <div class="news-meta">
+                            <span>2089.06.17 10:00</span>
+                            <span class="tag">社会</span>
+                        </div>
+                        <h4>义体改造合法化法案通过二读</h4>
+                        <p>市议会以72%赞成票通过《义体增强法案》二读。该法案将允许市民进行非军事级义体改造。反对者担忧社会分化加剧。最终投票定于下周举行。</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 公告系统 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="icon">📢</span>
+                    <h2>公告系统</h2>
+                    <span class="chinese">Announcements</span>
+                </div>
+                <div class="announcements">
+                    <div class="announcement-item urgent">
+                        <div class="anno-level warn">⚠ 紧急通告 URGENT</div>
+                        <div class="anno-title">城市黄色戒备状态生效中</div>
+                        <div class="anno-time">生效时间：2089.06.18 23:00 · 预计持续48小时</div>
+                    </div>
+                    <div class="announcement-item">
+                        <div class="anno-level info">ℹ 系统维护</div>
+                        <div class="anno-title">信息塔主服务器定期维护通知</div>
+                        <div class="anno-time">计划时间：2089.06.21 02:00-04:00 · 期间部分服务可能中断</div>
+                    </div>
+                    <div class="announcement-item">
+                        <div class="anno-level warn">⚡ 区域警告</div>
+                        <div class="anno-title">第4区电力恢复预计延迟</div>
+                        <div class="anno-time">更新时间：2089.06.19 07:15 · 受影响区域扩大至第5区边缘</div>
+                    </div>
+                    <div class="announcement-item">
+                        <div class="anno-level info">ℹ 公共通知</div>
+                        <div class="anno-title">年度市民数据同步开始</div>
+                        <div class="anno-time">请所有市民在6月30日前完成生物特征更新</div>
+                    </div>
+                    <div class="announcement-item">
+                        <div class="anno-level info">ℹ 天气预警</div>
+                        <div class="anno-title">酸雨预警：6月20日预计降雨 pH 4.2</div>
+                        <div class="anno-time">请市民避免户外活动，确保护甲涂层完好</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 全息广告 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="icon">📡</span>
+                    <h2>全息广告</h2>
+                    <span class="chinese">Holographic Ads</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div style="padding:14px;background:rgba(0,240,255,0.04);border:1px solid var(--border-cyan);border-radius:3px;">
+                        <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--cyan);letter-spacing:2px;">SYNAPSE NX-9000</div>
+                        <div style="font-size:12px;color:#999;margin-top:4px;">新一代神经接口 · 思维即指令 · 体验未来</div>
+                        <div style="font-size:11px;color:var(--yellow);margin-top:6px;">¥ 29,999 NXC · 立即预购</div>
+                    </div>
+                    <div style="padding:14px;background:rgba(0,240,255,0.04);border:1px solid var(--border-cyan);border-radius:3px;">
+                        <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--cyan);letter-spacing:2px;">AETHER FUSION</div>
+                        <div style="font-size:12px;color:#999;margin-top:4px;">家庭聚变能源盒 · 无限电力 · 零排放</div>
+                        <div style="font-size:11px;color:var(--yellow);margin-top:6px;">¥ 5,499 NXC/月 · 订阅即享</div>
+                    </div>
+                    <div style="padding:14px;background:rgba(0,240,255,0.04);border:1px solid var(--border-cyan);border-radius:3px;">
+                        <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--cyan);letter-spacing:2px;">CHROMA HOLO-DECK</div>
+                        <div style="font-size:12px;color:#999;margin-top:4px;">家用全息娱乐舱 · 8K投影 · 360°沉浸</div>
+                        <div style="font-size:11px;color:var(--yellow);margin-top:6px;">¥ 89,999 NXC · 限量发售</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 信号可视化 (oscilloscope) -->
+            <div class="panel signal-section">
+                <div class="panel-header">
+                    <span class="icon">〰️</span>
+                    <h2>城市广播信号</h2>
+                    <span class="chinese">City Broadcast Signal</span>
+                </div>
+                <div class="signal-container">
+                    <canvas id="signalCanvas"></canvas>
+                    <div class="signal-overlay">LIVE · 频段 247.8 MHz · 编码 NX-AES-256</div>
+                </div>
+            </div>
+
+            <!-- 城市广播频道 -->
+            <div class="panel broadcast-panel">
+                <div class="panel-header">
+                    <span class="icon">📻</span>
+                    <h2>城市广播</h2>
+                    <span class="chinese">City Broadcast</span>
+                </div>
+                <div class="broadcast-grid">
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">98.7 MHz</div>
+                        <div class="ch-name">NEXUS 城市之声</div>
+                        <div class="ch-status">● 直播中 · 早间新闻</div>
+                    </div>
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">102.4 MHz</div>
+                        <div class="ch-name">全息音乐台 CHROMA FM</div>
+                        <div class="ch-status">● 直播中 · Cyber Beats</div>
+                    </div>
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">88.1 MHz</div>
+                        <div class="ch-name">紧急广播频道</div>
+                        <div class="ch-status" style="color:var(--yellow);">● 待机中 · 无紧急消息</div>
+                    </div>
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">107.9 MHz</div>
+                        <div class="ch-name">神舆集团官方频道</div>
+                        <div class="ch-status">● 直播中 · 企业公告</div>
+                    </div>
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">95.5 MHz</div>
+                        <div class="ch-name">地下电台 · 自由之声</div>
+                        <div class="ch-status" style="color:#ff6644;">▲ 未授权 · 信号追踪中</div>
+                    </div>
+                    <div class="broadcast-channel">
+                        <div class="ch-freq">91.3 MHz</div>
+                        <div class="ch-name">量子加密频道 Q-CHAN</div>
+                        <div class="ch-status">● 安全连接 · 仅限授权</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ STATUS BAR ═══════════════ -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-dot-live"></span>
+            <span>系统在线 · 运行时间 2,847 小时</span>
+        </div>
+        <div class="status-item">
+            <span>数据吞吐: 847 TB/s</span>
+        </div>
+        <div class="status-item">
+            <span>活跃连接: 3,284,771</span>
+        </div>
+        <div class="status-item">
+            <span>信息塔 v9.3.1 · NEXUS-9</span>
+        </div>
+        <div class="status-item" id="clock" style="color:var(--yellow);">
+            <span>2089.06.19 08:47:32 CST</span>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════
+        //  NEXUS-9 INFORMATION TOWER · MAIN SCRIPT
+        // ═══════════════════════════════════════════
+
+        // ── Clock Update ──
+        function updateClock() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const mo = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const h = String(now.getHours()).padStart(2, '0');
+            const mi = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.innerHTML = '<span>' + y + '.' + mo + '.' + d + ' ' + h + ':' + mi + ':' + s + ' CST</span>';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ── Holo Billboard Ad Rotation ──
+        (function() {
+            const slides = document.querySelectorAll('#holoBillboard .ad-slide');
+            const dots = document.querySelectorAll('#adIndicators .dot');
+            const billboard = document.getElementById('holoBillboard');
+            let currentIdx = 0;
+            const total = slides.length;
+
+            function showSlide(idx) {
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+                slides[idx].classList.add('active');
+                dots[idx].classList.add('active');
+
+                // Glitch transition
+                billboard.classList.add('glitch-active');
+                setTimeout(() => billboard.classList.remove('glitch-active'), 400);
+
+                currentIdx = idx;
+            }
+
+            // Auto rotate every 5 seconds
+            setInterval(() => {
+                const next = (currentIdx + 1) % total;
+                showSlide(next);
+            }, 5000);
+
+            // Click indicators
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const idx = parseInt(dot.getAttribute('data-idx'));
+                    showSlide(idx);
+                });
+            });
+        })();
+
+        // ── Signal Wave (Oscilloscope Animation) ──
+        (function() {
+            const canvas = document.getElementById('signalCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const waves = [
+                { freq: 0.008, amp: 0.25, phase: 0, speed: 0.02, color: '#ffe600', alpha: 0.9 },
+                { freq: 0.014, amp: 0.18, phase: 1.5, speed: 0.025, color: '#ffe600', alpha: 0.5 },
+                { freq: 0.022, amp: 0.12, phase: 3.0, speed: 0.03, color: '#00f0ff', alpha: 0.7 },
+                { freq: 0.005, amp: 0.30, phase: 4.5, speed: 0.012, color: '#00f0ff', alpha: 0.4 },
+            ];
+
+            function draw() {
+                const W = canvas.width;
+                const H = canvas.height;
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.fillRect(0, 0, W, H);
+
+                // Grid lines
+                ctx.strokeStyle = 'rgba(0,240,255,0.06)';
+                ctx.lineWidth = 1;
+                for (let y = 0; y < H; y += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(W, y);
+                    ctx.stroke();
+                }
+                for (let x = 0; x < W; x += 60) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, H);
+                    ctx.stroke();
+                }
+
+                // Center line
+                ctx.strokeStyle = 'rgba(0,240,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([8, 20]);
+                ctx.beginPath();
+                ctx.moveTo(0, H / 2);
+                ctx.lineTo(W, H / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw waves
+                waves.forEach(w => {
+                    w.phase += w.speed;
+                    ctx.strokeStyle = w.color;
+                    ctx.globalAlpha = w.alpha;
+                    ctx.lineWidth = 1.5;
+                    ctx.shadowColor = w.color;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    for (let x = 0; x < W; x += 2) {
+                        const y = H / 2 + Math.sin(x * w.freq + w.phase) * H * w.amp
+                                + Math.sin(x * w.freq * 3.7 + w.phase * 2.1) * H * w.amp * 0.3;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                });
+                ctx.globalAlpha = 1;
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ── Signal Strength Meter Animation ──
+        function animateMeter(containerId, valueId, baseVal, variance) {
+            const container = document.getElementById(containerId);
+            const valueEl = document.getElementById(valueId);
+            if (!container || !valueEl) return;
+
+            function update() {
+                const bars = [];
+                const barCount = 8;
+                const val = Math.min(100, Math.max(20, baseVal + (Math.random() - 0.5) * variance));
+                const displayVal = val.toFixed(1);
+
+                container.innerHTML = '';
+                for (let i = 0; i < barCount; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    const threshold = (i + 1) * (100 / barCount);
+                    let h;
+                    if (val >= threshold) {
+                        h = 100;
+                    } else if (val >= threshold - (100 / barCount)) {
+                        h = ((val - (threshold - 100 / barCount)) / (100 / barCount)) * 100;
+                    } else {
+                        h = 0;
+                    }
+                    bar.style.height = Math.max(4, h) + '%';
+                    container.appendChild(bar);
+                }
+                valueEl.textContent = displayVal + '%';
+            }
+
+            update();
+            setInterval(update, 2000 + Math.random() * 1000);
+        }
+
+        animateMeter('meterMain', 'meterMainVal', 98.2, 3);
+        animateMeter('meterQuantum', 'meterQuantumVal', 87.5, 8);
+        animateMeter('meterEmerg', 'meterEmergVal', 100, 0.5);
+        animateMeter('meterHolo', 'meterHoloVal', 92.1, 6);
+
+        // ── Urgent Announcement Blink ──
+        (function() {
+            // Already handled via CSS animation on .announcement-item.urgent
+            // Additional dynamic: randomly add/remove urgent items
+            const announcements = document.querySelectorAll('.announcement-item');
+            setInterval(() => {
+                const randomIdx = Math.floor(Math.random() * announcements.length);
+                const item = announcements[randomIdx];
+                item.classList.toggle('urgent');
+                setTimeout(() => item.classList.toggle('urgent'), 3000 + Math.random() * 5000);
+            }, 15000);
+        })();
+
+        // ── Breaking News Flash ──
+        (function() {
+            const breakingTags = document.querySelectorAll('.tag.breaking');
+            setInterval(() => {
+                breakingTags.forEach(tag => {
+                    tag.style.opacity = '0.3';
+                    setTimeout(() => { tag.style.opacity = '1'; }, 300);
+                });
+            }, 4000);
+        })();
+
+        // ── Console Easter Egg ──
+        (function() {
+            const styles = [
+                'color: #ffe600; font-size: 24px; font-weight: bold; font-family: monospace;',
+                'color: #00f0ff; font-size: 14px; font-family: monospace;',
+                'color: #888; font-size: 12px; font-family: monospace;',
+                'color: #ffe600; font-size: 12px; font-family: monospace;',
+                'color: #ff3344; font-size: 11px; font-family: monospace;',
+                'color: #00f0ff; font-size: 11px; font-family: monospace;',
+            ];
+            console.log('%c╔══════════════════════════════════════╗', styles[0]);
+            console.log('%c║   NEXUS-9 信息塔 · 主控终端 v9.3.1    ║', styles[0]);
+            console.log('%c╠══════════════════════════════════════╣', styles[0]);
+            console.log('%c  欢迎访问 NEXUS-9 信息中枢              ', styles[1]);
+            console.log('%c  你正在查看城市通讯核心节点            ', styles[2]);
+            console.log('%c  当前在线终端: ' + Math.floor(Math.random() * 9000000 + 1000000).toLocaleString(), styles[3]);
+            console.log('%c  数据流监控中...                       ', styles[2]);
+            console.log('%c  ⚠ 注意: 未经授权的访问将被追踪        ', styles[4]);
+            console.log('%c  信号强度: ████████████████░░  94.8%   ', styles[5]);
+            console.log('%c╚══════════════════════════════════════╝', styles[0]);
+            console.log('%c  键入 window.NEXUS9 获取更多信息       ', styles[2]);
+
+            window.NEXUS9 = {
+                tower: 'NEXUS-9 Information Tower',
+                version: '9.3.1',
+                uptime: '2,847 hours',
+                location: 'City Center, Sector 1',
+                height: '1,247 meters',
+                floors: 312,
+                signalRange: '500 km',
+                encryptedChannels: 16384,
+                activeConnections: 3284771,
+                dataThroughput: '847 TB/s',
+                status: 'ONLINE',
+                easterEgg: '你发现了隐藏的控制台。这座城市有无数的秘密等待你去探索。',
+                access: function() {
+                    console.log('%c📡 建立安全连接...', 'color: #00f0ff;');
+                    setTimeout(() => {
+                        console.log('%c✅ 已连接至 NEXUS-9 信息塔主控系统', 'color: #00ff66;');
+                        console.log('%c🔑 访问级别: 访客 (GUEST)', 'color: #ffe600;');
+                        console.log('%c💡 提示: 更高的访问级别需要生物特征验证', 'color: #888;');
+                    }, 1000);
+                }
+            };
+            console.log('%c🔍 尝试执行 NEXUS9.access() 建立连接', 'color: #888; font-style: italic;');
+        })();
+    </script>
+</body>
+</html>

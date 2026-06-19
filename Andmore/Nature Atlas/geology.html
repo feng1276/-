@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地质现象 · Nature Atlas</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-card: rgba(17, 22, 29, 0.82);
+            --glass-bg: rgba(10, 14, 20, 0.7);
+            --glass-border: rgba(0, 160, 220, 0.18);
+            --accent-ocean: #0099cc;
+            --accent-magma: #e0553d;
+            --accent-glow-magma: rgba(224, 85, 61, 0.4);
+            --accent-glow-lava: rgba(255, 120, 30, 0.5);
+            --accent-lava: #ff6a1a;
+            --accent-ash: #8a8a8a;
+            --text-primary: #e2e6ea;
+            --text-secondary: #a8b4c0;
+            --text-muted: #6b7885;
+            --border-radius-xl: 1.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.55);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Source Sans 3', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image: radial-gradient(ellipse at 40% 15%, rgba(224, 85, 61, 0.05) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        /* 🌋 Magma glow pulse */
+        @keyframes magmaPulse {
+            0%, 100% { text-shadow: 0 0 35px var(--accent-glow-magma); }
+            50% { text-shadow: 0 0 70px var(--accent-glow-magma), 0 0 130px rgba(224, 85, 61, 0.35); }
+        }
+
+        /* 🔥 Lava flow shimmer */
+        @keyframes lavaShimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 🌋 Ash particle float */
+        @keyframes ashFloat {
+            0% { transform: translateY(0) translateX(0); opacity: 0.7; }
+            100% { transform: translateY(-80px) translateX(15px); opacity: 0; }
+        }
+
+        /* 🔥 Magma border glow */
+        @keyframes magmaBorderGlow {
+            0%, 100% { border-color: rgba(224, 85, 61, 0.18); }
+            50% { border-color: rgba(224, 85, 61, 0.45); }
+        }
+
+        /* 🌋 Subtle tremor shake */
+        @keyframes tremorShake {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-1px); }
+            20% { transform: translateX(1px); }
+            30% { transform: translateX(-0.5px); }
+            40% { transform: translateX(0.5px); }
+            50% { transform: translateX(0); }
+        }
+
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .logo .nat {
+            color: var(--accent-ocean);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-magma);
+        }
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--accent-magma);
+            text-shadow: 0 0 35px var(--accent-glow-magma);
+            animation: magmaPulse 3s ease-in-out infinite;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* 🕰️ Geological Time Scale Timeline */
+        .timeline-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            overflow-x: auto;
+        }
+        .timeline-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--accent-magma);
+            margin-bottom: 1.5rem;
+        }
+        .geo-timeline {
+            display: flex;
+            gap: 0;
+            min-width: 900px;
+            position: relative;
+            padding: 1rem 0;
+        }
+        .geo-timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                rgba(224,85,61,0.5) 0%,
+                rgba(224,85,61,0.7) 20%,
+                rgba(255,106,26,0.6) 40%,
+                rgba(255,140,60,0.5) 60%,
+                rgba(224,85,61,0.7) 80%,
+                rgba(255,106,26,0.9) 100%);
+            border-radius: 2px;
+        }
+        .timeline-era {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            padding: 1.5rem 0.5rem 0.5rem;
+            cursor: default;
+            transition: 0.3s ease;
+        }
+        .timeline-era:hover {
+            transform: translateY(-5px);
+        }
+        .timeline-era::before {
+            content: '';
+            position: absolute;
+            top: calc(50% - 5px);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: var(--accent-magma);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-glow-magma);
+            z-index: 2;
+        }
+        .timeline-era .era-name {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .timeline-era .era-date {
+            font-size: 0.7rem;
+            color: var(--accent-magma);
+            margin: 0.2rem 0;
+        }
+        .timeline-era .era-phenomena {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* 🌍 Earth Cross-Section SVG */
+        .earth-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+        }
+        .earth-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--accent-magma);
+            margin-bottom: 1rem;
+        }
+        .earth-section svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 📏 Richter Scale Card */
+        .richter-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+        }
+        .richter-card h2 {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--accent-magma);
+            margin-bottom: 1.2rem;
+        }
+        .richter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 0.8rem;
+        }
+        .richter-level {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            transition: 0.3s;
+        }
+        .richter-level:hover {
+            border-color: var(--accent-magma);
+            background: rgba(224,85,61,0.06);
+        }
+        .richter-level .mag-num {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent-magma);
+            min-width: 2.5rem;
+            text-align: center;
+        }
+        .richter-level .mag-detail {
+            flex: 1;
+        }
+        .richter-level .mag-detail .mag-effect {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .richter-level .mag-detail .mag-freq {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        /* 🔥 Ring of Fire Section */
+        .ring-of-fire {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 85, 61, 0.3);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 50px rgba(224, 85, 61, 0.08);
+            text-align: center;
+            animation: magmaBorderGlow 4s ease-in-out infinite;
+        }
+        .ring-of-fire h2 {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--accent-magma);
+            margin-bottom: 1rem;
+        }
+        .ring-of-fire svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .ring-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .ring-stat {
+            text-align: center;
+            padding: 0.5rem 1rem;
+        }
+        .ring-stat .ring-val {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            color: var(--accent-magma);
+            font-weight: 700;
+        }
+        .ring-stat .ring-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        /* 🌋 Canvas Volcanic Eruption */
+        .volcano-canvas-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .volcano-canvas-section canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 1rem;
+        }
+        .volcano-canvas-section::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            border-radius: var(--border-radius-xl);
+            animation: magmaBorderGlow 3s ease-in-out infinite;
+        }
+
+        /* 🃏 Geology Grid */
+        .geology-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 2rem;
+        }
+        .geo-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+        }
+        .geo-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent-magma);
+            box-shadow: 0 0 40px var(--accent-glow-magma), 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        .geo-img {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+        }
+        .geo-body {
+            padding: 1.5rem;
+        }
+        .geo-body h3 {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+        }
+        .geo-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+        .richter-tag {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            background: rgba(224, 85, 61, 0.15);
+            color: var(--accent-magma);
+            border: 1px solid rgba(224, 85, 61, 0.3);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .geo-card {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        /* 📊 Stats Bar */
+        .geo-stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .geo-stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.2rem;
+            padding: 1.2rem;
+            text-align: center;
+            box-shadow: var(--shadow-card);
+            transition: 0.3s;
+        }
+        .geo-stat-card:hover {
+            border-color: var(--accent-magma);
+            box-shadow: 0 0 25px rgba(224,85,61,0.12);
+            transform: translateY(-2px);
+        }
+        .geo-stat-card .geo-stat-value {
+            font-family: var(--font-heading);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent-magma);
+        }
+        .geo-stat-card .geo-stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 0.3rem;
+        }
+
+        @media (max-width: 768px) {
+            .geology-grid {
+                grid-template-columns: 1fr;
+            }
+            .geo-stats-bar {
+                grid-template-columns: 1fr 1fr;
+            }
+            .richter-grid {
+                grid-template-columns: 1fr;
+            }
+            .ring-stats {
+                gap: 0.5rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><span class="nat">NATURE</span> ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="nature_home.html">首页</a></li>
+            <li><a href="phenomena.html">现象库</a></li>
+            <li><a href="weather.html">极端天气</a></li>
+            <li><a href="geology.html" class="active">地质现象</a></li>
+            <li><a href="ocean.html">海洋现象</a></li>
+            <li><a href="optical.html">光学现象</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间轴</a></li>
+            <li><a href="compare.html">数据对比</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🌋 地质现象</h1>
+        <p style="color:var(--text-muted);">地球内部力量的壮观展现</p>
+    </div>
+
+    <div class="container">
+        <!-- 🕰️ Geological Time Scale -->
+        <div class="timeline-section">
+            <h2>🕰️ 地质时间尺度</h2>
+            <p style="color:var(--text-secondary); margin-bottom:1.2rem; font-size:0.85rem;">地球46亿年历史中的关键地质现象及其首次出现的年代</p>
+            <div class="geo-timeline">
+                <div class="timeline-era">
+                    <div class="era-name">冥古宙</div>
+                    <div class="era-date">4600-4000 Ma</div>
+                    <div class="era-phenomena">地球形成<br>岩浆海洋<br>月球诞生</div>
+                </div>
+                <div class="timeline-era">
+                    <div class="era-name">太古宙</div>
+                    <div class="era-date">4000-2500 Ma</div>
+                    <div class="era-phenomena">最早地壳<br>板块构造启动<br>热泉活动</div>
+                </div>
+                <div class="timeline-era">
+                    <div class="era-name">元古宙</div>
+                    <div class="era-date">2500-541 Ma</div>
+                    <div class="era-phenomena">超大陆旋回<br>冰期沉积<br>大规模火山活动</div>
+                </div>
+                <div class="timeline-era">
+                    <div class="era-name">古生代</div>
+                    <div class="era-date">541-252 Ma</div>
+                    <div class="era-phenomena">造山运动<br>石灰岩台地<br>化石记录丰富</div>
+                </div>
+                <div class="timeline-era">
+                    <div class="era-name">中生代</div>
+                    <div class="era-date">252-66 Ma</div>
+                    <div class="era-phenomena">超级地幔柱<br>大规模熔岩流<br>陨石撞击</div>
+                </div>
+                <div class="timeline-era">
+                    <div class="era-name">新生代</div>
+                    <div class="era-date">66 Ma - 至今</div>
+                    <div class="era-phenomena">环太平洋火山带<br>冰河时代<br>人类记录现象</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌍 Earth Cross-Section SVG -->
+        <div class="earth-section">
+            <h2>🌍 地球内部结构</h2>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:1rem;">板块构造与地球圈层 — 展示地壳、地幔、外核、内核及板块运动方向</p>
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+                <!-- Ocean -->
+                <rect x="0" y="40" width="350" height="60" rx="5" fill="rgba(0,153,204,0.12)" stroke="rgba(0,153,204,0.15)" stroke-width="1"/>
+                <text x="150" y="75" fill="rgba(0,153,204,0.5)" font-size="10" font-family="sans-serif">海洋 (Ocean)</text>
+                <!-- Continental crust -->
+                <rect x="350" y="40" width="450" height="45" rx="5" fill="rgba(160,140,120,0.2)" stroke="rgba(160,140,120,0.25)" stroke-width="1"/>
+                <text x="520" y="67" fill="rgba(160,140,120,0.5)" font-size="10" font-family="sans-serif">大陆地壳 (Continental Crust) ~35 km</text>
+                <!-- Oceanic crust -->
+                <rect x="0" y="100" width="350" height="20" rx="3" fill="rgba(100,110,120,0.3)" stroke="rgba(100,110,120,0.2)" stroke-width="1"/>
+                <text x="120" y="114" fill="rgba(100,110,120,0.5)" font-size="9" font-family="sans-serif">洋壳 ~7 km</text>
+                <!-- Lithosphere -->
+                <rect x="0" y="120" width="800" height="35" rx="5" fill="rgba(140,130,110,0.25)" stroke="rgba(140,130,110,0.2)" stroke-width="1"/>
+                <text x="350" y="142" fill="rgba(140,130,110,0.5)" font-size="10" font-family="sans-serif">岩石圈地幔 (Lithospheric Mantle) ~100 km</text>
+                <!-- Asthenosphere -->
+                <rect x="0" y="155" width="800" height="50" rx="5" fill="rgba(224,85,61,0.1)" stroke="rgba(224,85,61,0.15)" stroke-width="1" stroke-dasharray="4,3"/>
+                <text x="310" y="183" fill="rgba(224,85,61,0.4)" font-size="10" font-family="sans-serif">软流圈 (Asthenosphere) ~100-350 km — 部分熔融，板块在此之上滑动</text>
+                <!-- Mid-ocean ridge -->
+                <polygon points="300,40 280,100 320,100" fill="rgba(224,85,61,0.15)" stroke="rgba(224,85,61,0.25)" stroke-width="1"/>
+                <text x="230" y="115" fill="rgba(224,85,61,0.5)" font-size="8" font-family="sans-serif">洋中脊</text>
+                <!-- Subduction zone -->
+                <line x1="600" y1="40" x2="550" y2="160" stroke="rgba(224,85,61,0.3)" stroke-width="2"/>
+                <text x="555" y="140" fill="rgba(224,85,61,0.5)" font-size="9" font-family="sans-serif">俯冲带</text>
+                <!-- Volcano on continent -->
+                <polygon points="680,40 665,90 695,90" fill="rgba(224,85,61,0.2)" stroke="rgba(224,85,61,0.3)" stroke-width="1"/>
+                <text x="660" y="105" fill="rgba(224,85,61,0.4)" font-size="8" font-family="sans-serif">火山弧</text>
+                <!-- Plate movement arrows -->
+                <line x1="310" y1="55" x2="250" y2="55" stroke="#88ccdd" stroke-width="1.5" marker-end="url(#arrowLeft)"/>
+                <line x1="290" y1="55" x2="350" y2="55" stroke="#88ccdd" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+                <text x="270" y="48" fill="#88ccdd" font-size="8" font-family="sans-serif">← 扩张 →</text>
+                <line x1="630" y1="55" x2="580" y2="55" stroke="#e8793e" stroke-width="1.5" marker-end="url(#arrowRight2)"/>
+                <text x="585" y="48" fill="#e8793e" font-size="8" font-family="sans-serif">俯冲</text>
+                <!-- Mantle (simplified) -->
+                <rect x="0" y="205" width="800" height="180" rx="10" fill="rgba(224,85,61,0.06)" stroke="rgba(224,85,61,0.08)" stroke-width="1"/>
+                <text x="330" y="280" fill="rgba(224,85,61,0.3)" font-size="11" font-family="sans-serif">下地幔 (Lower Mantle) ~2900 km</text>
+                <!-- Mantle convection arrows -->
+                <path d="M400,240 Q450,300 400,360" fill="none" stroke="rgba(255,140,60,0.2)" stroke-width="1.5" marker-end="url(#arrowMagma)"/>
+                <path d="M350,360 Q300,300 350,240" fill="none" stroke="rgba(255,140,60,0.2)" stroke-width="1.5" marker-end="url(#arrowMagma2)"/>
+                <text x="420" y="310" fill="rgba(255,140,60,0.3)" font-size="9" font-family="sans-serif">地幔对流</text>
+                <!-- Outer core -->
+                <rect x="80" y="385" width="640" height="60" rx="15" fill="rgba(255,180,60,0.1)" stroke="rgba(255,180,60,0.15)" stroke-width="1"/>
+                <text x="310" y="420" fill="rgba(255,180,60,0.35)" font-size="11" font-family="sans-serif">外核 (Outer Core) · 液态铁镍 · ~2300 km厚</text>
+                <!-- Inner core -->
+                <rect x="250" y="445" width="300" height="45" rx="20" fill="rgba(255,200,80,0.15)" stroke="rgba(255,200,80,0.2)" stroke-width="1"/>
+                <text x="340" y="472" fill="rgba(255,200,80,0.4)" font-size="10" font-family="sans-serif">内核 (Inner Core) · 固态 · ~1200 km</text>
+                <!-- Depth scale -->
+                <line x1="760" y1="40" x2="760" y2="490" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                <text x="730" y="270" fill="var(--text-muted)" font-size="8" font-family="sans-serif">6371 km</text>
+                <!-- Arrow markers -->
+                <defs>
+                    <marker id="arrowLeft" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+                        <polygon points="6 0, 0 2.5, 6 5" fill="#88ccdd"/>
+                    </marker>
+                    <marker id="arrowRight" markerWidth="6" markerHeight="5" refX="0" refY="2.5" orient="auto">
+                        <polygon points="0 0, 6 2.5, 0 5" fill="#88ccdd"/>
+                    </marker>
+                    <marker id="arrowRight2" markerWidth="6" markerHeight="5" refX="0" refY="2.5" orient="auto">
+                        <polygon points="0 0, 6 2.5, 0 5" fill="#e8793e"/>
+                    </marker>
+                    <marker id="arrowMagma" markerWidth="6" markerHeight="5" refX="0" refY="2.5" orient="auto">
+                        <polygon points="0 0, 6 2.5, 0 5" fill="rgba(255,140,60,0.3)"/>
+                    </marker>
+                    <marker id="arrowMagma2" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+                        <polygon points="6 0, 0 2.5, 6 5" fill="rgba(255,140,60,0.3)"/>
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- 📏 Richter Scale Card -->
+        <div class="richter-card">
+            <h2>📏 里氏震级详解</h2>
+            <p style="color:var(--text-secondary); margin-bottom:1.2rem; font-size:0.85rem;">里氏震级（Richter Magnitude Scale）为对数尺度：每增加1级，振幅增大10倍，释放能量约增大31.6倍。</p>
+            <div class="richter-grid">
+                <div class="richter-level">
+                    <div class="mag-num">1-2</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">微震 — 仪器可记录，人体通常无感</div>
+                        <div class="mag-freq">全球年均: ~130万次</div>
+                    </div>
+                </div>
+                <div class="richter-level">
+                    <div class="mag-num">3-4</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">小震 — 室内少数人有感，悬挂物轻微摆动</div>
+                        <div class="mag-freq">全球年均: ~13万次</div>
+                    </div>
+                </div>
+                <div class="richter-level">
+                    <div class="mag-num">5-6</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">中强震 — 建筑物晃动，不牢固物品倒塌</div>
+                        <div class="mag-freq">全球年均: ~1300次</div>
+                    </div>
+                </div>
+                <div class="richter-level">
+                    <div class="mag-num">7-7.9</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">强震 — 建筑物严重破坏，地面裂缝</div>
+                        <div class="mag-freq">全球年均: ~15次</div>
+                    </div>
+                </div>
+                <div class="richter-level">
+                    <div class="mag-num">8-8.9</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">巨大地震 — 大范围毁灭，可能引发海啸</div>
+                        <div class="mag-freq">全球年均: ~1次</div>
+                    </div>
+                </div>
+                <div class="richter-level">
+                    <div class="mag-num">9+</div>
+                    <div class="mag-detail">
+                        <div class="mag-effect">特大地震 — 改变地貌，全球性影响</div>
+                        <div class="mag-freq">历史记录: 仅数次</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔥 Ring of Fire -->
+        <div class="ring-of-fire">
+            <h2>🔥 环太平洋火山带 (Ring of Fire)</h2>
+            <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.85rem;">太平洋板块边缘全长约40,000公里的马蹄形地带，集中了全球75%的活火山和90%的地震</p>
+            <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;">
+                <!-- Pacific Ocean base -->
+                <ellipse cx="400" cy="200" rx="260" ry="160" fill="rgba(0,120,180,0.1)" stroke="rgba(0,153,204,0.2)" stroke-width="1"/>
+                <text x="340" y="200" fill="rgba(0,153,204,0.3)" font-size="14" font-family="sans-serif">太平洋</text>
+                <!-- Ring of Fire arc -->
+                <path d="M100,120 Q150,60 300,30 Q500,10 600,50 Q700,90 720,180 Q740,280 680,340 Q600,380 450,380 Q300,380 180,340 Q80,280 100,120"
+                    fill="none" stroke="rgba(224,85,61,0.5)" stroke-width="3" stroke-dasharray="8,4"/>
+                <path d="M100,120 Q150,60 300,30 Q500,10 600,50 Q700,90 720,180 Q740,280 680,340 Q600,380 450,380 Q300,380 180,340 Q80,280 100,120"
+                    fill="none" stroke="rgba(255,106,26,0.25)" stroke-width="12" opacity="0.3"/>
+                <!-- Volcano markers -->
+                <circle cx="300" cy="35" r="5" fill="var(--accent-magma)"><title>堪察加半岛</title></circle>
+                <circle cx="620" cy="70" r="5" fill="var(--accent-magma)"><title>阿拉斯加</title></circle>
+                <circle cx="710" cy="180" r="5" fill="var(--accent-magma)"><title>喀斯喀特山脉</title></circle>
+                <circle cx="690" cy="260" r="5" fill="var(--accent-magma)"><title>墨西哥</title></circle>
+                <circle cx="650" cy="330" r="5" fill="var(--accent-magma)"><title>中美洲</title></circle>
+                <circle cx="550" cy="360" r="5" fill="var(--accent-magma)"><title>安第斯山脉</title></circle>
+                <circle cx="300" cy="375" r="5" fill="var(--accent-magma)"><title>南安第斯</title></circle>
+                <circle cx="170" cy="340" r="5" fill="var(--accent-magma)"><title>新西兰</title></circle>
+                <circle cx="110" cy="260" r="5" fill="var(--accent-magma)"><title>汤加-克马德克</title></circle>
+                <circle cx="120" cy="180" r="5" fill="var(--accent-magma)"><title>菲律宾</title></circle>
+                <circle cx="200" cy="100" r="5" fill="var(--accent-magma)"><title>日本</title></circle>
+                <!-- Landmass hints -->
+                <ellipse cx="100" cy="200" rx="80" ry="120" fill="rgba(160,140,120,0.08)"/>
+                <ellipse cx="720" cy="200" rx="60" ry="140" fill="rgba(160,140,120,0.08)"/>
+                <ellipse cx="550" cy="50" rx="100" ry="40" fill="rgba(160,140,120,0.08)"/>
+                <ellipse cx="700" cy="350" rx="50" ry="30" fill="rgba(160,140,120,0.06)"/>
+                <ellipse cx="50" cy="350" rx="40" ry="30" fill="rgba(160,140,120,0.06)"/>
+                <!-- Labels -->
+                <text x="230" y="22" fill="var(--text-muted)" font-size="8" font-family="sans-serif">堪察加</text>
+                <text x="630" y="62" fill="var(--text-muted)" font-size="8" font-family="sans-serif">阿拉斯加</text>
+                <text x="680" y="175" fill="var(--text-muted)" font-size="8" font-family="sans-serif">喀斯喀特</text>
+                <text x="145" y="110" fill="var(--text-muted)" font-size="8" font-family="sans-serif">日本</text>
+                <text x="555" y="352" fill="var(--text-muted)" font-size="8" font-family="sans-serif">安第斯</text>
+                <text x="105" y="270" fill="var(--text-muted)" font-size="8" font-family="sans-serif">汤加</text>
+            </svg>
+            <div class="ring-stats">
+                <div class="ring-stat">
+                    <div class="ring-val">~452</div>
+                    <div class="ring-label">活火山数量</div>
+                </div>
+                <div class="ring-stat">
+                    <div class="ring-val">75%</div>
+                    <div class="ring-label">全球活火山占比</div>
+                </div>
+                <div class="ring-stat">
+                    <div class="ring-val">90%</div>
+                    <div class="ring-label">全球地震占比</div>
+                </div>
+                <div class="ring-stat">
+                    <div class="ring-val">40,000 km</div>
+                    <div class="ring-label">环带总长度</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌋 Volcanic Eruption Canvas -->
+        <div class="volcano-canvas-section">
+            <canvas id="volcanoCanvas" width="1100" height="220" style="width:100%; height:220px;"></canvas>
+        </div>
+
+        <!-- 📊 Stats Bar -->
+        <div class="geo-stats-bar" id="geoStatsBar"></div>
+
+        <!-- 🃏 Geology Cards Grid -->
+        <div class="geology-grid" id="geologyGrid"></div>
+    </div>
+
+    <script>
+        var geologyData = [
+            { id: 'volcano', name: '火山喷发', icon: '🌋', vei: 'VEI 0-8', frequency: '年均60次', type: '火山活动',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '岩浆、火山灰和气体从地壳裂口喷涌而出，是地球内部能量的直接释放，VEI 8级喷发可影响全球气候。' },
+            { id: 'earthquake', name: '地震', icon: '🏚️', vei: '里氏1-9级', frequency: '年均50万次(可感知约10万次)', type: '构造运动',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&h=300&fit=crop',
+                desc: '地壳板块突然滑动释放能量引发地面震动，9级地震释放能量相当于4.8亿吨TNT炸药。' },
+            { id: 'geyser', name: '间歇泉', icon: '💨', vei: 'N/A', frequency: '持续周期喷发', type: '热液活动',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=500&h=300&fit=crop',
+                desc: '地下水被岩浆加热后周期性从地表喷出热水和蒸汽，喷发高度可达数十米。' },
+            { id: 'sinkhole', name: '天坑', icon: '🕳️', vei: 'N/A', frequency: '偶发', type: '地表塌陷',
+                img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=500&h=300&fit=crop',
+                desc: '地下空洞坍塌形成的地表巨型凹陷，直径可达数百米，可在数秒内吞噬建筑物。' },
+            { id: 'landslide', name: '山体滑坡', icon: '⛰️', vei: 'N/A', frequency: '雨季高发', type: '块体运动',
+                img: 'https://images.unsplash.com/photo-1519682577862-22b62b24e493?w=500&h=300&fit=crop',
+                desc: '大量岩石和泥土在重力作用下沿斜坡快速下滑，速度可达160km/h以上。' },
+            { id: 'tsunami_geo', name: '地质海啸', icon: '🌊', vei: '最高可达50米浪高', frequency: '海底地震后触发', type: '海洋地质',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=500&h=300&fit=crop',
+                desc: '由海底地震、火山或滑坡引发的巨大破坏性海浪，在深海中以喷气机速度传播。' },
+            { id: 'lahar', name: '火山泥流', icon: '💧', vei: 'N/A', frequency: '火山喷发后触发', type: '火山次生灾害',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '火山灰与雨水或融雪混合形成的快速泥石流，速度可达100km/h，摧毁沿途一切。' },
+            { id: 'pyroclastic_flow', name: '火山碎屑流', icon: '💥', vei: 'VEI 3+', frequency: '爆炸性喷发', type: '火山活动',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '炽热气体与火山碎屑混合物高速冲下山坡，温度高达1000°C，速度超700km/h，所过之处无人生还。' },
+            { id: 'caldera', name: '破火山口', icon: '🕳️', vei: 'VEI 7-8', frequency: '超级喷发后形成', type: '火山构造',
+                img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=500&h=300&fit=crop',
+                desc: '大规模喷发后火山顶部塌陷形成的大型凹陷，直径可达数十公里，常积水成湖。' },
+            { id: 'icequake', name: '冰震', icon: '❄️', vei: '里氏1-3级', frequency: '冰川区冬季频发', type: '冰川活动',
+                img: 'https://images.unsplash.com/photo-1547754980-3df97fed72c8?w=500&h=300&fit=crop',
+                desc: '冰川内部应力释放或冰层断裂引发的地震式震动，在极地和高山冰川区广泛存在。' },
+            { id: 'mud_volcano', name: '泥火山', icon: '💩', vei: 'N/A', frequency: '持续或间歇', type: '沉积构造',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=500&h=300&fit=crop',
+                desc: '地下泥浆、水和气体喷出地表形成的锥形构造，非岩浆成因，常见于油气区和俯冲带。' },
+            { id: 'megatsunami', name: '巨型海啸', icon: '🌊', vei: '浪高超100米', frequency: '极罕见', type: '海洋地质',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=500&h=300&fit=crop',
+                desc: '大规模山体滑坡或小行星撞击海洋引发的超级海啸，浪高可达500米以上。' },
+            { id: 'cryovolcano', name: '冰火山', icon: '❄️', vei: 'N/A', frequency: '外太阳系常见', type: '冰冻火山',
+                img: 'https://images.unsplash.com/photo-1547754980-3df97fed72c8?w=500&h=300&fit=crop',
+                desc: '喷发水、氨或甲烷等挥发物（而非熔岩）的冰冻天体地质现象，存在于土卫六等冰卫星上。' },
+            { id: 'jokulhlaup', name: '冰川溃决洪水', icon: '🌊', vei: 'N/A', frequency: '火山冰川区', type: '冰川活动',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=500&h=300&fit=crop',
+                desc: '冰下火山喷发或地热融化冰川水突然释放的灾难性洪水，流量可达密西西比河数倍。' },
+            { id: 'liquefaction', name: '土壤液化', icon: '💧', vei: 'N/A', frequency: '强震触发', type: '地震次生现象',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&h=300&fit=crop',
+                desc: '地震震动使饱和沙土丧失强度、如液体般流动，导致建筑物下沉倾斜甚至完全倾倒。' },
+            { id: 'rockfall', name: '岩崩', icon: '🪨', vei: 'N/A', frequency: '陡坡区常见', type: '块体运动',
+                img: 'https://images.unsplash.com/photo-1519682577862-22b62b24e493?w=500&h=300&fit=crop',
+                desc: '单个或少量岩石从陡峭崖壁快速坠落，由风化、冻融或地震触发，对山区交通构成威胁。' },
+            { id: 'limestone_pavement', name: '石灰岩路面', icon: '🪨', vei: 'N/A', frequency: '静态地貌', type: '喀斯特地貌',
+                img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=500&h=300&fit=crop',
+                desc: '冰川侵蚀剥离表层土壤后暴露的石灰岩平台，被溶蚀分割成壮观岩块与沟槽网格。' },
+            { id: 'tectonic_rift', name: '构造裂谷', icon: '🌍', vei: 'N/A', frequency: '持续数百万年', type: '构造运动',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&h=300&fit=crop',
+                desc: '地壳拉张断裂形成的大型线性凹陷，如东非大裂谷，是大陆裂解成新大洋的初期阶段。' },
+            { id: 'subduction_zone', name: '俯冲带', icon: '🌍', vei: 'N/A', frequency: '持续数百万年', type: '构造运动',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&h=300&fit=crop',
+                desc: '一个板块下沉到另一板块之下的区域，产生最深海沟、最强地震及火山弧。' },
+            { id: 'hot_spring', name: '温泉', icon: '♨️', vei: 'N/A', frequency: '地热区持续', type: '热液活动',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=500&h=300&fit=crop',
+                desc: '地下水被地热加温后涌出地表，水温显著高于当地年均气温，富含矿物质。' },
+            { id: 'fumarole', name: '喷气孔', icon: '💨', vei: 'N/A', frequency: '火山活动区', type: '火山活动',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=500&h=300&fit=crop',
+                desc: '火山地区地表的蒸汽和气体喷出口，温度可达900°C，释放水蒸气、CO2和硫化物气体。' },
+            { id: 'lava_tube', name: '熔岩管', icon: '🕳️', vei: 'N/A', frequency: '熔岩流中形成', type: '火山构造',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '熔岩流表面冷却凝固、内部仍流动时形成的管状洞穴，可延伸数十公里。' },
+            { id: 'volcanic_bomb', name: '火山弹', icon: '💣', vei: 'VEI 2+', frequency: '爆炸性喷发', type: '火山活动',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '火山喷发中抛出的半熔融岩石碎块，在空中飞行时冷却成形，直径大于64毫米。' },
+            { id: 'ash_fall', name: '火山灰沉降', icon: '🌫️', vei: 'VEI 3+', frequency: '爆炸性喷发', type: '火山活动',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=500&h=300&fit=crop',
+                desc: '火山喷发产生的细粒火山灰从大气中沉降到地表，可覆盖数千平方公里，压垮屋顶、污染水源。' },
+            { id: 'lahar_dam', name: '火山泥流坝', icon: '🏔️', vei: 'N/A', frequency: '泥流堆积后', type: '火山次生灾害',
+                img: 'https://images.unsplash.com/photo-1519682577862-22b62b24e493?w=500&h=300&fit=crop',
+                desc: '火山泥流堆积物堵塞河谷形成的天然堤坝，溃决时引发下游二次灾难性洪水。' },
+            { id: 'crater_lake', name: '火山口湖', icon: '🏞️', vei: 'N/A', frequency: '死火山区', type: '火山构造',
+                img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=500&h=300&fit=crop',
+                desc: '火山口或破火山口积水形成的湖泊，常呈圆形，深度极大，如美国火山口湖深达594米。' },
+        ];
+
+        // 📊 Render geo stats
+        (function renderGeoStats() {
+            var total = geologyData.length;
+            var types = {};
+            geologyData.forEach(function(g) { types[g.type] = (types[g.type] || 0) + 1; });
+            var mostCommon = '';
+            var maxCount = 0;
+            for (var t in types) { if (types[t] > maxCount) { maxCount = types[t]; mostCommon = t; } }
+            var volcanicCount = geologyData.filter(function(g) { return g.type === '火山活动' || g.type === '火山构造' || g.type === '火山次生灾害'; }).length;
+
+            document.getElementById('geoStatsBar').innerHTML =
+                '<div class="geo-stat-card">' +
+                  '<div class="geo-stat-value">' + total + '</div>' +
+                  '<div class="geo-stat-label">收录现象总数</div>' +
+                '</div>' +
+                '<div class="geo-stat-card">' +
+                  '<div class="geo-stat-value">' + volcanicCount + '</div>' +
+                  '<div class="geo-stat-label">火山相关现象</div>' +
+                '</div>' +
+                '<div class="geo-stat-card">' +
+                  '<div class="geo-stat-value">' + mostCommon + '</div>' +
+                  '<div class="geo-stat-label">最常见类别 (' + maxCount + '项)</div>' +
+                '</div>' +
+                '<div class="geo-stat-card">' +
+                  '<div class="geo-stat-value">' + (new Set(geologyData.map(function(g) { return g.type; }))).size + '</div>' +
+                  '<div class="geo-stat-label">地质分类总数</div>' +
+                '</div>';
+        })();
+
+        // 🃏 Render geology grid
+        document.getElementById('geologyGrid').innerHTML = geologyData.map(function(g, i) {
+            return '<div class="geo-card" style="animation-delay:' + (i * 0.04) + 's;" onclick="window.location.href=\'detail.html?phenomenon=' + g.id + '\'">' +
+              '<div class="geo-img" style="background-image:url(\'' + g.img + '\');">' +
+                '<span style="font-size:2.5rem;">' + g.icon + '</span>' +
+              '</div>' +
+              '<div class="geo-body">' +
+                '<h3>' + g.name + '</h3>' +
+                '<span class="richter-tag">📏 ' + g.vei + '</span>' +
+                '<span style="color:var(--text-muted); font-size:0.75rem; margin-left:0.5rem;">🔄 ' + g.frequency + '</span>' +
+                '<span style="color:var(--text-muted); font-size:0.65rem; margin-left:0.5rem;">📂 ' + g.type + '</span>' +
+                '<p>' + g.desc + '</p>' +
+              '</div>' +
+            '</div>';
+        }).join('');
+
+        // 🌋 Volcanic eruption canvas animation
+        (function initVolcanoCanvas() {
+            var canvas = document.getElementById('volcanoCanvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width;
+            var H = canvas.height;
+
+            // Volcano mountain profile
+            function drawVolcano() {
+                ctx.fillStyle = 'rgba(60, 45, 35, 0.8)';
+                ctx.beginPath();
+                ctx.moveTo(W * 0.3, H - 10);
+                ctx.lineTo(W * 0.46, H * 0.45);
+                ctx.lineTo(W * 0.5, H * 0.35);
+                ctx.lineTo(W * 0.54, H * 0.45);
+                ctx.lineTo(W * 0.7, H - 10);
+                ctx.closePath();
+                ctx.fill();
+                // Crater rim
+                ctx.fillStyle = 'rgba(40, 30, 25, 0.9)';
+                ctx.beginPath();
+                ctx.ellipse(W * 0.5, H * 0.38, 40, 12, 0, Math.PI, 0);
+                ctx.fill();
+                // Snow cap
+                ctx.fillStyle = 'rgba(200, 210, 220, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(W * 0.47, H * 0.42);
+                ctx.lineTo(W * 0.5, H * 0.35);
+                ctx.lineTo(W * 0.53, H * 0.42);
+                ctx.fill();
+            }
+
+            // Eruption particles
+            var particles = [];
+            var maxParticles = 150;
+
+            function createParticle() {
+                var angle = (Math.random() - 0.5) * 1.2 - Math.PI / 2;
+                var speed = 0.8 + Math.random() * 3;
+                return {
+                    x: W * 0.5,
+                    y: H * 0.36,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    life: 1,
+                    decay: 0.003 + Math.random() * 0.008,
+                    size: 1 + Math.random() * 4,
+                    type: Math.random() < 0.3 ? 'ash' : (Math.random() < 0.5 ? 'lava' : 'smoke'),
+                    color: Math.random() < 0.3 ?
+                        ['rgba(255, 106, 26, ', ')'] :
+                        (Math.random() < 0.6 ?
+                            ['rgba(224, 85, 61, ', ')'] :
+                            ['rgba(120, 120, 120, ', ')'])
+                };
+            }
+
+            var glowPhase = 0;
+            var glowSpeed = 0.02;
+
+            function animate() {
+                // Background fade
+                ctx.fillStyle = 'rgba(10, 14, 20, 0.3)';
+                ctx.fillRect(0, 0, W, H);
+
+                // Sky gradient
+                var skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+                skyGrad.addColorStop(0, 'rgba(40, 20, 15, 0.5)');
+                skyGrad.addColorStop(1, 'rgba(60, 30, 20, 0.3)');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, W, H);
+
+                // Magma glow behind volcano
+                glowPhase += glowSpeed;
+                var glowAlpha = 0.12 + Math.sin(glowPhase) * 0.06;
+                var magmaGlow = ctx.createRadialGradient(W * 0.5, H * 0.36, 0, W * 0.5, H * 0.36, 120);
+                magmaGlow.addColorStop(0, 'rgba(255, 106, 26, ' + glowAlpha + ')');
+                magmaGlow.addColorStop(0.5, 'rgba(224, 85, 61, ' + (glowAlpha * 0.5) + ')');
+                magmaGlow.addColorStop(1, 'rgba(224, 85, 61, 0)');
+                ctx.fillStyle = magmaGlow;
+                ctx.fillRect(W * 0.3, H * 0.1, W * 0.4, H * 0.5);
+
+                drawVolcano();
+
+                // Spawn new particles
+                if (particles.length < maxParticles) {
+                    for (var i = 0; i < 3; i++) {
+                        particles.push(createParticle());
+                    }
+                }
+
+                // Draw eruption glow from crater
+                var craterGlow = ctx.createRadialGradient(W * 0.5, H * 0.36, 0, W * 0.5, H * 0.36, 30);
+                craterGlow.addColorStop(0, 'rgba(255, 180, 40, 0.6)');
+                craterGlow.addColorStop(0.5, 'rgba(255, 106, 26, 0.25)');
+                craterGlow.addColorStop(1, 'rgba(255, 60, 10, 0)');
+                ctx.fillStyle = craterGlow;
+                ctx.beginPath();
+                ctx.arc(W * 0.5, H * 0.36, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Update and draw particles
+                for (var j = particles.length - 1; j >= 0; j--) {
+                    var p = particles[j];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy -= 0.008; // slight upward buoyancy then gravity
+                    p.life -= p.decay;
+                    if (p.life <= 0) {
+                        particles.splice(j, 1);
+                        continue;
+                    }
+                    ctx.fillStyle = p.color[0] + (p.life * 0.8) + p.color[1];
+                    ctx.beginPath();
+                    if (p.type === 'lava') {
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    } else {
+                        ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+                    }
+                    ctx.fill();
+                    // Glow for lava
+                    if (p.type === 'lava' && p.life > 0.3) {
+                        ctx.fillStyle = 'rgba(255, 180, 40, ' + (p.life * 0.2) + ')';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Ground
+                ctx.fillStyle = 'rgba(25, 22, 20, 0.7)';
+                ctx.fillRect(0, H - 10, W, 10);
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+            console.log('🌋 火山喷发画布动画已启动');
+        })();
+
+        console.log('🌋 地质现象页面已加载 — 共收录 ' + geologyData.length + ' 种地质现象');
+    </script>
+</body>
+</html>

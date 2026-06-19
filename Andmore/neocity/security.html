@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS - Security & Alert System</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:system-ui,-apple-system,sans-serif;
+  background:#030814;
+  color:#c8d6e5;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  position:relative;
+}
+body::before{
+  content:'';
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(circle,rgba(0,212,255,0.04) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;opacity:0.3;
+}
+#topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(3,8,20,0.95);
+  border-bottom:1px solid rgba(0,212,255,0.15);
+  padding:10px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  backdrop-filter:blur(12px);
+  font-size:13px;letter-spacing:0.5px;
+}
+#topbar .brand{color:#00d4ff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px}
+#topbar .brand .dot{width:8px;height:8px;background:#00ff88;border-radius:50%;animation:pulse-dot 2s infinite}
+#topbar .info{color:#6b7d95;display:flex;gap:28px;flex-wrap:wrap}
+#topbar .info span{color:#c8d6e5}
+#topbar .clock{color:#00d4ff;font-family:'Consolas','Courier New',monospace;font-size:14px}
+#main-layout{display:flex;flex:1;position:relative;z-index:1}
+#sidebar{
+  width:200px;min-width:200px;
+  background:rgba(6,15,40,0.6);
+  border-right:1px solid rgba(0,212,255,0.1);
+  backdrop-filter:blur(8px);
+  padding:16px 0;
+  display:flex;flex-direction:column;
+}
+#sidebar a{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;
+  color:#6b7d95;text-decoration:none;
+  font-size:13px;letter-spacing:0.3px;
+  border-left:3px solid transparent;
+  transition:all 0.25s;
+}
+#sidebar a:hover{background:rgba(0,212,255,0.06);color:#c8d6e5;border-left-color:#00d4ff}
+#sidebar a.active{background:rgba(0,212,255,0.08);color:#00d4ff;border-left-color:#00d4ff}
+#sidebar .nav-icon{width:18px;text-align:center;font-size:14px}
+#content{flex:1;padding:24px;overflow-y:auto;max-height:calc(100vh - 90px)}
+.page-header{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.page-header .icon{font-size:36px}
+.page-header h1{font-size:24px;font-weight:700;color:#c8d6e5}
+.page-header .sub{color:#6b7d95;font-size:14px;margin-top:2px}
+.panel{
+  background:rgba(6,15,40,0.8);
+  border:1px solid rgba(0,212,255,0.12);
+  border-radius:8px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 0 20px rgba(0,212,255,0.05);
+  padding:20px;
+  margin-bottom:20px;
+}
+.panel h2{font-size:16px;color:#00d4ff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel h2 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.data-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.data-card{
+  background:rgba(6,15,40,0.5);
+  border:1px solid rgba(0,212,255,0.08);
+  border-radius:6px;padding:16px;
+  display:flex;flex-direction:column;gap:6px;
+  transition:all 0.3s;
+}
+.data-card:hover{border-color:rgba(0,212,255,0.2);box-shadow:0 0 12px rgba(0,212,255,0.07)}
+.data-card .label{font-size:11px;color:#6b7d95;text-transform:uppercase;letter-spacing:1px}
+.data-card .value{font-size:28px;font-weight:700;font-family:'Consolas','Courier New',monospace}
+.data-card .sub-text{font-size:11px;color:#6b7d95}
+.level-display{display:flex;align-items:center;gap:20px;padding:16px 0}
+.level-marker{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s}
+.level-marker .bar{
+  width:54px;height:10px;border-radius:5px;
+  background:rgba(255,255,255,0.08);
+  transition:all 0.4s;
+}
+.level-marker.active .bar{box-shadow:0 0 18px currentColor}
+.level-marker .level-label{font-size:10px;color:#6b7d95;text-align:center;line-height:1.4}
+.level-marker.active .level-label{font-weight:700}
+.level-marker:hover .bar{transform:scaleY(1.6)}
+.lvl1 .bar{background:#00ff88}.lvl1{color:#00ff88}
+.lvl2 .bar{background:#00d4ff}.lvl2{color:#00d4ff}
+.lvl3 .bar{background:#ffb700}.lvl3{color:#ffb700}
+.lvl4 .bar{background:#ff8800}.lvl4{color:#ff8800}
+.lvl5 .bar{background:#ff3366}.lvl5{color:#ff3366}
+.level-current{
+  background:rgba(255,183,0,0.1);
+  border:2px solid #ffb700;
+  border-radius:12px;padding:18px 24px;
+  animation:pulse-yellow 2s infinite;
+}
+.level-current .big-label{font-size:32px;font-weight:800;color:#ffb700}
+.level-current .desc{color:#c8d6e5;font-size:13px;margin-top:4px;max-width:380px}
+.zone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.zone-card{
+  background:rgba(6,15,40,0.5);
+  border:1px solid rgba(0,212,255,0.08);
+  border-radius:8px;padding:16px;
+  transition:all 0.3s;
+}
+.zone-card:hover{border-color:rgba(0,212,255,0.25);box-shadow:0 0 14px rgba(0,212,255,0.08)}
+.zone-card .zone-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.zone-card .zone-name{font-weight:700;font-size:15px;color:#c8d6e5}
+.zone-card .stat-row{display:flex;justify-content:space-between;font-size:12px;color:#6b7d95;padding:3px 0}
+.zone-card .stat-row span:nth-child(2){color:#c8d6e5;font-family:'Consolas',monospace}
+.incident-card{
+  background:rgba(6,15,40,0.5);
+  border-left:3px solid #ffb700;
+  border-radius:0 6px 6px 0;padding:14px 16px;
+  margin-bottom:10px;
+  transition:all 0.3s;
+}
+.incident-card:hover{border-left-width:5px;background:rgba(6,15,40,0.7)}
+.incident-card.severity-high{border-left-color:#ff3366}
+.incident-card.severity-low{border-left-color:#00ff88}
+.incident-card .inc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.incident-card .inc-id{font-family:'Consolas',monospace;font-size:13px;color:#00d4ff;font-weight:700}
+.incident-card .inc-severity{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.incident-card .inc-severity.high{background:rgba(255,51,102,0.15);color:#ff3366}
+.incident-card .inc-severity.medium{background:rgba(255,183,0,0.15);color:#ffb700}
+.incident-card .inc-severity.low{background:rgba(0,255,136,0.12);color:#00ff88}
+.incident-card .inc-desc{font-size:13px;color:#c8d6e5;margin-bottom:4px}
+.incident-card .inc-meta{font-size:11px;color:#6b7d95;display:flex;gap:16px;flex-wrap:wrap}
+.history-table{width:100%;border-collapse:collapse;font-size:12px}
+.history-table th{text-align:left;padding:10px 12px;color:#6b7d95;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(0,212,255,0.1)}
+.history-table td{padding:9px 12px;border-bottom:1px solid rgba(0,212,255,0.05);color:#c8d6e5;font-family:'Consolas',monospace;font-size:11px}
+.history-table tr:hover{background:rgba(0,212,255,0.03)}
+.badge{padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.badge-resolved{background:rgba(0,255,136,0.12);color:#00ff88}
+.badge-investigating{background:rgba(0,212,255,0.12);color:#00d4ff}
+.badge-monitoring{background:rgba(179,71,234,0.12);color:#b347ea}
+.badge-contained{background:rgba(255,183,0,0.12);color:#ffb700}
+.badge-standby{background:rgba(0,255,204,0.1);color:#00ffcc}
+.camera-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.camera-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:8px;border-radius:6px;background:rgba(6,15,40,0.4)}
+.camera-item .cam-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.camera-item .cam-dot.online{background:#00ff88;box-shadow:0 0 6px #00ff88}
+.camera-item .cam-dot.offline{background:#ff3366;box-shadow:0 0 6px #ff3366}
+.camera-item .cam-dot.maintenance{background:#ffb700;box-shadow:0 0 6px #ffb700}
+.response-table{width:100%;border-collapse:collapse;font-size:12px}
+.response-table th{text-align:left;padding:8px 10px;color:#6b7d95;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(0,212,255,0.1)}
+.response-table td{padding:8px 10px;border-bottom:1px solid rgba(0,212,255,0.05);color:#c8d6e5;font-size:11px}
+.response-table tr:hover{background:rgba(0,212,255,0.03)}
+.cyber-bar{display:flex;align-items:flex-end;gap:4px;height:80px}
+.cyber-bar .bar-chunk{flex:1;background:rgba(0,212,255,0.5);border-radius:2px 2px 0 0;min-height:4px;animation:bar-breathe 3s infinite}
+.cyber-bar .bar-chunk:nth-child(odd){animation-delay:0.5s}
+.cyber-bar .bar-chunk:nth-child(3n){background:rgba(0,255,204,0.5)}
+.cyber-bar .bar-chunk:nth-child(5n+1){animation-delay:1s}
+.cyber-bar .bar-chunk.high{background:rgba(255,51,102,0.6)}
+#statusbar{
+  background:rgba(3,8,20,0.95);
+  border-top:1px solid rgba(0,212,255,0.12);
+  padding:8px 24px;
+  font-size:11px;color:#6b7d95;
+  display:flex;align-items:center;gap:20px;
+  z-index:100;position:relative;
+}
+#statusbar .scroll{overflow:hidden;white-space:nowrap;flex:1}
+#statusbar .scroll-inner{display:inline-block;animation:scroll-text 30s linear infinite}
+#statusbar .bar-dot{width:6px;height:6px;border-radius:50%;background:#00ff88;display:inline-block;margin-right:6px;flex-shrink:0}
+.flash-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,51,102,0.06);pointer-events:none;z-index:9998;opacity:0;transition:opacity 0.15s}
+.flash-overlay.active{opacity:1;transition:opacity 0s}
+.incident-timer{font-family:'Consolas',monospace;color:#ffb700;font-size:12px}
+.protocol-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.protocol-card{
+  background:rgba(6,15,40,0.5);
+  border:1px solid rgba(0,212,255,0.08);
+  border-radius:6px;padding:14px;
+  transition:all 0.3s;
+}
+.protocol-card:hover{border-color:rgba(0,212,255,0.2)}
+.protocol-card .proto-name{font-weight:700;font-size:14px;color:#00d4ff;margin-bottom:6px}
+.protocol-card .proto-desc{font-size:11px;color:#6b7d95;line-height:1.5}
+.progress-bar{width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;margin-top:8px;overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:3px;transition:width 0.6s}
+.progress-bar .fill.green{background:#00ff88}
+.progress-bar .fill.blue{background:#00d4ff}
+.progress-bar .fill.yellow{background:#ffb700}
+.progress-bar .fill.purple{background:#b347ea}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes pulse-yellow{0%,100%{box-shadow:0 0 10px rgba(255,183,0,0.3)}50%{box-shadow:0 0 30px rgba(255,183,0,0.7)}}
+@keyframes scroll-text{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+@keyframes bar-breathe{0%,100%{opacity:0.5}50%{opacity:1}}
+@keyframes border-pulse{0%,100%{border-color:rgba(0,212,255,0.12)}50%{border-color:rgba(0,212,255,0.35)}}
+@keyframes fade-in-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes status-blink{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes glitch-shift{0%,100%{transform:translateX(0)}2%{transform:translateX(-2px)}4%{transform:translateX(2px)}6%{transform:translateX(0)}}
+@keyframes data-stream{0%{background-position:0 0}100%{background-position:0 40px}}
+@keyframes threat-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+@keyframes alert-flash{0%,100%{background:transparent}10%{background:rgba(255,51,102,0.1)}20%{background:transparent}}
+@keyframes cyber-scan{0%{top:0}100%{top:100%}}
+@keyframes radar-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes severity-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
+@keyframes count-pulse{0%,100%{transform:scale(1)}30%{transform:scale(1.08)}}
+#content .panel{animation:fade-in-up 0.4s ease-out}
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="flash-overlay" class="flash-overlay"></div>
+
+<div id="topbar">
+  <div class="brand">
+    <div class="dot"></div>
+    NEO CITY OS v3.7
+  </div>
+  <div class="info">
+    <span>&#9679; SYSTEM ONLINE</span>
+    <span>STABILITY: 98.2%</span>
+    <span>AI CORE ACTIVE</span>
+    <span class="clock" id="live-clock">--</span>
+  </div>
+</div>
+
+<div id="main-layout">
+  <nav id="sidebar">
+    <a href="dashboard.html"><span class="nav-icon">&#9678;</span> Dashboard</a>
+    <a href="traffic.html"><span class="nav-icon">&#9758;</span> Traffic</a>
+    <a href="energy.html"><span class="nav-icon">&#9889;</span> Energy</a>
+    <a href="population.html"><span class="nav-icon">&#9787;</span> Population</a>
+    <a href="weather.html"><span class="nav-icon">&#9730;</span> Weather</a>
+    <a href="security.html" class="active"><span class="nav-icon">&#9888;</span> Security</a>
+    <a href="map.html"><span class="nav-icon">&#8982;</span> Map</a>
+    <a href="ai.html"><span class="nav-icon">&#10025;</span> AI Core</a>
+  </nav>
+
+  <div id="content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="icon">&#128680;</div>
+      <div>
+        <h1>&#23433;&#20840;&#19982;&#35686;&#25253;&#31995;&#32479; | SECURITY CONTROL</h1>
+        <div class="sub">Real-time threat monitoring, incident response, and city-wide surveillance management system</div>
+      </div>
+    </div>
+
+    <!-- Security Level Indicator -->
+    <div class="panel" id="level-indicator">
+      <h2><span class="dot" style="background:#ffb700"></span> Security Threat Level Assessment</h2>
+      <div style="display:flex;align-items:center;gap:30px;flex-wrap:wrap">
+        <div class="level-display" style="flex:1;min-width:340px">
+          <div class="level-marker lvl1" data-level="1" title="Level 1: Low - Routine operations, no significant threats detected">
+            <div class="bar"></div><span class="level-label">GREEN<br>Low</span>
+          </div>
+          <div class="level-marker lvl2" data-level="2" title="Level 2: Guarded - General risk of security incidents, standard monitoring">
+            <div class="bar"></div><span class="level-label">BLUE<br>Guarded</span>
+          </div>
+          <div class="level-marker lvl3 active" data-level="3" title="Level 3: Elevated - Significant risk detected, enhanced monitoring active">
+            <div class="bar"></div><span class="level-label">YELLOW<br>Elevated</span>
+          </div>
+          <div class="level-marker lvl4" data-level="4" title="Level 4: High - Credible threats identified, response teams on alert">
+            <div class="bar"></div><span class="level-label">ORANGE<br>High</span>
+          </div>
+          <div class="level-marker lvl5" data-level="5" title="Level 5: Critical - Immediate danger, emergency protocols in effect">
+            <div class="bar"></div><span class="level-label">RED<br>Critical</span>
+          </div>
+        </div>
+        <div class="level-current" style="flex:0 0 auto">
+          <div style="font-size:11px;color:#6b7d95;text-transform:uppercase;letter-spacing:1px">Current Level</div>
+          <div class="big-label" id="current-level-text">YELLOW &mdash; ELEVATED</div>
+          <div class="desc">Elevated threat posture due to recent unauthorized network access attempt at Zone D Data Center and power grid anomaly in Zone C Substation 3. All response protocols are active. The Security Operations Center has deployed enhanced patrols across Zones C and D. Citizens are advised to remain vigilant and report any suspicious activity to the NEO CITY SOC via hotline 7000 or the NEO CITY mobile application.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threat Overview Cards -->
+    <div class="data-grid" id="threat-cards">
+      <div class="data-card" id="card-incidents">
+        <div class="label">&#128308; Active Incidents</div>
+        <div class="value" style="color:#ff3366" id="val-incidents">3</div>
+        <div class="sub-text">2 medium severity, 1 low severity</div>
+      </div>
+      <div class="data-card" id="card-resolved">
+        <div class="label">&#9989; Resolved Today</div>
+        <div class="value" style="color:#00ff88" id="val-resolved">17</div>
+        <div class="sub-text">Avg resolution time: 18.6 minutes</div>
+      </div>
+      <div class="data-card" id="card-teams">
+        <div class="label">&#128737; Response Teams Active</div>
+        <div class="value" style="color:#00d4ff" id="val-teams">8</div>
+        <div class="sub-text">42 personnel currently deployed</div>
+      </div>
+      <div class="data-card" id="card-response">
+        <div class="label">&#9201; Average Response Time</div>
+        <div class="value" style="color:#ffb700" id="val-response">4.2<span style="font-size:16px"> min</span></div>
+        <div class="sub-text">Within target of 5 minutes &#10003;</div>
+      </div>
+    </div>
+
+    <!-- Zone Security Status -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#00d4ff"></span> Zone Security Status &mdash; All Sectors</h2>
+      <div class="zone-grid">
+        <!-- Zone A -->
+        <div class="zone-card">
+          <div class="zone-header">
+            <div class="zone-name">Zone A &mdash; Central Business District</div>
+            <span class="status-dot" style="background:#00ff88;box-shadow:0 0 8px #00ff88"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#00d4ff">2 / Guarded</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span>0</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>1,247</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>12 police, 4 drone</span></div>
+          <div class="stat-row"><span>Perimeter Sensors</span><span>All operational</span></div>
+          <div class="stat-row"><span>Last Sweep</span><span>14:45 UTC</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#00ff88">NORMAL</span></div>
+        </div>
+        <!-- Zone B -->
+        <div class="zone-card">
+          <div class="zone-header">
+            <div class="zone-name">Zone B &mdash; Residential District</div>
+            <span class="status-dot" style="background:#00ff88;box-shadow:0 0 8px #00ff88"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#00d4ff">2 / Guarded</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span>0</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>896</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>8 police, 2 drone</span></div>
+          <div class="stat-row"><span>Community Watch</span><span>34 active members</span></div>
+          <div class="stat-row"><span>Last Sweep</span><span>15:10 UTC</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#00ff88">NORMAL</span></div>
+        </div>
+        <!-- Zone C -->
+        <div class="zone-card" style="border-color:rgba(255,183,0,0.25);animation:border-pulse 3s infinite">
+          <div class="zone-header">
+            <div class="zone-name">Zone C &mdash; Industrial Sector</div>
+            <span class="status-dot" style="background:#ffb700;box-shadow:0 0 10px #ffb700;animation:status-blink 1.5s infinite"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#ffb700">3 / Elevated</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span style="color:#ff3366">2</span></div>
+          <div class="stat-row"><span>Incident Breakdown</span><span style="font-size:10px">1 power grid anomaly, 1 unauthorized access attempt</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>534</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>15 police, 6 drone</span></div>
+          <div class="stat-row"><span>Hazmat Sensors</span><span>All operational</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#ffb700;animation:status-blink 2s infinite">CAUTION</span></div>
+        </div>
+        <!-- Zone D -->
+        <div class="zone-card" style="border-color:rgba(179,71,234,0.25)">
+          <div class="zone-header">
+            <div class="zone-name">Zone D &mdash; Technology Park</div>
+            <span class="status-dot" style="background:#b347ea;box-shadow:0 0 10px #b347ea;animation:status-blink 1.5s infinite"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#ffb700">3 / Elevated</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span style="color:#ff3366">1</span></div>
+          <div class="stat-row"><span>Incident Breakdown</span><span style="font-size:10px">1 suspicious network activity investigation</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>2,103</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>10 police, 4 drone</span></div>
+          <div class="stat-row"><span>Cyber Sensors</span><span>Enhanced monitoring active</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#b347ea;animation:status-blink 2s infinite">MONITORING</span></div>
+        </div>
+        <!-- Zone E -->
+        <div class="zone-card">
+          <div class="zone-header">
+            <div class="zone-name">Zone E &mdash; Port Authority</div>
+            <span class="status-dot" style="background:#00ff88;box-shadow:0 0 8px #00ff88"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#00d4ff">2 / Guarded</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span>0</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>678</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>14 police, 8 drone</span></div>
+          <div class="stat-row"><span>Vessel Tracking</span><span>12 ships monitored</span></div>
+          <div class="stat-row"><span>Last Sweep</span><span>15:22 UTC</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#00ff88">NORMAL</span></div>
+        </div>
+        <!-- Zone F -->
+        <div class="zone-card">
+          <div class="zone-header">
+            <div class="zone-name">Zone F &mdash; Ecological Zone</div>
+            <span class="status-dot" style="background:#00ff88;box-shadow:0 0 8px #00ff88"></span>
+          </div>
+          <div class="stat-row"><span>Security Level</span><span style="color:#00ff88">1 / Low</span></div>
+          <div class="stat-row"><span>Active Incidents</span><span>0</span></div>
+          <div class="stat-row"><span>Cameras Online</span><span>234</span></div>
+          <div class="stat-row"><span>Active Patrols</span><span>4 police, 2 drone</span></div>
+          <div class="stat-row"><span>Wildlife Sensors</span><span>All operational</span></div>
+          <div class="stat-row"><span>Last Sweep</span><span>15:00 UTC</span></div>
+          <div class="stat-row"><span>Status</span><span style="color:#00ff88">NORMAL</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Incident Panel -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#ff3366;animation:status-blink 1s infinite"></span> Active Incident Panel &mdash; Live Tracking</h2>
+      <div id="incident-list"></div>
+    </div>
+
+    <!-- Incident History Log -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#6b7d95"></span> Incident History Log &mdash; Previous 24 Hours</h2>
+      <div style="overflow-x:auto">
+        <table class="history-table">
+          <thead><tr><th>Time</th><th>Incident ID</th><th>Type</th><th>Zone</th><th>Severity</th><th>Description</th><th>Response Unit</th><th>Status</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Surveillance System Status -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#00ffcc"></span> Surveillance System Status &mdash; City Camera Network</h2>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="label">&#128247; Total Cameras</div>
+          <div class="value" style="color:#00d4ff;font-size:22px">5,692</div>
+          <div class="sub-text">Across 6 city zones &amp; 42 substations</div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128994; Online Cameras</div>
+          <div class="value" style="color:#00ff88;font-size:22px">99.3%</div>
+          <div class="sub-text">5,650 cameras fully operational</div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128308; Offline Cameras</div>
+          <div class="value" style="color:#ff3366;font-size:22px">42</div>
+          <div class="sub-text">Maintenance crew dispatched to 8 locations</div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128190; Recording Storage</div>
+          <div class="value" style="color:#ffb700;font-size:22px">87%</div>
+          <div class="sub-text">342 TB free of 2,632 TB total</div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#129302; AI Stream Processing</div>
+          <div class="value" style="color:#00ffcc;font-size:22px">ACTIVE</div>
+          <div class="sub-text">1,247 concurrent streams analyzed</div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128225; Drone Fleet</div>
+          <div class="value" style="color:#b347ea;font-size:22px">24</div>
+          <div class="sub-text">18 airborne, 6 on standby</div>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <div style="font-size:13px;color:#c8d6e5;margin-bottom:10px;font-weight:600">Camera Location Status &mdash; Key Monitoring Points</div>
+        <div class="camera-grid">
+          <div class="camera-item"><span class="cam-dot online"></span> A-01 Central Square</div>
+          <div class="camera-item"><span class="cam-dot online"></span> A-03 Neo Tower Lobby</div>
+          <div class="camera-item"><span class="cam-dot online"></span> A-05 Financial District</div>
+          <div class="camera-item"><span class="cam-dot online"></span> A-07 Central Station</div>
+          <div class="camera-item"><span class="cam-dot online"></span> B-02 Residential Block 3</div>
+          <div class="camera-item"><span class="cam-dot online"></span> B-06 Community Center</div>
+          <div class="camera-item"><span class="cam-dot online"></span> C-02 Industrial Park Gate</div>
+          <div class="camera-item"><span class="cam-dot offline"></span> C-07 Substation 3 Gate</div>
+          <div class="camera-item"><span class="cam-dot online"></span> C-11 Warehouse District</div>
+          <div class="camera-item"><span class="cam-dot online"></span> D-01 Tech Hub Entrance</div>
+          <div class="camera-item"><span class="cam-dot online"></span> D-04 Data Center Perimeter</div>
+          <div class="camera-item"><span class="cam-dot maintenance"></span> D-08 Research Lab South</div>
+          <div class="camera-item"><span class="cam-dot online"></span> E-02 Port Gate A</div>
+          <div class="camera-item"><span class="cam-dot online"></span> E-04 Dock Entrance B</div>
+          <div class="camera-item"><span class="cam-dot online"></span> F-01 Eco Zone North</div>
+          <div class="camera-item"><span class="cam-dot online"></span> F-03 Solar Farm Perimeter</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emergency Response Teams -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#00ff88"></span> Emergency Response Teams &mdash; Active Deployment</h2>
+      <div style="overflow-x:auto">
+        <table class="response-table">
+          <thead><tr><th>Team</th><th>Type</th><th>Status</th><th>Location</th><th>Personnel</th><th>Equipment</th><th>Vehicle</th><th>Last Deployed</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Alpha-1 Fire Rescue</td>
+              <td style="color:#ff3366">Fire</td>
+              <td><span class="badge badge-standby">Standby</span></td>
+              <td>Zone A, Station 1</td>
+              <td>8</td>
+              <td style="color:#00ff88">Fully Operational</td>
+              <td>Engine-01, Ladder-02</td>
+              <td>14:05 &mdash; Vehicle Fire A-4</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Beta-2 Medical Response</td>
+              <td style="color:#00ff88">Medical</td>
+              <td><span class="badge badge-monitoring">Deployed</span></td>
+              <td>Zone B, Sector 4</td>
+              <td>6</td>
+              <td style="color:#00ff88">Fully Operational</td>
+              <td>Ambulance-03, MedVan-07</td>
+              <td>15:20 &mdash; Medical Emergency B-4</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Gamma-3 Police Patrol</td>
+              <td style="color:#00d4ff">Police</td>
+              <td><span class="badge badge-standby">Standby</span></td>
+              <td>Zone A, Central Precinct</td>
+              <td>10</td>
+              <td style="color:#00ff88">Fully Operational</td>
+              <td>Patrol-11, Patrol-12, Interceptor-05</td>
+              <td>12:48 &mdash; Traffic Violation A-1</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Delta-4 CyberSec Unit</td>
+              <td style="color:#b347ea">Cyber</td>
+              <td><span class="badge badge-investigating">Investigating</span></td>
+              <td>Zone D, Data Center</td>
+              <td>5</td>
+              <td style="color:#ffb700">Enhanced Mode Active</td>
+              <td>CyberVan-01, Drone-09</td>
+              <td>13:58 &mdash; Network Breach Attempt</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Epsilon-5 Engineering</td>
+              <td style="color:#ffb700">Engineering</td>
+              <td><span class="badge badge-monitoring">Deployed</span></td>
+              <td>Zone C, Substation 3</td>
+              <td>7</td>
+              <td style="color:#ffb700">Partial &mdash; Heavy Tools</td>
+              <td>UtilTruck-04, Crane-02</td>
+              <td>14:32 &mdash; Power Grid Anomaly</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Zeta-6 Hazmat Unit</td>
+              <td style="color:#ff3366">Fire</td>
+              <td><span class="badge badge-standby">Standby</span></td>
+              <td>Zone C, Station 4</td>
+              <td>4</td>
+              <td style="color:#00ff88">Fully Operational</td>
+              <td>Hazmat-01, Decon-03</td>
+              <td>09:15 &mdash; Chemical Spill C-5</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Eta-7 Traffic Control</td>
+              <td style="color:#ffb700">Engineering</td>
+              <td><span class="badge badge-monitoring">Deployed</span></td>
+              <td>Zone A, A-1/A-2 Intersection</td>
+              <td>3</td>
+              <td style="color:#ffb700">Signal Repair Kit Active</td>
+              <td>ServTruck-08</td>
+              <td>12:15 &mdash; Signal Malfunction</td>
+            </tr>
+            <tr>
+              <td style="color:#00d4ff;font-weight:600">Theta-8 Drone Squad</td>
+              <td style="color:#b347ea">Cyber</td>
+              <td><span class="badge badge-standby">Standby</span></td>
+              <td>Zone F, Eco Perimeter</td>
+              <td>4</td>
+              <td style="color:#00ff88">Fully Operational</td>
+              <td>DroneStation-01, 6 UAVs</td>
+              <td>11:42 &mdash; Fire Alarm Check C-7</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cyber Security Dashboard -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#b347ea"></span> Cyber Security Dashboard &mdash; Network Defense Status</h2>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="label">&#128737; Perimeter Firewall</div>
+          <div class="value" style="color:#00ff88;font-size:22px">ACTIVE</div>
+          <div class="sub-text">1,247,832 threats blocked today</div>
+          <div class="progress-bar"><div class="fill green" style="width:100%"></div></div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#9888; Last Attack Vector</div>
+          <div class="value" style="color:#ff3366;font-size:18px">13:58:42 UTC</div>
+          <div class="sub-text">DDoS Layer 7 &mdash; MITIGATED at 847 Gbps</div>
+          <div class="progress-bar"><div class="fill yellow" style="width:85%"></div></div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128274; Channel Encryption</div>
+          <div class="value" style="color:#00ffcc;font-size:22px">ALL SECURE</div>
+          <div class="sub-text">AES-256-GCM, TLS 1.3 on all channels</div>
+          <div class="progress-bar"><div class="fill green" style="width:100%"></div></div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128200; Threat Intelligence</div>
+          <div class="value" style="color:#00d4ff;font-size:22px">847</div>
+          <div class="sub-text">New IOCs ingested and analyzed today</div>
+          <div class="progress-bar"><div class="fill blue" style="width:78%"></div></div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128225; Intrusion Detection</div>
+          <div class="value" style="color:#ffb700;font-size:22px">3</div>
+          <div class="sub-text">Anomalies detected in last 6 hours</div>
+          <div class="progress-bar"><div class="fill yellow" style="width:15%"></div></div>
+        </div>
+        <div class="data-card">
+          <div class="label">&#128187; Endpoint Protection</div>
+          <div class="value" style="color:#00ff88;font-size:22px">100%</div>
+          <div class="sub-text">24,781 endpoints secured</div>
+          <div class="progress-bar"><div class="fill green" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <div style="font-size:13px;color:#c8d6e5;margin-bottom:10px;font-weight:600">Network Traffic Anomaly Detection &mdash; Last 60 Minutes</div>
+        <div class="cyber-bar" id="traffic-bars">
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#6b7d95;margin-top:6px">
+          <span>60 min ago</span><span>45 min</span><span>30 min</span><span>15 min</span><span>Now</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Protocols -->
+    <div class="panel">
+      <h2><span class="dot" style="background:#00ffcc"></span> Active Security Protocols &amp; Procedures</h2>
+      <div class="protocol-grid">
+        <div class="protocol-card">
+          <div class="proto-name">&#128272; PROTO-ALPHA: Perimeter Lockdown</div>
+          <div class="proto-desc">Full perimeter lockdown protocol for Level 4+ threats. Automatically seals all zone entry points, activates biometric verification at all checkpoints, and deploys drone surveillance grid. Response time target: under 90 seconds from trigger.</div>
+          <div class="progress-bar"><div class="fill purple" style="width:92%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 92% &mdash; Last drill: June 12 2026</div>
+        </div>
+        <div class="protocol-card">
+          <div class="proto-name">&#128760; PROTO-BRAVO: Cyber Containment</div>
+          <div class="proto-desc">Network isolation and threat containment procedure. Segments affected network zones, activates honeypot deception grid, and initiates forensic packet capture. SOC team is paged within 30 seconds of detection.</div>
+          <div class="progress-bar"><div class="fill blue" style="width:98%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 98% &mdash; Activated today at 13:58 UTC</div>
+        </div>
+        <div class="protocol-card">
+          <div class="proto-name">&#128680; PROTO-CHARLIE: Mass Evacuation</div>
+          <div class="proto-desc">City-wide or zone-specific evacuation protocol. Activates emergency broadcast system, dynamic traffic routing to evacuation points, and automated transit system override. Coordinates 48 emergency shelters.</div>
+          <div class="progress-bar"><div class="fill yellow" style="width:88%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 88% &mdash; Last full drill: May 28 2026</div>
+        </div>
+        <div class="protocol-card">
+          <div class="proto-name">&#9889; PROTO-DELTA: Power Grid Defense</div>
+          <div class="proto-desc">Critical infrastructure protection against physical and cyber threats to the power grid. Isolates affected substations, reroutes power through redundant pathways, and deploys engineering response teams.</div>
+          <div class="progress-bar"><div class="fill yellow" style="width:85%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 85% &mdash; Partially activated for INC-0472</div>
+        </div>
+        <div class="protocol-card">
+          <div class="proto-name">&#128225; PROTO-ECHO: Aerial Surveillance Grid</div>
+          <div class="proto-desc">Deploys the full drone fleet for wide-area surveillance. 24 UAVs provide overlapping coverage at 400ft altitude with thermal, optical, and LIDAR sensors. Real-time feed integrated with AI anomaly detection.</div>
+          <div class="progress-bar"><div class="fill blue" style="width:96%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 96% &mdash; 18 drones currently airborne</div>
+        </div>
+        <div class="protocol-card">
+          <div class="proto-name">&#127973; PROTO-FOXTROT: Medical Surge</div>
+          <div class="proto-desc">Healthcare system surge capacity activation for mass casualty or pandemic events. Mobilizes 14 hospitals, 3,200 beds, 48 ICU units, and field medical stations. Coordinates with regional health authorities.</div>
+          <div class="progress-bar"><div class="fill green" style="width:94%"></div></div>
+          <div style="font-size:10px;color:#6b7d95;margin-top:4px">Readiness: 94% &mdash; Last drill: June 05 2026</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="statusbar">
+  <div class="bar-dot" style="animation:pulse-dot 1.5s infinite"></div>
+  <div class="scroll"><div class="scroll-inner" id="scroll-msg">
+    &#9888; SECURITY LEVEL: YELLOW/ELEVATED &mdash; Enhanced patrols active in Zones C and D |
+    &#9989; All perimeter sensors operational across 6 zones |
+    &#128225; Drone patrol rotation: every 15 minutes |
+    &#128274; Encryption keys rotated at 12:00 UTC |
+    &#128187; AI threat detection: 3 anomalies flagged in last 24 hours |
+    &#128308; Report suspicious activity: Call SOC-7000 or use NEO CITY mobile app |
+    &#128204; Next scheduled security drill: June 20 2026 at 09:00 UTC |
+    &#128295; Maintenance window: June 18 2026 02:00-04:00 UTC |
+    &#128247; Camera network health: 99.3% operational (5,650 of 5,692 online)
+  </div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ===== LIVE CLOCK =====
+function updateClock(){
+  var now=new Date();
+  var y=now.getUTCFullYear();
+  var mo=String(now.getUTCMonth()+1).padStart(2,'0');
+  var d=String(now.getUTCDate()).padStart(2,'0');
+  var h=String(now.getUTCHours()).padStart(2,'0');
+  var mi=String(now.getUTCMinutes()).padStart(2,'0');
+  var s=String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('live-clock').textContent=y+'-'+mo+'-'+d+' '+h+':'+mi+':'+s+' UTC';
+}
+updateClock();setInterval(updateClock,1000);
+
+// ===== INCIDENT DATA =====
+var incidents=[
+  {id:'INC-0472',desc:'Power grid anomaly detected in Zone C Substation 3 &mdash; voltage fluctuation of 17.3% above baseline with harmonic distortion patterns',severity:'Medium',time:'14:32',timeVal:new Date(Date.now()-7200000),response:'Engineering team Epsilon-5 dispatched with heavy diagnostic equipment. Backup power routing engaged. Estimated time to resolution: 12 minutes.',status:'Investigating'},
+  {id:'INC-0471',desc:'Unauthorized network access attempt at Zone D Data Center &mdash; SQL injection probe targeting citizen database API endpoint on port 8443',severity:'High',time:'13:58',timeVal:new Date(Date.now()-9000000),response:'CyberSec team Delta-4 activated PROTO-BRAVO containment. Source IP traced to external VPS in Eastern Europe. Perimeter firewall rules updated. All database access logs preserved for forensic analysis.',status:'Contained'},
+  {id:'INC-0470',desc:'Traffic signal malfunction at A-1 Central Boulevard and A-2 Commerce Avenue intersection &mdash; controller unit reporting firmware checksum error',severity:'Low',time:'12:15',timeVal:new Date(Date.now()-15000000),response:'Traffic control team Eta-7 adjusting signal timing manually. Firmware rollback initiated on controller unit A1-TS-04. Traffic flow rerouted via A-3 and A-4 corridors. Estimated restoration: 25 minutes.',status:'Monitoring'},
+  {id:'INC-0469',desc:'Fire alarm triggered at Zone C Warehouse 7 &mdash; smoke detector SD-C7-14 activated at 11:42 with particulate reading of 0.08 mg/m3',severity:'High',time:'11:42',timeVal:new Date(Date.now()-17400000),response:'Fire drones Delta-1 and Delta-2 deployed for aerial thermal scan. Building evacuated (12 personnel). Thermal imaging confirmed no heat source. Particulate sensor deemed faulty &mdash; maintenance scheduled. FALSE ALARM CONFIRMED at 11:58.',status:'Resolved'},
+  {id:'INC-0468',desc:'Water pressure drop detected in Zone B Sector 4 &mdash; main pipeline pressure decreased from 65 PSI to 42 PSI over 8-minute period',severity:'Medium',time:'10:08',timeVal:new Date(Date.now()-22800000),response:'Utility team Beta-2 investigating primary distribution line. Pressure stabilizing at 58 PSI after automated valve adjustments. Ultrasonic leak detection equipment deployed along 3.2km of pipeline. No structural damage identified yet.',status:'Investigating'}
+];
+
+function renderIncidents(){
+  var container=document.getElementById('incident-list');
+  if(!container)return;
+  container.innerHTML='';
+  incidents.forEach(function(inc,i){
+    var sevClass=inc.severity==='High'?'high':(inc.severity==='Medium'?'medium':'low');
+    var elapsed=Math.floor((Date.now()-inc.timeVal.getTime())/60000);
+    var elapsedStr;
+    if(elapsed>=60){var hh=Math.floor(elapsed/60);elapsedStr=hh+'h '+(elapsed%60)+'m ago';}
+    else{elapsedStr=elapsed+'m ago';}
+    var card=document.createElement('div');
+    card.className='incident-card severity-'+sevClass;
+    card.style.animation='fade-in-up 0.4s ease-out '+(i*0.08)+'s both';
+    card.innerHTML=
+      '<div class="inc-header">'+
+        '<span class="inc-id">'+inc.id+'</span>'+
+        '<span class="inc-severity '+sevClass+'">'+inc.severity.toUpperCase()+'</span>'+
+      '</div>'+
+      '<div class="inc-desc">'+inc.desc+'</div>'+
+      '<div class="inc-meta">'+
+        '<span>&#128339; Reported: '+inc.time+' UTC</span>'+
+        '<span class="incident-timer" data-idx="'+i+'">Elapsed: '+elapsedStr+'</span>'+
+        '<span>Status: <b>'+inc.status.toUpperCase()+'</b></span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:#6b7d95;margin-top:4px;line-height:1.4">'+inc.response+'</div>';
+    container.appendChild(card);
+  });
+}
+
+function updateTimers(){
+  var timers=document.querySelectorAll('.incident-timer');
+  timers.forEach(function(t){
+    var idx=parseInt(t.getAttribute('data-idx'));
+    if(!isNaN(idx)&&incidents[idx]){
+      var elapsed=Math.floor((Date.now()-incidents[idx].timeVal.getTime())/60000);
+      var str;
+      if(elapsed>=60){var hh=Math.floor(elapsed/60);str=hh+'h '+(elapsed%60)+'m ago';}
+      else{str=elapsed+'m ago';}
+      t.textContent='Elapsed: '+str;
+    }
+  });
+}
+renderIncidents();
+setInterval(updateTimers,15000);
+
+// ===== HISTORY DATA =====
+var historyData=[
+  {time:'16:42',id:'INC-0472',type:'Power',zone:'C',severity:'Medium',desc:'Grid fluctuation Substation 3',unit:'Epsilon-5',status:'Investigating'},
+  {time:'15:55',id:'INC-0471',type:'Cyber',zone:'D',severity:'High',desc:'Network intrusion attempt Data Center API',unit:'Delta-4',status:'Contained'},
+  {time:'15:30',id:'INC-0470',type:'Traffic',zone:'A',severity:'Low',desc:'Signal firmware failure A-1/A-2 junction',unit:'Eta-7',status:'Monitoring'},
+  {time:'14:28',id:'INC-0469',type:'Fire',zone:'C',severity:'High',desc:'False alarm Warehouse 7 smoke detector',unit:'Theta-8',status:'Resolved'},
+  {time:'13:54',id:'INC-0468',type:'Environmental',zone:'B',severity:'Medium',desc:'Water pressure anomaly Sector 4 main pipe',unit:'Beta-2',status:'Investigating'},
+  {time:'11:20',id:'INC-0467',type:'Traffic',zone:'E',severity:'Low',desc:'Cargo truck congestion Port Access Road',unit:'Eta-7',status:'Resolved'},
+  {time:'10:44',id:'INC-0466',type:'Cyber',zone:'D',severity:'Medium',desc:'Phishing campaign targeting city employees',unit:'Delta-4',status:'Resolved'},
+  {time:'09:35',id:'INC-0465',type:'Structural',zone:'A',severity:'Low',desc:'Loose external panel Neo Tower Level 12',unit:'Epsilon-5',status:'Resolved'},
+  {time:'08:12',id:'INC-0464',type:'Power',zone:'C',severity:'Medium',desc:'Transformer T-7 overheating Sector 2',unit:'Epsilon-5',status:'Resolved'},
+  {time:'06:58',id:'INC-0463',type:'Environmental',zone:'F',severity:'Low',desc:'AQI spike reading at Eco Zone sensor 4',unit:'Theta-8',status:'Resolved'},
+  {time:'04:40',id:'INC-0462',type:'Fire',zone:'B',severity:'Medium',desc:'Kitchen fire Residential Block 9 Unit 4C',unit:'Alpha-1',status:'Resolved'},
+  {time:'02:15',id:'INC-0461',type:'Cyber',zone:'D',severity:'High',desc:'Brute force attack Admin Portal login',unit:'Delta-4',status:'Contained'}
+];
+
+function renderHistory(){
+  var tbody=document.getElementById('history-body');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  historyData.forEach(function(h){
+    var row=document.createElement('tr');
+    var statusClass='badge-'+h.status.toLowerCase();
+    row.innerHTML=
+      '<td>'+h.time+'</td>'+
+      '<td style="color:#00d4ff">'+h.id+'</td>'+
+      '<td>'+h.type+'</td>'+
+      '<td>Zone '+h.zone+'</td>'+
+      '<td>'+h.severity+'</td>'+
+      '<td>'+h.desc+'</td>'+
+      '<td>'+h.unit+'</td>'+
+      '<td><span class="badge '+statusClass+'">'+h.status+'</span></td>';
+    tbody.appendChild(row);
+  });
+}
+renderHistory();
+
+// ===== TRAFFIC BARS GENERATION =====
+function generateTrafficBars(){
+  var container=document.getElementById('traffic-bars');
+  if(!container)return;
+  container.innerHTML='';
+  for(var i=0;i<40;i++){
+    var bar=document.createElement('div');
+    bar.className='bar-chunk';
+    var h=10+Math.random()*70;
+    bar.style.height=h+'%';
+    if(h>55)bar.classList.add('high');
+    container.appendChild(bar);
+  }
+}
+generateTrafficBars();
+setInterval(generateTrafficBars,10000);
+
+// ===== SECURITY LEVEL PULSE =====
+var levelIndicator=document.getElementById('level-indicator');
+setInterval(function(){
+  if(Math.random()<0.15){
+    if(levelIndicator){
+      levelIndicator.style.animation='threat-pulse 0.3s ease-out';
+      setTimeout(function(){if(levelIndicator)levelIndicator.style.animation='';},300);
+    }
+  }
+},8000);
+
+// ===== ALERT FLASH SIMULATION =====
+var flashOverlay=document.getElementById('flash-overlay');
+setInterval(function(){
+  if(Math.random()<0.08){
+    if(flashOverlay){
+      flashOverlay.classList.add('active');
+      setTimeout(function(){if(flashOverlay)flashOverlay.classList.remove('active');},150);
+    }
+  }
+},12000);
+
+// ===== INACTIVE INCIDENT COUNT PULSE =====
+setInterval(function(){
+  var valEl=document.getElementById('val-incidents');
+  if(valEl&&Math.random()<0.2){
+    valEl.style.animation='count-pulse 0.4s ease-out';
+    setTimeout(function(){if(valEl)valEl.style.animation='';},400);
+  }
+},10000);
+
+// ===== RESPONSE TIME VARIATION =====
+setInterval(function(){
+  var valEl=document.getElementById('val-response');
+  if(valEl){
+    var newVal=(3.2+Math.random()*2.1).toFixed(1);
+    valEl.innerHTML=newVal+'<span style="font-size:16px"> min</span>';
+  }
+},30000);
+
+// ===== STATUS BAR MESSAGE CYCLE =====
+var msgs=[
+  '⚠ SECURITY LEVEL: YELLOW/ELEVATED -- Enhanced patrols in Zones C and D',
+  '✅ All perimeter sensors operational | Drone patrol rotation: every 15 minutes',
+  '🔒 Encryption keys rotated at 12:00 UTC | AI threat detection: 3 anomalies flagged today',
+  '🔴 Report suspicious activity: Call SOC-7000 or use NEO CITY mobile app',
+  '📌 Next security drill: June 20 2026 at 09:00 | Maintenance window: June 18 02:00-04:00 UTC',
+  '📷 Camera network health: 99.3% operational (5,650 of 5,692 online)',
+  '🚨 Incident response teams: 8 active, 42 personnel deployed across 4 zones',
+  '📡 Drone fleet status: 18 airborne, 6 on standby, 0 maintenance'
+];
+var msgIdx=0;
+setInterval(function(){
+  msgIdx=(msgIdx+1)%msgs.length;
+  var el=document.getElementById('scroll-msg');
+  if(el)el.textContent=msgs[msgIdx];
+},8000);
+
+// ===== LEVEL MARKER HOVER TOOLTIP =====
+var markers=document.querySelectorAll('.level-marker');
+markers.forEach(function(m){
+  m.addEventListener('click',function(){
+    markers.forEach(function(x){x.classList.remove('active');});
+    m.classList.add('active');
+    var lvl=m.getAttribute('data-level');
+    var names=['','GREEN &mdash; LOW','BLUE &mdash; GUARDED','YELLOW &mdash; ELEVATED','ORANGE &mdash; HIGH','RED &mdash; CRITICAL'];
+    var descs=[
+      '',
+      'Routine operations. No significant threats detected. Standard monitoring protocols in effect.',
+      'General risk of security incidents. Standard monitoring with periodic patrol sweeps.',
+      'Significant risk detected. Enhanced monitoring active. Response teams on elevated alert.',
+      'Credible threats identified. All response teams on standby. Perimeter security enhanced.',
+      'Immediate danger detected. Emergency protocols in effect. Civil defense notification initiated.'
+    ];
+    var txt=document.getElementById('current-level-text');
+    var dsc=document.querySelector('.level-current .desc');
+    if(txt&&names[lvl])txt.textContent=names[lvl];
+    if(dsc&&descs[lvl])dsc.textContent=descs[lvl];
+  });
+});
+
+// ===== DATA CARD CLICK ANIMATION =====
+var dataCards=document.querySelectorAll('.data-card');
+dataCards.forEach(function(card){
+  card.addEventListener('click',function(){
+    card.style.animation='none';
+    card.offsetHeight;
+    card.style.animation='count-pulse 0.3s ease-out';
+  });
+});
+
+console.log('NEO CITY OS Security Control System v3.7 initialized.');
+console.log('Threat Level: YELLOW/ELEVATED | Active Incidents: '+incidents.length+' | SOC Hotline: 7000');
+console.log('All systems nominal. Surveillance grid online. AI monitoring active.');
+})();
+</script>
+</body>
+</html>

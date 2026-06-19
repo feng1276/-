@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>邻居 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.8);
+  --surface2: #111;
+  --text: #c8c0b8;
+  --dim: #706860;
+  --red: #8b0000;
+  --red-bright: #b01010;
+  --red-glow: #ff2020;
+  --amber: #b8701a;
+  --amber-bright: #e0902a;
+  --green-safe: #2a5a2a;
+  --yellow-warn: #8a8a1a;
+  --orange-danger: #b85a1a;
+  --red-extreme: #a01010;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grain/Noise Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 9998;
+  animation: grainShift 8s steps(3) infinite;
+}
+
+@keyframes grainShift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-3px, 2px); }
+  50% { transform: translate(1px, -3px); }
+  75% { transform: translate(-2px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Glitch keyframes */
+@keyframes glitchText {
+  0% { text-shadow: 2px 0 var(--red-glow), -2px 0 #00f; }
+  20% { text-shadow: -2px 0 var(--red-glow), 2px 0 #00f; }
+  40% { text-shadow: 2px 0 var(--red-glow), -1px 0 #00f; }
+  60% { text-shadow: -1px 0 var(--red-glow), 1px 0 #00f; }
+  80% { text-shadow: 1px 0 var(--red-glow), -2px 0 #00f; }
+  100% { text-shadow: 2px 0 var(--red-glow), -2px 0 #00f; }
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.85; }
+  10% { opacity: 1; }
+  15% { opacity: 0.9; }
+  20% { opacity: 1; }
+  50% { opacity: 1; }
+  55% { opacity: 0.8; }
+  60% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulseRed {
+  0%, 100% { box-shadow: 0 0 5px rgba(255,20,20,0.3); }
+  50% { box-shadow: 0 0 20px rgba(255,20,20,0.7), 0 0 40px rgba(255,20,20,0.3); }
+}
+
+@keyframes shiftExpression {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.95); }
+}
+
+@keyframes slowFade {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 2000px; }
+}
+
+/* Top Navigation */
+nav.top-nav a {
+  transition: all 0.3s ease;
+  font-family: 'Share Tech Mono', monospace;
+}
+nav.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+
+/* Header */
+.header-section {
+  text-align: center;
+  padding: 40px 20px 20px;
+  position: relative;
+}
+.header-section h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.6em;
+  font-weight: 700;
+  color: var(--red-bright);
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px rgba(180,16,16,0.5), 0 0 60px rgba(180,16,16,0.2);
+  animation: flicker 6s infinite;
+}
+.header-section .subtitle {
+  color: var(--dim);
+  font-size: 0.9em;
+  letter-spacing: 3px;
+  margin-top: 8px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.header-section .warning-banner {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 24px;
+  border: 1px solid rgba(180,16,16,0.4);
+  background: rgba(139,0,0,0.1);
+  color: var(--red-bright);
+  font-size: 0.85em;
+  letter-spacing: 2px;
+  animation: pulseRed 3s infinite;
+}
+
+/* Legend */
+.legend-bar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto 20px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8em;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--dim);
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot.green { background: #3a7a3a; box-shadow: 0 0 6px rgba(50,200,50,0.4); }
+.legend-dot.yellow { background: #9a9a2a; box-shadow: 0 0 6px rgba(200,200,50,0.4); }
+.legend-dot.orange { background: #c8702a; box-shadow: 0 0 6px rgba(220,120,40,0.4); }
+.legend-dot.red { background: #d02020; box-shadow: 0 0 6px rgba(220,30,30,0.4); }
+
+/* Resident Grid */
+.resident-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 20px;
+  padding: 0 24px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Resident Card */
+.resident-card {
+  background: var(--surface);
+  border: 1px solid rgba(120,90,60,0.15);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.resident-card:hover {
+  border-color: rgba(200,80,40,0.4);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px rgba(200,80,40,0.15);
+  transform: translateY(-2px);
+}
+.resident-card.expanded {
+  border-color: rgba(180,100,40,0.5);
+  box-shadow: 0 6px 30px rgba(0,0,0,0.6), 0 0 20px rgba(180,100,40,0.2);
+}
+
+/* Card top bar - warning level indicator */
+.card-warning-strip {
+  height: 3px;
+  width: 100%;
+}
+.card-warning-strip.level-green { background: linear-gradient(90deg, #3a7a3a, #5aaa5a, #3a7a3a); }
+.card-warning-strip.level-yellow { background: linear-gradient(90deg, #8a8a1a, #baba3a, #8a8a1a); }
+.card-warning-strip.level-orange { background: linear-gradient(90deg, #b85a1a, #e08030, #b85a1a); }
+.card-warning-strip.level-red { background: linear-gradient(90deg, #a01010, #e03030, #a01010); animation: pulseRed 2s infinite; }
+
+/* Card Header */
+.card-header {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Photo placeholder area */
+.resident-photo {
+  width: 64px; height: 64px;
+  border-radius: 2px;
+  border: 2px solid rgba(100,80,60,0.3);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s ease;
+}
+.resident-photo::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+}
+.resident-photo .photo-icon {
+  font-size: 28px;
+  opacity: 0.4;
+}
+.resident-card:hover .resident-photo {
+  border-color: rgba(200,80,40,0.5);
+  box-shadow: 0 0 15px rgba(200,80,40,0.15);
+}
+/* Expression shift on hover */
+.resident-card.eerie-photo:hover .resident-photo {
+  transform: scaleY(0.92);
+  filter: brightness(0.8) contrast(1.3);
+  border-color: rgba(200,30,30,0.6);
+  box-shadow: 0 0 20px rgba(200,30,30,0.25);
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+.card-room {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1em;
+  color: var(--amber);
+  letter-spacing: 1px;
+}
+.card-name {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+.card-status-line {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.card-status {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 1px;
+}
+.status-living { background: rgba(50,150,50,0.15); color: #5a9a5a; border: 1px solid rgba(50,150,50,0.2); }
+.status-missing { background: rgba(200,200,40,0.12); color: #aaaa3a; border: 1px solid rgba(200,200,40,0.2); }
+.status-deceased { background: rgba(200,40,40,0.12); color: #c04040; border: 1px solid rgba(200,40,40,0.2); }
+.status-unknown { background: rgba(120,100,80,0.12); color: #9a8a7a; border: 1px solid rgba(120,100,80,0.2); }
+
+.warn-badge {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.warn-green { background: rgba(50,180,50,0.1); color: #4a9a4a; }
+.warn-yellow { background: rgba(200,200,40,0.1); color: #baba2a; }
+.warn-orange { background: rgba(220,120,40,0.1); color: #d08030; }
+.warn-red { background: rgba(220,30,30,0.12); color: #e04040; animation: flicker 3s infinite; }
+
+.card-brief {
+  padding: 0 20px 12px;
+  font-size: 0.82em;
+  color: var(--dim);
+  line-height: 1.6;
+  border-bottom: 1px solid rgba(100,80,60,0.1);
+}
+
+/* Expanded details section */
+.card-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.6s ease, padding 0.4s ease;
+  background: rgba(10,8,6,0.6);
+}
+.resident-card.expanded .card-details {
+  max-height: 2000px;
+}
+.details-inner {
+  padding: 0 20px 20px;
+}
+.details-inner h4 {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 0.8em;
+  letter-spacing: 2px;
+  margin: 12px 0 6px;
+  border-bottom: 1px solid rgba(180,112,26,0.2);
+  padding-bottom: 4px;
+}
+.details-inner p {
+  font-size: 0.82em;
+  color: var(--dim);
+  line-height: 1.7;
+  margin: 4px 0;
+}
+.details-inner .encounter-log {
+  background: rgba(0,0,0,0.3);
+  border-left: 2px solid rgba(180,16,16,0.3);
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 0.8em;
+  color: #b0a090;
+  line-height: 1.8;
+}
+.details-inner .encounter-log .log-date {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75em;
+  color: var(--amber);
+  letter-spacing: 1px;
+}
+
+/* Interaction Log Section */
+.interaction-log-section {
+  max-width: 1000px;
+  margin: 0 auto 60px;
+  padding: 0 24px;
+}
+.interaction-log-section h2 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--red-bright);
+  text-align: center;
+  letter-spacing: 4px;
+  font-size: 1.4em;
+  margin-bottom: 24px;
+  text-shadow: 0 0 12px rgba(180,16,16,0.4);
+}
+.interaction-log {
+  background: var(--surface);
+  border: 1px solid rgba(100,80,60,0.15);
+  border-radius: 4px;
+  padding: 24px;
+}
+.log-entry {
+  border-bottom: 1px solid rgba(100,80,60,0.08);
+  padding: 16px 0;
+  transition: background 0.3s;
+}
+.log-entry:last-child { border-bottom: none; }
+.log-entry:hover { background: rgba(180,16,16,0.03); }
+.log-entry .log-header {
+  display: flex;
+  gap: 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78em;
+  color: var(--amber);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.log-entry .log-text {
+  font-size: 0.85em;
+  color: var(--dim);
+  line-height: 1.7;
+}
+.log-entry .log-from {
+  font-size: 0.75em;
+  color: var(--red-bright);
+  font-family: 'Share Tech Mono', monospace;
+  margin-top: 4px;
+}
+
+/* Met counter */
+.met-counter {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid rgba(100,80,60,0.2);
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7em;
+  color: var(--dim);
+  z-index: 90;
+  text-align: center;
+}
+.met-counter span {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8em;
+  color: var(--amber);
+  letter-spacing: 2px;
+}
+
+/* Footer */
+.footer-note {
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.7em;
+  padding: 30px;
+  opacity: 0.6;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Search */
+.search-bar-wrap {
+  max-width: 600px;
+  margin: 0 auto 24px;
+  padding: 0 24px;
+}
+.search-bar {
+  width: 100%;
+  background: rgba(20,16,12,0.6);
+  border: 1px solid rgba(100,80,60,0.2);
+  color: var(--text);
+  padding: 10px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.9em;
+  letter-spacing: 1px;
+  outline: none;
+  border-radius: 2px;
+  transition: border-color 0.3s;
+}
+.search-bar:focus {
+  border-color: rgba(200,80,40,0.4);
+  box-shadow: 0 0 10px rgba(200,80,40,0.1);
+}
+.search-bar::placeholder {
+  color: #4a4038;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .header-section h1 { font-size: 1.6em; letter-spacing: 3px; }
+  .resident-grid { grid-template-columns: 1fr; padding: 0 12px; }
+  .card-header { padding: 12px; gap: 10px; }
+  .resident-photo { width: 48px; height: 48px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared Navigation -->
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html" style="color:#888;text-decoration:none;">首页</a>
+  <a href="rules_main.html" style="color:#888;text-decoration:none;">住户守则</a>
+  <a href="elevator_rules.html" style="color:#888;text-decoration:none;">电梯规则</a>
+  <a href="floor_directory.html" style="color:#888;text-decoration:none;">楼层指南</a>
+  <a href="room_404.html" style="color:#888;text-decoration:none;">404房间</a>
+  <a href="basement.html" style="color:#888;text-decoration:none;">地下室</a>
+  <a href="surveillance.html" style="color:#888;text-decoration:none;">监控室</a>
+  <a href="neighbor_encounters.html" style="color:#c04040;text-decoration:none;">邻居</a>
+  <a href="manager_log.html" style="color:#888;text-decoration:none;">管理员日志</a>
+  <a href="phone_calls.html" style="color:#888;text-decoration:none;">电话记录</a>
+  <a href="mirror_rules.html" style="color:#888;text-decoration:none;">镜子规则</a>
+  <a href="midnight_shift.html" style="color:#888;text-decoration:none;">深夜值班</a>
+  <a href="missing_persons.html" style="color:#888;text-decoration:none;">失踪档案</a>
+  <a href="ritual_purification.html" style="color:#888;text-decoration:none;">净化仪式</a>
+  <a href="final_night.html" style="color:#c04040;text-decoration:none;">终局</a>
+</nav>
+
+<!-- Header -->
+<section class="header-section">
+  <h1>夜 色 公 寓</h1>
+  <div class="subtitle">— 居 民 档 案 · 邻 里 互 动 记 录 —</div>
+  <div class="warning-banner">⚠ 警告：以下信息基于住户自行报告，部分内容可能存在矛盾。请自行判断真伪。</div>
+</section>
+
+<!-- Legend -->
+<div class="legend-bar">
+  <div class="legend-item"><span class="legend-dot green"></span> 安全 — 至今未报告异常</div>
+  <div class="legend-item"><span class="legend-dot yellow"></span> 注意 — 偶有异常报告</div>
+  <div class="legend-item"><span class="legend-dot orange"></span> 危险 — 多次异常，建议避开</div>
+  <div class="legend-item"><span class="legend-dot red"></span> 极度危险 — 请勿接触</div>
+</div>
+
+<!-- Search -->
+<div class="search-bar-wrap">
+  <input type="text" class="search-bar" id="residentSearch" placeholder="搜索住户：姓名、房间号、状态..." oninput="filterResidents()">
+</div>
+
+<!-- Met Counter -->
+<div class="met-counter" id="metCounter">
+  已接触
+  <span id="metCount">0</span>
+  / 12 户
+</div>
+
+<!-- Resident Grid -->
+<section class="resident-grid" id="residentGrid">
+
+<!-- Card 1: 102 赵奶奶 -->
+<div class="resident-card eerie-photo" data-room="102" data-name="赵奶奶" data-status="deceased" data-level="orange" id="card-102" onclick="toggleCard('card-102')">
+  <div class="card-warning-strip level-orange"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F475;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">102 室</div>
+      <div class="card-name">赵秀英 — "赵奶奶"</div>
+      <div class="card-status-line">
+        <span class="card-status status-deceased">已故</span>
+        <span class="warn-badge warn-orange">警告等级：危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">一位和蔼可亲的老奶奶，经常给邻居送自制饼干。总是微笑着和你打招呼。但物业记录显示，赵秀英已于三年前去世。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：1998年3月15日</p>
+      <p>登记职业：退休教师</p>
+      <p>家庭成员：独居（丈夫于2005年去世，子女在国外）</p>
+      <p>最后一次物业缴费记录：2021年6月（之后无人缴费，但水电仍在正常使用）</p>
+      <h4>▍ 邻里互动记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2023-11-08 16:22</span><br>
+        报告人：503室住户刘先生<br>
+        "在电梯里遇到了赵奶奶，她递给我一袋手工饼干，说是杏仁味的。她笑起来很温暖。但我回到房间打开袋子——里面是泥土和几根干枯的树枝。我冲下楼想问她，但102室的门紧锁着。后来物业告诉我，102室已经没人住了。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2024-01-15 19:45</span><br>
+        报告人：207室住户小陈<br>
+        "路过一楼走廊时闻到很浓的烤饼干香味，从102的方向飘来。我走近时门开了一条缝，里面亮着暖黄色的灯光。赵奶奶的声音说'进来坐坐吧'。我记得之前的住户群里有提到过她的事，没敢进去。跑回家后我查了群聊天记录——赵奶奶三年前就去世了。葬礼在楼下的殡仪馆办的。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2024-02-22 03:11</span><br>
+        报告人：安保巡逻记录<br>
+        "凌晨巡逻经过102室，透过门缝看到灯光。靠近后听到缝纫机的声音。通过猫眼反窥镜看到一位老妇人在缝制什么东西——看起来像是人的头发。已上报，待进一步调查。"
+      </div>
+      <h4>▍ 官方记录备注</h4>
+      <p>死亡证明编号：DB-2021-0673，签发日期2021年6月28日。死因：心力衰竭。遗体已于2021年7月2日火化。骨灰由子女带回加拿大。——但这些记录在2023年系统升级后"意外丢失"。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 2: 305 李先生 -->
+<div class="resident-card" data-room="305" data-name="李先生" data-status="living" data-level="orange" id="card-305" onclick="toggleCard('card-305')">
+  <div class="card-warning-strip level-orange"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F464;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">305 室</div>
+      <div class="card-name">李维远</div>
+      <div class="card-status-line">
+        <span class="card-status status-living">居住中</span>
+        <span class="warn-badge warn-orange">警告等级：危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">据登记，李先生自2015年起便居住于此。然而过去九年间，没有任何邻居亲眼见过他离开房间。外卖放在门口会在几小时内消失。每天凌晨三点，305室内传出打字机的声音。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：2015年8月1日</p>
+      <p>登记职业：自由撰稿人（远程办公）</p>
+      <p>家庭成员：独居</p>
+      <p>备注：从未亲自缴纳物业费，费用通过银行自动转账支付，账户余额始终充足</p>
+      <h4>▍ 邻里互动记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2020-03-12 22:30</span><br>
+        报告人：304室住户王女士<br>
+        "我曾在305门口放了一盘饺子（新搬来的礼节性拜访）。第二天早上盘子还在原处，饺子没动，但盘子上多了一张纸条，用端正的钢笔字写着：'谢谢，但我只吃夜间送来的食物。请不要再于白昼时分敲门。——305'"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2022-07-19 03:07</span><br>
+        报告人：306室住户<br>
+        "凌晨三点被打字声吵醒。是那种老式打字机的声音，非常清晰。我贴着墙壁听了一会儿，打字节奏极快，像是有人在赶稿。突然声音停了。然后我听到——我发誓我听到了——打字机的声音开始变成我的名字。哒、哒、哒哒哒、哒——就是我的名字的拼音节奏。我搬走了，第二天就搬走了。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2023-12-25 03:00</span><br>
+        报告人：夜间保安老张<br>
+        "圣诞节那天凌晨，整栋楼都很安静。我巡逻到三楼，305室的门开着一条缝。走廊里有一股很重的墨水味。我往里面瞥了一眼——什么都没看清，但能感觉到有人在黑暗里注视着我。门自己关上了。我跑回值班室，发现值班日志空白处被人用钢笔写了一行字：'你看到了不该看的。忘掉它。'"
+      </div>
+      <h4>▍ 管理员备注</h4>
+      <p>2024年物业试图进入305室进行年度安全检查，敲门无人应答。用备用钥匙开门——门从里面被十几把锁反锁了，每一把锁都是不同年代、不同材质的。这扇门无法被正常打开。水表和电表仍在运转。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 3: 404 历任住户 -->
+<div class="resident-card" data-room="404" data-name="历任住户" data-status="unknown" data-level="red" id="card-404" onclick="toggleCard('card-404')">
+  <div class="card-warning-strip level-red"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x26A0;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">404 室 — 历任住户档案</div>
+      <div class="card-name">多位 （自1981年起共11位登记住户）</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">集体异常</span>
+        <span class="warn-badge warn-red">警告等级：极度危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">自1981年以来，404室共有11位登记住户。目前没有一位仍处于"正常"状态。入住404室的住户平均停留时间为11个月。通常的结局是：失踪、死亡、或在精神彻底崩溃后逃离。这间房间本身似乎会——改变——住在里面的人。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 历任住户完整记录</h4>
+      <p style="color:#c04040;font-size:0.78em;">（以下记录从物业档案中摘录，部分内容因年代久远而模糊不清）</p>
+      <div class="encounter-log">
+        <span class="log-date">1981-04 — 1982-02 (10个月)</span><br>
+        姓名：周建国 | 男 | 34岁 | 工厂工人<br>
+        结局：失踪。1982年2月14日下班后进入公寓大楼，此后再未被目击离开。房间内个人物品完好。妻子报案，警方调查无果。案卷中有一句备注："邻居报告周建国去世前三个月开始自言自语，声称墙壁里有人在和他说话。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1983-01 — 1983-11 (10个月)</span><br>
+        姓名：林美琴 | 女 | 28岁 | 护士<br>
+        结局：精神失常。1983年11月开始声称房间里有"另一个自己"。多次因在走廊里尖叫而被投诉。被送入精神病院。入院记录中她反复说："404不是房间，是入口。它一直在等。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1985-06 — 1986-01 (7个月)</span><br>
+        姓名：王浩 | 男 | 41岁 | 商人<br>
+        结局：死亡。尸体被发现于404室内，法医判定为心肌梗死。但尸体面部表情极度扭曲，法医在报告中备注："死者生前似乎经历了极度的恐惧——远超出常规心梗所能解释的程度。"房间温度在发现尸体时为零下三度，空调未开启。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1987-09 — 1988-08 (11个月)</span><br>
+        姓名：陈丽华 | 女 | 25岁 | 研究生<br>
+        结局：失踪。最后一次被目击是在电梯监控中：进入电梯，按下4楼按钮，电梯门关闭。但电梯到达4楼开门时，里面空无一人。监控录像没有显示她离开的画面。警方翻看了所有楼层的监控——她就这样消失了。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1990-03 — 1991-02 (11个月)</span><br>
+        姓名：张德胜 | 男 | 52岁 | 退休铁路工人<br>
+        结局：失踪后出现。失踪三周后，他的妻子报警。三周后的一个雨夜，他突然出现在公寓大门口，浑身湿透，面无表情。妻子欣喜若狂——但随即发现"他"不再说话，不再吃饭，只是坐在404的角落里盯着墙壁。三个月后妻子也失踪了。物业记录上被涂改过，原始文字被覆盖。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1993-05 — 1993-12 (7个月)</span><br>
+        姓名：吴敏 | 女 | 31岁 | 记者<br>
+        结局：死亡。从404室窗户坠落。但404的窗户是固定式的，无法打开——除非将整扇窗框拆下。警方发现窗框的螺丝从房间内部被拧下。遗书被找到，但笔迹鉴定显示并非吴敏本人所写。遗书只有一个词："终于"。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1996-02 — 1996-08 (6个月)</span><br>
+        姓名：赵明哲 | 男 | 29岁 | 程序员<br>
+        结局：失踪。最后一条信息是发给母亲的："妈，我房间里多了一扇门。以前没有的。我要打开它看看。"此后失联。警方搜查404室——所有的墙壁都是完好的，没有额外的门。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">1999-11 — 2000-10 (11个月)</span><br>
+        姓名：孙晓雨 | 女 | 22岁 | 大学生<br>
+        结局：精神崩溃后逃离。目前居住在另一个城市。多次接受访问时拒绝谈论404室的经历。唯一的回应是："有些地方不应该住人。404是其中之一。它还在等我回去——我能感觉到。每天晚上。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2004-07 — 2005-06 (11个月)</span><br>
+        姓名：刘建国 | 男 | 45岁 | 出租车司机<br>
+        结局：失踪。监控录像显示他在凌晨3:33打开房门，走到走廊上，然后——向左转入了走廊尽头。那里是一堵墙。但他走了进去。此后未再出现。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2010-03 — 2010-05 (2个月)</span><br>
+        姓名：匿名 | 身份不明 | 登记信息疑似伪造<br>
+        结局：下落不明。此人登记入住时使用的身份证号码经核查为已故十年的死者的号码。入住两个月后房间被清空——不是搬走了，是清空了。所有的家具、衣物、个人物品全部消失，连墙壁的涂料都变成了崭新的白色。仿佛从未有人住过。
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2017-10 — 2018-09 (11个月)</span><br>
+        姓名：郑宇 | 男 | 33岁 | 前警察<br>
+        结局：离职后失踪。郑宇曾是刑警，他入住404是为了调查之前的失踪案。他留下大量笔记和录音。最后一篇日记写于2018年9月3日："我知道答案了。答案很简单。404室不是闹鬼的房间——整栋楼才是。404只是它最薄弱的地方。就像皮肤上的伤口。它会呼吸。如果你读到了这个——快离开。趁你还能离开的时候。"
+      </div>
+      <h4>▍ 管理员备注</h4>
+      <p style="color:#c04040;">404室目前标记为"维修中，暂不出租"。但你知道吗——偶尔会有新来的住户询问404室是否空置。他们总说有人在网上发布了招租信息。但我们从未发布过任何关于404室的招租广告。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 4: 502 红衣女子 -->
+<div class="resident-card eerie-photo" data-room="502" data-name="红衣女子" data-status="unknown" data-level="red" id="card-502" onclick="toggleCard('card-502')">
+  <div class="card-warning-strip level-red"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F457;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">502 室</div>
+      <div class="card-name">姓名不详 — "红衣女子"</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">未知</span>
+        <span class="warn-badge warn-red">警告等级：极度危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">永远穿着一件红色连衣裙的年轻女性。奇怪的是——没有人见过她的正面。她只出现在镜面反射中：电梯的镜面墙壁、走廊的玻璃窗、积水的地面倒影。当你转身直视她的位置时，空无一人。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：不详（物业登记中无此人）</p>
+      <p>登记职业：无记录</p>
+      <p>外貌描述：年轻女性，约25岁，长发及腰，总是穿着鲜艳的红色连衣裙</p>
+      <p>特殊性质：仅出现在反射表面中，无法被直接目击</p>
+      <h4>▍ 目击记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2019-05-14 18:40</span><br>
+        报告人：501室住户<br>
+        "下班回家在电梯里，电梯门是不锈钢的镜面。我看到身后站着一个穿红裙子的女人，离我很近。我本能地回头——电梯里只有我一个人。再回头看镜面，她还在。她在笑。电梯到了五楼我冲了出去。从那以后我再也不坐那个电梯了。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2020-08-22 23:15</span><br>
+        报告人：503室住户<br>
+        "下过雨的晚上，走廊窗户下的地面有一小片积水。我路过时在倒影里看到了她——红裙子，黑长发，站在502门口。我僵住了。她抬起手，在倒影里对我做了一个'嘘'的手势。然后水干了。她也不在了。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2023-04-03 02:47</span><br>
+        报告人：五楼走廊监控（画面异常）<br>
+        "监控画面在凌晨2:47出现了约三秒的强烈干扰。干扰期间，画面反射出摄像头的玻璃罩上倒映着一个红色人影——站在摄像头正后方。干扰结束后画面正常，但走廊通道上留下了一串湿脚印，从502室门口延伸到电梯前，然后消失。"
+      </div>
+      <h4>▍ 调查备注</h4>
+      <p>502室的物业登记为"空置"，但每月有固定金额汇入物业账户用于支付该房间的费用。汇款账户属于一个已于1997年注销的银行账号。目前无人能够解释这些汇款从何而来。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 5: 610 小男孩 -->
+<div class="resident-card eerie-photo" data-room="610" data-name="小男孩" data-status="unknown" data-level="orange" id="card-610" onclick="toggleCard('card-610')">
+  <div class="card-warning-strip level-orange"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F9D2;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">610 室</div>
+      <div class="card-name">姓名不详 — "小宇"（自称）</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">未知</span>
+        <span class="warn-badge warn-orange">警告等级：危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">一个约八九岁的小男孩，经常在六楼走廊里独自玩耍。他喜欢邀请路过的住户一起玩拍手游戏或跳房子。但所有注意到他的人最终都会发现同一件事：走廊的灯光下，这个孩子——没有影子。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：不详</p>
+      <p>自称年龄：8岁</p>
+      <p>外貌：短发，穿蓝色条纹T恤和灰色短裤，皮肤苍白</p>
+      <p>特殊标记：在灯光下无影子；双脚不着地（约离地1厘米漂浮）；永远赤脚</p>
+      <h4>▍ 目击记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2021-09-12 17:30</span><br>
+        报告人：608室住户小赵<br>
+        "加班回来在六楼走廊里看到一个小孩在拍皮球。球弹到我跟前，他跑过来抬头看着我说'哥哥，陪我玩跳房子吧'。当时走廊灯很亮，我突然注意到——我和皮球都有影子，但他没有。走廊的地砖上，他站的位置干干净净，什么阴影也没有。我说我还有事，快步回了房间。关上门后透过猫眼往外看——他还在原地，但正盯着猫眼看。他知道我在看他。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2022-01-22 19:10</span><br>
+        报告人：612室住户（匿名）<br>
+        "我六岁的女儿有一天问我：'爸爸，为什么走廊里那个小哥哥总是在哭？他说他找不到家。他说他家在610室。但我敲门610从来没人开过。'我立刻打电话给物业——610室在过去五年间一直是空置的。那天晚上我把女儿房间的门锁了。第二天女儿告诉我，那个小哥哥从窗户外面对她招手。我们住六楼。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2023-08-30 15:45</span><br>
+        报告人：新搬入的602住户（不知情）<br>
+        "搬进来第一天在走廊里遇到一个可爱的小男孩。他说他叫小宇，住在610。他邀请我去他房间看看他的画。我跟着他走到610室——门开着，里面是一个看起来非常普通的儿童房间。他给我看了他的蜡笔画。画的是一家三口。但三个人的脸都被涂成了黑色。他说'这是我爸爸妈妈和我，在我们死之前'。然后我就什么都想不起来了。醒来时我在自己房间里，手机显示时间过了六个小时。610的门锁着，里面没人。"
+      </div>
+      <h4>▍ 历史记录</h4>
+      <p>查阅旧报纸发现：1999年12月，610室曾发生煤气泄漏事故，一家三口遇难。遇难者中包括一名8岁的男孩。男孩的名字在报道中被隐去了——但他的小伙伴们叫他"小宇"。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 6: 708 神秘空房 -->
+<div class="resident-card" data-room="708" data-name="神秘住户" data-status="unknown" data-level="yellow" id="card-708" onclick="toggleCard('card-708')">
+  <div class="card-warning-strip level-yellow"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F4E8;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">708 室</div>
+      <div class="card-name">登记为"空置"——但有人支付房租</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">状态矛盾</span>
+        <span class="warn-badge warn-yellow">警告等级：注意</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">物业系统显示708室为"空置待租"。但三年来，每月都有一笔房租准时汇入账户。门口的信箱里总是塞满邮件——有时邮件会自己消失，仿佛被人取走。敲门永远无人应答。但门缝下偶尔会透出灯光。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 矛盾记录</h4>
+      <p>物业系统状态：空置（自2019年3月起）</p>
+      <p>房租支付状态：每月15日准时到账，金额精确到分</p>
+      <p>汇款账户：自动转账，源账户信息为乱码</p>
+      <p>水电使用情况：每月有约30-40度用电、3-5吨用水——典型的单人居住用量</p>
+      <h4>▍ 异常报告</h4>
+      <div class="encounter-log">
+        <span class="log-date">2021-03-15 10:00</span><br>
+        报告人：邮递员<br>
+        "708的信箱总是满的。报纸、账单、宣传单——但过几天再去看，信箱空了。门口擦得很干净，没有灰尘。我试过在信封上做标记，被取走的邮件上标记还在——但多了一道折痕，像是被人仔细阅读过。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2022-06-30 20:30</span><br>
+        报告人：709室住户<br>
+        "有一天晚上我在阳台晾衣服，看到708的窗帘动了一下——是被人从里面拨开的。一只手。一只非常苍白的手。但708的窗帘是物业统一安装的，不可能被风吹动——它的窗户是关死的。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2023-11-04 03:00</span><br>
+        报告人：夜间巡逻记录<br>
+        "凌晨三点经过708，门缝下透出微弱的灯光。附耳听——里面有脚步声，很轻，在房间里来回走动。像是在踱步。我敲门表明身份。脚步声停了。然后一个声音从门那边传来——不是通过门缝，是直接在我耳朵里响起的：'别敲了。我在睡觉。'我立刻离开了七楼。"
+      </div>
+      <h4>▍ 管理员备注</h4>
+      <p>曾尝试用备用钥匙进入708检查，但钥匙孔里似乎被什么东西堵住了。派锁匠来查看——锁匠说锁孔内侧有一种柔软、有弹性的东西，像是——肌肉组织。建议不要强行开门。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 7: 801 管理员 -->
+<div class="resident-card" data-room="801" data-name="管理员" data-status="living" data-level="orange" id="card-801" onclick="toggleCard('card-801')">
+  <div class="card-warning-strip level-orange"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F46E;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">801 室 — 管理室</div>
+      <div class="card-name">钱伯安 — 现任管理员</div>
+      <div class="card-status-line">
+        <span class="card-status status-living">居住中</span>
+        <span class="warn-badge warn-orange">警告等级：危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">钱伯安自2009年起担任夜色公寓的管理员。白天他是一位热心、尽责的管理员——修理水管、收发快递、调解邻里纠纷。但有一条不成文的规矩：太阳落山之后，绝不要和他说话。老住户们对此讳莫如深。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入职日期：2009年4月1日（注意日期）</p>
+      <p>前任管理员：赵大同（2008年12月辞职——"辞职"记录可疑，见管理日志）</p>
+      <p>白班时间：08:00 — 18:00</p>
+      <p>夜班——无。18:00以后管理室关闭，管理员"休息"</p>
+      <h4>▍ 观察记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2015-11-20 19:30</span><br>
+        报告人：新搬入的303住户（不知规矩）<br>
+        "搬进来第三天晚上暖气坏了，我去敲801的门。钱管理员开了门——但他看起来完全不像白天那个人。他的眼睛是黑的，全部是黑的，没有眼白。他问我'什么事'，声音很低，像两个人同时在说话。我结结巴巴地说了暖气的事。他盯着我看了整整十几秒，然后说'明天早上告诉我'。关上了门。第二天早上我去找他——他又变成了那个笑眯眯的钱管理员，立刻帮我修好了暖气。他好像完全不记得昨晚的事。我不敢提。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2018-12-31 23:55</span><br>
+        报告人：跨年夜在外活动的几位住户<br>
+        "跨年夜我们从外面回来，在大厅里等电梯。时钟刚过午夜，钱管理员从楼梯走下来。他穿着白天的制服，但制服的胸口位置有暗色的——像是干涸的血迹。他微笑着祝我们'新年快乐'，然后径直走向地下室楼梯。没有人敢跟上去。第二天我们在群里讨论这件事——发现所有人都看到了他，但每个人看到的'血迹'位置不一样。"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2022-04-01 20:15</span><br>
+        报告人：外卖骑手<br>
+        "送到801的外卖。我晚上8点到的，敲了801的门。门开了大概十厘米的缝，一只手伸出来拿了外卖。但我注意到——门后面的墙上，贴满了照片。全是这栋楼里住户的照片。有些照片上的人我已经在之前的新闻里见过——失踪人员报道。我说'祝您用餐愉快'就跑了。回到店里我查了一下，801室已经连续四年在同一天——4月1日——点同一家店同一道菜。但前三年，这家店还没开业。"
+      </div>
+      <h4>▍ 住户守则摘录</h4>
+      <p style="color:#c04040;">"规则第17条：如有任何问题需要联系管理员，请在早上8:00至下午6:00之间进行。日落后请勿以任何理由联系管理员。如果你在夜间听到管理员在走廊里叫你的名字——不要应答。那不再是你的管理员。"</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 8: 203 杨先生——正常住户 -->
+<div class="resident-card" data-room="203" data-name="杨先生" data-status="living" data-level="green" id="card-203" onclick="toggleCard('card-203')">
+  <div class="card-warning-strip level-green"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F468;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">203 室</div>
+      <div class="card-name">杨建国 — 退休会计</div>
+      <div class="card-status-line">
+        <span class="card-status status-living">居住中</span>
+        <span class="warn-badge warn-green">警告等级：安全</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">杨先生是这栋楼里少有的"正常"住户。他每天早晨6点准时在楼下晨练，晚上9点熄灯。他是住户委员会的财务负责人。在过去的二十年里，他从未报告过任何异常——或者说，他从未"承认"报告过。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：2003年2月</p>
+      <p>登记职业：退休会计</p>
+      <p>家庭成员：与妻子同住（妻子几乎从不出门，邻居对她的印象非常模糊）</p>
+      <h4>▍ 邻里互动</h4>
+      <div class="encounter-log">
+        <span class="log-date">2021-04-15 09:00</span><br>
+        报告人：住户委员会会议记录<br>
+        "杨先生在会议上提交了一份详细的财务报表。在讨论电梯维修费用时，他翻到报表第13页——那一页的内容和前面完全对不上：上面密密麻麻写满了数字，但组合起来像是某种坐标或暗号。杨先生迅速翻过那一页，面色如常。有人问他那是什么，他说'打印错误'。但那页纸看起来非常旧，纸张发黄，墨迹也不是打印的——是手写的。"
+      </div>
+      <h4>▍ 备注</h4>
+      <p>杨先生是安全的——但所有和他走得太近的住户，最终都离开了这栋楼。不是搬走。是"离开"。杨先生似乎对此非常平静。太过于平静了。</p>
+    </div>
+  </div>
+</div>
+
+<!-- Card 9: 407 猫女士 -->
+<div class="resident-card" data-room="407" data-name="孙女士" data-status="living" data-level="yellow" id="card-407" onclick="toggleCard('card-407')">
+  <div class="card-warning-strip level-yellow"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F431;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">407 室</div>
+      <div class="card-name">孙美兰 — "猫女士"</div>
+      <div class="card-status-line">
+        <span class="card-status status-living">居住中</span>
+        <span class="warn-badge warn-yellow">警告等级：注意</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">她养了六只猫。但这些猫——从来不叫。它们只是坐在窗台上，注视着走廊里路过的每一个人。有住户说它们不像是宠物，更像是"看守"。孙女士本人非常安静，但有时在走廊里会突然停下来，对着空气说"我知道了"。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住日期：2016年6月</p>
+      <p>登记职业：无（依靠遗产生活）</p>
+      <p>宠物：六只黑猫（但有人数过——有时候是五只，有时候是七只）</p>
+      <h4>▍ 异常记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2023-07-07 14:20</span><br>
+        报告人：408室住户<br>
+        "我路过407时，孙女士的门开着。她的猫排成一排坐在门口，全部面向走廊深处。我顺着它们的视线看过去——走廊尽头什么也没有。但猫的眼睛都瞪得很大。孙女士从房间里走出来，看了看我，又看了看走廊尽头，说：'没关系，它们只是在看着它。它每天都从这里经过。你看不到的话反而是好事。'"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card 10: 地下B1 流浪汉 -->
+<div class="resident-card" data-room="B1" data-name="流浪者" data-status="unknown" data-level="orange" id="card-B1" onclick="toggleCard('card-B1')">
+  <div class="card-warning-strip level-orange"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F6AA;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">B1 地下室通道</div>
+      <div class="card-name">姓名不详 — "地下室的人"</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">未知</span>
+        <span class="warn-badge warn-orange">警告等级：危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">多个住户报告在地下室区域看到过一个衣衫褴褛的人影。当被问及时，此人说自己"一直住在这里，从大楼建成的那天开始"。但这是不可能的——1973年至今已经超过五十年。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>首次目击：约1985年</p>
+      <p>外貌描述：男性，年龄难辨（有时看起来像四十岁，有时像七十岁），衣着破烂但干净</p>
+      <h4>▍ 目击记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2019-03-21 22:00</span><br>
+        报告人：维修工<br>
+        "我去地下室检查水管，在B1的角落里看到一个人蹲在管道旁边。他转过来看着我说：'小心那个穿红裙子的。她不是住在这里的。不对——她是住在这里的。但你不该看到她。'然后他站起来，走进了管道间的一个窄缝里——那条缝连手臂都伸不进去。"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card 11: 901 顶楼住户 -->
+<div class="resident-card" data-room="901" data-name="顶楼住户" data-status="unknown" data-level="red" id="card-901" onclick="toggleCard('card-901')">
+  <div class="card-warning-strip level-red"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F3A2;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">901 室 — 顶层</div>
+      <div class="card-name">未知 — "楼上的脚步声"</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">未知</span>
+        <span class="warn-badge warn-red">警告等级：极度危险</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">901室在物业登记中不存在。整栋楼官方只有八层。但有些住户声称在深夜听到天花板之上——九楼的位置——有沉重的脚步声、拖动家具的声音，以及……一种像是很多人在同时低语的声音。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>官方楼层数：8层（地下2层 + 地上8层）</p>
+      <p>住户报告：8楼住户多次报告天花板之上有脚步声</p>
+      <p>电梯面板：仅有B2-8F的按钮，无9F</p>
+      <h4>▍ 目击记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2022-02-14 02:00</span><br>
+        报告人：802室住户<br>
+        "凌晨两点被吵醒——天花板上传来脚步声，非常沉重，来回走动，持续了约二十分钟。然后是拖动重物的声音。最后是一声巨响，像是整件家具被掀翻了。我给物业打电话投诉楼上噪音。物业沉默了一会儿说：'女士……您住的是顶楼。'"
+      </div>
+      <div class="encounter-log">
+        <span class="log-date">2023-09-30 00:00</span><br>
+        报告人：805室住户<br>
+        "我试着顺着消防楼梯往上走。八楼是顶层，但楼梯在八楼之后并没有结束——它继续向上延伸。我往上走了一段，看到了一个标着'9'的楼层平台。一扇门。门上没有房间号，只有一个手写的牌子：'不要敲门。我们在听。'我飞快地跑回了自己的房间。"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card 12: 206 双胞胎 -->
+<div class="resident-card" data-room="206" data-name="双胞胎兄弟" data-status="living" data-level="yellow" id="card-206" onclick="toggleCard('card-206')">
+  <div class="card-warning-strip level-yellow"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F465;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">206 室</div>
+      <div class="card-name">陈氏兄弟 — 但只有一人登记入住</div>
+      <div class="card-status-line">
+        <span class="card-status status-living">居住中</span>
+        <span class="warn-badge warn-yellow">警告等级：注意</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">206室理论上只有一位住户——陈文彬。但所有邻居都见过两个一模一样的他同时出现在不同地点。一个人在大厅取快递，另一个同时在二楼阳台抽烟。陈文彬从不谈论这件事。当你问起时，他会反问你："你确定我现在是哪一个吗？"</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>登记住户：陈文彬，男，28岁</p>
+      <p>入住日期：2020年11月</p>
+      <p>登记的身份证：有效</p>
+      <p>备注：他的双胞胎弟弟在出生时就夭折了——但这话不是一个邻居告诉我们的。是陈文彬自己说的。他笑着说："他没有出生——但他还是来了。"</p>
+      <h4>▍ 目击记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2021-08-11 12:00</span><br>
+        报告人：一楼大厅保安<br>
+        "中午看到陈文彬出门，和他打了招呼。十分钟后我去二楼巡逻——看到他站在206阳台抽烟。我又回到一楼大厅查监控。监控显示他确实出了大门，没有回来过。但二楼的监控同时拍到有人在206阳台。同一个人。"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card 13: 308 从不关灯的房间 -->
+<div class="resident-card" data-room="308" data-name="从不关灯的房间" data-status="unknown" data-level="yellow" id="card-308" onclick="toggleCard('card-308')">
+  <div class="card-warning-strip level-yellow"></div>
+  <div class="card-header">
+    <div class="resident-photo">
+      <span class="photo-icon">&#x1F4A1;</span>
+    </div>
+    <div class="card-info">
+      <div class="card-room">308 室</div>
+      <div class="card-name">住户不详 — "永远亮着的灯"</div>
+      <div class="card-status-line">
+        <span class="card-status status-unknown">未知</span>
+        <span class="warn-badge warn-yellow">警告等级：注意</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-brief">308室的灯二十四小时亮着。窗户永远拉着厚厚的深色窗帘。没有邻居能回忆起是否曾见过有人进出308。但每晚十点整，窗帘后面会出现一个人形的剪影，一动不动地站在窗前——直到天亮。</div>
+  <div class="card-details">
+    <div class="details-inner">
+      <h4>▍ 基本信息</h4>
+      <p>入住记录：存在一份2012年的入住登记，但登记表上除了日期和房间号外，其余栏位全部为空</p>
+      <p>水电使用：电费每月异常高，但水费几乎为零</p>
+      <h4>▍ 观察记录</h4>
+      <div class="encounter-log">
+        <span class="log-date">2022-10-31 22:00</span><br>
+        报告人：对面楼住户（通过窗户观察）<br>
+        "万圣节晚上我特意观察了308的窗户。十点整，剪影出现了。但我注意到——剪影的轮廓在变化。第一天是男的，第二天是女的，第三天看起来像两个孩子。它到底是谁？还是说，里面不只有一个人？"
+      </div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<!-- Interaction Log Section -->
+<section class="interaction-log-section">
+  <h2>邻 里 互 动 日 志</h2>
+  <div class="interaction-log">
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-01-08</span><span>20:15</span><span>来源：大楼住户微信群</span>
+      </div>
+      <div class="log-text">
+        [住户A 503室]: 有人刚才听到走廊里有小孩的笑声吗？我出门看了，走廊是空的。<br>
+        [住户B 207室]: 我听到了。从六楼方向传来的。<br>
+        [住户C 608室]: 我就在六楼。走廊里有个小孩在拍皮球。我不敢开门。<br>
+        [住户A 503室]: 叫管理员了吗？<br>
+        [住户C 608室]: 已经下午六点多了。你知道规矩的。<br>
+        [住户D 610室]: 不对。六楼没有任何小孩。我家就我一个人住。你为什么说你在608？608是空房。<br>
+        （此后住户B退出群聊。账号已注销。）
+      </div>
+      <div class="log-from">— 来自住户微信群聊天记录 2024-01-08</div>
+    </div>
+
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-02-14</span><span>23:45</span><span>来源：匿名投稿</span>
+      </div>
+      <div class="log-text">
+        今天是情人节。我买了一束花回公寓。在电梯里遇到了一个非常漂亮的女孩——红色连衣裙，长发。我鼓起勇气和她搭话。她笑着指了指电梯里的楼层按钮——4楼。我说好巧，我住5楼。我们一起出了电梯，走在走廊里。快到502的时候她停了下来，拿出钥匙。然后她转过来看着我。就是那个瞬间，我发现——走廊的灯光穿过她的身体照在墙上。她是半透明的。她咧嘴笑了，嘴角一直咧到了耳根。她说："谢谢你送我回家。你想要来坐坐吗？"我拼命摇头，跑上了五楼。回头看——她还在，站在502门口，微笑。但502的房门上贴着物业的封条。红色的，上面写着：'此房暂不开放'。
+      </div>
+      <div class="log-from">— 匿名 2024-02-14 深夜</div>
+    </div>
+
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-03-03</span><span>03:33</span><span>来源：夜间监控语音记录</span>
+      </div>
+      <div class="log-text">
+        [语音转文字 — 走廊监控麦克风 #4F]<br>
+        未知说话者A：（低沉的男声）"……第四位来了。和你预想的一样吗？"<br>
+        未知说话者B：（年轻女性的声音）"比预想中更快。它越来越急了。"<br>
+        未知说话者A："404那边？"<br>
+        未知说话者B："嗯。今晚门开了三次。"<br>
+        （沉默约四十五秒）<br>
+        未知说话者A："钱伯安知道了吗？"<br>
+        未知说话者B："他当然知道。他一直都知道。他只是不能说。"<br>
+        （录音中断 — 时长2分08秒）
+      </div>
+      <div class="log-from">— 监控室自动语音日志 #2024-03-03-0333</div>
+    </div>
+
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-04-01</span><span>00:01</span><span>来源：大楼公共区域监控</span>
+      </div>
+      <div class="log-text">
+        4月1日凌晨，一楼大厅的监控拍到所有八层楼的走廊灯以同一频率闪烁——每隔四秒，从一楼到八楼依次熄灭再亮起。整个过程重复了整整一个小时。期间没有一个人经过走廊。但监控画面中，每层楼的走廊地面上，都出现了一排湿脚印——从电梯口一直延伸到走廊尽头。脚印的尺寸各不相同。有成年男女的，有小孩的，甚至有——看起来像是动物的爪印。
+      </div>
+      <div class="log-from">— 安保监控摘要 #0401-2024</div>
+    </div>
+
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-05-18</span><span>19:30</span><span>来源：住户面谈记录</span>
+      </div>
+      <div class="log-text">
+        今天一位新搬来的年轻住户找到我。他说他刚入住三天，已经遇到了三个不同的邻居来"欢迎"他。第一位是102的赵奶奶，送了他一袋饼干。第二位是502的红衣女士，送了他一张手写的欢迎卡。第三位是610的小男孩，邀请他一起玩。他微笑着说邻居们都好热情。<br>
+        我没有告诉他真相。<br>
+        我只是说："如果你珍惜自己的生命——不要再吃任何邻居给的食物。不要再打开任何邻居写的卡片。不要再和走廊里的孩子说话。"<br>
+        他愣住了。他问我为什么。<br>
+        我说："因为这栋楼里，只有你是真正活着的人。"<br>
+        我是在开玩笑的。大概吧。
+      </div>
+      <div class="log-from">— 匿名 自称"住户委员会成员" 2024-05-18</div>
+    </div>
+
+    <div class="log-entry">
+      <div class="log-header">
+        <span>2024-06-01</span><span>00:00</span><span>来源：不知名信号源</span>
+      </div>
+      <div class="log-text">
+        以下文字以未知方式出现在所有住户的手机屏幕上，持续三秒后消失。已确认没有住户截图成功。不同住户看到的文字略有不同，但大意相同：<br><br>
+        "亲爱的住户，感谢您选择夜色公寓。您已在此居住____天。请仔细阅读住户守则，并严格遵守。若您看到本条信息，说明您已被纳入统计。祝您居住愉快。"<br><br>
+        横线处的数字各不相同。一位住户的数字是"1"。另一位是"4,783"。
+      </div>
+      <div class="log-from">— 全体住户报告 2024-06-01</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="footer-note">
+  夜色公寓 居民档案 · 仅供内部参考 · 未经授权不得外传<br>
+  以上信息由住户委员会整理，不代表物业观点<br>
+  "如果你认识到了以上所有人——你可能已经在名单上了。"
+</div>
+
+<script>
+// === Resident Card Toggle ===
+function toggleCard(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  card.classList.toggle('expanded');
+
+  // Track met residents in localStorage
+  const room = card.getAttribute('data-room');
+  let met = JSON.parse(localStorage.getItem('nightfall_met_residents') || '[]');
+  if (!met.includes(room)) {
+    met.push(room);
+    localStorage.setItem('nightfall_met_residents', JSON.stringify(met));
+  }
+  updateMetCounter();
+}
+
+// === Update Met Counter ===
+function updateMetCounter() {
+  const met = JSON.parse(localStorage.getItem('nightfall_met_residents') || '[]');
+  const countEl = document.getElementById('metCount');
+  if (countEl) {
+    countEl.textContent = met.length;
+    if (met.length >= 12) {
+      countEl.style.color = '#e04040';
+      countEl.style.textShadow = '0 0 10px rgba(255,20,20,0.5)';
+    }
+  }
+}
+
+// === Search Filter ===
+function filterResidents() {
+  const query = document.getElementById('residentSearch').value.toLowerCase();
+  const cards = document.querySelectorAll('.resident-card');
+  cards.forEach(card => {
+    const room = (card.getAttribute('data-room') || '').toLowerCase();
+    const name = (card.getAttribute('data-name') || '').toLowerCase();
+    const status = (card.getAttribute('data-status') || '').toLowerCase();
+    const level = (card.getAttribute('data-level') || '').toLowerCase();
+    const text = room + ' ' + name + ' ' + status + ' ' + level;
+    if (!query || text.includes(query)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// === Keyboard shortcut for search ===
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'f') {
+    e.preventDefault();
+    document.getElementById('residentSearch').focus();
+  }
+});
+
+// === Initialize ===
+document.addEventListener('DOMContentLoaded', function() {
+  updateMetCounter();
+
+  // Check if user has met all residents
+  const met = JSON.parse(localStorage.getItem('nightfall_met_residents') || '[]');
+  if (met.length >= 12) {
+    console.log('%c你已接触全部12户居民。%c你确定这栋楼里只有12户吗？',
+      'color:#c04040;font-size:16px;', 'color:#706860;');
+  }
+
+  // Random flicker on resident photos
+  setInterval(() => {
+    const photos = document.querySelectorAll('.eerie-photo .resident-photo');
+    if (photos.length > 0 && Math.random() < 0.1) {
+      const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
+      randomPhoto.style.filter = 'brightness(0.6) contrast(1.5)';
+      setTimeout(() => {
+        randomPhoto.style.filter = '';
+      }, 200 + Math.random() * 400);
+    }
+  }, 3000);
+
+  // Occasionally scroll a card's warning strip
+  setInterval(() => {
+    const strips = document.querySelectorAll('.card-warning-strip.level-red');
+    strips.forEach(strip => {
+      if (Math.random() < 0.05) {
+        strip.style.opacity = '0.3';
+        setTimeout(() => { strip.style.opacity = '1'; }, 150);
+      }
+    });
+  }, 2000);
+});
+
+// === Console Easter Egg ===
+console.log('%c夜 色 公 寓%c — 居民档案',
+  'color:#b01010;font-size:24px;font-family:serif;letter-spacing:6px;',
+  'color:#c8c0b8;');
+console.log('%c"你认识你的邻居吗？他们认识你吗？他们中有多少——还是人？"',
+  'color:#706860;font-style:italic;');
+console.log('%c输入 %cunlockAll() %c来查看全部档案（不推荐）',
+  'color:#706860;', 'color:#e0902a;', 'color:#706860;');
+
+function unlockAll() {
+  const allCards = document.querySelectorAll('.resident-card');
+  allCards.forEach(card => card.classList.add('expanded'));
+  const rooms = [];
+  document.querySelectorAll('.resident-card').forEach(card => {
+    rooms.push(card.getAttribute('data-room'));
+  });
+  localStorage.setItem('nightfall_met_residents', JSON.stringify(rooms));
+  updateMetCounter();
+  console.log('%c全部档案已解锁。%c这是你自找的。',
+    'color:#c04040;', 'color:#706860;');
+  // Creepy effect
+  document.body.style.transition = 'background 2s';
+  document.body.style.background = '#020202';
+  setTimeout(() => { document.body.style.background = '#060606'; }, 1500);
+}
+</script>
+
+</body>
+</html>

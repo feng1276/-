@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 | 霓虹城</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-magenta: #ff00ff;
+    --neon-yellow: #ffe600;
+    --neon-green: #00ff41;
+    --neon-red: #ff3131;
+    --neon-blue: #0066ff;
+    --bg-deep: #0a0a0f;
+    --bg-city: #0d0d1a;
+    --scan-line: rgba(0, 240, 255, 0.03);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  /* ===== SCANLINES OVERLAY ===== */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 240, 255, 0.015) 2px,
+      rgba(0, 240, 255, 0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== BOOT SEQUENCE ===== */
+  #boot-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    transition: opacity 1.5s ease-out;
+  }
+  #boot-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #boot-lines {
+    width: 80%;
+    max-width: 800px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #00ff41;
+    text-shadow: 0 0 5px #00ff41;
+  }
+  #boot-lines .line {
+    opacity: 0;
+    animation: bootFadeIn 0.3s forwards;
+  }
+  #boot-lines .line:nth-child(1) { animation-delay: 0.3s; }
+  #boot-lines .line:nth-child(2) { animation-delay: 0.7s; }
+  #boot-lines .line:nth-child(3) { animation-delay: 1.1s; }
+  #boot-lines .line:nth-child(4) { animation-delay: 1.5s; }
+  #boot-lines .line:nth-child(5) { animation-delay: 1.9s; }
+  #boot-lines .line:nth-child(6) { animation-delay: 2.3s; }
+  #boot-lines .line:nth-child(7) { animation-delay: 2.7s; }
+  #boot-lines .line:nth-child(8) { animation-delay: 3.1s; }
+  #boot-lines .line:nth-child(9) { animation-delay: 3.5s; }
+  #boot-lines .line:nth-child(10) { animation-delay: 3.9s; }
+  #boot-lines .line:nth-child(11) { animation-delay: 4.3s; }
+  #boot-lines .line:nth-child(12) { animation-delay: 4.7s; }
+  #boot-lines .line:nth-child(13) { animation-delay: 5.1s; }
+  #boot-lines .line:nth-child(14) { animation-delay: 5.5s; }
+
+  @keyframes bootFadeIn {
+    to { opacity: 1; }
+  }
+
+  .blink-cursor {
+    display: inline-block;
+    width: 10px;
+    height: 18px;
+    background: #00ff41;
+    animation: blink 0.8s infinite;
+    margin-left: 4px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  #boot-welcome {
+    margin-top: 40px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan), 0 0 80px var(--neon-cyan);
+    opacity: 0;
+    animation: welcomeGlow 1.5s forwards;
+    animation-delay: 6s;
+    letter-spacing: 8px;
+  }
+  @keyframes welcomeGlow {
+    0% { opacity: 0; transform: scale(1.5); filter: blur(10px); }
+    50% { opacity: 0.8; transform: scale(1); filter: blur(0); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+
+  #boot-subtitle {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--neon-magenta);
+    margin-top: 15px;
+    letter-spacing: 6px;
+    opacity: 0;
+    animation: bootFadeIn 0.5s forwards;
+    animation-delay: 7s;
+  }
+
+  /* ===== MAIN CITY VIEW ===== */
+  #city-container {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  /* Sky gradient */
+  #sky {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 60%;
+    background: linear-gradient(180deg, #020010 0%, #0a0030 30%, #150040 60%, #1a0030 100%);
+    z-index: 0;
+  }
+
+  /* Stars */
+  #stars-canvas {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 60%;
+    z-index: 1;
+  }
+
+  /* City silhouette */
+  #city-skyline {
+    position: absolute;
+    bottom: 20%;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    z-index: 2;
+  }
+
+  /* Building shapes */
+  .building {
+    position: absolute;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(10,10,30,0.9) 0%, rgba(5,5,20,1) 100%);
+    border: 1px solid rgba(0, 240, 255, 0.1);
+    border-bottom: none;
+  }
+  .building::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, rgba(0,240,255,0.05) 0%, transparent 80%);
+    animation: buildingPulse 3s infinite;
+  }
+  .building::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    height: 1px;
+    background: var(--neon-cyan);
+    opacity: 0.5;
+  }
+
+  /* Neon windows */
+  .window {
+    position: absolute;
+    width: 4px;
+    height: 6px;
+    background: var(--neon-cyan);
+    border-radius: 1px;
+    animation: windowFlicker 2s infinite;
+  }
+  .window.warm { background: #ffaa00; }
+  .window.magenta { background: var(--neon-magenta); }
+  .window.off { background: rgba(0,240,255,0.1); animation: none; }
+
+  @keyframes windowFlicker {
+    0%, 95%, 100% { opacity: 0.9; }
+    96% { opacity: 0.2; }
+    97% { opacity: 0.8; }
+    98% { opacity: 0.1; }
+  }
+
+  @keyframes buildingPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Ground */
+  #ground {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 20%;
+    background: linear-gradient(180deg, #0a0a15 0%, #050510 50%, #020208 100%);
+    z-index: 3;
+    border-top: 1px solid rgba(0,240,255,0.15);
+  }
+  #ground::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent, var(--neon-magenta), transparent);
+    animation: roadSweep 4s linear infinite;
+  }
+  @keyframes roadSweep {
+    0% { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Grid lines on ground */
+  #ground-grid {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 100%;
+    background:
+      linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(0,240,255,0.05) 1px, transparent 1px);
+    background-size: 60px 30px;
+    z-index: 4;
+    perspective: 500px;
+    transform: perspective(600px) rotateX(60deg);
+    transform-origin: bottom;
+  }
+
+  /* ===== FLYING VEHICLES ===== */
+  .flyer {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .flyer-body {
+    width: 40px;
+    height: 8px;
+    background: linear-gradient(90deg, rgba(0,240,255,0.3), rgba(0,240,255,0.8), rgba(255,0,255,0.3));
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0,240,255,0.5), 0 0 20px rgba(0,240,255,0.3);
+  }
+  .flyer-trail {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,240,255,0.6), rgba(255,0,255,0.3));
+    border-radius: 1px;
+    position: absolute;
+    top: 3px;
+    right: 30px;
+  }
+
+  /* ===== HOLOGRAPHIC AD BOARDS ===== */
+  .ad-board {
+    position: absolute;
+    z-index: 8;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--neon-magenta);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px var(--neon-magenta);
+    letter-spacing: 2px;
+    animation: adGlitch 5s infinite;
+  }
+  @keyframes adGlitch {
+    0%, 45%, 55%, 100% { transform: translate(0); opacity: 1; }
+    48% { transform: translate(-3px, 1px); opacity: 0.7; }
+    52% { transform: translate(2px, -1px); opacity: 0.8; }
+  }
+
+  /* ===== ENTRY PORTAL ===== */
+  #entry-portal {
+    position: absolute;
+    bottom: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    text-align: center;
+    animation: portalFloat 3s ease-in-out infinite;
+  }
+  @keyframes portalFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-10px); }
+  }
+
+  #enter-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #000;
+    background: var(--neon-cyan);
+    border: none;
+    padding: 18px 60px;
+    cursor: pointer;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    position: relative;
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+    box-shadow: 0 0 30px var(--neon-cyan), 0 0 60px rgba(0,240,255,0.5), 0 0 100px rgba(0,240,255,0.3);
+    transition: all 0.3s ease;
+  }
+  #enter-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 40px #fff, 0 0 80px var(--neon-cyan), 0 0 120px rgba(0,240,255,0.6);
+    transform: scale(1.05);
+  }
+  #enter-btn::after {
+    content: '';
+    position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    background: var(--neon-cyan);
+    z-index: -1;
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+    opacity: 0.3;
+    animation: btnPulse 2s ease-in-out infinite;
+  }
+  @keyframes btnPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+  }
+
+  #portal-ring {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 30px;
+    border: 2px solid var(--neon-cyan);
+    border-radius: 50%;
+    animation: ringSpin 8s linear infinite;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.1);
+  }
+  #portal-ring::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: -8px; right: -8px; bottom: -8px;
+    border: 1px solid rgba(0,240,255,0.3);
+    border-radius: 50%;
+    animation: ringSpin 5s linear infinite reverse;
+  }
+  #portal-ring::after {
+    content: 'NEXUS-9';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 15px var(--neon-cyan);
+    letter-spacing: 6px;
+  }
+  @keyframes ringSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== STATUS BAR ===== */
+  #status-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 28px;
+    background: rgba(0,0,0,0.9);
+    border-top: 1px solid rgba(0,240,255,0.2);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--neon-cyan);
+  }
+  #status-bar span {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    animation: statusBlink 2s infinite;
+  }
+  @keyframes statusBlink {
+    0%, 100% { box-shadow: 0 0 6px var(--neon-green); }
+    50% { box-shadow: 0 0 12px var(--neon-green), 0 0 20px var(--neon-green); }
+  }
+
+  /* ===== PARTICLES ===== */
+  .particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    font-size: 12px;
+    color: var(--neon-cyan);
+    opacity: 0.6;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-400px) translateX(30px); opacity: 0; }
+  }
+
+  /* ===== DAY-NIGHT INDICATOR ===== */
+  #time-indicator {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    z-index: 9000;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+    letter-spacing: 3px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    #boot-welcome { font-size: 28px; letter-spacing: 4px; }
+    #enter-btn { font-size: 16px; padding: 14px 40px; letter-spacing: 3px; }
+    #portal-ring { width: 140px; height: 140px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== BOOT SEQUENCE ===== -->
+<div id="boot-screen">
+  <div id="boot-lines">
+    <div class="line">> INITIALIZING NEURAL INTERFACE... <span style="color:#00ff41;">OK</span></div>
+    <div class="line">> LOADING CITY CORE v9.7.2... <span style="color:#00ff41;">OK</span></div>
+    <div class="line">> ESTABLISHING QUANTUM LINK... <span style="color:#00ff41;">CONNECTED</span></div>
+    <div class="line">> DECRYPTING CITY GRID... <span style="color:#ffaa00;">████████████████</span> 100%</div>
+    <div class="line">> CALIBRATING HOLOGRAPHIC DISPLAY... <span style="color:#00ff41;">OK</span></div>
+    <div class="line">> SYNCING NEURAL PATHWAYS... <span style="color:#ffaa00;">██████████</span> 67%</div>
+    <div class="line">> NEURAL SYNC COMPLETE <span style="color:#00ff41;">✓</span></div>
+    <div class="line">> LOADING CITIZEN DATABASE... <span style="color:#ffaa00;">████████████████████</span> 100%</div>
+    <div class="line">> CITIZEN ID: <span style="color:var(--neon-magenta);">ANONYMOUS_VISITOR</span></div>
+    <div class="line">> ACCESS LEVEL: <span style="color:#ffaa00;">GUEST [RESTRICTED]</span></div>
+    <div class="line">> CITY STATUS: <span style="color:#00ff41;">OPERATIONAL</span></div>
+    <div class="line">> THREAT LEVEL: <span style="color:#00ff41;">NOMINAL</span></div>
+    <div class="line">> WELCOME MESSAGE LOADED</div>
+    <div class="line">> READY <span class="blink-cursor"></span></div>
+  </div>
+  <div id="boot-welcome">WELCOME TO NEXUS-9</div>
+  <div id="boot-subtitle">「 欢 迎 来 到 霓 虹 城 」</div>
+</div>
+
+<!-- ===== MAIN CITY ===== -->
+<div id="city-container">
+  <div id="sky"></div>
+  <canvas id="stars-canvas"></canvas>
+  <div id="city-skyline"></div>
+  <div id="ground">
+    <div id="ground-grid"></div>
+  </div>
+
+  <!-- AD BOARDS -->
+  <div class="ad-board" style="top:18%; left:8%;">◈ 记忆扩容服务 ◈</div>
+  <div class="ad-board" style="top:22%; right:12%;">◈ NEURAL UPGRADE v2.0 ◈</div>
+  <div class="ad-board" style="top:35%; left:22%; color:#ffe600; border-color:#ffe600; text-shadow:0 0 10px #ffe600;">◈ 数据永不灭 ◈</div>
+  <div class="ad-board" style="top:40%; right:25%;">◈ 全息娱乐中心 ◈</div>
+  <div class="ad-board" style="top:28%; left:60%; color:#00ff41; border-color:#00ff41; text-shadow:0 0 10px #00ff41;">◈ 量子意识上传 ◈</div>
+
+  <!-- ENTRY PORTAL -->
+  <div id="entry-portal">
+    <div id="portal-ring"></div>
+    <a href="city_map.html"><button id="enter-btn">进 入 城 市</button></a>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+  <span><span class="status-dot"></span> NEXUS-9 :: CITY CORE ONLINE</span>
+  <span id="status-clock">2187.06.19 23:47:03</span>
+  <span id="status-coords">SECTOR 7G :: N33° E121°</span>
+</div>
+
+<div id="time-indicator">🌙 NIGHT MODE</div>
+
+<script>
+// ===== BOOT SEQUENCE TIMER =====
+setTimeout(() => {
+  document.getElementById('boot-screen').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('boot-screen').style.display = 'none';
+  }, 1500);
+}, 8500);
+
+// ===== CLOCK =====
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const s = now.getSeconds().toString().padStart(2,'0');
+  document.getElementById('status-clock').textContent = `2187.06.19 ${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+
+// ===== STARS =====
+const starsCanvas = document.getElementById('stars-canvas');
+const starsCtx = starsCanvas.getContext('2d');
+starsCanvas.width = window.innerWidth;
+starsCanvas.height = window.innerHeight * 0.6;
+
+const stars = [];
+for (let i = 0; i < 300; i++) {
+  stars.push({
+    x: Math.random() * starsCanvas.width,
+    y: Math.random() * starsCanvas.height,
+    r: Math.random() * 1.5 + 0.5,
+    a: Math.random(),
+    speed: Math.random() * 0.02 + 0.005
+  });
+}
+
+function drawStars() {
+  starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+  stars.forEach(s => {
+    s.a += s.speed;
+    if (s.a > 1) s.a = 0;
+    starsCtx.beginPath();
+    starsCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    starsCtx.fillStyle = `rgba(255,255,255,${Math.abs(Math.sin(s.a * Math.PI))})`;
+    starsCtx.fill();
+  });
+
+  // Random shooting stars
+  if (Math.random() < 0.01) {
+    const sx = Math.random() * starsCanvas.width;
+    const sy = Math.random() * starsCanvas.height * 0.5;
+    starsCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+    starsCtx.lineWidth = 1;
+    starsCtx.beginPath();
+    starsCtx.moveTo(sx, sy);
+    starsCtx.lineTo(sx + 80, sy + 30);
+    starsCtx.stroke();
+  }
+
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ===== BUILDINGS =====
+const skyline = document.getElementById('city-skyline');
+const buildingData = [
+  { l: 40, w: 60, h: 380 }, { l: 120, w: 50, h: 520 }, { l: 200, w: 70, h: 300 },
+  { l: 300, w: 55, h: 450 }, { l: 380, w: 80, h: 350 }, { l: 500, w: 45, h: 500 },
+  { l: 570, w: 65, h: 420 }, { l: 660, w: 55, h: 550 }, { l: 740, w: 50, h: 380 },
+  { l: 820, w: 70, h: 480 }, { l: 920, w: 60, h: 310 }, { l: 1010, w: 55, h: 530 },
+  { l: 1100, w: 75, h: 400 }, { l: 1200, w: 50, h: 460 }, { l: 1300, w: 65, h: 350 },
+];
+
+buildingData.forEach(b => {
+  const div = document.createElement('div');
+  div.className = 'building';
+  div.style.cssText = `left:${b.l}px; width:${b.w}px; height:${b.h}px;`;
+
+  // Add windows
+  const rows = Math.floor(b.h / 12);
+  const cols = Math.floor(b.w / 8);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 1; c < cols - 1; c++) {
+      if (Math.random() < 0.85) {
+        const win = document.createElement('div');
+        win.className = 'window';
+        const rand = Math.random();
+        if (rand < 0.6) win.classList.add('warm');
+        else if (rand < 0.75) win.classList.add('magenta');
+        else if (rand < 0.85) win.classList.add('off');
+        win.style.cssText = `left:${c * 8}px; top:${r * 12 + 5}px; animation-delay:${Math.random() * 3}s`;
+        div.appendChild(win);
+      }
+    }
+  }
+  skyline.appendChild(div);
+});
+
+// ===== FLYING VEHICLES =====
+function createFlyer() {
+  const flyer = document.createElement('div');
+  flyer.className = 'flyer';
+  const y = 10 + Math.random() * 40;
+  const speed = 20 + Math.random() * 40;
+  flyer.style.cssText = `top:${y}%; left:-100px; animation: flyAcross ${speed}s linear forwards;`;
+  flyer.innerHTML = '<div class="flyer-trail"></div><div class="flyer-body"></div>';
+
+  const style = document.createElement('style');
+  style.textContent = `@keyframes flyAcross { to { left: 110%; } }`;
+  document.head.appendChild(style);
+
+  document.getElementById('city-container').appendChild(flyer);
+  setTimeout(() => { flyer.remove(); style.remove(); }, speed * 1000 + 500);
+}
+setInterval(createFlyer, 3000);
+createFlyer();
+createFlyer();
+
+// ===== FLOATING PARTICLES =====
+function createParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.textContent = ['0','1','◈','◆','◇','●','○'][Math.floor(Math.random() * 7)];
+  p.style.cssText = `left:${Math.random() * 100}%; bottom:${15 + Math.random() * 50}%; animation-duration:${8 + Math.random() * 12}s;`;
+  document.getElementById('city-container').appendChild(p);
+  setTimeout(() => p.remove(), 20000);
+}
+setInterval(createParticle, 800);
+
+// ===== AD BOARD DYNAMIC TEXT =====
+const adTexts = [
+  ['◈ 记忆扩容服务 ◈', '◈ 正在读取你的记忆... ◈', '◈ 欢迎回来 ◈'],
+  ['◈ NEURAL UPGRADE v2.0 ◈', '◈ 你的神经元已过时 ◈', '◈ 立即升级 ◈'],
+  ['◈ 数据永不灭 ◈', '◈ 上传你的意识 ◈', '◈ 获得永生 ◈'],
+  ['◈ 全息娱乐中心 ◈', '◈ 逃离现实的出口 ◈', '◈ 全时沉浸体验 ◈'],
+  ['◈ 量子意识上传 ◈', '◈ 你还在等什么 ◈', '◈ 超越肉体 ◈'],
+];
+let adIndex = 0;
+setInterval(() => {
+  const boards = document.querySelectorAll('.ad-board');
+  boards.forEach((board, i) => {
+    if (adTexts[i]) {
+      board.textContent = adTexts[i][adIndex % 3];
+      board.style.transition = 'all 0.5s';
+    }
+  });
+  adIndex++;
+}, 5000);
+
+// ===== DAY/NIGHT CYCLE =====
+function updateDayNight() {
+  const hour = new Date().getHours();
+  const indicator = document.getElementById('time-indicator');
+  const sky = document.getElementById('sky');
+
+  if (hour >= 6 && hour < 18) {
+    indicator.textContent = '☀️ DAY MODE';
+    sky.style.background = 'linear-gradient(180deg, #001030 0%, #002050 30%, #0a2040 60%, #152030 100%)';
+    document.body.style.setProperty('--neon-cyan', '#0088cc');
+  } else if (hour >= 18 && hour < 21) {
+    indicator.textContent = '🌅 DUSK MODE';
+    sky.style.background = 'linear-gradient(180deg, #200020 0%, #300040 30%, #150030 60%, #0a0020 100%)';
+    document.body.style.setProperty('--neon-cyan', '#cc44ff');
+  } else {
+    indicator.textContent = '🌙 NIGHT MODE';
+    sky.style.background = 'linear-gradient(180deg, #020010 0%, #0a0030 30%, #150040 60%, #1a0030 100%)';
+    document.body.style.setProperty('--neon-cyan', '#00f0ff');
+  }
+}
+updateDayNight();
+setInterval(updateDayNight, 60000);
+
+// ===== RESIZE HANDLER =====
+window.addEventListener('resize', () => {
+  starsCanvas.width = window.innerWidth;
+  starsCanvas.height = window.innerHeight * 0.6;
+});
+
+// ===== KEYBOARD EASTER EGGS =====
+const keySequence = [];
+const secretCode = 'nexus';
+document.addEventListener('keydown', (e) => {
+  keySequence.push(e.key.toLowerCase());
+  if (keySequence.length > 10) keySequence.shift();
+  if (keySequence.slice(-secretCode.length).join('') === secretCode) {
+    document.querySelectorAll('.ad-board').forEach(b => {
+      b.textContent = '⚠ ACCESS GRANTED ⚠';
+      b.style.color = '#ff3131';
+      b.style.borderColor = '#ff3131';
+      b.style.textShadow = '0 0 15px #ff3131';
+      setTimeout(() => { b.style.color = ''; b.style.borderColor = ''; b.style.textShadow = ''; }, 2000);
+    });
+    console.log('%c[NEXUS-9 CORE] %cHidden access code accepted. Underground passage unlocked.',
+      'color:#ff3131;', 'color:#00ff41;');
+  }
+});
+
+console.log('%c╔══════════════════════════════════╗%c\n%c║   WELCOME TO NEXUS-9 v9.7.2   ║%c\n%c║  霓虹城核心已启动              ║%c\n%c║  Type "help" for commands       ║%c\n%c╚══════════════════════════════════╝%c',
+  'color:#00f0ff;','','color:#00f0ff;','','color:#00f0ff;','','color:#00f0ff;','','color:#00f0ff;','');
+</script>
+</body>
+</html>

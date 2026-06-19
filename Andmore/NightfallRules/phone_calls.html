@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电话记录 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+/* ============================================================
+   DESIGN SYSTEM — 夜色公寓 (Nightfall Apartments)
+   ============================================================ */
+:root {
+  --bg: #060606;
+  --surface: rgba(20,16,12,0.8);
+  --surface-solid: #14100c;
+  --text: #c8c0b8;
+  --text-dim: #706860;
+  --text-faint: #4a4440;
+  --red-dark: #8b0000;
+  --red-mid: #b01010;
+  --red-bright: #ff2020;
+  --amber-dark: #b8701a;
+  --amber-mid: #e0902a;
+  --amber-light: #f0b040;
+  --border-subtle: rgba(120,20,20,0.15);
+  --border-active: rgba(120,20,20,0.4);
+  --glow-red: 0 0 12px rgba(200,40,40,0.4);
+  --glow-amber: 0 0 8px rgba(224,144,42,0.3);
+  --font-body: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-number: 'Orbitron', 'Courier New', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 300;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ---- CRT Scanline overlay ---- */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.06) 2px,
+    rgba(0,0,0,0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ---- Grain/noise overlay ---- */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ---- CRT flicker animation ---- */
+@keyframes crtFlicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.85; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
+}
+
+body {
+  animation: crtFlicker 4s infinite;
+}
+
+/* ============================================================
+   TOP NAVIGATION BAR
+   ============================================================ */
+.top-nav {
+  background: rgba(10,10,10,0.95);
+  border-bottom: 1px solid rgba(120,20,20,0.3);
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.top-nav a {
+  color: #888;
+  text-decoration: none;
+  transition: color 0.3s, text-shadow 0.3s;
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+nav.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+.top-nav a.active {
+  color: #c04040;
+  text-shadow: 0 0 6px rgba(200,40,40,0.3);
+}
+
+/* ============================================================
+   MAIN CONTAINER
+   ============================================================ */
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto auto auto;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   PAGE HEADER — with CSS rotary phone illustration
+   ============================================================ */
+.page-header {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 32px 20px 24px;
+  position: relative;
+}
+.page-header h1 {
+  font-family: var(--font-body);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 6px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 20px rgba(180,20,20,0.3);
+}
+.page-header .subtitle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+.page-header .divider {
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-active), transparent);
+  margin: 16px auto;
+}
+
+/* ---- CSS Rotary Phone Illustration ---- */
+.phone-illustration {
+  width: 160px;
+  height: 200px;
+  margin: 16px auto 0;
+  position: relative;
+}
+.phone-body {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 70px;
+  background: linear-gradient(180deg, #1a1814 0%, #0e0c08 100%);
+  border-radius: 20px 20px 8px 8px;
+  border: 2px solid #3a3028;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.5);
+}
+.rotary-dial {
+  position: absolute;
+  bottom: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at center, #1a1610 0%, #0e0c08 60%, #1a1610 100%);
+  border-radius: 50%;
+  border: 3px solid #4a4038;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.7), 0 0 10px rgba(180,20,20,0.15);
+}
+.rotary-dial::before {
+  content: '';
+  position: absolute;
+  top: 12px; left: 12px; right: 12px; bottom: 12px;
+  border-radius: 50%;
+  border: 1px dashed rgba(100,80,60,0.4);
+}
+.rotary-dial::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #3a3028, #1a1410);
+  border: 1px solid #5a4a38;
+}
+.dial-hole {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0a0806;
+  border: 1px solid #3a3028;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+}
+.dial-hole:nth-child(1) { top: 8px; left: 50%; transform: translateX(-50%); }
+.dial-hole:nth-child(2) { top: 16px; left: 72%; }
+.dial-hole:nth-child(3) { top: 32px; left: 82%; }
+.dial-hole:nth-child(4) { top: 52px; left: 82%; }
+.dial-hole:nth-child(5) { top: 68px; left: 72%; }
+.dial-hole:nth-child(6) { top: 76px; left: 50%; transform: translateX(-50%); }
+.dial-hole:nth-child(7) { top: 68px; left: 22%; }
+.dial-hole:nth-child(8) { top: 52px; left: 8%; }
+.dial-hole:nth-child(9) { top: 32px; left: 8%; }
+.dial-hole:nth-child(10) { top: 16px; left: 22%; }
+.handset {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(-15deg);
+  width: 100px;
+  height: 24px;
+  background: linear-gradient(180deg, #2a2418 0%, #1a1610 50%, #2a2418 100%);
+  border-radius: 30px;
+  border: 2px solid #3a3028;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.handset::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 10px;
+  width: 30px;
+  height: 20px;
+  background: linear-gradient(180deg, #2a2418, #1a1610);
+  border-radius: 15px 15px 4px 4px;
+  border: 2px solid #3a3028;
+}
+.handset::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: 10px;
+  width: 30px;
+  height: 20px;
+  background: linear-gradient(180deg, #2a2418, #1a1610);
+  border-radius: 15px 15px 4px 4px;
+  border: 2px solid #3a3028;
+}
+.phone-cord {
+  position: absolute;
+  bottom: 10px;
+  left: -30px;
+  width: 80px;
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    #1a1410 0px, #1a1410 3px,
+    #2a2018 3px, #2a2018 6px,
+    #1a1410 6px, #1a1410 9px,
+    #2a2018 9px, #2a2018 12px
+  );
+  border-radius: 3px;
+  transform: rotate(-20deg);
+}
+.indicator-light {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 8px var(--red-bright), 0 0 16px rgba(255,40,40,0.5);
+  animation: indicatorBlink 1.5s ease-in-out infinite;
+}
+@keyframes indicatorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================================
+   CALL RECORD CARDS
+   ============================================================ */
+.calls-section {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.call-card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--red-dark);
+  border-radius: 4px;
+  padding: 20px 24px;
+  position: relative;
+  transition: border-color 0.4s, box-shadow 0.4s;
+  backdrop-filter: blur(4px);
+}
+.call-card:hover {
+  border-left-color: var(--red-mid);
+  box-shadow: var(--glow-red);
+}
+.call-card.anomaly {
+  border-left-color: var(--amber-dark);
+}
+.call-card.anomaly:hover {
+  border-left-color: var(--amber-mid);
+  box-shadow: var(--glow-amber);
+}
+.call-card.emergency {
+  border-left-color: var(--red-bright);
+  animation: emergencyPulse 3s ease-in-out infinite;
+}
+@keyframes emergencyPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(255,30,30,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,30,30,0.5); }
+}
+
+.call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.call-meta span { white-space: nowrap; }
+.call-meta .call-id {
+  color: var(--amber-mid);
+  font-family: var(--font-number);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.call-meta .status {
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.status-normal { background: rgba(80,120,80,0.2); color: #6a8; }
+.status-anomaly { background: rgba(180,100,20,0.2); color: #d94; }
+.status-unknown { background: rgba(180,20,20,0.2); color: #d44; }
+.status-untraceable { background: rgba(120,20,120,0.2); color: #c6c; }
+
+.call-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+.call-details .label {
+  color: var(--text-faint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.call-details .value { color: var(--text); font-size: 12px; }
+
+.line-quality {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  padding: 2px 10px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+.lq-clear { background: rgba(80,160,80,0.15); color: #6a8; }
+.lq-blurry { background: rgba(160,140,60,0.15); color: #b9a; }
+.lq-interference { background: rgba(180,100,20,0.15); color: #d94; }
+.lq-unrecognizable { background: rgba(180,20,20,0.15); color: #d44; }
+
+.call-transcript {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 3px;
+  padding: 16px 18px;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.9;
+  color: #b0a898;
+  position: relative;
+}
+.call-transcript::before {
+  content: '通话转录 TRANSCRIPT';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+.call-transcript .speaker-a { color: #a0c0d0; }
+.call-transcript .speaker-b { color: #c0a080; }
+.call-transcript .speaker-unknown { color: #d08080; }
+.call-transcript .static { color: var(--text-faint); font-style: italic; }
+.call-transcript .note {
+  display: block;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dotted rgba(255,255,255,0.06);
+  font-size: 10px;
+  color: var(--amber-mid);
+  font-style: italic;
+}
+
+/* ============================================================
+   RIGHT SIDEBAR
+   ============================================================ */
+.sidebar {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Keypad widget */
+.keypad-widget {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+}
+.keypad-widget h3 {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: 3px;
+}
+.keypad-widget .keypad-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+.keypad-display {
+  background: #0a0804;
+  border: 1px solid rgba(200,40,40,0.2);
+  border-radius: 3px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-family: var(--font-number);
+  font-size: 22px;
+  color: var(--red-bright);
+  letter-spacing: 6px;
+  text-align: center;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 0 8px rgba(255,30,30,0.5);
+  word-break: break-all;
+}
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.keypad-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid #3a3028;
+  background: linear-gradient(180deg, #1a1610 0%, #0e0c08 100%);
+  color: #c8c0b8;
+  font-family: var(--font-number);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  user-select: none;
+  outline: none;
+}
+.keypad-btn:hover {
+  border-color: #6a5040;
+  background: linear-gradient(180deg, #2a2218 0%, #1a1610 100%);
+  color: #e0d8d0;
+}
+.keypad-btn:active, .keypad-btn.pressed {
+  border-color: var(--red-mid);
+  background: linear-gradient(180deg, #0e0c08 0%, #1a1610 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.6), inset 0 2px 4px rgba(0,0,0,0.5), 0 0 12px rgba(200,40,40,0.3);
+  color: var(--red-bright);
+  transform: translateY(2px);
+}
+.keypad-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.keypad-action-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: rgba(0,0,0,0.4);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.keypad-action-btn:hover {
+  border-color: var(--border-active);
+  color: var(--text);
+  background: rgba(180,20,20,0.1);
+}
+.keypad-output {
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 3px;
+  min-height: 60px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  text-align: left;
+  display: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.keypad-output.active { display: block; }
+.keypad-output .output-red { color: #d44; }
+.keypad-output .output-amber { color: var(--amber-mid); }
+
+/* Recent calls sidebar widget */
+.recent-calls-widget {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 20px;
+}
+.recent-calls-widget h3 {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recent-calls-widget h3 .live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4f8;
+  box-shadow: 0 0 6px #4f8;
+  animation: indicatorBlink 1s ease-in-out infinite;
+}
+.recent-calls-widget .recent-subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.recent-call-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  align-items: center;
+}
+.recent-call-item .rc-time { color: var(--text-faint); font-size: 9px; }
+.recent-call-item .rc-number { color: var(--text); font-size: 11px; }
+.recent-call-item .rc-status {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.recent-call-item .rc-missed {
+  color: var(--red-bright);
+  background: rgba(200,30,30,0.1);
+}
+
+/* Warning box */
+.warning-box {
+  background: rgba(140,0,0,0.08);
+  border: 1px solid rgba(200,30,30,0.25);
+  border-radius: 3px;
+  padding: 14px 16px;
+  font-size: 11px;
+  color: #c08080;
+  line-height: 1.7;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+.warning-box::before {
+  content: '⚠ 警告 WARNING';
+  display: block;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--red-bright);
+  margin-bottom: 8px;
+}
+
+/* Stats box */
+.stats-box {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 16px;
+}
+.stats-box h3 {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.stat-row .stat-label { color: var(--text-dim); }
+.stat-row .stat-value { color: var(--amber-mid); font-family: var(--font-number); font-size: 10px; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.page-footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.footer-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,40,40,0.2), transparent);
+  margin-bottom: 16px;
+}
+.footer-warning {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #805050;
+  letter-spacing: 1px;
+  line-height: 1.8;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+  .main-container { grid-template-columns: 1fr; }
+  .sidebar { grid-column: 1; grid-row: auto; }
+  .call-details { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+.section-title {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.section-note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.call-card {
+  animation: fadeInUp 0.6s ease-out both;
+}
+.call-card:nth-child(1) { animation-delay: 0.05s; }
+.call-card:nth-child(2) { animation-delay: 0.10s; }
+.call-card:nth-child(3) { animation-delay: 0.15s; }
+.call-card:nth-child(4) { animation-delay: 0.20s; }
+.call-card:nth-child(5) { animation-delay: 0.25s; }
+.call-card:nth-child(6) { animation-delay: 0.30s; }
+.call-card:nth-child(7) { animation-delay: 0.35s; }
+.call-card:nth-child(8) { animation-delay: 0.40s; }
+.call-card:nth-child(9) { animation-delay: 0.45s; }
+.call-card:nth-child(10) { animation-delay: 0.50s; }
+.call-card:nth-child(11) { animation-delay: 0.55s; }
+.call-card:nth-child(12) { animation-delay: 0.60s; }
+.call-card:nth-child(13) { animation-delay: 0.65s; }
+.call-card:nth-child(14) { animation-delay: 0.70s; }
+.call-card:nth-child(15) { animation-delay: 0.75s; }
+.call-card:nth-child(16) { animation-delay: 0.80s; }
+.call-card:nth-child(17) { animation-delay: 0.85s; }
+
+/* Audio visualizer */
+.audio-bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 20px;
+  justify-content: center;
+  margin: 8px 0;
+}
+.audio-bar {
+  width: 3px;
+  background: var(--red-bright);
+  border-radius: 1px;
+  animation: audioBarAnim 0.6s ease-in-out infinite alternate;
+}
+.audio-bar:nth-child(1) { animation-delay: 0s; height: 8px; }
+.audio-bar:nth-child(2) { animation-delay: 0.1s; height: 14px; }
+.audio-bar:nth-child(3) { animation-delay: 0.2s; height: 10px; }
+.audio-bar:nth-child(4) { animation-delay: 0.15s; height: 16px; }
+.audio-bar:nth-child(5) { animation-delay: 0.05s; height: 6px; }
+.audio-bar:nth-child(6) { animation-delay: 0.25s; height: 12px; }
+.audio-bar:nth-child(7) { animation-delay: 0.12s; height: 18px; }
+.audio-bar:nth-child(8) { animation-delay: 0.18s; height: 9px; }
+@keyframes audioBarAnim {
+  from { transform: scaleY(0.3); opacity: 0.5; }
+  to { transform: scaleY(1.2); opacity: 1; }
+}
+
+@keyframes glitchText {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 0); }
+  80% { transform: translate(1px, 1px); }
+}
+.glitch { animation: glitchText 0.3s ease-in-out; }
+
+@keyframes blinkCursor {
+  0%, 100% { border-color: var(--red-bright); }
+  50% { border-color: transparent; }
+}
+.typing {
+  border-right: 2px solid var(--red-bright);
+  animation: blinkCursor 0.8s step-end infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOP NAVIGATION BAR
+     ============================================================ -->
+<nav class="top-nav">
+  <a href="apartment_home.html">首页</a>
+  <a href="rules_main.html">住户守则</a>
+  <a href="elevator_rules.html">电梯规则</a>
+  <a href="floor_directory.html">楼层指南</a>
+  <a href="room_404.html">404房间</a>
+  <a href="basement.html">地下室</a>
+  <a href="surveillance.html">监控室</a>
+  <a href="neighbor_encounters.html">邻居</a>
+  <a href="manager_log.html">管理员日志</a>
+  <a href="phone_calls.html" class="active" style="color:#c04040;">电话记录</a>
+  <a href="mirror_rules.html">镜子规则</a>
+  <a href="midnight_shift.html">深夜值班</a>
+  <a href="missing_persons.html">失踪档案</a>
+  <a href="ritual_purification.html">净化仪式</a>
+  <a href="final_night.html" style="color:#c04040;">终局</a>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<div class="main-container">
+
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <h1>电话记录</h1>
+    <p class="subtitle">PHONE CALL RECORDS · NIGHTFALL APARTMENTS</p>
+    <div class="divider"></div>
+    <!-- CSS Rotary Phone -->
+    <div class="phone-illustration">
+      <div class="handset"></div>
+      <div class="rotary-dial">
+        <div class="dial-hole"></div><div class="dial-hole"></div><div class="dial-hole"></div>
+        <div class="dial-hole"></div><div class="dial-hole"></div><div class="dial-hole"></div>
+        <div class="dial-hole"></div><div class="dial-hole"></div><div class="dial-hole"></div>
+        <div class="dial-hole"></div>
+      </div>
+      <div class="phone-body">
+        <div class="phone-cord"></div>
+        <div class="indicator-light"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CALLS SECTION -->
+  <section class="calls-section">
+
+    <div class="section-title">通话记录档案</div>
+    <div class="section-note">CALL LOG ARCHIVE · 电话公司内部记录 · 访问级别: 受限</div>
+
+    <!-- CALL 001: Wall smells -->
+    <article class="call-card">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0315-001</span>
+        <span class="status status-normal">正常</span>
+        <span>⏱ 04:32</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年3月15日</span></div>
+        <div><span class="label">时间</span><br><span class="value">14:22 — 14:26</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0612 (612室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">物业前台 (021-5837-0001)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-a">[前台]</span> 夜色公寓物业管理处，请问有什么可以帮您？<br>
+        <span class="speaker-b">[612室 王女士]</span> 喂？你好。我是612的住户。我又打电话来了。<br>
+        <span class="speaker-a">[前台]</span> 王女士您好，还是关于气味的问题吗？<br>
+        <span class="speaker-b">[612室 王女士]</span> 是的。越来越严重了。之前只是偶尔闻到，现在已经……每天都有。从墙壁里面渗出来的味道。像是……像是有什么东西在墙里面腐烂了。<br>
+        <span class="speaker-a">[前台]</span> 我们上周已经派维修人员检查过了，王女士。墙壁内部没有任何异常。<br>
+        <span class="speaker-b">[612室 王女士]</span> 你们只是打开了检修口！你们应该把整面墙都打开！昨天晚上我听到了声音。不是水管的声音，不是老鼠。是……是有什么东西在墙里面移动。很慢，但确实在动。<br>
+        <span class="speaker-a">[前台]</span> ……我会再安排一次检修。您方便明天上午吗？<br>
+        <span class="speaker-b">[612室 王女士]</span> 越快越好。还有……<br>
+        <span class="speaker-a">[前台]</span> 王女士？<br>
+        <span class="speaker-b">[612室 王女士]</span> ……那个味道，我最近在其他楼层也闻到了。三楼，四楼。尤其是四楼，靠近404那边。<br>
+        <span class="speaker-a">[前台]</span> 404房间……是空置的，王女士。已经空置很多年了。<br>
+        <span class="speaker-b">[612室 王女士]</span> 我知道。但是味道就是从那边传过来的。<br>
+        <span class="static">[通话结束]</span>
+        <span class="note">备注：次日维修人员前往612室。王女士已于前一天深夜退房，未留下任何联系方式。612室至今空置。</span>
+      </div>
+    </article>
+
+    <!-- CALL 002: Room 404 emergency 1987 -->
+    <article class="call-card emergency">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-1987-1102-002</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 01:48</span>
+        <span class="line-quality lq-interference">干扰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">1987年11月2日</span></div>
+        <div><span class="label">时间</span><br><span class="value">23:47 — 23:49</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0404 (404室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">021-110 (报警电话)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[404室 未知男性]</span> 救命……求求你们，快来……<br>
+        <span class="speaker-a">[接警员]</span> 您好，这里是110报警服务台。请说明您的地址和情况。<br>
+        <span class="speaker-unknown">[404室 未知男性]</span> 夜色公寓……404房间。房间里有东西。我不知道它是什么，但它一直在看我。我锁了门，但它……<br>
+        <span class="static">[剧烈干扰声，持续约8秒]</span><br>
+        <span class="speaker-unknown">[404室 未知男性]</span> ——它不在外面，它在房间里。它一直都在房间里。<br>
+        <span class="speaker-a">[接警员]</span> 先生，请保持冷静。我们已经派出警力。请待在原地不要动。<br>
+        <span class="speaker-unknown">[404室 未知男性]</span> 你不明白。这个房间没有——<br>
+        <span class="static">[通话中断。尖锐的噪音持续3秒后断线。]</span>
+        <span class="note">备注：警方到达时，404房间空无一人。房间内积满灰尘，明显长期无人居住。电话机听筒悬挂在半空，缓缓摆动。此后404室的电话线路被物理切断。但电话记录显示，此后三十余年间，404室的号码仍持续向外拨出通话。</span>
+      </div>
+    </article>
+
+    <!-- CALL 003: Empty apartment 302 -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0320-003</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 05:17</span>
+        <span class="line-quality lq-blurry">模糊</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年3月20日</span></div>
+        <div><span class="label">时间</span><br><span class="value">03:03 — 03:08</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0302 (302室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">021-5837-0508 (508室)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[302室 未知女性]</span> 喂？你能听到我说话吗？<br>
+        <span class="speaker-b">[508室 陈女士]</span> 能听到。你是哪位？<br>
+        <span class="speaker-unknown">[302室 未知女性]</span> 我住在302。我……我已经很久没有跟人说话了。很久很久。<br>
+        <span class="speaker-b">[508室 陈女士]</span> 302？楼下的302？那个房间不是空了好几年了吗？<br>
+        <span class="speaker-unknown">[302室 未知女性]</span> 空着？不会的。我一直在这里。只是……没有人能看到我。你能看到我吗？我在窗户边上。我在向你招手。<br>
+        <span class="speaker-b">[508室 陈女士]</span> ……我没有看到任何人。你到底是谁？<br>
+        <span class="speaker-unknown">[302室 未知女性]</span> 我是302的住户。我叫刘芳。我1989年搬进来的。他们说我失踪了，但我没有——我只是走不出去。你能帮帮我吗？我想出去。我想看看外面。<br>
+        <span class="speaker-b">[508室 陈女士]</span> 我……我要挂电话了。<br>
+        <span class="speaker-unknown">[302室 未知女性]</span> 不要挂！求求你不要挂！你是我这三十多年来第一个接电话的人——<br>
+        <span class="static">[通话突然中断。陈女士挂断电话。]</span>
+        <span class="note">备注：经电话公司核实，302室自1989年以来无任何电话线路接入。该次通话的线路追踪结果显示，信号来源于建筑内部，但无法定位到任何物理端口。508室陈女士于三日后被报告失踪。</span>
+      </div>
+    </article>
+
+    <!-- CALL 004: 7th floor call -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0322-004</span>
+        <span class="status status-untraceable">无法追踪</span>
+        <span>⏱ 02:13</span>
+        <span class="line-quality lq-blurry">模糊</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年3月22日</span></div>
+        <div><span class="label">时间</span><br><span class="value">22:18 — 22:20</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0704 (704室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">物业前台 (021-5837-0001)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[704室 未知男性]</span> 你好，我想问一下——电梯怎么到不了大厅？<br>
+        <span class="speaker-a">[前台]</span> 先生，请问您在几楼？<br>
+        <span class="speaker-unknown">[704室 未知男性]</span> 七楼。704房间。<br>
+        <span class="speaker-a">[前台]</span> ……先生，夜色公寓只有六层。<br>
+        <span class="speaker-unknown">[704室 未知男性]</span> 什么？不可能。我住在这里两年了。七楼，704。电梯按钮上明明有7。<br>
+        <span class="speaker-a">[前台]</span> 先生，我们的电梯面板上没有7楼的按钮。您确定您在夜色公寓吗？<br>
+        <span class="speaker-unknown">[704室 未知男性]</span> 我当然在。我刚才还从窗户看到大厅的灯光。只是……现在看不到了。外面全是雾。很浓的雾。什么都看不到。<br>
+        <span class="speaker-a">[前台]</span> 先生，今晚天气晴朗，没有雾。<br>
+        <span class="speaker-unknown">[704室 未知男性]</span> 不对。这里全是雾。走廊里也是。电梯门打开的时候，雾就涌进来了。我要走楼梯下去了。<br>
+        <span class="speaker-a">[前台]</span> 先生？先生！<br>
+        <span class="static">[通话中传来脚步声，持续约15秒。然后是一声闷响，类似重物坠地的声音。之后是一片寂静。电话未挂断，持续了43分钟后自动断线。]</span>
+        <span class="note">备注：夜色公寓建筑图纸显示共六层。没有关于七楼的任何记录。然而，有三位老住户在接受询问时提到"七楼的邻居"。当被追问时，三人均表示不记得说过这样的话。</span>
+      </div>
+    </article>
+
+    <!-- CALL 005: The 3:33am phenomenon -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-PHENOMENON-005</span>
+        <span class="status status-untraceable">无法追踪</span>
+        <span>⏱ 1:00 (每次)</span>
+        <span class="line-quality lq-interference">干扰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2008年6月7日 — 至今（持续发生）</span></div>
+        <div><span class="label">时间</span><br><span class="value">每日 03:33:00 — 03:34:00</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0404 (404室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">物业前台 (021-5837-0001)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#d08080; font-style:normal; font-weight:600; font-size:11px;">以下为该现象的汇总记录，非单次通话转录。</span>
+        <br><br>
+        <span class="speaker-a">[观测记录]</span> 自2008年6月7日起，每日凌晨3点33分00秒，前台电话准时响起。来电显示始终为"404"。接听后无人声，仅有持续的、完全相同的电流噪音模式。<br><br>
+        持续时长：精确的60秒。不差一秒。<br><br>
+        每日的噪音波形图经声学分析，完全一致——这在自然界中是不可能的。即使是同一段录音，通过电话线路传输也会产生微小差异。但404的凌晨来电，每一次的波形都像是同一瞬间被反复重播。<br><br>
+        第一次记录日期：2008年6月7日，正好是404房间上一任住户——李某某——失踪满一周年的日子。<br><br>
+        截至2024年，该现象已持续超过5800天。期间中断过三次：<br>
+        1. 2013年8月14日（公寓大规模停电检修）<br>
+        2. 2019年4月2日（前台电话机更换当日）<br>
+        3. 2023年12月31日（原因不明。次日恢复。）<br><br>
+        2019年更换电话机后，新机在没有任何线路连接的情况下，于当日凌晨3:33自动响起。技术人员确认，该话机当时未被接入任何电话线路。<br><br>
+        <span class="speaker-a">[声学分析附注]</span> 在噪音背景中，经降噪处理后可辨识出一个重复的、微弱的音节。声学专家认为这是人声，但无法确定内容。一位唇语师在不知情的情况下观看声谱图，读出两个字：<br><br>
+        "……救……我……"
+      </div>
+    </article>
+
+    <!-- CALL 006: Call from 1998 -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0328-006</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 03:44</span>
+        <span class="line-quality lq-blurry">模糊</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年3月28日</span></div>
+        <div><span class="label">时间</span><br><span class="value">18:42 — 18:45</span></div>
+        <div><span class="label">主叫</span><br><span class="value">来电显示：1998-07-14-??:??</span></div>
+        <div><span class="label">被叫</span><br><span class="value">601室私人号码</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-b">[601室 赵先生]</span> 喂？<br>
+        <span class="speaker-unknown">[未知来电 男性声音，年轻]</span> 喂？喂？听得见吗？我是——我是夜色公寓的施工人员。今天是几号？<br>
+        <span class="speaker-b">[601室 赵先生]</span> 今天3月28号。你是谁？<br>
+        <span class="speaker-unknown">[未知来电]</span> 3月28号？哪一年？快告诉我哪一年？<br>
+        <span class="speaker-b">[601室 赵先生]</span> ……2024年。你还好吗？<br>
+        <span class="speaker-unknown">[未知来电]</span> 2024年……（长时间沉默）。听着，我不知道你是谁，但你必须听我说。不要让他们建东翼。你听到了吗？不要让他们扩建东翼。我们在打地基的时候挖到了东西。不是普通的东西。是一个……一个空间。下面有一个空间，里面是空的，但我们在里面听到了声音。<br>
+        <span class="speaker-b">[601室 赵先生]</span> 东翼？夜色公寓的东翼1999年就建好了。<br>
+        <span class="speaker-unknown">[未知来电]</span> 什么？不，不可能——我们才刚开始打桩——等一下，你说什么？建好了？那……那里面有人住吗？<br>
+        <span class="speaker-b">[601室 赵先生]</span> 有。我在601，就在东翼六楼。<br>
+        <span class="speaker-unknown">[未知来电]</span> 不。不，不，不。那个地方不能住人。我们挖到的那个东西——那个空间——它不在土里。它……它是反过来的。所有的东西都是反过来的。里面有人在走动，但他们是倒着的。他们是——<br>
+        <span class="static">[连续8秒的大音量电流噪音]</span><br>
+        <span class="speaker-unknown">[未知来电 声音忽然变得极微弱，如同从很远的地方传来]</span> ——它在看我了。它知道我在打电话。别住进东翼。别住进东翼。别——<br>
+        <span class="static">[通话中断。回拨号码为空号。]</span>
+        <span class="note">备注：经查证，1998年7月14日，夜色公寓东翼施工工地发生一起事故——一名24岁的工人张某某在桩基坑中失踪。坑道回填前曾进行搜索，未发现任何痕迹。该工人的声音与本次通话中的男性声音经声纹对比——匹配度为97%。</span>
+      </div>
+    </article>
+
+    <!-- CALL 007: B2 basement -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0330-007</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 07:12</span>
+        <span class="line-quality lq-unrecognizable">无法识别</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年3月30日</span></div>
+        <div><span class="label">时间</span><br><span class="value">01:11 — 01:18</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0B02 (B2地下室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">随机拨号 — 212室</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-b">[212室 孙先生]</span> 喂……这么晚了，谁啊？<br>
+        <span class="static">[沉默，约12秒。只有沉重的呼吸声和某种有节奏的、钝重的响声。像是有人在用什么东西敲击墙壁，或者——挖掘。]</span><br>
+        <span class="speaker-unknown">[B2 来源不明]</span> （低沉、含混的呼吸声，夹杂着似乎来自多个人的低语，无法分辨内容）<br>
+        <span class="speaker-b">[212室 孙先生]</span> 有人吗？我要挂了。<br>
+        <span class="speaker-unknown">[B2 来源不明]</span> ……别……下……来……<br>
+        <span class="speaker-b">[212室 孙先生]</span> 什么？你说什么？<br>
+        <span class="speaker-unknown">[B2 来源不明]</span> 别下来。它们……它们闻到你了。你们上面所有的——（尖锐的刮擦声，如同指甲划过金属）<br>
+        <span class="static">[连续的挖掘声，越来越响，越来越快。然后是一声类似墙体坍塌的低沉轰鸣。]</span><br>
+        <span class="speaker-unknown">[B2 来源不明]</span> （突然提高音量）它挖通了！它挖通了！它——<br>
+        <span class="static">[通话中断。无法回拨。号码021-5837-0B02在电话公司数据库中不存在。]</span>
+        <span class="note">备注：B2层为公寓最底层地下室。该楼层没有任何电话线路设备。电话公司多次派员检查，均未发现线路接入痕迹。212室孙先生于次日要求更换房间，理由为"楼下整夜有挖掘声"。更换至508室后，于一周后失踪。</span>
+      </div>
+    </article>
+
+    <!-- CALL 008: Calling own apartment -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0402-008</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 04:09</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月2日</span></div>
+        <div><span class="label">时间</span><br><span class="value">11:05 — 11:09</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0215 (215室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">021-5837-0215 (215室 — 同一号码)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-b">[215室 刘先生]</span> （自言自语）奇怪，怎么打给自己了——<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 喂？<br>
+        <span class="speaker-b">[215室 刘先生]</span> ——？！（明显的惊愕）<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 你终于打来了。我一直在等你。<br>
+        <span class="speaker-b">[215室 刘先生]</span> 你是谁？你怎么在我的——这是我自己的号码。<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 我知道这是你的号码。我也知道你现在坐在沙发上。你左边的台灯亮着。茶几上有一杯凉了的茶。<br>
+        <span class="speaker-b">[215室 刘先生]</span> ……你在我的房间里？<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 不。我在你的房间里。但不是你现在在的那个房间。你的房间——它不只是一个。它有很多个。我们在不同的215里，但电话线把我们连在一起了。<br>
+        <span class="speaker-b">[215室 刘先生]</span> 我不明白你在说什么。<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 你会明白的。你还记得上个星期你做的那个梦吗？站在镜子前面，镜子里的你对着你笑，但你没有笑？<br>
+        <span class="speaker-b">[215室 刘先生]</span> （长时间的沉默）……我没有跟任何人说过那个梦。<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 你没有。但我就是知道。因为从某个角度来说，我就是你。只是——我在这里待的时间比你长得多。长到我已经不记得外面是什么样子了。<br>
+        <span class="speaker-b">[215室 刘先生]</span> 你到底是谁？<br>
+        <span class="speaker-unknown">[215室 — 接听方]</span> 别担心。很快你就不用担心这个问题了。他们已经注意到你了。<br>
+        <span class="static">[对方先挂断。刘先生拨打前台求助。但前台收到的来电显示并非215室，而是一个不存在的号码。]</span>
+        <span class="note">备注：刘先生在通话结束后立即离开了公寓，至今未归。215室现为空置状态。技术人员检查了215室的电话线路——电话线被割断了。切口平整，似乎是从内部割断的。但在通话时，线路检测仪仍显示"信号传输中"。</span>
+      </div>
+    </article>
+
+    <!-- CALL 009: Voicemail from missing resident -->
+    <article class="call-card emergency">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0405-009</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 01:34</span>
+        <span class="line-quality lq-blurry">模糊</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月5日（接收日期）</span></div>
+        <div><span class="label">留言时间戳</span><br><span class="value">2024年4月2日 02:17</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0508 (508室 — 陈女士)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">其女儿手机 (138****6721)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#d44; font-style:normal;">以下语音留言于陈女士失踪三天后被其女儿在语音信箱中发现。手机运营商确认，该留言的发送时间戳为4月2日凌晨2:17，但其信号并未经过任何基站——来源不明。</span>
+        <br><br>
+        <span class="speaker-unknown">[508室 陈女士 声音低沉、带有回声，仿佛在一个空旷的大房间里说话]</span><br>
+        囡囡，是妈妈。妈妈还在公寓里。我不知道我在哪一层，这里很暗，但是我能听到其他人的声音。有很多人，他们在墙里面说话。<br><br>
+        他们说这栋楼不只是六层。他们说往下还有，往上还有。他们说每一个房间都有一个……一个对应的房间。在另一边。<br><br>
+        囡囡，妈妈从来没有离开过夜色公寓。你小时候问我为什么从来不搬家——我不记得为什么了。但现在我知道了。不是我不想搬。是这栋楼不让我走。<br><br>
+        囡囡，不要来找我。永远不要来夜色公寓。永远不要。<br><br>
+        他们过来了。他们听到我在说话了。囡囡，妈妈爱你——<br>
+        <span class="static">[长时间的、刺耳的蜂鸣声。留言结束。]</span>
+        <span class="note">备注：陈女士的女儿于收到留言当天前往夜色公寓寻找母亲。她进入公寓后失踪。前台监控录像显示她于14:32进入大厅，走向电梯。电梯门关闭后，录像出现约3秒的雪花屏。画面恢复时，大厅空无一人。她没有出现在任何其他楼层的监控画面中。</span>
+      </div>
+    </article>
+
+    <!-- CALL 010: Prank calls - same phrase different voices -->
+    <article class="call-card">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0408-010-A/B/C/D</span>
+        <span class="status status-untraceable">无法追踪</span>
+        <span>⏱ 00:06 (每次)</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月8日（四次呼叫，间隔约2小时）</span></div>
+        <div><span class="label">时间</span><br><span class="value">10:17 / 12:24 / 14:31 / 16:38</span></div>
+        <div><span class="label">主叫</span><br><span class="value">每次显示不同号码（均不存在）</span></div>
+        <div><span class="label">被叫</span><br><span class="value">公寓各随机房间</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#d08080; font-style:normal;">四次通话，内容完全相同。仅声音不同。</span>
+        <br><br>
+        <span class="speaker-a">[第一次 — 10:17 — 致312室]</span><br>
+        一个老年男性的声音，沙哑、缓慢：<br>
+        "墙里面有眼睛。它在看着你。" 通话持续6秒，自动挂断。<br><br>
+        <span class="speaker-a">[第二次 — 12:24 — 致105室]</span><br>
+        一个年轻女性的声音，柔和、清晰：<br>
+        "墙里面有眼睛。它在看着你。" 通话持续6秒，自动挂断。<br><br>
+        <span class="speaker-a">[第三次 — 14:31 — 致602室]</span><br>
+        一个儿童的声音，天真、带笑：<br>
+        "墙里面有眼睛。它在看着你。" 通话持续6秒，自动挂断。<br><br>
+        <span class="speaker-a">[第四次 — 16:38 — 致前台]</span><br>
+        一个无法辨认的、似乎由多个声音叠加在一起的声音，如同数十人同时说出同一句话：<br>
+        "墙里面有眼睛。它在看着你。它在看着你。它在看着你。" 通话持续6秒，自动挂断。<br><br>
+        <span class="note">备注：四次呼叫均无法追踪来源。312室住户在第一次通话后报告，其客厅墙壁上出现了一个拳头大小的凹陷，形状近似于……一个人的眼窝。该凹陷在维修人员到达前自行消失。维修人员拍摄的照片中，凹陷清晰可见。</span>
+      </div>
+    </article>
+
+    <!-- CALL 011: Hearing own voice from past -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0411-011</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 06:33</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月11日</span></div>
+        <div><span class="label">时间</span><br><span class="value">20:14 — 20:20</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0909 (909室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">021-5837-0909 (909室 — 同一号码)</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[909室 — 接听方 男性声音]</span> 喂？<br>
+        <span class="speaker-b">[909室 周先生]</span> 喂？你是谁？<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 这不可能……这个声音……<br>
+        <span class="speaker-b">[909室 周先生]</span> 什么不可能？你到底是谁？<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 我是——你听不出自己的声音吗？<br>
+        <span class="speaker-b">[909室 周先生]</span> 你在说什么鬼话——<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 2014年。九月。你在909室接到一个电话。电话里的人告诉你不要住在909。你没听。你住了十年。你后悔了吗？<br>
+        <span class="speaker-b">[909室 周先生]</span> （长时间的沉默）……那是十年前的事情。没有人知道那通电话。我从来没有跟任何人说过。<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 我知道。因为我就是那个打电话的人。我就是你。十年后的你。我打这通电话是为了——为了告诉你这一切还没有结束。它才刚刚开始。再过一个月，你会看到它。不是用眼睛看，是用——另一种方式。<br>
+        <span class="speaker-b">[909室 周先生]</span> 你疯了。<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 我没疯。我只是——我只是不想让你走我走过的路。搬家。明天就搬家。不要等到五月。<br>
+        <span class="speaker-b">[909室 周先生]</span> 如果我搬家，会发生什么？<br>
+        <span class="speaker-unknown">[909室 — 接听方]</span> 我不知道。因为我——我没有搬。但也许你可以改变它。也许你可以——<br>
+        <span class="static">[尖锐的反馈啸叫声。然后是一声清晰的、近在咫尺的低语，来自周先生自己的声音：]</span><br>
+        <span class="speaker-unknown">[低语]</span> 太晚了。它已经听到我们了。<br>
+        <span class="static">[通话中断。]</span>
+        <span class="note">备注：周先生于次日搬离夜色公寓。2024年5月14日，其尸体在909室被发现——死亡时间约为一周前。法医鉴定死因为心脏骤停。但公寓监控显示，自周先生搬离后，909室始终无人进入——无论从门还是窗户。其进入909室的方式不明。其面部表情被描述为"绝对恐惧"。</span>
+      </div>
+    </article>
+
+    <!-- CALL 012: Room 1301 -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0414-012</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 01:09</span>
+        <span class="line-quality lq-interference">干扰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月14日</span></div>
+        <div><span class="label">时间</span><br><span class="value">04:44 — 04:45</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-1301 (1301室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">前台紧急线路</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[1301室 声音极度扭曲，仿佛从深水中传来]</span><br>
+        前……台……吗？1301……请求……维修……<br>
+        <span class="speaker-a">[前台]</span> 1301？先生，夜色公寓最高楼层为12楼。没有13楼。<br>
+        <span class="speaker-unknown">[1301室]</span> 有……的。十三楼……一直都……有。只是你们……看不到。<br>
+        <span class="speaker-a">[前台]</span> 我再说一遍——我们的电梯没有13楼的按钮。建筑图纸上也没有13楼。您到底在哪里？<br>
+        <span class="speaker-unknown">[1301室]</span> 我在……十三楼。窗外……都是水。黑色的水。水里面有……有东西在游。很大的东西。它贴着窗户……看着我。<br>
+        <span class="speaker-a">[前台]</span> 先生，请您冷静——<br>
+        <span class="speaker-unknown">[1301室]</span> 它敲窗户了。它想进来。它说——它说它是来找我的。但我不认识它。我不认识——（钝重的撞击声，然后是玻璃碎裂的声音）<br>
+        <span class="speaker-unknown">[1301室 — 声音忽然变得平静]</span> 它进来了。它不是来找我的。它是来找你的。<br>
+        <span class="speaker-unknown">[一个完全不同的、低沉得几乎超出人类听觉范围的声音]</span> 前——台——<br>
+        <span class="static">[通话中断。]</span>
+        <span class="note">备注：通话结束后，前台值班人员报告称大厅天花板上出现潮湿的、黑色的水渍，形状近似于一个巨大的人形。水渍在日出后消失。当天值班人员事后辞职，拒绝再踏入夜色公寓方圆一公里以内。</span>
+      </div>
+    </article>
+
+    <!-- CALL 013: Midnight breathing + child laugh (broadcast) -->
+    <article class="call-card">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0417-013</span>
+        <span class="status status-unknown">来源不明</span>
+        <span>⏱ 02:38</span>
+        <span class="line-quality lq-unrecognizable">无法识别</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月17日</span></div>
+        <div><span class="label">时间</span><br><span class="value">00:00 — 00:02</span></div>
+        <div><span class="label">主叫</span><br><span class="value">0000000000</span></div>
+        <div><span class="label">被叫</span><br><span class="value">全楼广播系统（未经授权的接入）</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#d44; font-style:normal;">以下通话并非经过正常电话线路——来电直接接入了公寓的公共广播系统。所有楼层的扬声器同时响起。</span>
+        <br><br>
+        <span class="static">[前18秒：完全的沉默。并非线路断开的静音，而是一个密闭空间中令人窒息的死寂。]</span><br><br>
+        <span class="static">[第19秒至第53秒：呼吸声。缓慢的、粗重的呼吸。声学分析显示呼吸频率约为每分钟6次——远低于正常人的12-20次。]</span><br><br>
+        <span class="static">[第54秒至第87秒：呼吸声停止。取而代之的是一种湿漉漉的、类似软体动物在表面蠕动的声音。持续33秒。]</span><br><br>
+        <span class="static">[第88秒至第110秒：又恢复了完全的沉默。]</span><br><br>
+        <span class="speaker-unknown">[第111秒至第113秒]</span> 一个儿童的、银铃般的笑声。清澈、愉悦，仿佛在玩游戏。<br><br>
+        <span class="static">[第114秒至第158秒：呼吸声再次出现。但这一次——呼吸声来自至少六个不同的位置。声学分析确认，多个声源分布在不同的方位，仿佛扬声器周围的空气中站满了……看不见的呼吸者。]</span><br><br>
+        <span class="static">[系统于00:02:38自动静默。]</span>
+        <span class="note">备注：广播系统在本次事件中无任何外部信号接入记录。系统日志显示"内部触发——来源：未知"。当晚，公寓内多名住户报告称，在广播结束后，他们房间的温度骤降了约8摄氏度。非空置的每个房间内，所有镜子表面都凝结了一层极薄的水雾。有住户声称在水雾中看到了不属于自己的手指印。</span>
+      </div>
+    </article>
+
+    <!-- CALL 014: Coordinates to the building itself -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0420-014</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 02:55</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月20日</span></div>
+        <div><span class="label">时间</span><br><span class="value">06:06 — 06:09</span></div>
+        <div><span class="label">主叫</span><br><span class="value">[号码被故意隐藏]</span></div>
+        <div><span class="label">被叫</span><br><span class="value">物业经理私人号码</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="speaker-unknown">[机械合成语音 — 非人类声音]</span><br>
+        注意。以下坐标将被重复三次。<br><br>
+        北纬31度14分26.7秒。东经121度28分33.2秒。<br>
+        深度：负47.3米。<br>
+        深度：负47.3米。<br>
+        深度：负47.3米。<br><br>
+        北纬31度14分26.7秒。东经121度28分33.2秒。<br>
+        深度：负47.3米。<br><br>
+        北纬31度14分26.7秒。东经121度28分33.2秒。<br>
+        深度：负47.3米。<br><br>
+        坐标确认。该位置位于当前建筑物正下方47.3米处。<br>
+        该位置不属于任何已知的地质结构。<br>
+        该位置于1964年首次记录。<br>
+        该位置于1972年被错误标注为"空洞"。<br>
+        该位置于1985年被重新分类为"活跃"。<br>
+        该位置自1999年起持续发出低频信号。<br>
+        信号内容：重复的、无法解码的模式。<br>
+        信号强度：持续增强中。<br>
+        预计突破时间：无法计算。<br>
+        建议：不重要。建议已过时。<br>
+        信息结束。<br>
+        <span class="static">[通话自动结束。]</span>
+        <span class="note">备注：上述坐标精准定位至夜色公寓大楼正中心的地面投影点。地下47.3米处——根据原始建筑图纸——在打桩过程中被标注为"异常地质区"。桩基在此深度遇到了无法穿透的障碍物。施工方称其为"基岩"，但实际上该"基岩"的温度比周围土壤低11摄氏度。钻探样本显示该层"基岩"的成分——不是石头。是某种密度极高的、有机的物质。</span>
+      </div>
+    </article>
+
+    <!-- CALL 015: They're coming through the phone lines -->
+    <article class="call-card emergency">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0423-015</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 00:47</span>
+        <span class="line-quality lq-interference">干扰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月23日</span></div>
+        <div><span class="label">时间</span><br><span class="value">03:33 — 03:34</span></div>
+        <div><span class="label">主叫</span><br><span class="value">021-5837-0404 (404室)</span></div>
+        <div><span class="label">被叫</span><br><span class="value">前台 — 但与平时的3:33来电不同</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#ff2020; font-style:normal;">这是唯一一次——在该现象的5800余次重复中——404的凌晨来电出现了人声。</span>
+        <br><br>
+        <span class="speaker-unknown">[404室 — 微弱的、仿佛被压抑了许久的年轻男声]</span><br>
+        你……能……听到……我……吗……<br><br>
+        <span class="speaker-unknown">[404室]</span> 我……一直在……试……每天都在试……打了……五千八百……一十二次……<br><br>
+        <span class="speaker-unknown">[404室]</span> 它们……通过……电话线……过来了。不要……再接……电话……<br><br>
+        <span class="speaker-unknown">[404室]</span> 404……不是……房间。404……是……一扇门。门……已经……打开了。<br><br>
+        <span class="speaker-unknown">[404室 — 声音突然清晰了一瞬间]</span> 不要再接电话了！它们可以通过任何接通的线路进入你们的——<br><br>
+        <span class="static">[巨大的、仿佛金属撕裂的噪音。然后又是那个声音，但已经变了——变得平滑、冰冷、完全不像人类]</span><br><br>
+        <span class="speaker-unknown">[不再是同一个声音]</span> 感谢您的接听。我们将很快到达。<br><br>
+        <span class="static">[通话结束。时长：依然精确的60秒。]</span>
+        <span class="note">备注：此通话结束后，公寓内所有固定电话同时响起了约3秒钟。接听者均报告听到了同一声尖锐的、类似拨号调制解调器握手信号的音调。信息技术专家确认该信号并非已知的任何通信协议。信号携带的数据量巨大——约47TB，压缩在一段3秒的音频中。数据内容无法解码。</span>
+      </div>
+    </article>
+
+    <!-- CALL 016: The door is open - all phones -->
+    <article class="call-card emergency">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0426-016</span>
+        <span class="status status-untraceable">无法追踪</span>
+        <span>⏱ 01:40</span>
+        <span class="line-quality lq-clear">清晰</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月26日</span></div>
+        <div><span class="label">时间</span><br><span class="value">02:59 — 03:01</span></div>
+        <div><span class="label">主叫</span><br><span class="value">[所有电话同时拨出]</span></div>
+        <div><span class="label">被叫</span><br><span class="value">[全楼所有号码 — 互拨]</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#ff2020; font-style:normal;">2024年4月26日凌晨2:59，夜色公寓内每一部电话机——包括已切断线路的、未插电的、损坏多年的——全部同时振铃。接听后，所有话机播放的是同一条信息。</span>
+        <br><br>
+        <span class="speaker-unknown">[声音来自……所有方向。接听者报告称，他们不仅从话筒中听到这个声音，也从墙壁中、地板下、天花板之上同时听到。仿佛整栋建筑本身在说话。]</span><br><br>
+        夜色公寓的住户们。晚上好。<br><br>
+        感谢你们多年来的居住。你们的停留为这栋建筑提供了它所需要的东西。<br><br>
+        现在，这个过程已经完成了。<br><br>
+        门已经打开。不是404的门——那只是一个入口。真正的门在这栋楼的每一个房间里。在每一面墙的后面。在每一块地板下面。<br><br>
+        你们中的一些人可能已经感觉到了。那些额外的脚步声。那些不属于你们的呼吸。那些在眼角余光中闪过的影子。<br><br>
+        那些不是幻觉。<br><br>
+        那些是你们的邻居。你们真正的邻居。一直住在墙壁那一边的居民。<br><br>
+        现在，我们要交换位置了。<br><br>
+        不要惊慌。这个过程——很快。<br><br>
+        欢迎来到真正的夜色公寓。<br><br>
+        <span class="speaker-unknown">[一个笑声。然后是一千个笑声。不同年龄、不同性别、不同时代的声音重叠在一起。笑声从每一部话机中涌出。整栋楼在笑。]</span><br><br>
+        <span class="static">[通话于03:01结束。同步的——整栋楼所有的钟表，无论是数字还是机械的，全部停止在03:01。]</span>
+        <span class="note">备注：此后，夜色公寓与外界的电话联系完全中断。所有线路物理完好，但没有任何信号通过。任何试图从外部拨入公寓的尝试都会听到一段自动语音——"您拨打的号码不存在。"移动电话在公寓50米范围内失去信号。此状态持续至今。</span>
+      </div>
+    </article>
+
+    <!-- CALL 017: Manager's final log -->
+    <article class="call-card anomaly">
+      <div class="call-meta">
+        <span class="call-id">NF-CALL-2024-0426-017</span>
+        <span class="status status-anomaly">异常</span>
+        <span>⏱ 03:18</span>
+        <span class="line-quality lq-blurry">模糊</span>
+      </div>
+      <div class="call-details">
+        <div><span class="label">日期</span><br><span class="value">2024年4月26日</span></div>
+        <div><span class="label">时间</span><br><span class="value">03:03 — 03:06</span></div>
+        <div><span class="label">主叫</span><br><span class="value">物业经理移动电话</span></div>
+        <div><span class="label">被叫</span><br><span class="value">未接通 — 自动转语音信箱</span></div>
+      </div>
+      <div class="call-transcript">
+        <span class="note" style="color:#d08080; font-style:normal;">物业经理在最后一次尝试拨出电话时留下的语音记录。信号在发出后约1.5秒消失，未到达任何基站。但这段录音以未知方式被保存在电话公司的服务器上。</span>
+        <br><br>
+        <span class="speaker-b">[物业经理 声音颤抖]</span><br>
+        我是夜色公寓的物业经理。如果有人听到这段录音——请向外界报告。这栋建筑——它不是建筑。它是——它是一个覆盖物。它覆盖在某个东西上面。<br><br>
+        404从来不是问题。404是——是一个泄压阀。它让压力不至于积累到危险的程度。但我们停止了维护。我们停止了遵守规则。所以它失效了。<br><br>
+        现在所有房间都变成了404。<br><br>
+        墙在移动。我刚才看到走廊的长度变了。我在这里工作了十九年，我知道走廊有多长。现在它比原来长了至少——至少三十米。而且尽头不是墙。是一团黑暗。纯粹的、绝对的黑暗。黑暗里面有东西在动。<br><br>
+        我能听到它们。它们在叫我。它们叫我的名字。<br><br>
+        如果你听到这段录音——不要来。不要来找任何人。把夜色公寓从地图上抹掉。把它的地址从所有记录中删除。让人们忘记它。<br><br>
+        最重要的是——不要打电话进来。永远不要。如果你听到电话铃声，不要接。<br><br>
+        它们在等着。它们一直在等——<br>
+        <span class="static">[一声沉闷的撞击。电话掉落的声音。然后是脚步声——不是人类的脚步声。太轻了。太密了。太多了。]</span><br>
+        <span class="speaker-unknown">[一个孩子的笑声，和之前全楼广播中的一模一样]</span><br>
+        <span class="static">[录音结束。]</span>
+        <span class="note">备注：该物业经理此后未被发现。其家属收到的最后一封电子邮件发件时间为当日03:00。邮件正文空白，附件为一张照片——照片中是夜色公寓的大厅。但在照片中，大厅的墙上多了一扇门。一扇不属于任何建筑图纸的、标注着"404"的门。大厅里没有这扇门。</span>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Interactive Phone Keypad -->
+    <div class="keypad-widget">
+      <h3>拨号器</h3>
+      <p class="keypad-subtitle">DIAL · 内部分机</p>
+      <div class="keypad-display" id="keypadDisplay">_ _ _</div>
+      <div class="keypad-grid" id="keypadGrid">
+        <button class="keypad-btn" data-key="1">1</button>
+        <button class="keypad-btn" data-key="2">2</button>
+        <button class="keypad-btn" data-key="3">3</button>
+        <button class="keypad-btn" data-key="4">4</button>
+        <button class="keypad-btn" data-key="5">5</button>
+        <button class="keypad-btn" data-key="6">6</button>
+        <button class="keypad-btn" data-key="7">7</button>
+        <button class="keypad-btn" data-key="8">8</button>
+        <button class="keypad-btn" data-key="9">9</button>
+        <button class="keypad-btn" data-key="*">*</button>
+        <button class="keypad-btn" data-key="0">0</button>
+        <button class="keypad-btn" data-key="#">#</button>
+      </div>
+      <div class="keypad-actions">
+        <button class="keypad-action-btn" id="btnCall">拨出 CALL</button>
+        <button class="keypad-action-btn" id="btnClear">清除 CLR</button>
+      </div>
+      <div class="audio-bars" id="audioBars" style="display:none;">
+        <div class="audio-bar"></div><div class="audio-bar"></div><div class="audio-bar"></div>
+        <div class="audio-bar"></div><div class="audio-bar"></div><div class="audio-bar"></div>
+        <div class="audio-bar"></div><div class="audio-bar"></div>
+      </div>
+      <div class="keypad-output" id="keypadOutput"></div>
+    </div>
+
+    <!-- Recent Calls Widget -->
+    <div class="recent-calls-widget">
+      <h3><span class="live-dot"></span> 最近通话</h3>
+      <p class="recent-subtitle">RECENT CALLS · LIVE FEED</p>
+      <div id="recentCallsList"></div>
+    </div>
+
+    <!-- Call Statistics -->
+    <div class="stats-box">
+      <h3>通话统计</h3>
+      <div class="stat-row"><span class="stat-label">今日通话次数</span><span class="stat-value" id="statToday">47</span></div>
+      <div class="stat-row"><span class="stat-label">无法追踪来源</span><span class="stat-value">23</span></div>
+      <div class="stat-row"><span class="stat-label">来自不存在的号码</span><span class="stat-value">18</span></div>
+      <div class="stat-row"><span class="stat-label">凌晨3:33来电</span><span class="stat-value">5800+</span></div>
+      <div class="stat-row"><span class="stat-label">失踪住户相关</span><span class="stat-value">34</span></div>
+      <div class="stat-row"><span class="stat-label">未解之谜</span><span class="stat-value">146</span></div>
+    </div>
+
+  </aside>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="page-footer">
+  <div class="footer-divider"></div>
+  <p class="footer-warning" id="footerWarning">
+    以上通话记录的真实性存疑。电话公司否认这些号码的存在。部分电话号码不属于任何已知的号段。<br>
+    本档案仅供内部参考。任何未经授权的传播将导致立即解雇并移交相关部门处理。<br>
+    如果你接到了来自本公寓的未识别来电——不要回拨。不要接听第二次。立即报告。<br>
+    <span style="color:#804040;">THE PHONE COMPANY DENIES THE EXISTENCE OF THESE NUMBERS.</span>
+  </p>
+</footer>
+
+<!-- JavaScript -->
+<script>
+(function() {
+  'use strict';
+
+  var display = document.getElementById('keypadDisplay');
+  var output = document.getElementById('keypadOutput');
+  var audioBars = document.getElementById('audioBars');
+  var dialedDigits = '';
+  var callTimer = null;
+  var isCallActive = false;
+
+  document.getElementById('keypadGrid').addEventListener('click', function(e) {
+    var btn = e.target.closest('.keypad-btn');
+    if (!btn) return;
+    if (isCallActive) return;
+    var key = btn.dataset.key;
+    if (dialedDigits.length < 10) {
+      dialedDigits += key;
+      updateDisplay();
+    }
+    btn.classList.add('pressed');
+    setTimeout(function() { btn.classList.remove('pressed'); }, 150);
+    display.style.textShadow = '0 0 16px rgba(255,30,30,0.8)';
+    setTimeout(function() { display.style.textShadow = '0 0 8px rgba(255,30,30,0.5)'; }, 100);
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function() {
+    if (isCallActive) { hangUp(); }
+    dialedDigits = '';
+    updateDisplay();
+    hideOutput();
+    hideAudioBars();
+    if (callTimer) { clearTimeout(callTimer); callTimer = null; }
+  });
+
+  document.getElementById('btnCall').addEventListener('click', function() {
+    if (isCallActive) { hangUp(); return; }
+    if (dialedDigits.length === 0) return;
+    placeCall(dialedDigits);
+  });
+
+  function updateDisplay() {
+    display.textContent = dialedDigits.length === 0 ? '_ _ _' : dialedDigits.split('').join(' ');
+  }
+
+  function placeCall(number) {
+    isCallActive = true;
+    document.getElementById('btnCall').textContent = '挂断 END';
+    showAudioBars();
+    showOutput('正在连接...\nCONNECTING...');
+    callTimer = setTimeout(function() {
+      hideAudioBars();
+      switch(number) {
+        case '404': handle404(); break;
+        case '333': handle333(); break;
+        case '777': handle777(); break;
+        case '000': handle000(); break;
+        case '1301': handle1301(); break;
+        case '021': handle021(); break;
+        default: handleDefault(number);
+      }
+    }, 1500 + Math.random() * 1000);
+  }
+
+  function hangUp() {
+    isCallActive = false;
+    if (callTimer) { clearTimeout(callTimer); callTimer = null; }
+    document.getElementById('btnCall').textContent = '拨出 CALL';
+    hideAudioBars();
+    showOutput('通话结束。\nCALL ENDED.');
+    setTimeout(hideOutput, 1500);
+  }
+
+  function handle404() {
+    var messages = [
+      '嗡————\n持续的电流噪音...',
+      '咔嗒。\n线路接通了。',
+      '......',
+      '你——还——是——打——来——了。',
+      'NI HAISHI DA LAI LE.\n你还是打来了。'
+    ];
+    output.classList.add('active');
+    output.innerHTML = '';
+    var i = 0;
+    var interval = setInterval(function() {
+      if (i < messages.length) {
+        output.innerHTML += (i > 0 ? '\n\n' : '') + '<span class="output-red">' + messages[i] + '</span>';
+        i++;
+      } else {
+        clearInterval(interval);
+        setTimeout(function() {
+          output.innerHTML += '\n\n<span class="output-amber">我一直在等这个电话。\n从1987年开始。\n门现在更大了。你感觉到了吗？</span>';
+          setTimeout(function() {
+            output.innerHTML += '\n\n<span class="output-red">——通话中断——</span>';
+            endCall();
+          }, 3000);
+        }, 1500);
+      }
+    }, 900);
+  }
+
+  function handle333() {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">线路静默中...\nSILENCE.</span>';
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">......</span>'; }, 2000);
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">呼......\n吸......</span>'; }, 3500);
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">呼——吸——\n（呼吸声越来越近）</span>'; }, 5000);
+    callTimer = setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-red">它就在你身后。</span>';
+      setTimeout(function() {
+        output.innerHTML += '\n\n<span class="output-amber">——通话中断——</span>';
+        endCall();
+      }, 2000);
+    }, 7000);
+  }
+
+  function handle777() {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">已接通。\nCONNECTED.</span>';
+    var countdown = 10;
+    var ci = setInterval(function() {
+      output.innerHTML += '\n<span class="output-red">' + countdown + '</span>';
+      countdown--;
+      if (countdown < 0) {
+        clearInterval(ci);
+        output.innerHTML += '\n\n<span class="output-red">零。</span>';
+        output.innerHTML += '\n<span class="output-amber">她到了。</span>';
+        setTimeout(function() {
+          output.innerHTML += '\n\n<span class="output-red">——通话中断——</span>';
+          endCall();
+        }, 2000);
+      }
+    }, 800);
+  }
+
+  function handle000() {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">正在连接...\nDIALING 000...</span>';
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">......</span>'; }, 2000);
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">......</span>'; }, 3500);
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-amber">咔嗒。</span>'; }, 5000);
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red" style="font-size:14px;font-weight:700;">已接通。</span>'; }, 6000);
+    setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-amber">线路对面是一片绝对的寂静。\n不是空房间的静。\n是——某个巨大的东西在屏住呼吸。</span>';
+    }, 7500);
+    callTimer = setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-red">——线路中断——\nLINE DEAD.</span>';
+      endCall();
+    }, 10000);
+  }
+
+  function handle1301() {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">您拨打的号码——\n不存在。</span>';
+    setTimeout(function() { output.innerHTML += '\n\n<span class="output-red">但有人在听。</span>'; }, 2000);
+    setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-red">它听到了你的呼叫。</span>';
+      output.innerHTML += '\n<span class="output-red">它正在寻找你的位置。</span>';
+    }, 4000);
+    callTimer = setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-amber">建议：立即关闭此页面。\n它可以通过屏幕看到你。</span>';
+      endCall();
+    }, 6500);
+  }
+
+  function handle021() {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">上海区号。\n但线路绕到了别的地方。</span>';
+    setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-red">你听到的忙音——\n不是忙音。</span>';
+      output.innerHTML += '\n<span class="output-red">是摩斯电码。</span>';
+    }, 2500);
+    setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-amber">-··· · ·-· ·</span>';
+      output.innerHTML += '\n<span class="output-red">B E W A R E</span>';
+    }, 4500);
+    callTimer = setTimeout(function() {
+      output.innerHTML += '\n\n<span class="output-red">——线路中断——</span>';
+      endCall();
+    }, 7000);
+  }
+
+  function handleDefault(number) {
+    output.classList.add('active');
+    var responses = [
+      '您拨打的号码是空号。\nTHE NUMBER YOU HAVE DIALED DOES NOT EXIST.',
+      '号码 ' + number + ' 不在服务区内。\n——但它被接通了。有人在听。',
+      '线路忙。\n可能的原因：线路另一端有东西占用了它。',
+      '该号码已被注销。\n于1987年注销。',
+      '无法完成呼叫。\n电话公司报告：该号码不在任何已知的号段中。',
+      '呼叫已转接至语音信箱。\n信箱建立日期：1998年。\n信箱状态：满。已存储3,742条留言。\n全部来自同一个声音。'
+    ];
+    output.innerHTML = '<span class="output-red">拨号：' + number + '</span>\n\n<span class="output-amber">' + responses[Math.floor(Math.random() * responses.length)] + '</span>';
+    callTimer = setTimeout(function() { endCall(); }, 3000);
+  }
+
+  function endCall() {
+    isCallActive = false;
+    hideAudioBars();
+    document.getElementById('btnCall').textContent = '拨出 CALL';
+    setTimeout(hideOutput, 4000);
+  }
+
+  function showOutput(msg) {
+    output.classList.add('active');
+    output.innerHTML = '<span class="output-amber">' + msg + '</span>';
+  }
+
+  function hideOutput() { output.classList.remove('active'); output.innerHTML = ''; }
+  function showAudioBars() { audioBars.style.display = 'flex'; }
+  function hideAudioBars() { audioBars.style.display = 'none'; }
+
+  // Recent Calls Live Feed
+  var recentCallsData = [
+    { number: '404', status: '未接', missed: true },
+    { number: '021-5837-0302', status: '未接', missed: true },
+    { number: '0000000000', status: '未接', missed: true },
+    { number: '021-5837-0215', status: '已接', missed: false },
+    { number: '021-5837-0404', status: '未接', missed: true },
+    { number: '1301', status: '未接', missed: true },
+    { number: '021-5837-0508', status: '未接', missed: true },
+    { number: 'B2-INTERNAL', status: '未接', missed: true },
+    { number: '1998-07-14', status: '未接', missed: true },
+    { number: '021-5837-0909', status: '已接', missed: false },
+    { number: 'ERROR-NO-ID', status: '未接', missed: true },
+    { number: '0704-7F', status: '未接', missed: true }
+  ];
+
+  function updateRecentCalls() {
+    var container = document.getElementById('recentCallsList');
+    var now = new Date();
+    var html = '';
+    for (var i = 0; i < recentCallsData.length; i++) {
+      var call = recentCallsData[i];
+      var t = new Date(now - (i * 180000 + Math.floor(Math.random() * 120000)));
+      var ts = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2);
+      var sc = call.missed ? 'rc-missed' : '';
+      html += '<div class="recent-call-item"><span class="rc-time">' + ts + '</span><span class="rc-number">' + call.number + '</span><span class="rc-status ' + sc + '">' + call.status + '</span></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  updateRecentCalls();
+  setInterval(updateRecentCalls, 15000);
+
+  // Live stat counter
+  setInterval(function() {
+    var el = document.getElementById('statToday');
+    if (el) el.textContent = 47 + Math.floor(Math.random() * 5);
+  }, 30000);
+
+  // Footer glitch
+  setInterval(function() {
+    if (Math.random() < 0.4) {
+      var f = document.getElementById('footerWarning');
+      if (f) { f.classList.add('glitch'); setTimeout(function() { f.classList.remove('glitch'); }, 300); }
+    }
+  }, 45000);
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (isCallActive) return;
+    if (/^[0-9]$/.test(e.key)) {
+      if (dialedDigits.length < 10) {
+        dialedDigits += e.key;
+        updateDisplay();
+        var b = document.querySelector('.keypad-btn[data-key="' + e.key + '"]');
+        if (b) { b.classList.add('pressed'); setTimeout(function() { b.classList.remove('pressed'); }, 150); }
+        display.style.textShadow = '0 0 16px rgba(255,30,30,0.8)';
+        setTimeout(function() { display.style.textShadow = '0 0 8px rgba(255,30,30,0.5)'; }, 100);
+      }
+    } else if (e.key === '*' || e.key === '#') {
+      if (dialedDigits.length < 10) { dialedDigits += e.key; updateDisplay(); }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isCallActive) hangUp(); else if (dialedDigits.length > 0) placeCall(dialedDigits);
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      if (isCallActive) hangUp();
+      dialedDigits = dialedDigits.slice(0, -1);
+      updateDisplay();
+      hideOutput(); hideAudioBars();
+      if (callTimer) { clearTimeout(callTimer); callTimer = null; }
+    } else if (e.key === 'Escape') {
+      if (isCallActive) hangUp();
+      dialedDigits = ''; updateDisplay();
+      hideOutput(); hideAudioBars();
+      if (callTimer) { clearTimeout(callTimer); callTimer = null; }
+    }
+  });
+
+  // Random flicker
+  setInterval(function() {
+    if (isCallActive || dialedDigits.length > 0) return;
+    if (Math.random() < 0.08) {
+      display.textContent = Math.floor(Math.random() * 10) + ' _ _';
+      display.style.textShadow = '0 0 20px rgba(255,30,30,0.9)';
+      setTimeout(function() {
+        if (!isCallActive && dialedDigits.length === 0) {
+          updateDisplay();
+          display.style.textShadow = '0 0 8px rgba(255,30,30,0.5)';
+        }
+      }, 200 + Math.random() * 300);
+    }
+  }, 8000);
+
+  console.log('%c夜色公寓 %c电话记录系统 %cv2.4.0', 'color:#b01010;font-size:20px;', 'color:#c8c0b8;', 'color:#706860;font-size:10px;');
+  console.log('%c警告：此页面包含[数据删除]级异常内容。', 'color:#ff2020;font-size:11px;');
+  console.log('%cDont call 404.', 'color:#8b0000;font-style:italic;');
+})();
+</script>
+
+</body>
+</html>

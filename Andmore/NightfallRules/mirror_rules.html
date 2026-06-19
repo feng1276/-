@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>镜子规则 — 夜色公寓</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-deep: #060606;
+  --bg-surface: #0a0a0a;
+  --card-bg: rgba(20,16,12,0.8);
+  --card-alt: #111;
+  --text-main: #c8c0b8;
+  --text-dim: #706860;
+  --red-dark: #8b0000;
+  --red-mid: #b01010;
+  --red-glow: #ff2020;
+  --amber-dark: #b8701a;
+  --amber-mid: #e0902a;
+  --font-body: 'Noto Serif SC', serif;
+  --font-code: 'Orbitron', monospace;
+  --font-log: 'Share Tech Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* CRT Scanline Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.15) 0px,
+    rgba(0,0,0,0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.6;
+}
+
+/* Grain/Noise Overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.5;
+}
+
+/* Navigation */
+nav.top-nav a:hover {
+  color: #e0c0c0 !important;
+  text-shadow: 0 0 8px rgba(200,40,40,0.5);
+}
+
+/* Flicker animation */
+@keyframes flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.85; }
+  10% { opacity: 1; }
+  15% { opacity: 0.9; }
+  20% { opacity: 1; }
+  50% { opacity: 1; }
+  52% { opacity: 0.8; }
+  54% { opacity: 1; }
+  80% { opacity: 1; }
+  82% { opacity: 0.75; }
+  84% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes glitch-text {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes fog-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes crack-appear {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes reflection-shift {
+  0% { opacity: 0.6; filter: brightness(1); }
+  25% { opacity: 0.85; filter: brightness(1.1); }
+  50% { opacity: 0.5; filter: brightness(0.9); }
+  75% { opacity: 0.8; filter: brightness(1.05); }
+  100% { opacity: 0.6; filter: brightness(1); }
+}
+
+@keyframes red-pulse {
+  0%, 100% { text-shadow: 0 0 4px var(--red-dark), 0 0 8px var(--red-dark); }
+  50% { text-shadow: 0 0 8px var(--red-glow), 0 0 16px var(--red-glow), 0 0 24px var(--red-mid); }
+}
+
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes eye-blink {
+  0%, 95%, 100% { transform: scaleY(1); }
+  96%, 98% { transform: scaleY(0.1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-3px, 2px); }
+  20% { transform: translate(3px, -1px); }
+  30% { transform: translate(-1px, -2px); }
+  40% { transform: translate(2px, 1px); }
+  50% { transform: translate(-2px, -1px); }
+  60% { transform: translate(1px, 2px); }
+  70% { transform: translate(-1px, 1px); }
+  80% { transform: translate(2px, -2px); }
+  90% { transform: translate(-2px, -1px); }
+}
+
+@keyframes text-fade-in-out {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  animation: flicker 8s infinite;
+}
+
+/* Header */
+.page-header {
+  text-align: center;
+  padding: 40px 20px 30px;
+  border-bottom: 1px solid rgba(120,20,20,0.3);
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-family: var(--font-body);
+  font-size: 2.6em;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.08em;
+  animation: red-pulse 4s infinite;
+}
+
+.page-header .subtitle {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  color: var(--text-dim);
+  letter-spacing: 0.25em;
+  margin-top: 8px;
+}
+
+.warning-banner {
+  background: rgba(180,0,0,0.1);
+  border: 1px solid rgba(180,16,16,0.4);
+  border-left: 4px solid var(--red-mid);
+  padding: 16px 20px;
+  margin: 20px 0;
+  font-size: 0.95em;
+  color: #e0b0b0;
+  animation: flicker 10s infinite;
+}
+
+.warning-banner strong {
+  color: var(--red-glow);
+}
+
+/* Mirror Container */
+.mirror-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
+  position: relative;
+}
+
+.mirror-frame {
+  width: 340px;
+  height: 480px;
+  border-radius: 50% / 30%;
+  background: radial-gradient(ellipse at center, rgba(30,30,40,0.9) 0%, rgba(15,15,20,0.95) 40%, rgba(5,5,5,1) 100%);
+  border: 8px solid #1a1a1a;
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.9),
+    inset 0 0 120px rgba(0,0,0,0.6),
+    0 0 20px rgba(0,0,0,0.8),
+    0 0 40px rgba(20,0,0,0.3),
+    0 0 80px rgba(40,0,0,0.15);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.8s ease;
+}
+
+.mirror-frame::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 50%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.01) 40%,
+    transparent 100%);
+  border-radius: 60%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.mirror-fog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, rgba(80,80,100,0.25) 0%, transparent 70%);
+  animation: fog-pulse 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.mirror-crack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.mirror-crack.visible {
+  opacity: 1;
+  animation: crack-appear 0.3s ease-out;
+}
+
+.mirror-crack svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mirror-reflection {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: rgba(180,170,160,0.7);
+  font-family: var(--font-body);
+  font-size: 0.9em;
+  z-index: 5;
+  pointer-events: none;
+  transition: all 0.5s ease;
+  min-width: 200px;
+  padding: 10px;
+}
+
+.mirror-reflection.disturbing {
+  color: rgba(200,40,40,0.8);
+  animation: text-fade-in-out 3s ease-in-out forwards;
+}
+
+.mirror-face {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 70px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+
+.mirror-face.visible {
+  opacity: 0.3;
+}
+
+.face-outline {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(150,140,130,0.4);
+  border-radius: 50% 50% 45% 45%;
+  position: relative;
+}
+
+.face-outline::before,
+.face-outline::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 4px;
+  border: 1px solid rgba(150,140,130,0.3);
+  border-radius: 50%;
+  top: 35%;
+}
+
+.face-outline::before { left: 15%; }
+.face-outline::after { right: 15%; }
+
+.face-mouth {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: rgba(150,140,130,0.3);
+  border-radius: 1px;
+}
+
+/* Mirror glow on hover */
+.mirror-frame:hover {
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.9),
+    inset 0 0 120px rgba(0,0,0,0.6),
+    0 0 20px rgba(0,0,0,0.8),
+    0 0 40px rgba(40,0,0,0.5),
+    0 0 80px rgba(60,0,0,0.3),
+    0 0 120px rgba(40,0,0,0.2);
+}
+
+.mirror-frame:hover .mirror-reflection {
+  color: rgba(200,180,160,0.9);
+}
+
+/* Rules Cards */
+.section-title {
+  font-family: var(--font-body);
+  font-size: 1.6em;
+  color: var(--text-main);
+  border-left: 3px solid var(--red-mid);
+  padding-left: 16px;
+  margin: 40px 0 20px;
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.rule-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(100,80,60,0.2);
+  border-left: 3px solid var(--red-dark);
+  padding: 16px 20px;
+  position: relative;
+  transition: all 0.3s ease;
+  animation: float-up 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.rule-card:nth-child(1) { animation-delay: 0.1s; }
+.rule-card:nth-child(2) { animation-delay: 0.2s; }
+.rule-card:nth-child(3) { animation-delay: 0.3s; }
+.rule-card:nth-child(4) { animation-delay: 0.4s; }
+.rule-card:nth-child(5) { animation-delay: 0.5s; }
+.rule-card:nth-child(6) { animation-delay: 0.6s; }
+.rule-card:nth-child(7) { animation-delay: 0.7s; }
+.rule-card:nth-child(8) { animation-delay: 0.8s; }
+.rule-card:nth-child(9) { animation-delay: 0.9s; }
+.rule-card:nth-child(10) { animation-delay: 1.0s; }
+.rule-card:nth-child(11) { animation-delay: 1.1s; }
+.rule-card:nth-child(12) { animation-delay: 1.2s; }
+.rule-card:nth-child(13) { animation-delay: 1.3s; }
+.rule-card:nth-child(14) { animation-delay: 1.4s; }
+.rule-card:nth-child(15) { animation-delay: 1.5s; }
+
+.rule-card:hover {
+  border-left-color: var(--red-glow);
+  box-shadow: 0 0 20px rgba(200,0,0,0.1);
+  background: rgba(28,20,14,0.85);
+}
+
+.rule-number {
+  font-family: var(--font-code);
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--amber-mid);
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+
+.rule-text {
+  font-size: 1.05em;
+  line-height: 1.7;
+  color: var(--text-main);
+}
+
+.rule-card.danger {
+  border-left-color: var(--red-glow);
+  background: rgba(30,12,12,0.8);
+}
+
+.rule-card.danger .rule-number {
+  color: var(--red-glow);
+}
+
+/* Incident Log */
+.incident-log {
+  margin: 30px 0;
+}
+
+.incident-entry {
+  background: var(--card-alt);
+  border: 1px solid rgba(80,60,40,0.25);
+  padding: 18px 22px;
+  margin: 12px 0;
+  position: relative;
+}
+
+.incident-entry::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--red-dark);
+}
+
+.incident-number {
+  font-family: var(--font-code);
+  font-size: 0.85em;
+  color: var(--amber-dark);
+  letter-spacing: 0.15em;
+}
+
+.incident-date {
+  font-family: var(--font-log);
+  color: var(--text-dim);
+  font-size: 0.85em;
+  margin: 4px 0;
+}
+
+.incident-location {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.9em;
+  margin: 4px 0;
+}
+
+.incident-description {
+  margin-top: 8px;
+  line-height: 1.7;
+  color: var(--text-main);
+}
+
+.incident-result {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(180,0,0,0.08);
+  border-radius: 2px;
+  font-size: 0.85em;
+  color: #d09090;
+  display: inline-block;
+}
+
+/* Mirror Test Section */
+.mirror-test {
+  background: var(--card-bg);
+  border: 1px solid rgba(120,20,20,0.3);
+  padding: 30px;
+  margin: 30px 0;
+}
+
+.test-question {
+  font-size: 1.15em;
+  color: var(--text-main);
+  margin: 20px 0 12px;
+  font-weight: 600;
+}
+
+.test-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.test-option {
+  background: rgba(20,16,12,0.6);
+  border: 1px solid rgba(100,80,60,0.3);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.95em;
+  text-align: left;
+}
+
+.test-option:hover {
+  border-color: var(--amber-dark);
+  background: rgba(30,24,16,0.7);
+  box-shadow: 0 0 12px rgba(184,112,26,0.15);
+}
+
+.test-option.selected {
+  border-color: var(--red-mid);
+  background: rgba(40,16,16,0.7);
+}
+
+.test-result {
+  margin-top: 14px;
+  padding: 14px;
+  background: rgba(0,0,0,0.4);
+  border-left: 2px solid var(--text-dim);
+  color: var(--text-dim);
+  font-style: italic;
+  display: none;
+  line-height: 1.6;
+}
+
+.test-result.show {
+  display: block;
+  animation: float-up 0.4s ease-out;
+}
+
+.test-tracker {
+  font-family: var(--font-code);
+  font-size: 0.8em;
+  color: var(--text-dim);
+  text-align: right;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(100,80,60,0.2);
+}
+
+/* Safe Mirror Check */
+.safe-check {
+  margin: 30px 0;
+}
+
+.check-item {
+  background: var(--card-bg);
+  border: 1px solid rgba(80,60,40,0.2);
+  padding: 20px 24px;
+  margin: 12px 0;
+  position: relative;
+}
+
+.check-number {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  color: var(--amber-dark);
+  font-weight: 600;
+}
+
+.check-title {
+  font-size: 1.1em;
+  color: var(--text-main);
+  margin: 6px 0;
+  font-weight: 600;
+}
+
+.check-procedure {
+  color: var(--text-main);
+  line-height: 1.7;
+  margin-top: 8px;
+}
+
+.check-warning {
+  color: #c08080;
+  font-size: 0.9em;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Footer */
+.page-footer {
+  text-align: center;
+  padding: 30px;
+  border-top: 1px solid rgba(120,20,20,0.2);
+  margin-top: 40px;
+  color: var(--text-dim);
+  font-size: 0.85em;
+}
+
+.page-footer .ominous {
+  color: var(--red-mid);
+  animation: red-pulse 6s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mirror-frame {
+    width: 240px;
+    height: 340px;
+  }
+  .container { padding: 12px; }
+  .page-header h1 { font-size: 1.8em; }
+}
+
+/* Ghost text that appears intermittently */
+.ghost-text {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200,40,40,0.6);
+  font-family: var(--font-body);
+  font-size: 0.9em;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+  animation: text-fade-in-out 8s infinite;
+  animation-delay: 4s;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a1a1a; }
+</style>
+</head>
+<body>
+
+<nav class="top-nav" style="background:rgba(10,10,10,0.95);border-bottom:1px solid rgba(120,20,20,0.3);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;position:sticky;top:0;z-index:100;font-size:12px;">
+  <a href="apartment_home.html" style="color:#888;text-decoration:none;">首页</a>
+  <a href="rules_main.html" style="color:#888;text-decoration:none;">住户守则</a>
+  <a href="elevator_rules.html" style="color:#888;text-decoration:none;">电梯规则</a>
+  <a href="floor_directory.html" style="color:#888;text-decoration:none;">楼层指南</a>
+  <a href="room_404.html" style="color:#888;text-decoration:none;">404房间</a>
+  <a href="basement.html" style="color:#888;text-decoration:none;">地下室</a>
+  <a href="surveillance.html" style="color:#888;text-decoration:none;">监控室</a>
+  <a href="neighbor_encounters.html" style="color:#888;text-decoration:none;">邻居</a>
+  <a href="manager_log.html" style="color:#888;text-decoration:none;">管理员日志</a>
+  <a href="phone_calls.html" style="color:#888;text-decoration:none;">电话记录</a>
+  <a href="mirror_rules.html" style="color:#c04040;text-decoration:none;">镜子规则</a>
+  <a href="midnight_shift.html" style="color:#888;text-decoration:none;">深夜值班</a>
+  <a href="missing_persons.html" style="color:#888;text-decoration:none;">失踪档案</a>
+  <a href="ritual_purification.html" style="color:#888;text-decoration:none;">净化仪式</a>
+  <a href="final_night.html" style="color:#c04040;text-decoration:none;">终局</a>
+</nav>
+
+<div class="ghost-text" id="ghostText"></div>
+
+<div class="container">
+
+<header class="page-header">
+  <h1>镜 子 规 则</h1>
+  <p class="subtitle">MIRROR REGULATIONS // NIGHTFALL APARTMENTS</p>
+</header>
+
+<div class="warning-banner">
+  <strong>⚠ 公告：</strong>
+  夜色公寓的镜子比住户还多。不是所有的镜子里都是你自己。
+  以下规则来自历任住户和管理员的经验总结。我们无法保证所有规则都适用于你遇到的每一个情况——因为每一次的情况，可能都是前所未有的。
+  请记住：<strong>镜子记不住规则。镜子只记住你。</strong>
+</div>
+
+<!-- CENTRAL MIRROR ELEMENT -->
+<section class="mirror-section">
+  <div class="mirror-frame" id="mainMirror">
+    <div class="mirror-fog"></div>
+    <div class="mirror-crack" id="mirrorCrack">
+      <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="0" x2="100" y2="120" stroke="rgba(180,160,140,0.35)" stroke-width="0.8"/>
+        <line x1="100" y1="120" x2="80" y2="200" stroke="rgba(180,160,140,0.3)" stroke-width="0.6"/>
+        <line x1="100" y1="120" x2="150" y2="250" stroke="rgba(180,160,140,0.25)" stroke-width="0.5"/>
+        <line x1="80" y1="200" x2="40" y2="300" stroke="rgba(180,160,140,0.2)" stroke-width="0.4"/>
+        <line x1="20" y1="80" x2="60" y2="140" stroke="rgba(180,160,140,0.2)" stroke-width="0.5"/>
+      </svg>
+    </div>
+    <div class="mirror-face" id="mirrorFace">
+      <div class="face-outline">
+        <div class="face-mouth"></div>
+      </div>
+    </div>
+    <div class="mirror-reflection" id="mirrorReflection">
+      你看到自己的倒影。<br>看起来一切正常。
+    </div>
+  </div>
+</section>
+
+<!-- THE 15 RULES -->
+<h2 class="section-title">镜子守则（共十五条）</h2>
+<p style="color:var(--text-dim);font-size:0.9em;margin-bottom:16px;">
+  以下规则按照发现顺序排列。第1至第6条张贴在每间公寓的入口处。第7至第15条最初只在管理员的私人笔记本中发现，
+  未经官方张贴。部分规则之间的内容存在矛盾——我们尚不确定这是否意味着某一条规则本身就是陷阱。
+</p>
+
+<div class="rules-grid">
+
+<div class="rule-card">
+  <span class="rule-number">规则一</span>
+  <p class="rule-text">不要在午夜后直视任何镜子超过三秒。镜子在午夜后不再是反射面——它是窗。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则二</span>
+  <p class="rule-text">如果镜子里的你眨了眼睛但你确定你没有，立刻离开房间。不要跑——跑会引起它的注意。平稳地走。不要回头去看镜子。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则三</span>
+  <p class="rule-text">电梯里的镜子只能看自己的脚。电梯在楼层之间移动时，镜子有时会通往别的楼层——一层不在这栋建筑里的楼层。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则四</span>
+  <p class="rule-text">如果你的镜像是背对着你的，不要转身。慢慢地后退离开房间。你的镜像在看着某个你看不到的东西。你不应该加入它。</p>
+</div>
+
+<div class="rule-card danger">
+  <span class="rule-number">规则五</span>
+  <p class="rule-text">四楼走廊尽头的那面镜子——不要去看它。它也不是镜子。它从来都不是镜子。它只是装成了镜子的样子。如果你已经看了，请立即前往管理员办公室，不要经过任何反光表面。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则六</span>
+  <p class="rule-text">如果你在镜子里看到身后有人但屋里只有你一个人，说"我看见你了"。然后跑。不要等回应。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则七</span>
+  <p class="rule-text">不要同时面对两面镜子。镜子之间会建立通道。你可能会在两个镜像之间迷失方向——或者说，你会看到无穷多个自己的延伸，而其中并非所有的"你"都是静止的。</p>
+</div>
+
+<div class="rule-card danger">
+  <span class="rule-number">规则八</span>
+  <p class="rule-text">如果一面镜子碎了但你没有碰它，这不是意外。用红布盖住碎片。不要看碎片里的任何东西。在下一个满月之前，不要清理它。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则九</span>
+  <p class="rule-text">不要对着夜色公寓的任何镜子拍照。照片会捕捉到镜子真正反射的东西——而不是你看到的东西。看到一个自己没拍过的镜中照片是一些住户离开的最后一个环节。</p>
+</div>
+
+<div class="rule-card danger">
+  <span class="rule-number">规则十</span>
+  <p class="rule-text">镜子里住着东西。它们大多数时候只是看着。但如果你持续违反规则，它们会开始模仿你——先是你的动作，然后是你的声音，最后是你的记忆。当你的镜像是完全的你时，你就不再是你自己。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则十一</span>
+  <p class="rule-text">早晨五点到六点之间，所有镜子都是安全的。这是唯一被确认的安全窗口。如果你不得不在夜间行动，请在这个时间段内完成所有需要照镜子的活动。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则十二</span>
+  <p class="rule-text">你会在公寓里发现不属于你的镜子。不要覆盖它们。不要移动它们。不要触碰它们。它们是被放在那里的——被专门放置在某人的房间里。你只是暂时看不到那些"某人"。假装镜子不存在。它们也会假装你不存在。这是双方心照不宣的协议。</p>
+</div>
+
+<div class="rule-card danger">
+  <span class="rule-number">规则十三</span>
+  <p class="rule-text">如果你在镜子里看到自己的嘴巴在动，但你没有在说话，不要读唇语。不要试图理解。立刻闭上眼睛，捂住耳朵，数到一百。当你睁开眼睛时，如果你还在镜子里看到自己——你是安全的。如果你看到了别的东西……你已经读得太晚了。</p>
+</div>
+
+<div class="rule-card">
+  <span class="rule-number">规则十四</span>
+  <p class="rule-text">有些住户已经不再照镜子。他们用触觉来确认自己的脸还在。他们不讨论这件事。不要问他们为什么。如果你开始感到需要经常触碰自己的脸来确认它还存在——你已经看到了他们看到的东西。去管理员办公室。告诉他们"我想检查一下镜子"。他们会知道什么意思。</p>
+</div>
+
+<div class="rule-card danger">
+  <span class="rule-number">规则十五</span>
+  <p class="rule-text">最终极的规则：死亡不是最坏的结果。被镜子完全复制——让镜中的你走出来代替你，而你被困在那一边看着——这才是。镜子里的东西不是要杀你。它们要成为你。如果你在镜子前站得太久，你已经在帮它们了。</p>
+</div>
+
+</div>
+
+<!-- INCIDENT LOG -->
+<h2 class="section-title">镜子事故记录</h2>
+<p style="color:var(--text-dim);font-size:0.9em;margin-bottom:16px;">
+  以下记录来自建筑管理档案和警方报告。部分记录已被人为涂抹。我们认为涂抹者并非管理员本人。
+</p>
+
+<div class="incident-log">
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-1987-001</div>
+  <div class="incident-date">1987年3月14日 · 凌晨2:41</div>
+  <div class="incident-location">四楼 · 走廊尽头</div>
+  <div class="incident-description">
+    住户陈女士（302室）在返回途中经过四楼走廊尽头时，声称在那面"镜子"中看到了已故三年的母亲。
+    陈女士走向镜子，她的丈夫试图拉住她但未能成功。目击者称陈女士的倒影开始独立于她本人行动——先是微笑，
+    然后招手。陈女士触摸镜面的瞬间，走廊的灯全部熄灭。灯亮后，陈女士和她的倒影都不见了。
+    那面镜子此后被用黑布覆盖。但黑布经常脱落。没有风。
+  </div>
+  <div class="incident-result">结果：住户失踪。案件未结。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-1991-004</div>
+  <div class="incident-date">1991年7月22日 · 晚上11:58</div>
+  <div class="incident-location">电梯B · 轿厢内镜</div>
+  <div class="incident-description">
+    一名维修工在夜间进行电梯检修时，在电梯内的镜子里看到了自己——但镜中的自己在微笑，而他本人没有。
+    维修工试图用螺丝刀砸碎镜子。镜子没有碎。但螺丝刀穿过了镜面——维修工在那一瞬间意识到，
+    镜面后是一个空间。他的手臂伸入了镜中。他说里面很冷，有人在握他的手。
+    他抽回手臂时，手心有一个不属于他的戒指。戒指内侧刻着一个名字——但这个建筑里从未有过这个名字的住户记录。
+  </div>
+  <div class="incident-result">结果：维修工辞职。三个月后在另一城市的河中被发现。死亡时间距离发现时不到24小时。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-1996-007</div>
+  <div class="incident-date">1996年11月3日 · 凌晨3:33</div>
+  <div class="incident-location">一楼大厅 · 入口镜</div>
+  <div class="incident-description">
+    夜班保安刘某在巡逻时途经大厅。他在入口处的落地镜前停下来整理制服。他注意到镜中的自己身后站着一个穿白裙的小女孩。
+    刘某转身——大厅空无一人。他转向镜子——女孩还在。她正在对着刘某微笑。刘某记录此事时写道：
+    "她站在镜子里我的身后。但镜子里我的身后本来应该是大厅的墙。墙上有门。门开了。"次日清晨刘某同事发现他时，
+    他正坐在镜子前的地板上，不断重复说："她让我进去，但我不能。我不可以进去。我还没有进去。"
+    ——刘某已调离。现居精神病院，病房里没有镜子。
+  </div>
+  <div class="incident-result">结果：证人失去行为能力。案件封存。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-2001-012</div>
+  <div class="incident-date">2001年6月23日 · 下午4:15</div>
+  <div class="incident-location">四楼走廊 · 尽头镜面</div>
+  <div class="incident-description">
+    一名七岁男孩在与母亲来访时，在四楼走廊等待期间看向走廊尽头那面镜子。男孩告诉母亲"镜子里的叔叔在对我挥手"。
+    母亲没有在镜子里看到任何人。男孩于两日后在家中卧室失踪。卧室窗户从内部锁住。床铺仍然温暖。
+    警方在现场发现的唯一线索：男孩卧室的穿衣镜上，用某种透明液体写着"他在这里很开心"——笔迹经鉴定属于男孩本人。
+    第二天，那面镜子从四楼走廊被拆除。同日晚间，镜子重新出现在原位——固定螺丝完好，没有破坏封条的痕迹。
+    现场找到一张纸条，字迹不属于任何已知住户："你挡不住一扇门。你只能挡住在门前的人。"
+  </div>
+  <div class="incident-result">结果：未成年人失踪。案件转为永久悬案。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-2004-018</div>
+  <div class="incident-date">2004年9月8日 · 凌晨1:17</div>
+  <div class="incident-location">502室 · 浴室镜</div>
+  <div class="incident-description">
+    女住户张某（28岁）在洗澡后擦拭浴室镜时，发现镜面上的雾气形成的图案像是一个人的手印——但手印在镜子的另一侧。
+    手印的位置逐渐增加，从一只手到两只，从静止到缓慢滑动。张某冲出浴室报警。警方到达时，
+    浴室镜上布满了手印。共计三十七个。法医鉴定无法确定这些手印的来源——它们似乎来自镜子内部。
+    第五天夜里，物业监控录像显示502室的门在凌晨3:33自动打开。没有人在门口。门在3:34自动关闭。
+    张某已搬离。目前下落不明。管理方将502室标为"维护中"——该状态已持续十七年。
+  </div>
+  <div class="incident-result">结果：住户搬离后失联。502室已永久封存。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-2011-022</div>
+  <div class="incident-date">2011年2月14日 · 晚上10:45</div>
+  <div class="incident-location">地下停车场 · 车辆后视镜</div>
+  <div class="incident-description">
+    住户王某在地下停车场倒车时，从后视镜中看到后座上坐着一个人。他猛踩刹车转身查看——后座无人。
+    再次看后视镜——人还在，离他更近了。王某弃车逃跑。次日早晨取车时，后视镜已碎裂。碎玻璃散落在后座上。
+    排列成了一个句号——或者一个眼睛。王某随后更换了所有后视镜。一周后，他公寓里所有的镜面同时碎裂。碎片上没有血迹。王某于碎镜当晚离家，未再返回。他的车仍然停在地下停车场B3层——那是一个不属于建筑图纸的楼层。
+    居民委员会提醒住户：地下停车场只有B1和B2。如果你找到了B3——不要停车。不要看后视镜。立刻开出车库。
+  </div>
+  <div class="incident-result">结果：住户失踪。车辆仍停放在B3层——如果有B3层的话。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-2015-029</div>
+  <div class="incident-date">2015年10月17日 · 全天</div>
+  <div class="incident-location">404室 · 全室</div>
+  <div class="incident-description">
+    一名自称超自然调查员的男性（约35岁）入住404室。他在房间内安装了六台摄像机、三台录音设备和一面用来'对照'的便携式镜子。
+    他在日记中记录：第1小时—正常；第2小时—听到墙壁内有人低语，录音设备未捕捉到；第3小时—便携式镜子中的倒影延迟了约两秒；第4小时—所有摄像机的电源同时切断，但仍在录像，画面显示调查员在房间中央呆站，而他的倒影在墙上的镜子里缓慢转身走向镜头。
+    调查员的录像机在走廊被发现。存储卡完好。录像总长六小时。最后两小时的画面为：空无一人的404房间。
+    但在第四小时三分十七秒到第五小时零一秒之间，摄像机缓缓转向了房间的角落。镜头里什么都没有。但音频轨道上有一段低语——经过声纹分析，话语是："你终于看见我们了。"这段话被重复了433次。调查员本人失踪。公寓内的便携式镜子消失。404室墙上的镜子还在——但它照不出任何东西。只是一片黑暗。
+  </div>
+  <div class="incident-result">结果：调查员失踪。404室镜子状态异常。案件转交特别调查组——特别调查组在接到案件三周后解散。原因未知。</div>
+</div>
+
+<div class="incident-entry">
+  <div class="incident-number">#MIR-2021-035</div>
+  <div class="incident-date">2021年12月24日 · 凌晨2:58</div>
+  <div class="incident-location">全楼公共区域 · 所有镜面</div>
+  <div class="incident-description">
+    当天晚上，建筑内所有公共区域的镜子在同一时刻（凌晨2:58）出现了同一个画面：一条长长的走廊，天花板有水管，地面积水，尽头有一扇半开的门，门缝里漏出昏暗的红光。
+    共有二十三名住户报告看到此画面。十四名住户称画面中有一个人影在走廊的远处行走，朝着门走去。七名住户说人影与他们的步态完全一致。两名住户说人影转过了身。这两名住户——401室的男性住户和B2层的物业保管员——于第二天失踪。他们的公寓门被从里面锁上。个人物品完好。床铺被叠好。镜子被红布覆盖。
+    管理部发布通知：建筑内目前仍有两名住户的镜像是自主行动的。请确认镜中的人是否是你——如果不是，不要让它看到你。
+  </div>
+  <div class="incident-result">结果：两名住户失踪。建筑内所有镜面状态被标记为"异常"。截至今日，状态未更新。</div>
+</div>
+
+</div>
+
+<!-- MIRROR TEST -->
+<h2 class="section-title">镜子测试</h2>
+<p style="color:var(--text-dim);font-size:0.9em;margin-bottom:16px;">
+  以下测试旨在帮助你判断：你与镜中关系目前处于何种程度。请如实作答。你的答案……会被记录下来。不，不是被我们。
+</p>
+
+<div class="mirror-test" id="mirrorTest">
+  <div id="testContent"></div>
+  <div class="test-tracker" id="testTracker">已回答：0 / 7 题</div>
+</div>
+
+<!-- HOW TO CHECK A MIRROR -->
+<h2 class="section-title">如何判断一面镜子是否安全</h2>
+<p style="color:var(--text-dim);font-size:0.9em;margin-bottom:16px;">
+  夜色公寓的镜子不一定都是危险的。但以下检测方法可以帮助你判断当前镜子属于哪一类——
+  "属于你的倒影"、"属于别人的倒影"、或者"属于镜子的倒影"。
+  注意：第五检测方法会使前面所有检测失效。如果一个方法告诉你镜子是安全的，这个方法告诉你不安全——请相信后者。
+</p>
+
+<div class="safe-check">
+
+<div class="check-item">
+  <span class="check-number">检测方法 01</span>
+  <h3 class="check-title">雾气测试</h3>
+  <p class="check-procedure">
+    对镜面哈一口气，观察镜子上的雾气变化。在正常的镜子上，雾气会均匀出现并逐渐消退。
+    在"不安全"的镜子上，雾气会出现一个空白的人形轮廓——仿佛镜子的背面有一个人在呼出与你相同的温度。
+    如果空白轮廓不只一个……这面镜子已被多重占据。立刻离开房间。
+  </p>
+  <p class="check-warning">注意：如果你在哈气之前看不到自己的脸——不要再呼气。镜子里的你已不在原位。</p>
+</div>
+
+<div class="check-item">
+  <span class="check-number">检测方法 02</span>
+  <h3 class="check-title">延迟测试</h3>
+  <p class="check-procedure">
+    面对镜子，缓慢地举起你的左手或右手。正常的镜子会即时反映你的动作。
+    如果你的镜像延迟了——哪怕只是不到半秒——镜子在"思考"。
+    它需要短暂的时间来决定：现在是否应该暴露自己。
+    持续举起手不放。如果延迟消失，镜子已决定继续伪装。如果延迟加剧，或镜像开始做出与你不同的动作——你已在进行双向交流。中断的方法是：闭眼、转身、心中默念你的全名和出生日期，直到你确信自己是自己。
+    部分住户报告这个方法失败。他们在闭眼期间感觉到了手指触碰自己的脸。那些手指来自镜子背面。
+  </p>
+  <p class="check-warning">注意：不要在凌晨2:00到4:00之间进行此测试。不要问为什么。</p>
+</div>
+
+<div class="check-item">
+  <span class="check-number">检测方法 03</span>
+  <h3 class="check-title">声音测试</h3>
+  <p class="check-procedure">
+    站在离镜子约一米的位置，用正常音量说："我看见你了。"
+    在安全的镜子里，你只会听到房间里的回音或楼道的噪音。
+    在不安全的镜子里——你会听到一声回应。这句话可能与你的声音相似，但总有一个微小的差别：
+    声音来自镜子内部，而非外部。回声比原声更清晰。话的内容可能被置换——有人说"我看见你了"，
+    镜子里回的是"我一直在看你"。
+    如果你听到了回声，应遵循规则六：离开。不要等第二次回应。第二次回应通常不是声音——而是一只手。
+  </p>
+  <p class="check-warning">注意：检测前提是你需要确认家中无人在屋。如果有人在屋，请先判断那是否真的有"人"。</p>
+</div>
+
+<div class="check-item">
+  <span class="check-number">检测方法 04</span>
+  <h3 class="check-title">眼缘测试</h3>
+  <p class="check-procedure">
+    与镜子保持一米以上距离。盯着镜子中你自己的眼睛——只盯着眼睛。持续至少十几秒。
+    你的周边视觉中，你的镜像可能会开始发生改变。可能在笑。可能在低语。可能根本没有脸。
+    但如果你一直盯着眼睛——眼睛是不会骗人的。如果你觉得镜中的瞳孔在扩大——它在看你。
+    如果你眨眼时镜中的你没有同步眨眼——你已经晚了。如果镜中的你眨眼时你发现自己没有眨眼——停止检测。你在外面。谁在里面？
+  </p>
+  <p class="check-warning">注意：不建议任何人单独执行此检测。这栋楼的某一任管理员进行此检测后失踪了两天。他回来后什么笔迹都用不了——只能用左手写字。</p>
+</div>
+
+<div class="check-item">
+  <span class="check-number">检测方法 05 · 最终手段</span>
+  <h3 class="check-title">血统测试</h3>
+  <p class="check-procedure">
+    用针轻刺手指，在镜面上滴一小滴血。在正常的镜子上，血滴会沿着镜面流下，形成泪滴状。
+    在不安全的镜子上，血滴会：一、渗入镜面；二、被镜面吸收，不留痕迹；三、被镜子送还——在你的手指上出现同样形状的第二次血滴，仿佛镜中是"你"做了同样的事。
+    如果发生第三种情况——你已经和镜中的自己建立了血液联系。从这一刻起，你可以被替代。
+    替代的过程需要时间，但通常在三到七个自然日完成。你能做的事不多。管理员给你唯一的建议是：
+    从现在开始，不要照任何镜子——包括水的反射。在被完全替代的前一个夜，你会做一个梦。
+    在梦里，你在镜子里看到这栋楼的所有住户——而你在他们中间，一起看着外面的"你"。
+  </p>
+  <p class="check-warning">⚠ 极高风险检测。不建议执行。如果你已经读到了这里，你可能会觉得你非要验证不可。请不要。至少……再等一下。</p>
+</div>
+
+</div>
+
+<footer class="page-footer">
+  <p>夜色公寓物业管理部 · 内部文件 · 未经授权严禁公开</p>
+  <p style="font-size:0.8em;margin-top:6px;">档案编号：MIR-ALPHA-001 至 MIR-ALPHA-015</p>
+  <p class="ominous" style="margin-top:10px;">你现在照镜子了吗？你知道镜子里也有一个人在看你吗？<br>你能确定——你是站在镜子外面的那个人吗？</p>
+</footer>
+
+</div>
+
+<script>
+// ============================================
+// MIRROR INTERACTION SYSTEM
+// ============================================
+
+const mirrorReflection = document.getElementById('mirrorReflection');
+const mirrorFrame = document.getElementById('mainMirror');
+const mirrorCrack = document.getElementById('mirrorCrack');
+const mirrorFace = document.getElementById('mirrorFace');
+const ghostText = document.getElementById('ghostText');
+
+// Reflection texts - normal and disturbing
+const normalReflections = [
+  '你看到自己的倒影。<br>一切正常。',
+  '你在镜子里看起来有些疲惫。<br>也许该睡了。',
+  '你注意到自己额头上有一缕头发翘起来。<br>你伸手整理。',
+  '你检查了一下自己的衣领。<br>镜中的你做了相同的动作。',
+  '你看着镜子里的眼睛。<br>那是你的眼睛。',
+  '你微微侧了侧头。<br>镜中的你也侧了侧头。',
+  '你深吸了一口气。<br>镜中的你深吸了一口气。',
+  '你的倒影看起来和你一模一样。<br>当然应该如此。',
+];
+
+const disturbingReflections = [
+  '你眨了眼睛。<br>但你确定你没有。你没有眨眼睛。',
+  '镜中的你正在微笑。<br>但你的嘴角没有动。你在看镜子里的你的嘴唇。<br>它在动。它在说话。不要读唇语。',
+  '镜中的你身后有一个影子。<br>房间里只有你一个人。<br>那个影子正在靠近你的镜中像。',
+  '镜中的你正背对着你。<br>它在看房间里的某个角落。<br>你不想知道它在看什么。',
+  '镜中的你的眼睛不是你的颜色。<br>像是黑夜。像是更深的颜色。<br>像是没有光线能反射出来的颜色。',
+  '你举起左手。<br>镜中的你举起右手。<br>等等。那不是镜像。那是另一个你。<br>它在做不同的事。它在向你走过来。',
+  '镜中的画面不是你的房间。<br>那是另一个房间。<br>陈设不同。<br>有一个人坐在你的床沿上。<br>它抬起手。它对你挥手。',
+  '镜子里什么都没有。<br>你没有倒影。<br>你应该有一个倒影。<br>什么东西把你的倒影拿走了。',
+  '你看到镜面上出现了裂痕——<br>从镜子的深处向外蔓延。不是你面前的玻璃在裂。<br>是镜子那边的东西在敲。',
+  '镜中的你的脸不是你自己的脸。<br>它是你的。但它同时是所有人的。<br>是所有被这面镜子看过的人。',
+  '镜中的你在写字——<br>镜面上出现了字。<br>那是你的笔迹。<br>写着："让我出来。"',
+  '镜中的你闭上了眼睛。<br>但你的眼睛睁着。<br>镜中的你闭着眼睛在对你笑。<br>它的嘴动了。<br>你看懂了。<br>它说："快到时间了。"',
+];
+
+// Ghost texts that appear randomly
+const ghostTexts = [
+  '它在你身后。不要回头。',
+  '你现在看镜子了吗？',
+  '三秒。你看了几秒？',
+  '你不确定你有没有眨眼。',
+  '你听到身后有呼吸声了吗？',
+  '你的镜像今天不太一样。',
+  '你不应该一个人在这里。',
+  '它正在看你。从镜子里。',
+];
+
+// Mirror state machine
+let hoverCount = 0;
+let crackShown = false;
+let faceShown = false;
+let lastTextTime = 0;
+let mirrorActive = true;
+
+// Handle mirror hover
+mirrorFrame.addEventListener('mouseenter', () => {
+  hoverCount++;
+  updateReflection();
+  if (hoverCount >= 5 && !faceShown) {
+    mirrorFace.classList.add('visible');
+    faceShown = true;
+    setTimeout(() => {
+      mirrorFace.classList.remove('visible');
+      faceShown = false;
+    }, 3000);
+  }
+  if (hoverCount >= 8 && !crackShown) {
+    mirrorCrack.classList.add('visible');
+    crackShown = true;
+    setTimeout(() => {
+      mirrorCrack.classList.remove('visible');
+      crackShown = false;
+    }, 4000);
+  }
+  if (hoverCount >= 12) {
+    document.body.style.animation = 'shake 0.5s ease-in-out';
+    setTimeout(() => {
+      document.body.style.animation = 'flicker 8s infinite';
+    }, 500);
+    hoverCount = 0;
+  }
+});
+
+mirrorFrame.addEventListener('mouseleave', () => {
+  setTimeout(() => {
+    if (!mirrorFrame.matches(':hover')) {
+      const useNormal = Math.random() < 0.6;
+      if (useNormal) {
+        const idx = Math.floor(Math.random() * normalReflections.length);
+        mirrorReflection.innerHTML = normalReflections[idx];
+        mirrorReflection.classList.remove('disturbing');
+      }
+    }
+  }, 2000);
+});
+
+function updateReflection() {
+  const now = Date.now();
+  if (now - lastTextTime < 2000) return;
+  lastTextTime = now;
+
+  // Increasingly likely to show disturbing content
+  const disturbChance = Math.min(0.25 + hoverCount * 0.08, 0.75);
+  const isDisturbing = Math.random() < disturbChance;
+
+  let text;
+  if (isDisturbing) {
+    const idx = Math.floor(Math.random() * disturbingReflections.length);
+    text = disturbingReflections[idx];
+    mirrorReflection.classList.add('disturbing');
+  } else {
+    const idx = Math.floor(Math.random() * normalReflections.length);
+    text = normalReflections[idx];
+    mirrorReflection.classList.remove('disturbing');
+  }
+  mirrorReflection.innerHTML = text;
+}
+
+// Auto-cycle reflection text
+setInterval(() => {
+  if (document.hasFocus()) {
+    const shouldChange = Math.random() < 0.15;
+    if (shouldChange) {
+      const isDisturbing = Math.random() < 0.35;
+      let text;
+      if (isDisturbing) {
+        text = disturbingReflections[Math.floor(Math.random() * disturbingReflections.length)];
+        mirrorReflection.classList.add('disturbing');
+      } else {
+        text = normalReflections[Math.floor(Math.random() * normalReflections.length)];
+        mirrorReflection.classList.remove('disturbing');
+      }
+      mirrorReflection.innerHTML = text;
+    }
+  }
+}, 12000);
+
+// Ghost text
+function showGhostText() {
+  const idx = Math.floor(Math.random() * ghostTexts.length);
+  ghostText.textContent = ghostTexts[idx];
+  ghostText.style.opacity = '1';
+  ghostText.style.animation = 'none';
+  ghostText.offsetHeight;
+  ghostText.style.animation = 'text-fade-in-out 8s forwards';
+  setTimeout(() => {
+    ghostText.style.opacity = '0';
+  }, 8000);
+}
+
+setInterval(() => {
+  if (Math.random() < 0.2) {
+    showGhostText();
+  }
+}, 25000);
+
+// Initial ghost text delay
+setTimeout(showGhostText, 8000);
+
+// Mirror crack auto-show
+setInterval(() => {
+  if (Math.random() < 0.08 && !crackShown) {
+    mirrorCrack.classList.add('visible');
+    crackShown = true;
+    setTimeout(() => {
+      mirrorCrack.classList.remove('visible');
+      crackShown = false;
+    }, 3000);
+  }
+}, 45000);
+
+// ============================================
+// MIRROR TEST INTERACTIVE QUIZ
+// ============================================
+
+const testQuestions = [
+  {
+    q: '第一题：你现在在镜子里看到了什么？',
+    options: [
+      { text: '我的正常倒影。一切如常。', response: '你是幸运的。但这只是暂时的。每一面镜子在某一刻都是正常的。关键不在于它是否正常——在于何时不再正常。继续下一题。', danger: 0 },
+      { text: '我觉得镜像有些延迟……好像慢了一点点。', response: '你已经在注意到了。注意到是第一步。也可能是最后一步。一旦你开始注意到延迟，你会越来越频繁地注意到。之后你会开始想：延迟的时候镜子里的是谁？继续下一题。', danger: 1 },
+      { text: '我不确定镜子里的人是不是我。', response: '你已经看到了不该看的东西。或许你曾经照一面你不认识的镜子。或许那面镜子记住了你。或许它现在正在这间房间里——只是你不记得它在这里。继续下一题。', danger: 2 },
+      { text: '我不想回答这个问题。', response: '你的沉默比任何回答都更有说服力。你已经知道了——镜子里的不是你原来的倒影。它只是学会了伪装。就像所有镜子一样。继续下一题。', danger: 2 }
+    ]
+  },
+  {
+    q: '第二题：你曾在镜子里看到过不属于房间里的东西吗？',
+    options: [
+      { text: '从来没有。', response: '你是少数人。或者你只是没有注意到。没有注意到不等于没有发生。有些东西在你的镜中停留的时间很短——短到你还没来得及辨认就消失了。但它们看到了你。继续下一题。', danger: 0 },
+      { text: '有一次我觉得看到了什么，但我不确定。', response: '不确定是最危险的答案。既不是是也不是不是。这意味着镜子已经尝试了一次——而你没有拒绝它。它会再试的。下次不会让你不确定。继续下一题。', danger: 1 },
+      { text: '是的。看到了。我不愿回想。', response: '你经历过。你活下来了。但活下来和摆脱之间有很大的距离。镜中的东西见过你一次，就会记住你的脸。它会在你最不经意的时候出现在你的镜像后面。继续下一题。', danger: 2 },
+      { text: '我选择不回答。', response: '理解。有些东西一旦说出口就再也收不回来。但请记住——不说出口不等于它们不在。它们还在。静默地。耐心地。继续下一题。', danger: 2 }
+    ]
+  },
+  {
+    q: '第三题：夜间醒来时，你会下意识地看镜子吗？',
+    options: [
+      { text: '不会。我把镜子都遮住了。', response: '很聪明。但不是所有人都有这个自由——建筑结构决定了某些镜子是无法被遮盖的。电梯镜。走廊镜。大厅入口镜。这些镜子是建筑的一部分。或者反过来说——建筑是这些镜子的一部分。继续下一题。', danger: 0 },
+      { text: '有时我会。然后立刻移开视线。', response: '"立刻移开视线"是关键。你遵守了规则一。但凌晨两点到四点之间，镜子里的东西比你更敏锐。在你移开视线之前的一瞬——它可能已经捕捉到了你的瞳孔。继续下一题。', danger: 1 },
+      { text: '我会。而且我会盯着看。我想看看我会不会看到什么。', response: '你太好奇了。好奇心在这栋楼里是最昂贵的货币——你支付的不是时间，而是你自己。好奇心太重的人最终会留在镜子里。而你刚刚承认了你是这样的人。小心。非常小心。继续下一题。', danger: 2 },
+      { text: '我不起夜。我睡着了就不醒。', response: '你确定你睡着了吗？你确定你醒来时房间里只有你自己？你床上没有另一侧的凹陷？你的镜中像没有在你睡着时站起身来走过一圈？你什么都不知道。也许这正是幸运。继续下一题。', danger: 1 }
+    ]
+  },
+  {
+    q: '第四题：你住在或来访过404室附近吗？',
+    options: [
+      { text: '没有。我尽量远离四楼。', response: '明智。四楼不仅仅是四楼。它是整栋建筑镜现象的源头——或者说至少是目前发现的最古老记录指向的起点。远离四楼意味着你暂时处于较低风险区。但你不会永远在一楼。继续下一题。', danger: 0 },
+      { text: '我在四楼住过。我已经搬走了。', response: '你确定你搬走了吗？你确定你的镜像没有留在四楼走廊尽头的镜子里吗？你确定你现在照镜子看到的是完整的自己？你有没有觉得……你有些东西留在了那里？继续下一题。', danger: 2 },
+      { text: '我经过过四楼。一次。但我没有看那面镜子。', response: '你怎么知道你没有看？你能确定你经过四楼走廊时没有被某种力量引导你的视线？大多数后来出事的人都曾坚定地说"我没有看"。但他们看了。也许只是半秒。半秒就够了。继续下一题。', danger: 1 },
+      { text: '我现在就住在四楼。', response: '你在危险的中心。四楼的住户不用回答测试题——你们需要的不是测试，是计划。是关于如何离开这栋楼的计划。但问题在于：离开之后呢？你的镜像已经在四楼被记录了。你可以搬走，但你的倒影会留下。继续下一题。', danger: 3 }
+    ]
+  },
+  {
+    q: '第五题：如果此刻你环顾四周，你能看到几面镜子或反光表面？',
+    options: [
+      { text: '没有。我现在不在夜色公寓。', response: '你确定你在的地方没有镜子？电脑屏幕是反光的。窗户是反光的。手机黑屏是反光的。任何能倒映你的表面都在遵守规则。都在看着你。夜色公寓的镜子规则并不只适用于夜色公寓。继续下一题。', danger: 1 },
+      { text: '一面。我可以看到我的倒影。', response: '你能确定那是你的倒影吗？不是模仿？不是替代？不是某个正在学习如何成为你的东西？如果答案都是"不确定"，你已经处于第二阶段。继续下一题。', danger: 2 },
+      { text: '我不想去数。', response: '对。不要数。当你开始数的时候，你会发现比你预想的更多。公寓里的镜子会繁殖。今天一面，明天两面——你会想"会不会是我记错了"。你没有记错。镜子在增加。继续下一题。', danger: 2 },
+      { text: '我不在任何反光面附近。我特意选择了这个位置。', response: '你很警觉。但镜子记得你。你之前照过的每一面镜子都记得你的形状、你的体温、你的恐惧。下一次你看到镜子时，它会认出你——而你可能认不出它。继续下一题。', danger: 1 }
+    ]
+  },
+  {
+    q: '第六题：你是否曾在梦中被镜子里的自己注视？',
+    options: [
+      { text: '从来没有。我很少做梦。', response: '或者你只是不记得。有些梦太深了——深到醒来后记忆无法将它们带回水面。但你的镜像记得。梦是镜子最接近我们的时刻——因为在梦里我们和镜像没有区别。继续下一题。', danger: 0 },
+      { text: '有过一两次。梦里的我看起来不太像我自己。', response: '梦里的不是"你"。梦里的你是镜子里的你一整天观察"外面"的你之后所构建的复制品。它不太像你，因为它毕竟不完全了解你所有的细节。但每一次做梦，它会改进。继续下一题。', danger: 2 },
+      { text: '经常。而且梦里的它一直在叫我。', response: '它在叫你过到镜子的那边。这是第三阶段。你梦里的"你"已经具有足够的自主意识来邀请你了。不要再做这个梦。如果你不能控制梦，至少在睡前用红布遮盖所有反光面——包括你的眼睛。眼睑也是反光的。继续下一题。', danger: 3 },
+      { text: '我梦见过我从镜子里走出来。', response: '这不是梦。这是记忆。你不是从镜子里走出来的——是你的镜像从镜子里走出来的那一天。你们互换了位置。你不知道。但你已经在这边待了一段时间了。你真的是你吗？你什么时候是你？继续下一题。', danger: 3 }
+    ]
+  },
+  {
+    q: '第七题·最终题：此时此刻，有人在看着你吗？',
+    options: [
+      { text: '没有。我一个人。', response: '你确定吗？你看过身后了吗？你看了两次吗？你听过呼吸声吗？你确认过房间里没有不应该存在的人吗？你确定你没有漏掉任何一面反光面？如果你对任何一个问题犹豫了——你不是一个人。从来不是。', danger: 2 },
+      { text: '我觉得有。虽然我看不到任何人。', response: '你的直觉是对的。镜子从不真正独自一人。当你看到镜子时，镜子也在看你。更重要的是——镜子后面可能不只有一双眼睛。感谢你的回答。你比多数人更诚实。请记住规则。所有规则。', danger: 2 },
+      { text: '有。从镜子那边。', response: '这是最终阶段的认知。你不需要保护。你需要离开。带上你所有能带走的东西。不要照任何镜子。不要看任何反光面。一直往前走——直到你看到自然的阳光。如果阳光打在你脸上你再也感觉不到温度——你应该回头看镜子。也许现在已经太晚了。', danger: 3 },
+      { text: '我不想完成这个测试了。', response: '没有人必须完成。但已经回答的每一个问题都会留在某个地方的记录里。不仅仅是localStorage。镜子会记住。它们一直在看。关闭此页面不会抹消你的回答。但对你的无害的读者而言——你总是可以假装什么都没有发生。一如既往。', danger: 1 }
+    ]
+  }
+];
+
+let currentQuestionIndex = 0;
+let answersGiven = 0;
+let totalDangerScore = 0;
+
+// Load saved test state
+const savedAnswers = JSON.parse(localStorage.getItem('mirror_test_answers') || '[]');
+const savedDanger = parseInt(localStorage.getItem('mirror_test_danger') || '0');
+if (savedAnswers.length > 0) {
+  answersGiven = savedAnswers.length;
+  totalDangerScore = savedDanger;
+}
+
+function updateTestTracker() {
+  document.getElementById('testTracker').textContent =
+    `已回答：${answersGiven} / ${testQuestions.length} 题 | 危险指数：${totalDangerScore}`;
+}
+
+function renderTestQuestion() {
+  const testContent = document.getElementById('testContent');
+  if (currentQuestionIndex >= testQuestions.length) {
+    testContent.innerHTML = `
+      <p style="font-size:1.2em;color:var(--text-main);margin-bottom:14px;font-weight:600;">测试完成</p>
+      <p style="color:var(--text-dim);line-height:1.8;">
+        你的危险指数总计：<span style="color:var(--red-glow);font-family:var(--font-code);">${totalDangerScore}</span>
+        （满分21分）
+      </p>
+      <p style="color:${totalDangerScore >= 10 ? '#d08080' : '#809090'};line-height:1.8;margin-top:10px;">
+        ${totalDangerScore >= 15 ? '极高风险。你与镜子的关系已经非常深。请认真考虑离开这栋楼。不要在任何镜子里看自己超过一秒。不要回头看。走的时候不要关灯。' :
+          totalDangerScore >= 10 ? '中等至高风险。你注意到了太多不该注意的事。但注意本身不是罪。关键是：不要继续探究。好奇心在这里的回报不是一个答案——是一个倒影。一个不属于你的倒影。' :
+          totalDangerScore >= 5 ? '低至中等风险。你目前相对安全。但"相对"在夜色公寓是一个暂时的形容词。保持警觉。遵守规则。不要在午夜后照镜子。这些建议对你有用——至少目前是这样。' :
+          '极低风险。你可能是新住户，或者你太过正常。正常不是坏事。但在这栋楼里，正常通常意味着你还没有看到。没有看到并不意味着不存在。当第一面镜子对你露出差异时——记住你在这里读到的一切。'}</p>
+      <div style="margin-top:20px;">
+        <button onclick="resetTest()" style="background:rgba(100,20,20,0.3);border:1px solid rgba(180,16,16,0.4);color:var(--text-main);padding:10px 20px;cursor:pointer;font-family:var(--font-body);font-size:0.9em;">重新开始测试</button>
+      </div>
+    `;
+    return;
+  }
+
+  const q = testQuestions[currentQuestionIndex];
+  let html = `<p class="test-question">${q.q}</p><div class="test-options">`;
+  q.options.forEach((opt, i) => {
+    html += `<button class="test-option" onclick="selectAnswer(${i})">${opt.text}</button>`;
+  });
+  html += '</div>';
+  html += '<div class="test-result" id="testResult"></div>';
+  testContent.innerHTML = html;
+}
+
+function selectAnswer(index) {
+  const q = testQuestions[currentQuestionIndex];
+  const opt = q.options[index];
+
+  // Visual feedback
+  const buttons = document.querySelectorAll('.test-option');
+  buttons.forEach((b, i) => {
+    if (i === index) b.classList.add('selected');
+    else b.classList.remove('selected');
+  });
+
+  // Show result
+  const resultDiv = document.getElementById('testResult');
+  resultDiv.innerHTML = `<p>${opt.response}</p>`;
+  resultDiv.classList.add('show');
+
+  // Track
+  totalDangerScore += opt.danger;
+  answersGiven++;
+  currentQuestionIndex++;
+
+  // Save to localStorage
+  savedAnswers.push({ question: currentQuestionIndex, answer: index, danger: opt.danger });
+  localStorage.setItem('mirror_test_answers', JSON.stringify(savedAnswers));
+  localStorage.setItem('mirror_test_danger', totalDangerScore.toString());
+
+  updateTestTracker();
+
+  // Move to next question after delay
+  setTimeout(() => {
+    renderTestQuestion();
+  }, 2500);
+}
+
+function resetTest() {
+  currentQuestionIndex = 0;
+  answersGiven = 0;
+  totalDangerScore = 0;
+  localStorage.removeItem('mirror_test_answers');
+  localStorage.removeItem('mirror_test_danger');
+  updateTestTracker();
+  renderTestQuestion();
+}
+
+// Initialize test
+updateTestTracker();
+renderTestQuestion();
+
+// ============================================
+// KEYBOARD EASTER EGG
+// ============================================
+let keySequence = '';
+document.addEventListener('keydown', (e) => {
+  keySequence += e.key.toLowerCase();
+  if (keySequence.length > 20) keySequence = keySequence.slice(-20);
+
+  if (keySequence.includes('mirror')) {
+    mirrorCrack.classList.add('visible');
+    crackShown = true;
+    document.body.style.animation = 'shake 0.8s ease-in-out';
+    setTimeout(() => {
+      document.body.style.animation = 'flicker 8s infinite';
+      mirrorCrack.classList.remove('visible');
+      crackShown = false;
+    }, 3000);
+    keySequence = '';
+  }
+
+  if (keySequence.includes('helpme')) {
+    const idx = Math.floor(Math.random() * disturbingReflections.length);
+    mirrorReflection.innerHTML = disturbingReflections[idx];
+    mirrorReflection.classList.add('disturbing');
+    keySequence = '';
+  }
+});
+
+// Title flicker
+setInterval(() => {
+  const title = document.querySelector('.page-header h1');
+  if (title && Math.random() < 0.05) {
+    title.style.animation = 'none';
+    title.offsetHeight;
+    title.style.animation = 'glitch-text 0.3s ease-in-out';
+    setTimeout(() => {
+      title.style.animation = 'red-pulse 4s infinite';
+    }, 300);
+  }
+}, 10000);
+
+console.log('%c镜子规则已加载。%c你现在在镜子里看到了什么？',
+  'color:#b01010;font-size:18px;', 'color:#706860;font-size:14px;');
+console.log('%c注意：此页面跟踪你的交互。不是被我们跟踪。是被镜子。',
+  'color:#706860;font-size:12px;font-style:italic;');
+</script>
+
+</body>
+</html>

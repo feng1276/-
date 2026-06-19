@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>夜色公寓 — 电梯规则 | Elevator Rules</title>
+
+<!-- Google Fonts: Noto Serif SC (body), Orbitron (numbers/codes), Share Tech Mono (logs/terminal) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   CSS RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #060606;
+  color: #c8c0b8;
+  font-family: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  line-height: 1.7;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(139,0,0,0.6);
+  color: #c8c0b8;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a1a1a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a2020;
+}
+
+/* ============================================================
+   SVG FILTERS (hidden)
+   ============================================================ */
+.svg-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ============================================================
+   CRT SCANLINE OVERLAY
+   ============================================================ */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.12) 0px,
+    rgba(0,0,0,0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: scanlineMove 0.1s linear infinite;
+}
+
+@keyframes scanlineMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 4px; }
+}
+
+/* Occasional scanline flicker */
+.crt-overlay::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 60%,
+    rgba(0,0,0,0.25) 80%,
+    rgba(0,0,0,0.45) 100%
+  );
+  pointer-events: none;
+}
+
+/* ============================================================
+   GRAIN / NOISE OVERLAY
+   ============================================================ */
+.grain-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Additional subtle flicker overlay */
+.grain-overlay::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: rgba(0,0,0,0);
+  animation: grainFlicker 8s infinite;
+}
+
+@keyframes grainFlicker {
+  0%, 99.5%, 100% { background: rgba(0,0,0,0); }
+  99.6% { background: rgba(255,255,255,0.02); }
+  99.7% { background: rgba(0,0,0,0); }
+  99.8% { background: rgba(255,255,255,0.015); }
+}
+
+/* ============================================================
+   GLITCH FLICKER ANIMATION (for random use)
+   ============================================================ */
+@keyframes subtleFlicker {
+  0%, 100% { opacity: 1; }
+  3% { opacity: 0.97; }
+  6% { opacity: 1; }
+  45% { opacity: 0.98; }
+  48% { opacity: 1; }
+  92% { opacity: 0.96; }
+  95% { opacity: 1; }
+}
+
+body {
+  animation: subtleFlicker 12s infinite;
+}
+
+/* ============================================================
+   NAVIGATION BAR
+   ============================================================ */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(10,10,10,0.95);
+  border-bottom: 1px solid rgba(120,20,20,0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.nav-bar::-webkit-scrollbar {
+  height: 2px;
+}
+.nav-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nav-bar::-webkit-scrollbar-thumb {
+  background: rgba(139,0,0,0.3);
+}
+
+.nav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 12px;
+  min-height: 36px;
+}
+
+.nav-link {
+  display: inline-block;
+  padding: 8px 11px;
+  color: #706860;
+  text-decoration: none;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  transition: all 0.25s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: #8b0000;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #ff4040;
+  text-shadow: 0 0 8px rgba(255,32,32,0.5);
+}
+
+.nav-link:hover::after {
+  width: 60%;
+  background: #ff2020;
+  box-shadow: 0 0 6px rgba(255,32,32,0.6);
+}
+
+.nav-link.active {
+  color: #e0902a;
+  text-shadow: 0 0 6px rgba(224,144,42,0.4);
+}
+
+.nav-link.active::after {
+  width: 80%;
+  background: #b8701a;
+  box-shadow: 0 0 4px rgba(224,144,42,0.4);
+}
+
+.nav-separator {
+  color: rgba(120,20,20,0.3);
+  font-size: 0.65rem;
+  padding: 0 2px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+.main-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 30px 20px 60px;
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============================================================
+   RULES PLAQUE (left side)
+   ============================================================ */
+.rules-plaque {
+  flex: 0 0 360px;
+  max-width: 400px;
+  background: rgba(20,16,12,0.8);
+  border: 1px solid rgba(120,100,60,0.2);
+  border-radius: 4px;
+  padding: 28px 24px;
+  position: relative;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+/* Brass plaque effect on the border */
+.rules-plaque::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 1px solid rgba(184,112,26,0.15);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Corner ornaments */
+.rules-plaque::after {
+  content: '◆';
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(184,112,26,0.3);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.plaque-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(120,100,60,0.15);
+}
+
+.plaque-header h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.35rem;
+  color: #c8b898;
+  letter-spacing: 3px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.plaque-header .plaque-subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: #706860;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.plaque-header .plaque-ornament {
+  color: rgba(184,112,26,0.25);
+  font-size: 0.6rem;
+  letter-spacing: 6px;
+  margin-top: 8px;
+  display: block;
+}
+
+.rule-item {
+  padding: 10px 0 10px 20px;
+  border-left: 2px solid rgba(120,20,20,0.15);
+  margin-bottom: 8px;
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.rule-item:hover {
+  border-left-color: rgba(139,0,0,0.4);
+}
+
+.rule-item .rule-number {
+  position: absolute;
+  left: -10px;
+  top: 10px;
+  background: #111;
+  border: 1px solid rgba(120,20,20,0.3);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  color: #b01010;
+}
+
+.rule-item p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #b8b0a8;
+}
+
+.rule-item p strong {
+  color: #e0902a;
+  font-weight: 600;
+}
+
+.rule-item.warning p {
+  color: #c89090;
+}
+
+.rule-item.warning .rule-number {
+  border-color: rgba(255,32,32,0.4);
+  color: #ff2020;
+  animation: warnPulse 2s infinite;
+}
+
+@keyframes warnPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,32,32,0); }
+  50% { box-shadow: 0 0 6px rgba(255,32,32,0.3); }
+}
+
+.plaque-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(120,100,60,0.15);
+  text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: #504840;
+  letter-spacing: 1px;
+}
+
+/* ============================================================
+   ELEVATOR PANEL (center)
+   ============================================================ */
+.elevator-panel-wrapper {
+  flex: 0 0 520px;
+  max-width: 560px;
+}
+
+.elevator-panel {
+  background: linear-gradient(180deg, #14120e 0%, #0f0d0a 100%);
+  border: 3px solid #1a1814;
+  border-radius: 8px;
+  padding: 24px 28px 20px;
+  position: relative;
+  box-shadow:
+    0 12px 48px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(80,60,40,0.15),
+    inset 0 0 60px rgba(0,0,0,0.5);
+}
+
+/* Metallic frame effect */
+.elevator-panel::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid rgba(80,60,40,0.2);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* Top metallic rim */
+.elevator-panel::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(120,90,50,0.3) 15%,
+    rgba(180,140,80,0.4) 50%,
+    rgba(120,90,50,0.3) 85%,
+    transparent 100%
+  );
+  border-radius: 2px 2px 0 0;
+  pointer-events: none;
+}
+
+/* Panel header */
+.panel-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.panel-header .panel-brand {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  color: #504840;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.panel-header .panel-model {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  color: #403830;
+  letter-spacing: 2px;
+}
+
+/* ============================================================
+   FLOOR DISPLAY (7-segment LED style)
+   ============================================================ */
+.display-section {
+  margin-bottom: 14px;
+}
+
+.floor-display-container {
+  background: #080604;
+  border: 3px solid #1a1612;
+  border-radius: 4px;
+  padding: 6px 16px 8px;
+  text-align: center;
+  position: relative;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.9),
+    0 0 3px rgba(255,32,32,0.08);
+  margin-bottom: 8px;
+}
+
+/* LED housing effect - inner bezel */
+.floor-display-container::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid rgba(30,24,18,0.8);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.display-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  color: #504030;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.display-digits {
+  font-family: 'Orbitron', monospace;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ff2020;
+  text-shadow:
+    0 0 4px #ff2020,
+    0 0 8px #ff2020,
+    0 0 16px #ff2020,
+    0 0 32px #b01010,
+    0 0 60px #8b0000;
+  letter-spacing: 8px;
+  line-height: 1;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+/* Segmented display horizontal lines (pseudo-segment look) */
+.display-digits::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: rgba(255,32,32,0.05);
+  pointer-events: none;
+}
+
+/* ============================================================
+   STATUS / MESSAGE DISPLAY
+   ============================================================ */
+.status-display {
+  background: #080604;
+  border: 2px solid #14120e;
+  border-radius: 3px;
+  padding: 6px 12px;
+  text-align: center;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.8);
+  margin-bottom: 16px;
+}
+
+.status-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: #706040;
+  letter-spacing: 1px;
+  transition: color 0.3s ease;
+}
+
+.status-text.warning-msg {
+  color: #ff4040;
+  animation: statusBlink 0.8s infinite;
+}
+
+.status-text.success-msg {
+  color: #40c040;
+  text-shadow: 0 0 6px rgba(64,192,64,0.4);
+}
+
+@keyframes statusBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ============================================================
+   BUTTON PANEL
+   ============================================================ */
+.button-panel {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 16px 10px;
+  background: rgba(10,8,6,0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(30,24,18,0.3);
+}
+
+.btn-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Floor button base */
+.floor-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #1e1c18, #0a0806);
+  border: 2px solid #2a2520;
+  color: #b8b0a0;
+  font-family: 'Orbitron', monospace;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  box-shadow:
+    0 5px 10px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(60,50,40,0.2),
+    inset 0 1px 2px rgba(255,255,255,0.03);
+  transition: all 0.1s ease;
+  outline: none;
+  user-select: none;
+}
+
+/* Metallic rim highlight */
+.floor-btn::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.floor-btn:hover {
+  border-color: #604020;
+  color: #e0902a;
+  box-shadow:
+    0 5px 10px rgba(0,0,0,0.7),
+    0 0 20px rgba(224,144,42,0.25),
+    0 0 40px rgba(224,144,42,0.08);
+}
+
+.floor-btn:active,
+.floor-btn.pressed {
+  background: radial-gradient(circle at 35% 30%, #0a0806, #060404);
+  border-color: #b8701a;
+  color: #ffb040;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.8),
+    inset 0 3px 6px rgba(0,0,0,0.8),
+    0 0 15px rgba(224,144,42,0.4);
+  transform: translateY(2px);
+}
+
+/* Active/selected state for sequence tracking */
+.floor-btn.sequence-active {
+  border-color: #e0902a;
+  color: #e0902a;
+  box-shadow:
+    0 5px 10px rgba(0,0,0,0.7),
+    0 0 12px rgba(224,144,42,0.5);
+  animation: btnPulse 1.5s infinite;
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 5px 10px rgba(0,0,0,0.7), 0 0 12px rgba(224,144,42,0.5); }
+  50% { box-shadow: 0 5px 10px rgba(0,0,0,0.7), 0 0 24px rgba(224,144,42,0.7); }
+}
+
+/* B2 button - danger/warning styling */
+.floor-btn.btn-b2 {
+  border-color: #3a1010;
+  color: #c88080;
+}
+
+.floor-btn.btn-b2::after {
+  content: '!';
+  position: absolute;
+  top: -3px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #8b0000;
+  color: #ff4040;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  animation: dangerPulse 1.5s infinite;
+  box-shadow: 0 0 4px rgba(255,32,32,0.5);
+  pointer-events: none;
+}
+
+@keyframes dangerPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(255,32,32,0.5); }
+  50% { box-shadow: 0 0 10px rgba(255,32,32,0.8); }
+}
+
+.floor-btn.btn-b2:hover {
+  border-color: #8b0000;
+  color: #ff6060;
+  box-shadow:
+    0 5px 10px rgba(0,0,0,0.7),
+    0 0 20px rgba(255,32,32,0.3);
+}
+
+/* Floor 7 button - ghostly/faded */
+.floor-btn.btn-7 {
+  opacity: 0.45;
+  color: #605850;
+  border-style: dashed;
+  border-color: #2a2520;
+}
+
+.floor-btn.btn-7::before {
+  opacity: 0.3;
+}
+
+.floor-btn.btn-7:hover {
+  opacity: 0.6;
+  border-color: #403830;
+  color: #807870;
+  box-shadow:
+    0 5px 10px rgba(0,0,0,0.7),
+    0 0 8px rgba(200,192,184,0.08);
+}
+
+/* B1 button subtle styling */
+.floor-btn.btn-b1 {
+  color: #908878;
+  border-color: #2a2520;
+}
+
+/* ============================================================
+   DOOR AREA
+   ============================================================ */
+.door-area {
+  margin: 0 auto 16px;
+  max-width: 380px;
+}
+
+.door-frame {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #0a0806;
+  border: 2px solid #1a1814;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+}
+
+/* Door interior (destination, visible when doors open) */
+.door-interior {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(200,150,80,0.15) 0%,
+    rgba(200,150,80,0.05) 40%,
+    rgba(10,8,6,0.9) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.3s;
+}
+
+.door-interior .interior-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  color: rgba(224,144,42,0.6);
+  text-shadow: 0 0 20px rgba(224,144,42,0.3);
+  letter-spacing: 6px;
+}
+
+.door-interior.visible {
+  opacity: 1;
+}
+
+/* Left door */
+.door-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    #1a1612 0%,
+    #14120e 20%,
+    #181410 50%,
+    #14120e 80%,
+    #1a1612 100%
+  );
+  border-right: 1px solid #2a2420;
+  z-index: 2;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 0 8px rgba(0,0,0,0.6);
+}
+
+/* Door vertical line detail */
+.door-left::after {
+  content: '';
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: rgba(200,192,184,0.04);
+}
+
+.door-left::before {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: rgba(80,60,20,0.1);
+  border-radius: 1px;
+}
+
+/* Right door */
+.door-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(270deg,
+    #1a1612 0%,
+    #14120e 20%,
+    #181410 50%,
+    #14120e 80%,
+    #1a1612 100%
+  );
+  border-left: 1px solid #2a2420;
+  z-index: 2;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -2px 0 8px rgba(0,0,0,0.6);
+}
+
+.door-right::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: rgba(200,192,184,0.04);
+}
+
+/* Door open state */
+.door-area.doors-open .door-left {
+  transform: translateX(-95%);
+}
+
+.door-area.doors-open .door-right {
+  transform: translateX(95%);
+}
+
+/* Door partially open (creepy floor 4 event) */
+.door-area.doors-partial .door-left {
+  transform: translateX(-12%);
+}
+
+.door-area.doors-partial .door-right {
+  transform: translateX(12%);
+}
+
+/* Door label */
+.door-label {
+  text-align: center;
+  margin-top: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  color: #403830;
+  letter-spacing: 2px;
+}
+
+/* ============================================================
+   CONTROL ROW (reset button + indicators)
+   ============================================================ */
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.reset-btn {
+  background: rgba(20,16,12,0.8);
+  border: 1px solid rgba(120,100,60,0.25);
+  color: #706860;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  padding: 8px 20px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  border-radius: 3px;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+}
+
+.reset-btn:hover {
+  border-color: rgba(139,0,0,0.4);
+  color: #c88080;
+  box-shadow: 0 0 10px rgba(139,0,0,0.2);
+  background: rgba(30,18,14,0.9);
+}
+
+.reset-btn:active {
+  background: rgba(40,20,16,0.9);
+  transform: scale(0.97);
+}
+
+/* Sequence buffer indicator */
+.sequence-buffer {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: #504840;
+  letter-spacing: 3px;
+}
+
+.sequence-buffer .seq-digits {
+  color: #e0902a;
+  font-family: 'Orbitron', monospace;
+  letter-spacing: 4px;
+}
+
+/* ============================================================
+   SIDE PANEL (right side)
+   ============================================================ */
+.side-panel {
+  flex: 0 0 220px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================
+   MIRROR ZONE
+   ============================================================ */
+.mirror-zone {
+  background: rgba(20,16,12,0.7);
+  border: 1px solid rgba(80,60,30,0.2);
+  border-radius: 4px;
+  padding: 16px;
+  position: relative;
+}
+
+.mirror-label {
+  text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  color: #605040;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.mirror-surface {
+  width: 100%;
+  height: 200px;
+  background:
+    linear-gradient(
+      125deg,
+      rgba(180,170,150,0.08) 0%,
+      rgba(200,190,170,0.12) 15%,
+      rgba(160,150,130,0.04) 30%,
+      rgba(200,190,170,0.15) 45%,
+      rgba(160,150,130,0.04) 60%,
+      rgba(180,170,150,0.08) 75%,
+      rgba(200,190,170,0.1) 90%,
+      rgba(160,150,130,0.06) 100%
+    );
+  border: 2px solid #1a1612;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* Mirror glass reflection effect */
+.mirror-surface::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255,255,255,0.03) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(255,255,255,0.02) 100%
+    );
+  pointer-events: none;
+}
+
+/* Vague silhouette */
+.mirror-surface::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 120px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(180,170,150,0.08) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  animation: mirrorShift 8s infinite ease-in-out;
+  filter: blur(3px);
+}
+
+@keyframes mirrorShift {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  25% { transform: translate(-48%, -52%) scale(1.03); }
+  50% { transform: translate(-52%, -48%) scale(0.97); }
+  75% { transform: translate(-50%, -50%) scale(1.02); }
+}
+
+.mirror-warning {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.65rem;
+  color: #605040;
+  font-style: italic;
+}
+
+/* ============================================================
+   EMERGENCY PHONE
+   ============================================================ */
+.emergency-phone {
+  background: rgba(20,16,12,0.7);
+  border: 1px solid rgba(80,20,20,0.2);
+  border-radius: 4px;
+  padding: 16px;
+  text-align: center;
+}
+
+.phone-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  color: #806060;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.phone-icon-area {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 10px;
+  background: #0a0806;
+  border: 2px solid #3a2020;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 10px rgba(139,0,0,0.15),
+    inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Phone handset icon using CSS */
+.phone-handset {
+  width: 18px;
+  height: 26px;
+  position: relative;
+}
+
+.phone-handset::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 18px;
+  border: 2px solid #604040;
+  border-radius: 3px 3px 0 0;
+  border-bottom: none;
+  transform: rotate(-8deg);
+}
+
+.phone-handset::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 18px;
+  border: 2px solid #604040;
+  border-radius: 3px 3px 0 0;
+  border-bottom: none;
+  transform: rotate(8deg);
+}
+
+.phone-handset .phone-base {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 8px;
+  border: 1.5px solid #604040;
+  border-radius: 4px;
+  border-top: none;
+}
+
+.phone-warning-text {
+  font-size: 0.6rem;
+  color: #806060;
+  line-height: 1.5;
+  font-family: 'Noto Serif SC', serif;
+}
+
+/* ============================================================
+   PAGE TITLE AREA
+   ============================================================ */
+.page-title-area {
+  text-align: center;
+  padding: 20px 0 10px;
+}
+
+.page-title-area h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #c8b898;
+  letter-spacing: 6px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(184,112,26,0.2);
+}
+
+.page-title-area .subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: #706860;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.page-title-area .subtitle-ominous {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: #604040;
+  letter-spacing: 3px;
+}
+
+/* Title divider */
+.title-divider {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(139,0,0,0.4),
+    rgba(139,0,0,0.1),
+    rgba(139,0,0,0.4),
+    transparent
+  );
+  margin: 12px auto 0;
+}
+
+/* ============================================================
+   GLITCH EFFECT (applied via JS)
+   ============================================================ */
+body.glitch-active {
+  animation: glitchShake 0.3s ease-out;
+}
+
+body.glitch-active .elevator-panel {
+  animation: panelGlitch 0.3s ease-out;
+}
+
+body.glitch-active .display-digits {
+  color: #ff0000;
+  text-shadow:
+    5px 0 2px rgba(255,0,0,0.8),
+    -5px 0 2px rgba(0,0,255,0.6),
+    0 0 30px #ff0000;
+}
+
+@keyframes glitchShake {
+  0% { transform: translate(0); }
+  10% { transform: translate(-3px, 2px); }
+  20% { transform: translate(3px, -1px); }
+  30% { transform: translate(-2px, -2px); }
+  40% { transform: translate(4px, 1px); }
+  50% { transform: translate(-1px, 3px); }
+  60% { transform: translate(2px, -2px); }
+  70% { transform: translate(-3px, -1px); }
+  80% { transform: translate(1px, 2px); }
+  90% { transform: translate(-2px, 1px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes panelGlitch {
+  0%, 100% { filter: none; }
+  15% { filter: brightness(1.5) saturate(2); }
+  30% { filter: brightness(0.5) saturate(0.5); }
+  45% { filter: hue-rotate(30deg) brightness(1.3); }
+  60% { filter: brightness(0.7) hue-rotate(-20deg); }
+  75% { filter: none; }
+}
+
+/* ============================================================
+   DOOR OPEN/CLOSE KEYFRAMES (alternative for JS-driven)
+   ============================================================ */
+@keyframes doorSlideLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-95%); }
+}
+
+@keyframes doorSlideRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(95%); }
+}
+
+@keyframes doorCloseLeft {
+  from { transform: translateX(-95%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes doorCloseRight {
+  from { transform: translateX(95%); }
+  to { transform: translateX(0); }
+}
+
+/* ============================================================
+   FLOOR DISPLAY NUMBER CHANGE ANIMATION
+   ============================================================ */
+@keyframes digitChange {
+  0% { opacity: 0.3; transform: scaleY(0.8); filter: blur(2px); }
+  50% { opacity: 0.7; transform: scaleY(1.05); }
+  100% { opacity: 1; transform: scaleY(1); filter: blur(0); }
+}
+
+.digit-changing {
+  animation: digitChange 0.3s ease-out;
+}
+
+/* ============================================================
+   CREEPY FLOOR 4 AMBIENT EFFECT
+   ============================================================ */
+@keyframes creepyPulse {
+  0%, 100% { box-shadow: inset 0 3px 10px rgba(0,0,0,0.9), 0 0 3px rgba(255,32,32,0.08); }
+  50% { box-shadow: inset 0 3px 10px rgba(0,0,0,0.9), 0 0 8px rgba(255,32,32,0.2); }
+}
+
+.floor-display-container.creepy-mode {
+  animation: creepyPulse 2s infinite;
+}
+
+/* ============================================================
+   BUTTON PRESS KEYFRAME
+   ============================================================ */
+@keyframes btnPressDown {
+  0% { transform: translateY(0); box-shadow: 0 5px 10px rgba(0,0,0,0.7), 0 0 0 1px rgba(60,50,40,0.2), inset 0 1px 2px rgba(255,255,255,0.03); }
+  50% { transform: translateY(3px); box-shadow: 0 1px 3px rgba(0,0,0,0.9), inset 0 4px 8px rgba(0,0,0,0.8), 0 0 18px rgba(224,144,42,0.35); }
+  100% { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.8), inset 0 3px 6px rgba(0,0,0,0.8), 0 0 12px rgba(224,144,42,0.3); }
+}
+
+.floor-btn.btn-animate-press {
+  animation: btnPressDown 0.2s ease-out forwards;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .main-container {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px 40px;
+  }
+
+  .rules-plaque {
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .elevator-panel-wrapper {
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .side-panel {
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .mirror-zone,
+  .emergency-phone {
+    flex: 1 1 200px;
+  }
+
+  .nav-link {
+    padding: 8px 7px;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .button-panel {
+    gap: 10px;
+    padding: 10px 4px;
+  }
+
+  .floor-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .display-digits {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+  }
+
+  .page-title-area h1 {
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+  }
+
+  .door-frame {
+    height: 120px;
+  }
+
+  .side-panel {
+    flex-direction: column;
+  }
+
+  .mirror-surface {
+    height: 140px;
+  }
+}
+
+/* ============================================================
+   AMBIENT PARTICLES (optional subtle dust motes near panel)
+   ============================================================ */
+.ambient-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.03;
+  background:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 40% 60%, #fff, transparent),
+    radial-gradient(1px 1px at 70% 20%, #fff, transparent),
+    radial-gradient(1px 1px at 55% 75%, #fff, transparent),
+    radial-gradient(1px 1px at 80% 50%, #fff, transparent),
+    radial-gradient(1px 1px at 15% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 90% 35%, #fff, transparent),
+    radial-gradient(1px 1px at 33% 45%, #fff, transparent),
+    radial-gradient(1px 1px at 62% 85%, #fff, transparent),
+    radial-gradient(1px 1px at 48% 15%, #fff, transparent);
+  background-size: 200px 200px;
+  animation: dustDrift 30s linear infinite;
+}
+
+@keyframes dustDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 200px 200px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hidden SVG filters -->
+<svg class="svg-filters" aria-hidden="true">
+  <filter id="noiseFilter">
+    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.04 0"/>
+  </filter>
+  <filter id="glitchDisplace">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<!-- CRT Scanline Overlay -->
+<div class="crt-overlay" aria-hidden="true"></div>
+
+<!-- Grain/Noise Overlay -->
+<div class="grain-overlay" aria-hidden="true"></div>
+
+<!-- Ambient dust particles -->
+<div class="ambient-particles" aria-hidden="true"></div>
+
+<!-- ============================================================
+     NAVIGATION BAR
+     ============================================================ -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <a class="nav-link" href="apartment_home.html">首页</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="rules_main.html">住户守则</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link active" href="elevator_rules.html">电梯规则</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="floor_directory.html">楼层指南</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="room_404.html">404房间</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="basement.html">地下室</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="surveillance.html">监控室</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="neighbor_encounters.html">邻居</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="manager_log.html">管理员日志</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="phone_calls.html">电话记录</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="mirror_rules.html">镜子规则</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="midnight_shift.html">深夜值班</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="missing_persons.html">失踪档案</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="ritual_purification.html">净化仪式</a>
+    <span class="nav-separator">|</span>
+    <a class="nav-link" href="final_night.html">终局</a>
+  </div>
+</nav>
+
+<!-- ============================================================
+     PAGE TITLE
+     ============================================================ -->
+<div class="page-title-area">
+  <h1>夜色公寓 — 电梯规则</h1>
+  <span class="subtitle">Nightfall Apartments — Elevator Protocol</span>
+  <span class="subtitle-ominous">「上升或下降，你并不总能到达想去的地方」</span>
+  <div class="title-divider"></div>
+</div>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<div class="main-container">
+
+  <!-- LEFT: Rules Plaque -->
+  <aside class="rules-plaque">
+    <div class="plaque-header">
+      <h2>乘 客 须 知</h2>
+      <span class="plaque-subtitle">Passenger Information</span>
+      <span class="plaque-ornament">◆ ◆ ◆</span>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">1</span>
+      <p>必须在进入前按正确楼层序列: <strong>1 → 4 → 2 → 6</strong>。任何其他顺序均可能导致不可预知的停靠。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">2</span>
+      <p>如果电梯在<strong>4楼</strong>停下但门没有打开，不要按任何按钮。等待<strong>30秒</strong>，门会自动关闭并继续运行。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">3</span>
+      <p>电梯内的镜子如果显示的不是你的倒影，<strong>闭上眼睛</strong>从一数到十。镜子中的东西无法伤害看不见它的人。</p>
+    </div>
+
+    <div class="rule-item warning">
+      <span class="rule-number">4</span>
+      <p><strong>深夜23:00至凌晨05:00</strong>期间，电梯不会在5楼停靠。如果你看到5楼按钮亮起，那是你的幻觉。</p>
+    </div>
+
+    <div class="rule-item warning">
+      <span class="rule-number">5</span>
+      <p><strong>B2楼层</strong>按钮上方有红色标记。除非你确切知道地下二层有什么，且你确实需要前往那里——否则<strong>请勿触碰</strong>。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">6</span>
+      <p>如果在电梯内听到儿童的哭声，<strong>立即按下最近的楼层</strong>并在门打开的第一时间离开电梯。不要回头。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">7</span>
+      <p>电梯最大载客量为<strong>6人</strong>。如果你数到第7个人，记住——第7个<strong>不是人</strong>。不要与之交谈或对视。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">8</span>
+      <p>电梯运行的楼层指示灯如果跳过<strong>7楼</strong>，这是正常的。7楼并<strong>不存在</strong>。不要试图前往7楼。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">9</span>
+      <p>如果电梯门打开后看到的不是你要去的楼层，<strong>不要出去</strong>。按下关门键并重新选择你的目标楼层。</p>
+    </div>
+
+    <div class="rule-item warning">
+      <span class="rule-number">10</span>
+      <p><strong>停电时请勿使用电梯。</strong>如果已在电梯内遭遇停电，使用紧急电话——但<strong>不要接通</strong>。无论电话那头是谁在说话。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">11</span>
+      <p>如果你在电梯中感到有<strong>额外的重量</strong>——仿佛有人站在你身后而你独自身处电梯——不要转身。在下一层离开。</p>
+    </div>
+
+    <div class="rule-item">
+      <span class="rule-number">12</span>
+      <p>电梯内壁偶尔会出现<strong>手印</strong>。如果手印是湿的，立即在最近楼层离开。如果手印是干的，可以继续乘坐但请保持警惕。</p>
+    </div>
+
+    <div class="plaque-footer">
+      — 夜色公寓管理处 · 最后更新: ████年██月██日 —
+    </div>
+  </aside>
+
+  <!-- CENTER: Elevator Panel -->
+  <div class="elevator-panel-wrapper">
+    <div class="elevator-panel" id="elevatorPanel">
+      <!-- Panel branding -->
+      <div class="panel-header">
+        <span class="panel-brand">夜色电梯 · NIGHTFALL ELEVATOR CO.</span>
+        <span class="panel-model">MODEL NF-404 · SERIAL ████-██</span>
+      </div>
+
+      <!-- Floor Display -->
+      <div class="display-section">
+        <div class="floor-display-container" id="floorDisplayContainer">
+          <div class="display-label">当前楼层 · CURRENT FLOOR</div>
+          <div class="display-digits" id="floorDisplay">1</div>
+        </div>
+
+        <!-- Status / Message Display -->
+        <div class="status-display">
+          <span class="status-text" id="statusText">系统就绪 · SYSTEM READY</span>
+        </div>
+      </div>
+
+      <!-- Floor Buttons -->
+      <div class="button-panel">
+        <!-- Left column -->
+        <div class="btn-column" id="btnColLeft">
+          <button class="floor-btn btn-b2" data-floor="B2" id="btnB2" title="B2 - 非必要请勿触碰">B2</button>
+          <button class="floor-btn btn-b1" data-floor="B1" id="btnB1">B1</button>
+          <button class="floor-btn" data-floor="1" id="btn1">1</button>
+          <button class="floor-btn" data-floor="2" id="btn2">2</button>
+          <button class="floor-btn" data-floor="3" id="btn3">3</button>
+        </div>
+        <!-- Right column -->
+        <div class="btn-column" id="btnColRight">
+          <button class="floor-btn" data-floor="4" id="btn4">4</button>
+          <button class="floor-btn" data-floor="5" id="btn5">5</button>
+          <button class="floor-btn" data-floor="6" id="btn6">6</button>
+          <button class="floor-btn btn-7" data-floor="7" id="btn7" title="7楼并不存在">7</button>
+          <button class="floor-btn" data-floor="8" id="btn8">8</button>
+        </div>
+      </div>
+
+      <!-- Door Area -->
+      <div class="door-area" id="doorArea">
+        <div class="door-frame">
+          <div class="door-interior" id="doorInterior">
+            <span class="interior-text" id="interiorText"></span>
+          </div>
+          <div class="door-left" id="doorLeft"></div>
+          <div class="door-right" id="doorRight"></div>
+        </div>
+        <div class="door-label">电梯门 · ELEVATOR DOOR</div>
+      </div>
+
+      <!-- Control Row -->
+      <div class="control-row">
+        <button class="reset-btn" id="resetBtn" title="重置序列">重 置 · RESET</button>
+        <span class="sequence-buffer">
+          序列: <span class="seq-digits" id="seqDisplay">_ _ _ _</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Side Panel -->
+  <aside class="side-panel">
+    <!-- Mirror Zone -->
+    <div class="mirror-zone">
+      <div class="mirror-label">电梯内镜 · CABIN MIRROR</div>
+      <div class="mirror-surface" id="mirrorSurface">
+        <!-- The mirror is intentionally semi-reflective, showing vague shapes -->
+      </div>
+      <div class="mirror-warning">"如果倒影眨了眼睛，那不是你的倒影"</div>
+    </div>
+
+    <!-- Emergency Phone -->
+    <div class="emergency-phone">
+      <div class="phone-label">紧急电话 · EMERGENCY</div>
+      <div class="phone-icon-area">
+        <div class="phone-handset">
+          <div class="phone-base"></div>
+        </div>
+      </div>
+      <div class="phone-warning-text">
+        仅限紧急情况使用。<br>
+        <span style="color:#805050;">停电时：拿起话筒<br>但不要接通。</span>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // DOM REFERENCES
+  // ============================================================
+  const floorDisplay = document.getElementById('floorDisplay');
+  const floorDisplayContainer = document.getElementById('floorDisplayContainer');
+  const statusText = document.getElementById('statusText');
+  const seqDisplay = document.getElementById('seqDisplay');
+  const doorArea = document.getElementById('doorArea');
+  const doorInterior = document.getElementById('doorInterior');
+  const interiorText = document.getElementById('interiorText');
+  const doorLeft = document.getElementById('doorLeft');
+  const doorRight = document.getElementById('doorRight');
+  const elevatorPanel = document.getElementById('elevatorPanel');
+  const resetBtn = document.getElementById('resetBtn');
+  const mirrorSurface = document.getElementById('mirrorSurface');
+
+  // All floor buttons
+  const floorButtons = document.querySelectorAll('.floor-btn');
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const CORRECT_SEQUENCE = ['1', '4', '2', '6'];
+  let userSequence = [];
+  let currentFloor = '1';
+  let buttonPressCount = 0;
+  let isProcessing = false;        // prevent rapid double-clicks during animation
+  let doorsOpen = false;
+  let doorsPartial = false;
+  let randomStopTimeoutId = null;
+  let creepyMessageTimeoutId = null;
+
+  // ============================================================
+  // AUDIO CONTEXT (lazy init for Web Audio API ding)
+  // ============================================================
+  let audioCtx = null;
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  /**
+   * Play a simple elevator "ding" sound using Web Audio API oscillator.
+   * Two quick tones: a high F then a higher A, mimicking a typical elevator chime.
+   */
+  function playDingSound() {
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+
+      // First tone: F6 (~1397 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1397, now);
+      gain1.gain.setValueAtTime(0.25, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.4);
+
+      // Second tone: A6 (~1760 Hz), slightly delayed
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1760, now + 0.15);
+      gain2.gain.setValueAtTime(0.001, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.22, now + 0.17);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.55);
+    } catch (e) {
+      // Audio not supported or blocked — fail silently
+      console.log('Web Audio API not available or blocked:', e.message);
+    }
+  }
+
+  /**
+   * Play a low ominous tone for creepy events
+   */
+  function playCreepyTone() {
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(80, now);
+      osc.frequency.linearRampToValueAtTime(55, now + 1.5);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.3);
+      gain.gain.linearRampToValueAtTime(0.05, now + 1.0);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 2.0);
+    } catch (e) {
+      console.log('Web Audio API not available:', e.message);
+    }
+  }
+
+  /**
+   * Play a warning buzz
+   */
+  function playWarningBuzz() {
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(220, now + i * 0.15);
+        gain.gain.setValueAtTime(0.001, now + i * 0.15);
+        gain.gain.linearRampToValueAtTime(0.1, now + i * 0.15 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.15);
+        osc.stop(now + i * 0.15 + 0.12);
+      }
+    } catch (e) {
+      console.log('Web Audio API not available:', e.message);
+    }
+  }
+
+  // ============================================================
+  // DISPLAY UPDATE FUNCTIONS
+  // ============================================================
+
+  /** Update the floor number on the 7-segment style display */
+  function updateFloorDisplay(floor) {
+    currentFloor = floor;
+    // Add digit change animation
+    floorDisplay.classList.remove('digit-changing');
+    void floorDisplay.offsetWidth; // force reflow
+    floorDisplay.textContent = floor;
+    floorDisplay.classList.add('digit-changing');
+  }
+
+  /** Update the status/message display */
+  function updateStatus(message, className) {
+    statusText.textContent = message;
+    statusText.className = 'status-text';
+    if (className) {
+      statusText.classList.add(className);
+    }
+  }
+
+  /** Update the sequence buffer display */
+  function updateSeqDisplay() {
+    const padded = [];
+    for (let i = 0; i < 4; i++) {
+      if (i < userSequence.length) {
+        padded.push(userSequence[i]);
+      } else {
+        padded.push('_');
+      }
+    }
+    seqDisplay.textContent = padded.join(' ');
+  }
+
+  // ============================================================
+  // GLITCH EFFECT
+  // ============================================================
+
+  function triggerGlitch(duration) {
+    const dur = duration || 500;
+    document.body.classList.add('glitch-active');
+    setTimeout(function() {
+      document.body.classList.remove('glitch-active');
+    }, dur);
+  }
+
+  // ============================================================
+  // DOOR CONTROL
+  // ============================================================
+
+  function openDoors(destinationFloor) {
+    if (doorsOpen) return;
+    doorsOpen = true;
+    doorsPartial = false;
+
+    // Show destination behind doors
+    interiorText.textContent = destinationFloor || currentFloor;
+    doorInterior.classList.add('visible');
+
+    // Animate doors open
+    doorArea.classList.remove('doors-partial');
+    doorArea.classList.add('doors-open');
+
+    updateStatus('门已开启 · 请小心脚下 · DOORS OPEN', 'success-msg');
+  }
+
+  function closeDoors() {
+    if (!doorsOpen && !doorsPartial) return;
+
+    doorArea.classList.remove('doors-open', 'doors-partial');
+    doorInterior.classList.remove('visible');
+    doorsOpen = false;
+    doorsPartial = false;
+
+    setTimeout(function() {
+      interiorText.textContent = '';
+    }, 500);
+
+    updateStatus('系统就绪 · SYSTEM READY', '');
+  }
+
+  function partialOpenDoors() {
+    if (doorsOpen) return;
+    doorsPartial = true;
+
+    doorArea.classList.remove('doors-open');
+    doorArea.classList.add('doors-partial');
+    doorInterior.classList.add('visible');
+    interiorText.textContent = '?';
+  }
+
+  // ============================================================
+  // SEQUENCE CHECKING
+  // ============================================================
+
+  function checkSequence() {
+    const seqStr = userSequence.join(',');
+
+    // Check if the entered sequence matches the beginning of the correct sequence
+    for (let i = 0; i < userSequence.length; i++) {
+      if (userSequence[i] !== CORRECT_SEQUENCE[i]) {
+        return false;
+      }
+    }
+
+    // If full correct sequence entered
+    if (userSequence.length === CORRECT_SEQUENCE.length) {
+      return 'complete';
+    }
+
+    // Partial correct
+    return 'partial';
+  }
+
+  function handleCorrectSequence() {
+    isProcessing = true;
+    playDingSound();
+
+    // Flash the display
+    updateFloorDisplay('6');
+    updateStatus('序列正确 · 前往6楼 · SEQUENCE ACCEPTED', 'success-msg');
+
+    // Delay then open doors
+    setTimeout(function() {
+      openDoors('6');
+
+      // Auto-close doors after a delay
+      setTimeout(function() {
+        closeDoors();
+        resetSequence(true);
+        isProcessing = false;
+      }, 4000);
+    }, 800);
+  }
+
+  function handleWrongSequence() {
+    isProcessing = true;
+    playWarningBuzz();
+    triggerGlitch(600);
+
+    updateStatus('序列错误！已重置 · SEQUENCE ERROR! RESET', 'warning-msg');
+    floorDisplayContainer.classList.add('creepy-mode');
+
+    // Flash the display red briefly
+    const origColor = floorDisplay.style.color;
+    floorDisplay.style.color = '#ff0000';
+
+    setTimeout(function() {
+      floorDisplay.style.color = origColor || '';
+      floorDisplayContainer.classList.remove('creepy-mode');
+      resetSequence(false);
+      isProcessing = false;
+    }, 800);
+  }
+
+  function resetSequence(silent) {
+    userSequence = [];
+    updateSeqDisplay();
+
+    // Remove sequence-active class from all buttons
+    floorButtons.forEach(function(btn) {
+      btn.classList.remove('sequence-active');
+    });
+
+    if (!silent) {
+      updateStatus('序列已重置 · SEQUENCE RESET', '');
+    }
+
+    // Reset button press count for floor-4 trigger
+    buttonPressCount = 0;
+
+    // Reschedule the random stop
+    scheduleRandomStop();
+  }
+
+  // ============================================================
+  // BUTTON PRESS HANDLER
+  // ============================================================
+
+  function handleButtonPress(floorValue, buttonElement) {
+    if (isProcessing) return;
+    if (doorsOpen && floorValue !== currentFloor) {
+      // Close doors first if open and pressing a different floor
+      closeDoors();
+      setTimeout(function() {
+        handleButtonPressInternal(floorValue, buttonElement);
+      }, 600);
+      return;
+    }
+    handleButtonPressInternal(floorValue, buttonElement);
+  }
+
+  function handleButtonPressInternal(floorValue, buttonElement) {
+    // Skip floor 7 (it doesn't exist — creepy behavior)
+    if (floorValue === '7') {
+      triggerGlitch(300);
+      updateStatus('错误: 7楼不存在 · ERROR: FLOOR 7 DOES NOT EXIST', 'warning-msg');
+      // Display flickers
+      const origFloor = currentFloor;
+      updateFloorDisplay('--');
+      setTimeout(function() {
+        updateFloorDisplay(origFloor);
+        updateStatus('系统就绪 · SYSTEM READY', '');
+      }, 1200);
+      return;
+    }
+
+    // Animate button press
+    buttonElement.classList.add('btn-animate-press');
+    setTimeout(function() {
+      buttonElement.classList.remove('btn-animate-press');
+    }, 200);
+
+    // Play subtle click via very short oscillator
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch (e) { /* ignore */ }
+
+    // Update button press count
+    buttonPressCount++;
+
+    // Update floor display to show the pressed button's floor
+    updateFloorDisplay(floorValue);
+    updateStatus('已选择: ' + floorValue + '楼 · FLOOR SELECTED', '');
+
+    // Add to sequence
+    userSequence.push(floorValue);
+
+    // Mark button as sequence-active
+    buttonElement.classList.add('sequence-active');
+
+    // Update sequence display
+    updateSeqDisplay();
+
+    // Check sequence
+    const seqResult = checkSequence();
+
+    if (seqResult === 'complete') {
+      // Correct full sequence
+      handleCorrectSequence();
+    } else if (seqResult === 'partial') {
+      // Still building correct sequence
+      if (userSequence.length < CORRECT_SEQUENCE.length) {
+        updateStatus(
+          '序列进行中 (' + userSequence.length + '/4) · SEQUENCE IN PROGRESS',
+          ''
+        );
+      }
+      // Reschedule random stop since user is interacting
+      scheduleRandomStop();
+    } else if (seqResult === false) {
+      // Wrong sequence
+      handleWrongSequence();
+    }
+
+    // Check for floor-4 trigger after 3 presses
+    if (buttonPressCount >= 3 && !doorsOpen) {
+      // 30% chance to trigger the floor-4 creepy event after 3 presses
+      if (Math.random() < 0.3) {
+        // Small delay before triggering
+        clearTimeout(creepyMessageTimeoutId);
+        creepyMessageTimeoutId = setTimeout(function() {
+          triggerFloor4Event('button');
+        }, 1500);
+      }
+    }
+  }
+
+  // ============================================================
+  // RANDOM / CREEPY FLOOR 4 EVENT
+  // ============================================================
+
+  function scheduleRandomStop() {
+    clearTimeout(randomStopTimeoutId);
+
+    // Random delay between 15 and 45 seconds
+    const delay = 15000 + Math.random() * 30000;
+
+    randomStopTimeoutId = setTimeout(function() {
+      if (!doorsOpen && !isProcessing) {
+        triggerFloor4Event('random');
+      } else {
+        // If busy, reschedule
+        scheduleRandomStop();
+      }
+    }, delay);
+  }
+
+  function triggerFloor4Event(source) {
+    if (isProcessing) {
+      scheduleRandomStop();
+      return;
+    }
+
+    isProcessing = true;
+    playCreepyTone();
+
+    // Show floor 4 on display
+    updateFloorDisplay('4');
+    floorDisplayContainer.classList.add('creepy-mode');
+
+    // Partial door open
+    partialOpenDoors();
+
+    // Creepy message
+    const messages = [
+      '4楼 · 门未完全开启 · 有人在走廊里',
+      '4楼 · 听到脚步声 · 但没有看到人',
+      '4楼 · 走廊灯光闪烁 · 有影子在移动',
+      '4楼 · 门开了一条缝 · 有冷风渗入',
+      '4楼 · 有个声音说"进来" · 不要听'
+    ];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    updateStatus(msg, 'warning-msg');
+
+    // After a few seconds, close doors and recover
+    setTimeout(function() {
+      closeDoors();
+      floorDisplayContainer.classList.remove('creepy-mode');
+
+      setTimeout(function() {
+        updateFloorDisplay('1');
+        updateStatus('系统恢复 · 建议重返1楼 · SYSTEM RECOVERED', '');
+        isProcessing = false;
+        scheduleRandomStop();
+      }, 800);
+    }, 3500);
+  }
+
+  // ============================================================
+  // EVENT LISTENERS
+  // ============================================================
+
+  // Attach click handlers to all floor buttons
+  floorButtons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const floor = btn.getAttribute('data-floor');
+      handleButtonPress(floor, btn);
+    });
+  });
+
+  // Reset button
+  resetBtn.addEventListener('click', function() {
+    if (isProcessing) return;
+    closeDoors();
+    resetSequence(false);
+    updateFloorDisplay('1');
+    updateStatus('系统就绪 · SYSTEM READY', '');
+  });
+
+  // Keyboard support: number keys 0-8 map to floors
+  document.addEventListener('keydown', function(e) {
+    // Don't intercept if user is typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    const key = e.key;
+
+    // Map keyboard numbers
+    const keyToFloor = {
+      '1': '1', '2': '2', '3': '3', '4': '4',
+      '5': '5', '6': '6', '7': '7', '8': '8'
+    };
+
+    if (keyToFloor[key]) {
+      const floor = keyToFloor[key];
+      const btn = document.querySelector('[data-floor="' + floor + '"]');
+      if (btn && !isProcessing) {
+        e.preventDefault();
+        handleButtonPress(floor, btn);
+      }
+    }
+
+    // 'r' or 'R' for reset (lowercase only to avoid accidental triggers)
+    if (key === 'r' && !isProcessing) {
+      e.preventDefault();
+      closeDoors();
+      resetSequence(false);
+      updateFloorDisplay('1');
+      updateStatus('系统就绪 · SYSTEM READY', '');
+    }
+  });
+
+  // ============================================================
+  // MIRROR CREEPY BEHAVIOR
+  // ============================================================
+
+  // Occasionally make the mirror "shift" more dramatically
+  setInterval(function() {
+    if (Math.random() < 0.15) {
+      mirrorSurface.style.filter = 'brightness(0.7) blur(2px)';
+      setTimeout(function() {
+        mirrorSurface.style.filter = '';
+      }, 300 + Math.random() * 700);
+    }
+  }, 8000);
+
+  // Very rarely show a "face" silhouette in the mirror
+  setInterval(function() {
+    if (Math.random() < 0.05) {
+      mirrorSurface.style.background =
+        'linear-gradient(125deg, rgba(180,170,150,0.12) 0%, rgba(200,160,150,0.18) 40%, rgba(180,170,150,0.08) 100%)';
+      mirrorSurface.style.boxShadow = 'inset 0 0 30px rgba(139,0,0,0.15)';
+      setTimeout(function() {
+        mirrorSurface.style.background = '';
+        mirrorSurface.style.boxShadow = '';
+      }, 1200);
+    }
+  }, 15000);
+
+  // ============================================================
+  // INITIALIZATION
+  // ============================================================
+
+  function init() {
+    updateFloorDisplay('1');
+    updateStatus('系统就绪 · 请输入楼层序列 · SYSTEM READY', '');
+    updateSeqDisplay();
+    scheduleRandomStop();
+
+    console.log(
+      '%c夜色公寓电梯系统已启动 %c| %cNightfall Elevator System Online',
+      'color: #ff2020; font-size: 14px;',
+      'color: #706860;',
+      'color: #b8701a;'
+    );
+    console.log(
+      '%c正确序列 %c| %cCorrect Sequence: %c1 → 4 → 2 → 6',
+      'color: #706860;',
+      'color: #b8701a;',
+      'color: #706860;',
+      'color: #e0902a; font-weight: bold;'
+    );
+    console.log(
+      '%c⚠ 请遵守所有电梯规则。某些规则的存在是有原因的。',
+      'color: #ff4040; font-style: italic;'
+    );
+  }
+
+  // Start the system
+  init();
+
+})();
+</script>
+
+</body>
+</html>

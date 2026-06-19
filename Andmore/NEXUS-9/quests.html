@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 | 任务面板</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00f0ff;
+    --yellow: #ffe600;
+    --dark: #0a0a0f;
+    --darker: #050510;
+    --panel: #0d1117;
+    --border: #1a2a3a;
+    --text: #c0d0e0;
+    --dim: #5a6a7a;
+    --danger: #ff3366;
+    --success: #00ff88;
+    --easy: #00ff88;
+    --medium: #ffe600;
+    --hard: #ff8844;
+    --extreme: #ff3366;
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  @keyframes scanlines {
+    0% { background-position:0 0; }
+    100% { background-position:0 4px; }
+  }
+  @keyframes flicker {
+    0%, 100% { opacity:0.97; }
+    50% { opacity:1; }
+    92% { opacity:0.95; }
+    94% { opacity:1; }
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow:0 0 8px var(--cyan), 0 0 20px rgba(0,240,255,0.3), inset 0 0 8px rgba(0,240,255,0.05); }
+    50% { box-shadow:0 0 16px var(--cyan), 0 0 40px rgba(0,240,255,0.5), inset 0 0 16px rgba(0,240,255,0.1); }
+  }
+  @keyframes borderGlow {
+    0%, 100% { border-color:var(--cyan); box-shadow:0 0 10px rgba(0,240,255,0.3), inset 0 0 10px rgba(0,240,255,0.02); }
+    50% { border-color:#80f8ff; box-shadow:0 0 20px rgba(0,240,255,0.5), inset 0 0 20px rgba(0,240,255,0.05); }
+  }
+  @keyframes titleGlitch {
+    0%, 100% { text-shadow:0 0 10px var(--cyan), 0 0 30px rgba(0,240,255,0.5); }
+    2% { text-shadow:2px 0 10px var(--danger), -2px 0 10px var(--cyan); }
+    4% { text-shadow:-2px 0 10px var(--yellow), 2px 0 10px var(--cyan); }
+    6% { text-shadow:0 0 10px var(--cyan), 0 0 30px rgba(0,240,255,0.5); }
+  }
+  @keyframes cardReveal {
+    0% { transform:perspective(800px) rotateX(90deg); opacity:0; }
+    100% { transform:perspective(800px) rotateX(0deg); opacity:1; }
+  }
+  @keyframes acceptPulse {
+    0% { transform:scale(1); }
+    30% { transform:scale(0.95); }
+    60% { transform:scale(1.05); }
+    100% { transform:scale(1); }
+  }
+  @keyframes progressFill {
+    0% { width:0%; }
+  }
+  @keyframes successFlash {
+    0% { background:transparent; }
+    30% { background:rgba(0,255,136,0.3); }
+    100% { background:transparent; }
+  }
+  @keyframes floatUp {
+    0% { transform:translateY(0); opacity:1; }
+    100% { transform:translateY(-80px); opacity:0; }
+  }
+  @keyframes starSpin {
+    0% { transform:rotateY(0deg); }
+    100% { transform:rotateY(360deg); }
+  }
+  @keyframes dataStream {
+    0% { background-position:0 0; }
+    100% { background-position:0 100%; }
+  }
+
+  body {
+    font-family:'Share Tech Mono', 'Courier New', monospace;
+    background:var(--darker);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+    animation:flicker 8s infinite;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content:'';
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events:none;
+    z-index:9999;
+    animation:scanlines 0.15s linear infinite;
+  }
+
+  /* Background grid */
+  .bg-grid {
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* Navigation */
+  .top-nav {
+    position:relative;
+    z-index:10;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 32px;
+    background:rgba(13,17,23,0.95);
+    border-bottom:1px solid var(--border);
+    backdrop-filter:blur(10px);
+  }
+  .nav-logo {
+    font-family:'Orbitron', monospace;
+    font-size:20px;
+    font-weight:900;
+    color:var(--cyan);
+    text-shadow:0 0 20px rgba(0,240,255,0.6);
+    letter-spacing:3px;
+  }
+  .nav-logo span { color:var(--yellow); }
+  .nav-links { display:flex; gap:8px; }
+  .nav-links a {
+    font-family:'Orbitron', monospace;
+    color:var(--dim);
+    text-decoration:none;
+    font-size:12px;
+    padding:8px 16px;
+    border:1px solid var(--border);
+    border-radius:2px;
+    transition:all 0.3s;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    position:relative;
+    overflow:hidden;
+  }
+  .nav-links a::before {
+    content:'';
+    position:absolute;
+    bottom:0; left:0; width:100%; height:1px;
+    background:var(--cyan);
+    transform:scaleX(0);
+    transition:transform 0.3s;
+  }
+  .nav-links a:hover {
+    color:var(--cyan);
+    border-color:var(--cyan);
+    box-shadow:0 0 15px rgba(0,240,255,0.2);
+  }
+  .nav-links a:hover::before { transform:scaleX(1); }
+  .nav-links a.active {
+    color:var(--cyan);
+    border-color:var(--cyan);
+    background:rgba(0,240,255,0.05);
+  }
+  .nav-status {
+    font-size:11px;
+    color:var(--dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .nav-status .dot {
+    width:6px; height:6px;
+    background:var(--success);
+    border-radius:50%;
+    animation:glowPulse 2s infinite;
+  }
+
+  /* Main layout */
+  .main-container {
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:1fr 320px;
+    gap:20px;
+    padding:24px 32px;
+    max-width:1400px;
+    margin:0 auto;
+  }
+
+  .main-content { min-width:0; }
+
+  .section-title {
+    font-family:'Orbitron', monospace;
+    font-size:18px;
+    font-weight:700;
+    color:var(--cyan);
+    text-shadow:0 0 15px rgba(0,240,255,0.4);
+    margin-bottom:16px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+    letter-spacing:2px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-title::before {
+    content:'';
+    width:8px; height:8px;
+    background:var(--cyan);
+    box-shadow:0 0 10px var(--cyan);
+  }
+
+  /* Quest cards grid */
+  .quest-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+    gap:16px;
+    margin-bottom:32px;
+  }
+
+  .quest-card {
+    background:rgba(13,17,23,0.9);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+    transition:all 0.3s;
+    cursor:default;
+    animation:cardReveal 0.5s ease-out backwards;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .quest-card:nth-child(1) { animation-delay:0.05s; }
+  .quest-card:nth-child(2) { animation-delay:0.1s; }
+  .quest-card:nth-child(3) { animation-delay:0.15s; }
+  .quest-card:nth-child(4) { animation-delay:0.2s; }
+  .quest-card:nth-child(5) { animation-delay:0.25s; }
+  .quest-card:nth-child(6) { animation-delay:0.3s; }
+  .quest-card:nth-child(7) { animation-delay:0.35s; }
+  .quest-card:nth-child(8) { animation-delay:0.4s; }
+
+  .quest-card::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; width:100%; height:1px;
+    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity:0;
+    transition:opacity 0.3s;
+  }
+  .quest-card:hover {
+    border-color:var(--cyan);
+    box-shadow:0 0 20px rgba(0,240,255,0.15), inset 0 0 20px rgba(0,240,255,0.03);
+    transform:translateY(-2px);
+  }
+  .quest-card:hover::before { opacity:1; }
+
+  .quest-card .card-scanner {
+    position:absolute;
+    top:0; left:0; width:100%; height:2px;
+    background:rgba(0,240,255,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s;
+  }
+  .quest-card:hover .card-scanner { opacity:1; animation:dataStream 2s linear infinite; }
+
+  .quest-card.accepted {
+    border-color:var(--yellow);
+    box-shadow:0 0 15px rgba(255,230,0,0.1), inset 0 0 15px rgba(255,230,0,0.02);
+  }
+  .quest-card.completed {
+    border-color:var(--success);
+    background:rgba(0,255,136,0.03);
+    box-shadow:0 0 15px rgba(0,255,136,0.1);
+  }
+
+  .quest-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  .quest-title {
+    font-family:'Orbitron', monospace;
+    font-size:15px;
+    font-weight:700;
+    color:#e0f0ff;
+    letter-spacing:1px;
+  }
+  .quest-id {
+    font-size:10px;
+    color:var(--dim);
+    font-family:'Orbitron', monospace;
+  }
+
+  .difficulty {
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-size:10px;
+    letter-spacing:1px;
+    font-family:'Orbitron', monospace;
+  }
+  .difficulty.easy { color:var(--easy); }
+  .difficulty.medium { color:var(--medium); }
+  .difficulty.hard { color:var(--hard); }
+  .difficulty.extreme { color:var(--extreme); text-shadow:0 0 8px rgba(255,51,102,0.5); }
+
+  .difficulty .stars { display:flex; gap:1px; }
+  .difficulty .stars .star { font-size:14px; animation:starSpin 4s linear infinite; }
+
+  .quest-desc {
+    font-size:12px;
+    color:var(--text);
+    line-height:1.5;
+    flex-grow:1;
+    min-height:40px;
+  }
+
+  .quest-meta {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:10px;
+    color:var(--dim);
+    border-top:1px solid var(--border);
+    padding-top:10px;
+  }
+  .quest-reward {
+    color:var(--yellow);
+    text-shadow:0 0 8px rgba(255,230,0,0.3);
+    font-weight:bold;
+  }
+
+  .quest-actions { display:flex; gap:8px; }
+
+  .btn {
+    font-family:'Orbitron', monospace;
+    font-size:10px;
+    font-weight:600;
+    letter-spacing:1px;
+    padding:8px 18px;
+    border:1px solid var(--cyan);
+    border-radius:2px;
+    background:transparent;
+    color:var(--cyan);
+    cursor:pointer;
+    transition:all 0.3s;
+    text-transform:uppercase;
+    position:relative;
+    overflow:hidden;
+  }
+  .btn::before {
+    content:'';
+    position:absolute;
+    top:50%; left:50%;
+    width:0; height:0;
+    border-radius:50%;
+    background:rgba(0,240,255,0.2);
+    transform:translate(-50%,-50%);
+    transition:width 0.6s, height 0.6s;
+  }
+  .btn:hover::before { width:300px; height:300px; }
+  .btn:hover {
+    color:#000;
+    background:var(--cyan);
+    box-shadow:0 0 20px rgba(0,240,255,0.4);
+    animation:acceptPulse 0.4s ease;
+  }
+  .btn:active { transform:scale(0.97); }
+
+  .btn.accept-btn.accepted-btn {
+    border-color:var(--yellow);
+    color:var(--yellow);
+    background:transparent;
+    cursor:default;
+  }
+  .btn.accept-btn.accepted-btn:hover {
+    background:rgba(255,230,0,0.1);
+    box-shadow:0 0 15px rgba(255,230,0,0.2);
+  }
+
+  .btn.complete-btn {
+    border-color:var(--success);
+    color:var(--success);
+  }
+  .btn.complete-btn:hover {
+    background:var(--success);
+    color:#000;
+    box-shadow:0 0 20px rgba(0,255,136,0.4);
+  }
+
+  /* Progress bar inside card */
+  .quest-progress-wrap {
+    margin-top:4px;
+  }
+  .quest-progress-bar {
+    height:3px;
+    background:rgba(255,255,255,0.05);
+    border-radius:2px;
+    overflow:hidden;
+    margin-top:4px;
+  }
+  .quest-progress-fill {
+    height:100%;
+    background:var(--yellow);
+    border-radius:2px;
+    transition:width 0.5s ease;
+    box-shadow:0 0 8px rgba(255,230,0,0.3);
+  }
+  .quest-progress-text {
+    font-size:9px;
+    color:var(--dim);
+    text-align:right;
+    margin-top:2px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    position:sticky;
+    top:24px;
+    align-self:start;
+    max-height:calc(100vh - 100px);
+    overflow-y:auto;
+  }
+
+  .side-panel {
+    background:rgba(13,17,23,0.9);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+    animation:borderGlow 4s infinite;
+  }
+  .side-panel::after {
+    content:'';
+    position:absolute;
+    top:0; left:0; width:100%; height:100%;
+    background:repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,240,255,0.01) 1px, rgba(0,240,255,0.01) 2px);
+    pointer-events:none;
+    z-index:0;
+  }
+  .side-panel > * { position:relative; z-index:1; }
+
+  .panel-title {
+    font-family:'Orbitron', monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--cyan);
+    letter-spacing:2px;
+    margin-bottom:12px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+    text-transform:uppercase;
+  }
+
+  /* City permission display */
+  .perm-display {
+    text-align:center;
+    padding:12px;
+    background:rgba(0,240,255,0.03);
+    border:1px solid var(--border);
+    border-radius:4px;
+  }
+  .perm-level {
+    font-family:'Orbitron', monospace;
+    font-size:42px;
+    font-weight:900;
+    color:var(--cyan);
+    text-shadow:0 0 30px rgba(0,240,255,0.5);
+    line-height:1;
+  }
+  .perm-label {
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:2px;
+    margin-top:4px;
+    text-transform:uppercase;
+  }
+
+  /* Accepted quests list */
+  .accepted-list { list-style:none; }
+  .accepted-list li {
+    padding:8px 10px;
+    margin-bottom:6px;
+    border:1px solid var(--border);
+    border-radius:2px;
+    font-size:11px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    transition:all 0.3s;
+    cursor:pointer;
+  }
+  .accepted-list li:hover {
+    border-color:var(--yellow);
+    background:rgba(255,230,0,0.03);
+  }
+  .accepted-list .aq-name {
+    color:#d0e0ff;
+    font-weight:bold;
+    font-size:12px;
+  }
+  .accepted-list .aq-progress-bar {
+    height:3px;
+    background:rgba(255,255,255,0.05);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .accepted-list .aq-progress-fill {
+    height:100%;
+    background:var(--cyan);
+    border-radius:2px;
+    transition:width 0.5s ease;
+  }
+
+  .empty-state {
+    text-align:center;
+    padding:20px;
+    color:var(--dim);
+    font-size:11px;
+    line-height:1.6;
+  }
+  .empty-state .icon { font-size:30px; margin-bottom:8px; }
+
+  /* Completed quests */
+  .completed-item {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 0;
+    font-size:11px;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .completed-item .check {
+    color:var(--success);
+    font-size:14px;
+    text-shadow:0 0 6px rgba(0,255,136,0.5);
+  }
+  .completed-item .cq-name {
+    color:var(--success);
+    flex-grow:1;
+  }
+  .completed-item .cq-reward {
+    color:var(--yellow);
+    font-size:10px;
+  }
+
+  /* Rewards panel */
+  .reward-item {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 0;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    font-size:11px;
+  }
+  .reward-icon {
+    font-size:20px;
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,230,0,0.1);
+    border:1px solid rgba(255,230,0,0.2);
+    border-radius:2px;
+  }
+  .reward-name { color:var(--text); flex-grow:1; }
+  .reward-status {
+    font-size:9px;
+    padding:2px 8px;
+    border-radius:2px;
+  }
+  .reward-status.owned { color:var(--success); border:1px solid rgba(0,255,136,0.3); background:rgba(0,255,136,0.05); }
+  .reward-status.locked { color:var(--dim); border:1px solid rgba(255,255,255,0.1); }
+
+  /* Floating notification */
+  .float-notif {
+    position:fixed;
+    top:100px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:10000;
+    font-family:'Orbitron', monospace;
+    font-size:12px;
+    color:var(--cyan);
+    padding:12px 24px;
+    border:1px solid var(--cyan);
+    background:rgba(13,17,23,0.95);
+    animation:floatUp 2.5s ease-out forwards;
+    pointer-events:none;
+    text-shadow:0 0 15px var(--cyan);
+    letter-spacing:2px;
+  }
+
+  /* Completion effect */
+  .quest-card.completing {
+    animation:successFlash 0.6s ease 3;
+  }
+
+  /* Console easter egg trigger */
+  .console-hint {
+    position:fixed;
+    bottom:12px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:9px;
+    color:rgba(255,255,255,0.08);
+    z-index:1;
+    pointer-events:none;
+    letter-spacing:1px;
+  }
+
+  /* Responsive */
+  @media (max-width:900px) {
+    .main-container { grid-template-columns:1fr; padding:16px; }
+    .top-nav { flex-wrap:wrap; gap:8px; padding:10px 16px; }
+    .nav-links { flex-wrap:wrap; justify-content:center; }
+    .quest-grid { grid-template-columns:1fr; }
+    .sidebar { position:static; max-height:none; }
+  }
+
+  /* Horizontal rule decorative */
+  .hr-cyber {
+    border:none;
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--cyan), var(--yellow), var(--cyan), transparent);
+    margin:20px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<!-- Navigation -->
+<nav class="top-nav">
+  <div class="nav-logo">NEXUS<span>-9</span></div>
+  <div class="nav-links">
+    <a href="nexus_home.html">城市中心</a>
+    <a href="city_map.html">城市地图</a>
+    <a href="quests.html" class="active">任务面板</a>
+    <a href="terminal.html">终端</a>
+  </div>
+  <div class="nav-status">
+    <span class="dot"></span>
+    <span style="font-family:'Orbitron',monospace;font-size:10px;">Q-OS v2.4.1</span>
+    <span style="font-size:10px;color:var(--cyan);">[在线]</span>
+  </div>
+</nav>
+
+<!-- Main layout -->
+<div class="main-container">
+  <div class="main-content">
+
+    <!-- Available Quests -->
+    <div class="section-title">可用任务 AVAILABLE QUESTS</div>
+    <div class="quest-grid" id="availableQuests">
+      <!-- Cards rendered by JS -->
+    </div>
+
+    <!-- In Progress -->
+    <div class="section-title" style="color:var(--yellow);" id="inProgressSection">进行中 IN PROGRESS</div>
+    <div class="quest-grid" id="inProgressQuests">
+      <div class="empty-state">
+        <div class="icon" style="font-size:24px;">[ ]</div>
+        暂无进行中的任务<br>请在可用任务面板中接受任务
+      </div>
+    </div>
+
+    <!-- Completed -->
+    <div class="section-title" style="color:var(--success);">已完成 COMPLETED</div>
+    <div class="side-panel" id="completedPanel">
+      <div class="empty-state" id="completedEmpty">
+        <div class="icon">&#x2713;</div>
+        完成你的第一个任务以解锁奖励
+      </div>
+      <div id="completedList"></div>
+    </div>
+
+    <hr class="hr-cyber">
+
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- City Permission Level -->
+    <div class="side-panel">
+      <div class="panel-title">城市权限 CITY ACCESS</div>
+      <div class="perm-display">
+        <div class="perm-level" id="permLevel">1</div>
+        <div class="perm-label">NEXUS-9 权限等级</div>
+      </div>
+    </div>
+
+    <!-- Accepted Quests -->
+    <div class="side-panel">
+      <div class="panel-title">任务追踪 QUEST TRACKER</div>
+      <ul class="accepted-list" id="trackerList">
+        <li>
+          <div class="empty-state">
+            <div class="icon">&#x25A1;</div>
+            无追踪中的任务
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Rewards -->
+    <div class="side-panel">
+      <div class="panel-title">奖励 REWARDS</div>
+      <div id="rewardsList">
+        <div class="empty-state">
+          <div class="icon">&#x2726;</div>
+          完成任务以获取奖励
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="side-panel">
+      <div class="panel-title">统计 STATS</div>
+      <div style="font-size:11px;color:var(--dim);line-height:2;">
+        <div>总任务 <span style="color:var(--cyan);float:right;" id="statTotal">8</span></div>
+        <div>已完成 <span style="color:var(--success);float:right;" id="statDone">0</span></div>
+        <div>进行中 <span style="color:var(--yellow);float:right;" id="statActive">0</span></div>
+        <div>完成率 <span style="color:var(--cyan);float:right;" id="statRate">0%</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="console-hint">按 F12 打开控制台输入 NEXUS9.help() 查看隐藏命令</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============ QUEST DATA ============
+  const quests = [
+    {
+      id: 'Q001',
+      title: '初入都市',
+      difficulty: 'easy',
+      stars: 1,
+      desc: '访问城市中的三个主要区域，熟悉NEXUS-9的城市布局。这是每个新市民的必修课——了解你即将生活的世界。',
+      reward: '城市权限+1',
+      rewardType: 'perm',
+      target: 3,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F3D9;'
+    },
+    {
+      id: 'Q002',
+      title: '数据采集',
+      difficulty: 'medium',
+      stars: 2,
+      desc: '在废弃区中寻找隐藏的数据碎片。这些碎片散落在旧服务器的残骸之间，需要敏锐的观察力才能全部找到。',
+      reward: '解密密钥',
+      rewardType: 'item',
+      target: 5,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F4BE;'
+    },
+    {
+      id: 'Q003',
+      title: '量子之心',
+      difficulty: 'hard',
+      stars: 3,
+      desc: '潜入量子工厂，绕过安保系统，下载核心数据文件。警告：工厂内部有主动防御AI巡逻，请务必小心。',
+      reward: '量子通行证',
+      rewardType: 'key',
+      target: 1,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x269B;'
+    },
+    {
+      id: 'Q004',
+      title: '地下探秘',
+      difficulty: 'medium',
+      stars: 2,
+      desc: '寻找并进入地下黑客区的秘密入口。传闻那里是NEXUS-9真正权力的所在——信息自由流动的暗网。',
+      reward: '黑客身份',
+      rewardType: 'identity',
+      target: 1,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F5A5;'
+    },
+    {
+      id: 'Q005',
+      title: '真相追寻者',
+      difficulty: 'extreme',
+      stars: 5,
+      desc: '突破所有安全层级，找到核心AI"神谕"并获取访问权限。这是最危险的任务——许多人都尝试过，但无人生还。',
+      reward: '???',
+      rewardType: 'mystery',
+      target: 1,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F441;'
+    },
+    {
+      id: 'Q006',
+      title: '网络游民',
+      difficulty: 'easy',
+      stars: 1,
+      desc: '在网络广-场发布一条公开消息。NEXUS-9的每一个市民都有权发声——让你的存在被世界知晓。',
+      reward: '市民身份',
+      rewardType: 'identity',
+      target: 1,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F4E2;'
+    },
+    {
+      id: 'Q007',
+      title: '全视之眼',
+      difficulty: 'easy',
+      stars: 1,
+      desc: '前往信息塔并阅读三条新闻资讯。知识就是力量——在NEXUS-9，信息是最珍贵的货币。',
+      reward: '信息通行证',
+      rewardType: 'key',
+      target: 3,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F4F0;'
+    },
+    {
+      id: 'Q008',
+      title: '记忆深处',
+      difficulty: 'medium',
+      stars: 2,
+      desc: '在数据银行中存储一段属于你的记忆。无论是真-实的回忆还是虚构的数据，都会永久保存在量子存储器中。',
+      reward: '记忆扩容',
+      rewardType: 'item',
+      target: 1,
+      progress: 0,
+      accepted: false,
+      completed: false,
+      icon: '&#x1F9E0;'
+    }
+  ];
+
+  let state = {
+    quests: JSON.parse(JSON.stringify(quests)),
+    permLevel: 1,
+    rewards: {},   // rewardName -> unlocked
+    totalCompleted: 0
+  };
+
+  // ============ STATE PERSISTENCE ============
+  function saveState() {
+    try {
+      localStorage.setItem('nexus9_quests', JSON.stringify(state));
+    } catch(e) { /* localStorage may be unavailable */ }
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem('nexus9_quests');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        state.quests = saved.quests || state.quests;
+        state.permLevel = saved.permLevel || 1;
+        state.rewards = saved.rewards || {};
+        state.totalCompleted = saved.totalCompleted || 0;
+      }
+    } catch(e) {}
+    // Also load from legacy key
+    try {
+      const legacy = localStorage.getItem('nexus9_questState');
+      if (legacy && !state.totalCompleted) {
+        const ls = JSON.parse(legacy);
+        if (ls.quests) state.quests = ls.quests;
+      }
+    } catch(e) {}
+  }
+
+  // ============ DIFFICULTY HELPERS ============
+  function starHtml(count) {
+    let s = '';
+    for (let i = 0; i < count; i++) s += '<span class="star">&#x2605;</span>';
+    return s;
+  }
+
+  function diffLabel(d) {
+    const map = { easy:'简单', medium:'中等', hard:'困难', extreme:'极危' };
+    return map[d] || d;
+  }
+
+  // ============ RENDERING ============
+  function renderAll() {
+    renderAvailable();
+    renderInProgress();
+    renderCompleted();
+    renderTracker();
+    renderRewards();
+    renderStats();
+    renderPermLevel();
+    saveState();
+  }
+
+  function renderAvailable() {
+    const container = document.getElementById('availableQuests');
+    const available = state.quests.filter(q => !q.accepted && !q.completed);
+    if (!available.length) {
+      container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">&#x2714;</div>所有任务已完成！<br>城市向你致敬，传奇探索者。</div>';
+      return;
+    }
+    container.innerHTML = available.map((q, idx) => cardHTML(q, idx, 'available')).join('');
+  }
+
+  function renderInProgress() {
+    const container = document.getElementById('inProgressQuests');
+    const active = state.quests.filter(q => q.accepted && !q.completed);
+    if (!active.length) {
+      container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon" style="font-size:24px;">[ ]</div>暂无进行中的任务<br>请在可用任务面板中接受任务</div>';
+      return;
+    }
+    container.innerHTML = active.map((q, idx) => cardHTML(q, idx, 'inprogress')).join('');
+  }
+
+  function renderCompleted() {
+    const list = document.getElementById('completedList');
+    const empty = document.getElementById('completedEmpty');
+    const completed = state.quests.filter(q => q.completed);
+    if (!completed.length) {
+      empty.style.display = 'block';
+      list.innerHTML = '';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = completed.map(q =>
+      '<div class="completed-item">' +
+        '<span class="check">&#x2713;</span>' +
+        '<span class="cq-name">' + q.title + '</span>' +
+        '<span class="cq-diff ' + q.difficulty + '" style="font-size:9px;">' + diffLabel(q.difficulty) + '</span>' +
+        '<span class="cq-reward">+' + q.reward + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderTracker() {
+    const list = document.getElementById('trackerList');
+    const active = state.quests.filter(q => q.accepted && !q.completed);
+    if (!active.length) {
+      list.innerHTML = '<li><div class="empty-state"><div class="icon">&#x25A1;</div>无追踪中的任务</div></li>';
+      return;
+    }
+    list.innerHTML = active.map(q =>
+      '<li onclick="NEXUS9.focusQuest(\'' + q.id + '\')">' +
+        '<div class="aq-name">' + q.title + ' <span style="font-size:9px;color:var(--dim);">' + q.id + '</span></div>' +
+        '<div class="aq-progress-bar"><div class="aq-progress-fill" style="width:' + (q.progress/q.target*100) + '%;"></div></div>' +
+        '<div style="font-size:9px;color:var(--dim);text-align:right;">' + q.progress + '/' + q.target + '</div>' +
+      '</li>'
+    ).join('');
+  }
+
+  function renderRewards() {
+    const container = document.getElementById('rewardsList');
+    // Collect all unique rewards from completed quests
+    const earned = [];
+    state.quests.forEach(q => {
+      if (q.completed) {
+        earned.push({ name: q.reward, type: q.rewardType, icon: q.icon });
+      }
+    });
+    if (!earned.length) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">&#x2726;</div>完成任务以获取奖励</div>';
+      return;
+    }
+    container.innerHTML = earned.map(r =>
+      '<div class="reward-item">' +
+        '<div class="reward-icon">' + (r.icon || '&#x2726;') + '</div>' +
+        '<div class="reward-name">' + r.name + '</div>' +
+        '<div class="reward-status owned">已获得</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderStats() {
+    const total = state.quests.length;
+    const done = state.quests.filter(q => q.completed).length;
+    const active = state.quests.filter(q => q.accepted && !q.completed).length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDone').textContent = done;
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statRate').textContent = total ? Math.round(done/total*100) + '%' : '0%';
+    state.totalCompleted = done;
+  }
+
+  function renderPermLevel() {
+    // Perm level = base 1 + completed perm-type quests
+    let bonus = 0;
+    state.quests.forEach(q => {
+      if (q.completed && q.rewardType === 'perm') bonus++;
+    });
+    state.permLevel = 1 + bonus;
+    document.getElementById('permLevel').textContent = state.permLevel;
+  }
+
+  function cardHTML(q, idx, section) {
+    const pct = q.target ? Math.round(q.progress / q.target * 100) : 0;
+    let btnHTML = '';
+    let progressHTML = '';
+    let extraClass = '';
+
+    if (section === 'available') {
+      btnHTML = '<button class="btn accept-btn" onclick="NEXUS9.acceptQuest(\'' + q.id + '\')">接受任务 ACCEPT</button>';
+    } else if (section === 'inprogress') {
+      extraClass = ' accepted';
+      progressHTML =
+        '<div class="quest-progress-wrap">' +
+          '<div class="quest-progress-bar"><div class="quest-progress-fill" style="width:' + pct + '%;animation:progressFill 0.8s ease;"></div></div>' +
+          '<div class="quest-progress-text">' + q.progress + '/' + q.target + ' — ' + pct + '%</div>' +
+        '</div>';
+      btnHTML = '<button class="btn complete-btn" onclick="NEXUS9.makeProgress(\'' + q.id + '\')">推进 PROGRESS</button>';
+    }
+
+    return '<div class="quest-card' + extraClass + '" id="card-' + q.id + '" style="animation-delay:' + (idx*0.05) + 's;">' +
+      '<div class="card-scanner"></div>' +
+      '<div class="quest-header">' +
+        '<div>' +
+          '<div class="quest-title">' + (q.icon || '') + ' ' + q.title + '</div>' +
+          '<div class="quest-id">#' + q.id + '</div>' +
+        '</div>' +
+        '<div class="difficulty ' + q.difficulty + '">' +
+          '<div class="stars">' + starHtml(q.stars) + '</div>' +
+          diffLabel(q.difficulty) +
+        '</div>' +
+      '</div>' +
+      '<div class="quest-desc">' + q.desc + '</div>' +
+      progressHTML +
+      '<div class="quest-meta">' +
+        '<div class="quest-reward">&#x25C6; 奖励: ' + q.reward + '</div>' +
+        '<div class="quest-actions">' + btnHTML + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ============ ACTIONS ============
+  function acceptQuest(id) {
+    const q = state.quests.find(q => q.id === id);
+    if (!q || q.accepted || q.completed) return;
+    q.accepted = true;
+    showNotif('任务已接受: ' + q.title);
+    renderAll();
+  }
+
+  function makeProgress(id) {
+    const q = state.quests.find(q => q.id === id);
+    if (!q || q.completed || !q.accepted) return;
+    q.progress++;
+    showNotif('任务推进: ' + q.title + ' (' + q.progress + '/' + q.target + ')');
+    if (q.progress >= q.target) {
+      completeQuest(q);
+    }
+    renderAll();
+  }
+
+  function completeQuest(q) {
+    q.completed = true;
+    q.accepted = true;
+    const card = document.getElementById('card-' + q.id);
+    if (card) {
+      card.classList.add('completing');
+      setTimeout(() => card.classList.remove('completing'), 1800);
+    }
+    showNotif('任务完成! ' + q.title + ' — 获得: ' + q.reward);
+  }
+
+  function focusQuest(id) {
+    const card = document.getElementById('card-' + id);
+    if (card) {
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      card.style.boxShadow = '0 0 30px rgba(255,230,0,0.6), inset 0 0 30px rgba(255,230,0,0.05)';
+      card.style.borderColor = '#ffe600';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+        card.style.borderColor = '';
+        renderAll();
+      }, 2000);
+    }
+  }
+
+  function showNotif(msg) {
+    const el = document.createElement('div');
+    el.className = 'float-notif';
+    el.innerHTML = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  function resetAll() {
+    state.quests = JSON.parse(JSON.stringify(quests));
+    state.permLevel = 1;
+    state.rewards = {};
+    state.totalCompleted = 0;
+    renderAll();
+    showNotif('所有任务已重置');
+  }
+
+  function help() {
+    console.log(
+      '%c NEXUS-9 QUEST SYSTEM %c v2.4.1 ',
+      'background:#00f0ff;color:#000;padding:4px 8px;font-family:monospace;font-size:14px;',
+      'background:#0a0a0f;color:#00f0ff;padding:4px 8px;font-family:monospace;'
+    );
+    console.log('%c 可用命令:', 'color:#ffe600;font-weight:bold;');
+    console.log('  NEXUS9.help()          — 显示此帮助');
+    console.log('  NEXUS9.acceptQuest(id) — 接受任务 (如 "Q001")');
+    console.log('  NEXUS9.makeProgress(id)— 推进任务进度');
+    console.log('  NEXUS9.focusQuest(id)  — 聚焦滚动到指定任务');
+    console.log('  NEXUS9.list()          — 列出所有任务及状态');
+    console.log('  NEXUS9.reset()         — 重置所有任务进度');
+    console.log('  NEXUS9.state           — 查看完整状态对象');
+    console.log('  NEXUS9.cheat()         — 立即完成所有任务 (作弊)');
+    console.log('%c 任务ID列表:', 'color:#00ff88;font-weight:bold;');
+    quests.forEach(q => {
+      console.log('  ' + q.id + ' — ' + q.title + ' [' + q.difficulty.toUpperCase() + ']');
+    });
+  }
+
+  function list() {
+    console.log('%c === NEXUS-9 任务状态 ===', 'color:#00f0ff;font-weight:bold;');
+    state.quests.forEach(q => {
+      let status = q.completed ? '已完成' : (q.accepted ? '进行中' : '未接受');
+      let color = q.completed ? '#00ff88' : (q.accepted ? '#ffe600' : '#5a6a7a');
+      console.log(
+        '%c ' + q.id + ' %c ' + q.title + ' %c [' + status + '] %c ' + q.progress + '/' + q.target,
+        'color:#00f0ff;', 'color:#fff;', 'color:' + color + ';', 'color:#888;'
+      );
+    });
+    console.log('%c 权限等级: ' + state.permLevel + ' | 已完成: ' + state.totalCompleted + '/' + state.quests.length,
+      'color:#ffe600;');
+  }
+
+  function cheat() {
+    state.quests.forEach(q => {
+      q.accepted = true;
+      q.completed = true;
+      q.progress = q.target;
+    });
+    state.permLevel = 99;
+    renderAll();
+    showNotif('作弊模式激活 — 所有任务已完成');
+    console.log('%c 警告: 作弊模式已激活。城市权限等级: 99', 'color:#ff3366;font-size:16px;');
+  }
+
+  // ============ GLOBAL API ============
+  window.NEXUS9 = {
+    acceptQuest,
+    makeProgress,
+    focusQuest,
+    help,
+    list,
+    reset: resetAll,
+    cheat,
+    get state() { return state; },
+    get quests() { return state.quests; }
+  };
+
+  // ============ INIT ============
+  loadState();
+  renderAll();
+
+  // Console easter egg hint (only in dev)
+  console.log('%c NEXUS-9 QUEST SYSTEM LOADED %c 输入 NEXUS9.help() 查看命令',
+    'color:#00f0ff;font-size:12px;', 'color:#888;');
+  console.log('%c "在这座城市，任务即命运。" %c — 神谕 AI',
+    'color:#ffe600;font-style:italic;', '');
+
+  // Auto-save on page unload
+  window.addEventListener('beforeunload', saveState);
+})();
+</script>
+
+</body>
+</html>

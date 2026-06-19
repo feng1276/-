@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现象库 · Nature Atlas</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-card: rgba(17, 22, 29, 0.82);
+            --glass-bg: rgba(10, 14, 20, 0.7);
+            --glass-border: rgba(0, 160, 220, 0.18);
+            --glass-border-bright: rgba(0, 180, 240, 0.35);
+            --accent-ocean: #0099cc;
+            --accent-storm: #e8793e;
+            --accent-magma: #e0553d;
+            --accent-aurora: #4ecb71;
+            --accent-lightning: #f5c842;
+            --accent-glow-ocean: rgba(0, 160, 220, 0.4);
+            --text-primary: #e2e6ea;
+            --text-secondary: #a8b4c0;
+            --text-muted: #6b7885;
+            --border-radius-xl: 1.8rem;
+            --border-radius-md: 0.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.55);
+            --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-body: 'Source Sans 3', 'Inter', sans-serif;
+            --font-heading: 'Playfair Display', 'Georgia', serif;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .logo .nat {
+            color: var(--accent-ocean);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-ocean);
+        }
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+        }
+        .main-layout {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .filter-sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.8rem;
+            position: sticky;
+            top: 110px;
+            height: fit-content;
+        }
+        .filter-sidebar h3 {
+            font-family: var(--font-heading);
+            color: var(--accent-ocean);
+            margin-bottom: 1.2rem;
+        }
+        .filter-group {
+            margin-bottom: 1.3rem;
+        }
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.3rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        .filter-group select {
+            width: 100%;
+            padding: 0.6rem;
+            background: #1a2029;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            cursor: pointer;
+        }
+        .intensity-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .intensity-chip {
+            padding: 0.25rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            transition: 0.2s;
+        }
+        .intensity-chip.active {
+            background: rgba(0, 160, 220, 0.2);
+            border-color: var(--accent-ocean);
+            color: var(--accent-ocean);
+        }
+        .phenomena-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            align-content: start;
+        }
+        .phenom-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            box-shadow: var(--shadow-card);
+            position: relative;
+        }
+        .phenom-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent-ocean);
+            box-shadow: 0 0 35px var(--accent-glow-ocean), 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        .phenom-img {
+            height: 170px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            padding: 0.8rem;
+        }
+        .phenom-body {
+            padding: 1.3rem;
+        }
+        .phenom-body h3 {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+        }
+        .level-badge {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .level-extreme {
+            background: rgba(224, 85, 61, 0.2);
+            color: var(--accent-magma);
+        }
+        .level-high {
+            background: rgba(232, 121, 62, 0.2);
+            color: var(--accent-storm);
+        }
+        .level-moderate {
+            background: rgba(245, 200, 66, 0.2);
+            color: var(--accent-lightning);
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .page-btn.active {
+            background: var(--accent-ocean);
+            color: #fff;
+        }
+        @media (max-width: 900px) {
+            .main-layout {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            .filter-sidebar {
+                width: 100%;
+                position: static;
+            }
+        }
+
+        /* ========== NEW: Quick Stats Bar ========== */
+        .quick-stats-bar {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 1rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto 0.5rem;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 0.9rem 1.5rem;
+            text-align: center;
+            min-width: 140px;
+            transition: all var(--transition-smooth);
+        }
+        .stat-card:hover {
+            border-color: var(--accent-ocean);
+            box-shadow: 0 0 20px var(--accent-glow-ocean);
+        }
+        .stat-number {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-ocean);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+
+        /* ========== NEW: Featured Phenomenon Banner ========== */
+        .featured-banner {
+            max-width: 1400px;
+            margin: 0 auto 1.5rem;
+            padding: 0 2rem;
+        }
+        .featured-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border-bright);
+            border-radius: var(--border-radius-xl);
+            display: flex;
+            overflow: hidden;
+            min-height: 220px;
+            transition: all 0.6s ease;
+            position: relative;
+        }
+        .featured-card.fade-out {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .featured-img {
+            width: 340px;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .featured-img .featured-icon {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            font-size: 2.5rem;
+        }
+        .featured-body {
+            padding: 1.8rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+        }
+        .featured-body h2 {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+        .featured-body .featured-type-badge {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            width: fit-content;
+        }
+        .featured-body .featured-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+        .featured-body .featured-meta {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .featured-body .featured-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        @media (max-width: 768px) {
+            .featured-card {
+                flex-direction: column;
+            }
+            .featured-img {
+                width: 100%;
+                height: 180px;
+            }
+        }
+
+        /* ========== NEW: Phenomenon of the Day glowing border ========== */
+        @keyframes potdGlow {
+            0%, 100% { border-color: var(--accent-ocean); box-shadow: 0 0 15px var(--accent-glow-ocean), 0 0 35px rgba(0,160,220,0.25); }
+            25% { border-color: var(--accent-aurora); box-shadow: 0 0 15px rgba(78,203,113,0.4), 0 0 35px rgba(78,203,113,0.25); }
+            50% { border-color: var(--accent-storm); box-shadow: 0 0 15px rgba(232,121,62,0.4), 0 0 35px rgba(232,121,62,0.25); }
+            75% { border-color: var(--accent-magma); box-shadow: 0 0 15px rgba(224,85,61,0.4), 0 0 35px rgba(224,85,61,0.25); }
+        }
+        .phenom-card.potd {
+            animation: potdGlow 3s ease-in-out infinite;
+            border-width: 2px;
+        }
+        .phenom-card.potd::before {
+            content: '⭐ 今日现象';
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: var(--accent-lightning);
+            font-size: 0.65rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 1rem;
+            z-index: 5;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(245,200,66,0.35);
+        }
+
+        /* ========== NEW: Type-specific card top borders ========== */
+        .phenom-card.border-weather { border-top: 3px solid var(--accent-storm); }
+        .phenom-card.border-geology { border-top: 3px solid var(--accent-magma); }
+        .phenom-card.border-ocean   { border-top: 3px solid var(--accent-ocean); }
+        .phenom-card.border-optical { border-top: 3px solid var(--accent-aurora); }
+
+        /* ========== NEW: Sort toggle buttons ========== */
+        .sort-toggle-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.3rem;
+        }
+        .sort-btn {
+            padding: 0.3rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            transition: 0.2s;
+            font-family: var(--font-body);
+            white-space: nowrap;
+        }
+        .sort-btn.active {
+            background: rgba(0,160,220,0.2);
+            border-color: var(--accent-ocean);
+            color: var(--accent-ocean);
+        }
+        .sort-dir-toggle {
+            padding: 0.3rem 0.5rem;
+            border-radius: 50%;
+            font-size: 0.65rem;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            transition: 0.2s;
+            font-family: var(--font-body);
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sort-dir-toggle:hover {
+            border-color: var(--accent-ocean);
+            color: var(--accent-ocean);
+        }
+
+        /* ========== NEW: Compare selection ========== */
+        .phenom-card .compare-check {
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            z-index: 5;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-ocean);
+            cursor: pointer;
+            transform: scale(1.2);
+        }
+        .phenom-card.selected-for-compare {
+            border-color: var(--accent-lightning);
+            box-shadow: 0 0 20px rgba(245,200,66,0.3);
+        }
+        .compare-bar {
+            display: none;
+            position: sticky;
+            bottom: 20px;
+            z-index: 90;
+            text-align: center;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+        .compare-bar.visible {
+            display: block;
+        }
+        .compare-btn-main {
+            padding: 0.7rem 1.8rem;
+            border-radius: 3rem;
+            background: var(--accent-ocean);
+            border: none;
+            color: #fff;
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+            box-shadow: 0 4px 20px rgba(0,160,220,0.4);
+        }
+        .compare-btn-main:hover {
+            background: #00b4e5;
+            box-shadow: 0 6px 28px rgba(0,180,240,0.55);
+        }
+        .compare-btn-main:disabled {
+            background: #3a4450;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+        .compare-selection-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        /* ========== NEW: Scientific metadata tooltip on hover ========== */
+        .phenom-card .sci-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #11171f;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            line-height: 1.5;
+            padding: 0.7rem 1rem;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--glass-border-bright);
+            white-space: normal;
+            width: 260px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            z-index: 20;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            margin-bottom: 8px;
+        }
+        .phenom-card .sci-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(0,180,240,0.35);
+        }
+        .phenom-card:hover .sci-tooltip {
+            opacity: 1;
+        }
+
+        /* ========== NEW: Featured type badges ========== */
+        .badge-weather { background: rgba(232,121,62,0.2); color: var(--accent-storm); }
+        .badge-geology { background: rgba(224,85,61,0.2); color: var(--accent-magma); }
+        .badge-ocean   { background: rgba(0,153,204,0.2); color: var(--accent-ocean); }
+        .badge-optical { background: rgba(78,203,113,0.2); color: var(--accent-aurora); }
+
+        /* ========== NEW: Type badge on cards ========== */
+        .phenom-body .type-tag {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+        }
+        .type-weather { background: rgba(232,121,62,0.18); color: var(--accent-storm); }
+        .type-geology { background: rgba(224,85,61,0.18); color: var(--accent-magma); }
+        .type-ocean   { background: rgba(0,153,204,0.18); color: var(--accent-ocean); }
+        .type-optical { background: rgba(78,203,113,0.18); color: var(--accent-aurora); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><span class="nat">NATURE</span> ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="nature_home.html">首页</a></li>
+            <li><a href="phenomena.html" class="active">现象库</a></li>
+            <li><a href="weather.html">极端天气</a></li>
+            <li><a href="geology.html">地质现象</a></li>
+            <li><a href="ocean.html">海洋现象</a></li>
+            <li><a href="optical.html">光学现象</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间轴</a></li>
+            <li><a href="compare.html">数据对比</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>📚 自然现象库</h1>
+        <p style="color:var(--text-muted);">探索地球最震撼的自然奇观</p>
+    </div>
+
+    <!-- NEW: Quick Stats Bar -->
+    <div class="quick-stats-bar" id="quickStatsBar">
+        <div class="stat-card">
+            <div class="stat-number" id="statTotal">0</div>
+            <div class="stat-label">收录现象</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="statTypes">0</div>
+            <div class="stat-label">现象类型</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="statExtreme">0</div>
+            <div class="stat-label">极端现象</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="statCommon">0</div>
+            <div class="stat-label">常见现象</div>
+        </div>
+    </div>
+
+    <!-- NEW: Featured Phenomenon Banner -->
+    <div class="featured-banner" id="featuredBanner">
+        <div class="featured-card" id="featuredCard">
+            <div class="featured-img" id="featuredImg">
+                <span class="featured-icon" id="featuredIcon"></span>
+            </div>
+            <div class="featured-body">
+                <span class="featured-type-badge" id="featuredTypeBadge"></span>
+                <h2 id="featuredName"></h2>
+                <p class="featured-desc" id="featuredDesc"></p>
+                <div class="featured-meta">
+                    <span id="featuredIntensity"></span>
+                    <span id="featuredLocation"></span>
+                    <span id="featuredFrequency"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <aside class="filter-sidebar">
+            <h3>🔍 筛选</h3>
+            <div class="filter-group">
+                <label>类型</label>
+                <select id="typeFilter">
+                    <option value="all">全部</option><option value="weather">极端天气</option>
+                    <option value="geology">地质现象</option><option value="ocean">海洋现象</option>
+                    <option value="optical">光学现象</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>强度等级</label>
+                <div class="intensity-options" id="intensityOptions">
+                    <span class="intensity-chip" data-int="extreme">极端</span>
+                    <span class="intensity-chip" data-int="high">高</span>
+                    <span class="intensity-chip" data-int="moderate">中等</span>
+                </div>
+            </div>
+            <!-- NEW: Sort Controls -->
+            <div class="filter-group">
+                <label>排序方式</label>
+                <div class="sort-toggle-group" id="sortToggles">
+                    <button class="sort-btn active" data-sort="default">默认</button>
+                    <button class="sort-btn" data-sort="name">名称</button>
+                    <button class="sort-btn" data-sort="intensity">强度</button>
+                    <button class="sort-btn" data-sort="frequency">频率</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.35rem;">
+                    <span style="font-size:0.65rem;color:var(--text-muted);">方向:</span>
+                    <button class="sort-dir-toggle" id="sortDirToggle" title="切换升序/降序">↑</button>
+                </div>
+            </div>
+            <button id="resetFilter" style="width:100%;padding:0.5rem;border-radius:2rem;background:transparent;border:1px solid var(--glass-border);color:var(--text-secondary);cursor:pointer;margin-top:0.5rem;">重置</button>
+            <!-- NEW: Compare Selected Button -->
+            <div style="margin-top:1rem;border-top:1px solid var(--glass-border);padding-top:1rem;">
+                <button id="compareBtn" class="compare-btn-main" style="width:100%;" disabled>⚖️ 对比选中 (0/2)</button>
+                <p class="compare-selection-hint">勾选卡片左上角复选框选择2个现象</p>
+            </div>
+        </aside>
+        <div style="flex:1;">
+            <div class="phenomena-grid" id="phenomenaGrid"></div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- NEW: Floating Compare Bar -->
+    <div class="compare-bar" id="compareBar">
+        <button class="compare-btn-main" id="compareBarBtn">⚖️ 对比选中现象</button>
+    </div>
+
+    <script>
+        const phenomenaData = [
+            // ===== WEATHER - 极端天气 =====
+            { id: 'tornado', name: '龙卷风', icon: '🌪️', type: 'weather', intensity: 'extreme', level: 5,
+                location: '全球(北美为主)', frequency: 'uncommon',
+                desc: '地球上风速最快的自然现象，漏斗云从雷暴云底延伸至地面。',
+                scientific: '藤田级数EF0-EF5衡量破坏力。漏斗云由中气旋(mesocyclone)产生，中心气压极低，风速可达480km/h。',
+                img: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400&h=250&fit=crop' },
+            { id: 'hurricane', name: '飓风/台风', icon: '🌀', type: 'weather', intensity: 'extreme', level: 5,
+                location: '热带海域', frequency: 'uncommon',
+                desc: '大规模旋转风暴系统，中心风速可达250km/h以上。',
+                scientific: '萨菲尔-辛普森等级1-5级。暖心结构，能量源自温暖海水蒸发潜热。风眼直径20-65km，眼壁为最强风区。',
+                img: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=400&h=250&fit=crop' },
+            { id: 'lightning', name: '闪电风暴', icon: '⚡', type: 'weather', intensity: 'high', level: 4,
+                location: '全球', frequency: 'common',
+                desc: '云层间或云地间的大气放电现象，温度可达30000°C。',
+                scientific: '云内电荷分离导致电位差突破空气介电强度。先导(stepped leader)从云向下发展，回击(return stroke)产生可见闪电。',
+                img: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=250&fit=crop' },
+            { id: 'sandstorm', name: '沙尘暴', icon: '🏜️', type: 'weather', intensity: 'high', level: 3,
+                location: '干旱地区', frequency: 'uncommon',
+                desc: '强风将大量沙尘卷入空中，能见度急剧下降。',
+                scientific: '水平能见度低于1km即为沙尘暴。颗粒物直径0.08-1mm可悬浮数天，传输数千公里。PM10浓度可达15000μg/m³。',
+                img: 'https://images.unsplash.com/photo-1517758478390-c89333af4622?w=400&h=250&fit=crop' },
+            { id: 'derecho', name: '德雷科风暴', icon: '💨', type: 'weather', intensity: 'extreme', level: 5,
+                location: '北美、欧洲', frequency: 'rare',
+                desc: '大规模、长寿命的直线风暴系统，可造成数百公里宽的破坏带。',
+                scientific: '弓形回波(bow echo)雷达特征。风速≥93km/h，破坏带宽≥400km。常伴随下击暴流，破坏力堪比飓风。',
+                img: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=400&h=250&fit=crop' },
+            { id: 'microburst', name: '微下击暴流', icon: '⬇️', type: 'weather', intensity: 'high', level: 4,
+                location: '全球(雷暴区)', frequency: 'uncommon',
+                desc: '雷暴中急速下沉的冷空气柱触地后向四周猛烈扩散。',
+                scientific: '干微暴(dry microburst)和湿微暴(wet microburst)两类。水平风速可达270km/h，影响范围<4km。对航空安全威胁极大。',
+                img: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=250&fit=crop' },
+            { id: 'fire-whirl', name: '火龙卷', icon: '🔥', type: 'weather', intensity: 'high', level: 4,
+                location: '野火活跃区', frequency: 'rare',
+                desc: '强烈野火中形成的旋转火焰柱，温度极高且移动迅速。',
+                scientific: '火焰使空气急剧升温形成强烈上升气流，与水平风切变耦合产生漩涡。核心温度可达1090°C，转速可达100km/h。',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=400&h=250&fit=crop' },
+            { id: 'haboob', name: '哈布沙暴', icon: '🏜️', type: 'weather', intensity: 'high', level: 3,
+                location: '撒哈拉、中东、北美西南', frequency: 'uncommon',
+                desc: '由雷暴下曳气流引发的巨大沙尘墙，可达数百米高。',
+                scientific: '阿拉伯语habb意为"猛吹"。沙墙高度可达1000m，宽度可达100km。前进速度可达60km/h，能见度骤降至零。',
+                img: 'https://images.unsplash.com/photo-1517758478390-c89333af4622?w=400&h=250&fit=crop' },
+            { id: 'bomb-cyclone', name: '炸弹气旋', icon: '💣', type: 'weather', intensity: 'extreme', level: 5,
+                location: '中纬度海域', frequency: 'uncommon',
+                desc: '中心气压在24小时内骤降至少24百帕的爆炸性增强气旋。',
+                scientific: '气压下降率≥24hPa/24h(60°N)，也称为爆发性气旋ogenesis。常引发飓风级大风和暴雪，东海岸最显著。',
+                img: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=400&h=250&fit=crop' },
+            { id: 'thundersnow', name: '雷雪', icon: '⛈️', type: 'weather', intensity: 'high', level: 3,
+                location: '中高纬度地区', frequency: 'rare',
+                desc: '暴风雪中伴随闪电和雷鸣的罕见天气现象。',
+                scientific: '冬季对流不稳定导致。抬升凝结高度极低，冰晶碰撞产生电荷分离。降雪率可达5-10cm/h，雷声因雪的声学衰减传播距离短。',
+                img: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400&h=250&fit=crop' },
+            { id: 'supercell', name: '超级单体', icon: '☁️', type: 'weather', intensity: 'extreme', level: 5,
+                location: '全球(北美大平原为主)', frequency: 'uncommon',
+                desc: '具有深厚持久旋转上升气流的中气旋雷暴，是龙卷风的主要母体。',
+                scientific: '中气旋直径3-10km，旋转持续30分钟以上。雷达上呈钩状回波(hook echo)。可产生巨型冰雹(直径>10cm)和EF3+龙卷风。',
+                img: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400&h=250&fit=crop' },
+            { id: 'squall-line', name: '飑线', icon: '🌬️', type: 'weather', intensity: 'high', level: 4,
+                location: '全球', frequency: 'common',
+                desc: '排列成线的强烈雷暴群，前方有持续强风和剧烈天气。',
+                scientific: '雷达上呈线状回波。线前为阵风锋(gust front)，常出现弧状云(shelf cloud)。长度可达数百公里，持续数小时。',
+                img: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=250&fit=crop' },
+            { id: 'dust-devil', name: '尘卷风', icon: '🌪️', type: 'weather', intensity: 'moderate', level: 2,
+                location: '干旱炎热地区', frequency: 'common',
+                desc: '晴天条件下地面强烈受热形成的小型旋转上升气流柱。',
+                scientific: '与龙卷风不同，尘卷风并非源自云层。地表过热(50-70°C)导致超绝热递减率，形成直径1-10m的漩涡。风速一般<100km/h。',
+                img: 'https://images.unsplash.com/photo-1517758478390-c89333af4622?w=400&h=250&fit=crop' },
+            { id: 'atmospheric-river', name: '大气河', icon: '🌧️', type: 'weather', intensity: 'high', level: 3,
+                location: '中纬度西海岸', frequency: 'common',
+                desc: '狭窄而绵长的水汽输送带，可在登陆后引发极端降水。',
+                scientific: 'AR(Atmospheric River)宽400-600km，长数千公里。水汽输送量可达密西西比河河口流量的15倍。AR5等级分类基于持续时间和强度。',
+                img: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=400&h=250&fit=crop' },
+            { id: 'polar-vortex', name: '极地涡旋', icon: '❄️', type: 'weather', intensity: 'high', level: 4,
+                location: '北极/南极平流层', frequency: 'common',
+                desc: '冬季极地平流层中的大规模气旋式环流，南侵时引发极端寒潮。',
+                scientific: '平流层极涡(stratospheric polar vortex)在10-50km高度。SSW(平流层突然增温)可导致极涡分裂南下，引发中纬度极端低温。',
+                img: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400&h=250&fit=crop' },
+            { id: 'virga', name: '雨幡', icon: '🌦️', type: 'weather', intensity: 'moderate', level: 1,
+                location: '全球(干旱区常见)', frequency: 'common',
+                desc: '从云底降下但在到达地面前完全蒸发的降水条带。',
+                scientific: '降水穿过干燥低层大气时完全蒸发。可产生下击暴流(因蒸发冷却)。常见于高云底、低湿度的沙漠和高原地区。',
+                img: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=250&fit=crop' },
+            { id: 'steam-devil', name: '蒸汽卷', icon: '♨️', type: 'weather', intensity: 'moderate', level: 2,
+                location: '冷水域上(秋冬)', frequency: 'uncommon',
+                desc: '冷空气流经温暖水面时形成的蒸汽雾中的小型漩涡。',
+                scientific: '水面蒸发提供水汽和潜热，冷空气导致凝结。局地温差引发对流和微尺度涡旋。常见于五大湖、波罗的海等冷水域。',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop' },
+            { id: 'gustnado', name: '阵风卷', icon: '🌬️', type: 'weather', intensity: 'high', level: 3,
+                location: '雷暴阵风锋前沿', frequency: 'uncommon',
+                desc: '雷暴阵风锋前沿形成的短寿命浅层漩涡，形似小型龙卷风。',
+                scientific: '沿阵风锋的切变不稳定性产生。非中气旋起源(与龙卷风本质区别)，旋转深度浅，寿命短(<1分钟)，但风速仍可达130km/h。',
+                img: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400&h=250&fit=crop' },
+            { id: 'heat-burst', name: '热暴流', icon: '🌡️', type: 'weather', intensity: 'moderate', level: 2,
+                location: '夜间雷暴区', frequency: 'rare',
+                desc: '夜间衰亡雷暴中突然下沉的干热空气，使地面气温骤升。',
+                scientific: '降水完全蒸发导致下沉气团变干，绝热压缩加热。可使夜间气温从25°C骤升至38°C以上，同时风速可达120km/h。极为罕见。',
+                img: 'https://images.unsplash.com/photo-1517758478390-c89333af4622?w=400&h=250&fit=crop' },
+
+            // ===== GEOLOGY - 地质现象 =====
+            { id: 'volcano', name: '火山喷发', icon: '🌋', type: 'geology', intensity: 'extreme', level: 5,
+                location: '板块交界处', frequency: 'uncommon',
+                desc: '岩浆、火山灰和气体从地壳裂口喷涌而出。',
+                scientific: 'VEI(火山爆发指数)0-8级。岩浆黏度与气体含量决定喷发类型(夏威夷型至普林尼型)。火山灰可进入平流层影响全球气候。',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=400&h=250&fit=crop' },
+            { id: 'earthquake', name: '地震', icon: '🏚️', type: 'geology', intensity: 'extreme', level: 5,
+                location: '板块边界', frequency: 'uncommon',
+                desc: '地壳板块突然滑动释放能量引起的地面震动。',
+                scientific: '矩震级(Mw)衡量。弹性回跳理论：应变积累超过断层摩擦强度时突然破裂。P波(6km/s)与S波(3.5km/s)速度不同，用于预警。',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=250&fit=crop' },
+            { id: 'geyser', name: '间歇泉', icon: '💨', type: 'geology', intensity: 'moderate', level: 2,
+                location: '火山活动区', frequency: 'uncommon',
+                desc: '地下水被岩浆加热后周期性喷出地表。',
+                scientific: '需要水源、热源(岩浆)和管道系统。水在狭窄管道中被加热至远超沸点(因上方水柱压力)，最终闪蒸膨胀触发喷发。',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=400&h=250&fit=crop' },
+            { id: 'lahar', name: '火山泥流', icon: '🌋', type: 'geology', intensity: 'extreme', level: 5,
+                location: '火山斜坡', frequency: 'rare',
+                desc: '火山喷发融冰或暴雨混合火山灰形成的高速泥石流，速度可达100km/h。',
+                scientific: '容重1.5-2.4g/cm³，如同流动的混凝土。1985年Nevado del Ruiz火山泥流造成23000人死亡。可沿河谷奔流80km以上。',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=400&h=250&fit=crop' },
+            { id: 'pyroclastic-flow', name: '火山碎屑流', icon: '🔥', type: 'geology', intensity: 'extreme', level: 5,
+                location: '爆炸性火山', frequency: 'rare',
+                desc: '超高温(200-700°C)气体和火山碎屑混合物以700km/h沿山坡奔腾而下。',
+                scientific: '分为块灰流(block-and-ash flow)和浮石流(pumice flow)。内部湍流使碎屑悬浮。公元79年维苏威火山碎屑流掩埋了庞贝古城。',
+                img: 'https://images.unsplash.com/photo-1618164651854-e0e44c530c12?w=400&h=250&fit=crop' },
+            { id: 'caldera', name: '破火山口', icon: '⭕', type: 'geology', intensity: 'extreme', level: 5,
+                location: '超级火山遗址', frequency: 'very-rare',
+                desc: '火山喷发后岩浆房塌陷形成的巨大圆形凹陷，直径可达数十公里。',
+                scientific: '形成于VEI7+超级喷发后。黄石破火山口(64万年前)直径约55×72km。塌陷深度可达数百米，后常形成火山口湖。',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=250&fit=crop' },
+            { id: 'icequake', name: '冰震', icon: '🧊', type: 'geology', intensity: 'moderate', level: 2,
+                location: '冰川/冰盖地区', frequency: 'common',
+                desc: '冰川内部应力突然释放或冰层热胀冷缩引起的地表震动。',
+                scientific: '分为冰川滑动震(glacial slip)和热冰震(frost quake/cryoseism)。后者因饱和地面急速冻结膨胀，产生类似地震的巨响。',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=250&fit=crop' },
+            { id: 'mud-volcano', name: '泥火山', icon: '💧', type: 'geology', intensity: 'moderate', level: 2,
+                location: '沉积盆地、俯冲带', frequency: 'uncommon',
+                desc: '地下高压泥浆、水和气体喷出地表形成的锥形堆积体。',
+                scientific: '非岩浆活动。甲烷和高压地下水驱动。阿塞拜疆拥有全球约1/3的泥火山，部分可喷发火焰(引燃甲烷)。喷发高度可达数百米。',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=400&h=250&fit=crop' },
+            { id: 'megatsunami', name: '超级海啸', icon: '🌊', type: 'geology', intensity: 'extreme', level: 5,
+                location: '海湾、峡湾', frequency: 'very-rare',
+                desc: '由山体滑坡或冰川崩落进入水体引发的局地极端海啸，波高可超500米。',
+                scientific: '1958年阿拉斯加利图亚湾山崩引发524米巨浪(有记录最高)。与地震海啸不同，影响范围较小但浪高极大，沉积物中有独特证据。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'cryovolcano', name: '冰火山', icon: '❄️', type: 'geology', intensity: 'moderate', level: 2,
+                location: '外太阳系冰卫星', frequency: 'very-rare',
+                desc: '喷发水、氨、甲烷等挥发物而非熔岩的火山，存在于冰卫星上。',
+                scientific: '土卫二(Enceladus)南极的虎纹裂隙喷发水冰羽流，证实存在地下液态海洋。海卫一(Triton)喷发氮气冰火山。冥王星也有冰火山地貌。',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=250&fit=crop' },
+            { id: 'jokulhlaup', name: '冰川溃洪', icon: '🏔️', type: 'geology', intensity: 'high', level: 4,
+                location: '冰岛、阿拉斯加', frequency: 'rare',
+                desc: '火山或地热活动融化冰下大量水体突然释放形成的灾难性洪水。',
+                scientific: '冰岛语jökulhlaup。流量可达数万m³/s(超过亚马逊河)。1996年冰岛Grímsvötn洪水峰值流量达50000m³/s，携巨量冰块和沉积物。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'liquefaction', name: '土壤液化', icon: '⏳', type: 'geology', intensity: 'high', level: 3,
+                location: '饱和砂土区(地震时)', frequency: 'rare',
+                desc: '地震震动使饱和松散砂土暂时丧失强度，如同液体般流动。',
+                scientific: '超孔隙水压力使有效应力降为零。砂沸(sand boil)是地表标志。1964年新潟地震中整栋公寓楼倾斜倒塌。2011基督城地震大面积液化。',
+                img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=250&fit=crop' },
+            { id: 'rockfall', name: '岩崩', icon: '🪨', type: 'geology', intensity: 'high', level: 3,
+                location: '陡峭岩壁、山区', frequency: 'common',
+                desc: '岩体从陡坡或悬崖上快速崩落，速度可达200km/h以上。',
+                scientific: '触发因素：冻融循环、地震、降雨、根劈作用。落石轨迹由坡面弹跳决定。瑞士每年数千次岩崩，防护网和拦石坝是主要防御措施。',
+                img: 'https://images.unsplash.com/photo-1534043464124-2b78fb6dd4fa?w=400&h=250&fit=crop' },
+
+            // ===== OCEAN - 海洋现象 =====
+            { id: 'tsunami', name: '海啸', icon: '🌊', type: 'ocean', intensity: 'extreme', level: 5,
+                location: '沿海地区', frequency: 'rare',
+                desc: '由海底地震或火山引发的巨大破坏性海浪。',
+                scientific: '波长100-500km，远洋波高<1m，波速700-900km/h。近岸浅水区波速降低、波高剧增(达30m+)。DART浮标网络提供预警。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'waterspout', name: '水龙卷', icon: '💧', type: 'ocean', intensity: 'high', level: 3,
+                location: '温暖海域', frequency: 'uncommon',
+                desc: '在水面上形成的龙卷风，将水吸上天空。',
+                scientific: '分为晴天水龙卷(fair-weather)和龙卷水龙卷(tornadic)。前者由水面温差引发，风较弱(<120km/h)；后者陆上龙卷移至水面，具破坏性。',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop' },
+            { id: 'bioluminescence', name: '生物发光', icon: '✨', type: 'ocean', intensity: 'moderate', level: 1,
+                location: '温暖海域', frequency: 'uncommon',
+                desc: '海洋微生物发出蓝色荧光，形成梦幻般的荧光海。',
+                scientific: '荧光素-荧光素酶反应。甲藻(Noctiluca scintillans)受扰动发光。细菌群体感应(quorum sensing)调控发光。蓝光在海水中的衰减最小。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'rogue-wave', name: '疯狗浪', icon: '🌊', type: 'ocean', intensity: 'extreme', level: 5,
+                location: '开阔大洋', frequency: 'rare',
+                desc: '突然出现的单一巨浪，波高可达周围有效波高的2倍以上。',
+                scientific: '非线性聚焦(modulational instability)和波流相互作用形成。1995年Draupner海平台记录到25.6m疯狗浪(有史以来首次仪器记录)。沉船原因之一。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'maelstrom', name: '大漩涡', icon: '🌀', type: 'ocean', intensity: 'high', level: 3,
+                location: '海峡、峡湾窄口', frequency: 'uncommon',
+                desc: '潮汐流经狭窄海峡时形成的强大旋转涡流系统。',
+                scientific: '挪威Saltstraumen漩涡流速可达40km/h，每日形成4次(潮汐驱动)。苏格兰Corrievreckan漩涡是地球上最强之一。对小型船只极其危险。',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop' },
+            { id: 'algal-bloom', name: '藻华', icon: '🟢', type: 'ocean', intensity: 'moderate', level: 2,
+                location: '沿海富营养水域', frequency: 'common',
+                desc: '藻类在短时间内爆发性增殖，使水体变色并可能产生毒素。',
+                scientific: '赤潮(red tide)为甲藻藻华。富营养化(氮磷过量)是主要人为驱动因素。部分藻华产生神经毒素(如软骨藻酸)，导致鱼类和海洋哺乳动物死亡。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'storm-surge', name: '风暴潮', icon: '🌊', type: 'ocean', intensity: 'extreme', level: 5,
+                location: '沿海地区(飓风登陆)', frequency: 'uncommon',
+                desc: '热带气旋低压和强风共同作用使海面异常升高，淹没沿海。',
+                scientific: '气压每降1hPa海面升1cm(反气压效应)。向岸风将水推入浅湾。飓风卡特里娜风暴潮8.5m，是造成损失最大的单一因素。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'brine-pool', name: '盐水池', icon: '🧂', type: 'ocean', intensity: 'moderate', level: 1,
+                location: '深海海底(墨西哥湾)', frequency: 'very-rare',
+                desc: '深海海底超高盐度水体汇聚形成的"水下湖泊"，盐度是海水的4-5倍。',
+                scientific: '盐层溶蚀产生高密度卤水。表面有清晰界面(chemocline)。池边有贻贝等嗜极生物群落。因高盐和缺氧，掉入池中的生物会中毒死亡。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'seiche', name: '静振', icon: '〰️', type: 'ocean', intensity: 'moderate', level: 2,
+                location: '湖泊、港湾', frequency: 'uncommon',
+                desc: '封闭或半封闭水体中水面来回振荡的驻波现象，类似浴缸水晃动。',
+                scientific: '共振频率由水体几何形状决定。可由地震、风或气压变化触发。瑞士日内瓦湖静振周期约73分钟，最大振幅约2m。',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop' },
+            { id: 'whirlpool', name: '漩涡', icon: '🌀', type: 'ocean', intensity: 'moderate', level: 2,
+                location: '河流、海峡', frequency: 'common',
+                desc: '水流遇到障碍或不同流向交汇时形成的旋转水流区域。',
+                scientific: '涡度(vorticity)守恒原理。科里奥利力决定大型漩涡旋转方向(北半球逆时针)。海洋中尺度涡旋直径50-200km，寿命可达数月。',
+                img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop' },
+            { id: 'meteotsunami', name: '气象海啸', icon: '🌊', type: 'ocean', intensity: 'high', level: 3,
+                location: '沿海、大湖', frequency: 'rare',
+                desc: '由大气压力扰动和风应力引起的海啸式波浪，非地震成因。',
+                scientific: 'Proudman共振：气压波移动速度≈水体长波速度时产生共振放大。地中海的rissaga和五大湖的meteotsunami波高可达2-6m。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+            { id: 'cold-seep', name: '冷泉', icon: '🫧', type: 'ocean', intensity: 'moderate', level: 1,
+                location: '大陆边缘深海', frequency: 'common',
+                desc: '海底甲烷和硫化氢等流体缓慢渗漏形成的独特化能生态系统。',
+                scientific: '甲烷氧化古菌和硫酸盐还原菌共生形成化能合成基础。管虫、蛤类等依赖细菌共生。碳酸盐岩结壳和冷泉贻贝床是典型地貌标志。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'tidal-bore', name: '涌潮', icon: '🌊', type: 'ocean', intensity: 'high', level: 3,
+                location: '漏斗形河口', frequency: 'uncommon',
+                desc: '涨潮时潮水以波浪形式逆流涌入河口形成的壮观水墙。',
+                scientific: '钱塘江涌潮(银线潮)波高可达9m，流速40km/h。巴西Pororoca(亚马逊河)涌潮可持续30分钟以上。英国Severn bore涌潮是世界著名冲浪点。',
+                img: 'https://images.unsplash.com/photo-1559827291-f583f68b4fb0?w=400&h=250&fit=crop' },
+
+            // ===== OPTICAL - 光学现象 =====
+            { id: 'aurora', name: '极光', icon: '🌌', type: 'optical', intensity: 'moderate', level: 2,
+                location: '极地地区', frequency: 'uncommon',
+                desc: '太阳风粒子与地球磁场相互作用产生的绚丽光幕。',
+                scientific: '太阳高能粒子沿磁力线沉降，激发高层大气(100-400km)氧(绿557.7nm/红630.0nm)和氮(蓝紫)原子发光。Kp指数衡量地磁活动强度。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'rainbow', name: '彩虹', icon: '🌈', type: 'optical', intensity: 'moderate', level: 1,
+                location: '全球', frequency: 'common',
+                desc: '阳光经雨滴折射与反射形成的光学现象。',
+                scientific: '阳光在水滴内经一次内反射(主虹)或两次内反射(副虹/霓)。波长越短折射角越大(紫40.6°，红42.4°)。Alexander暗带在两条虹之间。',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=400&h=250&fit=crop' },
+            { id: 'sun-dog', name: '幻日', icon: '☀️', type: 'optical', intensity: 'moderate', level: 1,
+                location: '全球(寒冷地区)', frequency: 'common',
+                desc: '太阳两侧22°处出现的两个彩色光斑，如三个太阳并排。',
+                scientific: '阳光穿过六角板状冰晶（水平取向）折射产生。红色位于内侧（靠近太阳方向）。学名parhelion（复数parhelia），属于22°晕族。',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=400&h=250&fit=crop' },
+            { id: 'circumzenithal-arc', name: '环天顶弧', icon: '🌈', type: 'optical', intensity: 'moderate', level: 1,
+                location: '全球', frequency: 'uncommon',
+                desc: '天空中最鲜艳的冰晕，呈倒彩虹状出现在天顶附近。',
+                scientific: '阳光射入水平取向的六角板状冰晶顶面，从侧面射出。太阳高度<32°时可见。光谱纯度极高，被称为"天空中最美的冰晕"。',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=400&h=250&fit=crop' },
+            { id: 'green-flash', name: '绿闪', icon: '💚', type: 'optical', intensity: 'moderate', level: 1,
+                location: '清晰海平线', frequency: 'rare',
+                desc: '日落或日出瞬间太阳最顶端闪现1-2秒的翠绿色光芒。',
+                scientific: '大气色散将太阳最后影像分离成光谱色彩，蓝光被瑞利散射移除，绿色(约510nm)暂时可见。需要非常清晰的远地平线和温度逆温层。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'brocken-spectre', name: '布罗肯幽灵', icon: '👤', type: 'optical', intensity: 'moderate', level: 1,
+                location: '高山、云海上', frequency: 'uncommon',
+                desc: '观察者的影子投射在下方云雾上，周围环绕彩色光环的巨大影子。',
+                scientific: '阳光从观察者背后照射，影子投射在云雾(由小水滴组成)上。周围彩色光环为日华(glory)，由云滴后向散射发生米氏散射和干涉形成。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'light-pillar', name: '光柱', icon: '💡', type: 'optical', intensity: 'moderate', level: 1,
+                location: '寒冷地区(冬季)', frequency: 'uncommon',
+                desc: '垂直延伸的光柱，从太阳或地面光源向上或向下射出。',
+                scientific: '六角板状冰晶水平漂浮，反射光源光线形成垂直光柱。太阳光柱(sun pillar)呈暖色，人造光源光柱因LED/钠灯呈各色。冰晶越平整，光柱越锐利。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'moonbow', name: '月虹', icon: '🌙', type: 'optical', intensity: 'moderate', level: 1,
+                location: '有月光和降雨处', frequency: 'rare',
+                desc: '由月光而非阳光经雨滴折射反射形成的彩虹，色彩极淡。',
+                scientific: '月光强度仅为阳光的四十万分之一，因此人眼视锥细胞难以感知色彩，月虹通常呈白色或银灰色。长曝光摄影可显示完整光谱。',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=400&h=250&fit=crop' },
+            { id: 'fata-morgana', name: '复杂蜃景', icon: '🏰', type: 'optical', intensity: 'moderate', level: 1,
+                location: '海洋、冰原', frequency: 'rare',
+                desc: '多层大气逆温形成的高度失真的海市蜃楼，物体被拉伸成城堡状。',
+                scientific: '多个大气逆温层(ducting)造成光线在垂直方向多次弯曲。物像被垂直拉伸、压缩或反转，形成瞬息万变的"仙境"景象。得名于亚瑟王传说中的女巫Morgan le Fay。',
+                img: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=250&fit=crop' },
+            { id: 'perihelion', name: '近幻日', icon: '☀️', type: 'optical', intensity: 'moderate', level: 1,
+                location: '极地/高山(低温)', frequency: 'rare',
+                desc: '在120°方位角出现的明亮光斑，是远距离冰晕的一种罕见形态。',
+                scientific: '阳光在水平方向的六角板状冰晶中经两次内反射和两次折射。位于120°幻日环(parhelic circle)上，与太阳呈120°角。需极高质量冰晶。',
+                img: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=400&h=250&fit=crop' },
+            { id: 'aurora-corona', name: '极光冕', icon: '👑', type: 'optical', intensity: 'moderate', level: 2,
+                location: '极地地区', frequency: 'rare',
+                desc: '极光呈现环绕磁天顶的放射状结构，光芒从中心点向四面射出。',
+                scientific: '当观察者恰好位于极光弧正下方时，平行磁力线的粒子沉降产生透视汇聚效应。光芒似乎从磁天顶辐射而出，形成震撼的"天空之冕"。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'aurora-arc', name: '极光弧', icon: '🌠', type: 'optical', intensity: 'moderate', level: 2,
+                location: '极光带', frequency: 'common',
+                desc: '横跨天空的稳定极光条带，东西延伸数百公里，是极光最常见形态。',
+                scientific: '沿极光卵(auroal oval)分布。静默弧(quiet arc)对应稳定磁层-电离层电流系统。弧的底部高度约100km，宽度数公里至数十公里。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'aurora-band', name: '极光带', icon: '🌌', type: 'optical', intensity: 'moderate', level: 2,
+                location: '极光带(夜间)', frequency: 'common',
+                desc: '活跃的折叠状极光帷幕，快速变化和移动，如天幕在风中飘动。',
+                scientific: '磁层亚暴(substorm)期间粒子沉降增强。极光带呈现射线状(rayed band)或帷幕状(curtain)，褶皱由阿尔文波调制。色彩在绿-紫-红间动态变化。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+            { id: 'zodiacal-light', name: '黄道光', icon: '💫', type: 'optical', intensity: 'moderate', level: 1,
+                location: '热带(日出前/日落后)', frequency: 'uncommon',
+                desc: '沿黄道面延伸的微弱锥形光带，由行星际尘埃散射阳光形成。',
+                scientific: '太阳系行星际尘埃粒子(10-100μm)散射阳光。最佳观测时机：春分日落后西方和秋分日出前东方。亮度集中在黄道面，远离银河以避免混淆。',
+                img: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?w=400&h=250&fit=crop' },
+        ];
+
+        let activeIntensity = null;
+        let currentSort = 'default';
+        let sortAscending = true;
+        const itemsPerPage = 8;
+        let currentPage = 1;
+        let compareSet = [];
+        const maxCompare = 2;
+
+        // ===== SORT LOGIC =====
+        const freqOrder = { 'very-common': 1, 'common': 2, 'uncommon': 3, 'rare': 4, 'very-rare': 5 };
+
+        function sortData(data) {
+            const sorted = [...data];
+            if (currentSort === 'default') return sorted;
+            if (currentSort === 'name') {
+                sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+            } else if (currentSort === 'intensity') {
+                sorted.sort((a, b) => a.level - b.level);
+            } else if (currentSort === 'frequency') {
+                sorted.sort((a, b) => (freqOrder[a.frequency] || 3) - (freqOrder[b.frequency] || 3));
+            }
+            if (!sortAscending) sorted.reverse();
+            return sorted;
+        }
+
+        function getFiltered() {
+            const typeVal = document.getElementById('typeFilter').value;
+            const filtered = phenomenaData.filter(p => {
+                if (typeVal !== 'all' && p.type !== typeVal) return false;
+                if (activeIntensity && p.intensity !== activeIntensity) return false;
+                return true;
+            });
+            return sortData(filtered);
+        }
+
+        function render() {
+            const filtered = getFiltered();
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+            const start = (currentPage - 1) * itemsPerPage;
+            const items = filtered.slice(start, start + itemsPerPage);
+            const grid = document.getElementById('phenomenaGrid');
+            const potdIndex = getPotdIndex();
+            const globalIdx = phenomenaData.findIndex(p => p.id === items[0]?.id);
+
+            grid.innerHTML = items.map((p, i) => {
+                const realIdx = (start + i);
+                const isPotd = (function() {
+                    const dayIdx = hashDate() % phenomenaData.length;
+                    const globalI = phenomenaData.findIndex(dp => dp.id === p.id);
+                    return globalI === dayIdx;
+                })();
+                const isSelected = compareSet.includes(p.id);
+                const typeLabel = { weather: '极端天气', geology: '地质现象', ocean: '海洋现象', optical: '光学现象' }[p.type] || p.type;
+                return `
+            <div class="phenom-card border-${p.type}${isPotd ? ' potd' : ''}${isSelected ? ' selected-for-compare' : ''}" style="animation: fadeIn 0.5s ease ${i*0.05}s both;" data-id="${p.id}">
+              <input type="checkbox" class="compare-check" data-id="${p.id}" ${isSelected ? 'checked' : ''} title="选择对比">
+              <div class="sci-tooltip">🔬 <strong>科学数据：</strong>${p.scientific}</div>
+              <div class="phenom-img" style="background-image:url('${p.img}');"><span style="font-size:2rem;">${p.icon}</span></div>
+              <div class="phenom-body" onclick="window.location.href='detail.html?phenomenon=${p.id}'">
+                <span class="type-tag type-${p.type}">${typeLabel}</span>
+                <h3>${p.name}</h3>
+                <span class="level-badge level-${p.intensity}">强度: ${p.level}/5</span>
+                <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:0.5rem;">${p.desc}</p>
+                <p style="color:var(--text-muted); font-size:0.75rem;">📍 ${p.location}</p>
+              </div>
+            </div>`;
+            }).join('');
+
+            // Attach checkbox event listeners
+            grid.querySelectorAll('.compare-check').forEach(cb => {
+                cb.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    if (this.checked) {
+                        if (compareSet.length >= maxCompare) {
+                            this.checked = false;
+                            alert('最多只能选择2个现象进行对比');
+                            return;
+                        }
+                        compareSet.push(id);
+                    } else {
+                        compareSet = compareSet.filter(x => x !== id);
+                    }
+                    updateCompareUI();
+                    render();
+                });
+            });
+
+            const pagDiv = document.getElementById('pagination');
+            if (totalPages <= 1) { pagDiv.innerHTML = ''; } else {
+                let h = '';
+                for (let p = 1; p <= totalPages; p++)
+                    h +=
+                    `<button class="page-btn ${p===currentPage?'active':''}" data-p="${p}">${p}</button>`;
+                pagDiv.innerHTML = h;
+                pagDiv.querySelectorAll('.page-btn').forEach(b => b.addEventListener('click', function() {
+                    currentPage = parseInt(this.dataset.p);
+                    render();
+                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                }));
+            }
+        }
+
+        // ===== QUICK STATS =====
+        function updateQuickStats() {
+            document.getElementById('statTotal').textContent = phenomenaData.length;
+            const types = new Set(phenomenaData.map(p => p.type));
+            document.getElementById('statTypes').textContent = types.size;
+            const extreme = phenomenaData.filter(p => p.intensity === 'extreme').length;
+            document.getElementById('statExtreme').textContent = extreme;
+            const common = phenomenaData.filter(p => p.frequency === 'common' || p.frequency === 'very-common').length;
+            document.getElementById('statCommon').textContent = common;
+        }
+
+        // ===== FEATURED PHENOMENON =====
+        let featuredIdx = Math.floor(Math.random() * phenomenaData.length);
+        let featuredTimer = null;
+
+        function updateFeatured() {
+            const p = phenomenaData[featuredIdx];
+            const card = document.getElementById('featuredCard');
+            card.classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('featuredImg').style.backgroundImage = `url('${p.img}')`;
+                document.getElementById('featuredIcon').textContent = p.icon;
+                const typeLabel = { weather: '极端天气', geology: '地质现象', ocean: '海洋现象', optical: '光学现象' }[p.type];
+                const badge = document.getElementById('featuredTypeBadge');
+                badge.textContent = typeLabel;
+                badge.className = `featured-type-badge badge-${p.type}`;
+                document.getElementById('featuredName').textContent = p.name;
+                document.getElementById('featuredDesc').textContent = p.desc;
+                document.getElementById('featuredIntensity').innerHTML = `⚡ 强度 ${p.level}/5 (${p.intensity})`;
+                document.getElementById('featuredLocation').innerHTML = `📍 ${p.location}`;
+                const freqLabel = { 'very-common': '极常见', 'common': '常见', 'uncommon': '不常见', 'rare': '罕见', 'very-rare': '极罕见' }[p.frequency] || p.frequency;
+                document.getElementById('featuredFrequency').innerHTML = `🔄 ${freqLabel}`;
+                card.classList.remove('fade-out');
+            }, 300);
+            featuredIdx = (featuredIdx + 1) % phenomenaData.length;
+        }
+
+        function startFeaturedRotation() {
+            updateFeatured();
+            featuredTimer = setInterval(() => {
+                updateFeatured();
+            }, 30000);
+        }
+
+        // ===== COMPARE =====
+        function updateCompareUI() {
+            const btn = document.getElementById('compareBtn');
+            const bar = document.getElementById('compareBar');
+            const barBtn = document.getElementById('compareBarBtn');
+            const count = compareSet.length;
+            btn.textContent = `⚖️ 对比选中 (${count}/${maxCompare})`;
+            btn.disabled = count !== 2;
+            if (count === 2) {
+                btn.style.opacity = '1';
+                bar.classList.add('visible');
+            } else {
+                btn.style.opacity = '0.6';
+                bar.classList.remove('visible');
+            }
+        }
+
+        function doCompare() {
+            if (compareSet.length === 2) {
+                window.location.href = `compare.html?ids=${compareSet[0]},${compareSet[1]}`;
+            }
+        }
+
+        // ===== PHENOMENON OF THE DAY =====
+        function hashDate() {
+            const s = new Date().toDateString();
+            let h = 0;
+            for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i);
+                h |= 0; }
+            return Math.abs(h);
+        }
+
+        function getPotdIndex() {
+            return hashDate() % phenomenaData.length;
+        }
+
+        // ===== EVENT LISTENERS =====
+        document.getElementById('typeFilter').addEventListener('change', () => { currentPage = 1;
+            render(); });
+        document.getElementById('intensityOptions').addEventListener('click', function(e) {
+            if (e.target.classList.contains('intensity-chip')) {
+                const int = e.target.dataset.int;
+                if (activeIntensity === int) { activeIntensity = null;
+                    e.target.classList.remove('active'); } else {
+                    document.querySelectorAll('.intensity-chip').forEach(c => c.classList.remove(
+                        'active'));
+                    activeIntensity = int;
+                    e.target.classList.add('active');
+                }
+                currentPage = 1;
+                render();
+            }
+        });
+        document.getElementById('resetFilter').addEventListener('click', () => {
+            document.getElementById('typeFilter').value = 'all';
+            activeIntensity = null;
+            currentSort = 'default';
+            sortAscending = true;
+            document.querySelectorAll('.intensity-chip').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.sort-btn').forEach(b => { b.classList.remove('active'); if (b.dataset.sort === 'default') b.classList.add('active'); });
+            document.getElementById('sortDirToggle').textContent = '↑';
+            currentPage = 1;
+            compareSet = [];
+            updateCompareUI();
+            render();
+        });
+
+        // Sort toggle buttons
+        document.getElementById('sortToggles').addEventListener('click', function(e) {
+            if (e.target.classList.contains('sort-btn')) {
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentSort = e.target.dataset.sort;
+                currentPage = 1;
+                render();
+            }
+        });
+
+        // Sort direction toggle
+        document.getElementById('sortDirToggle').addEventListener('click', function() {
+            sortAscending = !sortAscending;
+            this.textContent = sortAscending ? '↑' : '↓';
+            currentPage = 1;
+            render();
+        });
+
+        // Compare buttons
+        document.getElementById('compareBtn').addEventListener('click', doCompare);
+        document.getElementById('compareBarBtn').addEventListener('click', doCompare);
+
+        // Search params handling (preserved from original)
+        const urlP = new URLSearchParams(window.location.search);
+        if (urlP.get('search')) {
+            const q = urlP.get('search').toLowerCase();
+            const filtered = phenomenaData.filter(p => p.name.includes(q) || p.desc.includes(q));
+            document.getElementById('phenomenaGrid').innerHTML = filtered.length ? '' : '<p>未找到</p>';
+        }
+
+        // ===== INIT =====
+        updateQuickStats();
+        startFeaturedRotation();
+        updateCompareUI();
+        render();
+        const st = document.createElement('style');
+        st.textContent =
+            '@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}';
+        document.head.appendChild(st);
+    </script>
+</body>
+</html>

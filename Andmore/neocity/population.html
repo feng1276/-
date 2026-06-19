@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO CITY OS - Population & Activity Monitor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #030814;
+  --panel: rgba(6, 15, 40, 0.8);
+  --border: rgba(0, 212, 255, 0.12);
+  --neon: #00d4ff;
+  --purple: #b347ea;
+  --cyan: #00ffcc;
+  --green: #00ff88;
+  --red: #ff3366;
+  --yellow: #ffb700;
+  --text: #c8d6e5;
+  --text2: #6b7d95;
+  --glow: 0 0 20px rgba(0,212,255,0.05);
+  --font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanlines 8s linear infinite;
+}
+
+@keyframes scanlines {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+#particles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* TOP STATUS BAR */
+#topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: rgba(6, 15, 40, 0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text2);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#topbar .brand { color: var(--neon); font-weight: 700; font-size: 14px; }
+#topbar .dot { color: var(--green); margin: 0 6px; }
+#topbar .stat { color: var(--cyan); }
+#topbar .clock { color: var(--text); margin-left: auto; }
+
+/* SIDEBAR */
+#sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 56px;
+  background: rgba(6, 15, 40, 0.9);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 70px;
+  gap: 6px;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+#sidebar:hover { width: 220px; }
+#sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 18px;
+  white-space: nowrap;
+  gap: 14px;
+  transition: all 0.25s ease;
+  border-left: 2px solid transparent;
+}
+#sidebar .nav-item:hover {
+  color: var(--neon);
+  background: rgba(0,212,255,0.06);
+  border-left-color: var(--neon);
+}
+#sidebar .nav-item.active {
+  color: var(--neon);
+  background: rgba(0,212,255,0.1);
+  border-left-color: var(--neon);
+}
+#sidebar .nav-item .label {
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#sidebar:hover .nav-item .label { opacity: 1; }
+
+/* MAIN */
+#main {
+  margin-left: 56px;
+  padding: 20px 28px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.breadcrumb {
+  font-size: 12px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+.breadcrumb span { color: var(--neon); }
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 24px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* PANEL */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--glow);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+.panel h3 {
+  font-size: 15px;
+  color: var(--neon);
+  margin-bottom: 16px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* STAT CARDS ROW */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 20px;
+  box-shadow: var(--glow);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon), var(--purple));
+  opacity: 0.6;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 30px rgba(0,212,255,0.12);
+}
+.stat-card .label {
+  font-size: 11px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+  font-family: system-ui, sans-serif;
+}
+.stat-card .value {
+  font-size: 36px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--neon);
+  margin-bottom: 4px;
+}
+.stat-card .sub {
+  font-size: 12px;
+  color: var(--text2);
+  font-family: system-ui, sans-serif;
+}
+
+/* DEMOGRAPHICS */
+.demos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.demo-card {
+  background: rgba(6, 15, 40, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.25s ease;
+}
+.demo-card:hover {
+  border-color: var(--neon);
+  box-shadow: 0 0 15px rgba(0,212,255,0.08);
+}
+.demo-card .demo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.demo-card .demo-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.demo-card .demo-pct {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.demo-card .demo-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.demo-card .bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.demo-card .bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.5s ease;
+}
+.demo-card .demo-desc {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+/* ZONES */
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.zone-card {
+  background: rgba(6, 15, 40, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.zone-card:hover {
+  border-color: var(--neon);
+  box-shadow: 0 0 20px rgba(0,212,255,0.1);
+}
+.zone-card.expanded { grid-column: span 2; }
+.zone-card .zone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.zone-card .zone-name { font-weight: 700; font-size: 15px; color: var(--text); }
+.zone-card .zone-status {
+  width: 10px; height: 10px; border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+.zone-card .zone-pop {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--neon);
+  margin-bottom: 4px;
+}
+.zone-card .zone-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  margin-bottom: 10px;
+}
+.zone-card .zone-mini span { color: var(--text); }
+.zone-card .density-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.zone-card .density-fill { height: 100%; border-radius: 3px; }
+.zone-card .zone-detail {
+  display: none;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.zone-card.expanded .zone-detail { display: block; }
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* HEAT MAP */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.heat-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-width: 40px;
+}
+.heat-cell:hover {
+  transform: scale(1.15);
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(255,255,255,0.3);
+}
+.heat-tooltip {
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(3,8,20,0.95);
+  border: 1px solid var(--neon);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--neon);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.heat-cell:hover .heat-tooltip { opacity: 1; }
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  justify-content: center;
+}
+.heat-legend .swatch {
+  width: 18px; height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* DAY/NIGHT SHIFT */
+.shift-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.shift-col {
+  background: rgba(6, 15, 40, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.shift-col h4 {
+  font-size: 14px;
+  color: var(--neon);
+  margin-bottom: 12px;
+  text-align: center;
+}
+.shift-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.shift-row .zone-label {
+  width: 90px;
+  color: var(--text2);
+  text-align: right;
+  flex-shrink: 0;
+}
+.shift-row .shift-bar-track {
+  flex: 1;
+  height: 16px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.shift-row .shift-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  min-width: 4px;
+  transition: width 1s ease;
+}
+.shift-row .shift-val {
+  width: 60px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* MIGRATION TABLE */
+.migration-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.migration-table th {
+  text-align: left;
+  padding: 10px 14px;
+  color: var(--neon);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.migration-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,212,255,0.05);
+  color: var(--text);
+}
+.migration-table .net-pos { color: var(--green); }
+.migration-table .net-neg { color: var(--red); }
+.migration-table tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+/* LABOR FORCE */
+.labor-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.labor-card {
+  background: rgba(6, 15, 40, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+.labor-card:hover {
+  border-color: var(--neon);
+  transform: translateY(-2px);
+}
+.labor-card .labor-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.labor-card .labor-name {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.labor-card .labor-count {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--neon);
+}
+.labor-card .labor-pct {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cyan);
+  margin-top: 2px;
+}
+
+/* TICKER */
+#ticker {
+  position: fixed;
+  bottom: 0;
+  left: 56px;
+  right: 0;
+  height: 32px;
+  background: rgba(6, 15, 40, 0.95);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+#ticker .ticker-content {
+  white-space: nowrap;
+  animation: ticker-scroll 40s linear infinite;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  display: flex;
+  gap: 60px;
+}
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+#ticker .ticker-item { color: var(--cyan); }
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .demos-grid { grid-template-columns: repeat(2, 1fr); }
+  .zones-grid { grid-template-columns: repeat(2, 1fr); }
+  .labor-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .demos-grid { grid-template-columns: 1fr; }
+  .zones-grid { grid-template-columns: 1fr; }
+  .labor-grid { grid-template-columns: repeat(2, 1fr); }
+  .shift-grid { grid-template-columns: 1fr; }
+  .page-title { font-size: 22px; }
+  .stat-card .value { font-size: 26px; }
+}
+
+/* animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(0,212,255,0.05); }
+  50% { box-shadow: 0 0 30px rgba(0,212,255,0.12); }
+}
+@keyframes digitFlip {
+  0% { opacity: 0.5; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes barGrow {
+  from { width: 0; }
+}
+@keyframes floatUp {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes borderGlow {
+  0%,100% { border-color: rgba(0,212,255,0.12); }
+  50% { border-color: rgba(0,212,255,0.3); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes spark {
+  0%,100% { opacity: 0; transform: translateY(0) scale(0); }
+  50% { opacity: 1; transform: translateY(-20px) scale(1); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- TOP STATUS BAR -->
+<div id="topbar">
+  <span class="brand">NEO CITY OS v3.7</span>
+  <span class="dot">●</span> SYSTEM ONLINE
+  <span class="stat">STABILITY: 98.2%</span>
+  <span class="stat">AI CORE ACTIVE</span>
+  <span class="clock" id="liveClock">UTC 2026-06-17 14:32:08</span>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <a class="nav-item active" href="population.html"><span>👥</span><span class="label">人口</span></a>
+  <a class="nav-item" href="dashboard.html"><span>📊</span><span class="label">总览</span></a>
+  <a class="nav-item" href="traffic.html"><span>🚦</span><span class="label">交通</span></a>
+  <a class="nav-item" href="energy.html"><span>⚡</span><span class="label">能源</span></a>
+  <a class="nav-item" href="weather.html"><span>🌦</span><span class="label">天气</span></a>
+  <a class="nav-item" href="security.html"><span>🚨</span><span class="label">安全</span></a>
+  <a class="nav-item" href="map.html"><span>🗺</span><span class="label">地图</span></a>
+  <a class="nav-item" href="ai.html"><span>🧠</span><span class="label">AI</span></a>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="breadcrumb">NEO CITY OS &nbsp;&#9656;&nbsp; <span>人口与活动监测</span></div>
+  <div class="page-title">👥 人口与活动监测 &nbsp;|&nbsp; POPULATION MONITOR</div>
+
+  <!-- POPULATION OVERVIEW -->
+  <div class="stat-row">
+    <div class="stat-card" style="animation: popIn 0.6s ease;">
+      <div class="label">Total Population</div>
+      <div class="value" id="popCounter">12,458,392</div>
+      <div class="sub">&#9650; 38,421 from last census | Real-time estimation</div>
+    </div>
+    <div class="stat-card" style="animation: popIn 0.6s ease 0.1s both;">
+      <div class="label">Population Density</div>
+      <div class="value" style="color:#b347ea;">4,827<span style="font-size:18px;">/km²</span></div>
+      <div class="sub">Urban core: 12,500/km² | Suburban: 2,100/km²</div>
+    </div>
+    <div class="stat-card" style="animation: popIn 0.6s ease 0.2s both;">
+      <div class="label">Growth Rate</div>
+      <div class="value" style="color:#00ff88;">+0.31<span style="font-size:18px;">%</span></div>
+      <div class="sub">Annual rate | Birth rate 11.2/1000 | Death rate 7.8/1000</div>
+    </div>
+    <div class="stat-card" style="animation: popIn 0.6s ease 0.3s both;">
+      <div class="label">Active Residents</div>
+      <div class="value" style="color:#00ffcc;">78.3<span style="font-size:18px;">%</span></div>
+      <div class="sub">Working age (18-65) | 9,754,000 individuals</div>
+    </div>
+  </div>
+
+  <!-- DEMOGRAPHIC BREAKDOWN -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.4s both;">
+    <h3>📊 Demographic Breakdown &mdash; Age Distribution by Segment</h3>
+    <div class="demos-grid">
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">0-17 Years &mdash; Youth</span><span class="demo-pct">18.2%</span></div>
+        <div class="demo-count">2,267,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:18.2%; background:linear-gradient(90deg,#00d4ff,#00ffcc);"></div></div>
+        <div class="demo-desc">Predominantly concentrated in residential Zones B and F, where family-oriented housing developments offer proximity to schools and parks. The youth population has grown 4.2% over the past five years, reflecting an influx of young families into suburban districts. Primary and secondary education facilities serve 1,840 schools citywide.</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">18-35 Years &mdash; Young Adults</span><span class="demo-pct">28.7%</span></div>
+        <div class="demo-count">3,575,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:28.7%; background:linear-gradient(90deg,#b347ea,#00d4ff);"></div></div>
+        <div class="demo-desc">The largest demographic segment, heavily clustered around the CBD (Zone A) and Tech Park (Zone D). This cohort drives the city's innovation economy, with 68% employed in technology, finance, and creative industries. Rental occupancy in high-density apartment complexes accounts for 73% of this group's housing arrangements.</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">36-50 Years &mdash; Mid-Career</span><span class="demo-pct">24.1%</span></div>
+        <div class="demo-count">3,002,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:24.1%; background:linear-gradient(90deg,#00ff88,#00ffcc);"></div></div>
+        <div class="demo-desc">This segment represents the backbone of NEO CITY's management and professional workforce. Distributed across all zones with a slight preference for Zone B (residential) and Zone D (tech). Homeownership rate within this group stands at 61%, significantly higher than the citywide average of 44%.</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">51-65 Years &mdash; Senior Workers</span><span class="demo-pct">19.5%</span></div>
+        <div class="demo-count">2,429,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:19.5%; background:linear-gradient(90deg,#ffb700,#ff3366);"></div></div>
+        <div class="demo-desc">Experienced professionals nearing retirement age, with high concentrations in Zone B and Zone F (Eco district). This group holds 41% of senior leadership positions across the city's top 500 corporations. Retirement migration outflows average 2,100 individuals per month to neighboring coastal regions.</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">66-80 Years &mdash; Retired</span><span class="demo-pct">7.3%</span></div>
+        <div class="demo-count">909,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:7.3%; background:linear-gradient(90deg,#ff3366,#ffb700);"></div></div>
+        <div class="demo-desc">Mostly residing in Zone B suburban communities and Zone F's eco-retirement villages. Healthcare utilization within this group is 3.2x the city average. The city maintains 47 dedicated senior community centers and 12 geriatric-specialty hospitals across all six zones.</div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-header"><span class="demo-name">81+ Years &mdash; Elderly</span><span class="demo-pct">2.2%</span></div>
+        <div class="demo-count">274,000 individuals</div>
+        <div class="bar-track"><div class="bar-fill" style="width:2.2%; background:linear-gradient(90deg,#6b7d95,#c8d6e5);"></div></div>
+        <div class="demo-desc">The fastest-growing demographic segment, projected to double within the next 15 years as life expectancy rises. Concentrated in assisted-living facilities across Zones B and F. The city council has allocated 8.3 billion credits for elder-care infrastructure expansion through 2030.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISTRICT POPULATION DISTRIBUTION -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.5s both;">
+    <h3>🏙 District Population Distribution &mdash; Six Urban Zones</h3>
+    <div class="zones-grid" id="zonesContainer">
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="A">
+        <div class="zone-header">
+          <span class="zone-name">Zone A &mdash; Central Business District</span>
+          <span class="zone-status" style="background:var(--yellow);" title="High density, peak activity"></span>
+        </div>
+        <div class="zone-pop">3,240,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>12,500/km²</span></div><div>Day Influx: <span style="color:var(--green);">+85%</span></div>
+          <div>Residential: <span>28%</span></div><div>Commercial: <span>72%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:93%; background:linear-gradient(90deg,#ffb700,#ff3366);"></div></div>
+        <div class="zone-detail">
+          The CBD is the economic heart of NEO CITY, hosting 72% of all corporate headquarters within its 38 square kilometers of high-rise towers. The daytime population swells to nearly 6 million as commuters from all other zones converge on the financial district. The area features 47 skyscrapers exceeding 200 meters, interconnected by an elevated pedestrian skyway network spanning 18 kilometers. Average commercial lease price stands at 2,840 credits per square meter annually.
+        </div>
+      </div>
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="B">
+        <div class="zone-header">
+          <span class="zone-name">Zone B &mdash; Residential District</span>
+          <span class="zone-status" style="background:var(--green);" title="Stable population"></span>
+        </div>
+        <div class="zone-pop">4,120,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>6,800/km²</span></div><div>Day Influx: <span style="color:var(--red);">-15%</span></div>
+          <div>Residential: <span>82%</span></div><div>Commercial: <span>18%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:54%; background:linear-gradient(90deg,#00ff88,#00d4ff);"></div></div>
+        <div class="zone-detail">
+          Spanning 606 square kilometers, Zone B is the largest residential hub of NEO CITY. It contains 1.2 million housing units ranging from low-rise townhouse complexes to mid-rise apartment blocks. The zone features 340 public parks, 86 community centers, and the city's largest shopping and entertainment corridors along the Riverfront Promenade. Public transit connectivity to the CBD averages 28 minutes via the express maglev line.
+        </div>
+      </div>
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="C">
+        <div class="zone-header">
+          <span class="zone-name">Zone C &mdash; Industrial Sector</span>
+          <span class="zone-status" style="background:var(--purple);" title="Operational - shift-based"></span>
+        </div>
+        <div class="zone-pop">890,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>1,200/km²</span></div><div>Day Influx: <span style="color:var(--green);">+40%</span></div>
+          <div>Residential: <span>15%</span></div><div>Commercial: <span>85%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:12%; background:linear-gradient(90deg,#6b7d95,#c8d6e5);"></div></div>
+        <div class="zone-detail">
+          Zone C encompasses the city's heavy manufacturing and logistics corridor, occupying 742 square kilometers of designated industrial land. The zone operates 24/7 across three shifts, with the daytime population boosted by approximately 360,000 inbound workers. Key industries include advanced robotics assembly, semiconductor fabrication, and the NEO CITY Central Freight Terminal handling 28,000 containers daily.
+        </div>
+      </div>
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="D">
+        <div class="zone-header">
+          <span class="zone-name">Zone D &mdash; Tech Park &amp; Innovation</span>
+          <span class="zone-status" style="background:var(--cyan);" title="Peak activity"></span>
+        </div>
+        <div class="zone-pop">2,100,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>5,600/km²</span></div><div>Day Influx: <span style="color:var(--green);">+25%</span></div>
+          <div>Residential: <span>45%</span></div><div>Commercial: <span>55%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:45%; background:linear-gradient(90deg,#b347ea,#00d4ff);"></div></div>
+        <div class="zone-detail">
+          Home to 480 tech startups, 12 unicorn enterprises, and the NEO CITY AI Research Consortium. Zone D features a unique mixed-use design where residential towers sit alongside R&amp;D campuses, reducing average commute to under 12 minutes. The zone's innovation output accounts for 38% of the city's patent filings and has attracted 184 billion credits in venture capital over the past decade.
+        </div>
+      </div>
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="E">
+        <div class="zone-header">
+          <span class="zone-name">Zone E &mdash; Port &amp; Logistics</span>
+          <span class="zone-status" style="background:var(--yellow);" title="Operational 24/7"></span>
+        </div>
+        <div class="zone-pop">1,350,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>2,100/km²</span></div><div>Day Influx: <span style="color:var(--green);">+50%</span></div>
+          <div>Residential: <span>30%</span></div><div>Commercial: <span>70%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:20%; background:linear-gradient(90deg,#ffb700,#ff3366);"></div></div>
+        <div class="zone-detail">
+          NEO CITY's primary maritime gateway featuring 24 deep-water berths, automated container handling systems, and a 4.2 million square meter warehousing complex. The port processes 8.7 million TEU annually, ranking among the top 15 globally. The logistics workforce of 420,000 includes stevedores, customs specialists, supply chain analysts, and drone fleet operators managing autonomous delivery networks.
+        </div>
+      </div>
+      <div class="zone-card" onclick="toggleZone(this)" data-zone="F">
+        <div class="zone-header">
+          <span class="zone-name">Zone F &mdash; Eco &amp; Green Belt</span>
+          <span class="zone-status" style="background:var(--green);" title="Protected zone"></span>
+        </div>
+        <div class="zone-pop">758,000</div>
+        <div class="zone-mini">
+          <div>Density: <span>800/km²</span></div><div>Day Influx: <span style="color:var(--cyan);">+5%</span></div>
+          <div>Residential: <span>90%</span></div><div>Commercial: <span>10%</span></div>
+        </div>
+        <div class="density-bar"><div class="density-fill" style="width:8%; background:linear-gradient(90deg,#00ff88,#00ffcc);"></div></div>
+        <div class="zone-detail">
+          A designated sustainable development zone covering 948 square kilometers of preserved woodland, wetlands, and eco-villages. Residential construction is capped at 25 units per hectare with mandatory green-roof and solar requirements. The zone absorbs an estimated 1.2 million tons of CO2 annually through its forest canopy and serves as the city's primary recreational escape with 620 kilometers of hiking and cycling trails.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY HEAT MAP -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.6s both;">
+    <h3>🔥 Real-Time Activity Heat Map &mdash; City Sector Analysis</h3>
+    <div class="heatmap-wrap">
+      <div class="heatmap" id="heatmapGrid"></div>
+      <div class="heat-legend">
+        <span style="color:#1a3a5c;">Low</span>
+        <span class="swatch" style="background:#0d2137;"></span>
+        <span class="swatch" style="background:#0d4f6b;"></span>
+        <span class="swatch" style="background:#0a7a8a;"></span>
+        <span class="swatch" style="background:#00b894;"></span>
+        <span class="swatch" style="background:#fdcb6e;"></span>
+        <span class="swatch" style="background:#f0932b;"></span>
+        <span class="swatch" style="background:#d63031;"></span>
+        <span style="color:#d63031;">Peak</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY/NIGHT POPULATION SHIFT -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.7s both;">
+    <h3>🌗 Day / Night Population Shift &mdash; Commuter Flow Analysis</h3>
+    <div class="shift-grid">
+      <div class="shift-col">
+        <h4>&#9728; Daytime Distribution (12:00)</h4>
+        <div class="shift-row"><span class="zone-label">Zone A CBD</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:98%; background:var(--neon);"></div></div><span class="shift-val">5,994,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone B Resi</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:57%; background:#b347ea;"></div></div><span class="shift-val">3,502,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone C Ind</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:21%; background:#ffb700;"></div></div><span class="shift-val">1,246,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone D Tech</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:43%; background:#00ffcc;"></div></div><span class="shift-val">2,625,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone E Port</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:33%; background:#ff3366;"></div></div><span class="shift-val">2,025,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone F Eco</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:13%; background:#00ff88;"></div></div><span class="shift-val">796,000</span></div>
+      </div>
+      <div class="shift-col">
+        <h4>&#9790; Nighttime Distribution (00:00)</h4>
+        <div class="shift-row"><span class="zone-label">Zone A CBD</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:44%; background:var(--neon);"></div></div><span class="shift-val">2,689,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone B Resi</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:80%; background:#b347ea;"></div></div><span class="shift-val">4,944,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone C Ind</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:12%; background:#ffb700;"></div></div><span class="shift-val">712,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone D Tech</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:28%; background:#00ffcc;"></div></div><span class="shift-val">1,680,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone E Port</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:18%; background:#ff3366;"></div></div><span class="shift-val">1,080,000</span></div>
+        <div class="shift-row"><span class="zone-label">Zone F Eco</span><div class="shift-bar-track"><div class="shift-bar-fill" style="width:12%; background:#00ff88;"></div></div><span class="shift-val">728,000</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIGRATION TRENDS -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.8s both;">
+    <h3>📈 Migration Trends &mdash; Last 12 Months</h3>
+    <div style="overflow-x:auto;">
+      <table class="migration-table">
+        <thead>
+          <tr><th>Month</th><th>Inbound</th><th>Outbound</th><th>Net Change</th><th>Primary Source/Destination</th><th>Seasonal Note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>2025-Jul</td><td>24,830</td><td>18,920</td><td class="net-pos">+5,910</td><td>Southern Metro Corridor</td><td>Summer graduate influx</td></tr>
+          <tr><td>2025-Aug</td><td>28,410</td><td>22,150</td><td class="net-pos">+6,260</td><td>Eastern Coastal Region</td><td>Peak relocation season</td></tr>
+          <tr><td>2025-Sep</td><td>31,200</td><td>19,840</td><td class="net-pos">+11,360</td><td>Northern Tech Belt</td><td>Academic year start</td></tr>
+          <tr><td>2025-Oct</td><td>22,670</td><td>21,330</td><td class="net-pos">+1,340</td><td>Western Agricultural Plains</td><td>Harvest labor return</td></tr>
+          <tr><td>2025-Nov</td><td>19,450</td><td>20,880</td><td class="net-neg">-1,430</td><td>Southern Islands</td><td>Pre-winter out-migration</td></tr>
+          <tr><td>2025-Dec</td><td>16,820</td><td>24,560</td><td class="net-neg">-7,740</td><td>Multiple regions</td><td>Holiday family relocation</td></tr>
+          <tr><td>2026-Jan</td><td>25,930</td><td>18,710</td><td class="net-pos">+7,220</td><td>Northern Tech Belt</td><td>New year job switching</td></tr>
+          <tr><td>2026-Feb</td><td>21,440</td><td>19,260</td><td class="net-pos">+2,180</td><td>Eastern Coastal Region</td><td>Mid-winter stabilization</td></tr>
+          <tr><td>2026-Mar</td><td>27,850</td><td>20,410</td><td class="net-pos">+7,440</td><td>Southern Metro Corridor</td><td>Spring hiring surge</td></tr>
+          <tr><td>2026-Apr</td><td>29,330</td><td>22,790</td><td class="net-pos">+6,540</td><td>Western Agricultural Plains</td><td>Construction season</td></tr>
+          <tr><td>2026-May</td><td>26,110</td><td>21,550</td><td class="net-pos">+4,560</td><td>Northern Tech Belt</td><td>Pre-summer stabilization</td></tr>
+          <tr><td>2026-Jun</td><td>23,580</td><td>19,140</td><td class="net-pos">+4,440</td><td>Eastern Coastal Region</td><td>Mid-year plateau</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px; font-size:12px; color:var(--text2); font-family:var(--font-mono);">
+      Annual net migration: <span style="color:var(--green);">+48,081</span> &nbsp;|&nbsp;
+      Peak inbound month: September 2025 &nbsp;|&nbsp;
+      Peak outbound month: December 2025 &nbsp;|&nbsp;
+      Data sourced from NEO CITY Immigration Authority and Residential Registry
+    </div>
+  </div>
+
+  <!-- LABOR FORCE STATS -->
+  <div class="panel" style="animation: fadeInUp 0.5s ease 0.9s both;">
+    <h3>💼 Labor Force Statistics &mdash; Employment Rate: <span style="color:var(--green);">94.7%</span></h3>
+    <div class="labor-grid">
+      <div class="labor-card">
+        <div class="labor-icon">💻</div>
+        <div class="labor-name">Technology &amp; IT</div>
+        <div class="labor-count">2,847,000</div>
+        <div class="labor-pct">29.2% of workforce</div>
+      </div>
+      <div class="labor-card">
+        <div class="labor-icon">🏭</div>
+        <div class="labor-name">Manufacturing</div>
+        <div class="labor-count">1,738,000</div>
+        <div class="labor-pct">17.8% of workforce</div>
+      </div>
+      <div class="labor-card">
+        <div class="labor-icon">🏥</div>
+        <div class="labor-name">Healthcare &amp; Services</div>
+        <div class="labor-count">2,104,000</div>
+        <div class="labor-pct">21.6% of workforce</div>
+      </div>
+      <div class="labor-card">
+        <div class="labor-icon">🏗</div>
+        <div class="labor-name">Construction &amp; Infra</div>
+        <div class="labor-count">1,356,000</div>
+        <div class="labor-pct">13.9% of workforce</div>
+      </div>
+      <div class="labor-card">
+        <div class="labor-icon">📦</div>
+        <div class="labor-name">Logistics &amp; Trade</div>
+        <div class="labor-count">1,709,000</div>
+        <div class="labor-pct">17.5% of workforce</div>
+      </div>
+    </div>
+    <div style="margin-top:16px; font-size:12px; color:var(--text2); font-family:var(--font-mono);">
+      Total employed: <span style="color:var(--neon);">9,754,000</span> &nbsp;|&nbsp;
+      Unemployment: <span style="color:var(--red);">5.3%</span> (516,000)&nbsp;|&nbsp;
+      Labor participation: <span style="color:var(--cyan);">78.3%</span> &nbsp;|&nbsp;
+      Avg monthly salary: 8,420 credits &nbsp;|&nbsp;
+      Gig economy workers: 1,428,000 (14.6%)
+    </div>
+  </div>
+
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="ticker-content">
+    <span>&#9670; POPULATION STABILITY INDEX: <span class="ticker-item">94.7 / 100</span></span>
+    <span>&#9670; YOUTH DEPENDENCY RATIO: <span class="ticker-item">22.3 per 100 working-age</span></span>
+    <span>&#9670; ELDERLY DEPENDENCY RATIO: <span class="ticker-item">12.1 per 100 working-age</span></span>
+    <span>&#9670; MEDIAN AGE: <span class="ticker-item">37.4 years</span></span>
+    <span>&#9670; GENDER RATIO: <span class="ticker-item">1.02 males per female</span></span>
+    <span>&#9670; AVERAGE HOUSEHOLD SIZE: <span class="ticker-item">2.71 persons</span></span>
+    <span>&#9670; SMART CITY SENSORS DEPLOYED: <span class="ticker-item">184,320 units</span></span>
+    <span>&#9670; DAILY COMMUTER VOLUME: <span class="ticker-item">6,840,000 trips</span></span>
+    <span>&#9670; POPULATION STABILITY INDEX: <span class="ticker-item">94.7 / 100</span></span>
+    <span>&#9670; YOUTH DEPENDENCY RATIO: <span class="ticker-item">22.3 per 100 working-age</span></span>
+    <span>&#9670; ELDERLY DEPENDENCY RATIO: <span class="ticker-item">12.1 per 100 working-age</span></span>
+    <span>&#9670; MEDIAN AGE: <span class="ticker-item">37.4 years</span></span>
+    <span>&#9670; GENDER RATIO: <span class="ticker-item">1.02 males per female</span></span>
+    <span>&#9670; AVERAGE HOUSEHOLD SIZE: <span class="ticker-item">2.71 persons</span></span>
+    <span>&#9670; SMART CITY SENSORS DEPLOYED: <span class="ticker-item">184,320 units</span></span>
+    <span>&#9670; DAILY COMMUTER VOLUME: <span class="ticker-item">6,840,000 trips</span></span>
+  </div>
+</div>
+
+<script>
+// ===== LIVE CLOCK =====
+function updateClock() {
+  const now = new Date();
+  const utc = now.toISOString().replace('T',' ').slice(0,19);
+  document.getElementById('liveClock').textContent = 'UTC ' + utc;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ===== PARTICLE BACKGROUND =====
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const particles = [];
+const PARTICLE_COUNT = 80;
+
+function createParticle() {
+  return {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.5,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    alpha: Math.random() * 0.5 + 0.15
+  };
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particles.push(createParticle());
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,212,255,${p.alpha})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// ===== LIVE POPULATION COUNTER =====
+let basePop = 12458392;
+let popGrowth = 0;
+
+function updatePopCounter() {
+  const now = new Date();
+  const seconds = now.getSeconds() + now.getMinutes() * 60 + now.getHours() * 3600;
+  popGrowth = Math.floor(seconds * 0.14);
+  const current = basePop + popGrowth;
+  document.getElementById('popCounter').textContent = current.toLocaleString();
+  // Small animation effect
+  document.getElementById('popCounter').style.animation = 'none';
+  document.getElementById('popCounter').offsetHeight;
+  document.getElementById('popCounter').style.animation = 'digitFlip 0.3s ease';
+}
+updatePopCounter();
+setInterval(updatePopCounter, 3000);
+
+// ===== HEAT MAP GENERATION =====
+const heatmapGrid = document.getElementById('heatmapGrid');
+const rows = 6, cols = 8;
+const sectors = [
+  'CBD-N', 'CBD-C', 'CBD-S', 'CBD-E', 'CBD-W', 'FIN-1', 'FIN-2', 'GOV',
+  'RES-NW', 'RES-N', 'RES-NE', 'RES-W', 'RES-C', 'RES-E', 'RES-SW', 'RES-S',
+  'TECH-1', 'TECH-2', 'TECH-3', 'TECH-4', 'TECH-5', 'TECH-6', 'IND-1', 'IND-2',
+  'IND-3', 'IND-4', 'IND-5', 'PORT-N', 'PORT-C', 'PORT-S', 'LOG-1', 'LOG-2',
+  'ECO-1', 'ECO-2', 'ECO-3', 'ECO-4', 'SUB-1', 'SUB-2', 'SUB-3', 'SUB-4',
+  'AGR-1', 'AGR-2', 'AGR-3', 'FOR-1', 'FOR-2', 'WET-1', 'WET-2', 'WET-3'
+];
+
+// Activity intensity values (0-100) → meaningful variation
+const activityMap = [
+  [88,92,85,78,72,90,87,65],  // CBD area - very high
+  [72,68,75,55,60,70,58,52],  // Residential - moderate
+  [85,82,78,80,76,70,42,40],  // Tech park - high
+  [38,35,40,72,75,68,55,50],  // Industrial / Port
+  [30,25,28,20,18,22,15,12],  // Eco - low
+  [10,8,12,5,3,6,8,4]         // Agri/Forest - very low
+];
+
+const activityLabels = [
+  'Financial District', 'Central Plaza', 'South Tower Cluster', 'East Banking Hub', 'West Commerce', 'Exchange Square', 'Derivatives Center', 'Gov Complex',
+  'Northwest Suburb', 'North Residential', 'Northeast Housing', 'West Village', 'Central Residential', 'East Apartments', 'Southwest Homes', 'South Estate',
+  'AI Lab Campus', 'Quantum Computing Center', 'Robotics Park', 'Biotech Hub', 'Data Center Row', 'Startup Incubator', 'Factory Zone A', 'Factory Zone B',
+  'Assembly Plant', 'Processing Facility', 'Storage Complex', 'North Port Terminal', 'Central Docks', 'South Wharf', 'Freight Hub A', 'Freight Hub B',
+  'North Forest Reserve', 'Eco-Village Alpha', 'Solar Farm', 'Wetland Sanctuary', 'Suburban Outpost 1', 'Suburban Outpost 2', 'Suburban Outpost 3', 'Suburban Outpost 4',
+  'Farmland A', 'Farmland B', 'Orchard Zone', 'Timber Reserve', 'Nature Preserve', 'Marshland North', 'Marshland South', 'Riparian Zone'
+];
+
+function getHeatColor(intensity) {
+  if (intensity < 8) return '#0d2137';
+  if (intensity < 15) return '#0a2f4a';
+  if (intensity < 25) return '#0d4f6b';
+  if (intensity < 40) return '#0a7a8a';
+  if (intensity < 55) return '#00b894';
+  if (intensity < 70) return '#fdcb6e';
+  if (intensity < 85) return '#f0932b';
+  return '#d63031';
+}
+
+function buildHeatmap() {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const intensity = activityMap[r][c];
+      const cell = document.createElement('div');
+      cell.className = 'heat-cell';
+      cell.style.backgroundColor = getHeatColor(intensity);
+      cell.title = `${sectors[idx]}: ${activityLabels[idx]} — Activity ${intensity}/100`;
+      const tooltip = document.createElement('span');
+      tooltip.className = 'heat-tooltip';
+      tooltip.textContent = `${sectors[idx]}: ${intensity}%`;
+      cell.appendChild(tooltip);
+      heatmapGrid.appendChild(cell);
+    }
+  }
+}
+buildHeatmap();
+
+// ===== ZONE CARD CLICK EXPANSION =====
+function toggleZone(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  // Collapse all
+  document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('expanded'));
+  // Toggle clicked
+  if (!wasExpanded) el.classList.add('expanded');
+}
+
+// ===== DATA REFRESH INTERVALS =====
+function microRefresh() {
+  // Subtly update density values
+  const densityFills = document.querySelectorAll('.density-fill');
+  densityFills.forEach(fill => {
+    const currentWidth = parseFloat(fill.style.width);
+    const jitter = (Math.random() - 0.5) * 2;
+    fill.style.width = Math.max(1, currentWidth + jitter) + '%';
+  });
+}
+setInterval(microRefresh, 8000);
+
+// ===== PERIODIC FULL DATA REFRESH =====
+let refreshCounter = 0;
+function fullRefresh() {
+  refreshCounter++;
+  // Simulate population updates
+  const statValues = document.querySelectorAll('.stat-card .value');
+  statValues.forEach(v => {
+    v.style.animation = 'none';
+    v.offsetHeight;
+    v.style.animation = 'glowPulse 0.6s ease';
+  });
+  // Update clock-style elements
+  document.querySelectorAll('.demo-pct').forEach((el, i) => {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'digitFlip 0.4s ease';
+  });
+}
+setInterval(fullRefresh, 30000);
+
+// ===== BAR GROW ANIMATION ON LOAD =====
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.bar-fill, .density-fill').forEach(bar => {
+    const targetWidth = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => {
+      bar.style.width = targetWidth;
+      bar.style.transition = 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    }, 300);
+  });
+});
+
+console.log('NEO CITY OS - Population & Activity Monitor initialized.');
+console.log('Active modules: Live Counter, Particle Engine, Heat Map, Zone Expansion, Migration Table, Labor Stats');
+console.log('Data refresh cycle: 30s full / 8s micro');
+</script>
+</body>
+</html>

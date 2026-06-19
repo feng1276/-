@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧠 人类记忆云端存储系统 — MNEMOS Cloud v4.7.1</title>
+<meta name="description" content="MNEMOS — 人类记忆云端存储与管理系统。上传、分类、检索、回放你的每一段记忆。">
+<meta name="theme-color" content="#050814">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Stylesheets -->
+<link rel="stylesheet" href="css/core.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/animations.css">
+<link rel="stylesheet" href="css/texture.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Canvas Layers
+     ═══════════════════════════════════════════════════════════════ -->
+<canvas id="cloudCanvas"></canvas>
+<canvas id="brainwaveCanvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Glitch Flash Overlay
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="noise-texture-overlay"></div>
+<div class="noise-texture-overlay--glitch" id="noise-glitch-overlay"></div>
+<div id="glitch-flash" style="position:fixed;inset:0;background:rgba(255,77,109,0.12);pointer-events:none;z-index:9999;opacity:0;transition:opacity 0.1s ease;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Main App Shell
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="app-shell">
+
+  <!-- ── ① Status Bar ────────────────────────────────────────── -->
+  <div id="status-bar">
+    <div class="status-item">
+      <span class="status-label">☁️ NODE</span>
+      <span class="status-value">MNEMOS-α</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">MEMORIES</span>
+      <span class="status-value">1,847,293</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">UPTIME</span>
+      <span class="status-value">847d 12h</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">STORAGE</span>
+      <span class="status-value">847PB / 1.2EB</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">SYNAPSE LOAD</span>
+      <div class="synapse-load-bar">
+        <div class="synapse-load-fill" style="width:34%"></div>
+      </div>
+      <span class="status-value">34%</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">STABILITY</span>
+      <span class="status-value good" id="stat-stability">92%</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">ANOMALIES</span>
+      <span class="status-value warning" id="stat-anomalies">5</span>
+    </div>
+    <div style="margin-left:auto;" class="status-item">
+      <div class="status-dot"></div>
+      <span style="color:var(--synapse-green);font-size:10px;">SYSTEM ONLINE</span>
+    </div>
+  </div>
+
+  <!-- ── ② Sidebar ──────────────────────────────────────────── -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">📂 记忆分类</div>
+      <div id="category-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">🔍 搜索记忆</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="search-input" placeholder="搜索关键词、时间、地点...">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">🏷️ 常用标签</div>
+      <div class="tag-cloud" id="tag-cloud">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--cloud-white-faint);line-height:1.8;">
+        <div>🧠 总记忆数: <span style="color:var(--neon-blue);">1,847,293</span></div>
+        <div>🔒 已加密: <span style="color:var(--memory-purple);">1,203,441</span></div>
+        <div>⚠️ 异常: <span style="color:var(--emotion-red);">3,847</span></div>
+        <div>📊 今日回放: <span style="color:var(--synapse-green);">1,284</span></div>
+        <div>🕐 最后同步: <span style="color:var(--cloud-white-faint);">2024-06-18 08:30 UTC</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ③ Main Content ─────────────────────────────────────── -->
+  <div id="main-content">
+    <div id="memory-grid-container">
+      <div class="memory-summary">
+        <span id="memory-count">显示 25 / 25 条记忆</span>
+        <span class="filter-active-indicator" id="filter-indicator"></span>
+      </div>
+      <div id="memory-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- ── ④ Detail Panel ──────────────────────────────────── -->
+    <div id="detail-panel">
+      <div class="detail-main" id="detail-main">
+        <div class="detail-empty">
+          <div style="text-align:center;">
+            <div style="font-size:48px;margin-bottom:16px;">🧠</div>
+            <div>选择一个记忆卡片以查看详情</div>
+            <div style="font-size:10px;color:var(--cloud-white-faint);margin-top:8px;">点击左侧记忆卡片 | 使用 ↑↓ 键导航 | Enter 回放</div>
+          </div>
+        </div>
+      </div>
+      <div class="detail-sidebar" id="detail-sidebar">
+        <div class="detail-empty"><span>📊 选择记忆以查看分析</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer Bar ─────────────────────────────────────────── -->
+  <div id="footer-bar">
+    <div class="footer-item">
+      <span class="footer-key">1-5</span> 分类切换
+    </div>
+    <div class="footer-item">
+      <span class="footer-key">↑↓</span> 导航
+    </div>
+    <div class="footer-item">
+      <span class="footer-key">Enter</span> 回放记忆
+    </div>
+    <div class="footer-item">
+      <span class="footer-key">R</span> 回放
+    </div>
+    <div class="footer-item">
+      <span class="footer-key">Esc</span> 关闭
+    </div>
+    <div class="footer-item">
+      <span class="footer-key">Ctrl+F</span> 搜索
+    </div>
+    <div style="margin-left:auto;" class="footer-item">
+      <span>🧠 记忆回放: </span>
+      <span style="color:var(--synapse-green);" id="footer-replays">0 | 0/4 已解锁</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Analysis Overlay
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="analysis-overlay" id="analysis-overlay">
+  <div class="analysis-title">📊 记忆结构分析</div>
+  <div class="analysis-canvas-wrap">
+    <canvas width="300" height="300"></canvas>
+  </div>
+  <button class="analysis-close" onclick="App.closeAnalysis()">[ CLOSE ANALYSIS ]</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Delete Confirmation Modal
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>⚠️</span>
+      <span id="modal-title-text">确认删除</span>
+    </div>
+    <div class="modal-text" id="modal-body-text">
+      此操作不可逆。确定要继续吗？
+    </div>
+    <div class="modal-actions">
+      <button class="action-btn" onclick="App.closeModal()">取消</button>
+      <button class="action-btn danger" onclick="App.confirmModalDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Scripts
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="js/data.js"></script>
+<script src="js/visualizer.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/search.js"></script>
+<script src="js/storyline.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

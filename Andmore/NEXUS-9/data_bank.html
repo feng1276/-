@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-9 数据银行 | 记忆存储中心</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   CSS RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-panel: #0d0d15;
+  --bg-card: #111122;
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff00ff;
+  --neon-green: #00ff41;
+  --neon-yellow: #ffe600;
+  --neon-red: #ff3131;
+  --text-primary: #e0e0f0;
+  --text-dim: #666688;
+  --border-glow: rgba(255, 0, 255, 0.3);
+  --shadow-magenta: 0 0 20px rgba(255, 0, 255, 0.5);
+  --shadow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-deep);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: var(--text-primary);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* ============================================================
+   SCANLINES OVERLAY
+   ============================================================ */
+.scanlines {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+}
+
+.scanlines::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.5) 100%);
+  pointer-events: none;
+}
+
+/* ============================================================
+   CRT FLICKER ANIMATION
+   ============================================================ */
+@keyframes crtFlicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.85; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
+}
+
+body {
+  animation: crtFlicker 4s infinite;
+}
+
+/* ============================================================
+   TOP NAVIGATION BAR
+   ============================================================ */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 30px;
+  background: linear-gradient(180deg, rgba(10, 10, 20, 0.98) 0%, rgba(10, 10, 20, 0.85) 100%);
+  border-bottom: 2px solid var(--neon-magenta);
+  box-shadow: 0 4px 30px rgba(255, 0, 255, 0.3), 0 -2px 40px rgba(255, 0, 255, 0.1) inset;
+  backdrop-filter: blur(10px);
+}
+
+.nav-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--neon-magenta);
+  text-shadow: 0 0 15px var(--neon-magenta), 0 0 40px var(--neon-magenta), 0 0 80px rgba(255, 0, 255, 0.4);
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { text-shadow: 0 0 15px var(--neon-magenta), 0 0 40px var(--neon-magenta); }
+  50% { text-shadow: 0 0 25px var(--neon-magenta), 0 0 60px var(--neon-magenta), 0 0 100px rgba(255, 0, 255, 0.6); }
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 10px 18px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-links a::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.1), transparent);
+  transition: left 0.3s ease;
+}
+
+.nav-links a:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5), 0 0 30px rgba(0, 240, 255, 0.2);
+  color: #fff;
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.nav-links a:hover::before {
+  left: 100%;
+}
+
+.nav-links a.active {
+  border-color: var(--neon-magenta);
+  color: var(--neon-magenta);
+  text-shadow: 0 0 10px var(--neon-magenta);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+  background: rgba(255, 0, 255, 0.05);
+}
+
+.nav-citizen-id {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-align: right;
+  line-height: 1.4;
+}
+
+.nav-citizen-id span {
+  display: block;
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+}
+
+/* ============================================================
+   IRIS SCAN OVERLAY
+   ============================================================ */
+.iris-scan-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.iris-scan-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.iris-circle {
+  width: 280px;
+  height: 280px;
+  border: 4px solid var(--neon-magenta);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.6), 0 0 80px rgba(255, 0, 255, 0.3), 0 0 120px rgba(255, 0, 255, 0.1), inset 0 0 40px rgba(255, 0, 255, 0.15);
+  overflow: hidden;
+  animation: irisBorderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes irisBorderPulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(255, 0, 255, 0.6), 0 0 80px rgba(255, 0, 255, 0.3); }
+  50% { box-shadow: 0 0 60px rgba(255, 0, 255, 0.9), 0 0 120px rgba(255, 0, 255, 0.5), 0 0 160px rgba(255, 0, 255, 0.2); }
+}
+
+.iris-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    rgba(0, 240, 255, 0.1) 0%,
+    rgba(255, 0, 255, 0.05) 30%,
+    rgba(10, 10, 20, 0.8) 60%,
+    rgba(255, 0, 255, 0.2) 100%
+  );
+  position: relative;
+}
+
+.iris-pupil {
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, #000 60%, rgba(0, 240, 255, 0.3) 100%);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+}
+
+.iris-rings {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+}
+
+.iris-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 0, 255, 0.4);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+.iris-ring:nth-child(1) { width: 180px; height: 180px; animation-delay: 0s; }
+.iris-ring:nth-child(2) { width: 220px; height: 220px; animation-delay: 0.5s; }
+.iris-ring:nth-child(3) { width: 260px; height: 260px; animation-delay: 1s; }
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.iris-scan-line {
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+  animation: scanDown 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes scanDown {
+  0% { top: -10px; }
+  50% { top: calc(100% - 10px); }
+  100% { top: -10px; }
+}
+
+.iris-scan-text {
+  margin-top: 40px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 6px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan);
+  animation: textBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes textBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.iris-progress-bar {
+  width: 300px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-top: 15px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.iris-progress-fill {
+  height: 100%;
+  background: var(--neon-magenta);
+  box-shadow: 0 0 10px var(--neon-magenta);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.iris-status {
+  margin-top: 10px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px 60px;
+  position: relative;
+}
+
+/* ============================================================
+   HERO HEADER
+   ============================================================ */
+.hero-header {
+  text-align: center;
+  padding: 40px 0 30px;
+  position: relative;
+}
+
+.hero-header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: var(--neon-magenta);
+  text-shadow: 0 0 20px var(--neon-magenta), 0 0 60px rgba(255, 0, 255, 0.6), 0 0 100px rgba(255, 0, 255, 0.3);
+  margin-bottom: 10px;
+}
+
+.hero-header .subtitle {
+  font-size: 0.85rem;
+  letter-spacing: 4px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.hero-divider {
+  width: 60%;
+  max-width: 600px;
+  height: 2px;
+  margin: 20px auto;
+  background: linear-gradient(90deg, transparent, var(--neon-magenta), transparent);
+  box-shadow: 0 0 15px var(--neon-magenta);
+}
+
+/* ============================================================
+   SECURITY BADGE / LOGIN PROMPT
+   ============================================================ */
+.security-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px 30px;
+  margin: 20px auto 30px;
+  max-width: 500px;
+  border: 1px solid var(--border-glow);
+  background: rgba(255, 0, 255, 0.03);
+  border-radius: 4px;
+  position: relative;
+}
+
+.security-badge::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 20px; right: 20px;
+  height: 1px;
+  background: var(--neon-magenta);
+  box-shadow: 0 0 10px var(--neon-magenta);
+}
+
+.badge-icon {
+  font-size: 1.8rem;
+  color: var(--neon-magenta);
+  text-shadow: 0 0 10px var(--neon-magenta);
+}
+
+.badge-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.badge-status {
+  font-size: 0.7rem;
+  color: var(--neon-green);
+  text-shadow: 0 0 5px var(--neon-green);
+}
+
+.login-prompt {
+  max-width: 500px;
+  margin: 0 auto 30px;
+  padding: 25px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 0, 255, 0.2);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.login-prompt h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 3px;
+  color: var(--neon-magenta);
+  text-align: center;
+  margin-bottom: 18px;
+  text-shadow: 0 0 8px var(--neon-magenta);
+}
+
+.login-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 2px;
+}
+
+.login-field label {
+  font-size: 0.7rem;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  white-space: nowrap;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.login-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  letter-spacing: 1px;
+}
+
+.login-field input::placeholder {
+  color: var(--text-dim);
+}
+
+.login-field .cursor-blink {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  background: var(--neon-cyan);
+  animation: cursorBlink 0.6s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.login-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  color: #000;
+  background: var(--neon-magenta);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.login-btn:hover {
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.8), 0 0 80px rgba(255, 0, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: scale(0.97);
+}
+
+/* ============================================================
+   DATA STREAM CANVAS
+   ============================================================ */
+.data-stream-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+
+/* ============================================================
+   SECTIONS GRID
+   ============================================================ */
+.sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 0, 255, 0.15);
+  border-radius: 4px;
+  padding: 25px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.section-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-magenta), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.section-card:hover {
+  border-color: rgba(255, 0, 255, 0.5);
+  box-shadow: 0 8px 40px rgba(255, 0, 255, 0.15), 0 0 80px rgba(0, 0, 0, 0.5);
+  transform: translateY(-3px);
+}
+
+.section-card:hover::before {
+  opacity: 1;
+}
+
+.section-card .card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: block;
+  text-shadow: 0 0 15px var(--neon-cyan);
+}
+
+.section-card h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.section-card h3 {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+  font-weight: normal;
+}
+
+.section-card .card-desc {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+}
+
+/* ============================================================
+   MEMORY STORAGE CARDS
+   ============================================================ */
+.memory-storage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memory-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 0, 255, 0.1);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.memory-card:hover {
+  border-color: rgba(255, 0, 255, 0.4);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
+}
+
+.memory-card .mem-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 2px;
+  background: rgba(255, 0, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.memory-card .mem-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.memory-card .mem-name {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-card .mem-meta {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.memory-card .mem-size {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: var(--neon-cyan);
+  white-space: nowrap;
+}
+
+.size-bar-container {
+  flex: 1;
+  max-width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.size-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.size-bar-fill.high {
+  background: var(--neon-red);
+  box-shadow: 0 0 5px var(--neon-red);
+}
+
+.size-bar-fill.medium {
+  background: var(--neon-yellow);
+  box-shadow: 0 0 5px var(--neon-yellow);
+}
+
+.size-bar-fill.low {
+  background: var(--neon-green);
+  box-shadow: 0 0 5px var(--neon-green);
+}
+
+/* ============================================================
+   DATA TRADING
+   ============================================================ */
+.ticker {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  color: var(--neon-green);
+  text-shadow: 0 0 8px var(--neon-green);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trade-table th, .trade-table td {
+  padding: 8px 10px;
+  font-size: 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 0, 255, 0.1);
+  letter-spacing: 1px;
+}
+
+.trade-table th {
+  color: var(--neon-magenta);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.trade-table .up {
+  color: var(--neon-green);
+}
+
+.trade-table .down {
+  color: var(--neon-red);
+}
+
+/* ============================================================
+   CONSCIOUSNESS BACKUP
+   ============================================================ */
+.backup-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+
+.backup-status .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 5px var(--neon-green); }
+  50% { box-shadow: 0 0 20px var(--neon-green), 0 0 30px rgba(0, 255, 65, 0.4); }
+}
+
+.backup-status span {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: var(--neon-cyan);
+}
+
+.backup-progress {
+  margin-top: 8px;
+}
+
+.backup-progress .bp-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.backup-progress .bp-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.backup-progress .bp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+/* ============================================================
+   ACCOUNT SYSTEM
+   ============================================================ */
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.account-stat {
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 0, 255, 0.1);
+  border-radius: 2px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.account-stat:hover {
+  border-color: rgba(255, 0, 255, 0.4);
+}
+
+.account-stat .stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  color: var(--neon-magenta);
+  text-shadow: 0 0 8px var(--neon-magenta);
+}
+
+.account-stat .stat-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-top: 5px;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   GLITCH EFFECT
+   ============================================================ */
+@keyframes glitch1 {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -1px); }
+  60% { transform: translate(-2px, -2px); }
+  80% { transform: translate(2px, 1px); }
+}
+
+.glitch-text {
+  animation: glitch1 0.3s ease-in-out infinite;
+  position: relative;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch-text::before {
+  color: var(--neon-cyan);
+  z-index: -1;
+  animation: glitchBefore 0.3s ease-in-out infinite;
+  clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%);
+}
+
+.glitch-text::after {
+  color: var(--neon-magenta);
+  z-index: -2;
+  animation: glitchAfter 0.3s ease-in-out infinite;
+  clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+}
+
+@keyframes glitchBefore {
+  0%, 100% { transform: translate(0); }
+  50% { transform: translate(2px, -1px); }
+}
+
+@keyframes glitchAfter {
+  0%, 100% { transform: translate(0); }
+  50% { transform: translate(-2px, 1px); }
+}
+
+/* ============================================================
+   STATUS BAR - BOTTOM
+   ============================================================ */
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 8px 30px;
+  background: linear-gradient(0deg, rgba(10, 10, 20, 0.98) 0%, rgba(10, 10, 20, 0.9) 100%);
+  border-top: 1px solid rgba(255, 0, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.status-bar .sb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-bar .sb-label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.status-bar .sb-value {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 5px var(--neon-cyan);
+}
+
+.status-bar .sb-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 6px var(--neon-green);
+  display: inline-block;
+}
+
+/* ============================================================
+   WARNING BANNER
+   ============================================================ */
+.warning-banner {
+  margin: 20px auto;
+  max-width: 800px;
+  padding: 12px 20px;
+  background: rgba(255, 49, 49, 0.05);
+  border: 1px solid rgba(255, 49, 49, 0.3);
+  border-left: 3px solid var(--neon-red);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: var(--neon-red);
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.warning-banner .warn-icon {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .top-nav {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 15px;
+  }
+
+  .nav-links a {
+    padding: 8px 12px;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+  }
+
+  .hero-header h1 {
+    font-size: 1.8rem;
+    letter-spacing: 4px;
+  }
+
+  .sections-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .status-bar {
+    flex-wrap: wrap;
+    gap: 5px;
+    font-size: 0.5rem;
+    padding: 6px 15px;
+  }
+}
+
+/* ============================================================
+   FLOATING PARTICLES
+   ============================================================ */
+.particle {
+  position: fixed;
+  width: 3px;
+  height: 3px;
+  background: var(--neon-magenta);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  box-shadow: 0 0 6px var(--neon-magenta);
+  animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   NEWS TICKER
+   ============================================================ */
+.news-ticker-wrap {
+  margin: 20px auto;
+  max-width: 1000px;
+  padding: 10px 0;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 0, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 0, 255, 0.15);
+}
+
+.news-ticker {
+  display: flex;
+  gap: 60px;
+  animation: tickerScroll 25s linear infinite;
+  white-space: nowrap;
+}
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.news-ticker-item {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: var(--neon-cyan);
+  font-family: 'Share Tech Mono', monospace;
+  white-space: nowrap;
+}
+
+.news-ticker-item .ticker-sep {
+  color: var(--neon-magenta);
+  margin: 0 8px;
+}
+
+/* ============================================================
+   ENCRYPTION/DECORATIVE HEX
+   ============================================================ */
+.hex-grid {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L55 20v30L30 65 5 50V20L30 5z' fill='none' stroke='%23ff00ff' stroke-width='1'/%3E%3C/svg%3E");
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SCANLINES OVERLAY
+     ============================================================ -->
+<div class="scanlines"></div>
+
+<!-- ============================================================
+     HEX GRID BACKGROUND
+     ============================================================ -->
+<div class="hex-grid"></div>
+
+<!-- ============================================================
+     DATA STREAM CANVAS (falling characters)
+     ============================================================ -->
+<canvas class="data-stream-container" id="dataStream"></canvas>
+
+<!-- ============================================================
+     IRIS SCAN OVERLAY
+     ============================================================ -->
+<div class="iris-scan-overlay" id="irisOverlay">
+  <div class="iris-circle">
+    <div class="iris-inner">
+      <div class="iris-pupil"></div>
+      <div class="iris-rings">
+        <div class="iris-ring"></div>
+        <div class="iris-ring"></div>
+        <div class="iris-ring"></div>
+      </div>
+      <div class="iris-scan-line"></div>
+    </div>
+  </div>
+  <div class="iris-scan-text" id="irisScanText">虹膜扫描中...</div>
+  <div class="iris-progress-bar">
+    <div class="iris-progress-fill" id="irisProgressFill"></div>
+  </div>
+  <div class="iris-status" id="irisStatus">IRIS SCANNING // NEXUS-9 生物认证</div>
+</div>
+
+<!-- ============================================================
+     TOP NAVIGATION BAR
+     ============================================================ -->
+<nav class="top-nav">
+  <div class="nav-logo">NEXUS-9</div>
+  <ul class="nav-links">
+    <li><a href="nexus_home.html">中枢网络</a></li>
+    <li><a href="city_map.html">城市地图</a></li>
+    <li><a href="metro_system.html">轨道系统</a></li>
+    <li><a href="data_bank.html" class="active">数据银行</a></li>
+  </ul>
+  <div class="nav-citizen-id">
+    公民ID: <span>NX9-C7F3-A91D</span>
+    安全等级: <span style="color:#ff00ff;">L4 加密</span>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<main class="main-container">
+
+  <!-- HERO HEADER -->
+  <header class="hero-header">
+    <h1>数据银行</h1>
+    <p class="subtitle">记忆不灭 · 数据永存</p>
+    <div class="hero-divider"></div>
+    <p style="font-size:0.75rem;color:var(--text-dim);letter-spacing:2px;margin-top:10px;">
+      NEXUS-9 核心数据存储与交易设施 // 安全等级: 最高
+    </p>
+  </header>
+
+  <!-- NEWS TICKER -->
+  <div class="news-ticker-wrap">
+    <div class="news-ticker" id="newsTicker">
+      <span class="news-ticker-item">◆ 记忆存储费率下调至0.3% <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ NX9区块高度: 8,473,291 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 意识备份节点新增12个 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 数据交易量突破500PB <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 安全审计状态: 正常 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 节点响应时间: 0.03ms <span class="ticker-sep">|</span></span>
+      <!-- Duplicated for seamless scroll -->
+      <span class="news-ticker-item">◆ 记忆存储费率下调至0.3% <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ NX9区块高度: 8,473,291 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 意识备份节点新增12个 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 数据交易量突破500PB <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 安全审计状态: 正常 <span class="ticker-sep">|</span></span>
+      <span class="news-ticker-item">◆ 节点响应时间: 0.03ms <span class="ticker-sep">|</span></span>
+    </div>
+  </div>
+
+  <!-- SECURITY BADGE -->
+  <div class="security-badge">
+    <span class="badge-icon">&#x1F512;</span>
+    <div>
+      <div class="badge-text">生物认证已激活</div>
+      <div class="badge-status">&#x25CF; 虹膜扫描通过 · 神经元匹配 99.8%</div>
+    </div>
+  </div>
+
+  <!-- LOGIN PROMPT -->
+  <div class="login-prompt" id="loginPrompt">
+    <h3>&#x25B6; 访问数据银行终端</h3>
+    <div class="login-field">
+      <label>公民ID:</label>
+      <input type="text" placeholder="NX9-____-____" id="citizenIdInput" value="NX9-C7F3-A91D">
+      <span class="cursor-blink"></span>
+    </div>
+    <div class="login-field">
+      <label>神经密钥:</label>
+      <input type="password" placeholder="****************" value="••••••••••••••••">
+      <span class="cursor-blink"></span>
+    </div>
+    <button class="login-btn" id="loginBtn">&#x25B6; 接入网络</button>
+    <p style="font-size:0.6rem;color:var(--text-dim);text-align:center;margin-top:10px;letter-spacing:1px;">
+      警告: 未经授权的访问将被追踪并上报至NEXUS-9安全中心
+    </p>
+  </div>
+
+  <!-- WARNING BANNER -->
+  <div class="warning-banner">
+    <span class="warn-icon">&#x26A0;</span>
+    系统公告: 数据银行将于 2084-07-15 进行例行维护，届时部分记忆存储节点将暂停服务。预计影响时间: 2小时。请提前备份重要记忆数据。
+  </div>
+
+  <!-- SECTIONS GRID -->
+  <div class="sections-grid">
+
+    <!-- SECTION 1: 记忆存储 -->
+    <div class="section-card">
+      <span class="card-icon">&#x1F4BE;</span>
+      <h2>记忆存储</h2>
+      <h3>MEMORY STORAGE VAULT</h3>
+      <p class="card-desc">
+        安全存储您的珍贵记忆数据。使用量子加密技术，确保每一段记忆都无法被未授权方读取。支持全息回放和情感追溯。
+      </p>
+      <div class="memory-storage-list">
+        <div class="memory-card">
+          <div class="mem-icon">&#x1F3A5;</div>
+          <div class="mem-info">
+            <div class="mem-name">童年记忆 · 片段 #0824</div>
+            <div class="mem-meta">存储日期: 2084-03-15 · 情感指数: 0.94</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="mem-size">12.4 GB</span>
+            <div class="size-bar-container">
+              <div class="size-bar-fill medium" style="width:45%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="memory-card">
+          <div class="mem-icon">&#x1F3B5;</div>
+          <div class="mem-info">
+            <div class="mem-name">第一次演奏 · 钢琴独奏</div>
+            <div class="mem-meta">存储日期: 2083-11-02 · 情感指数: 0.87</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="mem-size">8.1 GB</span>
+            <div class="size-bar-container">
+              <div class="size-bar-fill low" style="width:28%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="memory-card">
+          <div class="mem-icon">&#x1F30D;</div>
+          <div class="mem-info">
+            <div class="mem-name">旧世界旅行 · 东京2041</div>
+            <div class="mem-meta">存储日期: 2082-06-20 · 情感指数: 0.91</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="mem-size">24.7 GB</span>
+            <div class="size-bar-container">
+              <div class="size-bar-fill high" style="width:82%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="memory-card">
+          <div class="mem-icon">&#x1F4DA;</div>
+          <div class="mem-info">
+            <div class="mem-name">学术知识库 · 量子物理</div>
+            <div class="mem-meta">存储日期: 2084-01-08 · 情感指数: 0.45</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="mem-size">156.2 GB</span>
+            <div class="size-bar-container">
+              <div class="size-bar-fill high" style="width:95%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.6rem;color:var(--text-dim);margin-top:12px;text-align:right;">
+        总计存储: 201.4 GB / 配额 500 GB
+      </p>
+    </div>
+
+    <!-- SECTION 2: 数据交易 -->
+    <div class="section-card">
+      <span class="card-icon">&#x1F4C8;</span>
+      <h2>数据交易</h2>
+      <h3>DATA TRADING EXCHANGE</h3>
+      <p class="card-desc">
+        NEXUS-9 最大的记忆与数据交易市场。您可以在这里出售匿名化处理后的记忆数据，或购买他人的经验与技能。
+      </p>
+      <div class="ticker" id="tickerDisplay">&#x25B2; NX9-INDEX: 12,847.33</div>
+      <table class="trade-table">
+        <thead>
+          <tr>
+            <th>数据资产</th>
+            <th>价格(NXC)</th>
+            <th>涨跌</th>
+            <th>交易量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>钢琴演奏技能包</td>
+            <td>3,250</td>
+            <td class="up">+5.2%</td>
+            <td>1,240</td>
+          </tr>
+          <tr>
+            <td>日语N1语言包</td>
+            <td>2,100</td>
+            <td class="up">+2.8%</td>
+            <td>3,890</td>
+          </tr>
+          <tr>
+            <td>拳击格斗经验</td>
+            <td>5,800</td>
+            <td class="down">-1.3%</td>
+            <td>672</td>
+          </tr>
+          <tr>
+            <td>量子编程思维模块</td>
+            <td>9,450</td>
+            <td class="up">+8.7%</td>
+            <td>2,105</td>
+          </tr>
+          <tr>
+            <td>品酒鉴赏数据库</td>
+            <td>1,820</td>
+            <td class="down">-0.5%</td>
+            <td>4,300</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.6rem;color:var(--text-dim);margin-top:12px;text-align:right;">
+        数据更新频率: 实时 · 24h交易额: 12.8M NXC
+      </p>
+    </div>
+
+    <!-- SECTION 3: 意识备份 -->
+    <div class="section-card">
+      <span class="card-icon">&#x1F9E0;</span>
+      <h2>意识备份</h2>
+      <h3>CONSCIOUSNESS BACKUP</h3>
+      <p class="card-desc">
+        将您的完整意识上传至NEXUS-9量子服务器。即使肉体消亡，意识依然可以在数字世界中永存。备份采用分布式存储，安全无忧。
+      </p>
+      <div class="backup-status">
+        <span class="status-dot"></span>
+        <span>意识备份状态: 活跃 · 同步中</span>
+      </div>
+      <div class="backup-progress">
+        <div class="bp-label">
+          <span>意识同步进度</span>
+          <span style="color:var(--neon-cyan);">78%</span>
+        </div>
+        <div class="bp-bar">
+          <div class="bp-fill" style="width:78%;"></div>
+        </div>
+      </div>
+      <div class="backup-progress" style="margin-top:12px;">
+        <div class="bp-label">
+          <span>神经元映射完成度</span>
+          <span style="color:var(--neon-magenta);">99.7%</span>
+        </div>
+        <div class="bp-bar">
+          <div class="bp-fill" style="width:99.7%;background:var(--neon-magenta);box-shadow:0 0 10px var(--neon-magenta);"></div>
+        </div>
+      </div>
+      <p style="font-size:0.65rem;color:var(--text-dim);margin-top:15px;">
+        上次完整备份: 2084-06-19 03:47 UTC<br>
+        备份节点: 东京/上海/法兰克福/旧金山/新加坡<br>
+        加密算法: NEXUS-QC-256 · 不可破解
+      </p>
+    </div>
+
+    <!-- SECTION 4: 账户系统 -->
+    <div class="section-card">
+      <span class="card-icon">&#x1F4B3;</span>
+      <h2>账户系统</h2>
+      <h3>ACCOUNT SYSTEM</h3>
+      <p class="card-desc">
+        管理您的NEXUS-9数字身份与资产。一个账户，访问整个城市网络。支持神经令牌(NXC)、记忆积分、数据信用等多种资产类型。
+      </p>
+      <div class="account-grid">
+        <div class="account-stat">
+          <div class="stat-value">45,280</div>
+          <div class="stat-label">神经令牌 NXC</div>
+        </div>
+        <div class="account-stat">
+          <div class="stat-value">12</div>
+          <div class="stat-label">活跃智能合约</div>
+        </div>
+        <div class="account-stat">
+          <div class="stat-value">Lv.34</div>
+          <div class="stat-label">数据信用等级</div>
+        </div>
+        <div class="account-stat">
+          <div class="stat-value">3.2 Ð</div>
+          <div class="stat-label">质押收益/日</div>
+        </div>
+      </div>
+      <p style="font-size:0.65rem;color:var(--text-dim);margin-top:15px;">
+        钱包地址: 0xN9F3...A7D2<br>
+        账户创建: 2078-04-22 · 安全评分: 98/100
+      </p>
+    </div>
+
+  </div><!-- /sections-grid -->
+
+  <!-- EXTRA INFO PANEL -->
+  <div style="max-width:800px;margin:30px auto;padding:20px;background:var(--bg-panel);border:1px solid rgba(255,0,255,0.15);border-radius:4px;position:relative;z-index:1;">
+    <h3 style="font-family:'Orbitron',sans-serif;font-size:0.8rem;letter-spacing:3px;color:var(--neon-magenta);margin-bottom:15px;text-align:center;">
+      &#x25BC; 系统日志 SYSTE_LOG // NEXUS-9 数据银行
+    </h3>
+    <div style="font-size:0.65rem;color:var(--text-dim);line-height:2;letter-spacing:1px;max-height:120px;overflow-y:auto;" id="syslog">
+      [2084-06-19 14:23:01] 节点同步完成 · 延迟 0.002ms<br>
+      [2084-06-19 14:22:45] 安全审计通过 · 无异常访问<br>
+      [2084-06-19 14:21:30] 记忆存储请求 · 用户 NX9-C7F3-A91D · 批准<br>
+      [2084-06-19 14:20:11] 数据交易结算 · 合约 #88472 · 完成<br>
+      [2084-06-19 14:19:55] 意识备份增量同步 · 12.4MB · 成功<br>
+      [2084-06-19 14:18:02] 新节点加入 · 新加坡集群 · 在线<br>
+      [2084-06-19 14:17:30] 量子密钥轮换 · 完成<br>
+    </div>
+  </div>
+
+</main><!-- /main-container -->
+
+<!-- ============================================================
+     STATUS BAR - BOTTOM
+     ============================================================ -->
+<footer class="status-bar">
+  <div class="sb-item">
+    <span class="sb-dot"></span>
+    <span class="sb-label">连接状态:</span>
+    <span class="sb-value">安全加密通道</span>
+  </div>
+  <div class="sb-item">
+    <span class="sb-label">延迟:</span>
+    <span class="sb-value">0.004ms</span>
+  </div>
+  <div class="sb-item">
+    <span class="sb-label">公民:</span>
+    <span class="sb-value">NX9-C7F3-A91D | LING WEI</span>
+  </div>
+  <div class="sb-item">
+    <span class="sb-label">数据区块:</span>
+    <span class="sb-value">#8,473,291</span>
+  </div>
+  <div class="sb-item">
+    <span class="sb-label">节点:</span>
+    <span class="sb-value">SHANGHAI-7</span>
+  </div>
+  <div class="sb-item">
+    <span class="sb-label">加密:</span>
+    <span class="sb-value">QC-256-AES</span>
+  </div>
+</footer>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+// ============================================================
+// CONSOLE EASTER EGG
+// ============================================================
+(function consoleEasterEgg() {
+  const styleNexus = [
+    'background: #ff00ff',
+    'color: #000',
+    'font-size: 24px',
+    'font-weight: bold',
+    'padding: 12px 24px',
+    'letter-spacing: 4px',
+    'font-family: monospace'
+  ].join(';');
+
+  const styleMsg = [
+    'color: #00f0ff',
+    'font-size: 14px',
+    'font-family: monospace',
+    'letter-spacing: 1px'
+  ].join(';');
+
+  console.log('%c NEXUS-9 数据银行 ', styleNexus);
+  console.log('%c 记忆不灭 · 数据永存 · 意识上传中...', styleMsg);
+  console.log('%c [警告] 此终端为NEXUS-9安全设施，未经授权的访问将被追踪。', 'color:#ff3131;font-family:monospace;');
+  console.log('%c [SYS] 当前公民ID: NX9-C7F3-A91D | 安全等级: L4', 'color:#00ff41;font-family:monospace;');
+  console.log('%c [SYS] 虹膜扫描通过 · 神经元匹配: 99.8%', 'color:#ffe600;font-family:monospace;');
+  console.log('%c', '');
+  console.log('%c 祝您数据之旅愉快 // May your data be eternal.', 'color:#666688;font-style:italic;font-family:monospace;');
+})();
+
+// ============================================================
+// IRIS SCAN ANIMATION
+// ============================================================
+(function irisScanAnimation() {
+  const overlay = document.getElementById('irisOverlay');
+  const progressFill = document.getElementById('irisProgressFill');
+  const scanText = document.getElementById('irisScanText');
+  const status = document.getElementById('irisStatus');
+
+  const messages = [
+    '虹膜扫描中...',
+    '特征提取中...',
+    '神经元匹配中...',
+    '身份验证中...',
+    '解密密钥交换...',
+    '建立安全通道...',
+    '接入数据银行...'
+  ];
+
+  let progress = 0;
+  const totalDuration = 3500; // 3.5 seconds total
+  const interval = 40;
+  const steps = totalDuration / interval;
+  const increment = 100 / steps;
+
+  const scanInterval = setInterval(function() {
+    progress += increment;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(scanInterval);
+    }
+
+    progressFill.style.width = progress + '%';
+
+    const msgIndex = Math.min(
+      Math.floor((progress / 100) * messages.length),
+      messages.length - 1
+    );
+    scanText.textContent = messages[msgIndex];
+
+    if (progress >= 95) {
+      status.textContent = '认证成功 · 欢迎回来，公民 // ACCESS GRANTED';
+      status.style.color = '#00ff41';
+      status.style.textShadow = '0 0 5px #00ff41';
+    }
+  }, interval);
+
+  // Hide overlay after scan completes
+  setTimeout(function() {
+    overlay.classList.add('hidden');
+    // Remove overlay from DOM after transition
+    setTimeout(function() {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    }, 1000);
+  }, totalDuration + 600);
+})();
+
+// ============================================================
+// DATA STREAM CANVAS (falling characters)
+// ============================================================
+(function dataStreamCanvas() {
+  const canvas = document.getElementById('dataStream');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789@#$%&*<>{}[]|/\\';
+  const fontSize = 14;
+  const columns = Math.floor(canvas.width / fontSize);
+  const drops = [];
+
+  for (let i = 0; i < columns; i++) {
+    drops[i] = Math.floor(Math.random() * -canvas.height / fontSize);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = fontSize + 'px "Share Tech Mono", monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+
+      // Lead character brighter
+      const isLeading = Math.random() > 0.95;
+      if (isLeading) {
+        ctx.fillStyle = '#00ff41';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#00ff41';
+      } else {
+        ctx.fillStyle = 'rgba(0, 255, 65, 0.6)';
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fillText(char, x, y);
+
+      // Some magenta characters
+      if (Math.random() > 0.97) {
+        ctx.fillStyle = '#ff00ff';
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#ff00ff';
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y);
+      }
+
+      if (y > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+
+      drops[i]++;
+    }
+
+    ctx.shadowBlur = 0;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+})();
+
+// ============================================================
+// LOGIN BUTTON
+// ============================================================
+(function loginHandler() {
+  const btn = document.getElementById('loginBtn');
+  if (!btn) return;
+
+  btn.addEventListener('click', function() {
+    // Glitch effect on click
+    btn.textContent = '▶ 接入中...';
+    btn.style.background = '#00f0ff';
+    btn.style.boxShadow = '0 0 20px rgba(0,240,255,0.5)';
+    btn.disabled = true;
+
+    setTimeout(function() {
+      btn.textContent = '✓ 已接入';
+      btn.style.background = '#00ff41';
+      btn.style.boxShadow = '0 0 20px rgba(0,255,65,0.5)';
+
+      // Flash the page briefly
+      document.body.style.backgroundColor = '#0d0d20';
+      setTimeout(function() {
+        document.body.style.backgroundColor = '';
+      }, 150);
+
+      // Reset after 2s
+      setTimeout(function() {
+        btn.textContent = '▶ 接入网络';
+        btn.style.background = '#ff00ff';
+        btn.style.boxShadow = '0 0 20px rgba(255,0,255,0.5)';
+        btn.disabled = false;
+      }, 2000);
+    }, 1200);
+  });
+})();
+
+// ============================================================
+// TICKER FLASH (periodic price update)
+// ============================================================
+(function tickerUpdater() {
+  const ticker = document.getElementById('tickerDisplay');
+  if (!ticker) return;
+
+  setInterval(function() {
+    const base = 12847.33;
+    const change = (Math.random() - 0.48) * 50;
+    const newVal = (base + change).toFixed(2);
+    const arrow = change >= 0 ? '▲' : '▼';
+    ticker.textContent = arrow + ' NX9-INDEX: ' + newVal;
+    ticker.style.color = change >= 0 ? '#00ff41' : '#ff3131';
+    ticker.style.textShadow = change >= 0 ? '0 0 8px #00ff41' : '0 0 8px #ff3131';
+  }, 3000);
+})();
+
+// ============================================================
+// FLOATING PARTICLES
+// ============================================================
+(function floatingParticles() {
+  function createParticle() {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDuration = (Math.random() * 8 + 6) + 's';
+    particle.style.animationDelay = Math.random() * 5 + 's';
+    particle.style.width = (Math.random() * 3 + 1) + 'px';
+    particle.style.height = particle.style.width;
+
+    if (Math.random() > 0.7) {
+      particle.style.background = '#00f0ff';
+      particle.style.boxShadow = '0 0 6px #00f0ff';
+    }
+
+    document.body.appendChild(particle);
+
+    setTimeout(function() {
+      if (particle.parentNode) {
+        particle.parentNode.removeChild(particle);
+      }
+    }, 15000);
+  }
+
+  // Spawn particles periodically
+  setInterval(createParticle, 600);
+
+  // Initial burst
+  for (let i = 0; i < 20; i++) {
+    setTimeout(createParticle, i * 200);
+  }
+})();
+
+// ============================================================
+// GLITCH EFFECT ON CLICK (easter egg)
+// ============================================================
+(function glitchClickEasterEgg() {
+  let clickCount = 0;
+  document.addEventListener('click', function(e) {
+    // Only count clicks on the hero header
+    if (!e.target.closest('.hero-header')) return;
+
+    clickCount++;
+    if (clickCount >= 3) {
+      clickCount = 0;
+      const body = document.body;
+      body.style.transform = 'translate(-2px, 1px)';
+      body.style.filter = 'hue-rotate(90deg) brightness(1.5)';
+      setTimeout(function() {
+        body.style.transform = 'translate(2px, -1px)';
+        body.style.filter = 'hue-rotate(-90deg) brightness(0.8)';
+      }, 50);
+      setTimeout(function() {
+        body.style.transform = '';
+        body.style.filter = '';
+      }, 150);
+    }
+  });
+})();
+
+// ============================================================
+// SYSTEM LOG UPDATER
+// ============================================================
+(function syslogUpdater() {
+  const log = document.getElementById('syslog');
+  if (!log) return;
+
+  const messages = [
+    '节点同步完成 · 延迟 0.003ms',
+    '安全审计通过 · 无异常访问',
+    '数据交易完成 · 合约确认中',
+    '量子密钥轮换 · 成功',
+    '新节点加入 · 柏林集群 · 在线',
+    '意识备份校验通过 · SHA3-512',
+    '垃圾数据清理 · 释放 2.4GB',
+    '跨链桥接请求 · ETH→NXC · 处理中',
+  ];
+
+  setInterval(function() {
+    const now = new Date();
+    const ts = '[' + now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+      String(now.getDate()).padStart(2, '0') + ' ' +
+      String(now.getHours()).padStart(2, '0') + ':' +
+      String(now.getMinutes()).padStart(2, '0') + ':' +
+      String(now.getSeconds()).padStart(2, '0') + ']';
+
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    const entry = ts + ' ' + msg;
+
+    // Prepend to log
+    const currentContent = log.innerHTML.split('<br>');
+    currentContent.unshift(entry);
+    if (currentContent.length > 20) currentContent.pop();
+    log.innerHTML = currentContent.join('<br>');
+  }, 5000);
+})();
+
+// ============================================================
+// DIGITAL RAIN SPAWN RATE - random bursts
+// ============================================================
+(function digitalRainBurst() {
+  // Occasionally increase the data stream opacity for a "burst"
+  const canvas = document.getElementById('dataStream');
+  setInterval(function() {
+    if (Math.random() > 0.7) {
+      canvas.style.opacity = '0.25';
+      setTimeout(function() {
+        canvas.style.opacity = '0.15';
+      }, 400);
+    }
+  }, 8000);
+})();
+
+// ============================================================
+// KEYBOARD EASTER EGG (press 'N' 'E' 'X' 'U' 'S')
+// ============================================================
+(function keyboardEasterEgg() {
+  const target = ['n', 'e', 'x', 'u', 's'];
+  let idx = 0;
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key.toLowerCase() === target[idx]) {
+      idx++;
+      if (idx === target.length) {
+        idx = 0;
+        // Flash magenta
+        document.body.style.boxShadow = 'inset 0 0 200px rgba(255,0,255,0.4)';
+        document.body.style.transition = 'box-shadow 0.3s ease';
+        setTimeout(function() {
+          document.body.style.boxShadow = '';
+        }, 500);
+
+        console.log('%c [NEXUS] 隐藏终端已激活 // 输入 /help 查看可用命令', 'color:#ff00ff;font-family:monospace;font-size:14px;');
+      }
+    } else {
+      idx = 0;
+    }
+  });
+})();
+
+// ============================================================
+// PERIODIC GLITCH HEADER
+// ============================================================
+(function periodicGlitchHeader() {
+  const h1 = document.querySelector('.hero-header h1');
+  if (!h1) return;
+
+  setInterval(function() {
+    if (Math.random() > 0.85) {
+      h1.style.textShadow = '3px 0 #00f0ff, -3px 0 #ff00ff, 0 0 40px #ff00ff';
+      h1.style.transform = 'skewX(-2deg)';
+      setTimeout(function() {
+        h1.style.textShadow = '';
+        h1.style.transform = '';
+      }, 100);
+    }
+  }, 2000);
+})();
+</script>
+
+</body>
+</html>

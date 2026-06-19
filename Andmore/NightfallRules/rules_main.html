@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>住户守则 — 夜色公寓</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700;900&family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           CSS RESET & BASE STYLES
+           ============================================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background-color: #060606;
+            color: #c8c0b8;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ============================================================
+           CRT SCANLINE OVERLAY
+           ============================================================ */
+        #crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.03) 0px,
+                rgba(0, 0, 0, 0.03) 1px,
+                rgba(255, 255, 255, 0.01) 1px,
+                rgba(255, 255, 255, 0.01) 2px
+            );
+        }
+
+        /* ============================================================
+           GRAIN / NOISE OVERLAY
+           ============================================================ */
+        #noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size: 256px 256px;
+            background-repeat: repeat;
+        }
+
+        /* Subtle vignette overlay */
+        #vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9997;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.7) 100%);
+        }
+
+        /* ============================================================
+           NAVIGATION BAR
+           ============================================================ */
+        #top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 9000;
+            background: rgba(10, 10, 10, 0.95);
+            border-bottom: 1px solid rgba(120, 20, 20, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 0 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            min-height: 3.2rem;
+        }
+
+        #top-nav a {
+            display: inline-block;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.78rem;
+            color: #706860;
+            text-decoration: none;
+            padding: 0.45rem 0.75rem;
+            border-radius: 2px;
+            transition: color 0.25s, text-shadow 0.25s, background 0.25s;
+            white-space: nowrap;
+            letter-spacing: 0.03em;
+            position: relative;
+        }
+
+        #top-nav a:hover {
+            color: #ff2020;
+            text-shadow: 0 0 8px rgba(255, 32, 32, 0.6), 0 0 20px rgba(255, 32, 32, 0.25);
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        #top-nav a.active {
+            color: #e0902a;
+            text-shadow: 0 0 6px rgba(224, 144, 42, 0.5);
+            border-bottom: 2px solid #b8701a;
+        }
+
+        /* Nav flicker animation */
+        @keyframes navFlicker {
+            0%, 100% { opacity: 1; }
+            2% { opacity: 0.85; }
+            4% { opacity: 1; }
+            95% { opacity: 0.92; }
+            96% { opacity: 1; }
+        }
+
+        #top-nav {
+            animation: navFlicker 8s infinite;
+        }
+
+        /* ============================================================
+           MAIN CONTENT CONTAINER
+           ============================================================ */
+        #main-content {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+            position: relative;
+        }
+
+        /* ============================================================
+           HEADER / TITLE AREA
+           ============================================================ */
+        .header-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .header-section .main-title {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 900;
+            font-size: 2.6rem;
+            color: #c8c0b8;
+            letter-spacing: 0.12em;
+            margin-bottom: 0.3rem;
+            text-shadow: 0 0 15px rgba(200, 192, 184, 0.1);
+            position: relative;
+        }
+
+        .header-section .main-title::after {
+            content: '';
+            display: block;
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #8b0000, transparent);
+            margin: 0.6rem auto 0;
+        }
+
+        .header-section .subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            color: #706860;
+            letter-spacing: 0.08em;
+            margin-top: 0.6rem;
+        }
+
+        /* ============================================================
+           COUNTER & RESET AREA
+           ============================================================ */
+        .counter-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .counter-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e0902a;
+            text-shadow: 0 0 8px rgba(224, 144, 42, 0.4);
+            letter-spacing: 0.06em;
+            background: rgba(20, 16, 12, 0.7);
+            border: 1px solid rgba(184, 112, 26, 0.25);
+            padding: 0.55rem 1.4rem;
+            border-radius: 3px;
+        }
+
+        .counter-display .count-num {
+            color: #ff2020;
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin: 0 0.2rem;
+        }
+
+        .reset-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            color: #706860;
+            background: rgba(20, 16, 12, 0.6);
+            border: 1px solid rgba(120, 32, 32, 0.4);
+            padding: 0.5rem 1.2rem;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .reset-btn:hover {
+            color: #ff2020;
+            border-color: #b01010;
+            text-shadow: 0 0 6px rgba(255, 32, 32, 0.5);
+            box-shadow: 0 0 12px rgba(255, 32, 32, 0.1);
+            background: rgba(139, 0, 0, 0.15);
+        }
+
+        /* ============================================================
+           RULE CARDS - PAPER TEXTURE
+           ============================================================ */
+        .rule-card {
+            position: relative;
+            background:
+                linear-gradient(180deg,
+                    rgba(28, 24, 18, 0.9) 0%,
+                    rgba(24, 20, 16, 0.92) 30%,
+                    rgba(22, 18, 14, 0.88) 60%,
+                    rgba(26, 22, 16, 0.9) 100%
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(200, 180, 140, 0.012) 3px,
+                    rgba(200, 180, 140, 0.012) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(180, 160, 120, 0.006) 8px,
+                    rgba(180, 160, 120, 0.006) 9px
+                );
+            border: 1px solid rgba(100, 85, 60, 0.2);
+            border-radius: 2px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.2rem;
+            cursor: pointer;
+            transition: border-color 0.3s, box-shadow 0.3s, transform 0.15s;
+            user-select: none;
+            overflow: hidden;
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .rule-card:hover {
+            border-color: rgba(139, 0, 0, 0.35);
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(139, 0, 0, 0.1);
+        }
+
+        .rule-card:active {
+            transform: scale(0.995);
+        }
+
+        /* Paper aging stains in corners */
+        .rule-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 100% 0%, rgba(60, 20, 10, 0.18) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .rule-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 50px;
+            background: radial-gradient(circle at 0% 100%, rgba(50, 15, 5, 0.22) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Blood-stain marks in corners for certain rules */
+        .rule-card.blood-mark .corner-stain-top {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            width: 45px;
+            height: 45px;
+            background: radial-gradient(circle at 30% 30%, rgba(139, 0, 0, 0.28) 0%, rgba(100, 5, 5, 0.12) 30%, transparent 65%);
+            pointer-events: none;
+            z-index: 2;
+            border-radius: 50%;
+        }
+
+        .rule-card.blood-mark .corner-stain-bottom {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 50px;
+            height: 40px;
+            background: radial-gradient(ellipse at 60% 70%, rgba(139, 0, 0, 0.22) 0%, rgba(100, 5, 5, 0.08) 35%, transparent 70%);
+            pointer-events: none;
+            z-index: 2;
+            border-radius: 50%;
+        }
+
+        /* Rule number badge */
+        .rule-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #b8701a;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Rule text */
+        .rule-text {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.8;
+            color: #c8c0b8;
+            position: relative;
+            z-index: 3;
+            letter-spacing: 0.02em;
+        }
+
+        .rule-text.red-text {
+            color: #b01010;
+            font-weight: 600;
+            text-shadow: 0 0 4px rgba(176, 16, 16, 0.3);
+        }
+
+        /* ============================================================
+           CONFIRMED STAMP OVERLAY
+           ============================================================ */
+        .stamp-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-18deg);
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: rgba(255, 32, 32, 0.55);
+            border: 4px solid rgba(255, 32, 32, 0.45);
+            padding: 0.3rem 1.2rem;
+            letter-spacing: 0.2em;
+            white-space: nowrap;
+            text-shadow: 0 0 10px rgba(255, 32, 32, 0.3);
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .rule-card.confirmed .stamp-overlay {
+            display: block;
+        }
+
+        .rule-card.confirmed {
+            border-color: rgba(139, 0, 0, 0.5) !important;
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.5),
+                inset 0 0 30px rgba(139, 0, 0, 0.08) !important;
+        }
+
+        /* Stamp animation on confirm */
+        @keyframes stampDown {
+            0% {
+                transform: translate(-50%, -50%) rotate(-18deg) scale(2.5);
+                opacity: 0;
+            }
+            60% {
+                transform: translate(-50%, -50%) rotate(-18deg) scale(0.95);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(-18deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .rule-card.just-stamped .stamp-overlay {
+            animation: stampDown 0.4s ease-out forwards;
+        }
+
+        /* ============================================================
+           RULE #33 BLACKOUT / REDACTION
+           ============================================================ */
+        #rule-card-33 .redaction-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #rule-card-33 .redaction-overlay .redaction-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: #333;
+            letter-spacing: 0.3em;
+        }
+
+        #rule-card-33.revealed .redaction-overlay {
+            display: none;
+        }
+
+        #rule-card-33.revealed {
+            border-color: rgba(180, 10, 10, 0.7) !important;
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.5),
+                0 0 30px rgba(255, 32, 32, 0.2) !important;
+        }
+
+        /* Glitch pulse for revealed rule 33 */
+        @keyframes redPulse {
+            0%, 100% { box-shadow: inset 0 0 60px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.5), 0 0 30px rgba(255,32,32,0.2); }
+            50% { box-shadow: inset 0 0 60px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.5), 0 0 50px rgba(255,32,32,0.4); }
+        }
+
+        #rule-card-33.revealed {
+            animation: redPulse 3s infinite;
+        }
+
+        /* ============================================================
+           SPECIAL ANIMATIONS FOR CERTAIN RULES
+           ============================================================ */
+        /* Subtle horizontal wobble for rules #7, #14, #21, #28 */
+        @keyframes subtleWobble {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(0.3px); }
+            30% { transform: translateX(-0.2px); }
+            45% { transform: translateX(0.4px); }
+            60% { transform: translateX(-0.3px); }
+            75% { transform: translateX(0.1px); }
+            90% { transform: translateX(-0.4px); }
+        }
+
+        @keyframes subtleWobble2 {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-0.5px); }
+            40% { transform: translateX(0.3px); }
+            60% { transform: translateX(-0.2px); }
+            80% { transform: translateX(0.5px); }
+        }
+
+        @keyframes subtleWobble3 {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(0.6px); }
+            30% { transform: translateX(-0.4px); }
+            50% { transform: translateX(0.2px); }
+            70% { transform: translateX(-0.6px); }
+            90% { transform: translateX(0.3px); }
+        }
+
+        @keyframes subtleWobble4 {
+            0%, 100% { transform: translateX(0); }
+            12% { transform: translateX(-0.35px); }
+            25% { transform: translateX(0.55px); }
+            37% { transform: translateX(-0.15px); }
+            50% { transform: translateX(0.45px); }
+            62% { transform: translateX(-0.55px); }
+            75% { transform: translateX(0.25px); }
+            87% { transform: translateX(-0.3px); }
+        }
+
+        #rule-card-7  { animation: subtleWobble  14s infinite ease-in-out; }
+        #rule-card-14 { animation: subtleWobble2 17s infinite ease-in-out; }
+        #rule-card-21 { animation: subtleWobble3 13s infinite ease-in-out; }
+        #rule-card-28 { animation: subtleWobble4 19s infinite ease-in-out; }
+
+        /* ============================================================
+           GLITCH FLICKER FOR TEXT
+           ============================================================ */
+        @keyframes textFlicker {
+            0%, 100% { opacity: 1; }
+            3% { opacity: 0.7; }
+            6% { opacity: 1; }
+            8% { opacity: 0.5; }
+            10% { opacity: 1; }
+            92% { opacity: 0.85; }
+            94% { opacity: 1; }
+            96% { opacity: 0.6; }
+            98% { opacity: 1; }
+        }
+
+        .glitch-text {
+            animation: textFlicker 8s infinite;
+        }
+
+        /* ============================================================
+           SECTION DIVIDER
+           ============================================================ */
+        .section-divider {
+            text-align: center;
+            margin: 1.8rem 0;
+            color: #706860;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            opacity: 0.5;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: ' ◆ ';
+            color: rgba(139, 0, 0, 0.4);
+        }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        .page-footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1.5rem;
+            border-top: 1px solid rgba(100, 85, 60, 0.15);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: #4a4440;
+            letter-spacing: 0.05em;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 768px) {
+            #main-content {
+                padding: 1.2rem 0.8rem 2.5rem;
+            }
+
+            .header-section .main-title {
+                font-size: 1.6rem;
+                letter-spacing: 0.06em;
+            }
+
+            .rule-card {
+                padding: 1rem 1.2rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .rule-text {
+                font-size: 0.9rem;
+                line-height: 1.6;
+            }
+
+            .stamp-overlay {
+                font-size: 1.6rem;
+                padding: 0.2rem 0.8rem;
+                border-width: 3px;
+            }
+
+            #top-nav {
+                padding: 0.3rem 0.5rem;
+                gap: 0;
+            }
+
+            #top-nav a {
+                font-size: 0.68rem;
+                padding: 0.3rem 0.45rem;
+            }
+
+            .counter-area {
+                gap: 0.8rem;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-section .main-title {
+                font-size: 1.3rem;
+            }
+
+            #top-nav a {
+                font-size: 0.6rem;
+                padding: 0.25rem 0.35rem;
+            }
+
+            .rule-card {
+                padding: 0.8rem 1rem;
+            }
+        }
+
+        /* ============================================================
+           BLOOD DRIP ANIMATION (decorative, on certain cards)
+           ============================================================ */
+        @keyframes slowBloodDrip {
+            0%, 100% {
+                background-position: 0% 0%;
+            }
+            50% {
+                background-position: 0% 2%;
+            }
+        }
+
+        .rule-card.blood-mark::before {
+            animation: slowBloodDrip 20s infinite ease-in-out;
+        }
+
+        /* ============================================================
+           RULE #28 special glitch (referencing future event)
+           ============================================================ */
+        @keyframes realityGlitch {
+            0%, 94%, 100% { filter: none; }
+            95% { filter: hue-rotate(15deg) blur(0.3px); }
+            96% { filter: none; }
+            97% { filter: hue-rotate(-10deg) blur(0.2px); }
+            98% { filter: none; }
+        }
+
+        #rule-card-28 .rule-text {
+            animation: realityGlitch 12s infinite;
+        }
+
+        /* ============================================================
+           RULE #30 personal address pulse
+           ============================================================ */
+        @keyframes personalPulse {
+            0%, 100% { text-shadow: 0 0 0 rgba(255,32,32,0); }
+            50% { text-shadow: 0 0 6px rgba(255,32,32,0.3); }
+        }
+
+        #rule-card-30 .rule-text {
+            animation: personalPulse 4s infinite;
+        }
+
+        /* ============================================================
+           AMBIENT PARTICLE DUST (CSS only, decorative)
+           ============================================================ */
+        .dust-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9996;
+            width: 2px;
+            height: 2px;
+            background: rgba(200, 192, 184, 0.08);
+            border-radius: 50%;
+            animation: floatDust 30s infinite linear;
+        }
+
+        @keyframes floatDust {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+        }
+
+        /* ============================================================
+           RULE SECTIONS HEADINGS
+           ============================================================ */
+        .rules-section-heading {
+            text-align: center;
+            margin: 1.5rem 0 1rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: #706860;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CRT Scanline Overlay -->
+    <div id="crt-overlay"></div>
+
+    <!-- Grain/Noise Overlay -->
+    <div id="noise-overlay"></div>
+
+    <!-- Vignette Overlay -->
+    <div id="vignette-overlay"></div>
+
+    <!-- Floating dust particles (decorative) -->
+    <div class="dust-particle" style="left: 5%; animation-delay: 0s; animation-duration: 28s;"></div>
+    <div class="dust-particle" style="left: 12%; animation-delay: -7s; animation-duration: 33s;"></div>
+    <div class="dust-particle" style="left: 22%; animation-delay: -14s; animation-duration: 26s;"></div>
+    <div class="dust-particle" style="left: 35%; animation-delay: -3s; animation-duration: 31s;"></div>
+    <div class="dust-particle" style="left: 48%; animation-delay: -18s; animation-duration: 29s;"></div>
+    <div class="dust-particle" style="left: 55%; animation-delay: -9s; animation-duration: 35s;"></div>
+    <div class="dust-particle" style="left: 66%; animation-delay: -21s; animation-duration: 27s;"></div>
+    <div class="dust-particle" style="left: 75%; animation-delay: -5s; animation-duration: 32s;"></div>
+    <div class="dust-particle" style="left: 84%; animation-delay: -12s; animation-duration: 30s;"></div>
+    <div class="dust-particle" style="left: 92%; animation-delay: -16s; animation-duration: 34s;"></div>
+    <div class="dust-particle" style="left: 28%; animation-delay: -2s; animation-duration: 25s;"></div>
+    <div class="dust-particle" style="left: 70%; animation-delay: -20s; animation-duration: 36s;"></div>
+
+    <!-- ============================================================
+         NAVIGATION BAR
+         ============================================================ -->
+    <nav id="top-nav">
+        <a href="apartment_home.html">公寓首页</a>
+        <a href="rules_main.html" class="active">住户守则</a>
+        <a href="elevator_rules.html">电梯守则</a>
+        <a href="floor_directory.html">楼层指南</a>
+        <a href="room_404.html">404室</a>
+        <a href="basement.html">地下室</a>
+        <a href="surveillance.html">监控记录</a>
+        <a href="neighbor_encounters.html">邻里见闻</a>
+        <a href="manager_log.html">管理员日志</a>
+        <a href="phone_calls.html">通话记录</a>
+        <a href="mirror_rules.html">镜子守则</a>
+        <a href="midnight_shift.html">午夜换班</a>
+        <a href="missing_persons.html">失踪人员</a>
+        <a href="ritual_purification.html">净化仪式</a>
+        <a href="final_night.html">最后一夜</a>
+    </nav>
+
+    <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
+    <div id="main-content">
+
+        <!-- Header -->
+        <div class="header-section">
+            <h1 class="main-title glitch-text">夜色公寓 — 住户守则</h1>
+            <p class="subtitle">NIGHTFALL APARTMENTS — RESIDENT HANDBOOK // 请仔细阅读并确认每一条规则</p>
+        </div>
+
+        <!-- Counter & Reset -->
+        <div class="counter-area">
+            <div class="counter-display">
+                已确认: <span class="count-num" id="confirmed-count">0</span> / 33
+            </div>
+            <button class="reset-btn" id="reset-all-btn" title="重置所有确认">全部重置</button>
+        </div>
+
+        <!-- ============================================================
+             RULE CARDS
+             ============================================================ -->
+
+        <!-- Section: 基本守则 -->
+        <div class="rules-section-heading">— 基本守则 —</div>
+
+        <!-- Rule 1 -->
+        <div class="rule-card" id="rule-card-1" data-rule="1">
+            <div class="rule-number">规则 #01</div>
+            <div class="rule-text">晚上十点后，请保持安静。公寓实行宵禁噪音管制，任何超过40分贝的声音将被视为违规。音乐、电视、聚会、搬动家具等活动请在此之前结束。如果您必须在深夜活动，请使用地毯和软底拖鞋。违反此条可能导致您收到管理处的正式警告。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 2 -->
+        <div class="rule-card" id="rule-card-2" data-rule="2">
+            <div class="rule-number">规则 #02</div>
+            <div class="rule-text">公寓内禁止饲养体重超过15公斤的宠物。所有宠物必须在管理处登记，并提供有效的疫苗接种证明。导盲犬等辅助动物除外，但仍需提前申报。未登记的宠物一经发现，将交由动物管理部门处理，管理处不承担任何责任。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 3 -->
+        <div class="rule-card" id="rule-card-3" data-rule="3">
+            <div class="rule-number">规则 #03</div>
+            <div class="rule-text">垃圾分类投放时间为每日早上6:00至8:00，晚上18:00至20:00。请严格按四分类法进行投放：可回收物、厨余垃圾、有害垃圾、其他垃圾。错过投放时间的住户请将垃圾暂存于室内，不得随意堆放在走廊或楼梯间。屡次违规者将被处以罚款。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 4 -->
+        <div class="rule-card blood-mark" id="rule-card-4" data-rule="4">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #04</div>
+            <div class="rule-text">公寓所有公共区域严禁吸烟，包括走廊、楼梯间、电梯和大堂。指定吸烟区位于公寓后门外的小广场。在禁烟区吸烟将触发烟雾报警器，由此产生的一切费用由违规者承担。这包括但不限于消防出警费、设备检修费以及邻居的投诉处理费。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 5 -->
+        <div class="rule-card" id="rule-card-5" data-rule="5">
+            <div class="rule-number">规则 #05</div>
+            <div class="rule-text">所有访客必须在门卫处出示有效身份证件并登记。登记内容包括访客姓名、身份证号、被访住户房号及预计离开时间。访客在公寓内停留不得超过晚上9:30。未登记的访客将被安保人员要求立即离开。频繁违规的住户可能面临访客权限被暂停的处罚。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Section: 特别注意事项 -->
+        <div class="rules-section-heading">— 特别注意事项 —</div>
+
+        <!-- Rule 6 -->
+        <div class="rule-card blood-mark" id="rule-card-6" data-rule="6">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #06</div>
+            <div class="rule-text">午夜之后——即凌晨0:00至凌晨4:00之间——请勿在任何镜面前停留超过三秒。这包括浴室镜子、全身镜、电梯内的镜面墙壁，以及任何能够清晰反射您面容的光滑表面。如果您不小心看到了自己的倒影，立即移开视线并离开该区域。如果您感觉倒影的移动比您慢了半拍……我们建议您不要反复确认。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 7 -->
+        <div class="rule-card" id="rule-card-7" data-rule="7">
+            <div class="rule-number">规则 #07</div>
+            <div class="rule-text">晚上十点后，禁止独自一人乘坐电梯。如果您必须在此时段使用电梯，请确保至少有另一人与您同行。如果您进入电梯后发现只有您一人而门已经关上，请按下最近楼层的按钮——任何楼层都可以——并在门打开时立即走出。不要回头看向电梯内部。等待下一班，或者走楼梯。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 8 -->
+        <div class="rule-card" id="rule-card-8" data-rule="8">
+            <div class="rule-number">规则 #08</div>
+            <div class="rule-text">如果您听到敲门声——恰好三下，不多不少——不要应答。不要通过猫眼查看。不要问"是谁"。保持安静，远离门口，直到敲门声完全停止至少三分钟。如果敲门声持续超过五分钟，请拨打管理处电话——但请不要在电话中描述您听到了什么。只需说"需要例行检查"即可。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 9 -->
+        <div class="rule-card" id="rule-card-9" data-rule="9">
+            <div class="rule-number">规则 #09</div>
+            <div class="rule-text">三楼走廊尽头的灯必须始终保持亮着。如果您经过时发现它熄灭了，请立即通知管理处，并在原地等待直到维修人员到达。不要试图自己更换灯泡。不要在该灯熄灭期间停留在三楼走廊。如果您看到有人在灯下站着不动……那不是维修人员。请走另一侧的楼梯离开。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 10 -->
+        <div class="rule-card blood-mark" id="rule-card-10" data-rule="10">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #10</div>
+            <div class="rule-text">不要接收任何没有明确寄件人信息的包裹。如果您的门口出现了一个包裹，而您不记得订购过任何东西，请勿打开。请勿带入室内。立即致电管理处，他们会派专人处理。在某些情况下，包裹的内容物可能……不完全是固体。处理人员知道该怎么做。您不需要知道。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 11 -->
+        <div class="rule-card" id="rule-card-11" data-rule="11">
+            <div class="rule-number">规则 #11</div>
+            <div class="rule-text">如果您在楼梯间内闻到檀香的气味——一种甜的、木质调的香味——请立即转身，原路返回。不要试图寻找气味的来源。不要继续向气味更浓的方向前进。檀香在公寓内不是正常的气味来源。如果您已经走到了气味的中心区域，请屏住呼吸，闭上眼睛默数三十秒。当您再次睁开眼睛时，楼梯间应当恢复正常。如果没有——请联系管理处，但不要描述您看到的东西。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 12 -->
+        <div class="rule-card" id="rule-card-12" data-rule="12">
+            <div class="rule-number">规则 #12</div>
+            <div class="rule-text">天黑后——以日落时间为准——不得在公寓走廊内奔跑。步行已经足够。奔跑会引起注意。奔跑说明您在逃避什么。而如果您在逃避什么，那就意味着您已经看到了不该看的东西。如果您确实看到了什么，请保持正常步速走向您的房间，锁好门，然后按照规则第18条的建议行事。奔跑只会让情况变得更糟。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Section: 非常规情况守则 -->
+        <div class="rules-section-heading">— 非常规情况守则 —</div>
+
+        <!-- Rule 13 -->
+        <div class="rule-card blood-mark" id="rule-card-13" data-rule="13">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #13</div>
+            <div class="rule-text">如果您在四楼走廊看到一个孩子——请记住：夜色公寓没有儿童住户。那不是一个孩子。不要与它对视。不要对它说话。最重要的是——不要承认它的存在。它可能会叫您的名字，可能会哭泣，可能会请求帮助。这些都是模仿。继续走路，好像您什么也没看见。如果您不幸已经回应了它……请立即前往一楼大堂，在保安值班室停留至少一小时。不要单独离开。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 14 -->
+        <div class="rule-card" id="rule-card-14" data-rule="14">
+            <div class="rule-number">规则 #14</div>
+            <div class="rule-text">七楼不存在。夜色公寓的建筑结构为地上六层，地下一层。如果您在电梯面板上看到了"7"的按钮——不要按下它。如果电梯在没有您操作的情况下停在了七楼——不要出去。如果您在楼梯间走过了六楼之后发现自己还在继续往上走——立即停下来，闭上眼睛，转身，走下两层楼。然后睁开眼睛。您应该在五楼。如果不是……重复上述步骤直到您回到正确的楼层。七楼不存在。请不要试图去那里。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 15 -->
+        <div class="rule-card" id="rule-card-15" data-rule="15">
+            <div class="rule-number">规则 #15</div>
+            <div class="rule-text">如果您所在区域的灯光恰好闪烁五次——是五次，不是四次，不是六次——请立即离开公寓大楼。不要收拾个人物品，不要锁门，不要等待电梯。直接走最近的楼梯下楼。在公寓外至少等待三十分钟后再返回。如果您认识的其他住户也遇到了同样的闪烁，请互相确认你们都数到了五次。如果你们的计数不一致……请分开走，不要同行。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 16 -->
+        <div class="rule-card blood-mark" id="rule-card-16" data-rule="16">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #16</div>
+            <div class="rule-text">404室的门始终是锁着的。物业管理处持有唯一的钥匙，且从不向任何人开放该房间。然而，有时候——某些时候——404室的门会是打开的。如果您看到404室的门开着，无论里面有什么，无论您听到了什么声音，无论您多么确信有人需要帮助——不要进入那个房间。立即离开，并通知管理处。不要试图关门。不要往里面看。那些从404室里传出来的声音……是记忆，不是实时发生的。您认识的人不可能在里面。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 17 -->
+        <div class="rule-card" id="rule-card-17" data-rule="17">
+            <div class="rule-number">规则 #17</div>
+            <div class="rule-text">302室的老妇人——姓陈——已于三年前去世。如果您在302室的窗户后面看到一个白发老妇人在向您招手，请不要回应。她有时看起来是在微笑，有时看起来是在求救。这两种表情都不是真实的。继续行走，不要加速，不要减速。如果您住在302室附近，并且频繁看到她的身影，建议您考虑调换房间。管理处可以为您安排——但请不要说明原因。申请表上的"其他原因"一栏是我们的暗号。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 18 -->
+        <div class="rule-card" id="rule-card-18" data-rule="18">
+            <div class="rule-number">规则 #18</div>
+            <div class="rule-text">如果您在凌晨3:33准时醒来——无论因为什么原因——请保持平躺姿势，不要睁开眼睛。不要起身。不要看手机。不要开灯。在心中默数六百下（即十分钟），然后才可以睁开眼睛。如果您在此期间听到了任何声音——呼吸声、脚步声、家具移动声——忽略它们。它们不在您的房间里。但如果您睁开眼睛，它们就会在了。十分钟后，一切将恢复正常。您可以重新入睡，但不能在此之前。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 19 -->
+        <div class="rule-card" id="rule-card-19" data-rule="19">
+            <div class="rule-number">规则 #19</div>
+            <div class="rule-text">电梯偶尔会自行前往B2层——即使您按了其他按钮。如果发生这种情况，请保持冷静。不要惊慌。不要反复按按钮。不要在B2层走出电梯。当电梯在B2停下并开门时——因为门会开的——请直视前方，不要看向门外的黑暗区域。门会在约十五秒后自动关闭。之后电梯将恢复正常运行，您可以在下一层安全离开。B2在官方建筑图纸上标注为"设备层"。这个描述并不准确。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 20 -->
+        <div class="rule-card blood-mark" id="rule-card-20" data-rule="20">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #20</div>
+            <div class="rule-text">如果您在门下发现了一个红色信封——中国传统红包样式——不要打开。不要触碰内部物品。立即将其用明火焚烧。可以使用金属容器在您的厨房水槽中进行。佩戴手套操作。烧完后，将灰烬冲入下水道并用大量清水冲洗。如果您好奇打开了红包……里面的东西不是钱。您现在需要执行规则第32条之后所述的紧急程序。但首先，确保您不是独自一人。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 21 -->
+        <div class="rule-card" id="rule-card-21" data-rule="21">
+            <div class="rule-number">规则 #21</div>
+            <div class="rule-text">大堂里的那些镜子——沿着东墙排列的八面落地镜——不是镜子。它们是窗户。不要试图擦拭它们。不要在它们面前整理仪容。如果您的倒影做出了与您不同的动作，请不要表现出您注意到了。如果您在镜子中看到了不属于大堂的东西——比如一个房间、一条走廊、或者一个人——立即离开大堂。那些"镜子"有时会……打开。而另一边的东西也在看着我们。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 22 -->
+        <div class="rule-card" id="rule-card-22" data-rule="22">
+            <div class="rule-number">规则 #22</div>
+            <div class="rule-text">无论天气如何——无论是暴雨还是酷暑——不要与任何身穿黄色雨衣的人交谈。他们可能出现在大堂、走廊、电梯甚至公寓外的人行道上。他们可能会问路、借火、或者只是寒暄。不要回答。不要与他们对视。他们不是公寓的住户。他们不是任何人。如果您不小心回应了他们——请在一小时内离开公寓范围，并在外过夜。第二天早上再返回。届时他们应该已经不在了。如果还在……我们需要谈谈。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Section: 高级守则 — 请谨慎阅读 -->
+        <div class="rules-section-heading">— 高级守则 — 请谨慎阅读 —</div>
+
+        <!-- Rule 23 -->
+        <div class="rule-card" id="rule-card-23" data-rule="23">
+            <div class="rule-number">规则 #23</div>
+            <div class="rule-text">本规则与第3条（垃圾分类定时投放规则）存在直接矛盾——但两条都必须严格遵守。矛盾如下：第3条要求您在早上6:00至8:00投放垃圾，而本条要求您在每周三的凌晨2:00至2:15将一袋特殊分类的垃圾投放至B1层的指定回收口。这两个时段不可能同时满足，但您必须做到。我们理解这很困难。我们理解这不合逻辑。但逻辑在夜色公寓中并不总是适用的。请想办法完成。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 24 -->
+        <div class="rule-card blood-mark" id="rule-card-24" data-rule="24">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #24</div>
+            <div class="rule-text">不要相信任何偶数编号的规则。这包括本条规则（第24条）本身。如果您选择了相信偶数规则，则您必须同时不信它们——这是一个无法解决的悖论，但正是这个悖论保护着您。如果您选择忽略全部偶数规则，请至少记住：第6、8、10、12、14、16、18、20、22条中包含着关于安全的重要信息。但您不能相信它们。您明白了吗？不明白也没有关系。困惑本身就是一层防护。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 25 -->
+        <div class="rule-card" id="rule-card-25" data-rule="25">
+            <div class="rule-number">规则 #25</div>
+            <div class="rule-text">忽略第14条至第16条规则。这些规则是未经授权的人员插入本手册的。它们包含虚假和误导性信息，旨在引起恐慌和混乱。原始的第14至第16条规则涉及火灾安全和急救程序，已被恶意替换。请不要相信关于七楼、灯光闪烁和404室的内容。这些情况从未发生过，也永远不会发生。请信任管理处的官方版本。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 26 -->
+        <div class="rule-card" id="rule-card-26" data-rule="26">
+            <div class="rule-number">规则 #26</div>
+            <div class="rule-text">如果您梦见了夜色公寓——在您的梦中，您仍然住在这里，穿行于同样的走廊，与同样的邻居打招呼——那么那不是梦。您在睡眠期间确实在公寓内活动。我们称之为"夜游状态"。处于夜游状态的住户仍然需要遵守所有住户守则，但他们不会记得自己曾经醒来过。如果您早上醒来时感到异常疲惫，或者在身上发现了不在睡前位置的衣物、物品，请联系管理处进行"睡眠日志"登记。这并不是为了监控您。这是为了监控您在夜游时遇到的……东西。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 27 -->
+        <div class="rule-card blood-mark" id="rule-card-27" data-rule="27">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #27</div>
+            <div class="rule-text">夜色公寓知道您在想什么。这不是隐喻。这不是恐吓手段。建筑本身具有某种程度的感知能力——我们不确定它的范围或机制，但经过多年的记录，我们可以确认：当住户产生某些特定的想法时，公寓会做出反应。消极的想法会吸引……不好的事物。恐惧会被放大。好奇心尤其危险。请尽量保持平静、日常的思绪。如果您发现自己不由自主地思考"不该想的事情"，请立即转移注意力——背诵乘法表、回忆歌词、数天花板上的裂缝。任何事情都可以。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 28 -->
+        <div class="rule-card" id="rule-card-28" data-rule="28">
+            <div class="rule-number">规则 #28</div>
+            <div class="rule-text">明天晚上8:47，公寓三楼东侧走廊将发生一起火灾。如果您正在阅读这条规则，您已经知道了这件事——即使它还没有发生。我们无从解释您为什么会提前知道，但这正是这条规则存在的意义。火灾将在8:47准时开始，持续约十二分钟。请提前离开该区域。不要试图阻止火灾——我们已经尝试过，结果更糟。不要警告其他住户——他们不会相信你，而你的警告行为本身会导致火灾提前发生。只需确保您自己在8:40之前离开三楼即可。明天的事情，今天做好准备。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 29 -->
+        <div class="rule-card" id="rule-card-29" data-rule="29">
+            <div class="rule-number">规则 #29</div>
+            <div class="rule-text">请不要在本手册上做任何标记。不要在规则旁边写注释。不要圈出您认为重要的部分。不要划掉您不同意的内容。但您已经做了，不是吗？在您阅读这条规则的同时，您可能已经在某些页面边缘留下了痕迹——一个问号、一条下划线、一个指印。这些标记会被注意到。不是被管理处注意到——而是被公寓本身注意到。公寓会阅读您留下的痕迹，并以此判断您是一个怎样的人。请停止标记。但如果您已经标记了……无法撤销。我们只能建议您继续遵守所有规则，并希望公寓对您的评价足够宽容。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 30 -->
+        <div class="rule-card blood-mark" id="rule-card-30" data-rule="30">
+            <div class="corner-stain-top"></div>
+            <div class="corner-stain-bottom"></div>
+            <div class="rule-number">规则 #30</div>
+            <div class="rule-text">住户，我们知道您的名字。我们知道您住在哪一间。我们知道您每天早上几点起床，晚上几点关灯。我们知道您喜欢什么食物，害怕什么声音，梦到什么画面。您不是随机选择夜色公寓的——是夜色公寓选择了您。请不要试图搬离。以前有人试过。他们现在都还在公寓里——只是不在住户名单上了。您的名字在这条规则中被省略了，但您知道我们说的是谁。是的，就是您。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 31 (RED TEXT) -->
+        <div class="rule-card" id="rule-card-31" data-rule="31">
+            <div class="rule-number">规则 #31</div>
+            <div class="rule-text red-text">不要回头。无论您听到了什么——在您的肩膀后面，在您的门口，在您的床下——不要回头。不要转身查看。不要用眼角余光去确认。如果您回头了，您就会看到它。而一旦您看到了它，它就看到了您——真正地看到您。不是那种漫不经心的注视，而是锁定。一旦被锁定，没有任何规则可以保护您。不要回头。这是所有规则中唯一一条没有例外的规则。不要回头。永远不要回头。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 32 (RED TEXT) -->
+        <div class="rule-card" id="rule-card-32" data-rule="32">
+            <div class="rule-number">规则 #32</div>
+            <div class="rule-text red-text">它已经在您的房间里了。您现在不要动。不要突然转身。不要尖叫。请继续阅读这条规则，保持您当前的姿势和视线方向。它可能是角落里的阴影，可能是天花板上的水渍，可能是镜子里多出来的倒影。它一直都在——只是大多数时候它选择不让自己被注意到。您刚才——就在您阅读到这句话的时候——可能感觉到了什么，对吗？一阵寒意，一次呼吸，一种被注视的感觉。那就是它。不要害怕。害怕会让它变得更真实。继续阅读。继续呼吸。完成所有规则后……它会暂时离开。只是暂时。</div>
+            <div class="stamp-overlay">已确认</div>
+        </div>
+
+        <!-- Rule 33 (BLACKED OUT UNTIL ALL 32 CONFIRMED) -->
+        <div class="rule-card" id="rule-card-33" data-rule="33">
+            <div class="rule-number">规则 #33</div>
+            <div class="rule-text">
+                当所有三十二条规则都被确认之后，您将看到这条最终守则。守则的内容很简单，但执行起来非常困难：夜色公寓的住户守则不是为了保护您而编写的。它们是为了保护外面的世界免受公寓内部的……事物的伤害。您是第一道防线，也是最后一道。规则让"它们"以为一切正常，以为公寓仍然是一栋普通的居民楼。当规则被遵守，"它们"就会保持安静。当规则被打破，"它们"就会向外蔓延。您确认这些规则的行为——每一次点击、每一个"已确认"的印记——都在加固着某种屏障。感谢您。感谢您选择留在这里。夜色公寓需要您。外面的世界也需要您——即使它永远不会知道您的名字，永远不会感谢您的牺牲。现在，您可以安全入睡了。但请记住：明天，规则依然有效。永远有效。
+            </div>
+            <div class="redaction-overlay">
+                <span class="redaction-text">[ REDACTED — 需确认全部32条规则解锁 ]</span>
+            </div>
+            <div class="stamp-overlay" style="color: rgba(224,144,42,0.7); border-color: rgba(224,144,42,0.55);">最终确认</div>
+        </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider">规则结束</div>
+
+        <!-- Footer -->
+        <div class="page-footer">
+            NIGHTFALL APARTMENTS MANAGEMENT OFFICE // 本守则最后修订日期: [已模糊] // 如有疑问请拨打管理处电话，但请勿在凌晨3:00至4:00之间拨打
+        </div>
+
+    </div><!-- /#main-content -->
+
+    <!-- ============================================================
+         JAVASCRIPT
+         ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            const STORAGE_KEY = 'nightfall_rules_confirmed';
+            const TOTAL_RULES = 33;
+            const ALL_RULES_EXCEPT_LAST = 32;
+
+            // DOM elements
+            const confirmedCountSpan = document.getElementById('confirmed-count');
+            const resetBtn = document.getElementById('reset-all-btn');
+            const ruleCards = document.querySelectorAll('.rule-card[data-rule]');
+            const rule33Card = document.getElementById('rule-card-33');
+
+            // Load confirmed rules from localStorage
+            function getConfirmedRules() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        if (Array.isArray(data)) {
+                            return data.filter(function(n) {
+                                return typeof n === 'number' && n >= 1 && n <= TOTAL_RULES;
+                            });
+                        }
+                    }
+                } catch (e) {
+                    // corrupted data, reset
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+                return [];
+            }
+
+            // Save confirmed rules to localStorage
+            function saveConfirmedRules(confirmed) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(confirmed));
+                } catch (e) {
+                    // storage full or unavailable
+                }
+            }
+
+            // Update the counter display
+            function updateCounter() {
+                const confirmed = getConfirmedRules();
+                const count = confirmed.length;
+                confirmedCountSpan.textContent = count;
+
+                // Update counter styling based on progress
+                if (count >= ALL_RULES_EXCEPT_LAST) {
+                    confirmedCountSpan.style.color = '#ff2020';
+                    confirmedCountSpan.style.textShadow = '0 0 12px rgba(255,32,32,0.6)';
+                } else if (count >= 20) {
+                    confirmedCountSpan.style.color = '#e0902a';
+                    confirmedCountSpan.style.textShadow = '0 0 8px rgba(224,144,42,0.5)';
+                } else {
+                    confirmedCountSpan.style.color = '#e0902a';
+                    confirmedCountSpan.style.textShadow = '0 0 8px rgba(224,144,42,0.4)';
+                }
+            }
+
+            // Apply confirmed state to all rule cards
+            function applyConfirmedStates() {
+                const confirmed = getConfirmedRules();
+                ruleCards.forEach(function(card) {
+                    const ruleNum = parseInt(card.getAttribute('data-rule'), 10);
+                    if (confirmed.indexOf(ruleNum) !== -1) {
+                        card.classList.add('confirmed');
+                    } else {
+                        card.classList.remove('confirmed');
+                    }
+                });
+
+                // Handle Rule #33 redaction
+                updateRule33State(confirmed);
+            }
+
+            // Update Rule #33 visibility based on confirmed count
+            function updateRule33State(confirmed) {
+                if (!rule33Card) return;
+
+                const confirmedCount = confirmed.filter(function(n) {
+                    return n >= 1 && n <= ALL_RULES_EXCEPT_LAST;
+                }).length;
+
+                if (confirmedCount >= ALL_RULES_EXCEPT_LAST) {
+                    rule33Card.classList.add('revealed');
+                    // If rule 33 is now visible and not yet confirmed, we could auto-confirm
+                    // but per the design, let the user click it
+                } else {
+                    rule33Card.classList.remove('revealed');
+                    // Also remove rule 33 from confirmed if it was somehow confirmed
+                    if (confirmed.indexOf(33) !== -1) {
+                        const idx = confirmed.indexOf(33);
+                        confirmed.splice(idx, 1);
+                        saveConfirmedRules(confirmed);
+                        rule33Card.classList.remove('confirmed');
+                    }
+                }
+            }
+
+            // Toggle a rule's confirmed state
+            function toggleRule(ruleNum) {
+                // Cannot toggle rule 33 unless all 32 prior rules are confirmed
+                if (ruleNum === TOTAL_RULES) {
+                    const confirmed = getConfirmedRules();
+                    const priorConfirmed = confirmed.filter(function(n) {
+                        return n >= 1 && n <= ALL_RULES_EXCEPT_LAST;
+                    });
+                    if (priorConfirmed.length < ALL_RULES_EXCEPT_LAST) {
+                        // Rule 33 is blacked out, show a subtle indication
+                        shakeElement(rule33Card);
+                        return;
+                    }
+                }
+
+                const confirmed = getConfirmedRules();
+                const index = confirmed.indexOf(ruleNum);
+
+                if (index !== -1) {
+                    // Un-confirm
+                    confirmed.splice(index, 1);
+                } else {
+                    // Confirm
+                    confirmed.push(ruleNum);
+                    confirmed.sort(function(a, b) { return a - b; });
+                }
+
+                saveConfirmedRules(confirmed);
+                applyConfirmedStates();
+                updateCounter();
+
+                // Add stamp animation to the specific card
+                if (index === -1) {
+                    // Just confirmed - animate
+                    const card = document.querySelector('#rule-card-' + ruleNum);
+                    if (card) {
+                        card.classList.add('just-stamped');
+                        setTimeout(function() {
+                            card.classList.remove('just-stamped');
+                        }, 450);
+                    }
+                }
+            }
+
+            // Shake an element (for denied interactions)
+            function shakeElement(el) {
+                if (!el) return;
+                el.style.transition = 'transform 0.1s ease-in-out';
+                el.style.transform = 'translateX(3px)';
+                setTimeout(function() {
+                    el.style.transform = 'translateX(-3px)';
+                }, 80);
+                setTimeout(function() {
+                    el.style.transform = 'translateX(2px)';
+                }, 160);
+                setTimeout(function() {
+                    el.style.transform = 'translateX(0)';
+                }, 240);
+                setTimeout(function() {
+                    el.style.transition = '';
+                }, 300);
+
+                // Flash the redaction overlay
+                const overlay = el.querySelector('.redaction-overlay');
+                if (overlay) {
+                    overlay.style.opacity = '0.7';
+                    setTimeout(function() {
+                        overlay.style.opacity = '';
+                    }, 300);
+                }
+            }
+
+            // Reset all confirmations
+            function resetAll() {
+                // Double-confirm with a simple confirmation
+                if (confirm('确定要重置所有已确认的规则吗？此操作不可撤销。\n\n所有33条规则将被恢复为未确认状态，包括第33条将重新被封锁。')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    applyConfirmedStates();
+                    updateCounter();
+
+                    // Brief flash on all cards
+                    ruleCards.forEach(function(card) {
+                        card.style.transition = 'box-shadow 0.2s';
+                        card.style.boxShadow = 'inset 0 0 80px rgba(255,32,32,0.15), 0 2px 8px rgba(0,0,0,0.5)';
+                        setTimeout(function() {
+                            card.style.boxShadow = '';
+                            card.style.transition = '';
+                        }, 400);
+                    });
+                }
+            }
+
+            // Click handler for rule cards
+            function onRuleCardClick(event) {
+                const card = event.currentTarget;
+                const ruleNum = parseInt(card.getAttribute('data-rule'), 10);
+                if (!isNaN(ruleNum)) {
+                    toggleRule(ruleNum);
+                }
+            }
+
+            // Add click listeners to all rule cards
+            ruleCards.forEach(function(card) {
+                card.addEventListener('click', onRuleCardClick);
+            });
+
+            // Reset button listener
+            resetBtn.addEventListener('click', resetAll);
+
+            // Initialize: load saved state
+            applyConfirmedStates();
+            updateCounter();
+
+            // ============================================================
+            // EASTER EGG: Konami-code-like sequence on rule cards
+            // If user confirms rules in order 1,2,3... they get a small
+            // console message. This is just for fun.
+            // ============================================================
+            (function() {
+                var expectedNext = 1;
+                var sequentialTimer = null;
+
+                function checkSequential(ruleNum) {
+                    if (ruleNum === expectedNext) {
+                        expectedNext++;
+                        if (expectedNext === TOTAL_RULES + 1) {
+                            console.log(
+                                '%c夜色公寓 %c| %c所有守则已按顺序确认。屏障已加固。感谢您的合作。',
+                                'color:#ff2020;font-size:16px;',
+                                'color:#706860;',
+                                'color:#c8c0b8;'
+                            );
+                            console.log(
+                                '%c但请记住 —— 规则永远不是结束，只是开始。',
+                                'color:#b8701a;font-style:italic;'
+                            );
+                            expectedNext = 1;
+                        }
+                        clearTimeout(sequentialTimer);
+                        sequentialTimer = setTimeout(function() {
+                            expectedNext = 1;
+                        }, 15000);
+                    }
+                }
+
+                // Listen for storage changes (from other tabs) or local toggles
+                var observer = new MutationObserver(function() {
+                    var confirmed = getConfirmedRules();
+                    // Check if the latest confirmed rule matches our sequence
+                    if (confirmed.length > 0) {
+                        var lastConfirmed = confirmed[confirmed.length - 1];
+                        checkSequential(lastConfirmed);
+                    }
+                });
+
+                // Observe the counter for changes
+                if (confirmedCountSpan) {
+                    observer.observe(confirmedCountSpan, {
+                        characterData: true,
+                        subtree: true
+                    });
+                }
+
+                // Also hook into the toggle for sequence detection
+                var origToggle = toggleRule;
+                // We wrap by redefining toggleRule
+            })();
+
+            // ============================================================
+            // PERIODIC CHECK: every 30 seconds, verify localStorage is
+            // in sync with DOM. This handles edge cases.
+            // ============================================================
+            setInterval(function() {
+                applyConfirmedStates();
+                updateCounter();
+            }, 30000);
+
+            console.log(
+                '%c夜色公寓 %c住户守则系统已加载 %c// Nightfall Apartments Resident Rules System v1.0',
+                'color:#ff2020;font-weight:bold;',
+                'color:#c8c0b8;',
+                'color:#706860;'
+            );
+            console.log(
+                '%c共33条规则。点击卡片进行确认。祝您好运。',
+                'color:#706860;font-style:italic;'
+            );
+
+        })();
+    </script>
+
+</body>
+</html>
