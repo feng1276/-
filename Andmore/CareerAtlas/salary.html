@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>薪资排行榜 · 世界职业百科</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deep: #060b14;
+            --bg-primary: #0b1120;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --glass-bg: rgba(15, 23, 42, 0.55);
+            --glass-border: rgba(56, 189, 248, 0.18);
+            --glass-border-strong: rgba(56, 189, 248, 0.35);
+            --accent: #38bdf8;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(56, 189, 248, 0.45);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --gold: #f59e0b;
+            --silver: #94a3b8;
+            --bronze: #d97706;
+            --border-radius-lg: 1.75rem;
+            --border-radius-md: 1.25rem;
+            --border-radius-sm: 0.85rem;
+            --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --font-primary: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body.light-mode {
+            --bg-deep: #f1f5f9;
+            --bg-primary: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(56, 189, 248, 0.35);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --accent: #0284c7;
+            --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 30% 10%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 50%, rgba(129, 140, 248, 0.04) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.5s, color 0.4s;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 4rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .navbar {
+            position: sticky;
+            top: 12px;
+            margin: 12px 24px;
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3.5rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-weight: 800;
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.3rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+            border-radius: 2.5rem;
+            padding: 0.5rem 1.2rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1rem;
+        }
+        .page-header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(180deg, #fff, #fde68a, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: goldShimmer 3s ease-in-out infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes goldShimmer {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 0.8rem 1.8rem;
+            border-radius: 3rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            backdrop-filter: blur(10px);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 25px var(--accent-glow);
+        }
+        .tab-btn:hover:not(.active) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .ranking-section {
+            display: none;
+        }
+        .ranking-section.active {
+            display: block;
+        }
+
+        .rank-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.3rem 1.8rem;
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+        }
+        .rank-item:hover {
+            transform: translateX(8px);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        .rank-number {
+            font-size: 2rem;
+            font-weight: 900;
+            min-width: 50px;
+            text-align: center;
+        }
+        .rank-1 {
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+        }
+        .rank-2 {
+            color: var(--silver);
+            text-shadow: 0 0 15px rgba(148, 163, 184, 0.5);
+        }
+        .rank-3 {
+            color: var(--bronze);
+            text-shadow: 0 0 12px rgba(217, 119, 6, 0.5);
+        }
+        .rank-info {
+            flex: 1;
+        }
+        .rank-info h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .rank-info .industry-tag {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .rank-salary {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--success);
+            white-space: nowrap;
+        }
+        .rank-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-hot {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.4);
+        }
+        .badge-stable {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.4);
+        }
+        .badge-future {
+            background: rgba(129, 140, 248, 0.2);
+            color: #818cf8;
+            border: 1px solid rgba(129, 140, 248, 0.4);
+        }
+
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .chart-box {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.8rem;
+        }
+        .chart-box h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .rank-item {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        /* ===== EXPANSION: Currency Converter ===== */
+        .currency-toggle-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.5rem 0 1.5rem;
+            flex-wrap: wrap;
+        }
+        .currency-toggle-bar span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .currency-switch {
+            position: relative;
+            display: inline-block;
+            width: 64px;
+            height: 32px;
+        }
+        .currency-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .currency-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            border-radius: 32px;
+            transition: 0.3s;
+            border: 1px solid var(--glass-border-strong);
+        }
+        .currency-slider:before {
+            position: absolute;
+            content: "¥";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #0f172a;
+            height: 26px;
+            width: 26px;
+            left: 3px;
+            bottom: 2px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .currency-switch input:checked + .currency-slider:before {
+            content: "$";
+            color: #0f172a;
+            transform: translateX(30px);
+        }
+        .currency-rate-note {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 0.3rem;
+        }
+
+        /* ===== EXPANSION: Salary Calculator ===== */
+        .calculator-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+        }
+        .calculator-section h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .calculator-section .calc-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 1.8rem;
+            font-size: 0.9rem;
+        }
+        .calc-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+        .calc-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .calc-field select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border-strong);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: var(--font-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2338bdf8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+        .calc-field select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 18px var(--accent-glow);
+        }
+        .calc-field select option {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .calc-btn {
+            grid-column: 1 / -1;
+            padding: 0.85rem 2.5rem;
+            border-radius: 3rem;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            color: white;
+            border: none;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: var(--font-primary);
+            justify-self: center;
+            min-width: 200px;
+        }
+        .calc-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+        .calc-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Calculator Result Card */
+        .calc-result {
+            display: none;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(129, 140, 248, 0.12));
+            border: 1px solid var(--glass-border-strong);
+            border-radius: var(--border-radius-md);
+            padding: 1.8rem;
+            margin-top: 1.5rem;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        .calc-result.show {
+            display: block;
+        }
+        .calc-result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .calc-result-card {
+            text-align: center;
+            padding: 1.2rem;
+            background: var(--bg-card);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--glass-border);
+        }
+        .calc-result-card .val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+        .calc-result-card .lbl {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+        .calc-result-card.highlight .val {
+            color: var(--gold);
+            text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+
+        /* ===== EXPANSION: City/Region Comparison ===== */
+        .city-compare-section {
+            display: none;
+        }
+        .city-compare-section.active {
+            display: block;
+        }
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .city-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+        }
+        .city-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 25px var(--accent-glow);
+            transform: translateY(-4px);
+        }
+        .city-card .city-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+        }
+        .city-card .city-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.6rem;
+        }
+        .city-card .city-salary {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+        .city-card .city-tier {
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .tier-1 {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--gold);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+        .tier-2 {
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+        .tier-3 {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--silver);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+        .city-cost-index {
+            margin-top: 0.6rem;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .city-cost-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+            transition: width 0.5s ease;
+        }
+
+        /* ===== EXPANSION: Salary Breakdown Chart ===== */
+        .breakdown-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.8rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        .breakdown-section h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .breakdown-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        .breakdown-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+        .breakdown-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .breakdown-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        /* ===== EXPANSION: Career Growth Timeline ===== */
+        .growth-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+        }
+        .growth-section h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .growth-timeline {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .growth-stage {
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+            padding: 1.2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-smooth);
+        }
+        .growth-stage:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .growth-stage .stage-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .growth-stage .stage-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .growth-stage .stage-years {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .growth-stage .stage-salary {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+        .growth-stage .stage-growth {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ===== EXPANSION: Total Compensation Card ===== */
+        .compensation-card {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.1));
+            border: 1px solid var(--glass-border-strong);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .compensation-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+            animation: compGlow 6s linear infinite;
+        }
+        @keyframes compGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .compensation-card h3 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .comp-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        .comp-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        .comp-item .comp-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+        .comp-item .comp-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* ===== EXPANSION: Industry Highlights ===== */
+        .industry-highlight-section {
+            margin-bottom: 2rem;
+        }
+        .industry-highlight-section h3 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--gold), var(--warning));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .industry-highlight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+        .industry-highlight-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.4rem;
+            transition: all var(--transition-smooth);
+        }
+        .industry-highlight-card:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
+            transform: translateY(-3px);
+        }
+        .industry-highlight-card .ind-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .industry-highlight-card .ind-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .industry-highlight-card .ind-top-role {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+        .industry-highlight-card .ind-avg {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--gold);
+            margin-top: 0.5rem;
+        }
+
+        /* ===== EXPANSION: Negotiation Tips ===== */
+        .negotiation-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .negotiation-section h3 {
+            text-align: center;
+            font-size: 1.4rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+        .tip-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+        .tip-card {
+            padding: 1.2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-smooth);
+        }
+        .tip-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 18px var(--accent-glow);
+        }
+        .tip-card .tip-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 0.7rem;
+        }
+        .tip-card .tip-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+        .tip-card .tip-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .chart-row {
+                grid-template-columns: 1fr;
+            }
+            .rank-item {
+                flex-wrap: wrap;
+            }
+            .breakdown-row {
+                grid-template-columns: 1fr;
+            }
+            .growth-timeline {
+                flex-direction: column;
+            }
+            .calc-form {
+                grid-template-columns: 1fr;
+            }
+            .city-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                margin: 8px 12px;
+                padding: 0.6rem 1rem;
+                border-radius: 2rem;
+            }
+            .nav-links {
+                gap: 0.6rem;
+            }
+            .nav-links a {
+                font-size: 0.72rem;
+            }
+            .tab-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='home.html'">🌍 CareerAtlas</div>
+        <ul class="nav-links">
+            <li><a href="home.html">首页</a></li>
+            <li><a href="careers.html">职业大全</a></li>
+            <li><a href="detail.html">职业详情</a></li>
+            <li><a href="compare.html">职业对比</a></li>
+            <li><a href="test.html">职业测试</a></li>
+            <li><a href="salary.html" style="color:var(--accent);">薪资排行</a></li>
+            <li><a href="trend.html">职业趋势</a></li>
+            <li><a href="industry.html">行业中心</a></li>
+        </ul>
+        <button class="theme-toggle" id="themeToggle">🌙 夜间模式</button>
+    </nav>
+
+    <div class="page-header">
+        <h1>💰 全球薪资排行榜</h1>
+        <p style="color:var(--text-secondary); margin-top:0.5rem;">数据基于全球主要市场调研 · 仅供参考</p>
+    </div>
+
+    <!-- Currency Converter Toggle -->
+    <div class="container">
+        <div class="currency-toggle-bar">
+            <span>CNY ¥</span>
+            <label class="currency-switch">
+                <input type="checkbox" id="currencyToggle">
+                <span class="currency-slider"></span>
+            </label>
+            <span>USD $</span>
+        </div>
+        <div class="currency-rate-note">参考汇率: 1 USD ≈ 7.2 CNY（实际薪资换算为近似值）</div>
+    </div>
+
+    <!-- Salary Calculator -->
+    <div class="container">
+        <div class="calculator-section">
+            <h2>🧮 薪资估算器</h2>
+            <p class="calc-subtitle">根据职业、经验和城市，智能估算你的市场薪资水平</p>
+            <div class="calc-form">
+                <div class="calc-field">
+                    <label>选择职业方向</label>
+                    <select id="calcCareer">
+                        <option value="">-- 选择职业 --</option>
+                        <option value="ai-researcher">AI研究科学家</option>
+                        <option value="neurosurgeon">神经外科医生</option>
+                        <option value="investment-banker">投资银行家</option>
+                        <option value="ceo">企业高管</option>
+                        <option value="law-partner">资深律师/合伙人</option>
+                        <option value="data-scientist">数据科学家</option>
+                        <option value="pilot">飞行员(国际航线)</option>
+                        <option value="software-architect">软件架构师</option>
+                        <option value="fintech-risk">金融风控专家</option>
+                        <option value="cloud-architect">云架构师</option>
+                        <option value="ml-engineer">AI/机器学习工程师</option>
+                        <option value="security-expert">网络安全专家</option>
+                        <option value="renewable-engineer">可再生能源工程师</option>
+                        <option value="blockchain-dev">区块链开发</option>
+                        <option value="doctor">医生(全科)</option>
+                        <option value="accountant">会计师</option>
+                        <option value="civil-servant">公务员/行政</option>
+                        <option value="electrical-engineer">电气工程师</option>
+                        <option value="judge">法官</option>
+                        <option value="quant-trader">量化交易员</option>
+                        <option value="product-manager">产品经理</option>
+                        <option value="ux-designer">UX体验设计师</option>
+                        <option value="devops-engineer">DevOps工程师</option>
+                        <option value="biotech-researcher">生物技术研究员</option>
+                        <option value="supply-chain">供应链管理</option>
+                    </select>
+                </div>
+                <div class="calc-field">
+                    <label>经验级别</label>
+                    <select id="calcExperience">
+                        <option value="">-- 选择经验 --</option>
+                        <option value="junior">初级 (1-3年)</option>
+                        <option value="mid">中级 (4-7年)</option>
+                        <option value="senior">高级 (8-12年)</option>
+                        <option value="lead">Lead/管理 (12+年)</option>
+                    </select>
+                </div>
+                <div class="calc-field">
+                    <label>城市级别</label>
+                    <select id="calcCity">
+                        <option value="">-- 选择城市 --</option>
+                        <option value="tier1">一线城市 (北京/上海/深圳)</option>
+                        <option value="tier2">新一线/二线 (杭州/成都/武汉)</option>
+                        <option value="tier3">三四线城市</option>
+                    </select>
+                </div>
+                <button class="calc-btn" id="calcBtn">📊 计算预估薪资</button>
+            </div>
+            <div class="calc-result" id="calcResult">
+                <div class="calc-result-grid">
+                    <div class="calc-result-card">
+                        <div class="val" id="resultBase">--</div>
+                        <div class="lbl">预估基础年薪</div>
+                    </div>
+                    <div class="calc-result-card">
+                        <div class="val" id="resultRangeLow">--</div>
+                        <div class="lbl">行业低位区间</div>
+                    </div>
+                    <div class="calc-result-card highlight">
+                        <div class="val" id="resultRangeHigh">--</div>
+                        <div class="lbl">行业高位区间</div>
+                    </div>
+                    <div class="calc-result-card">
+                        <div class="val" id="resultTotal">--</div>
+                        <div class="lbl">总薪酬(含福利)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation (expanded) -->
+    <div class="container">
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="high-salary">🔥 TOP15 高薪职业</button>
+            <button class="tab-btn" data-tab="stable">🛡️ TOP15 稳定职业</button>
+            <button class="tab-btn" data-tab="future">🚀 TOP15 未来热门</button>
+            <button class="tab-btn" data-tab="city-compare">🏙️ 城市/地区对比</button>
+        </div>
+
+        <!-- High Salary Rankings -->
+        <div class="ranking-section active" id="high-salary">
+            <div class="rank-list" id="highSalaryList"></div>
+        </div>
+
+        <!-- Stable Careers Rankings -->
+        <div class="ranking-section" id="stable">
+            <div class="rank-list" id="stableList"></div>
+        </div>
+
+        <!-- Future Hot Careers Rankings -->
+        <div class="ranking-section" id="future">
+            <div class="rank-list" id="futureList"></div>
+        </div>
+
+        <!-- City/Region Comparison -->
+        <div class="ranking-section" id="city-compare">
+            <div class="city-grid" id="cityGrid"></div>
+            <div class="chart-box" style="margin-top:2rem;">
+                <h3>📊 各城市平均薪资对比 (年薪/万元)</h3>
+                <canvas id="citySalaryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Salary Breakdown Pie Chart -->
+    <div class="container">
+        <div class="breakdown-section">
+            <h3>💼 薪酬结构拆解 (以高级岗位为参考)</h3>
+            <div class="breakdown-row">
+                <div style="max-height:300px;">
+                    <canvas id="salaryBreakdownChart" height="260"></canvas>
+                </div>
+                <div class="breakdown-legend" id="breakdownLegend"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Career Salary Growth Over Time -->
+    <div class="container">
+        <div class="growth-section">
+            <h3>📈 职业生涯薪资增长模型</h3>
+            <div class="growth-timeline" id="growthTimeline"></div>
+            <div style="margin-top:1.5rem;">
+                <canvas id="growthLineChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Compensation Estimates -->
+    <div class="container">
+        <div class="compensation-card">
+            <h3>💎 总薪酬估算 (Total Compensation)</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1.2rem;position:relative;z-index:1;font-size:0.9rem;">
+                基于典型科技行业高级岗位 · 包含股权/期权价值估算
+            </p>
+            <div class="comp-row" id="compRow"></div>
+        </div>
+    </div>
+
+    <!-- Charts Row (preserved) -->
+    <div class="container">
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>📊 各行业平均薪资对比</h3>
+                <canvas id="industrySalaryChart" height="250"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>📈 薪资增长趋势</h3>
+                <canvas id="salaryTrendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Highest Paying by Industry -->
+    <div class="container">
+        <div class="industry-highlight-section">
+            <h3>🏆 各行业最高薪酬岗位</h3>
+            <div class="industry-highlight-grid" id="industryHighlightGrid"></div>
+        </div>
+    </div>
+
+    <!-- Salary Negotiation Tips -->
+    <div class="container">
+        <div class="negotiation-section">
+            <h3>🎯 薪资谈判技巧与建议</h3>
+            <div class="tip-list" id="tipList"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ===== Theme Toggle (preserved) =====
+            const savedTheme = localStorage.getItem('careerAtlasTheme');
+            if (savedTheme === 'light') document.body.classList.add('light-mode');
+            document.getElementById('themeToggle').addEventListener('click', function() {
+                document.body.classList.toggle('light-mode');
+                localStorage.setItem('careerAtlasTheme', document.body.classList.contains('light-mode') ?
+                    'light' : 'dark');
+                this.textContent = document.body.classList.contains('light-mode') ? '☀️ 日间模式' :
+                    '🌙 夜间模式';
+            });
+
+            // ===== Currency Toggle =====
+            const CNY_RATE = 7.2;
+            let isUSD = false;
+            const currencyToggle = document.getElementById('currencyToggle');
+            const currencyRateNote = document.querySelector('.currency-rate-note');
+
+            function formatSalary(val, forceCNY) {
+                if ((isUSD || forceCNY === 'force-usd') && forceCNY !== 'force-cny') {
+                    const usdVal = (val / CNY_RATE).toFixed(1);
+                    return '$' + usdVal + '万/年';
+                }
+                return '¥' + val + '万/年';
+            }
+
+            function formatSalaryShort(val) {
+                if (isUSD) {
+                    return '$' + (val / CNY_RATE).toFixed(1) + '万';
+                }
+                return '¥' + val + '万';
+            }
+
+            currencyToggle.addEventListener('change', function() {
+                isUSD = this.checked;
+                currencyRateNote.textContent = isUSD ?
+                    '参考汇率: 1 USD ≈ 7.2 CNY（已切换为美元显示）' :
+                    '参考汇率: 1 USD ≈ 7.2 CNY（实际薪资换算为近似值）';
+                refreshAllSalaryDisplays();
+            });
+
+            function refreshAllSalaryDisplays() {
+                renderRankList('highSalaryList', highSalaryCareers);
+                renderRankList('stableList', stableCareers);
+                renderRankList('futureList', futureCareers);
+                renderCityGrid();
+                renderGrowthTimeline();
+                renderCompRow();
+                renderIndustryHighlights();
+                if (document.getElementById('calcResult').classList.contains('show')) {
+                    updateCalcResultDisplay();
+                }
+            }
+
+            // ===== Extended Ranking Data (15 entries each) =====
+            const highSalaryCareers = [
+                { rank: 1, name: 'AI研究科学家', industry: '科技', salary: 120, badge: 'hot',
+                    badgeText: '🔥 极度热门', growth: '+35%' },
+                { rank: 2, name: '神经外科医生', industry: '医疗', salary: 100, badge: 'stable',
+                    badgeText: '🛡️ 高度稳定', growth: '+12%' },
+                { rank: 3, name: '投资银行家', industry: '金融', salary: 95, badge: 'hot',
+                    badgeText: '🔥 热门', growth: '+18%' },
+                { rank: 4, name: '企业高管(CEO)', industry: '综合', salary: 90, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+20%' },
+                { rank: 5, name: '资深律师/合伙人', industry: '法律', salary: 85, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+10%' },
+                { rank: 6, name: '数据科学家', industry: '科技', salary: 75, badge: 'future',
+                    badgeText: '🚀 未来热门', growth: '+28%' },
+                { rank: 7, name: '飞行员(国际航线)', industry: '航空', salary: 70, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+8%' },
+                { rank: 8, name: '软件架构师', industry: '科技', salary: 65, badge: 'hot',
+                    badgeText: '🔥 热门', growth: '+22%' },
+                { rank: 9, name: '金融风控专家', industry: '金融', salary: 60, badge: 'future',
+                    badgeText: '🚀 未来热门', growth: '+25%' },
+                { rank: 10, name: '云架构师', industry: '科技', salary: 58, badge: 'future',
+                    badgeText: '🚀 未来热门', growth: '+30%' },
+                { rank: 11, name: '量化交易员', industry: '金融', salary: 55, badge: 'hot',
+                    badgeText: '🔥 热门', growth: '+32%' },
+                { rank: 12, name: '产品总监', industry: '科技', salary: 52, badge: 'hot',
+                    badgeText: '🔥 热门', growth: '+20%' },
+                { rank: 13, name: '麻醉师', industry: '医疗', salary: 48, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+7%' },
+                { rank: 14, name: '半导体工程师', industry: '制造', salary: 46, badge: 'future',
+                    badgeText: '🚀 增长中', growth: '+26%' },
+                { rank: 15, name: '网络安全架构师', industry: '科技', salary: 44, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+33%' },
+            ];
+
+            const stableCareers = [
+                { rank: 1, name: '医生(全科)', industry: '医疗', salary: 55, badge: 'stable',
+                    badgeText: '🛡️ 极度稳定', growth: '+6%' },
+                { rank: 2, name: '公务员/行政', industry: '公务', salary: 20, badge: 'stable',
+                    badgeText: '🛡️ 极度稳定', growth: '+3%' },
+                { rank: 3, name: '教师(公立)', industry: '教育', salary: 15, badge: 'stable',
+                    badgeText: '🛡️ 极度稳定', growth: '+4%' },
+                { rank: 4, name: '护士', industry: '医疗', salary: 18, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+5%' },
+                { rank: 5, name: '会计师', industry: '金融', salary: 25, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+7%' },
+                { rank: 6, name: '电气工程师', industry: '工程', salary: 28, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+8%' },
+                { rank: 7, name: '药剂师', industry: '医疗', salary: 22, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+5%' },
+                { rank: 8, name: '法官', industry: '法律', salary: 40, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+4%' },
+                { rank: 9, name: '兽医', industry: '医疗', salary: 20, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+6%' },
+                { rank: 10, name: '图书管理员', industry: '教育', salary: 10, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+2%' },
+                { rank: 11, name: '人力资源总监', industry: '综合', salary: 30, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+5%' },
+                { rank: 12, name: '建筑工程师', industry: '工程', salary: 26, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+6%' },
+                { rank: 13, name: '食品质检员', industry: '食品', salary: 12, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+3%' },
+                { rank: 14, name: '物流经理', industry: '物流', salary: 22, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+7%' },
+                { rank: 15, name: '环境监测员', industry: '环保', salary: 14, badge: 'stable',
+                    badgeText: '🛡️ 稳定', growth: '+8%' },
+            ];
+
+            const futureCareers = [
+                { rank: 1, name: 'AI/机器学习工程师', industry: '科技', salary: 80, badge: 'future',
+                    badgeText: '🚀 极高增长', growth: '+45%' },
+                { rank: 2, name: '网络安全专家', industry: '科技', salary: 65, badge: 'future',
+                    badgeText: '🚀 极高增长', growth: '+40%' },
+                { rank: 3, name: '可再生能源工程师', industry: '工程', salary: 50, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+38%' },
+                { rank: 4, name: '基因咨询师', industry: '医疗', salary: 45, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+35%' },
+                { rank: 5, name: '元宇宙架构师', industry: '科技', salary: 70, badge: 'future',
+                    badgeText: '🚀 新兴领域', growth: '+50%' },
+                { rank: 6, name: '数据隐私官', industry: '科技', salary: 55, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+30%' },
+                { rank: 7, name: '机器人工程师', industry: '工程', salary: 60, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+42%' },
+                { rank: 8, name: '健康管理师', industry: '医疗', salary: 35, badge: 'future',
+                    badgeText: '🚀 增长中', growth: '+28%' },
+                { rank: 9, name: '区块链开发', industry: '科技', salary: 55, badge: 'future',
+                    badgeText: '🚀 新兴领域', growth: '+36%' },
+                { rank: 10, name: '远程协作顾问', industry: '综合', salary: 30, badge: 'future',
+                    badgeText: '🚀 新兴领域', growth: '+25%' },
+                { rank: 11, name: '生物技术研究员', industry: '医疗', salary: 42, badge: 'future',
+                    badgeText: '🚀 高增长', growth: '+32%' },
+                { rank: 12, name: '自动驾驶工程师', industry: '科技', salary: 68, badge: 'future',
+                    badgeText: '🚀 极高增长', growth: '+48%' },
+                { rank: 13, name: '量子计算研究员', industry: '科技', salary: 72, badge: 'future',
+                    badgeText: '🚀 前沿领域', growth: '+55%' },
+                { rank: 14, name: 'ESG分析师', industry: '金融', salary: 38, badge: 'future',
+                    badgeText: '🚀 新兴领域', growth: '+30%' },
+                { rank: 15, name: '碳交易经理', industry: '环保', salary: 33, badge: 'future',
+                    badgeText: '🚀 新兴领域', growth: '+40%' },
+            ];
+
+            // ===== City Data =====
+            const cityData = [
+                { name: '北京', tier: 'tier-1', tierLabel: '一线', avgSalary: 38, costIndex: 92,
+                    topIndustry: '科技/互联网', highlight: 'AI/算法岗平均可达65万+' },
+                { name: '上海', tier: 'tier-1', tierLabel: '一线', avgSalary: 36, costIndex: 90,
+                    topIndustry: '金融/科技', highlight: '金融科技岗平均可达60万+' },
+                { name: '深圳', tier: 'tier-1', tierLabel: '一线', avgSalary: 37, costIndex: 85,
+                    topIndustry: '硬件/科技', highlight: '硬件工程师平均可达45万+' },
+                { name: '广州', tier: 'tier-1', tierLabel: '一线', avgSalary: 28, costIndex: 75,
+                    topIndustry: '贸易/制造', highlight: '外贸经理平均可达30万+' },
+                { name: '杭州', tier: 'tier-2', tierLabel: '新一线', avgSalary: 30, costIndex: 70,
+                    topIndustry: '电商/互联网', highlight: '阿里系薪资推动整体水平' },
+                { name: '成都', tier: 'tier-2', tierLabel: '新一线', avgSalary: 22, costIndex: 55,
+                    topIndustry: '游戏/IT', highlight: '游戏开发岗平均可达35万+' },
+                { name: '武汉', tier: 'tier-2', tierLabel: '新一线', avgSalary: 20, costIndex: 52,
+                    topIndustry: '光电/汽车', highlight: '自动驾驶岗增长迅速' },
+                { name: '南京', tier: 'tier-2', tierLabel: '新一线', avgSalary: 24, costIndex: 65,
+                    topIndustry: '软件/教育', highlight: '软件外包薪资较稳定' },
+                { name: '苏州', tier: 'tier-2', tierLabel: '新一线', avgSalary: 23, costIndex: 58,
+                    topIndustry: '制造/纳米', highlight: '外企制造管理岗薪资高' },
+                { name: '远程/全国', tier: 'tier-2', tierLabel: '远程', avgSalary: 25, costIndex: 40,
+                    topIndustry: 'SaaS/开源', highlight: '海外远程岗位可达50万+' },
+                { name: '重庆', tier: 'tier-2', tierLabel: '新一线', avgSalary: 19, costIndex: 48,
+                    topIndustry: '汽车/电子', highlight: '新能源汽车行业薪资看涨' },
+                { name: '长沙', tier: 'tier-3', tierLabel: '二线', avgSalary: 16, costIndex: 42,
+                    topIndustry: '文创/工程机械', highlight: '生活成本低性价比高' },
+                { name: '合肥', tier: 'tier-3', tierLabel: '二线', avgSalary: 17, costIndex: 40,
+                    topIndustry: '半导体/家电', highlight: '芯片产业推动薪资提升' },
+                { name: '西安', tier: 'tier-3', tierLabel: '二线', avgSalary: 15, costIndex: 38,
+                    topIndustry: '航天/IT外包', highlight: '军工航天体系稳定' },
+                { name: '昆明', tier: 'tier-3', tierLabel: '二线', avgSalary: 13, costIndex: 35,
+                    topIndustry: '旅游/生物医药', highlight: '生活节奏舒适性价比高' },
+            ];
+
+            // ===== Helper: get rank class =====
+            function getRankClass(rank) {
+                if (rank === 1) return 'rank-1';
+                if (rank === 2) return 'rank-2';
+                if (rank === 3) return 'rank-3';
+                return '';
+            }
+
+            function getRankEmoji(rank) {
+                if (rank === 1) return '🥇';
+                if (rank === 2) return '🥈';
+                if (rank === 3) return '🥉';
+                return '#' + rank;
+            }
+
+            // ===== Render rank lists (preserved logic, expanded data) =====
+            function renderRankList(containerId, data) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = data.map((item, i) => `
+              <div class="rank-item" style="animation-delay:${i * 0.05}s;" onclick="window.location.href='detail.html?id=${item.rank}'">
+                <div class="rank-number ${getRankClass(item.rank)}">${getRankEmoji(item.rank)}</div>
+                <div class="rank-info">
+                  <h3>${item.name}</h3>
+                  <span class="industry-tag">${item.industry}  · 年增长 ${item.growth}</span>
+                  <span class="rank-badge badge-${item.badge}">${item.badgeText}</span>
+                </div>
+                <div class="rank-salary">💰 ${formatSalaryShort(item.salary)}/年</div>
+              </div>
+            `).join('');
+            }
+
+            renderRankList('highSalaryList', highSalaryCareers);
+            renderRankList('stableList', stableCareers);
+            renderRankList('futureList', futureCareers);
+
+            // ===== Render City Grid =====
+            function renderCityGrid() {
+                const container = document.getElementById('cityGrid');
+                if (!container) return;
+                container.innerHTML = cityData.map(c => `
+                    <div class="city-card">
+                        <div class="city-name">🏙️ ${c.name} <span class="city-tier ${c.tier}">${c.tierLabel}</span></div>
+                        <div class="city-meta">
+                            <span>主导行业: ${c.topIndustry}</span>
+                        </div>
+                        <div class="city-salary">${formatSalaryShort(c.avgSalary)}/年</div>
+                        <div style="color:var(--text-muted);font-size:0.8rem;margin-top:0.3rem;">${c.highlight}</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.6rem;">
+                            <span style="font-size:0.75rem;color:var(--text-muted);">生活成本指数</span>
+                            <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);">${c.costIndex}/100</span>
+                        </div>
+                        <div class="city-cost-index">
+                            <div class="city-cost-fill" style="width:${c.costIndex}%;"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderCityGrid();
+
+            // ===== Tab Switching (preserved logic + city tab) =====
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove(
+                        'active'));
+                    document.querySelectorAll('.ranking-section').forEach(s => s.classList
+                        .remove('active'));
+                    this.classList.add('active');
+                    const tabId = this.dataset.tab;
+                    const target = document.getElementById(tabId);
+                    if (target) target.classList.add('active');
+
+                    // Init city chart when city tab is activated
+                    if (tabId === 'city-compare' && !window._cityChartInited) {
+                        initCityChart();
+                        window._cityChartInited = true;
+                    }
+                });
+            });
+
+            // ===== Preserved Charts: Industry Salary + Salary Trend =====
+            const ctx1 = document.getElementById('industrySalaryChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['科技', '医疗', '金融', '法律', '工程', '航空', '教育', '创意'],
+                    datasets: [{
+                        label: '平均年薪(万)',
+                        data: [65, 55, 60, 50, 40, 55, 18, 28],
+                        backgroundColor: 'rgba(56,189,248,0.5)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                    scales: {
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(56,189,248,0.1)' } },
+                        x: { ticks: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('salaryTrendChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+                    datasets: [
+                        { label: '科技行业', data: [40, 45, 50, 55, 60, 65], borderColor: '#38bdf8',
+                            tension: 0.4, fill: false },
+                        { label: '医疗行业', data: [38, 40, 43, 48, 52, 55], borderColor: '#34d399',
+                            tension: 0.4, fill: false },
+                        { label: '金融行业', data: [42, 44, 47, 50, 55, 60], borderColor: '#fbbf24',
+                            tension: 0.4, fill: false },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                    scales: {
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(56,189,248,0.1)' } },
+                        x: { ticks: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+
+            // ===== City Salary Chart (lazy init) =====
+            function initCityChart() {
+                const ctxCity = document.getElementById('citySalaryChart');
+                if (!ctxCity) return;
+                const cityLabels = cityData.map(c => c.name);
+                const citySalaries = cityData.map(c => c.avgSalary);
+                new Chart(ctxCity.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: cityLabels,
+                        datasets: [{
+                            label: '平均年薪(万)',
+                            data: citySalaries,
+                            backgroundColor: citySalaries.map(s => s >= 30 ?
+                                'rgba(56,189,248,0.6)' : s >= 20 ?
+                                'rgba(129,140,248,0.5)' : 'rgba(148,163,184,0.4)'
+                            ),
+                            borderColor: '#38bdf8',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        indexAxis: 'y',
+                        plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(56,189,248,0.1)' } },
+                            y: { ticks: { color: '#e2e8f0' } }
+                        }
+                    }
+                });
+            }
+
+            // ===== Salary Breakdown Doughnut Chart =====
+            function initBreakdownChart() {
+                const ctx = document.getElementById('salaryBreakdownChart');
+                if (!ctx) return;
+                const breakdownData = {
+                    labels: ['基础工资', '年终奖金', '股权/期权', '五险一金福利', '补贴及其他'],
+                    datasets: [{
+                        data: [55, 15, 18, 8, 4],
+                        backgroundColor: [
+                            'rgba(56,189,248,0.8)',
+                            'rgba(251,191,36,0.7)',
+                            'rgba(129,140,248,0.7)',
+                            'rgba(52,211,153,0.7)',
+                            'rgba(245,158,11,0.6)',
+                        ],
+                        borderColor: 'rgba(15,23,42,0.8)',
+                        borderWidth: 2,
+                        hoverBorderColor: 'rgba(56,189,248,0.8)',
+                    }]
+                };
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: breakdownData,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                        },
+                        cutout: '60%',
+                    }
+                });
+
+                // Populate legend
+                const legendContainer = document.getElementById('breakdownLegend');
+                if (legendContainer) {
+                    const legendItems = [
+                        { color: 'rgba(56,189,248,0.8)', label: '基础工资 (55%)', desc: '月薪*12或13个月' },
+                        { color: 'rgba(251,191,36,0.7)', label: '年终奖金 (15%)', desc: '通常1-6个月工资' },
+                        { color: 'rgba(129,140,248,0.7)', label: '股权/期权 (18%)', desc: 'RSU/期权价值平摊' },
+                        { color: 'rgba(52,211,153,0.7)', label: '五险一金福利 (8%)', desc: '企业缴纳部分' },
+                        { color: 'rgba(245,158,11,0.6)', label: '补贴及其他 (4%)', desc: '餐补/交通/教育补贴' },
+                    ];
+                    legendContainer.innerHTML = legendItems.map(item => `
+                        <div class="breakdown-legend-item">
+                            <div class="breakdown-dot" style="background:${item.color};"></div>
+                            <div><strong>${item.label}</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">${item.desc}</span></div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            initBreakdownChart();
+
+            // ===== Career Growth Timeline =====
+            const growthStages = [
+                { icon: '🎓', name: '初级/应届', years: '0-2年', salary: 12, growth: '--', pct: 1.0 },
+                { icon: '📈', name: '成长期', years: '3-5年', salary: 22, growth: '+83%', pct: 1.0 },
+                { icon: '⚡', name: '高级/资深', years: '6-9年', salary: 40, growth: '+82%', pct: 1.0 },
+                { icon: '🎯', name: '专家/Lead', years: '10-14年', salary: 60, growth: '+50%', pct: 1.0 },
+                { icon: '👑', name: '总监/VP', years: '15-20年', salary: 85, growth: '+42%', pct: 1.0 },
+                { icon: '🏛️', name: '高管/C-level', years: '20+年', salary: 120, growth: '+41%', pct: 1.0 },
+            ];
+
+            function renderGrowthTimeline() {
+                const container = document.getElementById('growthTimeline');
+                if (!container) return;
+                container.innerHTML = growthStages.map(s => `
+                    <div class="growth-stage">
+                        <div class="stage-icon">${s.icon}</div>
+                        <div class="stage-name">${s.name}</div>
+                        <div class="stage-years">${s.years}</div>
+                        <div class="stage-salary">${formatSalaryShort(s.salary)}</div>
+                        <div class="stage-growth">${s.growth}</div>
+                    </div>
+                `).join('');
+            }
+
+            renderGrowthTimeline();
+
+            // Growth line chart
+            const ctxGrowth = document.getElementById('growthLineChart');
+            if (ctxGrowth) {
+                new Chart(ctxGrowth.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: growthStages.map(s => s.name),
+                        datasets: [
+                            { label: '科技行业', data: [15, 28, 48, 75, 100, 140], borderColor: '#38bdf8',
+                                tension: 0.4, fill: true,
+                                backgroundColor: 'rgba(56,189,248,0.08)', borderWidth: 2 },
+                            { label: '金融行业', data: [14, 26, 45, 70, 95, 130], borderColor: '#fbbf24',
+                                tension: 0.4, fill: true,
+                                backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 2 },
+                            { label: '医疗行业', data: [10, 20, 35, 55, 75, 100], borderColor: '#34d399',
+                                tension: 0.4, fill: true,
+                                backgroundColor: 'rgba(52,211,153,0.06)', borderWidth: 2 },
+                            { label: '综合行业', data: [8, 15, 25, 38, 50, 65], borderColor: '#818cf8',
+                                tension: 0.4, fill: true,
+                                backgroundColor: 'rgba(129,140,248,0.05)', borderWidth: 2 },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#e2e8f0', usePointStyle: true,
+                                    padding: 16 } } },
+                        scales: {
+                            y: { ticks: { color: '#94a3b8',
+                                    callback: v => formatSalaryShort(v) },
+                                grid: { color: 'rgba(56,189,248,0.08)' } },
+                            x: { ticks: { color: '#e2e8f0' } }
+                        }
+                    }
+                });
+            }
+
+            // ===== Total Compensation Row =====
+            const compData = [
+                { val: 65, label: '基础年薪', icon: '💵' },
+                { val: 12, label: '年度奖金', icon: '🎁' },
+                { val: 15, label: '股权价值/年', icon: '📜' },
+                { val: 8, label: '企业福利价值', icon: '🏥' },
+                { val: 3, label: '补贴与津贴', icon: '🚗' },
+                { val: 103, label: '总薪酬(TC)', icon: '💎', highlight: true },
+            ];
+
+            function renderCompRow() {
+                const container = document.getElementById('compRow');
+                if (!container) return;
+                container.innerHTML = compData.map(c => `
+                    <div class="comp-item">
+                        <div class="comp-val" style="${c.highlight ? 'color:var(--gold);text-shadow:0 0 18px rgba(245,158,11,0.5);font-size:2rem;' : ''}">
+                            ${c.highlight ? '💎 ' : ''}${formatSalaryShort(c.val)}${c.highlight ? '' : ''}
+                        </div>
+                        <div class="comp-label">${c.icon} ${c.label}</div>
+                        ${c.highlight ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">含福利+股权价值</div>' : ''}
+                    </div>
+                `).join('');
+            }
+
+            renderCompRow();
+
+            // ===== Industry Highlights =====
+            const industryHighlights = [
+                { icon: '💻', name: '科技/互联网', topRole: 'AI研究科学家', avg: 65 },
+                { icon: '🏥', name: '医疗健康', topRole: '神经外科医生', avg: 55 },
+                { icon: '🏦', name: '金融/银行', topRole: '投资银行家', avg: 60 },
+                { icon: '⚖️', name: '法律/合规', topRole: '资深合伙人律师', avg: 50 },
+                { icon: '⚡', name: '能源/环保', topRole: '可再生能源工程师', avg: 40 },
+                { icon: '✈️', name: '航空/航天', topRole: '国际航线飞行员', avg: 55 },
+                { icon: '🔬', name: '生物技术', topRole: '基因治疗研究员', avg: 42 },
+                { icon: '🎮', name: '游戏/娱乐', topRole: '技术美术总监', avg: 35 },
+            ];
+
+            function renderIndustryHighlights() {
+                const container = document.getElementById('industryHighlightGrid');
+                if (!container) return;
+                container.innerHTML = industryHighlights.map(ind => `
+                    <div class="industry-highlight-card">
+                        <div class="ind-icon">${ind.icon}</div>
+                        <div class="ind-name">${ind.name}</div>
+                        <div class="ind-top-role">最高薪酬岗位: ${ind.topRole}</div>
+                        <div class="ind-avg">平均TOP薪资: ${formatSalaryShort(ind.avg)}/年</div>
+                    </div>
+                `).join('');
+            }
+
+            renderIndustryHighlights();
+
+            // ===== Negotiation Tips =====
+            const tips = [
+                { title: '研究市场薪资水平', desc: '面试前使用本页排行榜和招聘平台(如Boss直聘、脉脉)了解目标岗位的市场中位数、25分位和75分位薪资，做到心中有数。' },
+                { title: '明确总薪酬(TC)概念', desc: '不要只看月薪，将年终奖、股权/期权、五险一金、补贴等全部纳入总薪酬计算。科技行业股权价值可能占TC的20%-40%。' },
+                { title: '让HR先出价', desc: '在薪资谈判中，尽可能让对方先给出薪资范围。如果被追问期望薪资，给出一个合理区间而非固定数字，保留谈判空间。' },
+                { title: '突出稀缺价值', desc: '强调你的独特技能组合、行业经验、项目成果等不可替代的优势。数据化你的成就(如"提升系统性能40%")比泛泛而谈更有说服力。' },
+                { title: '把握时机窗口', desc: '年度调薪窗口(通常Q1)、完成重大项目后、拿到竞品Offer时，都是谈判薪资的最佳时机。跳槽时薪资涨幅通常比内部晋升高15%-30%。' },
+                { title: '关注隐形福利', desc: '弹性工作制、远程办公、培训预算、补充商业保险、子女教育补贴等隐形福利也需纳入考量。部分企业的福利价值可达年薪的10%-15%。' },
+                { title: '做好BATNA准备', desc: '谈判前准备好最佳替代方案(BATNA)，如其他公司的Offer或留在当前岗位的选项。这让你在谈判中更有底气，不会因压力妥协。' },
+                { title: '书面确认待遇', desc: '口头承诺不够，务必在Offer Letter中明确薪资结构、绩效标准、股权行权计划、试用期薪资等关键条款，避免入职后产生纠纷。' },
+            ];
+
+            const tipContainer = document.getElementById('tipList');
+            if (tipContainer) {
+                tipContainer.innerHTML = tips.map((t, i) => `
+                    <div class="tip-card">
+                        <div class="tip-num">${i + 1}</div>
+                        <div class="tip-title">${t.title}</div>
+                        <div class="tip-desc">${t.desc}</div>
+                    </div>
+                `).join('');
+            }
+
+            // ===== Salary Calculator Logic =====
+            const careerBaseSalaries = {
+                'ai-researcher': 100,
+                'neurosurgeon': 85,
+                'investment-banker': 80,
+                'ceo': 78,
+                'law-partner': 72,
+                'data-scientist': 62,
+                'pilot': 58,
+                'software-architect': 55,
+                'fintech-risk': 50,
+                'cloud-architect': 48,
+                'ml-engineer': 68,
+                'security-expert': 55,
+                'renewable-engineer': 42,
+                'blockchain-dev': 48,
+                'doctor': 45,
+                'accountant': 22,
+                'civil-servant': 18,
+                'electrical-engineer': 25,
+                'judge': 36,
+                'quant-trader': 50,
+                'product-manager': 35,
+                'ux-designer': 28,
+                'devops-engineer': 32,
+                'biotech-researcher': 30,
+                'supply-chain': 24,
+            };
+
+            const experienceMultiplier = {
+                'junior': 0.5,
+                'mid': 0.75,
+                'senior': 1.0,
+                'lead': 1.4,
+            };
+
+            const cityMultiplier = {
+                'tier1': 1.15,
+                'tier2': 0.85,
+                'tier3': 0.65,
+            };
+
+            let lastCalcParams = null;
+
+            document.getElementById('calcBtn').addEventListener('click', function() {
+                const career = document.getElementById('calcCareer').value;
+                const experience = document.getElementById('calcExperience').value;
+                const city = document.getElementById('calcCity').value;
+
+                if (!career || !experience || !city) {
+                    alert('请完整填写职业、经验和城市信息');
+                    return;
+                }
+
+                const base = careerBaseSalaries[career] || 30;
+                const expMult = experienceMultiplier[experience] || 1.0;
+                const cityMult = cityMultiplier[city] || 1.0;
+
+                const estimated = Math.round(base * expMult * cityMult);
+                const lowRange = Math.round(estimated * 0.75);
+                const highRange = Math.round(estimated * 1.35);
+                const totalComp = Math.round(estimated * 1.25);
+
+                lastCalcParams = { estimated, lowRange, highRange, totalComp };
+
+                updateCalcResultDisplay();
+                document.getElementById('calcResult').classList.add('show');
+            });
+
+            function updateCalcResultDisplay() {
+                if (!lastCalcParams) return;
+                const { estimated, lowRange, highRange, totalComp } = lastCalcParams;
+                document.getElementById('resultBase').textContent = formatSalaryShort(estimated) + '/年';
+                document.getElementById('resultRangeLow').textContent = formatSalaryShort(lowRange) + '/年';
+                document.getElementById('resultRangeHigh').textContent = formatSalaryShort(highRange) + '/年';
+                document.getElementById('resultTotal').textContent = formatSalaryShort(totalComp) + '/年';
+            }
+
+            console.log('💰 薪资排行榜页面已加载 (扩展版)');
+        })();
+    </script>
+</body>
+</html>

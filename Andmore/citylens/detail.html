@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市详情 - CityLens</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-purple:#a855f7;--accent-red:#ff4757;--border-glow:#1e2d3d;
+            --glass-bg:rgba(21,26,40,0.85);--shadow-card:0 4px 25px rgba(0,0,0,0.6);
+            --shadow-hover:0 8px 40px rgba(74,158,255,0.2);--border-radius:10px;--transition-speed:0.3s;
+            --nav-height:72px;--max-width:1200px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#4a9eff,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;}.nav-links li a:hover{color:var(--text-highlight);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(74,158,255,0.15);background:rgba(74,158,255,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}.btn-icon:hover{background:rgba(74,158,255,0.15);border-color:var(--accent-blue);color:var(--accent-cyan);}
+        .mobile-menu-btn{display:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-cyan);}
+        .detail-hero{margin-top:var(--nav-height);height:400px;display:flex;align-items:flex-end;padding:40px;position:relative;overflow:hidden;}
+        .detail-hero-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(160deg,#0a0e17 0%,#0d1525 40%,#100d1a 100%);z-index:0;}
+        .detail-hero-glow{position:absolute;width:350px;height:350px;border-radius:50%;filter:blur(100px);z-index:0;}
+        .detail-hero-glow:nth-child(2){top:20%;left:30%;background:rgba(74,158,255,0.12);}
+        .detail-hero-glow:nth-child(3){bottom:10%;right:20%;background:rgba(168,85,247,0.08);}
+        .detail-hero-content{position:relative;z-index:2;max-width:var(--max-width);width:100%;margin:0 auto;display:flex;align-items:flex-end;gap:25px;}
+        .detail-hero-icon{font-size:6rem;}
+        .detail-hero-info h1{font-size:2.8rem;font-weight:900;color:var(--text-highlight);}
+        .detail-hero-meta{color:var(--text-secondary);font-size:0.95rem;margin-top:5px;}
+        .detail-content{max-width:var(--max-width);margin:0 auto;padding:40px 30px 70px;display:grid;grid-template-columns:1fr 340px;gap:30px;}
+        .detail-main h2{font-size:1.3rem;color:var(--accent-cyan);margin-bottom:15px;padding-bottom:8px;border-bottom:2px solid rgba(74,158,255,0.2);display:flex;align-items:center;gap:8px;}
+        .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:25px;}
+        .info-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:16px;text-align:center;transition:all var(--transition-speed);}
+        .info-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);border-color:var(--accent-cyan);}
+        .info-value{font-size:1.4rem;font-weight:900;color:var(--accent-cyan);}
+        .info-label{font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+        .index-section{margin-bottom:25px;}.index-section h3{color:var(--text-highlight);margin-bottom:12px;font-size:1rem;}
+        .index-bars{display:flex;flex-direction:column;gap:10px;}.index-bar{margin-bottom:5px;}
+        .index-bar-label{display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);margin-bottom:3px;}
+        .index-bar-track{height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;}
+        .index-bar-fill{height:100%;border-radius:3px;transition:width 1.2s ease;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+        .detail-sidebar{display:flex;flex-direction:column;gap:20px;}
+        .sidebar-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:20px;}
+        .sidebar-card h3{color:var(--accent-cyan);font-size:0.9rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-glow);}
+        .landmark-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.85rem;}.landmark-item span{font-size:1.5rem;}
+        .btn-fav{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(255,71,87,0.1);border:1px solid var(--accent-red);color:var(--accent-red);border-radius:20px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:all var(--transition-speed);}
+        .btn-fav.favorited{background:rgba(255,71,87,0.2);}.btn-fav:hover{background:var(--accent-red);color:#fff;}
+        /* NEW: Photo Gallery */
+        .photo-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-bottom:25px;}
+        .photo-card{border-radius:var(--border-radius);overflow:hidden;background:var(--bg-card);border:1px solid var(--border-glow);transition:all var(--transition-speed);}
+        .photo-card:hover{transform:scale(1.03);box-shadow:var(--shadow-hover);}
+        .photo-card img{width:100%;height:180px;object-fit:cover;display:block;}
+        .photo-card .photo-label{padding:0.6rem 1rem;font-size:0.8rem;color:var(--text-secondary);text-align:center;}
+        /* NEW: Tabs */
+        .tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+        .tab-btn{padding:8px 18px;border:1px solid var(--border-glow);background:var(--bg-card);color:var(--text-secondary);border-radius:20px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all var(--transition-speed);}
+        .tab-btn.active,.tab-btn:hover{background:var(--accent-blue);border-color:var(--accent-blue);color:#fff;}
+        .tab-content{display:none;}.tab-content.active{display:block;animation:fadeIn 0.4s ease;}
+        /* NEW: Reviews */
+        .review-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:16px;margin-bottom:12px;}
+        .review-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+        .review-stars{color:var(--accent-gold);font-size:0.9rem;}
+        .review-text{color:var(--text-secondary);font-size:0.85rem;line-height:1.6;}
+        .review-author{font-size:0.75rem;color:var(--text-secondary);margin-top:6px;}
+        /* NEW: Stats Dashboard */
+        .stats-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:25px;}
+        .stat-mini{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:14px;text-align:center;transition:all var(--transition-speed);}
+        .stat-mini:hover{transform:translateY(-2px);border-color:var(--accent-purple);}
+        .stat-mini .sm-value{font-size:1.5rem;font-weight:900;color:var(--accent-green);}
+        .stat-mini .sm-label{font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+        /* NEW: Timeline */
+        .mini-timeline{position:relative;padding-left:20px;border-left:2px solid var(--accent-purple);margin:15px 0;}
+        .mini-timeline .mt-item{position:relative;margin-bottom:12px;padding-left:16px;font-size:0.82rem;color:var(--text-secondary);}
+        .mini-timeline .mt-item::before{content:'';position:absolute;left:-27px;top:5px;width:10px;height:10px;background:var(--accent-purple);border-radius:50%;}
+        .mini-timeline .mt-year{font-weight:700;color:var(--accent-cyan);font-size:0.75rem;}
+        /* NEW: Cuisine tags */
+        .cuisine-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+        .cuisine-tag{padding:4px 12px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:15px;font-size:0.78rem;color:var(--accent-cyan);}
+        /* Animations */
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 5px rgba(74,158,255,0.2)}50%{box-shadow:0 0 20px rgba(74,158,255,0.5)}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+        .pulse-glow{animation:pulseGlow 2.5s infinite;}
+        .animate-in{animation:fadeIn 0.5s ease both;}
+        /* NEW: Cost Calculator */
+        .cost-calc{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:20px;margin-bottom:25px;}
+        .cost-calc h3{color:var(--accent-cyan);font-size:1rem;margin-bottom:15px;}
+        .cost-input-group{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+        .cost-input-group input{padding:10px;border:1px solid var(--border-glow);border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);font-size:0.9rem;width:120px;}
+        .cost-input-group select{padding:10px;border:1px solid var(--border-glow);border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);font-size:0.9rem;}
+        .cost-result{font-size:1.2rem;font-weight:800;color:var(--accent-green);margin-top:10px;padding:10px;background:rgba(0,255,136,0.05);border-radius:8px;text-align:center;}
+        .cost-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:0.8rem;color:var(--text-secondary);}
+        /* Neighborhood tags */
+        .neighbor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+        .neighbor-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:14px;transition:all var(--transition-speed);}
+        .neighbor-card:hover{border-color:var(--accent-purple);transform:translateY(-2px);}
+        .neighbor-card h4{color:var(--accent-cyan);font-size:0.9rem;margin-bottom:4px;}
+        .neighbor-card p{font-size:0.75rem;color:var(--text-secondary);line-height:1.4;}
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:28px;text-align:center;color:var(--text-secondary);font-size:0.78rem;}
+        @media(max-width:768px){.detail-content{grid-template-columns:1fr;}.detail-hero{height:280px;}.detail-hero-info h1{font-size:1.8rem;}.nav-links{display:none;}.mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}}
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"><div class="container"><a href="home.html" class="logo"><div class="logo-icon">C</div><span class="logo-text">CityLens</span></a><ul class="nav-links" id="navLinks"><li><a href="home.html">首页</a></li><li><a href="cities.html">城市大全</a></li><li><a href="compare.html">对比</a></li><li><a href="ranking.html">排行榜</a></li></ul><div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div></div></nav>
+
+    <section class="detail-hero" id="detailHero"><div class="detail-hero-bg"></div><div class="detail-hero-glow"></div><div class="detail-hero-glow"></div><div class="detail-hero-content"><span class="detail-hero-icon" id="cityIcon">🗼</span><div class="detail-hero-info"><h1 id="cityName">东京</h1><div class="detail-hero-meta" id="cityMeta">🇯🇵 日本 · 亚洲</div></div></div></section>
+
+    <div class="detail-content">
+        <div class="detail-main">
+            <!-- Stats Dashboard -->
+            <h2>📊 城市概览</h2>
+            <div class="stats-dashboard" id="statsDashboard"></div>
+
+            <!-- Info Grid -->
+            <h2>📋 关键数据</h2>
+            <div class="info-grid" id="cityInfo"></div>
+
+            <!-- Tabs -->
+            <div class="tabs" id="detailTabs">
+                <button class="tab-btn active" data-tab="overview">📝 简介</button>
+                <button class="tab-btn" data-tab="gallery">📸 图集</button>
+                <button class="tab-btn" data-tab="transport">🚇 交通</button>
+                <button class="tab-btn" data-tab="cuisine">🍽️ 美食</button>
+                <button class="tab-btn" data-tab="history">📜 历史</button>
+                <button class="tab-btn" data-tab="reviews">⭐ 点评</button>
+            </div>
+
+            <div class="tab-content active" id="tab-overview">
+                <h2>📝 城市简介</h2>
+                <p id="cityDesc" style="color:var(--text-secondary);line-height:1.8;"></p>
+                <div class="cuisine-tags" id="cuisineTags"></div>
+            </div>
+
+            <div class="tab-content" id="tab-gallery">
+                <h2>📸 城市图集</h2>
+                <div class="photo-gallery" id="photoGallery"></div>
+            </div>
+
+            <div class="tab-content" id="tab-transport">
+                <h2>🚇 交通系统</h2>
+                <p id="transportDesc" style="color:var(--text-secondary);line-height:1.8;"></p>
+            </div>
+
+            <div class="tab-content" id="tab-cuisine">
+                <h2>🍽️ 特色美食</h2>
+                <div id="cuisineList" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+            </div>
+
+            <div class="tab-content" id="tab-history">
+                <h2>📜 历史沿革</h2>
+                <div class="mini-timeline" id="historyTimeline"></div>
+            </div>
+
+            <div class="tab-content" id="tab-reviews">
+                <h2>⭐ 游客点评</h2>
+                <div id="reviewList"></div>
+            </div>
+
+            <!-- Life Index -->
+            <h2>📈 生活指数</h2>
+            <div class="index-bars" id="indexBars"></div>
+
+            <!-- Cost Calculator -->
+            <h2>💰 旅行成本估算</h2>
+            <div class="cost-calc">
+                <h3>计算你的旅行预算</h3>
+                <div class="cost-input-group">
+                    <input type="number" id="costDays" value="5" min="1" max="30" placeholder="天数">
+                    <select id="costStyle">
+                        <option value="budget">背包客</option>
+                        <option value="mid" selected>中等舒适</option>
+                        <option value="luxury">奢华体验</option>
+                    </select>
+                    <button onclick="calculateCost()" style="padding:10px 20px;background:var(--accent-cyan);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">计算</button>
+                </div>
+                <div class="cost-result" id="costResult">点击"计算"按钮查看估算</div>
+                <div class="cost-breakdown" id="costBreakdown"></div>
+            </div>
+
+            <!-- Landmarks -->
+            <h2>🏛️ 地标建筑</h2>
+            <div id="cityLandmarks" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+
+            <!-- Neighborhoods -->
+            <h2>🏘️ 热门街区</h2>
+            <div class="neighbor-grid" id="neighborhoodGrid"></div>
+
+            <!-- Travel Tips -->
+            <h2>💡 旅行贴士</h2>
+            <div id="travelTips" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;"></div>
+        </div>
+
+        <div class="detail-sidebar">
+            <div class="sidebar-card"><h3>❤️ 收藏</h3><button class="btn-fav" id="btnFavorite">🤍 收藏城市</button></div>
+            <div class="sidebar-card"><h3>📍 热门地标</h3><div id="sidebarLandmarks"></div></div>
+            <div class="sidebar-card"><h3>🌤️ 气候信息</h3><div id="climateInfo" style="color:var(--text-secondary);font-size:0.85rem;"></div></div>
+            <div class="sidebar-card"><h3>🕐 时区 & 货币</h3><div id="timezoneInfo" style="color:var(--text-secondary);font-size:0.85rem;"></div></div>
+            <div class="sidebar-card"><h3>🎯 适合人群</h3><div id="suitableFor" style="color:var(--text-secondary);font-size:0.82rem;"></div></div>
+        </div>
+    </div>
+
+    <footer class="footer"><p>© 2025 CityLens | 城市数据来源公开资料 | 仅供学习使用</p></footer>
+
+    <script>
+        const cityDB = {
+            tokyo: {
+                name:'东京',country:'日本',flag:'🇯🇵',icon:'🗼',region:'亚洲',rating:9.2,
+                population:'3700万',area:'2194km²',gdp:'$1.6万亿',metro:'13条',universities:'150+',
+                desc:'东京是日本的首都，也是世界上人口最多的都市圈。这座城市完美融合了传统与现代——从浅草寺的古老庙宇到涩谷的霓虹灯海，从秋叶原的电子街到银座的高端购物区。东京以其高效的公共交通系统、世界级的美食文化和对细节的极致追求而闻名。',
+                livable:8.9,safety:9.1,cost:7.2,transport:9.5,env:8.3,edu:9.0,medical:9.2,
+                climate:'亚热带季风气候，四季分明。夏季炎热潮湿（25-35°C），冬季温和（5-15°C）。樱花季（3-4月）是最佳旅游季节。',
+                landmarks:['东京塔','浅草寺','涩谷十字路口','皇居','秋叶原','银座','新宿御苑','上野公园'],
+                timezone:'UTC+9 (JST) · 北京时间+1h', currency:'日元 (JPY ¥) · 1 CNY ≈ 20 JPY',
+                suitableFor:'科技爱好者 · 美食探索者 · 动漫/游戏文化迷 · 时尚购物者 · 传统文化爱好者',
+                transportDesc:'东京拥有全球最复杂精密的轨道交通系统之一，JR山手线环绕都心，13条地铁线路覆盖全市。西瓜卡(Suica)支持全国通用。高峰期拥挤度全球闻名，但准点率高达99.9%。成田和羽田两大国际机场连接全球。',
+                cuisine:[
+                    {name:'寿司',emoji:'🍣',desc:'世界闻名的日式料理'},
+                    {name:'拉面',emoji:'🍜',desc:'豚骨、酱油、味噌等多样口味'},
+                    {name:'天妇罗',emoji:'🍤',desc:'酥脆炸物艺术'},
+                    {name:'和牛',emoji:'🥩',desc:'大理石纹的神户/松阪牛肉'},
+                    {name:'抹茶',emoji:'🍵',desc:'传统茶道体验'},
+                    {name:'居酒屋',emoji:'🏮',desc:'日式小酒馆文化'},
+                ],
+                history:[
+                    {year:'1457',event:'太田道灌修建江户城'},
+                    {year:'1603',event:'德川家康建立江户幕府，江户时代开始'},
+                    {year:'1868',event:'明治维新，江户改名东京，成为日本首都'},
+                    {year:'1923',event:'关东大地震，城市大规模重建'},
+                    {year:'1945',event:'东京大空袭，城市再次重建'},
+                    {year:'1964',event:'举办东京奥运会，新干线通车'},
+                    {year:'2021',event:'举办第二次奥运会（延期至2021年）'},
+                ],
+                reviews:[
+                    {stars:5,author:'旅行者小明',text:'东京的轨道交通太发达了！第一次去都完全不会迷路。涩谷十字路口人潮涌动的景象令人震撼。'},
+                    {stars:4,author:'美食博主大华',text:'在东京吃了7天，每天不重样。筑地市场的海鲜、银座的怀石料理、新宿的拉面...舌头在天堂。'},
+                    {stars:5,author:'数码控阿强',text:'秋叶原简直是数码和二次元的天堂。在友都八喜逛了一整天都不够。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=500&h=350&fit=crop',label:'涩谷十字路口夜景'},
+                    {url:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&h=350&fit=crop',label:'东京塔与城市天际线'},
+                    {url:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=500&h=350&fit=crop',label:'浅草寺雷门'},
+                    {url:'https://images.unsplash.com/photo-1549693578-d683be217e58?w=500&h=350&fit=crop',label:'樱花季的东京'},
+                ],
+                quickStats:{restaurants:'160,000+',hotels:'4,500+',parks:'8,200+',museums:'300+',annualVisitors:'1400万+',avgTemp:'16°C'},
+            },
+            nyc: {
+                name:'纽约',country:'美国',flag:'🇺🇸',icon:'🗽',region:'美洲',rating:9.0,
+                population:'840万',area:'1213km²',gdp:'$1.9万亿',metro:'24条',universities:'110+',
+                desc:'纽约是全球金融、文化和时尚的中心。从华尔街的金融巨头到百老汇的璀璨舞台，从中央公园的宁静绿地到时代广场的不夜霓虹，纽约以其无与伦比的多元性和活力吸引着全球人才。',
+                livable:8.5,safety:7.8,cost:8.5,transport:8.8,env:7.5,edu:9.1,medical:8.9,
+                climate:'温带大陆性气候。夏季炎热（25-35°C），冬季寒冷（-5到10°C）。春秋两季最为宜人。',
+                landmarks:['自由女神像','帝国大厦','中央公园','时代广场','布鲁克林大桥','大都会博物馆','华尔街','百老汇'],
+                timezone:'UTC-5 (EST) · 北京时间-13h', currency:'美元 (USD $) · 1 CNY ≈ 0.14 USD',
+                suitableFor:'金融从业者 · 艺术爱好者 · 时尚潮人 · 戏剧迷 · 多元文化探索者',
+                transportDesc:'纽约地铁24小时运营，是全球最庞大的地铁系统之一，拥有472个站点。黄色出租车和Uber遍布全城。肯尼迪(JFK)和纽瓦克(EWR)两大机场连接全球。步行指数极高，尤其在曼哈顿区域。',
+                cuisine:[
+                    {name:'纽约披萨',emoji:'🍕',desc:'薄底大片的标志性美食'},
+                    {name:'贝果',emoji:'🥯',desc:'纽约式水煮贝果配奶油芝士'},
+                    {name:'热狗',emoji:'🌭',desc:'街角餐车的经典选择'},
+                    {name:'芝士蛋糕',emoji:'🍰',desc:'浓郁的纽约风格芝士蛋糕'},
+                    {name:'汉堡',emoji:'🍔',desc:'Shake Shack等本土品牌'},
+                    {name:'国际美食',emoji:'🌮',desc:'来自全球各地的地道料理'},
+                ],
+                history:[
+                    {year:'1624',event:'荷兰人建立新阿姆斯特丹殖民地'},
+                    {year:'1664',event:'英国人接管，改名纽约(New York)'},
+                    {year:'1785',event:'成为美国第一个首都（1790年迁都）'},
+                    {year:'1886',event:'自由女神像落成'},
+                    {year:'1931',event:'帝国大厦建成'},
+                    {year:'2001',event:'911事件，世界贸易中心被毁'},
+                    {year:'2014',event:'新世贸中心一号大楼建成'},
+                ],
+                reviews:[
+                    {stars:5,author:'金融从业者老王',text:'华尔街的氛围无可替代。早晨在中央公园跑步，白天在金融区工作，晚上看百老汇。纽约的节奏让人上瘾。'},
+                    {stars:4,author:'旅行摄影师小美',text:'纽约每个街区都有完全不同的性格。从SOHO的艺术气息到哈莱姆的黑人文化，几天走下来像穿越了好几个国家。'},
+                    {stars:3,author:'留学生David',text:'物价确实高得离谱。曼哈顿一居室月租3000美元起，吃个简餐也要20刀。但机会也是其他地方无法比拟的。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=500&h=350&fit=crop',label:'曼哈顿天际线'},
+                    {url:'https://images.unsplash.com/photo-1534270804882-6b5048b1c1fc?w=500&h=350&fit=crop',label:'时代广场'},
+                    {url:'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=500&h=350&fit=crop',label:'布鲁克林大桥'},
+                    {url:'https://images.unsplash.com/photo-1583113131440-fb9e5f8e7d50?w=500&h=350&fit=crop',label:'中央公园秋色'},
+                ],
+                quickStats:{restaurants:'25,000+',hotels:'700+',parks:'1,700+',museums:'100+',annualVisitors:'6500万+',avgTemp:'13°C'},
+            },
+            london: {
+                name:'伦敦',country:'英国',flag:'🇬🇧',icon:'🏰',region:'欧洲',rating:8.8,
+                population:'900万',area:'1572km²',gdp:'$0.9万亿',metro:'11条',universities:'40+',
+                desc:'伦敦是一座将两千年历史与21世纪创新完美融合的城市。从大本钟到碎片大厦，从大英博物馆到肖尔迪奇的街头艺术，从白金汉宫到博罗市场的美食摊位——伦敦的每一寸土地都诉说着故事。',
+                livable:8.3,safety:8.2,cost:8.0,transport:8.6,env:7.8,edu:9.3,medical:8.5,
+                climate:'温带海洋性气候。温和多雨，夏季凉爽（18-25°C），冬季温和（2-8°C）。全年降雨均匀，随时带伞是伦敦人的基本功。',
+                landmarks:['大本钟','伦敦塔桥','大英博物馆','白金汉宫','伦敦眼','西敏寺','泰特现代美术馆','博罗市场'],
+                timezone:'UTC+0 (GMT) / UTC+1 (BST夏) · 北京时间-8h', currency:'英镑 (GBP £) · 1 CNY ≈ 0.11 GBP',
+                suitableFor:'历史爱好者 · 博物馆迷 · 戏剧爱好者 · 金融从业者 · 国际学生',
+                transportDesc:'伦敦地铁(Tube)是世界最古老的地铁系统，11条线路覆盖大伦敦地区。红色双层巴士和黑色出租车是城市标志。希思罗机场是欧洲最繁忙的航空枢纽。牡蛎卡(Oyster)一卡通行。',
+                cuisine:[
+                    {name:'英式早餐',emoji:'🍳',desc:'培根香肠豆子番茄黑布丁'},
+                    {name:'炸鱼薯条',emoji:'🐟',desc:'英国国民美食'},
+                    {name:'下午茶',emoji:'🫖',desc:'司康配奶油和果酱'},
+                    {name:'印度咖喱',emoji:'🍛',desc:'伦敦有全欧洲最好的咖喱'},
+                    {name:'周日烤肉',emoji:'🥩',desc:'传统英式周日午餐'},
+                ],
+                history:[
+                    {year:'43 BCE',event:'罗马人建立伦底纽姆(Londinium)'},
+                    {year:'1066',event:'诺曼征服，伦敦塔始建'},
+                    {year:'1666',event:'伦敦大火摧毁城市，随后重建'},
+                    {year:'1863',event:'世界第一条地铁在伦敦开通'},
+                    {year:'1940-41',event:'伦敦大轰炸，城市遭受严重破坏'},
+                    {year:'2012',event:'举办伦敦奥运会'},
+                ],
+                reviews:[
+                    {stars:5,author:'博物馆控小陈',text:'大英博物馆逛了三天都没看完。而且绝大多数博物馆免费！伦敦的公共文化资源太丰富了。'},
+                    {stars:4,author:'留学生小李',text:'伦敦的多样性令人惊叹。走在街上能听到300多种语言。但住宿费用是真的高，一居室月租1400镑起步。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=500&h=350&fit=crop',label:'伦敦塔桥与泰晤士河'},
+                    {url:'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=500&h=350&fit=crop',label:'大本钟与国会大厦'},
+                    {url:'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=500&h=350&fit=crop',label:'伦敦红色双层巴士'},
+                ],
+                quickStats:{restaurants:'18,000+',hotels:'2,300+',parks:'3,000+',museums:'170+',annualVisitors:'3000万+',avgTemp:'11°C'},
+            },
+            paris: {
+                name:'巴黎',country:'法国',flag:'🇫🇷',icon:'🗼',region:'欧洲',rating:9.1,
+                population:'220万(市区)',area:'105km²(市区)',gdp:'$0.9万亿',metro:'16条',universities:'20+',
+                desc:'巴黎——"光之城"——是全球最浪漫的城市之一。从埃菲尔铁塔的璀璨灯光到蒙马特高地的艺术气息，从卢浮宫的无价珍宝到拉丁区的古老咖啡馆，巴黎是艺术、美食、时尚和爱情的代名词。',
+                livable:8.7,safety:7.9,cost:8.2,transport:8.5,env:7.6,edu:9.0,medical:8.8,
+                climate:'温带海洋性气候。夏季温暖（20-28°C），冬季凉爽（2-8°C）。春秋两季气候宜人，是最佳旅游季节。',
+                landmarks:['埃菲尔铁塔','卢浮宫','巴黎圣母院','凯旋门','蒙马特圣心堂','奥赛博物馆','凡尔赛宫','香榭丽舍大道'],
+                timezone:'UTC+1 (CET) · 北京时间-7h', currency:'欧元 (EUR €) · 1 CNY ≈ 0.13 EUR',
+                suitableFor:'浪漫情侣 · 艺术爱好者 · 美食家 · 时尚达人 · 历史建筑迷',
+                transportDesc:'巴黎地铁拥有16条线路和超过300个站点，站点间距极短——市中心几乎每500米就有一个站。RER郊区快线连接机场和凡尔赛等远郊。Navigo卡一卡通全城。自行车共享系统Velib世界领先。',
+                cuisine:[
+                    {name:'可颂',emoji:'🥐',desc:'法式酥皮面包早餐标配'},
+                    {name:'法式蜗牛',emoji:'🐌',desc:'黄油大蒜焗蜗牛'},
+                    {name:'鹅肝',emoji:'🦆',desc:'法式高级料理代表'},
+                    {name:'马卡龙',emoji:'🍬',desc:'色彩缤纷的杏仁小圆饼'},
+                    {name:'法棍',emoji:'🥖',desc:'每天新鲜出炉的国民面包'},
+                    {name:'红酒',emoji:'🍷',desc:'波尔多、勃艮第世界级产区'},
+                ],
+                history:[
+                    {year:'~250 BCE',event:'凯尔特巴黎西人(Parisii)定居塞纳河畔'},
+                    {year:'508 CE',event:'法兰克王国定都巴黎'},
+                    {year:'1163',event:'巴黎圣母院始建'},
+                    {year:'1789',event:'法国大革命爆发'},
+                    {year:'1889',event:'埃菲尔铁塔为世博会建成'},
+                    {year:'2024',event:'举办第33届夏季奥运会'},
+                ],
+                reviews:[
+                    {stars:5,author:'蜜月旅行者安娜',text:'巴黎的浪漫渗透在每一个细节——塞纳河畔的夕阳、蒙马特的小巷、街角咖啡馆的吉他声。在巴黎度蜜月是最正确的决定。'},
+                    {stars:4,author:'背包客小杰',text:'卢浮宫看了足足两天。巴黎的博物馆通票真的超值。但要注意小偷，地铁和热门景点附近很多。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=350&fit=crop',label:'埃菲尔铁塔夜灯'},
+                    {url:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=500&h=350&fit=crop',label:'卢浮宫金字塔'},
+                    {url:'https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=500&h=350&fit=crop',label:'蒙马特圣心堂'},
+                ],
+                quickStats:{restaurants:'13,000+',hotels:'1,600+',parks:'470+',museums:'130+',annualVisitors:'3500万+',avgTemp:'12°C'},
+            },
+        };
+
+        const params=new URLSearchParams(window.location.search);let id=params.get('id')||'tokyo';if(!cityDB[id])id='tokyo';
+        const city=cityDB[id];
+
+        // Hero
+        document.getElementById('cityIcon').textContent=city.icon;
+        document.getElementById('cityName').textContent=city.name;
+        document.getElementById('cityMeta').textContent=`${city.flag} ${city.country} · ${city.region}`;
+        document.title=`${city.name} - CityLens`;
+
+        // Quick stats
+        document.getElementById('statsDashboard').innerHTML = Object.entries(city.quickStats).map(([k,v]) => `
+            <div class="stat-mini animate-in">
+                <div class="sm-value">${v}</div>
+                <div class="sm-label">${k.replace(/([A-Z])/g,' $1').trim()}</div>
+            </div>
+        `).join('');
+
+        // Info grid
+        document.getElementById('cityInfo').innerHTML=[
+            {v:city.population,l:'人口'},{v:city.area,l:'面积'},{v:city.gdp,l:'GDP'},
+            {v:city.metro,l:'地铁线路'},{v:city.universities,l:'高校数量'},{v:`⭐${city.rating}`,l:'综合评分'}
+        ].map(i=>`<div class="info-card animate-in"><div class="info-value">${i.v}</div><div class="info-label">${i.l}</div></div>`).join('');
+
+        // Index bars
+        document.getElementById('indexBars').innerHTML=[
+            {k:'宜居指数',v:city.livable},{k:'安全指数',v:city.safety},{k:'生活成本',v:city.cost},
+            {k:'交通指数',v:city.transport},{k:'环境指数',v:city.env},{k:'教育指数',v:city.edu},{k:'医疗指数',v:city.medical}
+        ].map(i=>`<div class="index-bar"><div class="index-bar-label"><span>${i.k}</span><span>${i.v}/10</span></div><div class="index-bar-track"><div class="index-bar-fill" style="width:${i.v*10}%;"></div></div></div>`).join('');
+
+        // Description
+        document.getElementById('cityDesc').textContent=city.desc;
+
+        // Cuisine tags
+        document.getElementById('cuisineTags').innerHTML = (city.cuisine||[]).map(c =>
+            `<span class="cuisine-tag">${c.emoji} ${c.name}</span>`
+        ).join('');
+
+        // Landmarks
+        document.getElementById('cityLandmarks').innerHTML=city.landmarks.map(l=>
+            `<span style="padding:8px 14px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);font-size:0.85rem;transition:all var(--transition-speed);">🏛️ ${l}</span>`
+        ).join('');
+        document.getElementById('sidebarLandmarks').innerHTML=city.landmarks.map(l=>
+            `<div class="landmark-item"><span>📍</span>${l}</div>`
+        ).join('');
+
+        // Sidebar
+        document.getElementById('climateInfo').textContent=city.climate;
+        document.getElementById('timezoneInfo').innerHTML = `<strong>时区:</strong> ${city.timezone}<br><strong>货币:</strong> ${city.currency}`;
+        document.getElementById('suitableFor').innerHTML = city.suitableFor.split('·').map(s => `<div style="margin:2px 0;">✓ ${s.trim()}</div>`).join('');
+
+        // Transport
+        document.getElementById('transportDesc').textContent = city.transportDesc || '暂无交通信息。';
+
+        // Cuisine list
+        document.getElementById('cuisineList').innerHTML = (city.cuisine||[]).map(c => `
+            <div style="background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:14px;width:calc(50% - 5px);min-width:160px;">
+                <span style="font-size:1.5rem;">${c.emoji}</span>
+                <strong style="display:block;margin-top:4px;font-size:0.9rem;">${c.name}</strong>
+                <span style="font-size:0.75rem;color:var(--text-secondary);">${c.desc}</span>
+            </div>
+        `).join('');
+
+        // History timeline
+        document.getElementById('historyTimeline').innerHTML = (city.history||[]).map(h => `
+            <div class="mt-item"><span class="mt-year">${h.year}</span><br>${h.event}</div>
+        `).join('');
+
+        // Reviews
+        document.getElementById('reviewList').innerHTML = (city.reviews||[]).map(r => `
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author">${r.author}</span>
+                    <span class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span>
+                </div>
+                <p class="review-text">${r.text}</p>
+            </div>
+        `).join('');
+
+        // Photo gallery
+        document.getElementById('photoGallery').innerHTML = (city.photos||[]).map(p => `
+            <div class="photo-card">
+                <img src="${p.url}" alt="${p.label}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none;height:180px;background:var(--bg-tertiary);display:none;align-items:center;justify-content:center;font-size:3rem;">${city.icon}</div>
+                <div class="photo-label">${p.label}</div>
+            </div>
+        `).join('');
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Favorites
+        let favs=JSON.parse(localStorage.getItem('citylens-favs')||'[]');const favBtn=document.getElementById('btnFavorite');
+        function updateFav(){const isF=favs.includes(city.name);favBtn.classList.toggle('favorited',isF);favBtn.innerHTML=isF?'❤️ 已收藏':'🤍 收藏城市';}
+        updateFav();favBtn.addEventListener('click',()=>{const idx=favs.indexOf(city.name);if(idx>-1)favs.splice(idx,1);else favs.push(city.name);localStorage.setItem('citylens-favs',JSON.stringify(favs));updateFav();});
+
+        // Navbar scroll
+        const navbar=document.getElementById('navbar');window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.scrollY>50));
+        document.getElementById('mobileMenuBtn').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('active'));
+        document.querySelectorAll('#navLinks a').forEach(l=>l.addEventListener('click',()=>document.getElementById('navLinks').classList.remove('active')));
+
+        // Theme
+        const bt=document.getElementById('btnThemeToggle'),s=localStorage.getItem('citylens-theme');
+        if(s==='light'){document.body.classList.add('light-mode');bt.textContent='◑';}
+        bt.addEventListener('click',()=>{document.body.classList.toggle('light-mode');const isL=document.body.classList.contains('light-mode');bt.textContent=isL?'◑':'◐';localStorage.setItem('citylens-theme',isL?'light':'dark');});
+
+        console.log(`%c🌆 ${city.name} 详情已加载 | ${Object.keys(cityDB).length}个城市可用`,'color:#4a9eff;font-size:1.1em;');
+
+        // ============ TRAVEL TIPS ============
+        const tipsDB = {
+            tokyo: ['购买地铁通票(JR Pass或东京地铁券)','大多数餐厅不收小费','7-11便利店可以取现和买票','公共场合不大声讲话','垃圾分类超级严格'],
+            nyc: ['曼哈顿街道是棋盘格，找路很容易','餐厅小费15-20%是必须的','地铁24小时运营，深夜注意安全','中央公园南侧比北侧安全','周四下午很多博物馆免费或降价'],
+            paris: ['学会说Bonjour(你好)和Merci(谢谢)','周二很多博物馆闭馆','面包店可以按半根法棍购买','地铁上小心扒手','购物满175欧可退税'],
+            london: ['靠左行走/站立','Oyster卡比现金票便宜一半','很多博物馆免费','酒吧在23:00前后关门','在自动扶梯上靠右站立'],
+            singapore: ['禁止在公共交通上饮食','禁止进口和嚼口香糖','小贩中心是最实惠的美食选择','过马路必须走斑马线','空调开很足，随身带薄外套'],
+            dubai: ['斋月期间白天公共场合禁止饮食','穿遮住肩膀和膝盖的衣服','周五是穆斯林休息日','出租车相对便宜','夏季避免户外活动'],
+            sydney: ['防晒霜一年四季都要用','周日公共交通有折扣','海滩之间通过红色和黄色旗标指示安全游泳区','咖啡文化浓厚，Flat White是必点','小费不是强制但受欢迎'],
+            istanbul: ['在大巴扎买东西一定要砍价','进入清真寺需要脱鞋和遮盖','机场远离市区，预留充足时间','土耳其茶免费续杯是常态','使用公共交通卡Istanbulkart'],
+            bangkok: ['大皇宫必须穿长裤和带袖','Tuk-tuk一定要先谈好价钱','街头小吃通常比餐厅更美味','寺庙内保持安静和尊重','按摩一小时约250泰铢'],
+        };
+        const tips = tipsDB[id] || ['提前了解当地交通卡','下载离线地图','购买旅行保险','学习几句当地语言问候语','保存紧急电话号码'];
+        document.getElementById('travelTips').innerHTML = tips.map((t,i) => `
+            <div style="background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:12px;font-size:0.82rem;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start;">
+                <span style="color:var(--accent-gold);font-weight:800;">0${i+1}</span>
+                <span>${t}</span>
+            </div>
+        `).join('');
+
+        // ============ COST CALCULATOR ============
+        const costData = {
+            budget: {hotel:25, food:15, transport:10, activities:10},
+            mid: {hotel:80, food:40, transport:20, activities:30},
+            luxury: {hotel:250, food:100, transport:50, activities:80},
+        };
+        const cityCostMultipliers = {tokyo:1.3, nyc:1.5, london:1.4, paris:1.35, singapore:1.25, dubai:1.2, sydney:1.15, istanbul:0.7, bangkok:0.5};
+        window.calculateCost = function() {
+            const days = parseInt(document.getElementById('costDays').value) || 5;
+            const style = document.getElementById('costStyle').value;
+            const multiplier = cityCostMultipliers[id] || 1.0;
+            const rates = costData[style];
+            const h = Math.round(rates.hotel * days * multiplier);
+            const f = Math.round(rates.food * days * multiplier);
+            const t = Math.round(rates.transport * days * multiplier);
+            const a = Math.round(rates.activities * days * multiplier);
+            const total = h + f + t + a;
+            document.getElementById('costResult').innerHTML = `💵 约 <strong>$${total}</strong> USD (${days}天, ${style==='budget'?'背包客':style==='mid'?'中等舒适':'奢华体验'})`;
+            document.getElementById('costBreakdown').innerHTML = `
+                <div>🏨 住宿: $${h}</div><div>🍽️ 餐饮: $${f}</div>
+                <div>🚇 交通: $${t}</div><div>🎯 活动: $${a}</div>
+            `;
+        };
+
+        // ============ NEIGHBORHOOD DATA ============
+        const neighborhoodDB = {
+            tokyo: [
+                {name:'涩谷', desc:'年轻人的圣地，全球最繁忙的十字路口，时尚与流行文化的发源地。'},
+                {name:'新宿', desc:'东京的曼哈顿，摩天大楼与歌舞伎町的不夜城。'},
+                {name:'浅草', desc:'下町风情，浅草寺雷门和传统商店街保留着旧东京的味道。'},
+                {name:'秋叶原', desc:'电子和二次元文化的全球圣殿。'},
+                {name:'银座', desc:'高端购物和精致餐饮的代名词。'},
+                {name:'六本木', desc:'国际氛围，博物馆、夜生活和使馆区。'},
+            ],
+            nyc: [
+                {name:'曼哈顿', desc:'金融、艺术、时尚的中心，纽约的核心岛屿。'},
+                {name:'布鲁克林', desc:'潮人天堂，精酿啤酒、街头艺术和多元文化。'},
+                {name:'皇后区', desc:'全球最多元化的行政区，地道国际美食。'},
+            ],
+            paris: [
+                {name:'蒙马特', desc:'艺术家的故乡，圣心堂俯瞰全城，浪漫的小巷和咖啡馆。'},
+                {name:'拉丁区', desc:'索邦大学所在地，古老书店和学术气息浓厚。'},
+                {name:'玛黑区', desc:'时尚精品店、画廊和LGBTQ+文化中心。'},
+            ],
+            london: [
+                {name:'西敏', desc:'政治中心，大本钟和国会大厦所在地。'},
+                {name:'肖尔迪奇', desc:'潮流先锋，街头艺术和独立咖啡馆。'},
+                {name:'肯辛顿', desc:'博物馆区，V&A和自然历史博物馆免费开放。'},
+            ],
+        };
+        const nbData = neighborhoodDB[id] || [
+            {name:'市中心', desc:'繁华的商业和文化中心。'},
+            {name:'老城区', desc:'保存完好的历史建筑和传统集市。'},
+        ];
+        document.getElementById('neighborhoodGrid').innerHTML = nbData.map(n => `
+            <div class="neighbor-card animate-in">
+                <h4>📍 ${n.name}</h4>
+                <p>${n.desc}</p>
+            </div>
+        `).join('');
+
+        // ============ ADDITIONAL CITIES IN DB (for future use) ============
+        Object.assign(cityDB, {
+            singapore: {
+                name:'新加坡',country:'新加坡',flag:'🇸🇬',icon:'🏙️',region:'亚洲',rating:9.0,
+                population:'570万',area:'733km²',gdp:'$0.5万亿',metro:'6条',universities:'6所大学',
+                desc:'新加坡是一个令人惊叹的花园城市国家。从滨海湾金沙酒店的无边泳池到牛车水的百年庙宇，从乌节路的奢华购物到小印度的香料市场，这个多元种族的小岛将亚洲传统、殖民地历史和未来主义建筑熔于一炉。',
+                livable:9.2,safety:9.5,cost:7.8,transport:9.0,env:9.3,edu:9.2,medical:9.4,
+                climate:'热带雨林气候。全年温暖潮湿（25-33°C），无明显四季。11-1月降雨较多。室内空调普及，室外湿热。',
+                landmarks:['滨海湾金沙','鱼尾狮公园','圣淘沙岛','乌节路','牛车水','小印度','滨海湾花园','新加坡动物园'],
+                timezone:'UTC+8 (SGT) · 与北京时间相同', currency:'新加坡元 (SGD $) · 1 CNY ≈ 0.19 SGD',
+                suitableFor:'美食探索者 · 购物达人 · 亲子家庭 · 商务旅行者 · 安全优先旅客',
+                transportDesc:'新加坡MRT覆盖全岛，站点密集且干净高效。EZ-Link卡一卡通。樟宜机场连续多年被评为全球最佳机场。',
+                cuisine:[
+                    {name:'海南鸡饭',emoji:'🐔',desc:'新加坡国民美食第一名'},{name:'辣椒螃蟹',emoji:'🦀',desc:'国菜级别的海鲜盛宴'},
+                    {name:'肉骨茶',emoji:'🍖',desc:'药材或胡椒汤底的猪骨汤'},{name:'叻沙',emoji:'🍜',desc:'椰浆咖喱面'},
+                    {name:'炒粿条',emoji:'🍝',desc:'黑酱油炒河粉'},{name:'咖椰吐司',emoji:'🍞',desc:'新加坡式早餐'},
+                ],
+                history:[
+                    {year:'1819',event:'莱佛士爵士建立英国贸易站'},{year:'1965',event:'脱离马来西亚独立建国'},
+                    {year:'1970s',event:'经济起飞成为亚洲四小龙之一'},{year:'2010',event:'滨海湾金沙开业，成为全球地标'},
+                ],
+                reviews:[
+                    {stars:5,author:'美食猎人阿豪',text:'新加坡的熟食中心文化太棒了。米其林一星的街头小贩3新币一份海南鸡饭，性价比炸裂。'},
+                    {stars:4,author:'亲子旅行妈妈李',text:'带孩子在新加坡玩了7天。动物园、环球影城、滨海湾花园儿童乐园，每一个设计都考虑到了孩子。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=350&fit=crop',label:'滨海湾金沙'},
+                    {url:'https://images.unsplash.com/photo-1565967511849-76a60a516170?w=500&h=350&fit=crop',label:'滨海湾花园'},
+                ],
+                quickStats:{restaurants:'7,000+',hotels:'400+',parks:'350+',museums:'50+',annualVisitors:'1900万+',avgTemp:'28°C'},
+            },
+            dubai: {
+                name:'迪拜',country:'阿联酋',flag:'🇦🇪',icon:'🏗️',region:'中东',rating:8.5,
+                population:'350万',area:'4114km²',gdp:'$0.15万亿',metro:'2条',universities:'30+',
+                desc:'迪拜是沙漠中崛起的未来之城。从828米的哈利法塔到棕榈岛的人工奇观，从黄金市场到世界上最奢华的购物中心，迪拜用40年时间从渔村变成了全球奢华之都。',
+                livable:8.0,safety:9.3,cost:8.8,transport:7.5,env:6.8,edu:8.2,medical:8.7,
+                climate:'热带沙漠气候。夏季极度炎热（35-48°C），冬季温暖舒适（20-28°C）。年降雨量极低。最佳旅游季节: 11月至次年3月。',
+                landmarks:['哈利法塔','棕榈岛','迪拜购物中心','帆船酒店','迪拜框架','黄金市场','迪拜喷泉'],
+                timezone:'UTC+4 (GST) · 北京时间-4h', currency:'阿联酋迪拉姆 (AED) · 1 CNY ≈ 0.51 AED',
+                suitableFor:'奢华旅行者 · 购物狂 · 建筑迷 · 沙漠探险者 · 美食爱好者',
+                transportDesc:'迪拜地铁为无人驾驶系统，红线连接大部分景点。出租车价格相对便宜。棕榈岛有单轨列车。',
+                cuisine:[
+                    {name:'阿拉伯烤肉',emoji:'🥩',desc:'Shawarma和Kebab'},{name:'鹰嘴豆泥',emoji:'🫘',desc:'Hummus中东经典'},
+                    {name:'椰枣',emoji:'🌴',desc:'阿拉伯传统能量食品'},{name:'阿拉伯咖啡',emoji:'☕',desc:'加入小豆蔻的传统咖啡'},
+                ],
+                history:[
+                    {year:'1833',event:'巴尼亚斯部落定居迪拜湾'},{year:'1971',event:'阿联酋成立'},
+                    {year:'2010',event:'哈利法塔828米竣工，全球最高建筑'},
+                ],
+                reviews:[
+                    {stars:4,author:'奢华体验师Lily',text:'迪拜的酒店是全球最好的。帆船酒店的海底餐厅和棕榈岛亚特兰蒂斯的水世界都超出预期。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=500&h=350&fit=crop',label:'哈利法塔'},
+                    {url:'https://images.unsplash.com/photo-1548013146-72479768bada?w=500&h=350&fit=crop',label:'迪拜沙漠'},
+                ],
+                quickStats:{restaurants:'9,000+',hotels:'700+',parks:'140+',museums:'20+',annualVisitors:'1600万+',avgTemp:'30°C'},
+            },
+            sydney: {
+                name:'悉尼',country:'澳大利亚',flag:'🇦🇺',icon:'🦘',region:'大洋洲',rating:9.0,
+                population:'530万',area:'12368km²',gdp:'$0.4万亿',metro:'8条',universities:'6所',
+                desc:'悉尼是南半球最闪耀的城市。歌剧院和海港大桥定义了全球最美丽的天际线之一。邦迪海滩的冲浪文化、蓝山的峡谷风光、达令港的繁华夜生活——悉尼将城市活力与自然美景完美融合。',
+                livable:9.1,safety:8.8,cost:8.3,transport:7.8,env:9.0,edu:8.9,medical:9.0,
+                climate:'亚热带气候。夏季温暖（22-32°C），冬季温和（8-18°C）。降雨均匀分布。12-2月是海滩季节。',
+                landmarks:['悉尼歌剧院','海港大桥','邦迪海滩','达令港','蓝山国家公园','塔隆加动物园'],
+                timezone:'UTC+10/11 (AEST/AEDT) · 北京时间+2/3h', currency:'澳元 (AUD $) · 1 CNY ≈ 0.21 AUD',
+                suitableFor:'冲浪爱好者 · 自然探险者 · 咖啡文化迷 · 海滩生活爱好者',
+                transportDesc:'悉尼火车网络覆盖大悉尼地区，渡轮是体验海港风光的最佳方式。Opal卡一卡通。轻轨连接市中心与内西区。',
+                cuisine:[
+                    {name:'澳式早餐',emoji:'🥑',desc:'牛油果吐司配Flat White咖啡'},{name:'海鲜拼盘',emoji:'🦞',desc:'悉尼岩蚝与龙虾'},
+                    {name:'肉派',emoji:'🥧',desc:'澳洲国民小食'},{name:'澳洲烧烤',emoji:'🥩',desc:'BBQ文化盛行'},
+                ],
+                history:[
+                    {year:'1788',event:'英国第一舰队抵达，建立殖民地'},{year:'1973',event:'悉尼歌剧院正式开放'},
+                    {year:'2000',event:'举办悉尼奥运会'},
+                ],
+                reviews:[
+                    {stars:5,author:'冲浪达人Mike',text:'悉尼是全世界唯一能在市中心冲浪的全球城市。早上邦迪冲浪，中午歌剧院午餐——这种生活无可替代。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=500&h=350&fit=crop',label:'悉尼歌剧院'},
+                    {url:'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=500&h=350&fit=crop',label:'邦迪海滩'},
+                ],
+                quickStats:{restaurants:'5,000+',hotels:'500+',parks:'800+',museums:'40+',annualVisitors:'1400万+',avgTemp:'18°C'},
+            },
+            istanbul: {
+                name:'伊斯坦布尔',country:'土耳其',flag:'🇹🇷',icon:'🕌',region:'欧亚交界',rating:8.7,
+                population:'1600万',area:'5343km²',gdp:'$0.3万亿',metro:'5条',universities:'50+',
+                desc:'伊斯坦布尔是世界上唯一横跨两大洲的城市。博斯普鲁斯海峡将欧洲和亚洲一分为二，而这座城市横跨两岸——一边是蓝色清真寺和圣索菲亚大教堂，一边是摩登的亚洲区。千年拜占庭与奥斯曼帝国的遗产在这座城市的每一块石头上留下印记。',
+                livable:7.5,safety:7.2,cost:6.0,transport:7.0,env:6.5,edu:8.0,medical:7.8,
+                climate:'地中海气候与黑海气候过渡区。夏季炎热干燥（25-35°C），冬季湿冷多雨（2-10°C），偶尔降雪。',
+                landmarks:['圣索菲亚大教堂','蓝色清真寺','托普卡帕宫','大巴扎','博斯普鲁斯海峡','加拉塔塔','地下水宫'],
+                timezone:'UTC+3 (TRT) · 北京时间-5h', currency:'土耳其里拉 (TRY ₺) · 1 CNY ≈ 4.3 TRY',
+                suitableFor:'历史迷 · 建筑爱好者 · 美食探索者 · 摄影爱好者 · 文化探险者',
+                transportDesc:'伊斯坦布尔地铁和电车网络持续扩展中。Marmaray海底铁路隧道连接欧亚两岸。渡轮是体验博斯普鲁斯的最佳方式。Istanbulkart一卡通用。',
+                cuisine:[
+                    {name:'土耳其烤肉',emoji:'🥙',desc:'Döner和İskender'},{name:'土耳其咖啡',emoji:'☕',desc:'浓厚带渣的传统咖啡'},
+                    {name:'巴克拉瓦',emoji:'🍯',desc:'蜂蜜千层酥'},{name:'土耳其软糖',emoji:'🍬',desc:'Lokum传统甜点'},
+                    {name:'土耳其红茶',emoji:'🫖',desc:'郁金香杯中的国民饮品'},
+                ],
+                history:[
+                    {year:'330 CE',event:'君士坦丁大帝建立君士坦丁堡为罗马新都'},{year:'1453',event:'奥斯曼帝国征服，改名伊斯坦布尔'},
+                    {year:'1930',event:'土耳其共和国正式定名伊斯坦布尔'},
+                ],
+                reviews:[
+                    {stars:5,author:'历史爱好者大林',text:'站在圣索菲亚大教堂里仰望穹顶——一千年拜占庭、五百年奥斯曼，层层历史叠加在同一空间里，太震撼了。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=500&h=350&fit=crop',label:'蓝色清真寺'},
+                    {url:'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?w=500&h=350&fit=crop',label:'博斯普鲁斯海峡'},
+                ],
+                quickStats:{restaurants:'15,000+',hotels:'2,000+',parks:'250+',museums:'80+',annualVisitors:'1400万+',avgTemp:'14°C'},
+            },
+            bangkok: {
+                name:'曼谷',country:'泰国',flag:'🇹🇭',icon:'🛕',region:'东南亚',rating:8.4,
+                population:'1100万',area:'1569km²',gdp:'$0.3万亿',metro:'4条',universities:'50+',
+                desc:'曼谷是东南亚最富活力的城市。金色寺庙与摩天大楼交相辉映，水上市场与豪华购物中心并存，街头小吃与米其林餐厅各美其美。这座城市的温度、气味和声音构成了一场永不停歇的感官盛宴。',
+                livable:7.2,safety:7.5,cost:5.5,transport:6.8,env:6.2,edu:7.8,medical:7.5,
+                climate:'热带季风气候。全年炎热（28-38°C），雨季（5-10月）降雨集中，凉季（11-2月）相对舒适。',
+                landmarks:['大皇宫','卧佛寺','郑王庙','考山路','暹罗天地','乍都乍周末市场','水上市场'],
+                timezone:'UTC+7 (ICT) · 北京时间-1h', currency:'泰铢 (THB ฿) · 1 CNY ≈ 5 THB',
+                suitableFor:'美食狂热者 · 文化探索者 · 购物达人 · 按摩爱好者 · 夜生活玩家',
+                transportDesc:'BTS天铁和MRT地铁覆盖市中心。公交船沿着湄南河和运河航行。Tuk-tuk嘟嘟车是城市标志，但记得砍价。摩托出租车穿街走巷。',
+                cuisine:[
+                    {name:'冬阴功',emoji:'🦐',desc:'酸辣虾汤，泰国国汤'},{name:'泰式炒河粉',emoji:'🍝',desc:'Pad Thai国民小吃'},
+                    {name:'青木瓜沙拉',emoji:'🥗',desc:'酸甜辣的经典开胃菜'},{name:'芒果糯米饭',emoji:'🥭',desc:'东南亚经典甜点'},
+                    {name:'绿咖喱',emoji:'🍛',desc:'椰奶咖喱配鸡肉'},{name:'泰式奶茶',emoji:'🧋',desc:'橘黄色的浓郁奶茶'},
+                ],
+                history:[
+                    {year:'1782',event:'拉玛一世建立曼谷为暹罗王国首都'},{year:'1999',event:'BTS天铁系统开通'},
+                ],
+                reviews:[
+                    {stars:5,author:'街头美食猎人Tony',text:'曼谷的街头美食是天堂级。一碗船面50泰铢（10块钱），味道甩很多高级餐厅几条街。在曼谷7天胖了5斤。'},
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=500&h=350&fit=crop',label:'大皇宫'},
+                    {url:'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=350&fit=crop',label:'曼谷水上市场'},
+                ],
+                quickStats:{restaurants:'50,000+',hotels:'1,200+',parks:'100+',museums:'50+',annualVisitors:'2200万+',avgTemp:'30°C'},
+            },
+        });
+    </script>
+</body>
+</html>

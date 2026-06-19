@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityLens - 城市生活指南</title>
+    <style>
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-red:#ff4757;--accent-purple:#a855f7;--accent-orange:#ff6b35;
+            --border-glow:#1e2d3d;--glass-bg:rgba(21,26,40,0.85);
+            --shadow-card:0 4px 25px rgba(0,0,0,0.6);--shadow-hover:0 8px 40px rgba(74,158,255,0.2);
+            --shadow-glass:0 8px 32px rgba(0,0,0,0.4);--border-radius:10px;--transition-speed:0.3s;
+            --nav-height:72px;--max-width:1400px;
+        }
+        /* ===== LIGHT MODE ===== */
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);--shadow-hover:0 8px 35px rgba(74,158,255,0.12);--shadow-glass:0 8px 32px rgba(0,0,0,0.08);}
+
+        /* ===== RESET & BASE ===== */
+        *{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;font-size:16px;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);overflow-x:hidden;}
+        body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 30% 20%,rgba(74,158,255,0.04) 0%,transparent 50%),radial-gradient(ellipse at 70% 60%,rgba(0,212,255,0.03) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(168,85,247,0.02) 0%,transparent 40%);pointer-events:none;z-index:0;}
+        body>*{position:relative;z-index:1;}
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar{width:8px;}
+        ::-webkit-scrollbar-track{background:var(--bg-secondary);}
+        ::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+        ::-webkit-scrollbar-thumb:hover{background:var(--accent-blue);}
+
+        /* ===== NAVBAR ===== */
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;transition:all var(--transition-speed);}
+        .navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);border-bottom-color:rgba(74,158,255,0.25);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}
+        .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#4a9eff,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;box-shadow:0 0 20px rgba(74,158,255,0.3);}
+        .logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+        .nav-links{display:flex;list-style:none;gap:2px;}
+        .nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;position:relative;}
+        .nav-links li a::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%) scaleX(0);width:50%;height:2px;background:var(--accent-cyan);transition:transform var(--transition-speed);}
+        .nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);background:rgba(74,158,255,0.08);}
+        .nav-links li a:hover::after,.nav-links li a.active::after{transform:translateX(-50%) scaleX(1);}
+        .nav-actions{display:flex;gap:8px;}
+        .btn-icon{width:38px;height:38px;border:1px solid rgba(74,158,255,0.15);background:rgba(74,158,255,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all var(--transition-speed);}
+        .btn-icon:hover{background:rgba(74,158,255,0.15);border-color:var(--accent-blue);color:var(--accent-cyan);}
+        .mobile-menu-btn{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+        .mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-cyan);border-radius:2px;}
+
+        /* ===== HERO ===== */
+        .hero{margin-top:var(--nav-height);position:relative;height:620px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0a0e17 0%,#0d1525 30%,#100d1a 60%,#0a0e17 100%);}
+        .hero-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1' fill='rgba(74,158,255,0.15)'/%3E%3C/svg%3E");opacity:0.5;z-index:0;}
+        .hero-glow{position:absolute;width:500px;height:500px;border-radius:50%;filter:blur(120px);z-index:0;}
+        .hero-glow:nth-child(2){top:10%;left:20%;background:rgba(74,158,255,0.1);}
+        .hero-glow:nth-child(3){bottom:5%;right:15%;background:rgba(168,85,247,0.08);}
+        #globeCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;opacity:0.12;pointer-events:none;}
+        .hero-content{position:relative;z-index:2;text-align:center;padding:40px;max-width:750px;}
+        .hero-badge{display:inline-block;padding:6px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.3);color:var(--accent-cyan);border-radius:20px;font-size:0.78rem;font-weight:600;letter-spacing:2px;margin-bottom:20px;animation:fadeInDown 0.6s ease;}
+        .hero-title{font-size:3.5rem;font-weight:900;color:var(--text-highlight);margin-bottom:12px;animation:fadeInUp 0.6s ease;}
+        .hero-title span{background:linear-gradient(135deg,#4a9eff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .hero-subtitle{font-size:1.15rem;color:var(--text-secondary);margin-bottom:15px;animation:fadeInUp 0.8s ease;}
+        .hero-search{display:flex;gap:10px;max-width:500px;margin:0 auto 25px;animation:fadeInUp 1s ease;}
+        .hero-search input{flex:1;padding:15px 22px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(74,158,255,0.3);color:var(--text-primary);border-radius:25px;font-size:0.95rem;outline:none;transition:all var(--transition-speed);}
+        .hero-search input:focus{border-color:var(--accent-cyan);box-shadow:0 0 20px rgba(0,212,255,0.15);}
+        .hero-search button{padding:15px 28px;background:linear-gradient(135deg,#4a9eff,#3a7fd9);color:#fff;border:none;border-radius:25px;font-weight:700;cursor:pointer;font-size:0.9rem;transition:all var(--transition-speed);}
+        .hero-search button:hover{box-shadow:0 6px 25px rgba(74,158,255,0.4);}
+        .hero-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;animation:fadeInUp 1.1s ease;}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:25px;font-size:0.9rem;font-weight:600;text-decoration:none;cursor:pointer;transition:all var(--transition-speed);border:none;}
+        .btn-outline{background:transparent;color:var(--accent-cyan);border:1.5px solid rgba(0,212,255,0.4);}
+        .btn-outline:hover{border-color:var(--accent-cyan);background:rgba(0,212,255,0.08);}
+
+        /* ===== QUICK FACTS TICKER ===== */
+        .quick-facts-bar{background:var(--bg-tertiary);border-top:1px solid var(--border-glow);border-bottom:1px solid var(--border-glow);padding:10px 0;overflow:hidden;}
+        .quick-facts-track{display:flex;gap:60px;animation:scrollFacts 30s linear infinite;white-space:nowrap;width:max-content;}
+        .quick-facts-track span{color:var(--accent-cyan);font-size:0.8rem;font-weight:600;letter-spacing:1px;display:inline-flex;align-items:center;gap:6px;}
+
+        /* ===== STATS BAR ===== */
+        .stats-bar{background:var(--bg-secondary);border-bottom:1px solid var(--border-glow);padding:28px 0;overflow:hidden;}
+        .stats-container{max-width:var(--max-width);margin:0 auto;padding:0 30px;display:flex;justify-content:space-around;flex-wrap:wrap;gap:22px;}
+        .stat-item{text-align:center;min-width:110px;transition:transform var(--transition-speed);}
+        .stat-item:hover{transform:translateY(-3px);}
+        .stat-number{font-size:2.2rem;font-weight:900;color:var(--accent-cyan);font-family:'Courier New',monospace;}
+        .stat-label{font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:2px;margin-top:2px;}
+
+        /* ===== SECTION COMMONS ===== */
+        .section{padding:65px 0;}
+        .section-alt{background:var(--bg-secondary);}
+        .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+        .section-header{text-align:center;margin-bottom:40px;}
+        .section-tag{display:inline-block;padding:5px 14px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);color:var(--accent-cyan);font-size:0.72rem;letter-spacing:2px;border-radius:12px;margin-bottom:12px;}
+        .section-header h2{font-size:2rem;font-weight:800;color:var(--text-highlight);}
+        .section-header .line{width:60px;height:3px;background:linear-gradient(90deg,var(--accent-blue),var(--accent-purple));margin:12px auto;border-radius:2px;}
+        .section-header .sub-desc{color:var(--text-secondary);font-size:0.88rem;margin-top:8px;}
+
+        /* ===== CITY GRID ===== */
+        .city-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px;}
+        .city-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;transition:all var(--transition-speed);cursor:pointer;text-decoration:none;color:inherit;display:block;}
+        .city-card:hover{transform:translateY(-5px);border-color:var(--accent-blue);box-shadow:var(--shadow-hover);}
+        .city-card-img{width:100%;aspect-ratio:16/10;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:4rem;color:var(--text-secondary);position:relative;overflow:hidden;}
+        .city-card-img .shimmer-overlay{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent);animation:shimmer 2.5s infinite;}
+        .city-card-rating{position:absolute;top:12px;right:12px;padding:5px 12px;background:rgba(0,0,0,0.7);border:1px solid var(--accent-gold);color:var(--accent-gold);font-size:0.78rem;font-weight:700;border-radius:15px;z-index:1;}
+        .city-card-info{padding:18px;}
+        .city-card-name{font-size:1.1rem;font-weight:700;color:var(--text-highlight);}
+        .city-card-country{font-size:0.82rem;color:var(--accent-cyan);margin-bottom:6px;}
+        .city-card-tags{display:flex;gap:6px;flex-wrap:wrap;}
+        .city-tag{padding:3px 10px;background:rgba(74,158,255,0.06);color:var(--accent-cyan);border-radius:10px;font-size:0.7rem;}
+
+        /* ===== QUICK COMPARE TABLE ===== */
+        .compare-table-wrap{overflow-x:auto;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);}
+        .compare-table{width:100%;border-collapse:collapse;font-size:0.9rem;}
+        .compare-table thead th{background:var(--bg-tertiary);color:var(--accent-cyan);font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;padding:14px 16px;text-align:center;border-bottom:2px solid var(--border-glow);position:sticky;top:0;}
+        .compare-table thead th:first-child{text-align:left;min-width:120px;}
+        .compare-table tbody td{padding:13px 16px;text-align:center;border-bottom:1px solid var(--border-glow);}
+        .compare-table tbody td:first-child{text-align:left;font-weight:600;color:var(--text-highlight);}
+        .compare-table tbody tr:hover{background:rgba(74,158,255,0.04);}
+        .price-low{color:var(--accent-green);font-weight:700;}
+        .price-mid{color:var(--accent-gold);font-weight:700;}
+        .price-high{color:var(--accent-red);font-weight:700;}
+        .compare-table tbody tr:last-child td{border-bottom:none;}
+
+        /* ===== BEST FOR ===== */
+        .bestfor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;}
+        .bestfor-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:22px;transition:all var(--transition-speed);}
+        .bestfor-card:hover{border-color:var(--accent-blue);box-shadow:var(--shadow-hover);transform:translateY(-3px);}
+        .bestfor-card h3{font-size:1.05rem;color:var(--text-highlight);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+        .bestfor-card .bestfor-sub{font-size:0.78rem;color:var(--text-secondary);margin-bottom:12px;}
+        .bestfor-card .bestfor-cities{display:flex;flex-wrap:wrap;gap:8px;}
+        .bestfor-badge{padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;display:inline-flex;align-items:center;gap:5px;background:rgba(74,158,255,0.08);color:var(--accent-cyan);border:1px solid rgba(74,158,255,0.15);}
+        .bestfor-badge.gold{background:rgba(255,215,0,0.08);color:var(--accent-gold);border-color:rgba(255,215,0,0.2);}
+
+        /* ===== QUIZ ===== */
+        .quiz-container{max-width:700px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:32px;}
+        .quiz-step{display:none;}
+        .quiz-step.active{display:block;}
+        .quiz-question{margin-bottom:22px;}
+        .quiz-question h4{font-size:1rem;color:var(--text-highlight);margin-bottom:10px;}
+        .quiz-question .q-num{display:inline-block;width:26px;height:26px;background:linear-gradient(135deg,#4a9eff,#a855f7);color:#fff;border-radius:50%;text-align:center;line-height:26px;font-size:0.78rem;font-weight:800;margin-right:6px;}
+        .quiz-options{display:flex;gap:10px;flex-wrap:wrap;}
+        .quiz-option{padding:10px 20px;background:rgba(74,158,255,0.05);border:1px solid rgba(74,158,255,0.2);color:var(--text-primary);border-radius:20px;cursor:pointer;font-size:0.85rem;transition:all var(--transition-speed);user-select:none;}
+        .quiz-option:hover{background:rgba(74,158,255,0.12);border-color:var(--accent-cyan);}
+        .quiz-option.selected{background:rgba(74,158,255,0.18);border-color:var(--accent-cyan);color:var(--accent-cyan);}
+        .quiz-result{text-align:center;padding:24px;background:rgba(74,158,255,0.05);border:1px solid var(--accent-blue);border-radius:var(--border-radius);display:none;}
+        .quiz-result .result-emoji{font-size:4rem;animation:float 2s ease-in-out infinite;}
+        .quiz-result .result-city{font-size:1.5rem;font-weight:800;color:var(--accent-cyan);margin:8px 0;}
+        .quiz-result .result-desc{font-size:0.9rem;color:var(--text-secondary);line-height:1.6;}
+        .quiz-result .result-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;}
+        .quiz-result .result-tags span{padding:4px 12px;background:rgba(74,158,255,0.08);color:var(--accent-cyan);border-radius:12px;font-size:0.72rem;}
+        .quiz-actions{display:flex;gap:10px;justify-content:center;margin-top:20px;}
+        .quiz-btn{padding:11px 24px;border-radius:25px;font-weight:700;font-size:0.85rem;cursor:pointer;border:none;transition:all var(--transition-speed);}
+        .quiz-btn.primary{background:linear-gradient(135deg,#4a9eff,#3a7fd9);color:#fff;}
+        .quiz-btn.primary:hover{box-shadow:0 4px 20px rgba(74,158,255,0.4);}
+        .quiz-btn.secondary{background:transparent;color:var(--text-secondary);border:1.5px solid var(--border-glow);}
+        .quiz-btn.secondary:hover{background:rgba(74,158,255,0.06);color:var(--accent-cyan);border-color:var(--accent-cyan);}
+        .quiz-btn.reset{background:transparent;color:var(--accent-cyan);border:1.5px solid rgba(0,212,255,0.4);}
+        .quiz-btn.reset:hover{background:rgba(0,212,255,0.08);}
+        .quiz-progress{display:flex;justify-content:center;gap:8px;margin-bottom:20px;}
+        .quiz-progress .dot{width:10px;height:10px;border-radius:50%;background:var(--border-glow);transition:all var(--transition-speed);}
+        .quiz-progress .dot.done{background:var(--accent-cyan);}
+        .quiz-progress .dot.current{background:var(--accent-blue);box-shadow:0 0 8px rgba(74,158,255,0.5);}
+
+        /* ===== TRENDING CITIES ===== */
+        .trending-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+        .trending-item{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:16px 20px;display:flex;align-items:center;gap:14px;transition:all var(--transition-speed);text-decoration:none;color:inherit;}
+        .trending-item:hover{border-color:var(--accent-purple);transform:translateX(4px);}
+        .trending-rank{font-size:1.4rem;font-weight:900;color:var(--accent-purple);min-width:32px;}
+        .trending-flag{font-size:2rem;}
+        .trending-info{flex:1;}
+        .trending-name{font-weight:700;color:var(--text-highlight);}
+        .trending-reason{font-size:0.75rem;color:var(--text-secondary);}
+        .trending-views{color:var(--accent-cyan);font-size:0.8rem;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+
+        /* ===== WEATHER ===== */
+        .weather-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+        .weather-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:22px 18px;text-align:center;transition:all var(--transition-speed);}
+        .weather-card:hover{border-color:var(--accent-cyan);box-shadow:var(--shadow-hover);transform:translateY(-4px);}
+        .weather-emoji{font-size:3.2rem;margin-bottom:8px;display:block;animation:float 3.5s ease-in-out infinite;}
+        .weather-emoji.delay1{animation-delay:-1s;}
+        .weather-emoji.delay2{animation-delay:-2s;}
+        .weather-emoji.delay3{animation-delay:-3s;}
+        .weather-temp{font-size:2rem;font-weight:900;color:var(--text-highlight);}
+        .weather-desc{font-size:0.82rem;color:var(--accent-cyan);font-weight:600;}
+        .weather-detail{font-size:0.72rem;color:var(--text-secondary);margin-top:4px;}
+        .weather-extra{font-size:0.7rem;color:var(--text-secondary);margin-top:6px;display:flex;justify-content:center;gap:10px;}
+
+        /* ===== LIVABLE RANK ===== */
+        .rank-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px;}
+        .rank-item{display:flex;align-items:center;gap:14px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:14px 18px;transition:all var(--transition-speed);text-decoration:none;color:inherit;}
+        .rank-item:hover{border-color:var(--accent-gold);transform:translateX(4px);}
+        .rank-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;background:var(--accent-gold);color:#0a0e17;font-size:0.9rem;flex-shrink:0;}
+        .rank-num.silver{background:var(--accent-cyan);}
+        .rank-num.bronze{background:var(--accent-orange);color:#fff;}
+        .rank-flag{font-size:1.8rem;}
+        .rank-name{font-weight:600;color:var(--text-highlight);}
+        .rank-score{color:var(--accent-cyan);font-size:0.85rem;margin-left:auto;}
+
+        /* ===== SEASONAL ===== */
+        .seasonal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;}
+        .seasonal-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:24px 20px;text-align:center;transition:all var(--transition-speed);cursor:pointer;}
+        .seasonal-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-hover);border-color:var(--accent-cyan);}
+        .seasonal-icon{font-size:3.2rem;margin-bottom:10px;display:block;animation:float 4s ease-in-out infinite;}
+        .seasonal-card h3{font-size:1.1rem;color:var(--text-highlight);margin-bottom:4px;}
+        .seasonal-card .seasonal-tag{font-size:0.75rem;color:var(--accent-cyan);margin-bottom:8px;}
+        .seasonal-cities{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+        .seasonal-cities span{padding:4px 12px;background:rgba(74,158,255,0.06);border-radius:12px;font-size:0.72rem;color:var(--text-secondary);transition:all var(--transition-speed);}
+        .seasonal-cities span:hover{background:rgba(74,158,255,0.12);color:var(--accent-cyan);}
+
+        /* ===== TRAVEL TIPS ===== */
+        .tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
+        .tip-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;transition:all var(--transition-speed);cursor:pointer;}
+        .tip-card:hover{transform:translateY(-5px);border-color:var(--accent-orange);box-shadow:var(--shadow-hover);}
+        .tip-card-header{background:linear-gradient(135deg,rgba(255,107,53,0.12),rgba(255,215,0,0.08));padding:18px;display:flex;align-items:center;gap:12px;}
+        .tip-card-header .tip-icon{font-size:2rem;}
+        .tip-card-header h4{font-size:0.95rem;color:var(--text-highlight);}
+        .tip-card-body{padding:16px;}
+        .tip-card-body p{font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px;line-height:1.5;}
+        .tip-card-body .tip-meta{font-size:0.72rem;color:var(--accent-cyan);display:flex;align-items:center;gap:5px;}
+
+        /* ===== NEWS ===== */
+        .news-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+        .news-item{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:18px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all var(--transition-speed);text-decoration:none;color:inherit;}
+        .news-item:hover{border-color:var(--accent-blue);transform:translateX(3px);}
+        .news-icon{font-size:2rem;}
+        .news-title{font-weight:600;color:var(--text-highlight);font-size:0.9rem;}
+        .news-date{font-size:0.75rem;color:var(--text-secondary);}
+
+        /* ===== NEWSLETTER ===== */
+        .newsletter-section{background:linear-gradient(135deg,rgba(74,158,255,0.06),rgba(168,85,247,0.04));border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:48px 40px;text-align:center;max-width:700px;margin:0 auto;}
+        .newsletter-section h3{font-size:1.5rem;color:var(--text-highlight);margin-bottom:8px;}
+        .newsletter-section p{font-size:0.9rem;color:var(--text-secondary);margin-bottom:20px;max-width:450px;margin-left:auto;margin-right:auto;}
+        .newsletter-form{display:flex;gap:10px;max-width:480px;margin:0 auto;}
+        .newsletter-form input{flex:1;padding:14px 20px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(74,158,255,0.3);color:var(--text-primary);border-radius:25px;font-size:0.9rem;outline:none;transition:all var(--transition-speed);}
+        .newsletter-form input:focus{border-color:var(--accent-cyan);box-shadow:0 0 20px rgba(0,212,255,0.12);}
+        .newsletter-form button{padding:14px 28px;background:linear-gradient(135deg,#4a9eff,#a855f7);color:#fff;border:none;border-radius:25px;font-weight:700;cursor:pointer;font-size:0.9rem;transition:all var(--transition-speed);white-space:nowrap;}
+        .newsletter-form button:hover{box-shadow:0 6px 25px rgba(168,85,247,0.4);transform:translateY(-1px);}
+
+        /* ===== PARTNER CITIES ===== */
+        .partner-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;align-items:center;padding:10px 0;}
+        .partner-item{display:flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:0.85rem;font-weight:600;opacity:0.7;transition:all var(--transition-speed);text-decoration:none;}
+        .partner-item:hover{opacity:1;color:var(--accent-cyan);transform:translateY(-2px);}
+        .partner-item .partner-flag{font-size:1.4rem;}
+
+        /* ===== FOOTER ===== */
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:45px 0 20px;}
+        .footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:25px;margin-bottom:30px;}
+        .footer-col h4{color:var(--accent-cyan);font-size:0.82rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+        .footer-col ul{list-style:none;}
+        .footer-col ul li{margin-bottom:6px;}
+        .footer-col ul li a{color:var(--text-secondary);text-decoration:none;font-size:0.8rem;transition:color var(--transition-speed);}
+        .footer-col ul li a:hover{color:var(--accent-blue);}
+        .footer-bottom{text-align:center;padding-top:18px;border-top:1px solid var(--border-glow);color:var(--text-secondary);font-size:0.75rem;}
+
+        /* ===== BACK TO TOP ===== */
+        .back-to-top{position:fixed;bottom:28px;right:28px;width:44px;height:44px;background:rgba(74,158,255,0.12);border:1.5px solid rgba(74,158,255,0.3);color:var(--accent-cyan);border-radius:10px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all var(--transition-speed);z-index:999;}
+        .back-to-top.visible{opacity:1;visibility:visible;}
+        .back-to-top:hover{background:var(--accent-blue);color:#fff;}
+
+        /* ===== KEYFRAMES ===== */
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(25px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes fadeInDown{from{opacity:0;transform:translateY(-25px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+        @keyframes shimmer{0%{left:-100%;}100%{left:100%;}}
+        @keyframes scrollFacts{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+        @keyframes countUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes glowPulse{0%,100%{box-shadow:0 0 5px rgba(74,158,255,0.3);}50%{box-shadow:0 0 20px rgba(74,158,255,0.6);}}
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:1024px){
+            .bestfor-grid{grid-template-columns:repeat(2,1fr);}
+        }
+        @media(max-width:900px){
+            .hero-title{font-size:2.2rem;}
+            .hero{height:500px;}
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,23,0.98);flex-direction:column;padding:20px;z-index:999;}
+            .nav-links.active{display:flex;}
+            .mobile-menu-btn{display:flex;}
+            .bestfor-grid{grid-template-columns:1fr;}
+            .compare-table{font-size:0.78rem;}
+            .compare-table thead th,.compare-table tbody td{padding:10px 12px;}
+            .newsletter-section{padding:30px 20px;}
+            .newsletter-form{flex-direction:column;}
+            .weather-grid{grid-template-columns:repeat(2,1fr);}
+            .partner-row{gap:20px;}
+        }
+        @media(max-width:600px){
+            .hero-title{font-size:1.6rem;}
+            .hero{height:420px;}
+            .city-grid{grid-template-columns:1fr;}
+            .hero-search{flex-direction:column;}
+            .stats-container{gap:14px;}
+            .stat-item{min-width:80px;}
+            .stat-number{font-size:1.6rem;}
+            .weather-grid{grid-template-columns:1fr;}
+            .trending-row{grid-template-columns:1fr;}
+            .seasonal-grid{grid-template-columns:repeat(2,1fr);}
+            .tips-grid{grid-template-columns:1fr;}
+            .news-row{grid-template-columns:1fr;}
+            .quiz-container{padding:20px;}
+        }
+        @media(max-width:400px){
+            .seasonal-grid{grid-template-columns:1fr;}
+            .quiz-options{flex-direction:column;}
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================= -->
+    <!--  NAVBAR                                      -->
+    <!-- ============================================= -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="home.html" class="logo">
+                <div class="logo-icon">C</div>
+                <span class="logo-text">CityLens</span>
+            </a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html" class="active">首页</a></li>
+                <li><a href="cities.html">城市大全</a></li>
+                <li><a href="compare.html">对比</a></li>
+                <li><a href="map.html">地图</a></li>
+                <li><a href="ranking.html">排行榜</a></li>
+                <li><a href="landmarks.html">地标</a></li>
+                <li><a href="cost.html">生活成本</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn-icon" id="btnThemeToggle">◐</button>
+                <button class="btn-icon" id="btnFav">❤️</button>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============================================= -->
+    <!--  HERO                                        -->
+    <!-- ============================================= -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-glow"></div>
+        <div class="hero-glow"></div>
+        <canvas id="globeCanvas" width="400" height="400"></canvas>
+        <div class="hero-content">
+            <div class="hero-badge">■ CITY EXPLORER 2025</div>
+            <h1 class="hero-title">探索世界<span>城市</span>生活</h1>
+            <p class="hero-subtitle">发现更适合你的城市 · 数据驱动的城市生活指南</p>
+            <div class="hero-search">
+                <input type="text" id="heroSearch" placeholder="搜索城市：东京 / 纽约 / 上海..." autocomplete="off">
+                <button onclick="searchCity()">🔍 搜索</button>
+            </div>
+            <div class="hero-buttons">
+                <a href="cities.html" class="btn btn-outline">🌍 浏览城市</a>
+                <a href="compare.html" class="btn btn-outline">⚖️ 城市对比</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  QUICK FACTS TICKER                          -->
+    <!-- ============================================= -->
+    <section class="quick-facts-bar">
+        <div class="quick-facts-track" id="factsTrack">
+            <span>📊 50+ 城市数据</span>
+            <span>🌏 覆盖6大洲</span>
+            <span>🏛️ 100+ 地标收录</span>
+            <span>📈 实时宜居指数</span>
+            <span>💰 生活成本对比</span>
+            <span>🌤️ 城市天气追踪</span>
+            <span>🔍 多维度筛选</span>
+            <span>⭐ 用户真实评价</span>
+            <!-- duplicated for seamless loop -->
+            <span>📊 50+ 城市数据</span>
+            <span>🌏 覆盖6大洲</span>
+            <span>🏛️ 100+ 地标收录</span>
+            <span>📈 实时宜居指数</span>
+            <span>💰 生活成本对比</span>
+            <span>🌤️ 城市天气追踪</span>
+            <span>🔍 多维度筛选</span>
+            <span>⭐ 用户真实评价</span>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  STATS BAR                                   -->
+    <!-- ============================================= -->
+    <section class="stats-bar">
+        <div class="stats-container">
+            <div class="stat-item">
+                <span class="stat-number" data-count="50">0</span>
+                <span class="stat-label">收录城市</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="30">0</span>
+                <span class="stat-label">覆盖国家</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="6">0</span>
+                <span class="stat-label">大洲</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="100">0</span>
+                <span class="stat-label">地标建筑</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="200">0</span>
+                <span class="stat-label">数据维度</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="15">0</span>
+                <span class="stat-label">分类标签</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="1200">0</span>
+                <span class="stat-label">用户评价</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-count="8">0</span>
+                <span class="stat-label">核心功能</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  FEATURED CITIES (12)                        -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 热门城市 ]</span>
+                <h2>精选城市</h2>
+                <div class="line"></div>
+                <p class="sub-desc">基于宜居评分、生活成本、文化丰富度等综合精选</p>
+            </div>
+            <div class="city-grid" id="featuredCities"></div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  COST OF LIVING QUICK COMPARE                -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 生活成本 ]</span>
+                <h2>热门城市生活成本速览</h2>
+                <div class="line"></div>
+                <p class="sub-desc">数据每月更新 · 以人民币为基准参考</p>
+            </div>
+            <div class="compare-table-wrap">
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>项目</th>
+                            <th>🏙️ 上海</th>
+                            <th>🗼 东京</th>
+                            <th>🗽 纽约</th>
+                            <th>🏰 伦敦</th>
+                            <th>🗼 巴黎</th>
+                            <th>🏙️ 新加坡</th>
+                            <th>🌴 洛杉矶</th>
+                            <th>🏖️ 巴塞罗那</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>市中心月租 (1室)</td>
+                            <td class="price-mid">¥8,500</td>
+                            <td class="price-high">¥12,000</td>
+                            <td class="price-high">¥28,000</td>
+                            <td class="price-high">¥22,000</td>
+                            <td class="price-high">¥18,000</td>
+                            <td class="price-high">¥16,000</td>
+                            <td class="price-high">¥20,000</td>
+                            <td class="price-mid">¥9,500</td>
+                        </tr>
+                        <tr>
+                            <td>普通餐厅一餐</td>
+                            <td class="price-low">¥40</td>
+                            <td class="price-mid">¥65</td>
+                            <td class="price-high">¥150</td>
+                            <td class="price-high">¥130</td>
+                            <td class="price-high">¥120</td>
+                            <td class="price-mid">¥70</td>
+                            <td class="price-high">¥130</td>
+                            <td class="price-mid">¥75</td>
+                        </tr>
+                        <tr>
+                            <td>一杯拿铁</td>
+                            <td class="price-low">¥28</td>
+                            <td class="price-mid">¥32</td>
+                            <td class="price-mid">¥38</td>
+                            <td class="price-mid">¥35</td>
+                            <td class="price-mid">¥36</td>
+                            <td class="price-mid">¥33</td>
+                            <td class="price-mid">¥35</td>
+                            <td class="price-low">¥22</td>
+                        </tr>
+                        <tr>
+                            <td>公共交通月票</td>
+                            <td class="price-low">¥200</td>
+                            <td class="price-mid">¥500</td>
+                            <td class="price-high">¥900</td>
+                            <td class="price-high">¥1,200</td>
+                            <td class="price-mid">¥580</td>
+                            <td class="price-mid">¥650</td>
+                            <td class="price-mid">¥700</td>
+                            <td class="price-mid">¥400</td>
+                        </tr>
+                        <tr>
+                            <td>月均生活费 (单人)</td>
+                            <td class="price-mid">¥6,000</td>
+                            <td class="price-mid">¥9,500</td>
+                            <td class="price-high">¥22,000</td>
+                            <td class="price-high">¥18,000</td>
+                            <td class="price-high">¥14,000</td>
+                            <td class="price-high">¥12,000</td>
+                            <td class="price-high">¥16,000</td>
+                            <td class="price-mid">¥7,500</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  BEST FOR                                    -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 特色推荐 ]</span>
+                <h2>最佳城市推荐</h2>
+                <div class="line"></div>
+                <p class="sub-desc">无论你追求什么，都能找到最适合的那座城</p>
+            </div>
+            <div class="bestfor-grid">
+                <!-- Best for Food -->
+                <div class="bestfor-card">
+                    <h3>🍜 最佳美食之城</h3>
+                    <div class="bestfor-sub">味蕾盛宴 · 全球美食之都</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇯🇵 东京 · 米其林之都</span>
+                        <span class="bestfor-badge">🇫🇷 巴黎 · 法餐殿堂</span>
+                        <span class="bestfor-badge">🇹🇭 曼谷 · 街头美食天堂</span>
+                        <span class="bestfor-badge">🇮🇹 罗马 · 意面披萨发源</span>
+                    </div>
+                </div>
+
+                <!-- Best for Tech Jobs -->
+                <div class="bestfor-card">
+                    <h3>💻 最佳科技就业</h3>
+                    <div class="bestfor-sub">硅谷之外 · 全球科技中心</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇺🇸 旧金山 · 硅谷核心</span>
+                        <span class="bestfor-badge">🇨🇳 上海 · 中国硅谷</span>
+                        <span class="bestfor-badge">🇸🇬 新加坡 · 亚洲科技枢纽</span>
+                        <span class="bestfor-badge">🇯🇵 东京 · 创新前沿</span>
+                    </div>
+                </div>
+
+                <!-- Best for Families -->
+                <div class="bestfor-card">
+                    <h3>👨‍👩‍👧‍👦 最佳家庭生活</h3>
+                    <div class="bestfor-sub">安全 · 教育 · 绿地 · 社区</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇸🇬 新加坡 · 全球最安全</span>
+                        <span class="bestfor-badge">🇦🇺 悉尼 · 阳光与海滩</span>
+                        <span class="bestfor-badge">🇨🇭 苏黎世 · 高品质生活</span>
+                        <span class="bestfor-badge">🇨🇦 温哥华 · 自然与城市</span>
+                    </div>
+                </div>
+
+                <!-- Best for Nightlife -->
+                <div class="bestfor-card">
+                    <h3>🎉 最佳夜生活</h3>
+                    <div class="bestfor-sub">不夜之城 · 派对与娱乐</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇺🇸 纽约 · 不夜城</span>
+                        <span class="bestfor-badge">🇪🇸 巴塞罗那 · 海滨夜店</span>
+                        <span class="bestfor-badge">🇹🇷 伊斯坦布尔 · 跨洲夜生活</span>
+                        <span class="bestfor-badge">🇬🇧 伦敦 · 西区剧院</span>
+                    </div>
+                </div>
+
+                <!-- Best for Nature -->
+                <div class="bestfor-card">
+                    <h3>🌿 最佳自然风光</h3>
+                    <div class="bestfor-sub">城市中的自然 · 山与海</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇨🇭 苏黎世 · 阿尔卑斯山</span>
+                        <span class="bestfor-badge">🇦🇺 悉尼 · 海滩与蓝山</span>
+                        <span class="bestfor-badge">🇨🇦 温哥华 · 山海之城</span>
+                        <span class="bestfor-badge">🇺🇸 洛杉矶 · 阳光海岸</span>
+                    </div>
+                </div>
+
+                <!-- Best for History -->
+                <div class="bestfor-card">
+                    <h3>🏛️ 最佳历史文化</h3>
+                    <div class="bestfor-sub">千年文明 · 行走的历史</div>
+                    <div class="bestfor-cities">
+                        <span class="bestfor-badge gold">🇮🇹 罗马 · 永恒之城</span>
+                        <span class="bestfor-badge">🇹🇷 伊斯坦布尔 · 帝国古都</span>
+                        <span class="bestfor-badge">🇷🇺 莫斯科 · 红场与克里姆林</span>
+                        <span class="bestfor-badge">🇬🇧 伦敦 · 千年王城</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  CITY QUIZ                                   -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 城市匹配 ]</span>
+                <h2>城市性格测试</h2>
+                <div class="line"></div>
+                <p class="sub-desc">回答 3 个问题，找到最适合你的城市</p>
+            </div>
+            <div class="quiz-container" id="quizContainer">
+                <div class="quiz-progress">
+                    <span class="dot done" id="dot1"></span>
+                    <span class="dot current" id="dot2"></span>
+                    <span class="dot" id="dot3"></span>
+                </div>
+
+                <!-- Q1: Climate -->
+                <div class="quiz-question">
+                    <h4><span class="q-num">1</span> 你更喜欢哪种气候？</h4>
+                    <div class="quiz-options" data-q="1">
+                        <span class="quiz-option" data-val="warm">☀️ 温暖阳光</span>
+                        <span class="quiz-option" data-val="cool">❄️ 凉爽四季</span>
+                        <span class="quiz-option" data-val="mild">🌸 温和湿润</span>
+                        <span class="quiz-option" data-val="any">🌈 都可以</span>
+                    </div>
+                </div>
+
+                <!-- Q2: Activity -->
+                <div class="quiz-question">
+                    <h4><span class="q-num">2</span> 你最喜欢的城市活动是？</h4>
+                    <div class="quiz-options" data-q="2">
+                        <span class="quiz-option" data-val="food">🍜 品尝美食</span>
+                        <span class="quiz-option" data-val="culture">🎨 文化探索</span>
+                        <span class="quiz-option" data-val="nature">🏞️ 户外自然</span>
+                        <span class="quiz-option" data-val="night">🎵 夜生活</span>
+                    </div>
+                </div>
+
+                <!-- Q3: Budget -->
+                <div class="quiz-question">
+                    <h4><span class="q-num">3</span> 你的月预算水平？</h4>
+                    <div class="quiz-options" data-q="3">
+                        <span class="quiz-option" data-val="low">💰 经济实惠</span>
+                        <span class="quiz-option" data-val="mid">💵 中等水平</span>
+                        <span class="quiz-option" data-val="high">💎 预算充足</span>
+                        <span class="quiz-option" data-val="any">🤷 无所谓</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="quiz-actions">
+                    <button class="quiz-btn primary" id="quizSubmit">🔮 查看我的城市</button>
+                    <button class="quiz-btn reset" id="quizReset">🔄 重新选择</button>
+                </div>
+
+                <!-- Result -->
+                <div class="quiz-result" id="quizResult">
+                    <div class="result-emoji" id="resultEmoji"></div>
+                    <div class="result-city" id="resultCity"></div>
+                    <div class="result-desc" id="resultDesc"></div>
+                    <div class="result-tags" id="resultTags"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  TRENDING CITIES                             -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 热门趋势 ]</span>
+                <h2>本周热门城市</h2>
+                <div class="line"></div>
+                <p class="sub-desc">基于搜索量、用户收藏和社交媒体讨论热度</p>
+            </div>
+            <div class="trending-row" id="trendingCities"></div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  WEATHER TODAY                               -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 今日天气 ]</span>
+                <h2>城市天气速报</h2>
+                <div class="line"></div>
+                <p class="sub-desc">模拟数据 · 仅供参考</p>
+            </div>
+            <div class="weather-grid" id="weatherGrid"></div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  LIVABLE RANK                                -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 宜居排行 ]</span>
+                <h2>最宜居城市 TOP6</h2>
+                <div class="line"></div>
+                <p class="sub-desc">综合安全、医疗、教育、环境、基础设施多维评分</p>
+            </div>
+            <div class="rank-preview" id="livableRank"></div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  SEASONAL RECOMMENDATIONS                    -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 四季推荐 ]</span>
+                <h2>季节城市推荐</h2>
+                <div class="line"></div>
+                <p class="sub-desc">每个季节都有最值得去的城市</p>
+            </div>
+            <div class="seasonal-grid">
+                <div class="seasonal-card">
+                    <span class="seasonal-icon">🌸</span>
+                    <h3>春季最佳</h3>
+                    <p class="seasonal-tag">3月 - 5月</p>
+                    <div class="seasonal-cities">
+                        <span>🇯🇵 东京 · 樱花季</span>
+                        <span>🇫🇷 巴黎 · 花都之春</span>
+                        <span>🇳🇱 阿姆斯特丹 · 郁金香</span>
+                    </div>
+                </div>
+                <div class="seasonal-card">
+                    <span class="seasonal-icon">☀️</span>
+                    <h3>夏季最佳</h3>
+                    <p class="seasonal-tag">6月 - 8月</p>
+                    <div class="seasonal-cities">
+                        <span>🇪🇸 巴塞罗那 · 地中海沙滩</span>
+                        <span>🇦🇺 悉尼 · 反季暖冬</span>
+                        <span>🇬🇷 雅典 · 爱琴海蓝白</span>
+                    </div>
+                </div>
+                <div class="seasonal-card">
+                    <span class="seasonal-icon">🍂</span>
+                    <h3>秋季最佳</h3>
+                    <p class="seasonal-tag">9月 - 11月</p>
+                    <div class="seasonal-cities">
+                        <span>🇨🇳 北京 · 香山红叶</span>
+                        <span>🇺🇸 纽约 · 中央公园秋色</span>
+                        <span>🇩🇪 慕尼黑 · 十月啤酒节</span>
+                    </div>
+                </div>
+                <div class="seasonal-card">
+                    <span class="seasonal-icon">❄️</span>
+                    <h3>冬季最佳</h3>
+                    <p class="seasonal-tag">12月 - 2月</p>
+                    <div class="seasonal-cities">
+                        <span>🇷🇺 莫斯科 · 冰雪童话</span>
+                        <span>🇨🇭 苏黎世 · 圣诞集市</span>
+                        <span>🇯🇵 札幌 · 雪祭与温泉</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  TRAVEL TIPS                                 -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 旅行攻略 ]</span>
+                <h2>城市生活小贴士</h2>
+                <div class="line"></div>
+                <p class="sub-desc">从出行到租房，助你快速融入新城市</p>
+            </div>
+            <div class="tips-grid">
+                <div class="tip-card">
+                    <div class="tip-card-header">
+                        <span class="tip-icon">🏠</span>
+                        <h4>如何在东京找到理想公寓</h4>
+                    </div>
+                    <div class="tip-card-body">
+                        <p>了解日本租房流程、初始费用（礼金、敷金）和最佳社区选择，从涩谷到吉祥寺的完整居住指南。</p>
+                        <div class="tip-meta">📅 2025-06-15 · ⏱️ 8 分钟阅读 · 🏷️ 租房攻略</div>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-card-header">
+                        <span class="tip-icon">🍕</span>
+                        <h4>纽约美食地图：10美元以下的美味</h4>
+                    </div>
+                    <div class="tip-card-body">
+                        <p>在寸土寸金的曼哈顿，也能吃到经济实惠的各国美食。从 1 美元披萨到唐人街拉面，美味不贵。</p>
+                        <div class="tip-meta">📅 2025-06-12 · ⏱️ 6 分钟阅读 · 🏷️ 美食探店</div>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-card-header">
+                        <span class="tip-icon">🚇</span>
+                        <h4>上海地铁通勤完全攻略</h4>
+                    </div>
+                    <div class="tip-card-body">
+                        <p>掌握上海地铁 900+ 公里的交通网络，高峰时段通勤技巧和最佳换乘路线深度分析。</p>
+                        <div class="tip-meta">📅 2025-06-08 · ⏱️ 5 分钟阅读 · 🏷️ 交通出行</div>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-card-header">
+                        <span class="tip-icon">💼</span>
+                        <h4>新加坡工作签证申请指南</h4>
+                    </div>
+                    <div class="tip-card-body">
+                        <p>EP、S Pass、创业签证...详解新加坡各类工作签证的申请条件、审批流程和最新政策变化。</p>
+                        <div class="tip-meta">📅 2025-06-03 · ⏱️ 10 分钟阅读 · 🏷️ 签证移民</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  NEWS                                        -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">[ 城市动态 ]</span>
+                <h2>最新资讯</h2>
+                <div class="line"></div>
+                <p class="sub-desc">全球城市发展动态一手掌握</p>
+            </div>
+            <div class="news-row" id="newsPreview"></div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  NEWSLETTER                                  -->
+    <!-- ============================================= -->
+    <section class="section">
+        <div class="container">
+            <div class="newsletter-section">
+                <h3>📬 订阅城市周报</h3>
+                <p>每周精选城市资讯、宜居排行更新和生活成本变动，直接送达您的邮箱。已有 12,000+ 订阅者。</p>
+                <div class="newsletter-form">
+                    <input type="email" id="newsletterEmail" placeholder="输入您的邮箱地址..." autocomplete="off">
+                    <button onclick="subscribeNewsletter()">🚀 免费订阅</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  PARTNER CITIES                              -->
+    <!-- ============================================= -->
+    <section class="section section-alt">
+        <div class="container" style="text-align:center;">
+            <div class="section-header">
+                <span class="section-tag">[ 合作伙伴 ]</span>
+                <h2>数据合作城市</h2>
+                <div class="line"></div>
+                <p class="sub-desc">感谢以下城市提供的开放数据支持</p>
+            </div>
+            <div class="partner-row">
+                <span class="partner-item"><span class="partner-flag">🇯🇵</span>东京都政府</span>
+                <span class="partner-item"><span class="partner-flag">🇨🇳</span>上海市大数据中心</span>
+                <span class="partner-item"><span class="partner-flag">🇸🇬</span>新加坡城市发展局</span>
+                <span class="partner-item"><span class="partner-flag">🇬🇧</span>伦敦市政厅</span>
+                <span class="partner-item"><span class="partner-flag">🇫🇷</span>巴黎旅游局</span>
+                <span class="partner-item"><span class="partner-flag">🇺🇸</span>纽约市开放数据</span>
+                <span class="partner-item"><span class="partner-flag">🇦🇺</span>悉尼市政府</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================= -->
+    <!--  FOOTER                                      -->
+    <!-- ============================================= -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>CityLens</h4>
+                    <ul>
+                        <li><a href="about.html">关于我们</a></li>
+                        <li><a href="#">联系方式</a></li>
+                        <li><a href="#">加入我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>探索</h4>
+                    <ul>
+                        <li><a href="cities.html">城市大全</a></li>
+                        <li><a href="map.html">地图探索</a></li>
+                        <li><a href="compare.html">城市对比</a></li>
+                        <li><a href="landmarks.html">城市地标</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>排行</h4>
+                    <ul>
+                        <li><a href="ranking.html">宜居排行</a></li>
+                        <li><a href="cost.html">生活成本</a></li>
+                        <li><a href="#">安全指数</a></li>
+                        <li><a href="#">教育排行</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>工具</h4>
+                    <ul>
+                        <li><a href="compare.html">城市对比</a></li>
+                        <li><a href="#">性格测试</a></li>
+                        <li><a href="#">费用计算器</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>声明</h4>
+                    <ul>
+                        <li><a href="#">数据来源公开</a></li>
+                        <li><a href="#">仅供学习使用</a></li>
+                        <li><a href="#">隐私政策</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2025 CityLens 城市生活指南 | 探索世界城市生活 | 仅供学习使用
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================= -->
+    <!--  BACK TO TOP                                 -->
+    <!-- ============================================= -->
+    <button class="back-to-top" id="backToTop">▲</button>
+
+    <!-- ============================================= -->
+    <!--  SCRIPTS                                     -->
+    <!-- ============================================= -->
+    <script>
+        // ===== CITY DATA (12 cities) =====
+        var cities = [
+            {id:'tokyo',name:'东京',country:'日本',flag:'🇯🇵',icon:'🗼',rating:9.2,tags:['科技','美食','交通发达'],population:'3700万',livable:8.9},
+            {id:'nyc',name:'纽约',country:'美国',flag:'🇺🇸',icon:'🗽',rating:9.0,tags:['金融中心','多元文化','不夜城'],population:'840万',livable:8.5},
+            {id:'shanghai',name:'上海',country:'中国',flag:'🇨🇳',icon:'🏙️',rating:8.8,tags:['经济中心','摩登','美食'],population:'2487万',livable:8.3},
+            {id:'london',name:'伦敦',country:'英国',flag:'🇬🇧',icon:'🏰',rating:9.1,tags:['历史','文化','金融'],population:'900万',livable:8.7},
+            {id:'paris',name:'巴黎',country:'法国',flag:'🇫🇷',icon:'🗼',rating:8.9,tags:['浪漫','艺术','美食'],population:'210万',livable:8.6},
+            {id:'singapore',name:'新加坡',country:'新加坡',flag:'🇸🇬',icon:'🏙️',rating:9.3,tags:['花园城市','安全','多元'],population:'570万',livable:9.1},
+            {id:'la',name:'洛杉矶',country:'美国',flag:'🇺🇸',icon:'🌴',rating:8.7,tags:['娱乐之都','阳光','多元'],population:'400万',livable:8.2},
+            {id:'barcelona',name:'巴塞罗那',country:'西班牙',flag:'🇪🇸',icon:'🏖️',rating:8.8,tags:['建筑艺术','海滩','美食'],population:'160万',livable:8.4},
+            {id:'rome',name:'罗马',country:'意大利',flag:'🇮🇹',icon:'🏛️',rating:8.6,tags:['历史遗迹','美食','艺术'],population:'280万',livable:8.0},
+            {id:'bangkok',name:'曼谷',country:'泰国',flag:'🇹🇭',icon:'🛕',rating:8.3,tags:['美食天堂','夜市','佛教文化'],population:'1050万',livable:7.8},
+            {id:'istanbul',name:'伊斯坦布尔',country:'土耳其',flag:'🇹🇷',icon:'🕌',rating:8.2,tags:['跨洲之城','历史','巴扎'],population:'1550万',livable:7.6},
+            {id:'moscow',name:'莫斯科',country:'俄罗斯',flag:'🇷🇺',icon:'⛪',rating:8.1,tags:['历史建筑','艺术','地铁'],population:'1260万',livable:7.5}
+        ];
+
+        // ===== RENDER: FEATURED CITIES =====
+        (function(){
+            var html = '';
+            for(var i=0;i<cities.length;i++){
+                var c=cities[i];
+                html+='<a href="detail.html?id='+c.id+'" class="city-card">';
+                html+='<div class="city-card-img">'+c.icon+'<div class="shimmer-overlay"></div><span class="city-card-rating">⭐'+c.rating+'</span></div>';
+                html+='<div class="city-card-info"><div class="city-card-name">'+c.flag+' '+c.name+'</div>';
+                html+='<div class="city-card-country">'+c.country+' · '+c.population+'人</div>';
+                html+='<div class="city-card-tags">';
+                for(var j=0;j<c.tags.length;j++){
+                    html+='<span class="city-tag">'+c.tags[j]+'</span>';
+                }
+                html+='</div></div></a>';
+            }
+            document.getElementById('featuredCities').innerHTML=html;
+        })();
+
+        // ===== RENDER: LIVABLE RANK =====
+        (function(){
+            var sorted=cities.slice().sort(function(a,b){return b.livable-a.livable;});
+            var html='';
+            for(var i=0;i<6;i++){
+                var c=sorted[i];
+                html+='<a href="detail.html?id='+c.id+'" class="rank-item">';
+                html+='<span class="rank-num">'+(i+1)+'</span>';
+                html+='<span class="rank-flag">'+c.flag+'</span>';
+                html+='<span class="rank-name">'+c.name+'</span>';
+                html+='<span class="rank-score">宜居 '+c.livable+'</span>';
+                html+='</a>';
+            }
+            document.getElementById('livableRank').innerHTML=html;
+        })();
+
+        // ===== RENDER: NEWS (6 items) =====
+        (function(){
+            var news=[
+                {i:'🏗️',t:'东京2025年城市更新计划发布',d:'2025-06-14'},
+                {i:'🌿',t:'新加坡蝉联全球最宜居城市',d:'2025-06-10'},
+                {i:'🚇',t:'上海地铁里程突破900公里',d:'2025-06-05'},
+                {i:'🏛️',t:'巴黎奥运会场馆改造完成',d:'2025-06-01'},
+                {i:'🏖️',t:'巴塞罗那智慧城市项目获国际大奖',d:'2025-05-28'},
+                {i:'🌴',t:'洛杉矶发布2030碳中和路线图',d:'2025-05-22'}
+            ];
+            var html='';
+            for(var i=0;i<news.length;i++){
+                var n=news[i];
+                html+='<a href="news.html" class="news-item"><span class="news-icon">'+n.i+'</span><div><div class="news-title">'+n.t+'</div><div class="news-date">'+n.d+'</div></div></a>';
+            }
+            document.getElementById('newsPreview').innerHTML=html;
+        })();
+
+        // ===== RENDER: TRENDING CITIES =====
+        (function(){
+            var trending=[
+                {id:'tokyo',flag:'🇯🇵',name:'东京',reason:'樱花季归来·搜索量暴增',views:'128K',rank:1},
+                {id:'barcelona',flag:'🇪🇸',name:'巴塞罗那',reason:'夏季海滩·欧洲热门目的地',views:'96K',rank:2},
+                {id:'singapore',flag:'🇸🇬',name:'新加坡',reason:'宜居榜首·移民咨询激增',views:'89K',rank:3},
+                {id:'bangkok',flag:'🇹🇭',name:'曼谷',reason:'物美价廉·数字游民新宠',views:'74K',rank:4},
+                {id:'paris',flag:'🇫🇷',name:'巴黎',reason:'奥运后续·旅游持续火爆',views:'68K',rank:5},
+                {id:'istanbul',flag:'🇹🇷',name:'伊斯坦布尔',reason:'跨洲体验·新兴热门城市',views:'55K',rank:6}
+            ];
+            var html='';
+            for(var i=0;i<trending.length;i++){
+                var t=trending[i];
+                html+='<a href="detail.html?id='+t.id+'" class="trending-item">';
+                html+='<span class="trending-rank">#'+t.rank+'</span>';
+                html+='<span class="trending-flag">'+t.flag+'</span>';
+                html+='<div class="trending-info"><div class="trending-name">'+t.name+'</div><div class="trending-reason">'+t.reason+'</div></div>';
+                html+='<span class="trending-views">👁️ '+t.views+'</span>';
+                html+='</a>';
+            }
+            document.getElementById('trendingCities').innerHTML=html;
+        })();
+
+        // ===== RENDER: WEATHER =====
+        (function(){
+            var weather=[
+                {city:'东京',flag:'🇯🇵',icon:'⛅',temp:'22°C',desc:'多云转晴',extra:'湿度65% · 风速3m/s',delay:''},
+                {city:'上海',flag:'🇨🇳',icon:'☀️',temp:'28°C',desc:'晴朗',extra:'湿度55% · 风速2m/s',delay:'delay1'},
+                {city:'纽约',flag:'🇺🇸',icon:'🌧️',temp:'18°C',desc:'小雨',extra:'湿度78% · 风速5m/s',delay:'delay2'},
+                {city:'伦敦',flag:'🇬🇧',icon:'🌥️',temp:'16°C',desc:'阴天',extra:'湿度72% · 风速4m/s',delay:'delay3'}
+            ];
+            var html='';
+            for(var i=0;i<weather.length;i++){
+                var w=weather[i];
+                html+='<div class="weather-card">';
+                html+='<span class="weather-emoji '+w.delay+'">'+w.icon+'</span>';
+                html+='<div class="weather-temp">'+w.temp+'</div>';
+                html+='<div class="weather-desc">'+w.desc+'</div>';
+                html+='<div class="weather-detail">'+w.flag+' '+w.city+'</div>';
+                html+='<div class="weather-extra">'+w.extra+'</div>';
+                html+='</div>';
+            }
+            document.getElementById('weatherGrid').innerHTML=html;
+        })();
+
+        // ===== CANVAS GLOBE ANIMATION =====
+        (function(){
+            var canvas=document.getElementById('globeCanvas');
+            var ctx=canvas.getContext('2d');
+            var w=canvas.width,h=canvas.height;
+            var cx=w/2,cy=h/2;
+            var radius=130;
+            var angle=0;
+
+            // Generate random dots on the globe surface
+            var dots=[];
+            for(var i=0;i<220;i++){
+                var lat=(Math.random()-0.5)*Math.PI;
+                var lng=Math.random()*Math.PI*2;
+                dots.push({lat:lat,lng:lng,size:Math.random()*2+0.5});
+            }
+
+            function project(lat,lng,rot){
+                var xCoord=lng+rot;
+                var px=cx+radius*Math.cos(lat)*Math.cos(xCoord)*0.9;
+                var py=cy+radius*Math.sin(lat)*1.1;
+                var z=radius*Math.cos(lat)*Math.sin(xCoord);
+                return {x:px,y:py,z:z};
+            }
+
+            function draw(){
+                ctx.clearRect(0,0,w,h);
+
+                // Draw meridian lines (longitude)
+                for(var i=0;i<12;i++){
+                    ctx.beginPath();
+                    ctx.strokeStyle='rgba(74,158,255,0.2)';
+                    ctx.lineWidth=1;
+                    for(var j=0;j<=60;j++){
+                        var latP=(j/60)*Math.PI-Math.PI/2;
+                        var pt=project(latP,(i/12)*Math.PI*2,angle);
+                        if(j===0){ctx.moveTo(pt.x,pt.y);}else{ctx.lineTo(pt.x,pt.y);}
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw parallel lines (latitude)
+                for(var i=0;i<6;i++){
+                    ctx.beginPath();
+                    ctx.strokeStyle='rgba(74,158,255,0.15)';
+                    ctx.lineWidth=1;
+                    var latP=(i/6)*Math.PI-Math.PI/2;
+                    for(var j=0;j<=60;j++){
+                        var pt=project(latP,(j/60)*Math.PI*2,angle);
+                        if(j===0){ctx.moveTo(pt.x,pt.y);}else{ctx.lineTo(pt.x,pt.y);}
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw dots (cities/stars)
+                for(var i=0;i<dots.length;i++){
+                    var d=dots[i];
+                    var pt=project(d.lat,d.lng,angle);
+                    if(pt.z>0){
+                        var alpha=0.25+(pt.z/radius)*0.55;
+                        ctx.fillStyle='rgba(0,212,255,'+alpha+')';
+                        ctx.beginPath();
+                        ctx.arc(pt.x,pt.y,d.size,0,Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+
+                // Draw axis line
+                angle+=0.004;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ===== SEARCH =====
+        function searchCity(){
+            var q=document.getElementById('heroSearch').value.trim().toLowerCase();
+            var found=null;
+            for(var i=0;i<cities.length;i++){
+                if(cities[i].name.includes(q)||cities[i].country.includes(q)){
+                    found=cities[i];
+                    break;
+                }
+            }
+            if(found){window.location.href='detail.html?id='+found.id;}
+            else{alert('未找到匹配城市，请尝试其他关键词');}
+        }
+        document.getElementById('heroSearch').addEventListener('keydown',function(e){
+            if(e.key==='Enter'){searchCity();}
+        });
+
+        // ===== SCROLL: NAVBAR + BACK TO TOP =====
+        var navbar=document.getElementById('navbar');
+        var btt=document.getElementById('backToTop');
+        window.addEventListener('scroll',function(){
+            var s=window.scrollY;
+            if(s>50){navbar.classList.add('scrolled');}else{navbar.classList.remove('scrolled');}
+            if(s>400){btt.classList.add('visible');}else{btt.classList.remove('visible');}
+        });
+        btt.addEventListener('click',function(){
+            window.scrollTo({top:0,behavior:'smooth'});
+        });
+
+        // ===== MOBILE MENU =====
+        document.getElementById('mobileMenuBtn').addEventListener('click',function(){
+            document.getElementById('navLinks').classList.toggle('active');
+        });
+        var navAnchors=document.querySelectorAll('#navLinks a');
+        for(var i=0;i<navAnchors.length;i++){
+            navAnchors[i].addEventListener('click',function(){
+                document.getElementById('navLinks').classList.remove('active');
+            });
+        }
+
+        // ===== THEME TOGGLE =====
+        var btnTheme=document.getElementById('btnThemeToggle');
+        var saved=localStorage.getItem('citylens-theme');
+        if(saved==='light'){
+            document.body.classList.add('light-mode');
+            btnTheme.textContent='◑';
+        }
+        btnTheme.addEventListener('click',function(){
+            document.body.classList.toggle('light-mode');
+            var isLight=document.body.classList.contains('light-mode');
+            btnTheme.textContent=isLight?'◑':'◐';
+            localStorage.setItem('citylens-theme',isLight?'light':'dark');
+        });
+
+        // ===== FAVORITES BUTTON =====
+        document.getElementById('btnFav').addEventListener('click',function(){
+            window.location.href='favorites.html';
+        });
+
+        // ===== ANIMATED COUNTERS =====
+        function animateCounters(){
+            var counters=document.querySelectorAll('.stat-number[data-count]');
+            for(var i=0;i<counters.length;i++){
+                (function(counter){
+                    var target=parseInt(counter.dataset.count);
+                    var duration=1800;
+                    var step=target/(duration/25);
+                    var current=0;
+                    var interval=setInterval(function(){
+                        current+=step;
+                        if(current>=target){
+                            counter.textContent=target.toLocaleString();
+                            clearInterval(interval);
+                        }else{
+                            counter.textContent=Math.floor(current).toLocaleString();
+                        }
+                    },25);
+                })(counters[i]);
+            }
+        }
+        new IntersectionObserver(function(entries){
+            entries.forEach(function(entry){
+                if(entry.isIntersecting){
+                    animateCounters();
+                    entry.target.remove();
+                }
+            });
+        },{threshold:0.5}).observe(document.querySelector('.stats-bar'));
+
+        // ===== CITY QUIZ =====
+        var quizAnswers={};
+        var quizOptions=document.querySelectorAll('.quiz-option');
+        for(var i=0;i<quizOptions.length;i++){
+            quizOptions[i].addEventListener('click',function(){
+                var q=this.parentElement.dataset.q;
+                var val=this.dataset.val;
+                quizAnswers[q]=val;
+                var siblings=this.parentElement.querySelectorAll('.quiz-option');
+                for(var j=0;j<siblings.length;j++){
+                    siblings[j].classList.remove('selected');
+                }
+                this.classList.add('selected');
+            });
+        }
+
+        document.getElementById('quizSubmit').addEventListener('click',function(){
+            var a=quizAnswers;
+            if(!a[1]||!a[2]||!a[3]){
+                alert('请先回答所有 3 个问题！');
+                return;
+            }
+            var climate=a[1],activity=a[2],budget=a[3];
+            var result;
+
+            if(budget==='low'){
+                if(activity==='food'){
+                    result={emoji:'🛕',city:'🇹🇭 曼谷',desc:'物美价廉的街头美食天堂！月生活费约 ¥4,000 就能享受高品质生活。从考山路到唐人街，美味无处不在。',tags:['美食天堂','物价亲民','夜生活丰富']};
+                }else if(activity==='culture'){
+                    result={emoji:'🏛️',city:'🇹🇷 伊斯坦布尔',desc:'横跨欧亚的千年古都，历史遗迹遍布全城，生活成本却十分亲民。探索大巴扎、蓝色清真寺，感受帝国文明的余晖。',tags:['历史古都','跨洲之城','物价友好']};
+                }else if(activity==='nature'){
+                    result={emoji:'🏞️',city:'🇨🇳 上海',desc:'国际化都市中生活成本相对可控。周边江浙山水丰富，城市公园众多，周末短途旅行选择多样。',tags:['公园众多','近郊山水','生活便利']};
+                }else{
+                    result={emoji:'🛕',city:'🇹🇭 曼谷',desc:'夜市、屋顶酒吧、夜市美食...曼谷的夜生活丰富且经济实惠，适合热爱热闹的你！',tags:['夜市文化','酒吧众多','物超所值']};
+                }
+            }else if(budget==='high'){
+                if(climate==='cool'){
+                    result={emoji:'🏰',city:'🇬🇧 伦敦',desc:'金融文化之都，预算充足可享受顶级生活体验。西区剧院、米其林餐厅、世界级博物馆任你挑选。',tags:['文化之都','金融中心','顶级体验']};
+                }else if(climate==='mild'){
+                    result={emoji:'🏙️',city:'🇸🇬 新加坡',desc:'全球最宜居城市之一，花园般的城市环境，极致的安全和便利。适合追求高品质生活的你。',tags:['全球最安全','花园城市','顶级设施']};
+                }else if(activity==='culture'){
+                    result={emoji:'🗼',city:'🇫🇷 巴黎',desc:'艺术与浪漫之都，在塞纳河畔喝杯咖啡，在卢浮宫漫步——这就是你梦寐以求的理想生活。',tags:['艺术殿堂','浪漫之都','美食胜地']};
+                }else{
+                    result={emoji:'🗽',city:'🇺🇸 纽约',desc:'世界之都，机会无限。预算充足时，曼哈顿的生活无可匹敌——文化、美食、夜生活，这里拥有一切。',tags:['不夜城','多元文化','无限可能']};
+                }
+            }else{
+                if(activity==='food'){
+                    result={emoji:'🗼',city:'🇯🇵 东京',desc:'米其林餐厅数量全球第一！从街头拉面到怀石料理，东京是美食爱好者的终极目的地。',tags:['米其林之都','街头美食','精致料理']};
+                }else if(activity==='culture'){
+                    result={emoji:'🏛️',city:'🇮🇹 罗马',desc:'永恒之城，每一步都是历史。在两千年的古迹中穿梭，享受意式慢生活与地道美食。',tags:['永恒之城','历史遗迹','意式生活']};
+                }else if(activity==='nature'){
+                    result={emoji:'🌴',city:'🇺🇸 洛杉矶',desc:'阳光、海滩、群山——洛杉矶拥有完美的户外生活。圣莫尼卡冲浪，格里菲斯公园徒步，马里布看日落。',tags:['阳光之城','山海之间','户外天堂']};
+                }else{
+                    result={emoji:'🏖️',city:'🇪🇸 巴塞罗那',desc:'高迪的建筑奇迹、地中海的阳光、Tapas 与 Sangria——巴塞罗那的夜生活永不落幕。',tags:['建筑艺术','地中海风情','夜生活之都']};
+                }
+            }
+
+            document.getElementById('resultEmoji').textContent=result.emoji;
+            document.getElementById('resultCity').textContent=result.city;
+            document.getElementById('resultDesc').textContent=result.desc;
+            var tagsHtml='';
+            for(var i=0;i<result.tags.length;i++){
+                tagsHtml+='<span>'+result.tags[i]+'</span>';
+            }
+            document.getElementById('resultTags').innerHTML=tagsHtml;
+            document.getElementById('quizResult').style.display='block';
+            document.getElementById('quizResult').scrollIntoView({behavior:'smooth',block:'center'});
+        });
+
+        document.getElementById('quizReset').addEventListener('click',function(){
+            quizAnswers={};
+            var allOpts=document.querySelectorAll('.quiz-option');
+            for(var i=0;i<allOpts.length;i++){
+                allOpts[i].classList.remove('selected');
+            }
+            document.getElementById('quizResult').style.display='none';
+        });
+
+        // ===== NEWSLETTER =====
+        function subscribeNewsletter(){
+            var email=document.getElementById('newsletterEmail').value.trim();
+            if(!email){
+                alert('请输入邮箱地址');
+                return;
+            }
+            if(email.indexOf('@')===-1||email.indexOf('.')===-1){
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+            alert('🎉 订阅成功！感谢 '+email+'\n\n每周城市资讯将发送到您的邮箱。\n（此为演示功能，不会实际发送邮件）');
+            document.getElementById('newsletterEmail').value='';
+        }
+        document.getElementById('newsletterEmail').addEventListener('keydown',function(e){
+            if(e.key==='Enter'){subscribeNewsletter();}
+        });
+
+        // ===== CONSOLE INIT =====
+        console.log('%c🌆 CityLens %c已就绪 %c| 城市科技风 %c| v2.0 扩展版 %c| '+cities.length+' 城市已加载',
+            'color:#4a9eff;font-size:1.3em;',
+            'color:#c9d1d9;',
+            'color:#a855f7;',
+            'color:#00d4ff;',
+            'color:#8b949e;');
+    </script>
+</body>
+</html>

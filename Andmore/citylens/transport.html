@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交通系统 - CityLens</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-orange:#ff6b35;--border-glow:#1e2d3d;--glass-bg:rgba(21,26,40,0.85);
+            --shadow-card:0 4px 25px rgba(0,0,0,0.6);--shadow-hover:0 8px 40px rgba(255,107,53,0.2);
+            --border-radius:10px;--transition-speed:0.3s;--nav-height:72px;--max-width:1400px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+
+        /* ============ NAVBAR ============ */
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#ff6b35,#ff4757);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;position:relative;}.nav-links li a::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%) scaleX(0);width:50%;height:2px;background:var(--accent-orange);transition:transform var(--transition-speed);}.nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);}.nav-links li a:hover::after,.nav-links li a.active::after{transform:translateX(-50%) scaleX(1);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(255,107,53,0.15);background:rgba(255,107,53,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}.btn-icon:hover{background:rgba(255,107,53,0.15);border-color:var(--accent-orange);color:var(--accent-orange);}
+        .mobile-menu-btn{display:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-orange);}
+
+        /* ============ PAGE HEADER ============ */
+        .page-header{margin-top:var(--nav-height);background:linear-gradient(160deg,#0a0e17 0%,#1a120d 30%,#0a0e17 100%);padding:55px 0;text-align:center;border-bottom:1px solid var(--border-glow);}.page-header h1{font-size:2.3rem;font-weight:900;color:var(--text-highlight);}.breadcrumb{margin-top:8px;font-size:0.82rem;color:var(--text-secondary);}.breadcrumb a{color:var(--accent-orange);text-decoration:none;}
+
+        /* ============ QUICK STATS BAR ============ */
+        .quick-stats-bar{background:var(--bg-secondary);border-bottom:1px solid var(--border-glow);padding:18px 0;}
+        .quick-stats-bar .container{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;}
+        .quick-stat{text-align:center;padding:6px 20px;border-right:1px solid var(--border-glow);}
+        .quick-stat:last-child{border-right:none;}
+        .quick-stat-value{font-size:1.5rem;font-weight:900;color:var(--accent-orange);}
+        .quick-stat-label{font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;}
+
+        /* ============ MAIN CONTENT ============ */
+        .main-content{padding:40px 0 70px;}.container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+
+        /* ============ FILTER BAR ============ */
+        .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;padding:14px 18px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);}
+        .filter-bar-label{font-size:0.78rem;color:var(--text-secondary);font-weight:600;}
+        .filter-btn{padding:6px 14px;border:1px solid var(--border-glow);background:transparent;color:var(--text-secondary);border-radius:6px;cursor:pointer;font-size:0.76rem;transition:all var(--transition-speed);font-family:inherit;}.filter-btn:hover{border-color:var(--accent-orange);color:var(--accent-orange);}.filter-btn.active{background:rgba(255,107,53,0.15);border-color:var(--accent-orange);color:var(--accent-orange);}
+        .search-input{padding:6px 12px;border:1px solid var(--border-glow);background:var(--bg-tertiary);color:var(--text-primary);border-radius:6px;font-size:0.8rem;font-family:inherit;margin-left:auto;min-width:180px;}.search-input::placeholder{color:var(--text-secondary);}.search-input:focus{outline:none;border-color:var(--accent-orange);}
+
+        /* ============ TRANSPORT GRID ============ */
+        .transport-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:22px;}
+        .transport-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;transition:all var(--transition-speed);}.transport-card:hover{transform:translateY(-3px);border-color:var(--accent-orange);box-shadow:var(--shadow-hover);}.transport-card.hidden{display:none;}
+        .transport-card-header{width:100%;aspect-ratio:16/9;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:4rem;color:var(--text-secondary);position:relative;overflow:hidden;}
+        .transport-card-header::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--accent-orange),var(--accent-gold),var(--accent-orange));}
+        .transport-card-badge{position:absolute;top:10px;right:10px;padding:4px 12px;background:rgba(255,107,53,0.2);border:1px solid var(--accent-orange);color:var(--accent-orange);font-size:0.7rem;font-weight:700;border-radius:10px;}
+        .transport-card-flag{position:absolute;top:10px;left:10px;font-size:1.5rem;}
+        .transport-card-body{padding:20px;}
+        .transport-card-name{font-size:1.15rem;font-weight:700;color:var(--text-highlight);}
+        .transport-card-city{font-size:0.8rem;color:var(--accent-orange);margin-bottom:8px;}
+        .transport-card-desc{font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;}
+
+        /* Score bar */
+        .score-bar-wrap{margin-bottom:10px;}.score-bar-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-secondary);margin-bottom:3px;}.score-bar-label span:last-child{color:var(--accent-orange);font-weight:700;}
+        .score-bar-bg{width:100%;height:8px;background:rgba(255,107,53,0.1);border-radius:4px;overflow:hidden;}.score-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-orange),var(--accent-gold));border-radius:4px;transition:width 1s ease;}
+
+        /* Mode share bars */
+        .mode-share-wrap{margin-bottom:10px;}.mode-share-title{font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;}
+        .mode-share-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:1px;}
+        .mode-share-segment{border-radius:0;transition:width 0.8s ease;}.mode-share-segment:first-child{border-radius:7px 0 0 7px;}.mode-share-segment:last-child{border-radius:0 7px 7px 0;}
+        .mode-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:0.63rem;color:var(--text-secondary);}
+        .mode-legend span{display:flex;align-items:center;gap:3px;}.mode-legend-dot{width:8px;height:8px;border-radius:2px;}
+
+        .transport-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .tstat{background:rgba(255,107,53,0.04);padding:10px;border-radius:6px;border-left:2px solid var(--accent-orange);}
+        .tstat-label{font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;}
+        .tstat-value{font-size:0.85rem;color:var(--accent-orange);font-weight:700;}
+
+        .card-expand-btn{width:100%;margin-top:10px;padding:8px;border:1px dashed var(--border-glow);background:transparent;color:var(--text-secondary);border-radius:6px;cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all var(--transition-speed);}.card-expand-btn:hover{border-color:var(--accent-orange);color:var(--accent-orange);}
+        .card-more-info{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-glow);}.card-more-info.open{display:block;animation:fadeIn 0.3s ease;}
+        .card-more-info .tstat{margin-bottom:4px;}
+
+        /* ============ AWARDS SECTION ============ */
+        .section-divider{margin:50px 0 0;text-align:center;}.section-divider h2{font-size:1.6rem;font-weight:900;color:var(--text-highlight);margin-bottom:6px;}
+        .section-divider p{font-size:0.82rem;color:var(--text-secondary);margin-bottom:24px;}
+        .awards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin-bottom:40px;}
+        .award-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:22px;text-align:center;transition:all var(--transition-speed);}.award-card:hover{transform:translateY(-2px);border-color:var(--accent-gold);box-shadow:0 4px 20px rgba(255,215,0,0.1);}
+        .award-icon{font-size:2.5rem;margin-bottom:8px;}.award-title{font-size:0.85rem;font-weight:700;color:var(--text-highlight);margin-bottom:4px;}.award-winner{font-size:1rem;color:var(--accent-orange);font-weight:900;margin-bottom:6px;}.award-stat{font-size:0.72rem;color:var(--text-secondary);}
+
+        /* ============ COMPARISON SECTION ============ */
+        .comparison-section{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:28px;margin-bottom:28px;}
+        .comparison-section h2{font-size:1.2rem;color:var(--text-highlight);margin-bottom:16px;}
+        .comparison-selects{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+        .comparison-selects select{padding:8px 14px;border:1px solid var(--border-glow);background:var(--bg-tertiary);color:var(--text-primary);border-radius:6px;font-size:0.85rem;font-family:inherit;cursor:pointer;min-width:180px;}.comparison-selects select:focus{outline:none;border-color:var(--accent-orange);}
+        .comparison-selects .vs-text{font-weight:900;color:var(--accent-orange);font-size:1.1rem;}
+        .comparison-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+        .comparison-table th{background:rgba(255,107,53,0.08);padding:10px 14px;text-align:left;color:var(--text-highlight);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;}
+        .comparison-table td{padding:10px 14px;border-bottom:1px solid var(--border-glow);color:var(--text-secondary);}
+        .comparison-table .metric-bar-wrap{display:flex;align-items:center;gap:8px;}.comparison-table .metric-bar{height:6px;background:linear-gradient(90deg,var(--accent-orange),var(--accent-gold));border-radius:3px;transition:width 0.6s ease;}
+        .comparison-result{display:none;}
+
+        /* ============ FUTURE PROJECTS ============ */
+        .future-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;margin-bottom:40px;}
+        .future-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:20px;transition:all var(--transition-speed);}.future-card:hover{border-color:var(--accent-cyan);}
+        .future-card-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}.future-card-header .fc-icon{font-size:2rem;}.future-card-header .fc-title{font-size:1rem;font-weight:700;color:var(--text-highlight);}.future-card-header .fc-city{font-size:0.75rem;color:var(--accent-orange);}
+        .future-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.78rem;color:var(--text-secondary);}.future-line .fl-name{font-weight:600;color:var(--text-primary);}.future-line .fl-date{color:var(--accent-cyan);font-size:0.7rem;}.progress-bar{width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:2px;}.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));border-radius:2px;}
+
+        /* ============ TRANSIT CARD GUIDES ============ */
+        .guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:40px;}
+        .guide-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:18px;transition:all var(--transition-speed);}.guide-card:hover{border-color:var(--accent-green);}
+        .guide-card .gc-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}.gc-icon{font-size:2rem;}.gc-name{font-size:0.95rem;font-weight:700;color:var(--text-highlight);}.gc-city{font-size:0.72rem;color:var(--accent-orange);}
+        .guide-steps{list-style:none;}.guide-steps li{font-size:0.74rem;color:var(--text-secondary);padding:4px 0 4px 18px;position:relative;line-height:1.45;}.guide-steps li::before{content:'▸';position:absolute;left:0;color:var(--accent-green);font-size:0.7rem;}
+
+        /* ============ FARE CALCULATOR ============ */
+        .fare-calculator{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:24px;margin-bottom:28px;}
+        .fare-calculator h2{font-size:1.2rem;color:var(--text-highlight);margin-bottom:16px;}
+        .fare-controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+        .fare-controls select,.fare-controls input{padding:8px 14px;border:1px solid var(--border-glow);background:var(--bg-tertiary);color:var(--text-primary);border-radius:6px;font-size:0.85rem;font-family:inherit;}.fare-controls select:focus,.fare-controls input:focus{outline:none;border-color:var(--accent-orange);}
+        .fare-controls input{max-width:80px;text-align:center;}
+        .fare-result{font-size:1.1rem;color:var(--text-highlight);padding:12px 16px;background:rgba(255,107,53,0.06);border-radius:6px;}.fare-result strong{color:var(--accent-orange);font-size:1.4rem;}
+
+        /* ============ FOOTER ============ */
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:28px;text-align:center;color:var(--text-secondary);font-size:0.78rem;}
+
+        /* ============ BACK TO TOP ============ */
+        .back-to-top{position:fixed;bottom:28px;right:28px;width:44px;height:44px;background:rgba(255,107,53,0.12);border:1.5px solid rgba(255,107,53,0.3);color:var(--accent-orange);border-radius:10px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all var(--transition-speed);z-index:999;}.back-to-top.visible{opacity:1;visibility:visible;}
+
+        /* ============ ANIMATIONS ============ */
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+        @keyframes fillBar{from{width:0;}}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+
+        /* ============ RESPONSIVE ============ */
+        @media(max-width:768px){
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,23,0.98);flex-direction:column;padding:20px;z-index:999;}.nav-links.active{display:flex;}
+            .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+            .transport-grid{grid-template-columns:1fr;}
+            .quick-stats-bar .container{gap:16px;}
+            .quick-stat{border-right:none;padding:6px 10px;}
+            .filter-bar{flex-direction:column;align-items:stretch;}.search-input{margin-left:0;min-width:auto;}
+            .comparison-selects{flex-direction:column;align-items:stretch;}
+            .awards-grid{grid-template-columns:1fr 1fr;}
+            .future-grid{grid-template-columns:1fr;}
+            .guide-grid{grid-template-columns:1fr;}
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="navbar" id="navbar"><div class="container"><a href="home.html" class="logo"><div class="logo-icon">C</div><span class="logo-text">CityLens</span></a><ul class="nav-links" id="navLinks"><li><a href="home.html">首页</a></li><li><a href="cities.html">城市大全</a></li><li><a href="transport.html" class="active">交通</a></li><li><a href="cost.html">生活成本</a></li><li><a href="news.html">新闻</a></li></ul><div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div></div></nav>
+
+    <!-- ==================== PAGE HEADER ==================== -->
+    <section class="page-header"><h1>🚇 交通系统</h1><p class="breadcrumb"><a href="home.html">首页</a> / 交通系统</p></section>
+
+    <!-- ==================== QUICK STATS BAR ==================== -->
+    <section class="quick-stats-bar"><div class="container">
+        <div class="quick-stat"><div class="quick-stat-value" id="statCities">22</div><div class="quick-stat-label">分析城市</div></div>
+        <div class="quick-stat"><div class="quick-stat-value" id="statLongest">上海 · 936 km</div><div class="quick-stat-label">最长地铁</div></div>
+        <div class="quick-stat"><div class="quick-stat-value" id="statMostStations">纽约 · 472站</div><div class="quick-stat-label">最多车站</div></div>
+        <div class="quick-stat"><div class="quick-stat-value" id="statHighestRidership">东京 · 870万/日</div><div class="quick-stat-label">最高客流</div></div>
+    </div></section>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <section class="main-content"><div class="container">
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <span class="filter-bar-label">🔍 排序方式：</span>
+            <button class="filter-btn active" data-sort="score">交通评分</button>
+            <button class="filter-btn" data-sort="metroLength">地铁长度</button>
+            <button class="filter-btn" data-sort="ridership">日客流量</button>
+            <button class="filter-btn" data-sort="affordable">最实惠</button>
+            <button class="filter-btn" data-sort="satisfaction">最满意</button>
+            <input type="text" class="search-input" id="citySearch" placeholder="搜索城市...">
+        </div>
+
+        <!-- Transport Grid -->
+        <div class="transport-grid" id="transportGrid"></div>
+
+        <!-- Section: Awards -->
+        <div class="section-divider"><h2>🏆 交通系统荣誉榜</h2><p>基于综合数据评选的全球城市交通最佳表现</p></div>
+        <div class="awards-grid" id="awardsGrid"></div>
+
+        <!-- Section: City Comparison -->
+        <div class="comparison-section">
+            <h2>📊 城市交通对比工具</h2>
+            <div class="comparison-selects">
+                <select id="compareCity1"><option value="">选择城市一</option></select>
+                <span class="vs-text">VS</span>
+                <select id="compareCity2"><option value="">选择城市二</option></select>
+                <button class="filter-btn active" id="btnCompare" style="padding:8px 18px;">开始对比</button>
+            </div>
+            <div class="comparison-result" id="comparisonResult"></div>
+        </div>
+
+        <!-- Section: Future Projects -->
+        <div class="section-divider"><h2>🔮 未来交通项目</h2><p>全球主要城市正在建设的地铁扩建与新线路</p></div>
+        <div class="future-grid" id="futureGrid"></div>
+
+        <!-- Section: Fare Calculator -->
+        <div class="fare-calculator">
+            <h2>💰 票价计算器</h2>
+            <div class="fare-controls">
+                <select id="fareCity"><option value="">选择城市</option></select>
+                <select id="fareType"><option value="single">单程票</option><option value="day">日票</option><option value="month">月票</option></select>
+                <label style="font-size:0.8rem;color:var(--text-secondary);">数量：</label>
+                <input type="number" id="fareQty" value="1" min="1" max="100">
+                <button class="filter-btn active" id="btnCalcFare" style="padding:8px 18px;">计算</button>
+            </div>
+            <div class="fare-result" id="fareResult">请选择城市和票种进行计算</div>
+        </div>
+
+        <!-- Section: Transit Card Guides -->
+        <div class="section-divider"><h2>🎫 交通卡使用指南</h2><p>全球主要城市交通卡购买与使用攻略</p></div>
+        <div class="guide-grid" id="guideGrid"></div>
+
+    </div></section>
+
+    <footer class="footer"><p>© 2025 CityLens | 交通数据来源公开资料 (UITP, TomTom, Numbeo, 各城市交通局) | 仅供学习参考</p></footer>
+    <button class="back-to-top" id="backToTop">▲</button>
+
+    <script>
+        // ==================== FULL TRANSPORT DATA (22 cities) ====================
+        const transports = [
+            {city:'东京',flag:'🇯🇵',icon:'🚇',badge:'🏅 世界最佳',desc:'东京地铁是全球最准时、最密集的城市轨道交通系统之一。JR山手线环绕市中心，连接各大商业区。Suica/Pasmo卡实现全城一卡通，平均延误不超过18秒。',metroLines:13,metroStations:290,metroLength:304,dailyRidership:8700000,yearlyRidership:3170000000,is24hr:false,paymentSystem:'Suica / Pasmo',airportCount:2,airportNames:'成田(NRT) + 羽田(HND)',busRoutes:320,bikeShareName:'Docomo Bike Share',bikeShareStations:1200,bikeShareBikes:9000,tramLines:2,hasFerry:true,highSpeedRail:'新干线 (东海道/东北/上越等)',avgCommuteTime:58,carOwnershipRate:0.32,congestionIndex:29,transitSatisfaction:94,singleTicketPrice:1.40,monthlyPassPrice:85,transportScore:97,modeShare:{metro:48,bus:12,car:12,bike:14,walk:14}},
+            {city:'纽约',flag:'🇺🇸',icon:'🚇',badge:'🕐 24h运营',desc:'纽约地铁是北美最大、全球最长24小时运营的城市轨道交通系统。标志性的黄色出租车、Citi Bike共享单车和MTA公交构成多元出行方式。',metroLines:24,metroStations:472,metroLength:399,dailyRidership:5600000,yearlyRidership:2044000000,is24hr:true,paymentSystem:'OMNY / MetroCard',airportCount:3,airportNames:'JFK + 纽瓦克(EWR) + 拉瓜迪亚(LGA)',busRoutes:327,bikeShareName:'Citi Bike',bikeShareStations:2000,bikeShareBikes:30000,tramLines:0,hasFerry:true,highSpeedRail:'Amtrak Acela (东北走廊)',avgCommuteTime:41,carOwnershipRate:0.45,congestionIndex:35,transitSatisfaction:72,singleTicketPrice:2.90,monthlyPassPrice:132,transportScore:82,modeShare:{metro:38,bus:12,car:27,bike:3,walk:20}},
+            {city:'上海',flag:'🇨🇳',icon:'🚇',badge:'🌏 全球最长',desc:'上海地铁网络总里程全球第一，突破930公里。扫码乘车、磁悬浮列车和密集的公交网络构成高效出行体系。支持支付宝/微信/大都会App扫码进站。',metroLines:20,metroStations:508,metroLength:936,dailyRidership:10000000,yearlyRidership:3650000000,is24hr:false,paymentSystem:'大都会App / 支付宝 / 交通卡',airportCount:2,airportNames:'浦东(PVG) + 虹桥(SHA)',busRoutes:1500,bikeShareName:'美团/哈啰/青桔单车',bikeShareStations:0,bikeShareBikes:800000,tramLines:0,hasFerry:true,highSpeedRail:'京沪/沪杭/沪宁高铁',avgCommuteTime:47,carOwnershipRate:0.28,congestionIndex:38,transitSatisfaction:88,singleTicketPrice:0.45,monthlyPassPrice:30,transportScore:93,modeShare:{metro:42,bus:18,car:15,bike:16,walk:9}},
+            {city:'伦敦',flag:'🇬🇧',icon:'🚇',badge:'🏛️ 历史最悠久',desc:'伦敦地铁(The Tube)于1863年开通，是世界上最古老的地下铁路。标志性圆形标志和"Mind the Gap"广播闻名于世。红色双层巴士与黑色出租车是城市名片。',metroLines:11,metroStations:272,metroLength:402,dailyRidership:5000000,yearlyRidership:1825000000,is24hr:false,paymentSystem:'Oyster Card / Contactless',airportCount:2,airportNames:'希思罗(LHR) + 盖特威克(LGW)',busRoutes:673,bikeShareName:'Santander Cycles',bikeShareStations:800,bikeShareBikes:12000,tramLines:3,hasFerry:true,highSpeedRail:'Eurostar (英法海底隧道)',avgCommuteTime:45,carOwnershipRate:0.55,congestionIndex:33,transitSatisfaction:83,singleTicketPrice:3.60,monthlyPassPrice:180,transportScore:85,modeShare:{metro:28,bus:17,car:30,bike:5,walk:20}},
+            {city:'巴黎',flag:'🇫🇷',icon:'🚇',badge:'🏙️ 高密度覆盖',desc:'巴黎地铁以极高站密度著称——市区内任意两点500米内必有地铁站。Navigo卡覆盖全法兰西岛大区交通。RER快线连接市区与远郊，是世界上最密集的地铁网络之一。',metroLines:16,metroStations:308,metroLength:226,dailyRidership:5200000,yearlyRidership:1898000000,is24hr:false,paymentSystem:'Navigo / Ticket t+',airportCount:2,airportNames:'戴高乐(CDG) + 奥利(ORY)',busRoutes:353,bikeShareName:'Vélib\' Métropole',bikeShareStations:1400,bikeShareBikes:20000,tramLines:10,hasFerry:true,highSpeedRail:'TGV (法国高速铁路)',avgCommuteTime:38,carOwnershipRate:0.42,congestionIndex:36,transitSatisfaction:85,singleTicketPrice:2.15,monthlyPassPrice:84,transportScore:91,modeShare:{metro:35,bus:12,car:22,bike:8,walk:23}},
+            {city:'新加坡',flag:'🇸🇬',icon:'🚇',badge:'🌟 极致高效',desc:'新加坡MRT以高度自动化、清洁和高效闻名全球。EZ-Link卡覆盖地铁和公交。严格的车辆配额制度(COE)使公共交通成为绝大多数人的首选。',metroLines:6,metroStations:142,metroLength:231,dailyRidership:3400000,yearlyRidership:1241000000,is24hr:false,paymentSystem:'EZ-Link / SimplyGo',airportCount:1,airportNames:'樟宜(SIN)',busRoutes:350,bikeShareName:'Anywheel / HelloRide',bikeShareStations:0,bikeShareBikes:45000,tramLines:0,hasFerry:true,highSpeedRail:'吉隆坡-新加坡高铁(规划中)',avgCommuteTime:45,carOwnershipRate:0.15,congestionIndex:25,transitSatisfaction:91,singleTicketPrice:0.90,monthlyPassPrice:45,transportScore:95,modeShare:{metro:42,bus:26,car:15,bike:1,walk:16}},
+            {city:'香港',flag:'🇭🇰',icon:'🚇',badge:'💎 盈利典范',desc:'港铁MTR是全球极少数盈利的地铁系统之一，以其高效、清洁和极高的准点率(99.9%)著称。八达通卡通用全港交通工具、便利店和餐饮场所。',metroLines:10,metroStations:99,metroLength:271,dailyRidership:5200000,yearlyRidership:1898000000,is24hr:false,paymentSystem:'八达通 (Octopus)',airportCount:1,airportNames:'香港国际(HKG)',busRoutes:700,bikeShareName:'Locobike',bikeShareStations:200,bikeShareBikes:3000,tramLines:1,hasFerry:true,highSpeedRail:'广深港高铁',avgCommuteTime:44,carOwnershipRate:0.10,congestionIndex:22,transitSatisfaction:92,singleTicketPrice:0.90,monthlyPassPrice:55,transportScore:94,modeShare:{metro:43,bus:30,car:8,bike:1,walk:18}},
+            {city:'首尔',flag:'🇰🇷',icon:'🚇',badge:'📱 科技领先',desc:'首尔地铁以先进的科技应用闻名——站内WiFi、无线充电、互动屏幕、加热座椅等设施一应俱全。T-money卡覆盖地铁、公交和出租车。',metroLines:23,metroStations:728,metroLength:382,dailyRidership:7200000,yearlyRidership:2628000000,is24hr:false,paymentSystem:'T-money / Cashbee',airportCount:2,airportNames:'仁川(ICN) + 金浦(GMP)',busRoutes:400,bikeShareName:'따릉이 (Seoul Bike)',bikeShareStations:2620,bikeShareBikes:35000,tramLines:0,hasFerry:false,highSpeedRail:'KTX (韩国高速铁路)',avgCommuteTime:43,carOwnershipRate:0.38,congestionIndex:30,transitSatisfaction:87,singleTicketPrice:1.10,monthlyPassPrice:45,transportScore:90,modeShare:{metro:41,bus:26,car:17,bike:4,walk:12}},
+            {city:'柏林',flag:'🇩🇪',icon:'🚇',badge:'🚋 多元融合',desc:'柏林拥有U-Bahn(地铁)、S-Bahn(市郊铁路)、有轨电车和公交组成的多层次交通网络。BVG应用提供无缝出行规划，交通系统以可靠和覆盖面广著称。',metroLines:9,metroStations:175,metroLength:156,dailyRidership:1500000,yearlyRidership:547500000,is24hr:false,paymentSystem:'BVG FahrCard / VBB',airportCount:1,airportNames:'勃兰登堡(BER)',busRoutes:198,bikeShareName:'Nextbike / Lime',bikeShareStations:200,bikeShareBikes:8000,tramLines:22,hasFerry:true,highSpeedRail:'ICE / IC (德国铁路)',avgCommuteTime:32,carOwnershipRate:0.35,congestionIndex:27,transitSatisfaction:82,singleTicketPrice:2.40,monthlyPassPrice:80,transportScore:84,modeShare:{metro:23,bus:14,car:28,bike:18,walk:17}},
+            {city:'莫斯科',flag:'🇷🇺',icon:'🚇',badge:'🏰 地下宫殿',desc:'莫斯科地铁以其宏伟的车站建筑被誉为"地下宫殿"。系统以高频次发车著称——高峰时段每90秒一班，是全球发车频率最高的地铁系统之一。',metroLines:16,metroStations:269,metroLength:466,dailyRidership:6700000,yearlyRidership:2445500000,is24hr:false,paymentSystem:'Troika Card',airportCount:3,airportNames:'谢列梅捷沃(SVO) + 多莫杰多沃(DME) + 伏努科沃(VKO)',busRoutes:800,bikeShareName:'Velobike',bikeShareStations:700,bikeShareBikes:6000,tramLines:38,hasFerry:true,highSpeedRail:'Sapsan (莫斯科-圣彼得堡)',avgCommuteTime:44,carOwnershipRate:0.31,congestionIndex:44,transitSatisfaction:80,singleTicketPrice:0.60,monthlyPassPrice:25,transportScore:86,modeShare:{metro:39,bus:18,car:24,bike:2,walk:17}},
+            {city:'北京',flag:'🇨🇳',icon:'🚇',badge:'🏗️ 快速扩张',desc:'北京地铁是全球最繁忙的地铁系统之一，网络仍在快速扩张。扫码乘车覆盖所有线路，公交专用道有效提升地面交通效率。大兴机场线时速可达160公里。',metroLines:27,metroStations:490,metroLength:836,dailyRidership:9000000,yearlyRidership:3285000000,is24hr:false,paymentSystem:'亿通行App / 一卡通',airportCount:2,airportNames:'首都(PEK) + 大兴(PKX)',busRoutes:1200,bikeShareName:'美团/哈啰/青桔单车',bikeShareStations:0,bikeShareBikes:600000,tramLines:0,hasFerry:false,highSpeedRail:'京沪/京广/京津高铁',avgCommuteTime:47,carOwnershipRate:0.30,congestionIndex:40,transitSatisfaction:86,singleTicketPrice:0.45,monthlyPassPrice:30,transportScore:89,modeShare:{metro:40,bus:22,car:18,bike:12,walk:8}},
+            {city:'马德里',flag:'🇪🇸',icon:'🚇',badge:'💰 高性价比',desc:'马德里地铁是欧洲增长最快的地铁网络之一，以其清洁、安全和合理的票价著称。Abono月票是欧洲性价比最高的交通通票之一。',metroLines:12,metroStations:302,metroLength:294,dailyRidership:1800000,yearlyRidership:657000000,is24hr:false,paymentSystem:'Tarjeta Multi / Abono',airportCount:1,airportNames:'阿道弗·苏亚雷斯(MAD)',busRoutes:216,bikeShareName:'BiciMAD',bikeShareStations:260,bikeShareBikes:3000,tramLines:3,hasFerry:false,highSpeedRail:'AVE (西班牙高速铁路)',avgCommuteTime:33,carOwnershipRate:0.48,congestionIndex:28,transitSatisfaction:81,singleTicketPrice:1.50,monthlyPassPrice:55,transportScore:83,modeShare:{metro:31,bus:20,car:29,bike:2,walk:18}},
+            {city:'巴塞罗那',flag:'🇪🇸',icon:'🚇',badge:'🎨 设计之美',desc:'巴塞罗那地铁融合了现代主义建筑美学与高效运营。TMB系统覆盖城市主要区域，有轨电车和缆车提供独特的出行体验。',metroLines:8,metroStations:189,metroLength:170,dailyRidership:1300000,yearlyRidership:474500000,is24hr:false,paymentSystem:'T-Mobilitat / Hola BCN',airportCount:1,airportNames:'埃尔普拉特(BCN)',busRoutes:230,bikeShareName:'Bicing',bikeShareStations:520,bikeShareBikes:7000,tramLines:4,hasFerry:true,highSpeedRail:'AVE (马德里-巴塞罗那)',avgCommuteTime:30,carOwnershipRate:0.40,congestionIndex:29,transitSatisfaction:79,singleTicketPrice:2.40,monthlyPassPrice:40,transportScore:80,modeShare:{metro:29,bus:18,car:24,bike:7,walk:22}},
+            {city:'维也纳',flag:'🇦🇹',icon:'🚇',badge:'🎻 经典高效',desc:'维也纳公共交通系统以准点、清洁和覆盖广泛著称。Wiener Linien运营的地铁、电车和公交网络被公认为欧洲最佳之一。年票仅€1/天，极其亲民。',metroLines:5,metroStations:109,metroLength:83,dailyRidership:1300000,yearlyRidership:474500000,is24hr:false,paymentSystem:'Wiener Linien / Klimaticket',airportCount:1,airportNames:'维也纳国际(VIE)',busRoutes:149,bikeShareName:'WienMobil Rad',bikeShareStations:240,bikeShareBikes:3000,tramLines:28,hasFerry:false,highSpeedRail:'Railjet / ÖBB',avgCommuteTime:27,carOwnershipRate:0.37,congestionIndex:24,transitSatisfaction:93,singleTicketPrice:2.40,monthlyPassPrice:35,transportScore:92,modeShare:{metro:28,bus:11,car:25,bike:9,walk:27}},
+            {city:'布拉格',flag:'🇨🇿',icon:'🚇',badge:'🏰 中欧明珠',desc:'布拉格地铁虽规模不大但极为高效，配合欧洲保存最完好的有轨电车网络，构成独特的城市交通体系。票价低廉，性价比极高。',metroLines:3,metroStations:61,metroLength:65,dailyRidership:1200000,yearlyRidership:438000000,is24hr:false,paymentSystem:'Lítačka / PID',airportCount:1,airportNames:'瓦茨拉夫·哈维尔(PRG)',busRoutes:300,bikeShareName:'Rekola / Nextbike',bikeShareStations:100,bikeShareBikes:1500,tramLines:26,hasFerry:true,highSpeedRail:'SuperCity Pendolino',avgCommuteTime:29,carOwnershipRate:0.42,congestionIndex:26,transitSatisfaction:84,singleTicketPrice:1.10,monthlyPassPrice:22,transportScore:87,modeShare:{metro:18,bus:16,car:28,bike:3,walk:35}},
+            {city:'阿姆斯特丹',flag:'🇳🇱',icon:'🚇',badge:'🚲 单车王国',desc:'阿姆斯特丹是当之无愧的全球自行车之都——自行车数量超过居民人口。GVB运营的地铁、电车和渡轮与无处不在的自行车道共同构成独特的交通生态。',metroLines:5,metroStations:39,metroLength:43,dailyRidership:550000,yearlyRidership:200750000,is24hr:false,paymentSystem:'OV-chipkaart',airportCount:1,airportNames:'史基浦(AMS)',busRoutes:55,bikeShareName:'OV-fiets / Felyx',bikeShareStations:300,bikeShareBikes:25000,tramLines:15,hasFerry:true,highSpeedRail:'Eurostar / Thalys / ICE',avgCommuteTime:26,carOwnershipRate:0.35,congestionIndex:25,transitSatisfaction:86,singleTicketPrice:3.20,monthlyPassPrice:90,transportScore:82,modeShare:{metro:10,bus:6,car:22,bike:38,walk:24}},
+            {city:'芝加哥',flag:'🇺🇸',icon:'🚇',badge:'🌬️ 风城轨道',desc:'芝加哥"L"系统(高架铁路)是美国第二大地铁网络，以环线(Loop)为中心向四周辐射。CTA公交和Metra通勤铁路构成区域交通体系。',metroLines:8,metroStations:145,metroLength:165,dailyRidership:800000,yearlyRidership:292000000,is24hr:true,paymentSystem:'Ventra Card',airportCount:2,airportNames:'奥黑尔(ORD) + 中途(MDW)',busRoutes:140,bikeShareName:'Divvy',bikeShareStations:600,bikeShareBikes:6000,tramLines:0,hasFerry:true,highSpeedRail:'Amtrak (中西部走廊)',avgCommuteTime:35,carOwnershipRate:0.52,congestionIndex:23,transitSatisfaction:70,singleTicketPrice:2.50,monthlyPassPrice:105,transportScore:74,modeShare:{metro:22,bus:15,car:40,bike:4,walk:19}},
+            {city:'旧金山',flag:'🇺🇸',icon:'🚋',badge:'🌉 湾区特色',desc:'旧金山以历史悠久的缆车(Cable Car)闻名世界，BART连接湾区各城市。Muni系统覆盖市内，Caltrain连接硅谷。共享单车和电动滑板车出行选择丰富。',metroLines:6,metroStations:50,metroLength:211,dailyRidership:400000,yearlyRidership:146000000,is24hr:false,paymentSystem:'Clipper Card',airportCount:1,airportNames:'旧金山国际(SFO)',busRoutes:82,bikeShareName:'Bay Wheels',bikeShareStations:300,bikeShareBikes:4000,tramLines:7,hasFerry:true,highSpeedRail:'加州高铁(建设中)',avgCommuteTime:34,carOwnershipRate:0.55,congestionIndex:32,transitSatisfaction:68,singleTicketPrice:2.75,monthlyPassPrice:98,transportScore:71,modeShare:{metro:18,bus:16,car:38,bike:9,walk:19}},
+            {city:'悉尼',flag:'🇦🇺',icon:'🚇',badge:'🦘 南半球之星',desc:'悉尼拥有澳大利亚最大的轨道交通网络——Sydney Trains覆盖大悉尼地区，新地铁线路正在建设中。独特的渡轮系统在悉尼港提供通勤和观光服务。',metroLines:8,metroStations:171,metroLength:369,dailyRidership:1100000,yearlyRidership:401500000,is24hr:false,paymentSystem:'Opal Card',airportCount:1,airportNames:'金斯福德·史密斯(SYD)',busRoutes:590,bikeShareName:'无固定站点共享单车',bikeShareStations:0,bikeShareBikes:5000,tramLines:2,hasFerry:true,highSpeedRail:'新州城际列车(XPT)',avgCommuteTime:42,carOwnershipRate:0.58,congestionIndex:35,transitSatisfaction:76,singleTicketPrice:2.80,monthlyPassPrice:110,transportScore:78,modeShare:{metro:24,bus:18,car:41,bike:2,walk:15}},
+            {city:'迪拜',flag:'🇦🇪',icon:'🚇',badge:'✨ 未来之城',desc:'迪拜地铁是全球最长的全自动无人驾驶地铁线路之一，黄金级车厢提供奢华出行体验。棕榈岛单轨列车和未来感十足的电车站展现城市雄心。',metroLines:2,metroStations:55,metroLength:90,dailyRidership:650000,yearlyRidership:237250000,is24hr:false,paymentSystem:'Nol Card',airportCount:2,airportNames:'迪拜国际(DXB) + 阿勒马克图姆(DWC)',busRoutes:120,bikeShareName:'Careem Bike',bikeShareStations:190,bikeShareBikes:3500,tramLines:1,hasFerry:true,highSpeedRail:'阿提哈德铁路(规划中)',avgCommuteTime:30,carOwnershipRate:0.55,congestionIndex:20,transitSatisfaction:82,singleTicketPrice:0.80,monthlyPassPrice:40,transportScore:79,modeShare:{metro:28,bus:18,car:40,bike:2,walk:12}},
+            {city:'台北',flag:'🇹🇼',icon:'🚇',badge:'🏮 便捷典范',desc:'台北捷运以清洁、安全和极高准点率受到市民和游客一致好评。悠游卡覆盖捷运、公交和公共自行车YouBike，形成无缝衔接的出行网络。',metroLines:6,metroStations:117,metroLength:152,dailyRidership:2100000,yearlyRidership:766500000,is24hr:false,paymentSystem:'悠游卡 (EasyCard)',airportCount:1,airportNames:'桃园国际(TPE)',busRoutes:400,bikeShareName:'YouBike',bikeShareStations:1300,bikeShareBikes:20000,tramLines:0,hasFerry:false,highSpeedRail:'台湾高铁',avgCommuteTime:35,carOwnershipRate:0.25,congestionIndex:24,transitSatisfaction:90,singleTicketPrice:0.70,monthlyPassPrice:35,transportScore:89,modeShare:{metro:35,bus:20,car:18,bike:10,walk:17}},
+            {city:'米兰',flag:'🇮🇹',icon:'🚇',badge:'👗 时尚枢纽',desc:'米兰地铁是意大利最繁忙的地铁系统，M4蓝线新近开通。ATM运营的地铁、电车和公交覆盖大米兰地区，配合区域铁路构成伦巴第大区交通网络。',metroLines:5,metroStations:125,metroLength:112,dailyRidership:1400000,yearlyRidership:511000000,is24hr:false,paymentSystem:'ATM / Milano Card',airportCount:2,airportNames:'马尔彭萨(MXP) + 利纳特(LIN)',busRoutes:130,bikeShareName:'BikeMi',bikeShareStations:320,bikeShareBikes:5000,tramLines:17,hasFerry:false,highSpeedRail:'Frecciarossa / Italo',avgCommuteTime:31,carOwnershipRate:0.52,congestionIndex:32,transitSatisfaction:77,singleTicketPrice:2.20,monthlyPassPrice:39,transportScore:79,modeShare:{metro:25,bus:12,car:35,bike:8,walk:20}},
+            {city:'德里',flag:'🇮🇳',icon:'🚇',badge:'🌏 南亚最大',desc:'德里地铁是印度最大、全球最现代化的地铁系统之一，全部使用标准轨距和空调车厢。机场快线提供市区直达服务。地铁大幅缓解了德里的交通拥堵。',metroLines:10,metroStations:289,metroLength:393,dailyRidership:4700000,yearlyRidership:1715500000,is24hr:false,paymentSystem:'Smart Card / QR Code',airportCount:1,airportNames:'英迪拉·甘地国际(DEL)',busRoutes:450,bikeShareName:'SmartBike / Yulu',bikeShareStations:100,bikeShareBikes:2000,tramLines:0,hasFerry:false,highSpeedRail:'德里-密拉特RRTS (半高铁)',avgCommuteTime:45,carOwnershipRate:0.08,congestionIndex:48,transitSatisfaction:75,singleTicketPrice:0.15,monthlyPassPrice:8,transportScore:76,modeShare:{metro:30,bus:22,car:15,bike:8,walk:25}}
+        ];
+
+        // ==================== MODE SHARE COLORS ====================
+        const modeColors = {metro:'#ff6b35',bus:'#4a9eff',car:'#8b949e',bike:'#00ff88',walk:'#ffd700'};
+        const modeLabels = {metro:'地铁',bus:'公交',car:'私家车',bike:'骑行',walk:'步行'};
+
+        // ==================== RENDER TRANSPORT CARDS ====================
+        function renderCards(data) {
+            const grid = document.getElementById('transportGrid');
+            grid.innerHTML = data.map((t, i) => {
+                const scoreWidth = t.transportScore || 0;
+                // Mode share bars
+                const modeSegments = ['metro','bus','car','bike','walk'].map(m => {
+                    const pct = (t.modeShare && t.modeShare[m]) ? t.modeShare[m] : 0;
+                    return `<div class="mode-share-segment" style="width:${pct}%;background:${modeColors[m]};" title="${modeLabels[m]}: ${pct}%"></div>`;
+                }).join('');
+                const modeLegend = ['metro','bus','car','bike','walk'].map(m => {
+                    const pct = (t.modeShare && t.modeShare[m]) ? t.modeShare[m] : 0;
+                    return `<span><span class="mode-legend-dot" style="background:${modeColors[m]};"></span>${modeLabels[m]} ${pct}%</span>`;
+                }).join('');
+
+                return `<div class="transport-card" data-city="${t.city}" data-score="${t.transportScore}" data-metro-length="${t.metroLength}" data-ridership="${t.dailyRidership}" data-price="${t.singleTicketPrice}" data-satisfaction="${t.transitSatisfaction}" style="animation:fadeInUp 0.4s ease forwards;animation-delay:${i*0.04}s">
+                    <div class="transport-card-header">
+                        <span class="transport-card-flag">${t.flag}</span>
+                        ${t.icon}
+                        <span class="transport-card-badge">${t.badge}</span>
+                    </div>
+                    <div class="transport-card-body">
+                        <div class="transport-card-name">${t.flag} ${t.city}</div>
+                        <div class="transport-card-city">${t.badge}</div>
+                        <div class="score-bar-wrap">
+                            <div class="score-bar-label"><span>🚦 交通评分</span><span>${t.transportScore}/100</span></div>
+                            <div class="score-bar-bg"><div class="score-bar-fill" style="width:${scoreWidth}%;animation:fillBar 1s ease forwards;"></div></div>
+                        </div>
+                        <div class="mode-share-wrap">
+                            <div class="mode-share-title">出行方式占比</div>
+                            <div class="mode-share-bar">${modeSegments}</div>
+                            <div class="mode-legend">${modeLegend}</div>
+                        </div>
+                        <div class="transport-card-desc">${t.desc}</div>
+                        <div class="transport-stats">
+                            <div class="tstat"><span class="tstat-label">地铁</span><span class="tstat-value">${t.metroLines}条线/${t.metroStations}站</span></div>
+                            <div class="tstat"><span class="tstat-label">日均客流</span><span class="tstat-value">${(t.dailyRidership/10000).toFixed(0)}万人次</span></div>
+                            <div class="tstat"><span class="tstat-label">里程</span><span class="tstat-value">${t.metroLength} km</span></div>
+                            <div class="tstat"><span class="tstat-label">票价</span><span class="tstat-value">${t.currency||'$'}${t.singleTicketPrice}</span></div>
+                        </div>
+                        <button class="card-expand-btn" onclick="toggleCardInfo(this)">📋 查看详细数据</button>
+                        <div class="card-more-info">
+                            <div class="transport-stats">
+                                <div class="tstat"><span class="tstat-label">年客流量</span><span class="tstat-value">${(t.yearlyRidership/100000000).toFixed(1)}亿</span></div>
+                                <div class="tstat"><span class="tstat-label">24h运营</span><span class="tstat-value">${t.is24hr?'✅ 是':'❌ 否'}</span></div>
+                                <div class="tstat"><span class="tstat-label">支付方式</span><span class="tstat-value">${t.paymentSystem}</span></div>
+                                <div class="tstat"><span class="tstat-label">机场</span><span class="tstat-value">${t.airportCount}个 — ${t.airportNames}</span></div>
+                                <div class="tstat"><span class="tstat-label">公交线路</span><span class="tstat-value">${t.busRoutes}条</span></div>
+                                <div class="tstat"><span class="tstat-label">共享单车</span><span class="tstat-value">${t.bikeShareName} (${t.bikeShareBikes.toLocaleString()}辆)</span></div>
+                                <div class="tstat"><span class="tstat-label">有轨电车</span><span class="tstat-value">${t.tramLines}条线路</span></div>
+                                <div class="tstat"><span class="tstat-label">渡轮</span><span class="tstat-value">${t.hasFerry?'✅ 有':'❌ 无'}</span></div>
+                                <div class="tstat"><span class="tstat-label">高铁</span><span class="tstat-value">${t.highSpeedRail}</span></div>
+                                <div class="tstat"><span class="tstat-label">月票价格</span><span class="tstat-value">$${t.monthlyPassPrice}</span></div>
+                                <div class="tstat"><span class="tstat-label">平均通勤</span><span class="tstat-value">${t.avgCommuteTime}分钟</span></div>
+                                <div class="tstat"><span class="tstat-label">汽车拥有率</span><span class="tstat-value">${(t.carOwnershipRate*100).toFixed(0)}%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== TOGGLE CARD MORE INFO ====================
+        function toggleCardInfo(btn) {
+            const moreInfo = btn.nextElementSibling;
+            moreInfo.classList.toggle('open');
+            btn.textContent = moreInfo.classList.contains('open') ? '📋 收起详细数据' : '📋 查看详细数据';
+        }
+
+        // ==================== FILTER / SORT ====================
+        let currentSort = 'score';
+        let currentSearch = '';
+
+        function applyFilters() {
+            let data = [...transports];
+            if (currentSearch) {
+                const q = currentSearch.toLowerCase();
+                data = data.filter(t => t.city.toLowerCase().includes(q) || t.paymentSystem.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q));
+            }
+            switch(currentSort) {
+                case 'score': data.sort((a,b) => b.transportScore - a.transportScore); break;
+                case 'metroLength': data.sort((a,b) => b.metroLength - a.metroLength); break;
+                case 'ridership': data.sort((a,b) => b.dailyRidership - a.dailyRidership); break;
+                case 'affordable': data.sort((a,b) => a.singleTicketPrice - b.singleTicketPrice); break;
+                case 'satisfaction': data.sort((a,b) => b.transitSatisfaction - a.transitSatisfaction); break;
+            }
+            renderCards(data);
+            document.getElementById('statCities').textContent = data.length;
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentSort = this.dataset.sort;
+                applyFilters();
+            });
+        });
+
+        document.getElementById('citySearch').addEventListener('input', function() {
+            currentSearch = this.value;
+            applyFilters();
+        });
+
+        // ==================== AWARDS ====================
+        function renderAwards() {
+            const awards = [
+                {title:'🏆 最佳地铁系统',winner:'东京',flag:'🇯🇵',stat:'评分 97/100 · 准点率99.9%',icon:'🚇'},
+                {title:'🚌 最佳公交网络',winner:'香港',flag:'🇭🇰',stat:'700条线路 · 八达通全覆盖',icon:'🚌'},
+                {title:'🚲 最佳骑行城市',winner:'阿姆斯特丹',flag:'🇳🇱',stat:'38%出行靠单车 · 500km专用道',icon:'🚲'},
+                {title:'💰 最实惠交通',winner:'德里',flag:'🇮🇳',stat:'单程$0.15 · 月票仅$8',icon:'💵'},
+                {title:'⏱️ 最准时系统',winner:'东京',flag:'🇯🇵',stat:'平均延误<18秒 · 年客流量31.7亿',icon:'⏰'},
+                {title:'🌏 最大网络',winner:'上海',flag:'🇨🇳',stat:'936公里 · 全球最长地铁',icon:'🌐'},
+                {title:'📱 科技领先',winner:'首尔',flag:'🇰🇷',stat:'728站 · WiFi全覆盖 · 无线充电',icon:'📱'},
+                {title:'🏰 最美车站',winner:'莫斯科',flag:'🇷🇺',stat:'16条线 · 地下宫殿 · 大理石车站',icon:'🏛️'}
+            ];
+            document.getElementById('awardsGrid').innerHTML = awards.map(a => `
+                <div class="award-card" style="animation:fadeInUp 0.4s ease forwards;animation-delay:${awards.indexOf(a)*0.06}s">
+                    <div class="award-icon">${a.icon}</div>
+                    <div class="award-title">${a.title}</div>
+                    <div class="award-winner">${a.flag} ${a.winner}</div>
+                    <div class="award-stat">${a.stat}</div>
+                </div>`).join('');
+        }
+
+        // ==================== CITY COMPARISON ====================
+        function populateCompareSelects() {
+            const opts = transports.map(t => `<option value="${t.city}">${t.flag} ${t.city}</option>`).join('');
+            document.getElementById('compareCity1').innerHTML = '<option value="">选择城市一</option>' + opts;
+            document.getElementById('compareCity2').innerHTML = '<option value="">选择城市二</option>' + opts;
+        }
+
+        function compareCities() {
+            const c1 = document.getElementById('compareCity1').value;
+            const c2 = document.getElementById('compareCity2').value;
+            if (!c1 || !c2) { document.getElementById('comparisonResult').style.display = 'none'; return; }
+            const d1 = transports.find(t => t.city === c1);
+            const d2 = transports.find(t => t.city === c2);
+            const cmpDiv = document.getElementById('comparisonResult');
+            cmpDiv.style.display = 'block';
+
+            const metrics = [
+                {label:'交通评分',key:'transportScore',unit:'/100',max:100,format:v=>v},
+                {label:'地铁线路',key:'metroLines',unit:'条',max:Math.max(d1.metroLines,d2.metroLines,1),format:v=>v},
+                {label:'地铁车站',key:'metroStations',unit:'站',max:Math.max(d1.metroStations,d2.metroStations,1),format:v=>v},
+                {label:'地铁里程',key:'metroLength',unit:' km',max:Math.max(d1.metroLength,d2.metroLength,1),format:v=>v},
+                {label:'日客流量',key:'dailyRidership',unit:'万',max:Math.max(d1.dailyRidership,d2.dailyRidership,1),format:v=>(v/10000).toFixed(0)},
+                {label:'单程票价',key:'singleTicketPrice',unit:'',max:Math.max(d1.singleTicketPrice,d2.singleTicketPrice,1),format:v=>'$'+v},
+                {label:'月票价格',key:'monthlyPassPrice',unit:'',max:Math.max(d1.monthlyPassPrice,d2.monthlyPassPrice,1),format:v=>'$'+v},
+                {label:'乘客满意度',key:'transitSatisfaction',unit:'/100',max:100,format:v=>v},
+                {label:'平均通勤',key:'avgCommuteTime',unit:'分钟',max:Math.max(d1.avgCommuteTime,d2.avgCommuteTime,1),format:v=>v},
+                {label:'汽车拥有率',key:'carOwnershipRate',unit:'%',max:1,format:v=>(v*100).toFixed(0)},
+                {label:'拥堵指数',key:'congestionIndex',unit:'',max:Math.max(d1.congestionIndex,d2.congestionIndex,1),format:v=>v}
+            ];
+
+            cmpDiv.innerHTML = `
+                <table class="comparison-table">
+                    <thead><tr><th>指标</th><th>${d1.flag} ${d1.city}</th><th>${d2.flag} ${d2.city}</th></tr></thead>
+                    <tbody>${metrics.map(m => {
+                        const v1 = m.format(d1[m.key]); const v2 = m.format(d2[m.key]);
+                        const raw1 = typeof d1[m.key] === 'number' ? d1[m.key] : 0;
+                        const raw2 = typeof d2[m.key] === 'number' ? d2[m.key] : 0;
+                        const maxVal = Math.max(raw1, raw2, 1);
+                        const w1 = (raw1/maxVal*100).toFixed(0); const w2 = (raw2/maxVal*100).toFixed(0);
+                        const winner = raw1 > raw2 ? d1.city : (raw2 > raw1 ? d2.city : '');
+                        const isLowerBetter = ['singleTicketPrice','monthlyPassPrice','avgCommuteTime','carOwnershipRate','congestionIndex'].includes(m.key);
+                        const winColor = isLowerBetter ? 'var(--accent-green)' : 'var(--accent-orange)';
+                        return `<tr>
+                            <td style="font-weight:600;color:var(--text-primary);">${m.label}</td>
+                            <td><div class="metric-bar-wrap">${v1}${m.unit}<div class="metric-bar" style="width:${w1}%;"></div></div></td>
+                            <td><div class="metric-bar-wrap">${v2}${m.unit}<div class="metric-bar" style="width:${w2}%;"></div></div></td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>`;
+        }
+
+        document.getElementById('btnCompare').addEventListener('click', compareCities);
+
+        // ==================== FUTURE PROJECTS ====================
+        function renderFutureProjects() {
+            const projects = [
+                {city:'东京',flag:'🇯🇵',icon:'🚇',lines:[
+                    {name:'都营大江户线延伸(大泉学园町)',pct:30,date:'2027'},
+                    {name:'南北线延伸(品川-白金高轮)',pct:60,date:'2028'},
+                    {name:'丰州-住吉新线(临海地铁)',pct:15,date:'2030s'}
+                ]},
+                {city:'巴黎',flag:'🇫🇷',icon:'🚇',lines:[
+                    {name:'大巴黎快线(Grand Paris Express) 15号线',pct:55,date:'2027'},
+                    {name:'16号线(圣但尼-努瓦西)',pct:40,date:'2028'},
+                    {name:'17号线(勒布尔热-戴高乐机场)',pct:35,date:'2029'}
+                ]},
+                {city:'上海',flag:'🇨🇳',icon:'🚇',lines:[
+                    {name:'21号线(浦东-宝山)',pct:70,date:'2027'},
+                    {name:'23号线(闵行开发区)',pct:45,date:'2028'},
+                    {name:'崇明线(浦东-崇明岛)',pct:50,date:'2028'},
+                    {name:'嘉闵线(嘉定-闵行市域铁路)',pct:35,date:'2029'}
+                ]},
+                {city:'纽约',flag:'🇺🇸',icon:'🚇',lines:[
+                    {name:'第二大道地铁三期延伸',pct:10,date:'2030+'},
+                    {name:'跨哈德逊Gateway隧道',pct:25,date:'2035'},
+                    {name:'皇后区-布鲁克林轻轨(BQX)',pct:20,date:'2030s'}
+                ]},
+                {city:'伦敦',flag:'🇬🇧',icon:'🚇',lines:[
+                    {name:'伊丽莎白线(Elizabeth Line) 全通',pct:95,date:'2025'},
+                    {name:'Bakerloo线南延(Lewisham)',pct:15,date:'2030s'},
+                    {name:'Crossrail 2 (规划中)',pct:5,date:'2035+'}
+                ]},
+                {city:'首尔',flag:'🇰🇷',icon:'🚇',lines:[
+                    {name:'GTX-A (首都圈广域急行铁道)',pct:80,date:'2026'},
+                    {name:'新安山线(汝矣岛-安山)',pct:40,date:'2028'},
+                    {name:'慰礼新沙线(慰礼-新沙)',pct:35,date:'2029'}
+                ]}
+            ];
+            document.getElementById('futureGrid').innerHTML = projects.map(p => `
+                <div class="future-card" style="animation:fadeInUp 0.4s ease forwards;animation-delay:${projects.indexOf(p)*0.08}s">
+                    <div class="future-card-header">
+                        <span class="fc-icon">${p.icon}</span>
+                        <div><div class="fc-title">${p.flag} ${p.city}</div><div class="fc-city">在建/规划项目</div></div>
+                    </div>
+                    ${p.lines.map(l => `
+                        <div class="future-line">
+                            <span class="fl-name">${l.name}</span>
+                            <span class="fl-date">预计 ${l.date}</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-bar-fill" style="width:${l.pct}%;"></div></div>
+                    `).join('')}
+                </div>`).join('');
+        }
+
+        // ==================== FARE CALCULATOR ====================
+        function populateFareCity() {
+            const opts = transports.map(t => `<option value="${t.city}">${t.flag} ${t.city}</option>`).join('');
+            document.getElementById('fareCity').innerHTML = '<option value="">选择城市</option>' + opts;
+        }
+
+        document.getElementById('btnCalcFare').addEventListener('click', function() {
+            const city = document.getElementById('fareCity').value;
+            const type = document.getElementById('fareType').value;
+            const qty = parseInt(document.getElementById('fareQty').value) || 1;
+            const t = transports.find(t => t.city === city);
+            if (!t) { document.getElementById('fareResult').innerHTML = '⚠️ 请先选择城市'; return; }
+            let cost = 0, label = '';
+            switch(type) {
+                case 'single': cost = t.singleTicketPrice * qty; label = `单程票 × ${qty}`; break;
+                case 'day': cost = t.singleTicketPrice * 6 * qty; label = `日票(约6次) × ${qty}`; break;
+                case 'month': cost = t.monthlyPassPrice * qty; label = `月票 × ${qty}`; break;
+            }
+            document.getElementById('fareResult').innerHTML = `${t.flag} ${t.city} — ${label} = <strong>$${cost.toFixed(2)}</strong> ${type==='month'?'/月':''}`;
+        });
+
+        // ==================== TRANSIT CARD GUIDES ====================
+        function renderGuides() {
+            const guides = [
+                {name:'Suica (西瓜卡)',city:'东京',icon:'🍉',steps:['在JR东日本车站售票机或便利店购买','充值金额可选择¥1,000-¥20,000','进站刷卡/手机NFC感应','余额不足时自动扣除,可随时充值','离开日本前可在指定窗口退卡退押金(¥500)']},
+                {name:'OMNY',city:'纽约',icon:'💳',steps:['无需购卡 —— 直接用非接触式信用卡/手机支付','在地铁闸机或公交读卡器上轻触','7天内最多付$34(即自动周票封顶)','也可在地铁站购买OMNY卡($5工本费)','下载OMNY App查看消费记录']},
+                {name:'Oyster Card',city:'伦敦',icon:'🦪',steps:['在地铁站售票机或Oyster Ticket Stop购买(£7押金)','充值Pay As You Go或加载Travelcard','进出站均需刷卡(DLR/火车出站也要刷)','每日有封顶价(Daily Cap),不超Pay As You Go上限','也可直接用Contactless银行卡/手机,同享封顶']},
+                {name:'Navigo',city:'巴黎',icon:'🎫',steps:['在RATP售票窗口或自动售票机购买Navigo Easy(€2)','周票/月票需要贴照片(Navigo Découverte)','加载Navigo Jour日票或Navigo Semaine周票','进出站刷卡,电车和公交上车刷卡','Navigo Liberté+可后付费(仅限法兰西岛居民)']},
+                {name:'八达通 (Octopus)',city:'香港',icon:'🐙',steps:['各地铁站客务中心或便利店(7-11/OK)购买','普通卡押金HK$50,可充值HK$100起','除交通外可在便利店、快餐店、停车场使用','Apple Pay/Android可添加电子八达通','退卡可退余额+押金(扣HK$11手续费)']},
+                {name:'T-money',city:'首尔',icon:'💳',steps:['便利店(GS25/CU/7-Eleven)或地铁站购买','卡片工本费₩2,500,充值₩1,000起','地铁、公交、出租车、便利店通用','地铁换乘公交30分钟内免费(限4次)','可下载Korea Tour Card(外国人专用,含景点折扣)']},
+                {name:'悠游卡 (EasyCard)',city:'台北',icon:'🎴',steps:['捷运站服务台、便利店购买(NT$100工本费)','充值NT$100起,捷运站/便利店均可','覆盖捷运、公交、YouBike、台铁、高铁(自由座)','YouBike前30分钟免费(需注册)','可绑定手机App查询余额和交易记录']}
+            ];
+            document.getElementById('guideGrid').innerHTML = guides.map(g => `
+                <div class="guide-card" style="animation:fadeInUp 0.4s ease forwards;animation-delay:${guides.indexOf(g)*0.06}s">
+                    <div class="gc-header"><span class="gc-icon">${g.icon}</span><div><div class="gc-name">${g.name}</div><div class="gc-city">${g.city}</div></div></div>
+                    <ol class="guide-steps">${g.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+                </div>`).join('');
+        }
+
+        // ==================== INIT ====================
+        function init() {
+            renderCards(transports);
+            renderAwards();
+            populateCompareSelects();
+            renderFutureProjects();
+            populateFareCity();
+            renderGuides();
+        }
+
+        init();
+
+        // ==================== NAVBAR / SCROLL / THEME / MOBILE (EXISTING) ====================
+        const navbar = document.getElementById('navbar'), btt = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 50);
+            btt.classList.toggle('visible', window.scrollY > 400);
+        });
+        btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => document.getElementById('navLinks').classList.toggle('active'));
+        document.querySelectorAll('#navLinks a').forEach(l => l.addEventListener('click', () => document.getElementById('navLinks').classList.remove('active')));
+        const bt = document.getElementById('btnThemeToggle'), s = localStorage.getItem('citylens-theme');
+        if (s === 'light') { document.body.classList.add('light-mode'); bt.textContent = '◑'; }
+        bt.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            bt.textContent = document.body.classList.contains('light-mode') ? '◑' : '◐';
+            localStorage.setItem('citylens-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+        console.log('%c🚇 交通系统已就绪 | 22个城市 · 丰富交互功能','color:#ff6b35;font-size:14px;');
+        console.log('%c💡 提示：试试排序、搜索、城市对比和票价计算器！','color:#00ff88;');
+    </script>
+</body>
+</html>

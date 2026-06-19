@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市对比 - CityLens</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-red:#ff4757;--accent-purple:#a855f7;--border-glow:#1e2d3d;
+            --glass-bg:rgba(21,26,40,0.85);--shadow-card:0 4px 25px rgba(0,0,0,0.6);
+            --shadow-hover:0 8px 40px rgba(168,85,247,0.2);--border-radius:10px;--transition-speed:0.3s;
+            --nav-height:72px;--max-width:1400px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);overflow-x:hidden;}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#a855f7,#4a9eff);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;position:relative;}.nav-links li a::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%) scaleX(0);width:50%;height:2px;background:var(--accent-purple);transition:transform var(--transition-speed);}.nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);background:rgba(168,85,247,0.08);}.nav-links li a:hover::after,.nav-links li a.active::after{transform:translateX(-50%) scaleX(1);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(168,85,247,0.15);background:rgba(168,85,247,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}.btn-icon:hover{background:rgba(168,85,247,0.15);border-color:var(--accent-purple);color:var(--accent-purple);}
+        .mobile-menu-btn{display:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-purple);}
+        .page-header{margin-top:var(--nav-height);background:linear-gradient(160deg,#0a0e17 0%,#140d1a 30%,#0a0e17 100%);padding:55px 0;text-align:center;border-bottom:1px solid var(--border-glow);}
+        .page-header h1{font-size:2.3rem;font-weight:900;color:var(--text-highlight);}
+        .page-header .breadcrumb{margin-top:8px;color:var(--text-secondary);font-size:0.82rem;}
+        .page-header .breadcrumb a{color:var(--accent-purple);text-decoration:none;}
+        .main-content{padding:40px 0 70px;}.container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+        .setup-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:35px;margin-bottom:30px;text-align:center;}.setup-card h2{color:var(--accent-purple);margin-bottom:25px;}
+        .presets-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
+        .btn-preset{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--bg-tertiary);border:1px solid var(--border-glow);color:var(--text-primary);border-radius:25px;font-size:0.82rem;cursor:pointer;transition:all var(--transition-speed);font-weight:500;}
+        .btn-preset:hover{background:rgba(168,85,247,0.12);border-color:var(--accent-purple);color:var(--accent-purple);}
+        .compare-selectors{display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;}.compare-sel{flex:1;min-width:220px;text-align:left;}.compare-sel label{display:block;color:var(--text-secondary);font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}.compare-sel select{width:100%;padding:13px;background:var(--bg-tertiary);border:1px solid var(--border-glow);color:var(--text-primary);border-radius:20px;font-size:0.9rem;cursor:pointer;outline:none;}.compare-sel select:focus{border-color:var(--accent-purple);}
+        .compare-vs{font-size:2.5rem;color:var(--accent-red);font-weight:900;}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 30px;border-radius:25px;font-size:0.9rem;font-weight:700;cursor:pointer;border:none;transition:all var(--transition-speed);text-transform:uppercase;letter-spacing:1px;margin-top:20px;}
+        .btn-compare{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;}.btn-compare:hover{box-shadow:0 6px 25px rgba(168,85,247,0.4);transform:translateY(-2px);}
+        .result-area{display:none;}.result-area.active{display:block;animation:fadeInUp 0.4s ease;}
+        .cost-diff-banner{background:var(--bg-card);border:1px solid var(--accent-gold);border-left:4px solid var(--accent-gold);border-radius:var(--border-radius);padding:18px 22px;margin-bottom:25px;text-align:center;font-size:1rem;font-weight:600;color:var(--accent-gold);}
+        .cost-diff-banner .cost-emoji{font-size:1.5rem;margin:0 6px;}
+        .summary-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:22px;margin-bottom:25px;line-height:1.8;color:var(--text-secondary);font-size:0.9rem;text-align:justify;}
+        .summary-card strong{color:var(--text-highlight);}
+        .summary-card .city-a-color{color:var(--accent-blue);font-weight:700;}
+        .summary-card .city-b-color{color:var(--accent-red);font-weight:700;}
+        .result-header{display:flex;gap:20px;margin-bottom:25px;}.result-col{flex:1;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;text-align:center;}.result-col.winner{border-color:var(--accent-gold);box-shadow:0 0 25px rgba(255,215,0,0.2);}.result-col-icon{font-size:3.5rem;}.result-col-name{font-size:1.15rem;font-weight:800;color:var(--text-highlight);}.result-col .win-count{color:var(--accent-green);margin-top:6px;font-weight:600;font-size:0.9rem;}.result-divider{display:flex;align-items:center;font-size:2rem;color:var(--accent-red);font-weight:900;}
+        .section-title{color:var(--accent-purple);text-align:center;margin:30px 0 18px;font-size:1.2rem;}
+        .compare-table{width:100%;border-collapse:collapse;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;margin-bottom:20px;}
+        .compare-table th,.compare-table td{padding:12px 16px;text-align:center;border:1px solid rgba(30,45,61,0.6);font-size:0.85rem;}
+        .compare-table thead th{background:var(--bg-tertiary);color:var(--accent-gold);font-weight:700;padding:14px 16px;font-size:0.88rem;}
+        .compare-table tbody td{color:var(--text-primary);}
+        .compare-table td.better{color:var(--accent-green);font-weight:700;}.compare-table td.better::after{content:' ◀';}
+        .compare-table tr:nth-child(even){background:rgba(255,255,255,0.015);}
+        .radar-section{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;margin-bottom:25px;text-align:center;}
+        .radar-section h3{color:var(--accent-purple);margin-bottom:15px;}
+        .radar-legend{display:flex;gap:30px;justify-content:center;margin-top:8px;font-size:0.85rem;}
+        .radar-legend span{display:flex;align-items:center;gap:6px;}
+        .radar-legend .legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+        .best-badges-section{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;margin-bottom:25px;}
+        .best-badges-section h3{color:var(--accent-purple);text-align:center;margin-bottom:18px;}
+        .badges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+        .badge-item{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-tertiary);border-radius:20px;font-size:0.8rem;color:var(--text-primary);border:1px solid var(--border-glow);}
+        .badge-item .badge-emoji{font-size:1.2rem;}
+        .badge-item .badge-city{font-weight:700;color:var(--text-highlight);}
+        .badge-item .badge-val{color:var(--text-secondary);font-size:0.72rem;margin-left:auto;}
+        .cost-bar-section{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;margin-bottom:25px;}
+        .cost-bar-section h3{color:var(--accent-purple);text-align:center;margin-bottom:18px;}
+        .cost-bar-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
+        .cost-bar-label{width:80px;font-size:0.8rem;color:var(--text-secondary);text-align:right;flex-shrink:0;}
+        .cost-bar-track{flex:1;height:22px;background:var(--bg-tertiary);border-radius:11px;overflow:hidden;position:relative;display:flex;}
+        .cost-bar-fill-a{height:100%;background:var(--accent-blue);border-radius:11px 0 0 11px;transition:width 1s ease;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#fff;font-weight:600;min-width:0;overflow:hidden;white-space:nowrap;}
+        .cost-bar-fill-b{height:100%;background:var(--accent-red);border-radius:0 11px 11px 0;transition:width 1s ease;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#fff;font-weight:600;min-width:0;overflow:hidden;white-space:nowrap;}
+        .bars-section{margin-top:25px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:30px;}
+        .bars-section h3{color:var(--accent-purple);margin-bottom:20px;text-align:center;}
+        .bar-group{display:flex;gap:30px;flex-wrap:wrap;}.bar-col{flex:1;min-width:250px;}.bar-col h5{margin-bottom:12px;font-size:0.95rem;}
+        .bar-item{margin-bottom:8px;}.bar-label{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-secondary);margin-bottom:3px;}.bar-label .bar-label-val{font-weight:600;color:var(--text-primary);}
+        .bar-track{height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;}.bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}.bar-fill.a{background:var(--accent-blue);}.bar-fill.b{background:var(--accent-red);}
+        .save-section{margin-top:25px;text-align:center;}
+        .btn-save{display:inline-flex;align-items:center;gap:6px;padding:12px 26px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:var(--accent-purple);border-radius:25px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all var(--transition-speed);}
+        .btn-save:hover{background:rgba(168,85,247,0.2);box-shadow:0 4px 20px rgba(168,85,247,0.2);}
+        .saved-list-section{margin-top:25px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;}
+        .saved-list-section h3{color:var(--accent-purple);text-align:center;margin-bottom:16px;}
+        .saved-list-empty{text-align:center;color:var(--text-secondary);font-size:0.85rem;padding:20px;}
+        .saved-item{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:8px;gap:12px;flex-wrap:wrap;}
+        .saved-item .si-cities{display:flex;align-items:center;gap:8px;font-size:0.9rem;color:var(--text-primary);font-weight:600;}
+        .saved-item .si-vs{color:var(--accent-red);font-weight:900;margin:0 4px;}
+        .saved-item .si-date{font-size:0.72rem;color:var(--text-secondary);}
+        .btn-saved-action{padding:6px 14px;border-radius:15px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border-glow);background:var(--bg-card);color:var(--text-primary);font-weight:500;transition:all var(--transition-speed);}
+        .btn-saved-action:hover{border-color:var(--accent-purple);color:var(--accent-purple);}
+        .btn-saved-action.delete:hover{border-color:var(--accent-red);color:var(--accent-red);}
+        .recommend-section{margin-top:25px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:25px;}
+        .recommend-section h3{color:var(--accent-purple);text-align:center;margin-bottom:16px;}
+        .recommend-cols{display:flex;gap:25px;flex-wrap:wrap;}
+        .recommend-col{flex:1;min-width:250px;background:var(--bg-tertiary);border-radius:var(--border-radius);padding:20px;text-align:center;border:1px solid var(--border-glow);}
+        .recommend-col .rec-label{font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;}
+        .recommend-col .rec-city{font-size:1.2rem;font-weight:800;color:var(--text-highlight);}
+        .recommend-col .rec-reason{font-size:0.78rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;}
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:28px;text-align:center;color:var(--text-secondary);font-size:0.78rem;}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes pulseGold{0%,100%{box-shadow:0 0 15px rgba(255,215,0,0.3);}50%{box-shadow:0 0 35px rgba(255,215,0,0.6);}}
+        .result-col.winner{animation:pulseGold 2s ease-in-out infinite;}
+        @media(max-width:768px){
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,23,0.98);flex-direction:column;padding:20px;z-index:999;}.nav-links.active{display:flex;}
+            .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+            .result-header{flex-direction:column;}.result-divider{justify-content:center;}
+            .compare-selectors{flex-direction:column;}
+            .page-header h1{font-size:1.6rem;}.page-header{padding:35px 0;}
+            .setup-card{padding:20px;}
+            .cost-bar-label{width:55px;font-size:0.7rem;}
+            .badges-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+            .recommend-cols{flex-direction:column;}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"><div class="container"><a href="home.html" class="logo"><div class="logo-icon">C</div><span class="logo-text">CityLens</span></a><ul class="nav-links" id="navLinks"><li><a href="home.html">首页</a></li><li><a href="cities.html">城市大全</a></li><li><a href="compare.html" class="active">对比</a></li><li><a href="ranking.html">排行榜</a></li></ul><div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div></div></nav>
+
+    <section class="page-header"><h1>⚖️ 城市对比</h1><p class="breadcrumb"><a href="home.html">首页</a> / 城市对比</p></section>
+
+    <section class="main-content"><div class="container">
+        <div class="setup-card"><h2>选择两座城市进行对比</h2>
+            <div class="presets-row">
+                <button class="btn-preset" data-a="tokyo" data-b="nyc">🗼 东京 vs 🗽 纽约</button>
+                <button class="btn-preset" data-a="london" data-b="paris">🏰 伦敦 vs 🗼 巴黎</button>
+                <button class="btn-preset" data-a="shanghai" data-b="singapore">🏙️ 上海 vs 🦁 新加坡</button>
+            </div>
+            <div class="compare-selectors">
+                <div class="compare-sel"><label>城市 A</label><select id="cityA"><option value="">-- 选择城市 --</option></select></div>
+                <div class="compare-vs">VS</div>
+                <div class="compare-sel"><label>城市 B</label><select id="cityB"><option value="">-- 选择城市 --</option></select></div>
+            </div>
+            <button class="btn btn-compare" id="btnCompare">🔍 开始对比</button>
+        </div>
+        <div class="result-area" id="resultArea"></div>
+        <div class="saved-list-section" id="savedListSection">
+            <h3>💾 已保存的对比记录</h3>
+            <div id="savedList"></div>
+        </div>
+    </div></section>
+
+    <footer class="footer"><p>© 2025 CityLens | 对比数据来源公开资料 | 仅供学习使用</p></footer>
+
+    <script>
+        const cities=[
+            // ---- EXISTING 4 (preserved) ----
+            {id:'tokyo',name:'东京',flag:'🇯🇵',icon:'🗼',population:'3700万',gdp:'1.6万亿',metro:'13条',rating:92,livable:89,safety:91,cost:72,transport:95,env:83,edu:90,area:'2194km²',medical:91,costOfLiving:78,rentCity:1500,rentOutside:800,mealInexpensive:8,mealMid:40,coffee:3.5,beer:5,internetSpeed:150,avgSalary:3200,unemployment:2.6,crimeIndex:22,pollutionIndex:35,healthcareIndex:88,happinessScore:6.2,walkability:92,bikeFriendly:78,annualTourists:15,greenSpace:7.5,unescoSites:2,michelinStars:212,startupRating:78},
+            {id:'nyc',name:'纽约',flag:'🇺🇸',icon:'🗽',population:'840万',gdp:'1.9万亿',metro:'24条',rating:90,livable:85,safety:78,cost:85,transport:88,env:75,edu:91,area:'1213km²',medical:89,costOfLiving:95,rentCity:3200,rentOutside:1800,mealInexpensive:15,mealMid:60,coffee:5.5,beer:8,internetSpeed:200,avgSalary:5800,unemployment:5.2,crimeIndex:45,pollutionIndex:42,healthcareIndex:82,happinessScore:6.8,walkability:88,bikeFriendly:65,annualTourists:13,greenSpace:14,unescoSites:1,michelinStars:72,startupRating:92},
+            {id:'shanghai',name:'上海',flag:'🇨🇳',icon:'🏙️',population:'2487万',gdp:'0.7万亿',metro:'20条',rating:88,livable:83,safety:85,cost:78,transport:89,env:72,edu:85,area:'6340km²',medical:82,costOfLiving:62,rentCity:1200,rentOutside:500,mealInexpensive:4,mealMid:25,coffee:3.8,beer:2.5,internetSpeed:180,avgSalary:1800,unemployment:4.5,crimeIndex:28,pollutionIndex:68,healthcareIndex:75,happinessScore:5.9,walkability:82,bikeFriendly:88,annualTourists:8,greenSpace:11,unescoSites:0,michelinStars:44,startupRating:85},
+            {id:'london',name:'伦敦',flag:'🇬🇧',icon:'🏰',population:'900万',gdp:'1.0万亿',metro:'11条',rating:91,livable:87,safety:83,cost:82,transport:87,env:80,edu:93,area:'1572km²',medical:90,costOfLiving:88,rentCity:2200,rentOutside:1300,mealInexpensive:12,mealMid:45,coffee:4.5,beer:6.5,internetSpeed:130,avgSalary:4200,unemployment:4.1,crimeIndex:38,pollutionIndex:40,healthcareIndex:85,happinessScore:7.1,walkability:85,bikeFriendly:72,annualTourists:19,greenSpace:33,unescoSites:4,michelinStars:67,startupRating:82},
+            // ---- NEW CITIES ----
+            {id:'paris',name:'巴黎',flag:'🇫🇷',icon:'🗼',population:'210万',gdp:'0.9万亿',metro:'16条',rating:88,livable:86,safety:76,cost:80,transport:86,env:78,edu:88,area:'105km²',medical:86,costOfLiving:85,rentCity:1900,rentOutside:1000,mealInexpensive:11,mealMid:42,coffee:4,beer:7,internetSpeed:120,avgSalary:3800,unemployment:7.8,crimeIndex:42,pollutionIndex:45,healthcareIndex:83,happinessScore:6.6,walkability:95,bikeFriendly:68,annualTourists:30,greenSpace:9.5,unescoSites:3,michelinStars:118,startupRating:76},
+            {id:'singapore',name:'新加坡',flag:'🇸🇬',icon:'🦁',population:'560万',gdp:'0.5万亿',metro:'6条',rating:92,livable:90,safety:94,cost:76,transport:92,env:88,edu:91,area:'733km²',medical:93,costOfLiving:82,rentCity:2600,rentOutside:1400,mealInexpensive:9,mealMid:35,coffee:4.2,beer:8,internetSpeed:220,avgSalary:4500,unemployment:2.0,crimeIndex:15,pollutionIndex:25,healthcareIndex:92,happinessScore:6.5,walkability:78,bikeFriendly:82,annualTourists:18,greenSpace:47,unescoSites:1,michelinStars:52,startupRating:88},
+            {id:'dubai',name:'迪拜',flag:'🇦🇪',icon:'🏝️',population:'340万',gdp:'0.4万亿',metro:'2条',rating:84,livable:82,safety:88,cost:70,transport:78,env:65,edu:76,area:'4114km²',medical:80,costOfLiving:68,rentCity:1800,rentOutside:900,mealInexpensive:8,mealMid:38,coffee:5,beer:10,internetSpeed:170,avgSalary:5000,unemployment:1.5,crimeIndex:18,pollutionIndex:55,healthcareIndex:78,happinessScore:6.8,walkability:45,bikeFriendly:30,annualTourists:16,greenSpace:5,unescoSites:0,michelinStars:12,startupRating:72},
+            {id:'seoul',name:'首尔',flag:'🇰🇷',icon:'🏯',population:'970万',gdp:'0.5万亿',metro:'22条',rating:87,livable:84,safety:86,cost:65,transport:90,env:74,edu:87,area:'605km²',medical:85,costOfLiving:60,rentCity:900,rentOutside:450,mealInexpensive:6,mealMid:22,coffee:3.2,beer:3,internetSpeed:250,avgSalary:2800,unemployment:3.0,crimeIndex:24,pollutionIndex:48,healthcareIndex:84,happinessScore:5.8,walkability:88,bikeFriendly:75,annualTourists:10,greenSpace:12,unescoSites:2,michelinStars:32,startupRating:90},
+            {id:'berlin',name:'柏林',flag:'🇩🇪',icon:'🚪',population:'370万',gdp:'0.3万亿',metro:'10条',rating:84,livable:85,safety:82,cost:58,transport:84,env:82,edu:82,area:'891km²',medical:81,costOfLiving:55,rentCity:1100,rentOutside:650,mealInexpensive:8,mealMid:28,coffee:3,beer:3.5,internetSpeed:100,avgSalary:3200,unemployment:5.5,crimeIndex:35,pollutionIndex:30,healthcareIndex:80,happinessScore:7.0,walkability:80,bikeFriendly:92,annualTourists:12,greenSpace:30,unescoSites:3,michelinStars:28,startupRating:86},
+            {id:'sydney',name:'悉尼',flag:'🇦🇺',icon:'🦘',population:'530万',gdp:'0.4万亿',metro:'9条',rating:88,livable:91,safety:87,cost:78,transport:80,env:90,edu:86,area:'12368km²',medical:87,costOfLiving:80,rentCity:1900,rentOutside:1100,mealInexpensive:10,mealMid:35,coffee:3.8,beer:7,internetSpeed:90,avgSalary:4400,unemployment:3.8,crimeIndex:30,pollutionIndex:22,healthcareIndex:86,happinessScore:7.3,walkability:65,bikeFriendly:55,annualTourists:9,greenSpace:46,unescoSites:2,michelinStars:16,startupRating:70},
+            {id:'toronto',name:'多伦多',flag:'🇨🇦',icon:'🍁',population:'290万',gdp:'0.4万亿',metro:'4条',rating:87,livable:89,safety:85,cost:70,transport:78,env:84,edu:84,area:'630km²',medical:84,costOfLiving:70,rentCity:1700,rentOutside:1000,mealInexpensive:10,mealMid:32,coffee:3.5,beer:5,internetSpeed:140,avgSalary:3800,unemployment:5.8,crimeIndex:32,pollutionIndex:28,healthcareIndex:82,happinessScore:7.2,walkability:75,bikeFriendly:68,annualTourists:4,greenSpace:20,unescoSites:0,michelinStars:14,startupRating:80},
+            {id:'moscow',name:'莫斯科',flag:'🇷🇺',icon:'🏛️',population:'1260万',gdp:'0.5万亿',metro:'14条',rating:77,livable:73,safety:68,cost:62,transport:82,env:65,edu:81,area:'2511km²',medical:74,costOfLiving:48,rentCity:700,rentOutside:350,mealInexpensive:5,mealMid:20,coffee:2,beer:1.8,internetSpeed:80,avgSalary:1200,unemployment:3.2,crimeIndex:48,pollutionIndex:52,healthcareIndex:68,happinessScore:5.5,walkability:60,bikeFriendly:38,annualTourists:5,greenSpace:18,unescoSites:3,michelinStars:8,startupRating:55},
+            {id:'mumbai',name:'孟买',flag:'🇮🇳',icon:'🕌',population:'2090万',gdp:'0.3万亿',metro:'3条',rating:72,livable:62,safety:58,cost:35,transport:60,env:42,edu:68,area:'603km²',medical:58,costOfLiving:28,rentCity:350,rentOutside:150,mealInexpensive:2,mealMid:8,coffee:1.5,beer:2,internetSpeed:55,avgSalary:600,unemployment:7.5,crimeIndex:55,pollutionIndex:82,healthcareIndex:52,happinessScore:4.2,walkability:55,bikeFriendly:35,annualTourists:6,greenSpace:6,unescoSites:2,michelinStars:3,startupRating:68},
+            {id:'beijing',name:'北京',flag:'🇨🇳',icon:'🏯',population:'2189万',gdp:'0.6万亿',metro:'27条',rating:84,livable:78,safety:88,cost:60,transport:86,env:58,edu:86,area:'16410km²',medical:83,costOfLiving:52,rentCity:1100,rentOutside:400,mealInexpensive:3.5,mealMid:20,coffee:3.2,beer:2,internetSpeed:160,avgSalary:2000,unemployment:4.2,crimeIndex:20,pollutionIndex:78,healthcareIndex:76,happinessScore:5.6,walkability:75,bikeFriendly:90,annualTourists:6,greenSpace:16,unescoSites:7,michelinStars:31,startupRating:82},
+            {id:'hongkong',name:'香港',flag:'🇭🇰',icon:'🏙️',population:'750万',gdp:'0.4万亿',metro:'10条',rating:87,livable:82,safety:90,cost:82,transport:93,env:70,edu:88,area:'1106km²',medical:88,costOfLiving:90,rentCity:2800,rentOutside:1600,mealInexpensive:7,mealMid:30,coffee:4.8,beer:6,internetSpeed:190,avgSalary:3500,unemployment:3.0,crimeIndex:18,pollutionIndex:55,healthcareIndex:90,happinessScore:5.5,walkability:92,bikeFriendly:40,annualTourists:25,greenSpace:40,unescoSites:0,michelinStars:71,startupRating:75},
+            {id:'bangkok',name:'曼谷',flag:'🇹🇭',icon:'🛕',population:'1060万',gdp:'0.3万亿',metro:'10条',rating:78,livable:72,safety:70,cost:38,transport:70,env:55,edu:70,area:'1569km²',medical:68,costOfLiving:35,rentCity:500,rentOutside:200,mealInexpensive:2,mealMid:10,coffee:2,beer:1.8,internetSpeed:80,avgSalary:700,unemployment:1.5,crimeIndex:38,pollutionIndex:72,healthcareIndex:65,happinessScore:5.9,walkability:58,bikeFriendly:42,annualTourists:22,greenSpace:7,unescoSites:0,michelinStars:6,startupRating:60},
+            {id:'istanbul',name:'伊斯坦布尔',flag:'🇹🇷',icon:'🕌',population:'1550万',gdp:'0.3万亿',metro:'8条',rating:76,livable:70,safety:65,cost:42,transport:68,env:60,edu:72,area:'5343km²',medical:66,costOfLiving:30,rentCity:400,rentOutside:180,mealInexpensive:3,mealMid:12,coffee:2,beer:2.5,internetSpeed:60,avgSalary:800,unemployment:9.5,crimeIndex:50,pollutionIndex:65,healthcareIndex:62,happinessScore:4.8,walkability:62,bikeFriendly:35,annualTourists:14,greenSpace:8,unescoSites:2,michelinStars:2,startupRating:48},
+            {id:'amsterdam',name:'阿姆斯特丹',flag:'🇳🇱',icon:'🌷',population:'87万',gdp:'0.2万亿',metro:'5条',rating:87,livable:88,safety:80,cost:68,transport:82,env:86,edu:83,area:'219km²',medical:84,costOfLiving:75,rentCity:1700,rentOutside:1000,mealInexpensive:12,mealMid:35,coffee:3.5,beer:5,internetSpeed:160,avgSalary:4000,unemployment:3.5,crimeIndex:28,pollutionIndex:28,healthcareIndex:84,happinessScore:7.4,walkability:90,bikeFriendly:96,annualTourists:18,greenSpace:14,unescoSites:2,michelinStars:33,startupRating:84},
+            {id:'sanfrancisco',name:'旧金山',flag:'🇺🇸',icon:'🌉',population:'87万',gdp:'0.6万亿',metro:'6条',rating:85,livable:83,safety:72,cost:92,transport:76,env:82,edu:85,area:'600km²',medical:83,costOfLiving:98,rentCity:3300,rentOutside:2000,mealInexpensive:14,mealMid:55,coffee:5,beer:7,internetSpeed:210,avgSalary:7200,unemployment:3.8,crimeIndex:50,pollutionIndex:32,healthcareIndex:81,happinessScore:6.9,walkability:86,bikeFriendly:72,annualTourists:24,greenSpace:19,unescoSites:0,michelinStars:50,startupRating:98},
+            {id:'chicago',name:'芝加哥',flag:'🇺🇸',icon:'🌬️',population:'270万',gdp:'0.7万亿',metro:'8条',rating:80,livable:78,safety:62,cost:65,transport:75,env:72,edu:80,area:'606km²',medical:78,costOfLiving:68,rentCity:1600,rentOutside:900,mealInexpensive:10,mealMid:35,coffee:4,beer:5,internetSpeed:150,avgSalary:4500,unemployment:5.0,crimeIndex:62,pollutionIndex:38,healthcareIndex:76,happinessScore:6.5,walkability:78,bikeFriendly:68,annualTourists:10,greenSpace:10,unescoSites:0,michelinStars:26,startupRating:70},
+            {id:'vienna',name:'维也纳',flag:'🇦🇹',icon:'🎻',population:'190万',gdp:'0.2万亿',metro:'5条',rating:89,livable:93,safety:90,cost:55,transport:85,env:88,edu:84,area:'415km²',medical:88,costOfLiving:58,rentCity:900,rentOutside:550,mealInexpensive:8,mealMid:25,coffee:3.2,beer:4,internetSpeed:110,avgSalary:3200,unemployment:6.0,crimeIndex:22,pollutionIndex:22,healthcareIndex:86,happinessScore:7.3,walkability:90,bikeFriendly:85,annualTourists:8,greenSpace:50,unescoSites:2,michelinStars:22,startupRating:62},
+            {id:'zurich',name:'苏黎世',flag:'🇨🇭',icon:'⛰️',population:'42万',gdp:'0.2万亿',metro:'1条',rating:90,livable:92,safety:93,cost:88,transport:88,env:92,edu:87,area:'88km²',medical:92,costOfLiving:95,rentCity:2500,rentOutside:1600,mealInexpensive:18,mealMid:50,coffee:5.5,beer:7.5,internetSpeed:180,avgSalary:6500,unemployment:2.0,crimeIndex:12,pollutionIndex:14,healthcareIndex:94,happinessScore:7.5,walkability:88,bikeFriendly:78,annualTourists:3,greenSpace:35,unescoSites:0,michelinStars:20,startupRating:68},
+            {id:'copenhagen',name:'哥本哈根',flag:'🇩🇰',icon:'🧜',population:'63万',gdp:'0.2万亿',metro:'4条',rating:90,livable:92,safety:89,cost:72,transport:86,env:94,edu:85,area:'86km²',medical:87,costOfLiving:78,rentCity:1600,rentOutside:900,mealInexpensive:14,mealMid:40,coffee:5,beer:6,internetSpeed:200,avgSalary:4500,unemployment:4.5,crimeIndex:18,pollutionIndex:18,healthcareIndex:85,happinessScore:7.6,walkability:94,bikeFriendly:98,annualTourists:5,greenSpace:25,unescoSites:0,michelinStars:22,startupRating:74},
+            {id:'barcelona',name:'巴塞罗那',flag:'🇪🇸',icon:'⛪',population:'160万',gdp:'0.2万亿',metro:'12条',rating:85,livable:84,safety:75,cost:55,transport:82,env:80,edu:78,area:'101km²',medical:80,costOfLiving:52,rentCity:1000,rentOutside:600,mealInexpensive:8,mealMid:25,coffee:2,beer:3,internetSpeed:130,avgSalary:2400,unemployment:12,crimeIndex:35,pollutionIndex:40,healthcareIndex:79,happinessScore:6.4,walkability:88,bikeFriendly:82,annualTourists:20,greenSpace:11,unescoSites:9,michelinStars:36,startupRating:72},
+            {id:'rome',name:'罗马',flag:'🇮🇹',icon:'🏛️',population:'280万',gdp:'0.2万亿',metro:'3条',rating:83,livable:79,safety:72,cost:60,transport:72,env:68,edu:79,area:'1285km²',medical:78,costOfLiving:58,rentCity:1000,rentOutside:550,mealInexpensive:8,mealMid:28,coffee:1.5,beer:4,internetSpeed:70,avgSalary:2200,unemployment:8.5,crimeIndex:38,pollutionIndex:48,healthcareIndex:76,happinessScore:6.3,walkability:82,bikeFriendly:52,annualTourists:15,greenSpace:15,unescoSites:4,michelinStars:33,startupRating:55},
+            {id:'melbourne',name:'墨尔本',flag:'🇦🇺',icon:'☕',population:'510万',gdp:'0.3万亿',metro:'5条',rating:89,livable:92,safety:86,cost:68,transport:80,env:88,edu:88,area:'9992km²',medical:86,costOfLiving:72,rentCity:1500,rentOutside:850,mealInexpensive:9,mealMid:30,coffee:3.5,beer:6,internetSpeed:85,avgSalary:4000,unemployment:4.0,crimeIndex:28,pollutionIndex:20,healthcareIndex:85,happinessScore:7.3,walkability:70,bikeFriendly:75,annualTourists:8,greenSpace:32,unescoSites:1,michelinStars:14,startupRating:68},
+            {id:'oslo',name:'奥斯陆',flag:'🇳🇴',icon:'🏔️',population:'70万',gdp:'0.2万亿',metro:'5条',rating:86,livable:88,safety:91,cost:82,transport:78,env:92,edu:82,area:'454km²',medical:88,costOfLiving:88,rentCity:1500,rentOutside:900,mealInexpensive:14,mealMid:42,coffee:4.5,beer:8,internetSpeed:140,avgSalary:4800,unemployment:3.2,crimeIndex:20,pollutionIndex:16,healthcareIndex:88,happinessScore:7.5,walkability:72,bikeFriendly:70,annualTourists:2,greenSpace:65,unescoSites:1,michelinStars:8,startupRating:60},
+            {id:'stockholm',name:'斯德哥尔摩',flag:'🇸🇪',icon:'⛵',population:'98万',gdp:'0.2万亿',metro:'3条',rating:87,livable:89,safety:88,cost:70,transport:82,env:90,edu:83,area:'188km²',medical:87,costOfLiving:75,rentCity:1300,rentOutside:750,mealInexpensive:10,mealMid:32,coffee:3.8,beer:6,internetSpeed:180,avgSalary:4000,unemployment:6.5,crimeIndex:25,pollutionIndex:15,healthcareIndex:86,happinessScore:7.4,walkability:78,bikeFriendly:80,annualTourists:3,greenSpace:40,unescoSites:2,michelinStars:12,startupRating:88},
+            {id:'lisbon',name:'里斯本',flag:'🇵🇹',icon:'⛵',population:'54万',gdp:'0.1万亿',metro:'4条',rating:82,livable:82,safety:82,cost:45,transport:74,env:78,edu:76,area:'100km²',medical:76,costOfLiving:42,rentCity:850,rentOutside:450,mealInexpensive:7,mealMid:20,coffee:1.5,beer:2.5,internetSpeed:100,avgSalary:1500,unemployment:6.2,crimeIndex:28,pollutionIndex:32,healthcareIndex:74,happinessScore:6.0,walkability:82,bikeFriendly:62,annualTourists:8,greenSpace:20,unescoSites:2,michelinStars:12,startupRating:70},
+            {id:'prague',name:'布拉格',flag:'🇨🇿',icon:'🏰',population:'130万',gdp:'0.1万亿',metro:'3条',rating:83,livable:84,safety:84,cost:40,transport:80,env:76,edu:78,area:'496km²',medical:77,costOfLiving:38,rentCity:750,rentOutside:400,mealInexpensive:5,mealMid:15,coffee:2.2,beer:1.5,internetSpeed:110,avgSalary:1800,unemployment:2.5,crimeIndex:22,pollutionIndex:35,healthcareIndex:78,happinessScore:6.8,walkability:85,bikeFriendly:65,annualTourists:9,greenSpace:22,unescoSites:1,michelinStars:8,startupRating:74},
+            {id:'taipei',name:'台北',flag:'🇹🇼',icon:'🏯',population:'260万',gdp:'0.2万亿',metro:'6条',rating:84,livable:85,safety:89,cost:50,transport:84,env:72,edu:84,area:'272km²',medical:83,costOfLiving:48,rentCity:600,rentOutside:300,mealInexpensive:4,mealMid:15,coffee:3,beer:2,internetSpeed:130,avgSalary:1800,unemployment:3.5,crimeIndex:16,pollutionIndex:42,healthcareIndex:82,happinessScore:6.4,walkability:80,bikeFriendly:72,annualTourists:8,greenSpace:13,unescoSites:0,michelinStars:26,startupRating:76},
+            {id:'kualalumpur',name:'吉隆坡',flag:'🇲🇾',icon:'🕌',population:'180万',gdp:'0.2万亿',metro:'5条',rating:78,livable:74,safety:73,cost:32,transport:72,env:62,edu:72,area:'243km²',medical:70,costOfLiving:30,rentCity:450,rentOutside:200,mealInexpensive:2.5,mealMid:8,coffee:2.5,beer:4,internetSpeed:100,avgSalary:1200,unemployment:3.4,crimeIndex:42,pollutionIndex:58,healthcareIndex:68,happinessScore:5.8,walkability:55,bikeFriendly:38,annualTourists:12,greenSpace:14,unescoSites:0,michelinStars:5,startupRating:58},
+            {id:'dublin',name:'都柏林',flag:'🇮🇪',icon:'☘️',population:'55万',gdp:'0.2万亿',metro:'2条',rating:84,livable:86,safety:79,cost:74,transport:70,env:82,edu:84,area:'115km²',medical:82,costOfLiving:78,rentCity:1900,rentOutside:1200,mealInexpensive:12,mealMid:35,coffee:3.8,beer:5.5,internetSpeed:110,avgSalary:4200,unemployment:4.2,crimeIndex:32,pollutionIndex:22,healthcareIndex:80,happinessScore:7.0,walkability:75,bikeFriendly:65,annualTourists:6,greenSpace:22,unescoSites:0,michelinStars:6,startupRating:82},
+            {id:'buenosaires',name:'布宜诺斯艾利斯',flag:'🇦🇷',icon:'💃',population:'300万',gdp:'0.2万亿',metro:'7条',rating:79,livable:76,safety:62,cost:35,transport:68,env:74,edu:80,area:'203km²',medical:72,costOfLiving:32,rentCity:400,rentOutside:200,mealInexpensive:5,mealMid:15,coffee:2,beer:2.5,internetSpeed:75,avgSalary:900,unemployment:9.0,crimeIndex:58,pollutionIndex:38,healthcareIndex:70,happinessScore:6.1,walkability:78,bikeFriendly:60,annualTourists:5,greenSpace:12,unescoSites:0,michelinStars:7,startupRating:55},
+            {id:'cairo',name:'开罗',flag:'🇪🇬',icon:'🏛️',population:'2100万',gdp:'0.1万亿',metro:'3条',rating:70,livable:58,safety:62,cost:25,transport:55,env:40,edu:65,area:'3085km²',medical:55,costOfLiving:22,rentCity:250,rentOutside:100,mealInexpensive:2,mealMid:7,coffee:1.2,beer:1.5,internetSpeed:40,avgSalary:300,unemployment:8.0,crimeIndex:48,pollutionIndex:90,healthcareIndex:50,happinessScore:4.0,walkability:48,bikeFriendly:25,annualTourists:8,greenSpace:3,unescoSites:3,michelinStars:0,startupRating:38}
+        ];
+
+        function populate(){
+            const opts='<option value="">-- 选择城市 --</option>'+cities.map(c=>`<option value="${c.id}">${c.flag} ${c.name}</option>`).join('');
+            document.getElementById('cityA').innerHTML=opts;
+            document.getElementById('cityB').innerHTML=opts;
+        }
+
+        function getNumericVal(v){return typeof v==='number'?v:parseFloat(v)||0;}
+
+        const radarDims=['livable','safety','transport','env','edu','medical'];
+        const radarLabels={livable:'宜居',safety:'安全',transport:'交通',env:'环境',edu:'教育',medical:'医疗'};
+
+        function buildRadarSVG(a,b){
+            const cx=200,cy=200,R=140,levels=5;
+            let svg=`<svg viewBox="0 0 400 400" width="380" height="380" xmlns="http://www.w3.org/2000/svg">`;
+            // grid
+            for(let lv=1;lv<=levels;lv++){
+                const r=R*lv/levels;
+                let pts=[];
+                for(let i=0;i<6;i++){
+                    const angle=(i*60-90)*Math.PI/180;
+                    pts.push(`${(cx+r*Math.cos(angle)).toFixed(1)},${(cy+r*Math.sin(angle)).toFixed(1)}`);
+                }
+                svg+=`<polygon points="${pts.join(' ')}" fill="none" stroke="var(--border-glow)" stroke-width="0.8" opacity="0.6"/>`;
+            }
+            // axes
+            for(let i=0;i<6;i++){
+                const angle=(i*60-90)*Math.PI/180;
+                svg+=`<line x1="${cx}" y1="${cy}" x2="${(cx+R*Math.cos(angle)).toFixed(1)}" y2="${(cy+R*Math.sin(angle)).toFixed(1)}" stroke="var(--border-glow)" stroke-width="0.8" opacity="0.4"/>`;
+            }
+            // labels
+            for(let i=0;i<6;i++){
+                const angle=(i*60-90)*Math.PI/180;
+                const lx=cx+(R+22)*Math.cos(angle),ly=cy+(R+22)*Math.sin(angle);
+                svg+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" font-size="11">${radarLabels[radarDims[i]]}</text>`;
+            }
+            // data polygon A
+            let ptsA=[];
+            for(let i=0;i<6;i++){
+                const v=Math.max(0,Math.min(100,getNumericVal(a[radarDims[i]])));
+                const angle=(i*60-90)*Math.PI/180;
+                ptsA.push(`${(cx+R*v/100*Math.cos(angle)).toFixed(1)},${(cy+R*v/100*Math.sin(angle)).toFixed(1)}`);
+            }
+            svg+=`<polygon points="${ptsA.join(' ')}" fill="var(--accent-blue)" fill-opacity="0.2" stroke="var(--accent-blue)" stroke-width="2.5"/>`;
+            for(let i=0;i<6;i++){
+                svg+=`<circle cx="${ptsA[i].split(',')[0]}" cy="${ptsA[i].split(',')[1]}" r="4" fill="var(--accent-blue)"/>`;
+            }
+            // data polygon B
+            let ptsB=[];
+            for(let i=0;i<6;i++){
+                const v=Math.max(0,Math.min(100,getNumericVal(b[radarDims[i]])));
+                const angle=(i*60-90)*Math.PI/180;
+                ptsB.push(`${(cx+R*v/100*Math.cos(angle)).toFixed(1)},${(cy+R*v/100*Math.sin(angle)).toFixed(1)}`);
+            }
+            svg+=`<polygon points="${ptsB.join(' ')}" fill="var(--accent-red)" fill-opacity="0.15" stroke="var(--accent-red)" stroke-width="2.5"/>`;
+            for(let i=0;i<6;i++){
+                svg+=`<circle cx="${ptsB[i].split(',')[0]}" cy="${ptsB[i].split(',')[1]}" r="4" fill="var(--accent-red)"/>`;
+            }
+            svg+=`</svg>`;
+            return svg;
+        }
+
+        function buildCostBars(a,b){
+            const items=[
+                {k:'rentCity',l:'市中心租金(月)',fmt:v=>'$'+v},
+                {k:'mealInexpensive',l:'简餐',fmt:v=>'$'+v},
+                {k:'coffee',l:'咖啡',fmt:v=>'$'+v},
+                {k:'beer',l:'啤酒',fmt:v=>'$'+v}
+            ];
+            const maxVals={};
+            items.forEach(it=>{maxVals[it.k]=Math.max(getNumericVal(a[it.k]),getNumericVal(b[it.k]),1);});
+            let html='';
+            items.forEach(it=>{
+                const va=getNumericVal(a[it.k]),vb=getNumericVal(b[it.k]);
+                const total=va+vb||1;
+                const pctA=Math.round(va/total*100),pctB=Math.round(vb/total*100);
+                html+=`<div class="cost-bar-row"><div class="cost-bar-label">${it.l}</div><div class="cost-bar-track"><div class="cost-bar-fill-a" style="width:${pctA}%;">${it.fmt(va)}</div><div class="cost-bar-fill-b" style="width:${pctB}%;">${it.fmt(vb)}</div></div></div>`;
+            });
+            return html;
+        }
+
+        function findSimilar(me,excludeIds){
+            const features=['rating','livable','safety','transport','env','edu','medical','happinessScore','walkability','bikeFriendly','healthcareIndex'];
+            const vec=cities.map(c=>features.map(f=>getNumericVal(c[f])/100));
+            const meIdx=cities.findIndex(c=>c.id===me.id);
+            const meVec=vec[meIdx];
+            let bestDist=Infinity,bestIdx=-1;
+            for(let i=0;i<cities.length;i++){
+                if(i===meIdx||excludeIds.includes(cities[i].id))continue;
+                let dist=0;
+                for(let j=0;j<features.length;j++)dist+=Math.pow(meVec[j]-vec[i][j],2);
+                dist=Math.sqrt(dist);
+                if(dist<bestDist){bestDist=dist;bestIdx=i;}
+            }
+            return bestIdx>=0?cities[bestIdx]:null;
+        }
+
+        function buildSummaryText(a,b,aw,bw,totalW){
+            const betterA=[],betterB=[];
+            const allKeys=[
+                {k:'livable',l:'宜居指数',h:true},{k:'safety',l:'安全指数',h:true},
+                {k:'transport',l:'交通指数',h:true},{k:'env',l:'环境指数',h:true},
+                {k:'edu',l:'教育指数',h:true},{k:'medical',l:'医疗指数',h:true},
+                {k:'happinessScore',l:'幸福指数',h:true},{k:'walkability',l:'步行友好度',h:true},
+                {k:'healthcareIndex',l:'医疗水平',h:true},{k:'rating',l:'综合评分',h:true}
+            ];
+            allKeys.forEach(k=>{
+                const va=getNumericVal(a[k.k]),vb=getNumericVal(b[k.k]);
+                if(k.h){if(va>vb)betterA.push(k.l);else if(vb>va)betterB.push(k.l);}
+            });
+            const winnerName=aw>bw?a.name:b.name;
+            const topA=betterA.slice(0,4).join('、'),topB=betterB.slice(0,4).join('、');
+            let txt=`<strong>${a.flag} <span class="city-a-color">${a.name}</span></strong> 在 <strong>${topA||'整体均衡性'}</strong> 方面表现突出，`;
+            txt+=`而 <strong>${b.flag} <span class="city-b-color">${b.name}</span></strong> 在 <strong>${topB||'综合体验'}</strong> 方面更占优势。`;
+            txt+=`在 ${totalW} 项核心指标中，<strong>${winnerName}</strong> 以 ${Math.max(aw,bw)} 项领先，`;
+            txt+=`${aw===bw?'两座城市旗鼓相当，各有千秋。':(aw>bw?'展现出更全面的城市竞争力。':'在多项关键指标上表现更佳。')}`;
+            txt+=` ${a.name}综合评分 ${a.rating}，${b.name}综合评分 ${b.rating}。`;
+            if(a.costOfLiving&&b.costOfLiving){
+                const diff=Math.round((a.costOfLiving/b.costOfLiving-1)*100);
+                txt+=`生活成本方面，${a.name}比${b.name}${diff>0?`高出约${Math.abs(diff)}%`:`低约${Math.abs(diff)}%`}。`;
+            }
+            return txt;
+        }
+
+        function buildBadges(a,b,allKeys){
+            let html='';
+            allKeys.forEach(k=>{
+                const va=getNumericVal(a[k.k]),vb=getNumericVal(b[k.k]);
+                let winner=null,wval=null;
+                if(k.h){if(va>vb){winner=a;wval=va;}else if(vb>va){winner=b;wval=vb;}}
+                else{if(va<vb){winner=a;wval=va;}else if(vb<va){winner=b;wval=vb;}}
+                if(!winner)return;
+                html+=`<div class="badge-item"><span class="badge-emoji">${k.emoji||'⭐'}</span><span class="badge-city">${winner.flag} ${winner.name}</span><span class="badge-val">${k.l} ${wval}</span></div>`;
+            });
+            return html;
+        }
+
+        function compare(){
+            const ia=document.getElementById('cityA').value,ib=document.getElementById('cityB').value;
+            if(!ia||!ib){alert('请选择两座城市');return;}
+            if(ia===ib){alert('请选择不同的城市进行对比');return;}
+            const a=cities.find(c=>c.id===ia),b=cities.find(c=>c.id===ib);
+
+            const keysUpper=[
+                {k:'rating',l:'综合评分',h:true,emoji:'⭐'},{k:'livable',l:'宜居指数',h:true,emoji:'🏡'},
+                {k:'safety',l:'安全指数',h:true,emoji:'🛡️'},{k:'costOfLiving',l:'生活成本',h:false,emoji:'💰'},
+                {k:'transport',l:'交通指数',h:true,emoji:'🚇'},{k:'env',l:'环境指数',h:true,emoji:'🌿'},
+                {k:'edu',l:'教育指数',h:true,emoji:'📚'},{k:'medical',l:'医疗指数',h:true,emoji:'🏥'},
+                {k:'happinessScore',l:'幸福指数',h:true,emoji:'😊'},{k:'walkability',l:'步行友好',h:true,emoji:'🚶'},
+                {k:'bikeFriendly',l:'自行车友好',h:true,emoji:'🚲'},{k:'internetSpeed',l:'网速(Mbps)',h:true,emoji:'📶'},
+                {k:'healthcareIndex',l:'医疗水平',h:true,emoji:'💊'},{k:'unemployment',l:'失业率(%)',h:false,emoji:'📉'},
+                {k:'crimeIndex',l:'犯罪指数',h:false,emoji:'🚨'},{k:'pollutionIndex',l:'污染指数',h:false,emoji:'🏭'},
+                {k:'greenSpace',l:'绿地占比(%)',h:true,emoji:'🌳'},{k:'annualTourists',l:'年游客(百万)',h:true,emoji:'📸'}
+            ];
+            const displayKeys=[
+                {k:'population',l:'人口'},{k:'gdp',l:'GDP'},{k:'metro',l:'地铁线路'},{k:'area',l:'面积'}
+            ];
+
+            let aw=0,bw=0;
+            const rows=keysUpper.map(k=>{
+                const va=getNumericVal(a[k.k]),vb=getNumericVal(b[k.k]);
+                let ab=false,bb=false;
+                if(k.h){if(va>vb){aw++;ab=true;}else if(vb>va){bw++;bb=true;}}
+                else{if(va<vb){aw++;ab=true;}else if(vb<va){bw++;bb=true;}}
+                return `<tr><th>${k.l}</th><td class="${ab?'better':''}">${va}</td><td class="${bb?'better':''}">${vb}</td></tr>`;
+            }).join('');
+
+            const displayRows=displayKeys.map(k=>{
+                return `<tr><th>${k.l}</th><td>${a[k.k]||'-'}</td><td>${b[k.k]||'-'}</td></tr>`;
+            }).join('');
+
+            const totalW=aw+bw;
+
+            // cost difference
+            let costDiffHTML='';
+            if(a.costOfLiving&&b.costOfLiving){
+                const diff=Math.round((a.costOfLiving/b.costOfLiving-1)*100);
+                if(diff!==0){
+                    const moreExpensive=diff>0?a:b;
+                    const lessExpensive=diff>0?b:a;
+                    costDiffHTML=`<div class="cost-diff-banner"><span class="cost-emoji">💸</span><strong>${moreExpensive.flag} ${moreExpensive.name}</strong> 的生活成本比 <strong>${lessExpensive.flag} ${lessExpensive.name}</strong> 高约 <strong>${Math.abs(diff)}%</strong><span class="cost-emoji">💸</span></div>`;
+                }else{
+                    costDiffHTML=`<div class="cost-diff-banner"><span class="cost-emoji">⚖️</span>两座城市的生活成本大致相当<span class="cost-emoji">⚖️</span></div>`;
+                }
+            }
+
+            // summary text
+            const summaryHTML=`<div class="summary-card">${buildSummaryText(a,b,aw,bw,totalW)}</div>`;
+
+            // radar
+            const radarHTML=`<div class="radar-section"><h3>📡 六维雷达对比</h3>${buildRadarSVG(a,b)}<div class="radar-legend"><span><span class="legend-dot" style="background:var(--accent-blue);"></span> ${a.flag} ${a.name}</span><span><span class="legend-dot" style="background:var(--accent-red);"></span> ${b.flag} ${b.name}</span></div></div>`;
+
+            // badges
+            const badgesHTML=`<div class="best-badges-section"><h3>🏆 各指标最佳</h3><div class="badges-grid">${buildBadges(a,b,keysUpper)}</div></div>`;
+
+            // cost bars
+            const costBarsHTML=`<div class="cost-bar-section"><h3>💵 生活成本细分对比</h3>${buildCostBars(a,b)}<div style="text-align:center;margin-top:10px;font-size:0.75rem;color:var(--text-secondary);"><span style="color:var(--accent-blue);">■</span> ${a.name} &nbsp;&nbsp; <span style="color:var(--accent-red);">■</span> ${b.name}</div></div>`;
+
+            // bars section (expanded)
+            const barKeys=[{k:'rating',l:'综合评分'},{k:'livable',l:'宜居指数'},{k:'safety',l:'安全指数'},{k:'transport',l:'交通指数'},{k:'env',l:'环境指数'},{k:'edu',l:'教育指数'},{k:'medical',l:'医疗指数'},{k:'walkability',l:'步行友好'},{k:'bikeFriendly',l:'自行车友好'},{k:'healthcareIndex',l:'医疗水平'},{k:'happinessScore',l:'幸福指数'},{k:'internetSpeed',l:'网速(Mbps)'}];
+            const barsA=barKeys.map(k=>`<div class="bar-item"><div class="bar-label"><span>${k.l}</span><span class="bar-label-val">${getNumericVal(a[k.k])}</span></div><div class="bar-track"><div class="bar-fill a" style="width:${Math.min(100,getNumericVal(a[k.k])||0)}%;"></div></div></div>`).join('');
+            const barsB=barKeys.map(k=>`<div class="bar-item"><div class="bar-label"><span>${k.l}</span><span class="bar-label-val">${getNumericVal(b[k.k])}</span></div><div class="bar-track"><div class="bar-fill b" style="width:${Math.min(100,getNumericVal(b[k.k])||0)}%;"></div></div></div>`).join('');
+            const barsHTML=`<div class="bars-section"><h3>📊 可视化对比</h3><div class="bar-group"><div class="bar-col"><h5 style="color:var(--accent-blue);">${a.flag} ${a.name}</h5>${barsA}</div><div class="bar-col"><h5 style="color:var(--accent-red);">${b.flag} ${b.name}</h5>${barsB}</div></div></div>`;
+
+            // recommendations
+            const simA=findSimilar(a,[a.id,b.id]);
+            const simB=findSimilar(b,[a.id,b.id]);
+            let recHTML='';
+            if(simA||simB){
+                recHTML=`<div class="recommend-section"><h3>💡 如果你喜欢...</h3><div class="recommend-cols">`;
+                if(simA)recHTML+=`<div class="recommend-col"><div class="rec-label">如果你喜欢 ${a.flag} ${a.name}</div><div class="rec-city">${simA.flag} ${simA.icon} ${simA.name}</div><div class="rec-reason">${simA.name} 在宜居(${simA.livable})、安全(${simA.safety})等维度与 ${a.name} 高度相似，可能也会是你的理想之城。</div></div>`;
+                if(simB)recHTML+=`<div class="recommend-col"><div class="rec-label">如果你喜欢 ${b.flag} ${b.name}</div><div class="rec-city">${simB.flag} ${simB.icon} ${simB.name}</div><div class="rec-reason">${simB.name} 在综合评分(${simB.rating})、交通(${simB.transport})等方面与 ${b.name} 相近，值得探索。</div></div>`;
+                recHTML+=`</div></div>`;
+            }
+
+            // save button
+            const saveHTML=`<div class="save-section"><button class="btn-save" onclick="saveComparison('${a.id}','${b.id}',${aw},${bw})">💾 保存此次对比</button></div>`;
+
+            document.getElementById('resultArea').innerHTML=
+                `<!-- COST DIFF -->${costDiffHTML}
+                <!-- SUMMARY -->${summaryHTML}
+                <!-- HEADER --><div class="result-header">
+                    <div class="result-col ${aw>bw?'winner':''}"><span class="result-col-icon">${a.icon}</span><div class="result-col-name">${a.flag} ${a.name}</div><div class="win-count">优势: ${aw}项</div></div>
+                    <div class="result-divider">⚡</div>
+                    <div class="result-col ${bw>aw?'winner':''}"><span class="result-col-icon">${b.icon}</span><div class="result-col-name">${b.flag} ${b.name}</div><div class="win-count">优势: ${bw}项</div></div>
+                </div>
+                <!-- RADAR -->${radarHTML}
+                <!-- TABLE --><h3 class="section-title">📋 详细指标对比</h3>
+                <table class="compare-table"><thead><tr><th>指标</th><th>${a.name}</th><th>${b.name}</th></tr></thead><tbody>${rows}${displayRows}</tbody></table>
+                <!-- BADGES -->${badgesHTML}
+                <!-- COST BARS -->${costBarsHTML}
+                <!-- BARS -->${barsHTML}
+                <!-- RECOMMEND -->${recHTML}
+                <!-- SAVE -->${saveHTML}`;
+            document.getElementById('resultArea').classList.add('active');
+            document.getElementById('resultArea').scrollIntoView({behavior:'smooth'});
+        }
+
+        function saveComparison(idA,idB,aw,bw){
+            const a=cities.find(c=>c.id===idA),b=cities.find(c=>c.id===idB);
+            if(!a||!b)return;
+            let saved=JSON.parse(localStorage.getItem('citylens-compares')||'[]');
+            saved.unshift({
+                idA:a.id,idB:b.id,nameA:a.name,nameB:b.name,flagA:a.flag,flagB:b.flag,
+                aw,bw,date:new Date().toLocaleString('zh-CN')
+            });
+            if(saved.length>20)saved=saved.slice(0,20);
+            localStorage.setItem('citylens-compares',JSON.stringify(saved));
+            renderSaved();
+            alert('对比已保存！');
+        }
+
+        function deleteSaved(idx){
+            let saved=JSON.parse(localStorage.getItem('citylens-compares')||'[]');
+            saved.splice(idx,1);
+            localStorage.setItem('citylens-compares',JSON.stringify(saved));
+            renderSaved();
+        }
+
+        function loadSaved(idA,idB){
+            document.getElementById('cityA').value=idA;
+            document.getElementById('cityB').value=idB;
+            compare();
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        function renderSaved(){
+            const saved=JSON.parse(localStorage.getItem('citylens-compares')||'[]');
+            const el=document.getElementById('savedList');
+            if(!saved.length){
+                el.innerHTML='<div class="saved-list-empty">暂无保存的对比记录，进行一次对比后可以保存到这里 📋</div>';
+                return;
+            }
+            el.innerHTML=saved.map((s,i)=>`
+                <div class="saved-item">
+                    <div class="si-cities"><span>${s.flagA} ${s.nameA}</span><span class="si-vs">VS</span><span>${s.flagB} ${s.nameB}</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span class="si-date">${s.date}</span>
+                        <button class="btn-saved-action" onclick="loadSaved('${s.idA}','${s.idB}')">🔍 重新对比</button>
+                        <button class="btn-saved-action delete" onclick="deleteSaved(${i})">🗑️ 删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event listeners
+        document.getElementById('btnCompare').addEventListener('click',compare);
+
+        document.querySelectorAll('.btn-preset').forEach(btn=>{
+            btn.addEventListener('click',function(){
+                document.getElementById('cityA').value=this.dataset.a;
+                document.getElementById('cityB').value=this.dataset.b;
+                compare();
+            });
+        });
+
+        const navbar=document.getElementById('navbar');
+        window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.scrollY>50));
+        document.getElementById('mobileMenuBtn').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('active'));
+        document.querySelectorAll('#navLinks a').forEach(l=>l.addEventListener('click',()=>document.getElementById('navLinks').classList.remove('active')));
+
+        const bt=document.getElementById('btnThemeToggle'),s=localStorage.getItem('citylens-theme');
+        if(s==='light'){document.body.classList.add('light-mode');bt.textContent='◑';}
+        bt.addEventListener('click',()=>{
+            document.body.classList.toggle('light-mode');
+            bt.textContent=document.body.classList.contains('light-mode')?'◑':'◐';
+            localStorage.setItem('citylens-theme',document.body.classList.contains('light-mode')?'light':'dark');
+        });
+
+        populate();
+        renderSaved();
+        console.log('%c⚖️ 城市对比已就绪','color:#a855f7;');
+        console.log('%c32城市 | 18+指标 | 雷达图 | 成本对比 | 智能推荐','color:#00d4ff;');
+        /* ===== CityLens Compare Page v2.0 | 32 cities | Radar + Cost + Badges + Save + Recommend ===== */
+    </script>
+
+</body>
+</html>

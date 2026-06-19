@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CareerAtlas · 世界职业百科</title>
+    <style>
+        /* ========== CSS变量与全局重置 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deep: #060b14;
+            --bg-primary: #0b1120;
+            --bg-secondary: #111827;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --glass-bg: rgba(15, 23, 42, 0.55);
+            --glass-border: rgba(56, 189, 248, 0.18);
+            --glass-border-strong: rgba(56, 189, 248, 0.35);
+            --accent: #38bdf8;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(56, 189, 248, 0.45);
+            --accent-glow-strong: rgba(56, 189, 248, 0.7);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border-radius-xl: 2.5rem;
+            --border-radius-lg: 1.75rem;
+            --border-radius-md: 1.25rem;
+            --border-radius-sm: 0.85rem;
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px var(--accent-glow);
+            --font-primary: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
+        }
+
+        /* 日间模式变量 */
+        body.light-mode {
+            --bg-deep: #f1f5f9;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(56, 189, 248, 0.35);
+            --glass-border-strong: rgba(56, 189, 248, 0.55);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --accent: #0284c7;
+            --accent-secondary: #4f46e5;
+            --accent-glow: rgba(2, 132, 199, 0.3);
+            --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 35px rgba(2, 132, 199, 0.25);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 25% 5%, rgba(56, 189, 248, 0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 20%, rgba(129, 140, 248, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 80%, rgba(56, 189, 248, 0.04) 0%, transparent 55%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.4s ease;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent), var(--accent-secondary));
+            border-radius: 10px;
+            border: 2px solid var(--bg-deep);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* ========== Canvas粒子背景 ========== */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+        }
+
+        /* ========== 导航栏 ========== */
+        .navbar {
+            position: sticky;
+            top: 15px;
+            margin: 15px 28px;
+            padding: 0.9rem 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            z-index: 1000;
+            transition: all var(--transition-smooth);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .navbar.scrolled {
+            padding: 0.6rem 2rem;
+            margin: 8px 20px;
+            background: rgba(15, 23, 42, 0.85);
+            border-radius: 3rem;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent), #a78bfa, var(--accent-secondary));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: logoShimmer 4s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform var(--transition-fast);
+        }
+        .logo:hover {
+            transform: scale(1.04);
+        }
+
+        @keyframes logoShimmer {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.8rem;
+            list-style: none;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+            padding: 0.4rem 0.2rem;
+            border-bottom: 2px solid transparent;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-smooth);
+            border-radius: 2px;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+            text-shadow: 0 0 12px var(--accent-glow);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            padding: 0.55rem 1.3rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+        .theme-toggle:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* ========== Hero区域 ========== */
+        .hero-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 5rem 2rem 4rem;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: heroPulse 6s ease-in-out infinite;
+        }
+
+        @keyframes heroPulse {
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateX(-50%) scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid var(--glass-border-strong);
+            border-radius: 3rem;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 1.8rem;
+            animation: fadeInUp 0.8s ease-out;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            background: linear-gradient(180deg, #ffffff 0%, #bae6fd 40%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.2rem;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+            letter-spacing: -1.5px;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin-bottom: 2.5rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+            line-height: 1.5;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .btn {
+            padding: 0.9rem 2.2rem;
+            border-radius: 3.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            color: white;
+            box-shadow: 0 8px 30px rgba(56, 189, 248, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(56, 189, 248, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--glass-border-strong);
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+        }
+        .btn-outline:hover {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.08);
+            box-shadow: 0 0 25px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+
+        .btn-sm {
+            padding: 0.55rem 1.4rem;
+            font-size: 0.85rem;
+            border-radius: 2.5rem;
+        }
+
+        /* ========== 搜索系统 ========== */
+        .search-wrapper {
+            width: 100%;
+            max-width: 680px;
+            margin: 1rem auto 4rem;
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.35s both;
+            z-index: 1;
+        }
+
+        .search-input-container {
+            display: flex;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 4rem;
+            padding: 0.3rem 0.3rem 0.3rem 2rem;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .search-input-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 35px var(--accent-glow), 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-icon {
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            margin-right: 0.8rem;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            padding: 0.9rem 0;
+            outline: none;
+            font-family: var(--font-primary);
+        }
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            border: none;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+        .search-btn:hover {
+            box-shadow: 0 0 25px var(--accent-glow);
+            transform: scale(1.03);
+        }
+
+        .suggestions-dropdown {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            max-height: 280px;
+            overflow-y: auto;
+            display: none;
+            z-index: 50;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(15px);
+        }
+        .suggestion-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .suggestion-item:hover {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* ========== 通用区块包装 ========== */
+        .section-wrapper {
+            position: relative;
+            z-index: 1;
+            padding: 2rem 2rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ========== 分类卡片区 ========== */
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            color: var(--text-primary);
+        }
+        .section-title span {
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 1.6rem;
+            padding: 0 2rem;
+            max-width: 1100px;
+            margin: 0 auto 4rem;
+        }
+
+        .category-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2.2rem 1.4rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity var(--transition-smooth);
+        }
+
+        .category-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 0 40px var(--accent-glow), 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .category-card:hover::before {
+            opacity: 1;
+        }
+
+        .category-icon {
+            font-size: 2.8rem;
+            margin-bottom: 0.8rem;
+            display: block;
+            transition: transform var(--transition-fast);
+        }
+        .category-card:hover .category-icon {
+            transform: scale(1.2) rotate(-5deg);
+        }
+
+        /* ========== 统计条 ========== */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin: 3rem 2rem 4rem;
+            padding: 2rem;
+            background: var(--glass-bg);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ========== 分区标题装饰 ========== */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1rem auto 3rem;
+            max-width: 400px;
+        }
+        .section-divider .divider-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-border-strong), transparent);
+        }
+        .section-divider .divider-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        /* ========== Career of the Day ========== */
+        .cotd-card {
+            position: relative;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border-strong);
+            border-radius: var(--border-radius-xl);
+            padding: 2.5rem 2.8rem;
+            max-width: 700px;
+            margin: 0 auto;
+            overflow: hidden;
+            transition: all var(--transition-smooth);
+            animation: cotdGlow 3s ease-in-out infinite;
+        }
+        .cotd-card::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: var(--border-radius-xl);
+            padding: 3px;
+            background: linear-gradient(135deg, var(--accent), #a78bfa, var(--accent-secondary), var(--accent));
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: gradientBorder 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes cotdGlow {
+            0%, 100% { box-shadow: 0 0 30px var(--accent-glow), 0 10px 40px rgba(0,0,0,0.4); }
+            50% { box-shadow: 0 0 55px var(--accent-glow-strong), 0 15px 50px rgba(0,0,0,0.5); }
+        }
+        @keyframes gradientBorder {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .cotd-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 2rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .cotd-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .cotd-card .cotd-meta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .cotd-card .cotd-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .cotd-card .btn {
+            margin-top: 0.5rem;
+        }
+
+        /* ========== Featured Careers 卡片 ========== */
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.8rem;
+            padding: 0 1rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .featured-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem 1.5rem;
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .featured-card.revealed {
+            animation: cardReveal 0.6s ease-out forwards;
+        }
+        .featured-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 0 35px var(--accent-glow), 0 15px 35px rgba(0,0,0,0.45);
+        }
+        .featured-card .fc-icon {
+            font-size: 2.4rem;
+            margin-bottom: 0.6rem;
+            display: block;
+        }
+        .featured-card .fc-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .featured-card .fc-salary {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+        .featured-card .fc-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        .featured-card .fc-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .fc-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--glass-border);
+            font-size: 0.75rem;
+            color: var(--accent);
+        }
+
+        /* ========== Trending Skills 跑马灯 ========== */
+        .marquee-section {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto 4rem;
+            padding: 0 1rem;
+        }
+        .marquee-track {
+            overflow: hidden;
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.2rem 0;
+            position: relative;
+        }
+        .marquee-inner {
+            display: flex;
+            gap: 2.5rem;
+            animation: marqueeScroll 30s linear infinite;
+            white-space: nowrap;
+        }
+        .marquee-inner:hover {
+            animation-play-state: paused;
+        }
+        @keyframes marqueeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1.2rem;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .marquee-chip .hot-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: rippleEffect 1.5s ease-out infinite;
+        }
+        @keyframes rippleEffect {
+            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+        }
+
+        /* ========== How It Works ========== */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        .step-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2.5rem 1.8rem;
+            text-align: center;
+            transition: all var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+        .step-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 1.2rem;
+            font-family: var(--font-display);
+        }
+        .step-card h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+        }
+        .step-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ========== Insights / Blog 卡片 ========== */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        .insight-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.8rem;
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .insight-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent);
+            box-shadow: 0 0 25px var(--accent-glow);
+        }
+        .insight-category {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent);
+        }
+        .insight-card h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .insight-card .insight-date {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .insight-card .insight-excerpt {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            flex: 1;
+        }
+        .insight-card .read-more {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.9rem;
+            align-self: flex-start;
+            transition: gap var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .insight-card:hover .read-more {
+            gap: 0.6rem;
+        }
+
+        /* ========== Testimonials ========== */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.8rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        .testimonial-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            position: relative;
+            transition: all var(--transition-smooth);
+        }
+        .testimonial-card::before {
+            content: '\201C';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 5rem;
+            font-family: Georgia, serif;
+            color: var(--accent);
+            opacity: 0.3;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .testimonial-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 25px var(--accent-glow);
+            transform: translateY(-4px);
+        }
+        .testimonial-card .t-text {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1.2rem;
+            padding-top: 0.5rem;
+        }
+        .testimonial-card .t-author {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        .t-author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #fff;
+        }
+        .t-author-info strong {
+            display: block;
+            font-size: 0.9rem;
+        }
+        .t-author-info span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* ========== Newsletter CTA ========== */
+        .newsletter-section {
+            position: relative;
+            z-index: 1;
+            max-width: 650px;
+            margin: 0 auto 4rem;
+            text-align: center;
+        }
+        .newsletter-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border-strong);
+            border-radius: var(--border-radius-xl);
+            padding: 3rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .newsletter-card::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: var(--border-radius-xl);
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary), #a78bfa, var(--accent));
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: gradientBorder 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        .newsletter-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+        }
+        .newsletter-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.8rem;
+        }
+        .newsletter-form {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .newsletter-input {
+            flex: 1;
+            min-width: 220px;
+            padding: 0.85rem 1.4rem;
+            border-radius: 3rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            font-family: var(--font-primary);
+            transition: all var(--transition-fast);
+        }
+        .newsletter-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* ========== 页脚 ========== */
+        .footer {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--glass-border);
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========== 回到顶部按钮 ========== */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 2.5rem;
+            right: 2.5rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border-strong);
+            color: var(--accent);
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .scroll-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .scroll-to-top:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 30px var(--accent-glow);
+            border-color: var(--accent);
+        }
+        .scroll-to-top svg.progress-ring {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            width: calc(100% + 12px);
+            height: calc(100% + 12px);
+            transform: rotate(-90deg);
+            pointer-events: none;
+        }
+        .scroll-to-top svg.progress-ring circle {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2.5;
+            stroke-dasharray: 157;
+            stroke-dashoffset: 157;
+            transition: stroke-dashoffset 0.15s linear;
+        }
+
+        /* ========== 动画库 ========== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes floatUpDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes cardReveal {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes statCount {
+            from { opacity: 0; transform: scale(0.4); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes rippleEffect {
+            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px var(--accent-glow); }
+            50% { box-shadow: 0 0 40px var(--accent-glow-strong); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes popInBounce {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { transform: scale(1.08); }
+            70% { transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes shimmerSweep {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes blurIn {
+            from { opacity: 0; filter: blur(10px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+
+        @keyframes scaleInHover {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        /* ========== 滚动触发动效 ========== */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 768px) {
+            .navbar {
+                margin: 10px 10px;
+                padding: 0.7rem 1.2rem;
+                border-radius: 2.5rem;
+            }
+            .nav-links {
+                gap: 0.8rem;
+                font-size: 0.8rem;
+            }
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+            .stats-bar {
+                gap: 1.5rem;
+            }
+            .cotd-card {
+                padding: 1.8rem 1.2rem;
+                margin: 0 0.5rem;
+            }
+            .cotd-card h3 {
+                font-size: 1.4rem;
+            }
+            .featured-grid {
+                grid-template-columns: 1fr;
+            }
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+            .scroll-to-top {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                width: 42px;
+                height: 42px;
+            }
+            .section-wrapper {
+                padding: 1rem 1rem 2.5rem;
+            }
+            .newsletter-card {
+                padding: 2rem 1.2rem;
+                margin: 0 0.5rem;
+            }
+        }
+    </style>
+    <!-- 引入Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ==================== Canvas 粒子背景 ==================== -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ==================== 导航栏 ==================== -->
+    <nav class="navbar" id="navbar">
+        <div class="logo" onclick="window.location.href='home.html'">🌍 CareerAtlas</div>
+        <ul class="nav-links">
+            <li><a href="home.html" style="color:var(--accent);">首页</a></li>
+            <li><a href="careers.html">职业大全</a></li>
+            <li><a href="detail.html">职业详情</a></li>
+            <li><a href="compare.html">职业对比</a></li>
+            <li><a href="test.html">职业测试</a></li>
+            <li><a href="salary.html">薪资排行</a></li>
+            <li><a href="trend.html">职业趋势</a></li>
+            <li><a href="industry.html">行业中心</a></li>
+        </ul>
+        <div class="nav-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="切换主题">
+                <span id="themeIcon">🌙</span> <span id="themeText">夜间</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== Hero主视觉 ==================== -->
+    <section class="hero-section">
+        <div class="hero-badge">🌟 全球职业信息平台</div>
+        <h1 class="hero-title">探索世界职业</h1>
+        <p class="hero-subtitle">找到适合你的未来方向 · 对比薪资与技能 · 规划学习路径</p>
+        <div class="hero-buttons">
+            <a href="test.html" class="btn btn-primary">🧪 开始职业测试</a>
+            <a href="careers.html" class="btn btn-outline">📚 浏览职业库</a>
+        </div>
+    </section>
+
+    <!-- ==================== 搜索系统 ==================== -->
+    <div class="search-wrapper">
+        <div class="search-input-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput"
+            placeholder="搜索职业：医生 / 程序员 / 飞行员 / 设计师 / AI工程师..."
+            autocomplete="off">
+            <button class="search-btn" id="searchBtn">搜索</button>
+        </div>
+        <div class="suggestions-dropdown" id="suggestionsDropdown"></div>
+    </div>
+
+    <!-- ==================== 职业分类入口 ==================== -->
+    <h2 class="section-title">📂 职业<span>分类探索</span></h2>
+    <div class="category-grid" id="categoryGrid">
+        <div class="category-card animate-on-scroll" data-category="tech">
+            <span class="category-icon">🧠</span>科技类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="medical">
+            <span class="category-icon">🏥</span>医疗类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="creative">
+            <span class="category-icon">🎨</span>创意类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="law">
+            <span class="category-icon">🏛️</span>公务/法律类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="engineering">
+            <span class="category-icon">🏗️</span>工程类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="finance">
+            <span class="category-icon">💼</span>商业金融类
+        </div>
+        <div class="category-card animate-on-scroll" data-category="aviation">
+            <span class="category-icon">✈️</span>交通航空类
+        </div>
+    </div>
+
+    <!-- ==================== Career of the Day ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">✨ 今日<span>推荐职业</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="cotd-card animate-on-scroll" id="cotdCard">
+            <span class="cotd-badge">🔥 Career of the Day</span>
+            <h3 id="cotdTitle">数据科学家</h3>
+            <p style="color:var(--text-secondary);margin-bottom:0.8rem;" id="cotdDesc">
+                数据科学家是21世纪"最性感的职业"——他们利用统计学、机器学习和领域知识，从海量数据中提取洞见，驱动企业决策。随着AI浪潮席卷全球，数据科学家需求量暴增，连续多年霸榜最佳职业排行榜。
+            </p>
+            <div class="cotd-meta">
+                <span>💰 <strong id="cotdSalary">￥25K-60K/月</strong></span>
+                <span>📈 <strong id="cotdGrowth">+35% 年增长率</strong></span>
+                <span>🎓 <strong id="cotdEdu">本科及以上</strong></span>
+            </div>
+            <a href="detail.html?career=数据科学家" class="btn btn-primary btn-sm">🔍 查看详情</a>
+        </div>
+    </div>
+
+    <!-- ==================== Featured Careers ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">⭐ 精选<span>热门职业</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="featured-grid" id="featuredGrid">
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=AI工程师'">
+                <span class="fc-icon">🤖</span>
+                <div class="fc-title">AI / 机器学习工程师</div>
+                <div class="fc-salary">￥30K - 80K / 月</div>
+                <p class="fc-desc">设计、训练和部署机器学习模型，推动智能产品落地。掌握Python、TensorFlow/PyTorch，是大模型时代的核心人才。</p>
+                <div class="fc-tags"><span class="fc-tag">Python</span><span class="fc-tag">深度学习</span><span class="fc-tag">高薪</span></div>
+            </div>
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=全栈工程师'">
+                <span class="fc-icon">💻</span>
+                <div class="fc-title">全栈开发工程师</div>
+                <div class="fc-salary">￥18K - 45K / 月</div>
+                <p class="fc-desc">兼顾前端与后端，独立完成Web应用从界面到数据库的完整开发。React/Vue + Node.js/Go 是标配技能组合。</p>
+                <div class="fc-tags"><span class="fc-tag">React</span><span class="fc-tag">Node.js</span><span class="fc-tag">远程友好</span></div>
+            </div>
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=UX设计师'">
+                <span class="fc-icon">🎯</span>
+                <div class="fc-title">UX / 产品设计师</div>
+                <div class="fc-salary">￥15K - 40K / 月</div>
+                <p class="fc-desc">以用户为中心，通过研究和原型设计打造卓越的产品体验。Figma、用户访谈、A/B测试是日常工作的核心。</p>
+                <div class="fc-tags"><span class="fc-tag">Figma</span><span class="fc-tag">用户研究</span><span class="fc-tag">创意</span></div>
+            </div>
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=网络安全专家'">
+                <span class="fc-icon">🛡️</span>
+                <div class="fc-title">网络安全专家</div>
+                <div class="fc-salary">￥20K - 55K / 月</div>
+                <p class="fc-desc">保护企业数字资产，抵御网络攻击。渗透测试、安全架构、应急响应——网络安全的每一个细分方向都极度缺人。</p>
+                <div class="fc-tags"><span class="fc-tag">安全</span><span class="fc-tag">CISSP</span><span class="fc-tag">高需求</span></div>
+            </div>
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=飞行员'">
+                <span class="fc-icon">✈️</span>
+                <div class="fc-title">民航飞行员</div>
+                <div class="fc-salary">￥30K - 100K / 月</div>
+                <p class="fc-desc">驾驶商业航班，安全护送旅客到达目的地。需要严格的体检、飞行训练和持续的在职培训，是责任与回报并存的职业。</p>
+                <div class="fc-tags"><span class="fc-tag">航空</span><span class="fc-tag">高薪</span><span class="fc-tag">全球就业</span></div>
+            </div>
+            <div class="featured-card animate-on-scroll" onclick="window.location.href='detail.html?career=医生'">
+                <span class="fc-icon">🏥</span>
+                <div class="fc-title">临床医生</div>
+                <div class="fc-salary">￥12K - 50K / 月</div>
+                <p class="fc-desc">诊断疾病、制定治疗方案、守护患者健康。医学是需要终身学习的领域，但职业稳定性和社会价值无可替代。</p>
+                <div class="fc-tags"><span class="fc-tag">医学</span><span class="fc-tag">稳定</span><span class="fc-tag">高社会价值</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Trending Skills ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">📈 热门<span>技能趋势</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="marquee-section">
+            <div class="marquee-track">
+                <div class="marquee-inner" id="marqueeInner">
+                    <!-- JS动态填充以保证重复 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 统计数据条 ==================== -->
+    <div class="stats-bar animate-on-scroll">
+        <div class="stat-item">
+            <div class="stat-number" id="statCareers">150+</div>
+            <div class="stat-label">收录职业</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">12</div>
+            <div class="stat-label">行业分类</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">国家/地区数据</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="statVisitors">10K+</div>
+            <div class="stat-label">月访问用户</div>
+        </div>
+    </div>
+
+    <!-- ==================== How It Works ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">🚀 <span>如何使用</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="steps-grid">
+            <div class="step-card animate-on-scroll">
+                <div class="step-number">1</div>
+                <h4>🔍 探索职业</h4>
+                <p>浏览150+职业的详细信息，包括薪资水平、所需技能、教育要求、职业发展路径。使用搜索和分类快速找到你感兴趣的方向。</p>
+            </div>
+            <div class="step-card animate-on-scroll">
+                <div class="step-number">2</div>
+                <h4>⚖️ 对比选择</h4>
+                <p>使用职业对比工具，并排比较多个职业的薪资、工作环境、前景预测。跳脱信息差，用数据帮助决策。</p>
+            </div>
+            <div class="step-card animate-on-scroll">
+                <div class="step-number">3</div>
+                <h4>🗺️ 规划路径</h4>
+                <p>参加职业测评找到与你性格和技能匹配的方向，获取定制化的学习路线图和资源推荐，从今天开始行动。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Latest Insights ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">📝 最新<span>职业洞察</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="insights-grid">
+            <div class="insight-card animate-on-scroll">
+                <span class="insight-category">行业趋势</span>
+                <h4>2026年AI人才市场报告：这5个新兴岗位正在爆发</h4>
+                <span class="insight-date">2026年6月12日</span>
+                <p class="insight-excerpt">Prompt工程师、AI合规官、MLOps工程师...随着大模型技术渗透到各行各业，一批从未听说过的新职业正在被创造出来，薪资涨幅惊人。</p>
+                <span class="read-more">阅读全文 →</span>
+            </div>
+            <div class="insight-card animate-on-scroll">
+                <span class="insight-category">职场技能</span>
+                <h4>远程办公常态化：2026年最受欢迎的10项远程职业技能</h4>
+                <span class="insight-date">2026年6月5日</span>
+                <p class="insight-excerpt">异步沟通、自我管理、跨时区协作——远程工作不只是换个地点上班，它要求一套全新的能力组合。LinkedIn数据揭示了雇主最看重的技能。</p>
+                <span class="read-more">阅读全文 →</span>
+            </div>
+            <div class="insight-card animate-on-scroll">
+                <span class="insight-category">薪资报告</span>
+                <h4>全球科技行业薪资对比：在哪里做程序员最赚钱？</h4>
+                <span class="insight-date">2026年5月28日</span>
+                <p class="insight-excerpt">硅谷依旧领先，但迪拜、新加坡和苏黎世的软件工程师薪资正在快速追赶。我们将生活成本纳入计算后，排名出现了有趣的变化。</p>
+                <span class="read-more">阅读全文 →</span>
+            </div>
+            <div class="insight-card animate-on-scroll">
+                <span class="insight-category">职业转型</span>
+                <h4>从零转行数据科学：30岁转行者的真实路径复盘</h4>
+                <span class="insight-date">2026年5月21日</span>
+                <p class="insight-excerpt">没有任何编程背景，如何用18个月从会计转行成为数据分析师？我们采访了三位成功转型者，复盘他们的学习计划、求职策略和踩过的坑。</p>
+                <span class="read-more">阅读全文 →</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Testimonials ==================== -->
+    <div class="section-wrapper">
+        <h2 class="section-title">💬 用户<span>心声</span></h2>
+        <div class="section-divider">
+            <span class="divider-line"></span><span class="divider-dot"></span><span class="divider-line"></span>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card animate-on-scroll">
+                <p class="t-text">CareerAtlas让我这个大三学生第一次系统地了解了各种职业的真实面貌。我原来只知道"做程序员"，现在知道了前端、后端、数据、AI等不同方向，并且通过对比功能选定了前端作为我的目标。</p>
+                <div class="t-author">
+                    <div class="t-author-avatar">L</div>
+                    <div class="t-author-info">
+                        <strong>林同学</strong>
+                        <span>计算机科学大三学生</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card animate-on-scroll">
+                <p class="t-text">作为工作了8年想要转行的人，我最需要的就是可靠的数据来支持我的决定。这个平台的薪资对比和行业趋势分析让我清晰地看到了目标职业的前景，让我敢迈出转行的第一步。</p>
+                <div class="t-author">
+                    <div class="t-author-avatar">W</div>
+                    <div class="t-author-info">
+                        <strong>王先生</strong>
+                        <span>前金融从业者，现UX设计师</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card animate-on-scroll">
+                <p class="t-text">作为高中班主任，我经常用CareerAtlas给学生们做职业启蒙。界面直观、信息全面，学生们都很喜欢在上面探索——特别是职业测试功能，帮助他们发现了很多从未考虑过的可能性。</p>
+                <div class="t-author">
+                    <div class="t-author-avatar">Z</div>
+                    <div class="t-author-info">
+                        <strong>张老师</strong>
+                        <span>高中班主任</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Newsletter CTA ==================== -->
+    <div class="newsletter-section animate-on-scroll">
+        <div class="newsletter-card">
+            <span style="font-size:2.5rem;display:block;margin-bottom:0.5rem;">📬</span>
+            <h3>订阅职业周报</h3>
+            <p>每周推送最新的职业趋势、薪资动态和学习资源，保持对职场的敏锐嗅觉。</p>
+            <form class="newsletter-form" id="newsletterForm" onsubmit="event.preventDefault(); document.getElementById('newsletterConfirm').style.display='block'; setTimeout(function(){ document.getElementById('newsletterConfirm').style.display='none'; }, 3500);">
+                <input type="email" class="newsletter-input" placeholder="输入你的邮箱地址" required>
+                <button type="submit" class="btn btn-primary btn-sm">订阅</button>
+            </form>
+            <p id="newsletterConfirm" style="color:var(--success);margin-top:1rem;display:none;font-weight:600;animation:fadeInUp 0.4s ease-out;">✅ 订阅成功！记得查收确认邮件~</p>
+        </div>
+    </div>
+
+    <!-- ==================== 页脚 ==================== -->
+    <footer class="footer">
+        <p>© 2025 CareerAtlas · 世界职业百科 | 数据仅供参考 | 设计用于教育与作品展示</p>
+    </footer>
+
+    <!-- ==================== 回到顶部按钮 ==================== -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="回到顶部">
+        <svg class="progress-ring" width="62" height="62" viewBox="0 0 62 62">
+            <circle cx="31" cy="31" r="25" id="progressCircle"/>
+        </svg>
+        ↑
+    </button>
+
+    <!-- ==================== JavaScript ==================== -->
+    <script>
+        (function() {
+            // ========== Canvas 粒子/星场背景 ==========
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animFrame;
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', function() {
+                resizeCanvas();
+                initParticles();
+            });
+
+            function initParticles() {
+                const count = Math.floor((canvas.width * canvas.height) / 12000);
+                particles = [];
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        radius: Math.random() * 1.8 + 0.3,
+                        opacity: Math.random() * 0.5 + 0.15
+                    });
+                }
+            }
+            initParticles();
+
+            function drawParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const isLight = document.body.classList.contains('light-mode');
+                const particleColor = isLight ? '2, 132, 199' : '56, 189, 248';
+
+                particles.forEach(function(p, i) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(' + particleColor + ', ' + p.opacity + ')';
+                    ctx.fill();
+
+                    // 连线附近粒子
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = p.x - particles[j].x;
+                        const dy = p.y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = 'rgba(' + particleColor + ', ' + (0.08 * (1 - dist / 100)) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                });
+
+                animFrame = requestAnimationFrame(drawParticles);
+            }
+            drawParticles();
+
+            // ========== 夜间模式切换 ==========
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+
+            const savedTheme = localStorage.getItem('careerAtlasTheme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = '日间';
+            }
+
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('light-mode');
+                const isLight = document.body.classList.contains('light-mode');
+                localStorage.setItem('careerAtlasTheme', isLight ? 'light' : 'dark');
+                themeIcon.textContent = isLight ? '☀️' : '🌙';
+                themeText.textContent = isLight ? '日间' : '夜间';
+            });
+
+            // ========== 导航栏滚动缩小 ==========
+            const navbar = document.getElementById('navbar');
+            let lastScrollY = 0;
+            window.addEventListener('scroll', function() {
+                const scrollY = window.scrollY;
+                if (scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+                lastScrollY = scrollY;
+
+                // 回到顶部按钮显示/隐藏 + 进度环
+                const stt = document.getElementById('scrollToTop');
+                const docH = document.documentElement.scrollHeight - window.innerHeight;
+                if (scrollY > 400) {
+                    stt.classList.add('visible');
+                    if (docH > 0) {
+                        const progress = Math.min(scrollY / docH, 1);
+                        const circle = document.getElementById('progressCircle');
+                        const circumference = 2 * Math.PI * 25; // r=25
+                        const offset = circumference * (1 - progress);
+                        circle.style.strokeDasharray = circumference;
+                        circle.style.strokeDashoffset = offset;
+                    }
+                } else {
+                    stt.classList.remove('visible');
+                }
+            });
+
+            // ========== 回到顶部点击 ==========
+            document.getElementById('scrollToTop').addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // ========== 搜索自动补全 ==========
+            const searchInput = document.getElementById('searchInput');
+            const suggestionsDropdown = document.getElementById('suggestionsDropdown');
+            const searchBtn = document.getElementById('searchBtn');
+
+            // 扩充职业数据库 (100+条目)
+            const careerDatabase = [
+                '软件工程师', '前端开发工程师', '后端开发工程师', '全栈工程师',
+                '医生', '外科医生', '内科医生', '儿科医生', '牙科医生',
+                '飞行员', '空中交通管制员', '飞机维修工程师',
+                'UI设计师', 'UX设计师', '平面设计师', '产品设计师',
+                '数据科学家', '机器学习工程师', 'AI研究员',
+                '律师', '法官', '法律顾问',
+                '建筑工程师', '土木工程师', '机械工程师',
+                '金融分析师', '投资银行家', '会计师', '精算师',
+                '教师', '教授', '培训师',
+                '护士', '药剂师', '物理治疗师',
+                '记者', '编辑', '内容创作者',
+                '消防员', '警察', '军人',
+                '厨师', '营养师',
+                '心理咨询师', '社会工作者',
+                '环境科学家', '地质学家',
+                '游戏开发者', '动画师', '视频编辑师',
+                '网络安全专家', '云架构师', 'DevOps工程师',
+                '区块链开发工程师', '量子计算研究员', '生物信息学工程师',
+                '电气工程师', '化学工程师', '航空航天工程师',
+                '兽医', '眼科医生', '麻醉师', '放射科医生',
+                '船长', '物流经理', '供应链分析师',
+                '品牌策划师', '市场营销经理', '公关专员',
+                '人力资源经理', '猎头顾问',
+                '数据工程师', '商业智能分析师', '数据库管理员',
+                '嵌入式系统工程师', '硬件工程师', '芯片设计工程师',
+                '建筑设计师', '城市规划师', '景观设计师',
+                '摄影师', '音乐制作人', '电竞选手', '直播主播',
+                '翻译', '口译员', '同声传译',
+                '健身教练', '运动员经纪人', '体育评论员',
+                '农业科学家', '海洋生物学家', '气象学家',
+                '保险精算师', '风险管理师', '量化交易员',
+                '刑事侦查员', '法医', '专利代理人',
+                '酒店经理', '旅游规划师', '展会策划师',
+                '核工程师', '新能源工程师', '光伏系统设计师',
+                '心理学家', '精神科医生', '行为治疗师',
+                '职业规划师', '企业培训师', '组织发展顾问'
+            ];
+
+            function performSearch() {
+                const query = searchInput.value.trim();
+                if (query) {
+                    window.location.href = 'careers.html?search=' + encodeURIComponent(query);
+                }
+            }
+
+            searchInput.addEventListener('input', function() {
+                const val = this.value.trim().toLowerCase();
+                if (val.length === 0) {
+                    suggestionsDropdown.style.display = 'none';
+                    return;
+                }
+                const filtered = careerDatabase.filter(function(c) {
+                    return c.toLowerCase().includes(val);
+                }).slice(0, 8);
+
+                if (filtered.length > 0) {
+                    suggestionsDropdown.innerHTML = filtered.map(function(c, i) {
+                        return '<div class="suggestion-item" data-career="' + c + '" style="animation: fadeInUp 0.3s ease-out ' + (i * 0.04) + 's both;"><span>🔍</span> ' + c + '</div>';
+                    }).join('');
+                    suggestionsDropdown.style.display = 'block';
+                } else {
+                    suggestionsDropdown.innerHTML =
+                        '<div class="suggestion-item" style="color:var(--text-muted);">未找到匹配职业</div>';
+                    suggestionsDropdown.style.display = 'block';
+                }
+            });
+
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // 点击建议项
+            suggestionsDropdown.addEventListener('click', function(e) {
+                const item = e.target.closest('.suggestion-item');
+                if (item && item.dataset.career) {
+                    searchInput.value = item.dataset.career;
+                    suggestionsDropdown.style.display = 'none';
+                    window.location.href = 'detail.html?career=' + encodeURIComponent(item.dataset.career);
+                }
+            });
+
+            // 点击外部关闭建议
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target) && !searchBtn.contains(e.target)) {
+                    suggestionsDropdown.style.display = 'none';
+                }
+            });
+
+            // ========== 分类卡片点击 ==========
+            document.getElementById('categoryGrid').addEventListener('click', function(e) {
+                const card = e.target.closest('.category-card');
+                if (card) {
+                    const category = card.dataset.category;
+                    window.location.href = 'careers.html?category=' + category;
+                }
+            });
+
+            // ========== 滚动动画 (IntersectionObserver) ==========
+            const observerOptions = {
+                threshold: 0.15,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // 对 featured-card 额外添加 cardReveal 动画
+                        if (entry.target.classList.contains('featured-card')) {
+                            entry.target.classList.add('revealed');
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.animate-on-scroll').forEach(function(el) {
+                observer.observe(el);
+            });
+
+            // 初始可见元素立即显示
+            setTimeout(function() {
+                document.querySelectorAll('.animate-on-scroll').forEach(function(el) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top < window.innerHeight) {
+                        el.classList.add('visible');
+                        if (el.classList.contains('featured-card')) {
+                            el.classList.add('revealed');
+                        }
+                    }
+                });
+            }, 100);
+
+            // ========== 模拟动态数字 ==========
+            function animateNumber(el, final, duration) {
+                const start = 0;
+                const increment = final / (duration / 16);
+                let current = start;
+                const timer = setInterval(function() {
+                    current += increment;
+                    if (current >= final) {
+                        el.textContent = final + '+';
+                        clearInterval(timer);
+                    } else {
+                        el.textContent = Math.floor(current) + '+';
+                    }
+                }, 16);
+            }
+
+            // ========== Career of the Day 轮换 ==========
+            const cotdData = [
+                {
+                    title: '数据科学家',
+                    desc: '数据科学家是21世纪"最性感的职业"——他们利用统计学、机器学习和领域知识，从海量数据中提取洞见，驱动企业决策。随着AI浪潮席卷全球，数据科学家需求量暴增。',
+                    salary: '￥25K-60K/月',
+                    growth: '+35% 年增长率',
+                    edu: '本科及以上',
+                    link: 'detail.html?career=数据科学家'
+                },
+                {
+                    title: 'AI / 机器学习工程师',
+                    desc: '在大模型时代，AI工程师是科技行业最炙手可热的角色。从训练GPT级别的语言模型到部署边缘AI，他们正在重塑每一个行业的技术底层。',
+                    salary: '￥30K-80K/月',
+                    growth: '+50% 年增长率',
+                    edu: '硕士及以上',
+                    link: 'detail.html?career=AI工程师'
+                },
+                {
+                    title: '网络安全专家',
+                    desc: '全球网络攻击每39秒发生一次，网络安全专家的需求从未如此迫切。从渗透测试到安全架构设计，这个领域提供了多条高薪且有成就感的职业路线。',
+                    salary: '￥20K-55K/月',
+                    growth: '+30% 年增长率',
+                    edu: '本科及以上',
+                    link: 'detail.html?career=网络安全专家'
+                },
+                {
+                    title: '民航飞行员',
+                    desc: '飞行不仅仅是工作，更是一种生活方式。随着全球航空业持续复苏和新航线开通，合格飞行员供不应求，薪资和福利待遇不断攀升。',
+                    salary: '￥30K-100K/月',
+                    growth: '+20% 年增长率',
+                    edu: '本科+飞行训练',
+                    link: 'detail.html?career=飞行员'
+                },
+                {
+                    title: 'UX / 产品设计师',
+                    desc: '在数字产品泛滥的今天，优秀的用户体验是产品脱颖而出的关键。UX设计师将心理学、美学和科技融合，创建让用户爱不释手的界面和交互。',
+                    salary: '￥15K-40K/月',
+                    growth: '+22% 年增长率',
+                    edu: '本科及以上',
+                    link: 'detail.html?career=UX设计师'
+                }
+            ];
+
+            const dayIndex = new Date().getDate() % cotdData.length;
+            const todayCareer = cotdData[dayIndex];
+            document.getElementById('cotdTitle').textContent = todayCareer.title;
+            document.getElementById('cotdDesc').textContent = todayCareer.desc;
+            document.getElementById('cotdSalary').textContent = todayCareer.salary;
+            document.getElementById('cotdGrowth').textContent = todayCareer.growth;
+            document.getElementById('cotdEdu').textContent = todayCareer.edu;
+            document.querySelector('#cotdCard .btn').href = todayCareer.link;
+
+            // ========== Trending Skills Marquee ==========
+            const trendingSkills = [
+                '🐍 Python', '⚛️ React', '🟢 Node.js', '🐹 Go', '🦀 Rust',
+                '🧠 TensorFlow', '🔥 PyTorch', '☁️ AWS', '🔷 TypeScript',
+                '🐳 Docker', '☸️ Kubernetes', '📊 Power BI', '🎨 Figma',
+                '🗄️ SQL', '🍃 MongoDB', '⚡ Next.js', '🦊 GitLab CI',
+                '🔒 CISSP', '📈 数据分析', '🤖 LangChain', '🌐 GraphQL',
+                '🪄 Tailwind CSS', '🎯 项目管理 (PMP)', '📱 Flutter',
+                '🐍 Python', '⚛️ React', '🟢 Node.js', '🐹 Go', '🦀 Rust',
+                '🧠 TensorFlow', '🔥 PyTorch', '☁️ AWS', '🔷 TypeScript',
+                '🐳 Docker', '☸️ Kubernetes', '📊 Power BI', '🎨 Figma',
+                '🗄️ SQL', '🍃 MongoDB', '⚡ Next.js', '🦊 GitLab CI'
+            ];
+
+            const marqueeInner = document.getElementById('marqueeInner');
+            marqueeInner.innerHTML = trendingSkills.map(function(skill) {
+                return '<span class="marquee-chip"><span class="hot-dot"></span>' + skill + '</span>';
+            }).join('');
+
+            // ========== 日志 ==========
+            console.log('🌍 CareerAtlas 首页已加载 - 世界职业百科');
+            console.log('📊 可用页面: home.html | careers.html | detail.html | compare.html | test.html | salary.html | trend.html | industry.html');
+            console.log('🎨 粒子背景 · 今日职业 · 精选卡片 · 趋势跑马灯 · 职业洞察 · 使用指南 · 用户心声 · 订阅CTA 全部就绪');
+        })();
+    </script>
+</body>
+</html>

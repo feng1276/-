@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>职业详情 · 世界职业百科</title>
+    <style>
+        /* ========== CSS变量与全局重置 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deep: #060b14;
+            --bg-primary: #0b1120;
+            --bg-secondary: #111827;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-solid: #0f172a;
+            --glass-bg: rgba(15, 23, 42, 0.55);
+            --glass-bg-strong: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(56, 189, 248, 0.18);
+            --glass-border-strong: rgba(56, 189, 248, 0.35);
+            --accent: #38bdf8;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(56, 189, 248, 0.45);
+            --accent-glow-strong: rgba(56, 189, 248, 0.7);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --info: #60a5fa;
+            --border-radius-xl: 2.5rem;
+            --border-radius-lg: 1.75rem;
+            --border-radius-md: 1.25rem;
+            --border-radius-sm: 0.85rem;
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px var(--accent-glow);
+            --font-primary: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
+        }
+
+        /* 日间模式变量 */
+        body.light-mode {
+            --bg-deep: #f1f5f9;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --bg-card-solid: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-bg-strong: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(56, 189, 248, 0.35);
+            --glass-border-strong: rgba(56, 189, 248, 0.55);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --accent: #0284c7;
+            --accent-secondary: #4f46e5;
+            --accent-glow: rgba(2, 132, 199, 0.3);
+            --accent-glow-strong: rgba(2, 132, 199, 0.5);
+            --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 35px rgba(2, 132, 199, 0.25);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 25% 5%, rgba(56, 189, 248, 0.10) 0%, transparent 55%),
+                radial-gradient(ellipse at 70% 15%, rgba(129, 140, 248, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 45% 85%, rgba(56, 189, 248, 0.05) 0%, transparent 55%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.4s ease;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 4rem;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent), var(--accent-secondary));
+            border-radius: 10px;
+            border: 2px solid var(--bg-deep);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* ========== 导航栏 ========== */
+        .navbar {
+            position: sticky;
+            top: 15px;
+            margin: 15px 28px;
+            padding: 0.9rem 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            z-index: 1000;
+            transition: all var(--transition-smooth);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-weight: 800;
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+            white-space: nowrap;
+            letter-spacing: -0.02em;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.3rem;
+            list-style: none;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: var(--transition-fast);
+            padding: 0.25rem 0;
+            position: relative;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-smooth);
+            border-radius: 2px;
+        }
+        .nav-links a:hover {
+            color: var(--accent);
+            text-shadow: 0 0 12px var(--accent-glow);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+            border-radius: 2.5rem;
+            padding: 0.5rem 1.2rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-family: var(--font-primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all var(--transition-smooth);
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+        .theme-toggle:hover {
+            background: rgba(56, 189, 248, 0.12);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* ========== 主容器 ========== */
+        .detail-container {
+            max-width: 1040px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ========== 区域标签页（Hash导航）========== */
+        .section-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.8rem;
+            padding: 0.3rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            position: sticky;
+            top: 115px;
+            z-index: 50;
+        }
+        .section-tab {
+            padding: 0.55rem 1.1rem;
+            border-radius: 2rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: var(--font-primary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        .section-tab:hover {
+            color: var(--text-primary);
+            background: rgba(56, 189, 248, 0.08);
+        }
+        .section-tab.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            font-weight: 600;
+            box-shadow: 0 0 14px var(--accent-glow);
+        }
+
+        /* ========== 封面区域 ========== */
+        .cover-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        .cover-section:hover {
+            border-color: var(--glass-border-strong);
+            box-shadow: 0 12px 40px rgba(56, 189, 248, 0.08);
+        }
+        .cover-icon {
+            font-size: 5rem;
+            background: rgba(56, 189, 248, 0.1);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            transition: all var(--transition-smooth);
+            flex-shrink: 0;
+        }
+        .cover-icon:hover {
+            background: rgba(56, 189, 248, 0.18);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        .cover-info h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(180deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cover-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            background: rgba(56, 189, 248, 0.08);
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.88rem;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+        .meta-item:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent);
+        }
+        .cover-description {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        /* ========== 信息网格卡片 ========== */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .info-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.8rem;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        }
+        .info-card:hover {
+            border-color: var(--glass-border-strong);
+            box-shadow: 0 8px 36px rgba(56, 189, 248, 0.08);
+            transform: translateY(-2px);
+        }
+        .info-card h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-card li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+        .info-card li:hover {
+            color: var(--text-primary);
+            padding-left: 0.3rem;
+        }
+        .info-card li::before {
+            content: '• ';
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* ========== 技能条 ========== */
+        .skill-bar {
+            margin: 0.7rem 0;
+        }
+        .skill-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-secondary);
+        }
+        .skill-bar-fill {
+            height: 8px;
+            background: rgba(56, 189, 248, 0.12);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .skill-bar-fill-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #a78bfa);
+            border-radius: 10px;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        /* 脉冲动画 */
+        .skill-bar-fill-inner.animated {
+            animation: skillPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes skillPulse {
+            0%, 100% {
+                box-shadow: 0 0 6px var(--accent-glow);
+            }
+            50% {
+                box-shadow: 0 0 18px var(--accent-glow-strong), 0 0 36px var(--accent-glow);
+            }
+        }
+
+        /* 加分技能标签 */
+        .bonus-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .bonus-tag {
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            padding: 0.3rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            color: var(--warning);
+            transition: all var(--transition-fast);
+        }
+        .bonus-tag:hover {
+            background: rgba(251, 191, 36, 0.2);
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+        }
+
+        /* ========== 时间线 (学习路径) ========== */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 2px solid var(--glass-border);
+            margin: 1.5rem 0;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.8rem;
+            padding-left: 1.5rem;
+            transition: all var(--transition-fast);
+        }
+        .timeline-item:hover {
+            transform: translateX(4px);
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.55rem;
+            top: 0.3rem;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: all var(--transition-smooth);
+        }
+        .timeline-item:hover::before {
+            box-shadow: 0 0 25px var(--accent-glow-strong);
+            transform: scale(1.2);
+        }
+        .timeline-item h4 {
+            color: var(--accent);
+            margin-bottom: 0.3rem;
+            font-weight: 700;
+        }
+
+        /* ========== 职业发展路径步骤 ========== */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+            gap: 0.5rem;
+        }
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 18px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: var(--glass-border);
+            z-index: 0;
+            border-radius: 3px;
+        }
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            transition: all var(--transition-fast);
+        }
+        .step:hover {
+            transform: translateY(-4px);
+        }
+        .step-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--accent);
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--accent);
+            transition: all var(--transition-smooth);
+        }
+        .step:hover .step-circle {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 24px var(--accent-glow-strong);
+        }
+        .step-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ========== 薪资预测柱状图 ========== */
+        .salary-projection {
+            margin-bottom: 2rem;
+        }
+        .salary-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 2rem;
+            padding: 1.5rem 1rem;
+            min-height: 220px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .salary-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            flex: 1;
+            min-width: 100px;
+            max-width: 160px;
+        }
+        .salary-bar-value {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--accent);
+        }
+        .salary-bar {
+            width: 70px;
+            border-radius: 12px 12px 0 0;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            min-height: 20px;
+            cursor: pointer;
+        }
+        .salary-bar:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 24px var(--accent-glow);
+        }
+        .salary-bar.entry {
+            background: linear-gradient(180deg, var(--accent), #7dd3fc);
+            height: 60px;
+        }
+        .salary-bar.mid {
+            background: linear-gradient(180deg, #38bdf8, #818cf8);
+            height: 110px;
+        }
+        .salary-bar.senior {
+            background: linear-gradient(180deg, #818cf8, #a78bfa);
+            height: 160px;
+        }
+        .salary-bar.expert {
+            background: linear-gradient(180deg, #a78bfa, #c084fc);
+            height: 200px;
+        }
+        .salary-bar-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ========== 日间一日时间线 ========== */
+        .day-timeline {
+            position: relative;
+            padding-left: 2.5rem;
+            border-left: 2px solid var(--glass-border);
+            margin: 1.5rem 0;
+        }
+        .day-timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding: 0.8rem 1.2rem;
+            background: rgba(56, 189, 248, 0.04);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid transparent;
+            transition: all var(--transition-fast);
+        }
+        .day-timeline-item:hover {
+            border-color: var(--glass-border);
+            background: rgba(56, 189, 248, 0.08);
+        }
+        .day-timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.82rem;
+            top: 1rem;
+            width: 10px;
+            height: 10px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+        .day-time {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 0.2rem;
+        }
+        .day-activity {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        /* ========== 利弊对比 ========== */
+        .pros-cons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .pros-box, .cons-box {
+            padding: 1.5rem;
+            border-radius: var(--border-radius-md);
+            border: 1px solid;
+            transition: all var(--transition-smooth);
+        }
+        .pros-box {
+            background: rgba(52, 211, 153, 0.06);
+            border-color: rgba(52, 211, 153, 0.25);
+        }
+        .pros-box:hover {
+            background: rgba(52, 211, 153, 0.1);
+            box-shadow: 0 0 24px rgba(52, 211, 153, 0.12);
+        }
+        .pros-box h4 {
+            color: var(--success);
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        .cons-box {
+            background: rgba(248, 113, 113, 0.06);
+            border-color: rgba(248, 113, 113, 0.25);
+        }
+        .cons-box:hover {
+            background: rgba(248, 113, 113, 0.1);
+            box-shadow: 0 0 24px rgba(248, 113, 113, 0.12);
+        }
+        .cons-box h4 {
+            color: var(--danger);
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        .pros-cons-list {
+            list-style: none;
+            padding: 0;
+        }
+        .pros-cons-list li {
+            padding: 0.4rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .pros-box .pros-cons-list li::before {
+            content: '✓ ';
+            color: var(--success);
+            font-weight: bold;
+        }
+        .cons-box .pros-cons-list li::before {
+            content: '✗ ';
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        /* ========== 认证证书 ========== */
+        .cert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .cert-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-sm);
+            padding: 1.2rem;
+            transition: all var(--transition-smooth);
+            cursor: default;
+        }
+        .cert-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 22px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+        .cert-card h4 {
+            color: var(--accent);
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+        .cert-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        .cert-difficulty {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .cert-difficulty.hard {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--danger);
+        }
+        .cert-difficulty.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--warning);
+        }
+        .cert-difficulty.easy {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--success);
+        }
+
+        /* ========== 全球需求地图 ========== */
+        .demand-regions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.8rem;
+        }
+        .demand-region {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem;
+            text-align: center;
+            transition: all var(--transition-smooth);
+        }
+        .demand-region:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .demand-flag {
+            font-size: 1.6rem;
+        }
+        .demand-region-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
+        }
+        .demand-meter {
+            height: 6px;
+            background: rgba(56, 189, 248, 0.12);
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .demand-meter-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1s ease;
+        }
+        .demand-meter-fill.high {
+            background: linear-gradient(90deg, var(--success), #6ee7b7);
+            width: 90%;
+        }
+        .demand-meter-fill.med-high {
+            background: linear-gradient(90deg, #60a5fa, var(--accent));
+            width: 70%;
+        }
+        .demand-meter-fill.medium {
+            background: linear-gradient(90deg, var(--warning), #fcd34d);
+            width: 50%;
+        }
+        .demand-meter-fill.low {
+            background: linear-gradient(90deg, var(--danger), #fca5a5);
+            width: 30%;
+        }
+        .demand-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        /* ========== 相似职业 ========== */
+        .similar-careers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .similar-career-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .similar-career-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 6px 28px var(--accent-glow);
+            transform: translateY(-4px);
+        }
+        .similar-career-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.6rem;
+        }
+        .similar-career-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .similar-career-salary {
+            font-size: 0.82rem;
+            color: var(--accent);
+            margin-top: 0.3rem;
+        }
+        .similar-career-match {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* ========== 完整卡片（全宽） ========== */
+        .full-width-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        }
+        .full-width-card:hover {
+            border-color: var(--glass-border-strong);
+            box-shadow: 0 8px 36px rgba(56, 189, 248, 0.08);
+        }
+        .full-width-card h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 1024px) {
+            .detail-container {
+                max-width: 100%;
+                padding: 0 1rem;
+            }
+            .cover-section {
+                padding: 2rem;
+            }
+            .cover-info h1 {
+                font-size: 2rem;
+            }
+            .section-tabs {
+                top: 105px;
+                gap: 0.3rem;
+            }
+            .section-tab {
+                font-size: 0.75rem;
+                padding: 0.45rem 0.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                margin: 8px 12px;
+                padding: 0.7rem 1.2rem;
+                border-radius: 2.5rem;
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+            .nav-links {
+                gap: 0.8rem;
+                justify-content: center;
+            }
+            .cover-section {
+                flex-direction: column;
+                text-align: center;
+                padding: 1.5rem;
+            }
+            .cover-icon {
+                font-size: 3.5rem;
+                padding: 1rem;
+            }
+            .cover-info h1 {
+                font-size: 1.7rem;
+            }
+            .cover-meta {
+                justify-content: center;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .progress-steps {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            .progress-steps::before {
+                display: none;
+            }
+            .pros-cons-grid {
+                grid-template-columns: 1fr;
+            }
+            .salary-chart {
+                gap: 1rem;
+            }
+            .salary-bar {
+                width: 50px;
+            }
+            .similar-careers-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            .section-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 0.3rem;
+            }
+            .demand-regions {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            }
+            .cert-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                margin: 5px 8px;
+                border-radius: 2rem;
+            }
+            .logo {
+                font-size: 1.3rem;
+            }
+            .nav-links a {
+                font-size: 0.75rem;
+            }
+            .cover-info h1 {
+                font-size: 1.4rem;
+            }
+            .cover-icon {
+                font-size: 2.8rem;
+            }
+            .salary-chart {
+                flex-direction: column;
+                align-items: center;
+            }
+            .salary-bar-wrapper {
+                flex-direction: row;
+                gap: 1rem;
+                max-width: 100%;
+                width: 100%;
+            }
+            .salary-bar {
+                width: 100%;
+                height: 30px !important;
+                border-radius: 8px;
+            }
+            .cert-grid {
+                grid-template-columns: 1fr;
+            }
+            .demand-regions {
+                grid-template-columns: 1fr 1fr;
+            }
+            .section-tab {
+                font-size: 0.7rem;
+                padding: 0.35rem 0.6rem;
+            }
+        }
+
+        /* ========== 淡入动画 ========== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-in {
+            animation: fadeInUp 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='home.html'">🌍 CareerAtlas</div>
+        <ul class="nav-links">
+            <li><a href="home.html">首页</a></li>
+            <li><a href="careers.html">职业大全</a></li>
+            <li><a href="detail.html" style="color:var(--accent);">职业详情</a></li>
+            <li><a href="compare.html">职业对比</a></li>
+            <li><a href="test.html">职业测试</a></li>
+            <li><a href="salary.html">薪资排行</a></li>
+            <li><a href="trend.html">职业趋势</a></li>
+            <li><a href="industry.html">行业中心</a></li>
+        </ul>
+        <button class="theme-toggle" id="themeToggle">🌙 夜间模式</button>
+    </nav>
+
+    <div class="detail-container" id="detailContainer">
+        <!-- 动态填充 -->
+    </div>
+
+    <script>
+        (function() {
+            // ========== 主题切换 ==========
+            const savedTheme = localStorage.getItem('careerAtlasTheme');
+            if (savedTheme === 'light') document.body.classList.add('light-mode');
+            const themeToggleBtn = document.getElementById('themeToggle');
+            if (themeToggleBtn) {
+                themeToggleBtn.textContent = document.body.classList.contains('light-mode') ? '☀️ 日间模式' : '🌙 夜间模式';
+                themeToggleBtn.addEventListener('click', function() {
+                    document.body.classList.toggle('light-mode');
+                    localStorage.setItem('careerAtlasTheme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+                    this.textContent = document.body.classList.contains('light-mode') ? '☀️ 日间模式' : '🌙 夜间模式';
+                });
+            }
+
+            // ========== 职业详情数据库（15+职业） ==========
+            const careersDetailDB = {
+                1: {
+                    name: '软件工程师',
+                    icon: '💻',
+                    industry: '科技',
+                    salary: '45万/年',
+                    location: '全球',
+                    education: '本科及以上',
+                    description: '软件工程师负责设计、开发、测试和维护软件系统，是数字时代的核心建造者。从移动应用到云计算基础设施，软件工程师推动着现代社会的技术变革。',
+                    responsibilities: ['编写高质量、可维护的代码', '维护和优化现有系统性能', '解决复杂技术难题与调试缺陷', '参与产品架构设计与技术选型', '与产品、设计、测试团队协作完成项目交付', '编写技术文档与单元测试'],
+                    requiredSkills: [
+                        { name: 'HTML/CSS/JavaScript', level: 90 },
+                        { name: '数据结构与算法', level: 85 },
+                        { name: '逻辑思维与问题解决', level: 88 },
+                        { name: '版本控制(Git)', level: 80 },
+                    ],
+                    bonusSkills: ['AI/机器学习', '云计算(AWS/Azure)', 'DevOps', '系统设计', '敏捷开发'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '计算机基础', desc: '学习编程语言、数据结构、计算机网络、操作系统原理' },
+                        { phase: '第2阶段', title: '项目实践', desc: '完成个人项目，参与开源贡献，建立代码仓库' },
+                        { phase: '第3阶段', title: '进阶框架', desc: '掌握主流框架、设计模式、数据库优化和分布式系统' },
+                        { phase: '第4阶段', title: '真实项目经验', desc: '实习或参与商业项目开发，积累团队协作和工程经验' },
+                    ],
+                    careerPath: ['初级工程师', '中级工程师', '高级工程师', '架构师/技术总监'],
+                    salaryProgression: [
+                        { level: '入门级', salary: '15-25万', barClass: 'entry' },
+                        { level: '中级', salary: '25-45万', barClass: 'mid' },
+                        { level: '高级', salary: '45-80万', barClass: 'senior' },
+                        { level: '专家/架构', salary: '80-150万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:00', activity: '站会同步进度，查看代码评审反馈' },
+                        { time: '10:00', activity: '核心编码时段，集中攻克复杂功能模块' },
+                        { time: '12:30', activity: '午餐与团队社交，技术分享交流' },
+                        { time: '14:00', activity: '跨部门协作会议，需求对齐与方案讨论' },
+                        { time: '16:00', activity: '代码调试、单元测试编写与性能优化' },
+                        { time: '18:00', activity: '文档更新、代码提交与当日总结' },
+                    ],
+                    pros: ['薪资待遇优厚，上升空间大', '可远程办公，工作地点灵活', '持续学习新技术，保持成长', '创造性强，能构建实际产品', '全球就业机会广泛'],
+                    cons: ['久坐办公，健康风险较高', '技术迭代快，需持续学习', '项目截止日期压力大', '长时间屏幕工作导致眼疲劳', '部分岗位需要on-call值班'],
+                    certifications: [
+                        { name: 'AWS Certified Developer', desc: '亚马逊云开发者认证，验证云服务开发能力', difficulty: 'hard' },
+                        { name: 'Google Professional Cloud Developer', desc: '谷歌云平台专业开发者认证', difficulty: 'hard' },
+                        { name: 'Oracle Certified Professional Java SE', desc: 'Java SE专业开发者认证', difficulty: 'medium' },
+                        { name: 'Certified Kubernetes Application Developer', desc: '云原生应用开发认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [2, 3, 6, 10],
+                },
+                2: {
+                    name: '前端开发工程师',
+                    icon: '🎨',
+                    industry: '科技',
+                    salary: '28万/年',
+                    location: '全球',
+                    education: '本科及以上',
+                    description: '前端开发工程师专注于构建用户界面和交互体验，将设计转化为可交互的Web应用，是连接用户与后端服务的桥梁。',
+                    responsibilities: ['将UI设计稿转化为高质量前端代码', '优化页面加载性能与渲染速度', '确保跨浏览器兼容性', '与后端工程师协作定义API接口', '编写可复用组件库'],
+                    requiredSkills: [
+                        { name: 'HTML/CSS/JavaScript', level: 95 },
+                        { name: 'React/Vue/Angular', level: 88 },
+                        { name: '响应式设计', level: 85 },
+                        { name: '性能优化', level: 78 },
+                    ],
+                    bonusSkills: ['TypeScript', 'Next.js/Nuxt', 'WebGL/Canvas', 'WebAssembly'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '前端基础', desc: 'HTML5语义化、CSS3布局、JavaScript ES6+' },
+                        { phase: '第2阶段', title: '框架掌握', desc: '深入学习React或Vue生态，状态管理与路由' },
+                        { phase: '第3阶段', title: '工程化', desc: 'Webpack/Vite构建、CI/CD、自动化测试' },
+                        { phase: '第4阶段', title: '全栈拓展', desc: 'Node.js后端、数据库基础、DevOps入门' },
+                    ],
+                    careerPath: ['初级前端', '中级前端', '高级前端', '前端架构师'],
+                    salaryProgression: [
+                        { level: '入门级', salary: '10-18万', barClass: 'entry' },
+                        { level: '中级', salary: '18-32万', barClass: 'mid' },
+                        { level: '高级', salary: '32-55万', barClass: 'senior' },
+                        { level: '专家/架构', salary: '55-90万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:30', activity: '检查设计稿更新，同步前端团队任务进展' },
+                        { time: '10:30', activity: '组件开发与页面布局实现' },
+                        { time: '12:00', activity: '代码评审同事的Pull Request' },
+                        { time: '14:00', activity: '与设计师沟通交互细节，实现动画效果' },
+                        { time: '16:00', activity: '性能调优、兼容性测试与bug修复' },
+                        { time: '17:30', activity: '技术分享或学习新技术趋势' },
+                    ],
+                    pros: ['创造性强，可视化成就能带来满足感', '入门门槛相对较低', '社区活跃，学习资源丰富', '远程办公机会多'],
+                    cons: ['技术栈更新极快，需频繁学习', '浏览器兼容性问题繁琐', '设计与开发之间常有沟通成本', '容易被认为技术含量低于后端'],
+                    certifications: [
+                        { name: 'Meta Front-End Developer Certificate', desc: 'Meta官方前端开发者专业证书', difficulty: 'easy' },
+                        { name: 'Microsoft Certified: Azure Developer Associate', desc: 'Azure云开发助理认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'med-high', label: '高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [1, 6, 7, 9],
+                },
+                3: {
+                    name: '数据科学家',
+                    icon: '📊',
+                    industry: '科技',
+                    salary: '50万/年',
+                    location: '全球',
+                    education: '硕士及以上',
+                    description: '数据科学家通过统计学、机器学习和编程技能，从海量数据中提取有价值的信息和预测模型，驱动企业决策和产品创新。',
+                    responsibilities: ['收集、清洗和预处理大规模数据集', '应用统计方法和机器学习算法建模', '数据可视化与洞察呈现', 'A/B测试设计与结果分析', '与业务团队协作将数据洞察转化为行动'],
+                    requiredSkills: [
+                        { name: 'Python/R', level: 92 },
+                        { name: '统计学与概率', level: 88 },
+                        { name: '机器学习', level: 85 },
+                        { name: 'SQL与数据处理', level: 82 },
+                    ],
+                    bonusSkills: ['深度学习', 'NLP自然语言处理', 'Spark/Hadoop', 'Tableau/PowerBI'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '数学与统计基础', desc: '概率论、线性代数、统计推断' },
+                        { phase: '第2阶段', title: '编程与工具', desc: 'Python数据科学生态、SQL、Jupyter' },
+                        { phase: '第3阶段', title: '机器学习', desc: '监督/非监督学习、特征工程、模型评估' },
+                        { phase: '第4阶段', title: '领域深入', desc: '深度学习、MLOps、大数据平台实战' },
+                    ],
+                    careerPath: ['数据分析师', '数据科学家', '高级数据科学家', '首席数据官'],
+                    salaryProgression: [
+                        { level: '入门级', salary: '18-30万', barClass: 'entry' },
+                        { level: '中级', salary: '30-55万', barClass: 'mid' },
+                        { level: '高级', salary: '55-100万', barClass: 'senior' },
+                        { level: '专家/总监', salary: '100-200万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:00', activity: '检查数据管道运行状态，确认ETL任务完成' },
+                        { time: '10:00', activity: '特征工程与模型训练实验' },
+                        { time: '12:00', activity: '与产品团队讨论业务指标定义' },
+                        { time: '14:00', activity: '模型评估与超参数调优' },
+                        { time: '16:00', activity: '制作数据看板与可视化报告' },
+                        { time: '17:30', activity: '阅读最新论文，研究方法改进' },
+                    ],
+                    pros: ['薪资极高，市场需求旺盛', '处于技术前沿，工作有趣', '对各行各业都有影响力', '职业发展路径清晰'],
+                    cons: ['数据清洗工作繁琐耗时', '业务方期望常不切实际', '需要同时掌握多领域知识', '模型解释性在部分行业受限'],
+                    certifications: [
+                        { name: 'Google Professional Data Engineer', desc: '谷歌数据工程专业认证', difficulty: 'hard' },
+                        { name: 'AWS Certified Machine Learning Specialty', desc: 'AWS机器学习专项认证', difficulty: 'hard' },
+                        { name: 'TensorFlow Developer Certificate', desc: 'TensorFlow开发者认证', difficulty: 'medium' },
+                        { name: 'Microsoft Certified: Azure Data Scientist', desc: 'Azure数据科学家助理认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'med-high', label: '高需求' },
+                    ],
+                    similarCareers: [1, 10, 11, 4],
+                },
+                4: {
+                    name: '医生',
+                    icon: '🩺',
+                    industry: '医疗',
+                    salary: '55万/年',
+                    location: '全球',
+                    education: '硕士及以上',
+                    description: '医生通过诊断和治疗疾病来维护人类健康，是最受尊敬的职业之一。需要扎实的医学知识和丰富的临床经验。',
+                    responsibilities: ['诊断疾病并制定治疗方案', '进行手术及医疗操作', '病人随访与康复指导', '医学研究与学术交流', '指导住院医师和实习生'],
+                    requiredSkills: [
+                        { name: '医学专业知识', level: 95 },
+                        { name: '临床诊断能力', level: 92 },
+                        { name: '医患沟通', level: 85 },
+                        { name: '应急处理', level: 88 },
+                    ],
+                    bonusSkills: ['科研能力', '医疗管理', '跨学科协作', '医学英语'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '医学预科', desc: '生物学、化学等基础科学课程' },
+                        { phase: '第2阶段', title: '医学院学习', desc: '系统学习医学理论和临床技能' },
+                        { phase: '第3阶段', title: '住院医师培训', desc: '在医院各科室轮转实践3-5年' },
+                        { phase: '第4阶段', title: '专科深造', desc: '选择专科方向深入研究与进修' },
+                    ],
+                    careerPath: ['住院医师', '主治医师', '副主任医师', '主任医师/科室主任'],
+                    salaryProgression: [
+                        { level: '规培阶段', salary: '8-15万', barClass: 'entry' },
+                        { level: '住院医师', salary: '15-25万', barClass: 'mid' },
+                        { level: '主治医师', salary: '25-60万', barClass: 'senior' },
+                        { level: '主任医师', salary: '60-150万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '07:30', activity: '查房，检查住院病人情况' },
+                        { time: '09:00', activity: '门诊接诊，诊断各类疾病' },
+                        { time: '12:00', activity: '午餐及科室病例讨论' },
+                        { time: '14:00', activity: '手术或专科治疗操作' },
+                        { time: '17:00', activity: '病历整理、医嘱调整' },
+                        { time: '19:00', activity: '夜班轮值或学术文献阅读' },
+                    ],
+                    pros: ['社会地位高，受人尊敬', '职业稳定性极强', '收入随经验持续增长', '救死扶伤的成就感', '终身学习、不断进步'],
+                    cons: ['培养周期极长(8-12年)', '工作强度大、压力高', '医患关系复杂', '夜班和节假日轮值频繁', '责任重大，容错率低'],
+                    certifications: [
+                        { name: '执业医师资格证', desc: '国家医师资格考试，行医必备', difficulty: 'hard' },
+                        { name: '住院医师规范化培训合格证', desc: '完成规培计划后获得', difficulty: 'hard' },
+                        { name: '专科医师资格证', desc: '特定专科领域的高级资格认证', difficulty: 'hard' },
+                        { name: '美国医师执照(USMLE)', desc: '国际医疗执业资格', difficulty: 'hard' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'high', label: '极高需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'high', label: '极高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'med-high', label: '高需求' },
+                    ],
+                    similarCareers: [5, 12, 4, 4],
+                },
+                5: {
+                    name: '护士',
+                    icon: '💉',
+                    industry: '医疗',
+                    salary: '18万/年',
+                    location: '全球',
+                    education: '专科及以上',
+                    description: '护士是医疗团队中不可或缺的一员，负责病人的日常护理、健康监测和医疗协助，是医患之间的重要纽带。',
+                    responsibilities: ['执行医嘱并进行护理操作', '监测病人生命体征', '健康教育及康复指导', '协助医生进行诊疗', '护理记录与交接班'],
+                    requiredSkills: [
+                        { name: '护理操作技术', level: 90 },
+                        { name: '病人关怀与沟通', level: 88 },
+                        { name: '急救技能', level: 85 },
+                        { name: '药品知识', level: 80 },
+                    ],
+                    bonusSkills: ['ICU重症护理', '外语沟通', '护理管理', '中医护理'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '护理基础教育', desc: '解剖学、生理学、护理学基础' },
+                        { phase: '第2阶段', title: '临床实习', desc: '在各级医院各科室轮转实习' },
+                        { phase: '第3阶段', title: '专科护理', desc: '选择ICU、急诊、手术室等专科' },
+                        { phase: '第4阶段', title: '高级进修', desc: '护理管理或护理教育方向深造' },
+                    ],
+                    careerPath: ['初级护士', '护师', '主管护师', '副主任护师/护士长'],
+                    salaryProgression: [
+                        { level: '初级护士', salary: '6-12万', barClass: 'entry' },
+                        { level: '护师', salary: '12-20万', barClass: 'mid' },
+                        { level: '主管护师', salary: '20-35万', barClass: 'senior' },
+                        { level: '护理管理', salary: '35-55万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '07:00', activity: '晨间交接班，了解病人夜间情况' },
+                        { time: '08:00', activity: '执行晨间护理，分发药物' },
+                        { time: '10:00', activity: '协助医生查房，执行医嘱' },
+                        { time: '13:00', activity: '病人健康教育及心理疏导' },
+                        { time: '15:00', activity: '护理记录撰写与交接准备' },
+                        { time: '17:00', activity: '晚班交接，特殊情况汇报' },
+                    ],
+                    pros: ['就业机会广泛，需求稳定', '能直接帮助他人，有意义', '排班灵活，可选择不同科室', '全球范围人才短缺'],
+                    cons: ['体力消耗大，需长时间站立', '三班倒影响生活规律', '薪资增长速度慢', '情感消耗大'],
+                    certifications: [
+                        { name: '护士执业资格证', desc: '国家护士资格考试，从业必备', difficulty: 'medium' },
+                        { name: '专科护士认证', desc: 'ICU、急诊等专科护理认证', difficulty: 'medium' },
+                        { name: '国际护士资格(CGFNS)', desc: '国际护理资格认证', difficulty: 'hard' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'high', label: '极高需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'high', label: '极高需求' },
+                    ],
+                    similarCareers: [4, 12, 4, 4],
+                },
+                6: {
+                    name: 'UI/UX设计师',
+                    icon: '🎯',
+                    industry: '创意',
+                    salary: '25万/年',
+                    location: '全球(可远程)',
+                    education: '本科及以上',
+                    description: 'UI/UX设计师负责数字产品的界面设计和用户体验优化，通过视觉设计和用户研究让产品既美观又易用。',
+                    responsibilities: ['用户研究与需求分析', '信息架构与交互流程设计', '高保真界面视觉设计', '设计系统与组件库维护', '可用性测试与迭代优化'],
+                    requiredSkills: [
+                        { name: 'Figma/Sketch', level: 92 },
+                        { name: '用户研究', level: 82 },
+                        { name: '视觉设计基础', level: 88 },
+                        { name: '交互设计原理', level: 85 },
+                    ],
+                    bonusSkills: ['动效设计(After Effects)', 'HTML/CSS基础', '3D设计', '用户行为数据分析'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '设计基础', desc: '色彩理论、排版、构图、设计原则' },
+                        { phase: '第2阶段', title: '工具与流程', desc: 'Figma高级技巧、设计系统、原型制作' },
+                        { phase: '第3阶段', title: '用户研究', desc: '用户访谈、可用性测试、数据分析' },
+                        { phase: '第4阶段', title: '商业思维', desc: '产品策略、设计管理、团队领导力' },
+                    ],
+                    careerPath: ['初级设计师', 'UI/UX设计师', '高级设计师', '设计总监'],
+                    salaryProgression: [
+                        { level: '初级', salary: '8-15万', barClass: 'entry' },
+                        { level: '中级', salary: '15-30万', barClass: 'mid' },
+                        { level: '高级', salary: '30-50万', barClass: 'senior' },
+                        { level: '设计总监', salary: '50-100万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:30', activity: '查看设计反馈，整理当天任务' },
+                        { time: '10:30', activity: '核心设计时段，产出高保真界面' },
+                        { time: '12:00', activity: '设计评审，与团队讨论方案' },
+                        { time: '14:00', activity: '用户研究分析或可用性测试' },
+                        { time: '16:00', activity: '设计系统维护与组件库更新' },
+                        { time: '17:30', activity: '收集灵感，研究设计趋势' },
+                    ],
+                    pros: ['创造性强，工作成果可视', '可远程办公，灵活自由', '跨行业应用广泛', '入门相对友好'],
+                    cons: ['主观性强，反复修改频繁', '需要持续证明设计价值', '职业天花板相对较低', '与工程师沟通常有摩擦'],
+                    certifications: [
+                        { name: 'Google UX Design Certificate', desc: '谷歌UX设计专业证书', difficulty: 'easy' },
+                        { name: 'Interaction Design Foundation证书', desc: 'IDF交互设计专业认证', difficulty: 'easy' },
+                        { name: 'Adobe Certified Professional', desc: 'Adobe创意设计专业认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'med-high', label: '高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [7, 2, 1, 9],
+                },
+                7: {
+                    name: '平面设计师',
+                    icon: '🖌️',
+                    industry: '创意',
+                    salary: '12万/年',
+                    location: '全球(可远程)',
+                    education: '专科及以上',
+                    description: '平面设计师通过视觉元素传达信息和品牌理念，涵盖印刷品、品牌标识、广告和数字媒体等广泛领域。',
+                    responsibilities: ['品牌视觉识别系统设计', '海报、画册等印刷品设计', '社交媒体视觉内容制作', '与客户沟通设计需求', '印前制作与色彩管理'],
+                    requiredSkills: [
+                        { name: 'Adobe Photoshop', level: 90 },
+                        { name: 'Adobe Illustrator', level: 88 },
+                        { name: '排版与色彩', level: 85 },
+                        { name: '品牌设计', level: 78 },
+                    ],
+                    bonusSkills: ['After Effects', '3D建模(C4D)', '插画能力', '摄影'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '美术基础', desc: '素描、色彩构成、平面构成' },
+                        { phase: '第2阶段', title: '软件精通', desc: 'Adobe三件套、设计规范' },
+                        { phase: '第3阶段', title: '商业设计', desc: '品牌设计、包装设计、广告创意' },
+                        { phase: '第4阶段', title: '专业精进', desc: '建立个人风格，拓展高端客户' },
+                    ],
+                    careerPath: ['初级设计师', '平面设计师', '资深设计师', '创意总监'],
+                    salaryProgression: [
+                        { level: '初级', salary: '5-10万', barClass: 'entry' },
+                        { level: '中级', salary: '10-18万', barClass: 'mid' },
+                        { level: '资深', salary: '18-30万', barClass: 'senior' },
+                        { level: '创意总监', salary: '30-60万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:30', activity: '查看客户反馈邮件，整理任务优先级' },
+                        { time: '10:30', activity: '创意构思与草图绘制' },
+                        { time: '13:00', activity: '核心设计执行，软件实操' },
+                        { time: '15:30', activity: '客户提案与修改沟通' },
+                        { time: '17:00', activity: '印前检查与文件输出' },
+                        { time: '18:30', activity: '设计资源收集与灵感整理' },
+                    ],
+                    pros: ['自由度高，可接私单', '入行门槛相对低', '创作过程充满乐趣', '可发展为数字设计方向'],
+                    cons: ['薪资天花板较低', 'AI对行业冲击较大', '客户改稿频繁', '加班赶稿是常态'],
+                    certifications: [
+                        { name: 'Adobe Certified Professional', desc: 'Adobe官方认证专业人士', difficulty: 'medium' },
+                        { name: 'Graphic Design Specialization (Coursera)', desc: '加州艺术学院平面设计专项课程', difficulty: 'easy' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'medium', label: '中等需求' },
+                        { region: '🇪🇺 欧洲', demand: 'low', label: '较低需求' },
+                        { region: '🇨🇳 中国', demand: 'medium', label: '中等需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'low', label: '较低需求' },
+                        { region: '🇦🇺 澳洲', demand: 'low', label: '较低需求' },
+                    ],
+                    similarCareers: [6, 9, 6, 6],
+                },
+                8: {
+                    name: '律师',
+                    icon: '⚖️',
+                    industry: '法律',
+                    salary: '48万/年',
+                    location: '全国',
+                    education: '硕士及以上',
+                    description: '律师通过法律专业知识为客户提供法律咨询、代理诉讼和合同审查等服务，维护社会公平正义。',
+                    responsibilities: ['案件分析与法律研究', '为客户提供法律咨询', '起草与审查法律文书', '出庭代理诉讼', '参与调解与谈判'],
+                    requiredSkills: [
+                        { name: '法律专业知识', level: 95 },
+                        { name: '逻辑与辩论', level: 92 },
+                        { name: '文书写作', level: 88 },
+                        { name: '谈判技巧', level: 85 },
+                    ],
+                    bonusSkills: ['外语(法律英语)', '心理学知识', '企业管理', '知识产权'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '法学本科', desc: '宪法、民法、刑法等基础法律' },
+                        { phase: '第2阶段', title: '法律硕士', desc: '深入专攻方向，模拟法庭训练' },
+                        { phase: '第3阶段', title: '实习律师', desc: '律所实习1-2年，积累实战经验' },
+                        { phase: '第4阶段', title: '独立执业', desc: '取得执业证，独立承接案件' },
+                    ],
+                    careerPath: ['实习律师', '执业律师', '合伙人律师', '高级合伙人'],
+                    salaryProgression: [
+                        { level: '实习律师', salary: '8-15万', barClass: 'entry' },
+                        { level: '执业律师', salary: '15-40万', barClass: 'mid' },
+                        { level: '合伙人', salary: '40-150万', barClass: 'senior' },
+                        { level: '高级合伙人', salary: '150-500万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '08:30', activity: '查阅案件材料，准备当天庭审或会议' },
+                        { time: '10:00', activity: '出庭应诉或参加客户会谈' },
+                        { time: '12:30', activity: '午餐与同行交流，讨论案件' },
+                        { time: '14:00', activity: '法律文书撰写与合同审查' },
+                        { time: '16:30', activity: '法律研究，检索相关判例' },
+                        { time: '19:00', activity: '加班准备次日案件材料' },
+                    ],
+                    pros: ['社会地位高', '收入上限极高', '智力挑战性强', '维护正义的使命感'],
+                    cons: ['入行门槛高，竞争激烈', '工作时间长，压力大', '需要持续学习新法规', '初期收入偏低'],
+                    certifications: [
+                        { name: '法律职业资格证(法考)', desc: '国家统一法律职业资格考试，从业必备', difficulty: 'hard' },
+                        { name: '律师执业证', desc: '实习期满后申领的执业证书', difficulty: 'medium' },
+                        { name: '专利代理人资格', desc: '知识产权领域专业资格', difficulty: 'hard' },
+                        { name: '美国律师资格考试(BAR)', desc: '美国各州律师执业资格', difficulty: 'hard' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'med-high', label: '高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [11, 4, 8, 8],
+                },
+                9: {
+                    name: '全栈开发工程师',
+                    icon: '🔧',
+                    industry: '科技',
+                    salary: '38万/年',
+                    location: '全球(可远程)',
+                    education: '本科及以上',
+                    description: '全栈开发工程师同时精通前端与后端技术，能够独立完成完整Web应用的开发，是技术团队中的多面手。',
+                    responsibilities: ['全栈应用架构设计与开发', '数据库设计与优化', 'API接口开发与集成', '前端界面与后端逻辑实现', '部署与运维自动化'],
+                    requiredSkills: [
+                        { name: '前端(React/Vue)', level: 85 },
+                        { name: '后端(Node/Python)', level: 82 },
+                        { name: '数据库(SQL/NoSQL)', level: 80 },
+                        { name: 'DevOps基础', level: 75 },
+                    ],
+                    bonusSkills: ['GraphQL', '微服务架构', 'Docker/K8s', 'WebSocket'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '前端基础', desc: 'HTML/CSS/JS及主流前端框架' },
+                        { phase: '第2阶段', title: '后端入门', desc: 'Node.js/Python后端及REST API设计' },
+                        { phase: '第3阶段', title: '数据库与部署', desc: '数据库设计、云服务部署、CI/CD' },
+                        { phase: '第4阶段', title: '架构能力', desc: '系统设计、微服务、性能优化' },
+                    ],
+                    careerPath: ['初级全栈', '全栈工程师', '高级全栈', '技术负责人'],
+                    salaryProgression: [
+                        { level: '初级', salary: '12-22万', barClass: 'entry' },
+                        { level: '中级', salary: '22-42万', barClass: 'mid' },
+                        { level: '高级', salary: '42-75万', barClass: 'senior' },
+                        { level: '技术负责人', salary: '75-130万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:00', activity: '站会与团队同步进度' },
+                        { time: '10:00', activity: '后端API开发与数据库优化' },
+                        { time: '12:00', activity: '代码评审' },
+                        { time: '14:00', activity: '前端页面开发与状态管理' },
+                        { time: '16:00', activity: '调试跨模块问题与集成测试' },
+                        { time: '18:00', activity: '部署与监控，文档更新' },
+                    ],
+                    pros: ['技术面广，就业灵活', '能独立完成整个产品', '薪资有竞争力', '创业能力强'],
+                    cons: ['广而不精的风险', '需要学习的技术栈太多', '前后端问题都要处理', '技术深度不如专精工程师'],
+                    certifications: [
+                        { name: 'AWS Certified Solutions Architect', desc: 'AWS解决方案架构师认证', difficulty: 'hard' },
+                        { name: 'MongoDB Certified Developer', desc: 'MongoDB官方开发者认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'med-high', label: '高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [1, 2, 10, 1],
+                },
+                10: {
+                    name: '人工智能工程师',
+                    icon: '🤖',
+                    industry: '科技',
+                    salary: '60万/年',
+                    location: '全球',
+                    education: '硕士及以上',
+                    description: '人工智能工程师专注于开发和应用AI算法与模型，包括深度学习、自然语言处理和计算机视觉，是当前最前沿的技术职业之一。',
+                    responsibilities: ['设计训练深度学习模型', '数据处理与特征工程', '模型部署与推理优化', '跟踪前沿AI研究进展', '与产品团队协作AI功能落地'],
+                    requiredSkills: [
+                        { name: 'Python/PyTorch', level: 95 },
+                        { name: '深度学习理论', level: 90 },
+                        { name: '数学基础(线代/概率)', level: 88 },
+                        { name: '模型部署(ONNX/TensorRT)', level: 78 },
+                    ],
+                    bonusSkills: ['强化学习', '大语言模型(LLM)', '分布式训练', '边缘AI部署'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '数学与编程', desc: '线性代数、概率论、Python高级编程' },
+                        { phase: '第2阶段', title: '机器学习基础', desc: '经典ML算法、Scikit-learn、特征工程' },
+                        { phase: '第3阶段', title: '深度学习', desc: 'CNN/RNN/Transformer、PyTorch/TensorFlow' },
+                        { phase: '第4阶段', title: '前沿研究', desc: '大模型、多模态、AI安全与对齐' },
+                    ],
+                    careerPath: ['AI算法工程师', '高级AI工程师', 'AI研究员', '首席AI科学家'],
+                    salaryProgression: [
+                        { level: '入门级', salary: '25-40万', barClass: 'entry' },
+                        { level: '中级', salary: '40-80万', barClass: 'mid' },
+                        { level: '高级', salary: '80-150万', barClass: 'senior' },
+                        { level: '首席科学家', salary: '150-500万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:00', activity: '查看模型训练进度与实验结果' },
+                        { time: '10:00', activity: '阅读最新AI论文，研究新方法' },
+                        { time: '12:00', activity: '团队讨论模型架构改进方案' },
+                        { time: '14:00', activity: '代码实现与模型训练调试' },
+                        { time: '16:30', activity: '模型评估与性能优化' },
+                        { time: '18:00', activity: '实验记录与周报撰写' },
+                    ],
+                    pros: ['薪资处于行业顶端', '技术前沿，极具挑战性', '研究成果影响力大', '行业需求爆发式增长'],
+                    cons: ['门槛极高，需要硕博学历', '研究不确定性大', '计算资源成本高', '需要持续跟进领域快速变化'],
+                    certifications: [
+                        { name: 'NVIDIA DLI Certificate', desc: 'NVIDIA深度学习学院认证', difficulty: 'medium' },
+                        { name: 'Google Professional ML Engineer', desc: '谷歌机器学习工程师认证', difficulty: 'hard' },
+                        { name: 'TensorFlow Developer Certificate', desc: 'TensorFlow官方开发者认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'med-high', label: '高需求' },
+                    ],
+                    similarCareers: [3, 1, 11, 3],
+                },
+                11: {
+                    name: '网络安全工程师',
+                    icon: '🛡️',
+                    industry: '科技',
+                    salary: '42万/年',
+                    location: '全球',
+                    education: '本科及以上',
+                    description: '网络安全工程师负责保护组织的信息系统和数据免受网络攻击，进行安全评估、漏洞检测和安全架构设计。',
+                    responsibilities: ['安全监控与威胁检测', '漏洞扫描与渗透测试', '安全架构设计与实施', '安全事件响应与取证', '安全培训与意识提升'],
+                    requiredSkills: [
+                        { name: '网络安全基础', level: 90 },
+                        { name: '渗透测试', level: 85 },
+                        { name: '安全工具(Wireshark等)', level: 82 },
+                        { name: '编程/脚本', level: 78 },
+                    ],
+                    bonusSkills: ['逆向工程', '恶意软件分析', '云安全', '区块链安全'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '网络与系统基础', desc: 'TCP/IP、操作系统、数据库基础' },
+                        { phase: '第2阶段', title: '安全基础', desc: '密码学、安全协议、常见攻击类型' },
+                        { phase: '第3阶段', title: '攻防实战', desc: '渗透测试、漏洞利用、CTF竞赛' },
+                        { phase: '第4阶段', title: '安全架构', desc: '企业安全方案设计、合规与审计' },
+                    ],
+                    careerPath: ['安全分析师', '安全工程师', '高级安全专家', '首席安全官(CSO)'],
+                    salaryProgression: [
+                        { level: '入门级', salary: '15-25万', barClass: 'entry' },
+                        { level: '中级', salary: '25-50万', barClass: 'mid' },
+                        { level: '高级', salary: '50-100万', barClass: 'senior' },
+                        { level: 'CSO/CISO', salary: '100-300万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '08:30', activity: '检查安全告警，分析夜间异常事件' },
+                        { time: '10:00', activity: '渗透测试与新漏洞验证' },
+                        { time: '12:00', activity: '安全运营会议，讨论风险态势' },
+                        { time: '14:00', activity: '安全工具开发与自动化脚本编写' },
+                        { time: '16:00', activity: '安全审计与合规检查' },
+                        { time: '17:30', activity: '撰写安全报告与修复建议' },
+                    ],
+                    pros: ['需求持续增长，就业稳定', '薪资水平高', '领域变化快，充满挑战', '可向白帽黑客方向发展'],
+                    cons: ['需要随时待命应对攻击', '压力大，责任重', '需要广泛的知识面', '攻击手段不断升级需持续学习'],
+                    certifications: [
+                        { name: 'CISSP', desc: '国际信息系统安全认证专家', difficulty: 'hard' },
+                        { name: 'CEH (Certified Ethical Hacker)', desc: '认证道德黑客', difficulty: 'medium' },
+                        { name: 'OSCP', desc: '进攻性安全认证专家', difficulty: 'hard' },
+                        { name: 'CompTIA Security+', desc: '信息安全基础认证', difficulty: 'easy' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'med-high', label: '高需求' },
+                    ],
+                    similarCareers: [1, 3, 10, 1],
+                },
+                12: {
+                    name: '教师',
+                    icon: '📚',
+                    industry: '教育',
+                    salary: '15万/年',
+                    location: '全国',
+                    education: '本科及以上',
+                    description: '教师是人类灵魂的工程师，负责学生的知识传授、能力培养和价值观引导，对社会发展具有深远影响。',
+                    responsibilities: ['课程设计及教学计划制定', '课堂教学与学生辅导', '作业批改与学业评估', '班级管理与学生沟通', '教研活动与专业发展'],
+                    requiredSkills: [
+                        { name: '学科专业知识', level: 90 },
+                        { name: '教学与表达能力', level: 88 },
+                        { name: '学生心理理解', level: 82 },
+                        { name: '课程设计', level: 80 },
+                    ],
+                    bonusSkills: ['教育技术工具', '双语教学', '特殊教育', '教研论文写作'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '学科基础', desc: '深入掌握所教学科知识体系' },
+                        { phase: '第2阶段', title: '教育理论与实习', desc: '教育学、心理学、教学实习' },
+                        { phase: '第3阶段', title: '教学实践', desc: '独立教学、班级管理经验积累' },
+                        { phase: '第4阶段', title: '教育研究', desc: '教研成果、职称评定、教育创新' },
+                    ],
+                    careerPath: ['初级教师', '中级教师', '高级教师', '特级教师/校长'],
+                    salaryProgression: [
+                        { level: '初级教师', salary: '6-12万', barClass: 'entry' },
+                        { level: '中级教师', salary: '12-18万', barClass: 'mid' },
+                        { level: '高级教师', salary: '18-30万', barClass: 'senior' },
+                        { level: '特级/管理层', salary: '30-55万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '07:30', activity: '到校准备，检查教学材料' },
+                        { time: '08:00', activity: '早读辅导与第一节授课' },
+                        { time: '10:30', activity: '课堂教学与互动讨论' },
+                        { time: '12:00', activity: '午餐监督与学生交流' },
+                        { time: '14:00', activity: '备课、批改作业' },
+                        { time: '17:00', activity: '教研活动或家长沟通' },
+                    ],
+                    pros: ['工作稳定，有编制保障', '寒暑假充裕', '教书育人成就感强', '社会尊重度高'],
+                    cons: ['薪资偏低且增长慢', '工作压力大、杂务多', '家长沟通消耗精力', '职业发展空间有限'],
+                    certifications: [
+                        { name: '教师资格证', desc: '国家教师资格考试，从业必备', difficulty: 'medium' },
+                        { name: '普通话等级证书', desc: '语文教师需二级甲等以上', difficulty: 'easy' },
+                        { name: '心理咨询师证书', desc: '学生心理辅导辅助认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'medium', label: '中等需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [16, 4, 12, 12],
+                },
+                13: {
+                    name: '建筑师',
+                    icon: '🏗️',
+                    industry: '工程',
+                    salary: '32万/年',
+                    location: '全国',
+                    education: '本科及以上',
+                    description: '建筑师将艺术创意与工程技术相结合，设计建筑物和空间环境，影响城市面貌和人们的生活方式。',
+                    responsibilities: ['建筑方案设计及概念构思', '施工图纸绘制与技术协调', '项目预算与进度管理', '与结构、设备工程师协作', '施工现场监督与验收'],
+                    requiredSkills: [
+                        { name: '建筑设计能力', level: 90 },
+                        { name: 'CAD/BIM软件', level: 85 },
+                        { name: '建筑法规知识', level: 82 },
+                        { name: '项目管理', level: 78 },
+                    ],
+                    bonusSkills: ['参数化设计(Grasshopper)', '可持续设计(LEED)', '3D渲染(V-Ray)', '城市规划'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '建筑学基础', desc: '设计基础、建筑史、建筑物理' },
+                        { phase: '第2阶段', title: '专业技能', desc: 'CAD/BIM/参数化设计、结构概念' },
+                        { phase: '第3阶段', title: '实习实践', desc: '设计院实习，参与真实项目' },
+                        { phase: '第4阶段', title: '注册建筑师', desc: '考取注册建筑师，独立执业' },
+                    ],
+                    careerPath: ['助理建筑师', '建筑师', '主创建筑师', '设计总监/合伙人'],
+                    salaryProgression: [
+                        { level: '助理', salary: '8-15万', barClass: 'entry' },
+                        { level: '建筑师', salary: '15-35万', barClass: 'mid' },
+                        { level: '主创建筑师', salary: '35-70万', barClass: 'senior' },
+                        { level: '设计总监', salary: '70-150万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '08:30', activity: '项目进度检查与团队任务分配' },
+                        { time: '09:30', activity: '方案设计与草图推敲' },
+                        { time: '11:00', activity: '与甲方沟通需求与修改意见' },
+                        { time: '14:00', activity: 'CAD/BIM详细设计与图纸深化' },
+                        { time: '16:30', activity: '与结构、机电等专业协调' },
+                        { time: '18:00', activity: '效果图审核与方案汇报准备' },
+                    ],
+                    pros: ['创造与工程结合，成就感强', '作品可留存数十年', '职业发展潜力大', '跨领域发展机会多'],
+                    cons: ['培养周期长(5-8年)', '前期收入低，加班多', '甲方要求反复修改', '责任大，涉及安全问题'],
+                    certifications: [
+                        { name: '注册建筑师', desc: '国家注册建筑师资格考试', difficulty: 'hard' },
+                        { name: 'LEED AP', desc: '国际绿色建筑认证专家', difficulty: 'medium' },
+                        { name: 'BIM技能等级证书', desc: '建筑信息模型技术认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'medium', label: '中等需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [8, 1, 13, 13],
+                },
+                14: {
+                    name: '金融分析师',
+                    icon: '💰',
+                    industry: '金融',
+                    salary: '40万/年',
+                    location: '全球',
+                    education: '硕士及以上',
+                    description: '金融分析师通过研究经济数据、行业趋势和公司财务，为投资决策提供专业建议，是资本市场的重要参与者。',
+                    responsibilities: ['财务建模与估值分析', '行业与公司深度研究', '投资报告撰写与呈现', '市场数据分析与预测', '投资组合风险管理'],
+                    requiredSkills: [
+                        { name: '财务分析', level: 92 },
+                        { name: 'Excel/建模', level: 88 },
+                        { name: '行业研究', level: 85 },
+                        { name: '数据处理(Excel/SQL)', level: 80 },
+                    ],
+                    bonusSkills: ['Python量化分析', 'CFA证书', 'Bloomberg终端', 'M&A并购经验'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '金融基础', desc: '会计、公司金融、投资学、宏观经济学' },
+                        { phase: '第2阶段', title: '分析工具', desc: '财务建模、估值方法、数据分析' },
+                        { phase: '第3阶段', title: '行业实践', desc: '券商/基金实习，行业深度覆盖' },
+                        { phase: '第4阶段', title: '专业认证', desc: 'CFA/CPA等专业资格，独立研究' },
+                    ],
+                    careerPath: ['分析助理', '金融分析师', '高级分析师', '研究总监/基金经理'],
+                    salaryProgression: [
+                        { level: '分析助理', salary: '15-25万', barClass: 'entry' },
+                        { level: '分析师', salary: '25-50万', barClass: 'mid' },
+                        { level: '高级分析师', salary: '50-120万', barClass: 'senior' },
+                        { level: '基金经理/MD', salary: '120-500万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '07:30', activity: '阅读隔夜全球市场动态与新闻' },
+                        { time: '09:00', activity: '晨会汇报市场观点与策略建议' },
+                        { time: '10:30', activity: '公司财务分析与估值建模' },
+                        { time: '13:00', activity: '行业调研与上市公司路演' },
+                        { time: '15:30', activity: '撰写研究报告与投资建议' },
+                        { time: '18:00', activity: '整理数据，准备次日晨会材料' },
+                    ],
+                    pros: ['薪资极高，奖金丰厚', '接触顶尖企业与人才', '职业晋升路径清晰', '全球就业机会多'],
+                    cons: ['工作时间长(996常见)', '业绩压力巨大', '市场波动带来心理压力', '合规限制越来越多'],
+                    certifications: [
+                        { name: 'CFA (特许金融分析师)', desc: '全球金融投资领域最高级别认证', difficulty: 'hard' },
+                        { name: 'CPA (注册会计师)', desc: '会计审计领域专业资格', difficulty: 'hard' },
+                        { name: 'FRM (金融风险管理师)', desc: '金融风险管理国际认证', difficulty: 'hard' },
+                        { name: '证券从业资格证', desc: '国内证券行业入门必备', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [8, 3, 1, 14],
+                },
+                15: {
+                    name: '飞行员',
+                    icon: '✈️',
+                    industry: '航空',
+                    salary: '80万/年',
+                    location: '全球',
+                    education: '本科及以上',
+                    description: '飞行员负责驾驶民航或货运飞机，确保航班安全运行，是航空运输业的核心职业。',
+                    responsibilities: ['飞行前检查与航线规划', '安全驾驶飞机执行航班', '与空中管制保持通信', '应对飞行中的突发情况', '飞行日志记录与汇报'],
+                    requiredSkills: [
+                        { name: '飞行技术', level: 95 },
+                        { name: '空间感知与反应', level: 90 },
+                        { name: '英语通信', level: 88 },
+                        { name: '应急决策', level: 92 },
+                    ],
+                    bonusSkills: ['多种机型资质', '飞行教学', '航空管理', '无人机操作'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '理论培训', desc: '航空理论、气象学、导航学' },
+                        { phase: '第2阶段', title: '飞行训练', desc: '私照、商照、仪表等级训练' },
+                        { phase: '第3阶段', title: '机型改装', desc: '特定机型模拟机训练与考核' },
+                        { phase: '第4阶段', title: '积累飞行时数', desc: '从副驾驶到机长的晋升之路' },
+                    ],
+                    careerPath: ['飞行学员', '副驾驶', '机长', '飞行教员/总飞行师'],
+                    salaryProgression: [
+                        { level: '飞行学员', salary: '10-20万', barClass: 'entry' },
+                        { level: '副驾驶', salary: '30-60万', barClass: 'mid' },
+                        { level: '机长', salary: '80-150万', barClass: 'senior' },
+                        { level: '教员/总飞', salary: '150-300万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '05:00', activity: '签到，飞行前体检与简令' },
+                        { time: '06:30', activity: '驾驶舱准备，系统检查' },
+                        { time: '08:00', activity: '起飞执行航班任务' },
+                        { time: '12:00', activity: '过站检查与下一段准备' },
+                        { time: '16:00', activity: '抵达目的地，飞行后讲评' },
+                        { time: '18:00', activity: '酒店休息，准备次日航班' },
+                    ],
+                    pros: ['薪资待遇极高', '全球旅行机会', '职业荣誉感强', '工作制度完善'],
+                    cons: ['培训费用极高(70-100万)', '长期离家，作息不规律', '体检标准严苛', '职业路径单一'],
+                    certifications: [
+                        { name: '私用飞行执照(PPL)', desc: '私人飞行入门执照', difficulty: 'medium' },
+                        { name: '商用飞行执照(CPL)', desc: '商业飞行必备执照', difficulty: 'hard' },
+                        { name: '航线运输执照(ATPL)', desc: '机长级别最高执照', difficulty: 'hard' },
+                        { name: 'ICAO英语等级', desc: '国际民航组织英语通信能力认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'med-high', label: '高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'high', label: '极高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [13, 4, 15, 15],
+                },
+                16: {
+                    name: '教育咨询师',
+                    icon: '🎓',
+                    industry: '教育',
+                    salary: '20万/年',
+                    location: '全国',
+                    education: '本科及以上',
+                    description: '教育咨询师为学生和家长提供学业规划、升学指导和职业发展建议，帮助每个学生找到最适合的成长路径。',
+                    responsibilities: ['学生学业评估与规划', '升学政策研究与解读', '一对一咨询与方案制定', '教育产品与服务推荐', '家长沟通与家庭教育指导'],
+                    requiredSkills: [
+                        { name: '教育政策知识', level: 85 },
+                        { name: '沟通与倾听', level: 90 },
+                        { name: '分析规划能力', level: 82 },
+                        { name: '心理学基础', level: 78 },
+                    ],
+                    bonusSkills: ['留学申请经验', '多语种能力', '数据分析', '课程开发'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '教育基础', desc: '教育学、心理学、教育政策法规' },
+                        { phase: '第2阶段', title: '咨询技能', desc: '咨询技巧、评估工具使用' },
+                        { phase: '第3阶段', title: '行业深耕', desc: '升学政策、考试制度深入研究' },
+                        { phase: '第4阶段', title: '专业发展', desc: '独立执业或教育创业' },
+                    ],
+                    careerPath: ['咨询助理', '教育咨询师', '高级咨询师', '咨询总监/合伙人'],
+                    salaryProgression: [
+                        { level: '助理', salary: '6-12万', barClass: 'entry' },
+                        { level: '咨询师', salary: '12-25万', barClass: 'mid' },
+                        { level: '高级咨询师', salary: '25-50万', barClass: 'senior' },
+                        { level: '总监/合伙人', salary: '50-120万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '09:00', activity: '查看预约，准备咨询材料' },
+                        { time: '10:00', activity: '一对一学生咨询面谈' },
+                        { time: '12:00', activity: '学业方案制定与调整' },
+                        { time: '14:00', activity: '升学政策研究与资料整理' },
+                        { time: '16:00', activity: '家长沟通与家庭教育指导' },
+                        { time: '18:00', activity: '案例复盘与学习提升' },
+                    ],
+                    pros: ['帮助他人成长，有意义', '工作时间较灵活', '行业发展空间大', '创业门槛较低'],
+                    cons: ['收入受市场波动影响', '需要持续跟进政策变化', '家长期望管理有压力', '行业竞争加剧'],
+                    certifications: [
+                        { name: '教师资格证', desc: '国家教师资格考试', difficulty: 'medium' },
+                        { name: '心理咨询师', desc: '心理健康辅导能力认证', difficulty: 'medium' },
+                        { name: 'GCDF全球职业规划师', desc: '国际职业规划专业认证', difficulty: 'medium' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'medium', label: '中等需求' },
+                        { region: '🇪🇺 欧洲', demand: 'medium', label: '中等需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'med-high', label: '高需求' },
+                        { region: '🇸🇬 东南亚', demand: 'medium', label: '中等需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [12, 8, 16, 16],
+                },
+                17: {
+                    name: '金融分析师',
+                    icon: '📈',
+                    industry: '金融',
+                    salary: '40万/年',
+                    location: '全球',
+                    education: '硕士及以上',
+                    description: '金融分析师运用财务知识和数据分析能力，为投资机构和客户提供市场研究、投资策略和风险评估。',
+                    responsibilities: ['宏观与行业研究分析', '公司基本面与估值分析', '投资报告撰写', '财务建模与预测', '投资组合风险评估'],
+                    requiredSkills: [
+                        { name: '财务分析', level: 92 },
+                        { name: '金融建模', level: 88 },
+                        { name: '行业研究', level: 85 },
+                        { name: '数据分析(Python/SQL)', level: 80 },
+                    ],
+                    bonusSkills: ['CFA/CPA证书', 'Bloomberg/Reuters', '量化分析', 'M&A经验'],
+                    learningPath: [
+                        { phase: '第1阶段', title: '金融基础', desc: '会计学、公司金融、投资学' },
+                        { phase: '第2阶段', title: '分析工具', desc: 'Excel建模、Python数据分析' },
+                        { phase: '第3阶段', title: '行业深耕', desc: '覆盖特定行业，建立研究框架' },
+                        { phase: '第4阶段', title: '投资决策', desc: '独立出具投资建议，管理投资组合' },
+                    ],
+                    careerPath: ['分析员', '分析师', '资深分析师', '研究总监'],
+                    salaryProgression: [
+                        { level: '分析员', salary: '12-25万', barClass: 'entry' },
+                        { level: '分析师', salary: '25-50万', barClass: 'mid' },
+                        { level: '资深分析师', salary: '50-120万', barClass: 'senior' },
+                        { level: '研究总监', salary: '120-500万', barClass: 'expert' },
+                    ],
+                    dayInLife: [
+                        { time: '07:00', activity: '阅读隔夜市场报告与新闻摘要' },
+                        { time: '08:30', activity: '晨会汇报市场观点' },
+                        { time: '10:00', activity: '公司研究与估值建模' },
+                        { time: '14:00', activity: '上市公司调研或电话会议' },
+                        { time: '16:00', activity: '撰写研究报告' },
+                        { time: '19:00', activity: '整理次日工作准备' },
+                    ],
+                    pros: ['薪资极具竞争力', '接触顶级公司与人才', '晋升路径明确', '全球就业机会'],
+                    cons: ['工作强度极高', '市场压力大', '合规要求严格', '需要持续考取证书'],
+                    certifications: [
+                        { name: 'CFA', desc: '特许金融分析师，全球顶级认证', difficulty: 'hard' },
+                        { name: 'CPA', desc: '注册会计师', difficulty: 'hard' },
+                        { name: 'FRM', desc: '金融风险管理师', difficulty: 'hard' },
+                    ],
+                    globalDemand: [
+                        { region: '🇺🇸 北美', demand: 'high', label: '极高需求' },
+                        { region: '🇪🇺 欧洲', demand: 'med-high', label: '高需求' },
+                        { region: '🇨🇳 中国', demand: 'med-high', label: '高需求' },
+                        { region: '🇮🇳 印度', demand: 'medium', label: '中等需求' },
+                        { region: '🇸🇬 东南亚', demand: 'med-high', label: '高需求' },
+                        { region: '🇦🇺 澳洲', demand: 'medium', label: '中等需求' },
+                    ],
+                    similarCareers: [14, 3, 8, 17],
+                },
+            };
+
+            // 默认详情数据（回退用）
+            const defaultDetail = {
+                name: '软件工程师',
+                icon: '💻',
+                industry: '科技',
+                salary: '45万/年',
+                location: '全球',
+                education: '本科及以上',
+                description: '软件工程师是数字世界的建筑师。',
+                responsibilities: ['编写代码', '维护系统', '技术攻关', '团队协作'],
+                requiredSkills: [
+                    { name: '编程能力', level: 90 },
+                    { name: '逻辑思维', level: 85 },
+                ],
+                bonusSkills: ['AI', '云计算'],
+                learningPath: [
+                    { phase: '第1阶段', title: '基础', desc: '学习基础' },
+                    { phase: '第2阶段', title: '实践', desc: '项目实践' },
+                ],
+                careerPath: ['初级', '中级', '高级', '专家'],
+                salaryProgression: [
+                    { level: '入门', salary: '15-25万', barClass: 'entry' },
+                    { level: '中级', salary: '25-45万', barClass: 'mid' },
+                    { level: '高级', salary: '45-80万', barClass: 'senior' },
+                    { level: '专家', salary: '80-150万', barClass: 'expert' },
+                ],
+                dayInLife: [
+                    { time: '09:00', activity: '开始工作' },
+                    { time: '12:00', activity: '午休' },
+                    { time: '18:00', activity: '下班' },
+                ],
+                pros: ['薪资不错', '有发展空间'],
+                cons: ['工作压力大', '需要持续学习'],
+                certifications: [],
+                globalDemand: [],
+                similarCareers: [],
+            };
+
+            // ========== URL参数解析 ==========
+            const urlParams = new URLSearchParams(window.location.search);
+            const careerId = parseInt(urlParams.get('id')) || 1;
+            const careerData = careersDetailDB[careerId] || defaultDetail;
+
+            // ========== 构建页面内容 ==========
+            const container = document.getElementById('detailContainer');
+
+            function buildSalaryChart(data) {
+                if (!data.salaryProgression || data.salaryProgression.length === 0) return '';
+                return data.salaryProgression.map(sp => `
+                    <div class="salary-bar-wrapper">
+                        <div class="salary-bar-value">${sp.salary}</div>
+                        <div class="salary-bar ${sp.barClass}" title="${sp.level}: ${sp.salary}"></div>
+                        <div class="salary-bar-label">${sp.level}</div>
+                    </div>
+                `).join('');
+            }
+
+            function buildDayTimeline(data) {
+                if (!data.dayInLife || data.dayInLife.length === 0) return '<p style="color:var(--text-muted);">暂无日间数据</p>';
+                return data.dayInLife.map(dl => `
+                    <div class="day-timeline-item">
+                        <div class="day-time">${dl.time}</div>
+                        <div class="day-activity">${dl.activity}</div>
+                    </div>
+                `).join('');
+            }
+
+            function buildProsCons(data) {
+                const pros = data.pros || [];
+                const cons = data.cons || [];
+                return `
+                    <div class="pros-cons-grid">
+                        <div class="pros-box">
+                            <h4>✅ 优势</h4>
+                            <ul class="pros-cons-list">
+                                ${pros.map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="cons-box">
+                            <h4>⚠️ 挑战</h4>
+                            <ul class="pros-cons-list">
+                                ${cons.map(c => `<li>${c}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function buildCertifications(data) {
+                if (!data.certifications || data.certifications.length === 0) return '<p style="color:var(--text-muted);">暂无认证数据</p>';
+                return `
+                    <div class="cert-grid">
+                        ${data.certifications.map(c => `
+                            <div class="cert-card">
+                                <h4>${c.name}</h4>
+                                <p>${c.desc}</p>
+                                <span class="cert-difficulty ${c.difficulty}">${
+                                    c.difficulty === 'hard' ? '高难度' : c.difficulty === 'medium' ? '中等难度' : '入门级'
+                                }</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            function buildGlobalDemand(data) {
+                if (!data.globalDemand || data.globalDemand.length === 0) return '<p style="color:var(--text-muted);">暂无需求数据</p>';
+                return `
+                    <div class="demand-regions">
+                        ${data.globalDemand.map(gd => `
+                            <div class="demand-region">
+                                <div class="demand-flag">${gd.region.split(' ')[0]}</div>
+                                <div class="demand-region-name">${gd.region.split(' ').slice(1).join(' ')}</div>
+                                <div class="demand-meter">
+                                    <div class="demand-meter-fill ${gd.demand}"></div>
+                                </div>
+                                <div class="demand-label">${gd.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            function buildSimilarCareers(data) {
+                if (!data.similarCareers || data.similarCareers.length === 0) return '<p style="color:var(--text-muted);">暂无相似职业推荐</p>';
+                // 去重并过滤掉当前职业
+                const uniqueIds = [...new Set(data.similarCareers)].filter(id => id !== careerId);
+                if (uniqueIds.length === 0) return '<p style="color:var(--text-muted);">暂无相似职业推荐</p>';
+                return `
+                    <div class="similar-careers-grid">
+                        ${uniqueIds.map(id => {
+                            const career = careersDetailDB[id];
+                            if (!career) return '';
+                            return `
+                                <a href="?id=${id}" class="similar-career-card">
+                                    <div class="similar-career-icon">${career.icon}</div>
+                                    <div class="similar-career-name">${career.name}</div>
+                                    <div class="similar-career-salary">${career.salary}</div>
+                                    <div class="similar-career-match">${career.industry}</div>
+                                </a>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <!-- 区域导航标签 -->
+                <div class="section-tabs" id="sectionTabs">
+                    <a href="#overview" class="section-tab active" data-section="overview">📋 概览</a>
+                    <a href="#skills" class="section-tab" data-section="skills">🛠️ 技能</a>
+                    <a href="#learning" class="section-tab" data-section="learning">📈 学习路径</a>
+                    <a href="#salary-projection" class="section-tab" data-section="salary-projection">💵 薪资预测</a>
+                    <a href="#day-in-life" class="section-tab" data-section="day-in-life">🕐 一日流程</a>
+                    <a href="#pros-cons" class="section-tab" data-section="pros-cons">⚖️ 利弊分析</a>
+                    <a href="#certifications" class="section-tab" data-section="certifications">📜 认证证书</a>
+                    <a href="#global-demand" class="section-tab" data-section="global-demand">🌍 全球需求</a>
+                    <a href="#similar" class="section-tab" data-section="similar">🔗 相似职业</a>
+                </div>
+
+                <!-- 封面区域 -->
+                <div class="cover-section animate-in" id="overview">
+                    <div class="cover-icon">${careerData.icon}</div>
+                    <div class="cover-info">
+                        <h1>${careerData.name}</h1>
+                        <div class="cover-meta">
+                            <span class="meta-item">🏭 ${careerData.industry}</span>
+                            <span class="meta-item">💰 ${careerData.salary}</span>
+                            <span class="meta-item">📍 ${careerData.location}</span>
+                            <span class="meta-item">🎓 ${careerData.education}</span>
+                        </div>
+                        <p class="cover-description">${careerData.description}</p>
+                    </div>
+                </div>
+
+                <!-- 工作内容 & 技能 -->
+                <div class="info-grid" id="skills">
+                    <div class="info-card animate-in delay-1">
+                        <h3>📋 工作内容</h3>
+                        <ul>${careerData.responsibilities.map(r => `<li>${r}</li>`).join('')}</ul>
+                    </div>
+                    <div class="info-card animate-in delay-2">
+                        <h3>🛠️ 核心技能</h3>
+                        ${careerData.requiredSkills.map(s => `
+                            <div class="skill-bar">
+                                <div class="skill-bar-label"><span>${s.name}</span><span>${s.level}%</span></div>
+                                <div class="skill-bar-fill"><div class="skill-bar-fill-inner" style="width:0%" data-width="${s.level}%"></div></div>
+                            </div>
+                        `).join('')}
+                        <h4 style="margin-top:1rem; color:var(--warning); font-size:1rem;">⭐ 加分技能</h4>
+                        <div class="bonus-tags">
+                            ${careerData.bonusSkills.map(s => `<span class="bonus-tag">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习路径 -->
+                <div class="full-width-card animate-in delay-3" id="learning">
+                    <h3>📈 学习路径</h3>
+                    <div class="timeline">
+                        ${careerData.learningPath.map(lp => `
+                            <div class="timeline-item">
+                                <h4>${lp.phase}：${lp.title}</h4>
+                                <p style="color:var(--text-secondary);">${lp.desc}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- 职业发展路径 -->
+                <div class="full-width-card animate-in delay-3">
+                    <h3>🚀 职业发展路径</h3>
+                    <div class="progress-steps">
+                        ${careerData.careerPath.map((cp, i) => `
+                            <div class="step">
+                                <div class="step-circle">${i+1}</div>
+                                <span class="step-label">${cp}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- 薪资预测 -->
+                <div class="full-width-card animate-in delay-4" id="salary-projection">
+                    <h3>💵 薪资成长预测</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.9rem;">从入门到专家的薪资范围（年薪/人民币）</p>
+                    <div class="salary-chart">
+                        ${buildSalaryChart(careerData)}
+                    </div>
+                </div>
+
+                <!-- 一日流程 -->
+                <div class="full-width-card animate-in delay-4" id="day-in-life">
+                    <h3>🕐 典型工作日</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.9rem;">${careerData.name}的一天</p>
+                    <div class="day-timeline">
+                        ${buildDayTimeline(careerData)}
+                    </div>
+                </div>
+
+                <!-- 利弊分析 -->
+                <div class="full-width-card animate-in delay-5" id="pros-cons">
+                    <h3>⚖️ 利弊对比</h3>
+                    ${buildProsCons(careerData)}
+                </div>
+
+                <!-- 认证证书 -->
+                <div class="full-width-card animate-in delay-5" id="certifications">
+                    <h3>📜 推荐认证</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.9rem;">提升职业竞争力的证书和资格</p>
+                    ${buildCertifications(careerData)}
+                </div>
+
+                <!-- 全球需求 -->
+                <div class="full-width-card animate-in delay-6" id="global-demand">
+                    <h3>🌍 全球需求分布</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.9rem;">各地区对${careerData.name}的需求程度</p>
+                    ${buildGlobalDemand(careerData)}
+                </div>
+
+                <!-- 相似职业 -->
+                <div class="full-width-card animate-in delay-6" id="similar">
+                    <h3>🔗 相似职业推荐</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:1rem; font-size:0.9rem;">与${careerData.name}技能相近的职业方向</p>
+                    ${buildSimilarCareers(careerData)}
+                </div>
+            `;
+
+            // ========== 动画技能条 ==========
+            setTimeout(() => {
+                document.querySelectorAll('.skill-bar-fill-inner').forEach(el => {
+                    el.style.width = el.dataset.width;
+                    // 添加脉冲动画
+                    setTimeout(() => {
+                        el.classList.add('animated');
+                    }, 1200);
+                });
+            }, 200);
+
+            // ========== 区域标签点击滚动 ==========
+            const sectionTabs = document.querySelectorAll('.section-tab');
+            sectionTabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('data-section');
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // 更新URL hash（不触发跳转）
+                        history.replaceState(null, null, '#' + targetId);
+                        // 高亮当前标签
+                        sectionTabs.forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+
+            // ========== URL Hash导航（页面加载时） ==========
+            function handleHashNavigation() {
+                const hash = window.location.hash.replace('#', '');
+                if (hash) {
+                    const target = document.getElementById(hash);
+                    if (target) {
+                        setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 400);
+                        sectionTabs.forEach(t => {
+                            t.classList.remove('active');
+                            if (t.getAttribute('data-section') === hash) {
+                                t.classList.add('active');
+                            }
+                        });
+                    }
+                }
+            }
+            handleHashNavigation();
+            window.addEventListener('hashchange', handleHashNavigation);
+
+            // ========== 滚动时自动高亮区域标签 ==========
+            const sectionIds = ['overview', 'skills', 'learning', 'salary-projection', 'day-in-life', 'pros-cons', 'certifications', 'global-demand', 'similar'];
+            let ticking = false;
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    requestAnimationFrame(function() {
+                        const scrollPos = window.scrollY + 140;
+                        let activeSection = 'overview';
+                        sectionIds.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && el.offsetTop <= scrollPos) {
+                                activeSection = id;
+                            }
+                        });
+                        sectionTabs.forEach(t => {
+                            t.classList.remove('active');
+                            if (t.getAttribute('data-section') === activeSection) {
+                                t.classList.add('active');
+                            }
+                        });
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+
+            console.log('🧠 职业详情页已加载 - ' + careerData.name + ' (ID: ' + careerId + ')');
+        })();
+    </script>
+</body>
+</html>

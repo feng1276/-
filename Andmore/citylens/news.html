@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市新闻 - CityLens</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-red:#ff4757;--accent-purple:#a855f7;--border-glow:#1e2d3d;
+            --glass-bg:rgba(21,26,40,0.85);--shadow-card:0 4px 25px rgba(0,0,0,0.6);
+            --shadow-hover:0 8px 40px rgba(74,158,255,0.2);--border-radius:10px;--transition-speed:0.3s;
+            --nav-height:72px;--max-width:1400px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+
+        /* ===== NAVBAR ===== */
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#4a9eff,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;}.nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(74,158,255,0.15);background:rgba(74,158,255,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}
+        .mobile-menu-btn{display:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-cyan);}
+
+        /* ===== NEWS TICKER ===== */
+        .news-ticker-bar{position:fixed;top:var(--nav-height);left:0;width:100%;height:38px;background:var(--bg-secondary);border-bottom:1px solid var(--border-glow);z-index:999;display:flex;align-items:center;overflow:hidden;}
+        .news-ticker-label{flex-shrink:0;background:var(--accent-red);color:#fff;padding:6px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;height:100%;display:flex;align-items:center;}
+        .news-ticker-wrap{overflow:hidden;flex:1;position:relative;height:100%;}
+        .news-ticker-track{display:flex;align-items:center;height:100%;animation:ticker-scroll 60s linear infinite;white-space:nowrap;}
+        .news-ticker-item{padding:0 28px;font-size:0.8rem;color:var(--text-primary);display:inline-flex;align-items:center;gap:8px;}.news-ticker-item .ticker-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);flex-shrink:0;}
+        @keyframes ticker-scroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+        /* ===== BREAKING NEWS BANNER ===== */
+        .breaking-banner{background:linear-gradient(135deg,#ff4757,#ff6b81);color:#fff;padding:14px 0;position:relative;z-index:10;display:none;}
+        .breaking-banner.active{display:block;}
+        .breaking-banner .container{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+        .breaking-badge{background:rgba(0,0,0,0.3);padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.78rem;flex-shrink:0;display:flex;align-items:center;gap:6px;}
+        .breaking-badge .pulse-dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse-dot 1.2s ease-in-out infinite;}
+        @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.6);}}
+        .breaking-title{font-weight:700;font-size:1rem;flex:1;}
+        .breaking-meta{font-size:0.78rem;opacity:0.85;flex-shrink:0;}
+        .breaking-close{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:4px 8px;opacity:0.7;transition:opacity 0.2s;flex-shrink:0;}.breaking-close:hover{opacity:1;}
+
+        /* ===== PAGE HEADER ===== */
+        .page-header{margin-top:var(--nav-height);background:linear-gradient(160deg,#0a0e17 0%,#0d1525 30%,#0a0e17 100%);padding:55px 0;text-align:center;border-bottom:1px solid var(--border-glow);}.page-header h1{font-size:2.3rem;font-weight:900;color:var(--text-highlight);}
+        .page-header .breadcrumb{margin-top:8px;font-size:0.82rem;color:var(--text-secondary);}.page-header .breadcrumb a{color:var(--accent-cyan);text-decoration:none;}.page-header .breadcrumb a:hover{text-decoration:underline;}
+
+        /* ===== SEARCH + FILTERS ===== */
+        .filters-bar{background:var(--bg-secondary);border-bottom:1px solid var(--border-glow);position:sticky;top:calc(var(--nav-height) + 38px);z-index:100;padding:14px 0;}
+        .filters-bar .container{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+        .search-input-wrap{position:relative;flex:1;min-width:220px;max-width:400px;}
+        .search-input-wrap input{width:100%;padding:10px 16px 10px 42px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.88rem;outline:none;transition:all var(--transition-speed);}.search-input-wrap input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
+        .search-input-wrap input::placeholder{color:var(--text-secondary);}
+        .search-input-wrap .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--text-secondary);pointer-events:none;}
+        .search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1rem;display:none;padding:2px 6px;}
+        .filter-select{padding:10px 18px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.82rem;cursor:pointer;outline:none;transition:all var(--transition-speed);}.filter-select:focus{border-color:var(--accent-cyan);}
+        .date-range-indicator{font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+
+        /* ===== CATEGORY TABS ===== */
+        .category-tabs{background:var(--bg-secondary);border-bottom:1px solid var(--border-glow);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+        .category-tabs .container{display:flex;gap:0;flex-wrap:nowrap;}
+        .cat-tab{padding:12px 20px;font-size:0.82rem;font-weight:500;color:var(--text-secondary);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all var(--transition-speed);white-space:nowrap;font-family:inherit;flex-shrink:0;}
+        .cat-tab:hover{color:var(--text-highlight);border-bottom-color:var(--border-glow);}
+        .cat-tab.active{color:var(--accent-cyan);border-bottom-color:var(--accent-cyan);}
+        .cat-tab .tab-count{font-size:0.7rem;margin-left:4px;opacity:0.7;}
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-content{padding:40px 0 70px;}.container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+        .content-layout{display:grid;grid-template-columns:1fr 300px;gap:30px;align-items:start;}
+
+        /* ===== FEATURED ===== */
+        .featured{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:35px;}.featured-main{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;transition:all var(--transition-speed);}.featured-main:hover{box-shadow:var(--shadow-hover);}.featured-main-img{width:100%;aspect-ratio:21/9;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:5rem;}.featured-main-body{padding:22px;}.featured-main-body h3{color:var(--text-highlight);font-size:1.2rem;margin-bottom:8px;}.featured-main-body p{color:var(--text-secondary);font-size:0.88rem;}.featured-side{display:flex;flex-direction:column;gap:14px;}.featured-side-item{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:16px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:all var(--transition-speed);flex:1;}.featured-side-item:hover{border-color:var(--accent-blue);transform:translateX(3px);}
+
+        /* ===== NEWS MASONRY ===== */
+        .news-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+        .news-section-header h2{color:var(--text-highlight);font-size:1.3rem;font-weight:700;}
+        .result-count{font-size:0.8rem;color:var(--text-secondary);}
+        .news-masonry{column-count:3;column-gap:20px;}.news-card{break-inside:avoid;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);margin-bottom:20px;overflow:hidden;transition:all var(--transition-speed);cursor:pointer;}.news-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);}.news-card-img{width:100%;aspect-ratio:16/10;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text-secondary);}.news-card-body{padding:16px;}.news-card-tag{display:inline-block;padding:3px 10px;background:rgba(74,158,255,0.1);color:var(--accent-cyan);border-radius:10px;font-size:0.7rem;font-weight:600;margin-bottom:8px;}.news-card-title{font-weight:700;color:var(--text-highlight);font-size:0.95rem;margin-bottom:5px;}.news-card-date{font-size:0.75rem;color:var(--text-secondary);}.news-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-glow);}.news-card-footer .card-source{font-size:0.7rem;color:var(--text-secondary);}.news-card-footer .card-read{font-size:0.7rem;color:var(--accent-cyan);}
+        .impact-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700;margin-left:6px;}.impact-high{background:rgba(255,71,87,0.15);color:var(--accent-red);}.impact-mid{background:rgba(255,215,0,0.15);color:var(--accent-gold);}.impact-low{background:rgba(0,255,136,0.1);color:var(--accent-green);}
+        .no-results{text-align:center;padding:60px 20px;color:var(--text-secondary);}.no-results .no-results-icon{font-size:3rem;display:block;margin-bottom:12px;}
+
+        /* ===== PAGINATION ===== */
+        .pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:30px;flex-wrap:wrap;}
+        .page-btn{padding:8px 14px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:0.85rem;transition:all var(--transition-speed);font-family:inherit;}
+        .page-btn:hover:not(:disabled):not(.active){border-color:var(--accent-cyan);color:var(--accent-cyan);}
+        .page-btn.active{background:var(--accent-cyan);border-color:var(--accent-cyan);color:#000;font-weight:700;}
+        .page-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+        /* ===== LOAD MORE ===== */
+        .load-more-wrap{text-align:center;margin-top:20px;}
+        .btn-load-more{padding:12px 36px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));border:none;border-radius:var(--border-radius);color:#fff;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all var(--transition-speed);font-family:inherit;}
+        .btn-load-more:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,212,255,0.3);}
+
+        /* ===== TRENDING SIDEBAR ===== */
+        .sidebar{-webkit-align-self:start;align-self:start;display:flex;flex-direction:column;gap:24px;}
+        .sidebar-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:20px;}
+        .sidebar-card h3{color:var(--text-highlight);font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+        .trending-list{list-style:none;display:flex;flex-direction:column;gap:12px;}
+        .trending-item{display:flex;gap:10px;align-items:flex-start;cursor:pointer;transition:all var(--transition-speed);padding:6px;border-radius:6px;}.trending-item:hover{background:var(--bg-tertiary);}
+        .trending-rank{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;color:#fff;}
+        .trending-rank.r1{background:var(--accent-red);}.trending-rank.r2{background:var(--accent-gold);color:#000;}.trending-rank.r3{background:var(--accent-cyan);color:#000;}.trending-rank.rn{background:var(--bg-tertiary);color:var(--text-secondary);}
+        .trending-info{flex:1;min-width:0;}.trending-info .t-title{font-size:0.82rem;font-weight:600;color:var(--text-highlight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.trending-info .t-meta{font-size:0.7rem;color:var(--text-secondary);margin-top:2px;display:flex;align-items:center;gap:8px;}
+
+        /* ===== MOST DISCUSSED ===== */
+        .discussed-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+        .discussed-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:6px;cursor:pointer;transition:all var(--transition-speed);}.discussed-item:hover{background:var(--bg-tertiary);}
+        .discussed-rank{width:22px;text-align:center;font-size:0.85rem;font-weight:800;color:var(--accent-purple);flex-shrink:0;}
+        .discussed-info{flex:1;min-width:0;}.discussed-info .d-title{font-size:0.8rem;color:var(--text-highlight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.discussed-info .d-count{font-size:0.68rem;color:var(--text-secondary);}
+
+        /* ===== TAG CLOUD ===== */
+        .tag-cloud{display:flex;flex-wrap:wrap;gap:8px;}
+        .tag-pill{padding:6px 14px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:20px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer;transition:all var(--transition-speed);font-family:inherit;}.tag-pill:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);background:rgba(0,212,255,0.05);}
+        .tag-pill.active{background:rgba(0,212,255,0.12);border-color:var(--accent-cyan);color:var(--accent-cyan);font-weight:600;}
+
+        /* ===== SUBMIT TIP FORM ===== */
+        .submit-tip-form textarea{width:100%;padding:12px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:90px;font-family:inherit;outline:none;transition:all var(--transition-speed);}.submit-tip-form textarea:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
+        .submit-tip-form textarea::placeholder{color:var(--text-secondary);}
+        .btn-submit-tip{width:100%;margin-top:10px;padding:10px;background:var(--accent-cyan);border:none;border-radius:var(--border-radius);color:#000;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all var(--transition-speed);font-family:inherit;}.btn-submit-tip:hover{background:var(--accent-blue);color:#fff;box-shadow:0 6px 20px rgba(0,212,255,0.25);}
+        .tip-success{text-align:center;color:var(--accent-green);font-size:0.82rem;margin-top:8px;display:none;}.tip-success.show{display:block;}
+
+        /* ===== MODAL ===== */
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;}
+        .modal-overlay.active{display:flex;}
+        .modal-dialog{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);max-width:750px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.7);}
+        .modal-header{padding:20px 24px;border-bottom:1px solid var(--border-glow);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:sticky;top:0;background:var(--bg-card);z-index:1;}
+        .modal-header h2{font-size:1.2rem;color:var(--text-highlight);margin:0;}
+        .modal-close{background:none;border:1px solid var(--border-glow);color:var(--text-secondary);font-size:1.2rem;cursor:pointer;padding:6px 12px;border-radius:8px;transition:all var(--transition-speed);flex-shrink:0;}.modal-close:hover{color:var(--text-highlight);border-color:var(--accent-red);}
+        .modal-body{padding:24px;}
+        .modal-body .modal-image{width:100%;aspect-ratio:21/9;background:var(--bg-tertiary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:4rem;margin-bottom:20px;}
+        .modal-meta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:0.82rem;color:var(--text-secondary);}.modal-meta span{display:inline-flex;align-items:center;gap:4px;}
+        .modal-story{color:var(--text-primary);font-size:0.92rem;line-height:1.8;margin-bottom:20px;}
+        .modal-related h4{color:var(--text-highlight);font-size:0.9rem;margin-bottom:10px;}
+        .modal-related-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+        .modal-related-list li a{color:var(--accent-cyan);text-decoration:none;font-size:0.85rem;transition:all var(--transition-speed);}.modal-related-list li a:hover{text-decoration:underline;color:var(--accent-blue);}
+        .modal-topics{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+        .modal-topics .topic-tag{padding:4px 12px;background:rgba(168,85,247,0.1);color:var(--accent-purple);border-radius:14px;font-size:0.72rem;}
+        .modal-source-box{margin-top:16px;padding:14px;background:var(--bg-tertiary);border-radius:8px;display:flex;align-items:center;gap:12px;}.modal-source-box .src-label{font-size:0.75rem;color:var(--text-secondary);}.modal-source-box .src-name{font-size:0.85rem;color:var(--text-highlight);font-weight:600;}
+
+        /* ===== FOOTER ===== */
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:28px;text-align:center;color:var(--text-secondary);font-size:0.78rem;}
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:1100px){.content-layout{grid-template-columns:1fr;}}
+        @media(max-width:900px){.featured{grid-template-columns:1fr;}.news-masonry{column-count:2;}.filters-bar .container{flex-wrap:wrap;}}
+        @media(max-width:768px){
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,23,0.98);flex-direction:column;padding:20px;z-index:999;}.nav-links.active{display:flex;}.mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+            .news-masonry{column-count:1;}
+            .news-ticker-bar{top:var(--nav-height);}
+            .filters-bar{top:calc(var(--nav-height) + 38px);}
+            .category-tabs .container{padding:0;}
+            .cat-tab{padding:10px 14px;font-size:0.75rem;}
+            .sidebar{order:-1;}
+            .page-header h1{font-size:1.6rem;}
+        }
+        @media(max-width:480px){
+            .container{padding:0 14px;}
+            .featured-main-body h3{font-size:1rem;}
+            .featured-side-item{padding:12px;gap:8px;}
+            .page-header{padding:35px 0;}
+        }
+
+        /* ===== UTILITY ===== */
+        .hidden{display:none!important;}
+        .text-accent{color:var(--accent-cyan);}
+        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+    </style>
+</head>
+<body>
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar" id="navbar"><div class="container"><a href="home.html" class="logo"><div class="logo-icon">C</div><span class="logo-text">CityLens</span></a><ul class="nav-links" id="navLinks"><li><a href="home.html">首页</a></li><li><a href="cities.html">城市大全</a></li><li><a href="cost.html">生活成本</a></li><li><a href="transport.html">交通</a></li><li><a href="news.html" class="active">新闻</a></li></ul><div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div></div></nav>
+
+    <!-- ===== NEWS TICKER ===== -->
+    <div class="news-ticker-bar" id="newsTicker">
+        <div class="news-ticker-label">📡 快讯</div>
+        <div class="news-ticker-wrap">
+            <div class="news-ticker-track" id="tickerTrack"></div>
+        </div>
+    </div>
+
+    <!-- ===== BREAKING NEWS BANNER ===== -->
+    <div class="breaking-banner" id="breakingBanner">
+        <div class="container">
+            <span class="breaking-badge"><span class="pulse-dot"></span>突发</span>
+            <span class="breaking-title" id="breakingTitle"></span>
+            <span class="breaking-meta" id="breakingMeta"></span>
+            <button class="breaking-close" id="breakingClose">&times;</button>
+        </div>
+    </div>
+
+    <!-- ===== PAGE HEADER ===== -->
+    <section class="page-header"><h1>📰 城市新闻</h1><p class="breadcrumb"><a href="home.html">首页</a> / 城市新闻</p></section>
+
+    <!-- ===== SEARCH + FILTERS BAR ===== -->
+    <div class="filters-bar">
+        <div class="container">
+            <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="搜索新闻标题或内容...">
+                <button class="search-clear" id="searchClear">&times;</button>
+            </div>
+            <select class="filter-select" id="regionFilter">
+                <option value="全部">🌍 全部地区</option>
+                <option value="亚洲">🌏 亚洲</option>
+                <option value="欧洲">🌍 欧洲</option>
+                <option value="美洲">🌎 美洲</option>
+                <option value="非洲">🌍 非洲</option>
+                <option value="大洋洲">🏝️ 大洋洲</option>
+            </select>
+            <select class="filter-select" id="impactFilter">
+                <option value="全部">📊 全部影响</option>
+                <option value="高">🔴 高影响</option>
+                <option value="中">🟡 中影响</option>
+                <option value="低">🟢 低影响</option>
+            </select>
+            <div class="date-range-indicator" id="dateRange"></div>
+        </div>
+    </div>
+
+    <!-- ===== CATEGORY TABS ===== -->
+    <div class="category-tabs">
+        <div class="container" id="categoryTabs">
+            <button class="cat-tab active" data-cat="全部">📋 全部 <span class="tab-count">(33)</span></button>
+            <button class="cat-tab" data-cat="城市发展">🏗️ 城市发展 <span class="tab-count">(4)</span></button>
+            <button class="cat-tab" data-cat="交通">🚇 交通 <span class="tab-count">(4)</span></button>
+            <button class="cat-tab" data-cat="环境">🌿 环境 <span class="tab-count">(3)</span></button>
+            <button class="cat-tab" data-cat="科技">🤖 科技 <span class="tab-count">(3)</span></button>
+            <button class="cat-tab" data-cat="文化">🎨 文化 <span class="tab-count">(3)</span></button>
+            <button class="cat-tab" data-cat="房产">🏠 房产 <span class="tab-count">(2)</span></button>
+            <button class="cat-tab" data-cat="旅游">✈️ 旅游 <span class="tab-count">(3)</span></button>
+            <button class="cat-tab" data-cat="政策">📋 政策 <span class="tab-count">(3)</span></button>
+            <button class="cat-tab" data-cat="经济">💰 经济 <span class="tab-count">(2)</span></button>
+            <button class="cat-tab" data-cat="活动">🎪 活动 <span class="tab-count">(3)</span></button>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <section class="main-content">
+        <div class="container">
+            <!-- Featured Section -->
+            <div class="featured">
+                <div class="featured-main"><div class="featured-main-img">🏗️</div><div class="featured-main-body"><span style="color:var(--accent-red);font-size:0.75rem;">📢 头条</span><h3>东京2025年城市更新计划发布：打造全球最智慧城市</h3><p>东京都政府公布了2025-2030年城市更新计划，将投入500亿美元用于智慧交通、绿色建筑和数字化基础设施建设。</p><span style="color:var(--text-secondary);font-size:0.8rem;">2025-06-14</span></div></div>
+                <div class="featured-side">
+                    <div class="featured-side-item"><span style="font-size:2rem;">🌿</span><div><div style="font-weight:600;color:var(--text-highlight);">新加坡蝉联全球最宜居城市榜首</div><div style="font-size:0.75rem;color:var(--text-secondary);">2025-06-10</div></div></div>
+                    <div class="featured-side-item"><span style="font-size:2rem;">🚇</span><div><div style="font-weight:600;color:var(--text-highlight);">上海地铁里程突破900公里</div><div style="font-size:0.75rem;color:var(--text-secondary);">2025-06-05</div></div></div>
+                    <div class="featured-side-item"><span style="font-size:2rem;">🏛️</span><div><div style="font-weight:600;color:var(--text-highlight);">巴黎奥运场馆改造计划完成</div><div style="font-size:0.75rem;color:var(--text-secondary);">2025-06-01</div></div></div>
+                </div>
+            </div>
+
+            <!-- Content Layout: Masonry + Sidebar -->
+            <div class="content-layout">
+                <!-- Left: News Grid -->
+                <div>
+                    <div class="news-section-header">
+                        <h2>📰 新闻列表</h2>
+                        <span class="result-count" id="resultCount"></span>
+                    </div>
+                    <div class="news-masonry" id="newsMasonry"></div>
+                    <div class="no-results hidden" id="noResults"><span class="no-results-icon">📭</span><p>没有找到匹配的新闻</p></div>
+                    <!-- Pagination -->
+                    <div class="pagination" id="pagination"></div>
+                    <!-- Load More -->
+                    <div class="load-more-wrap" id="loadMoreWrap">
+                        <button class="btn-load-more" id="btnLoadMore">📥 加载更多新闻</button>
+                    </div>
+                </div>
+
+                <!-- Right: Sidebar -->
+                <aside class="sidebar">
+                    <!-- Trending Now -->
+                    <div class="sidebar-card">
+                        <h3>🔥 热门趋势</h3>
+                        <ul class="trending-list" id="trendingList"></ul>
+                    </div>
+
+                    <!-- Most Discussed -->
+                    <div class="sidebar-card">
+                        <h3>💬 最多讨论</h3>
+                        <ul class="discussed-list" id="discussedList"></ul>
+                    </div>
+
+                    <!-- Tag Cloud -->
+                    <div class="sidebar-card">
+                        <h3>🏷️ 话题标签</h3>
+                        <div class="tag-cloud" id="tagCloud">
+                            <button class="tag-pill" data-tag="智能城市">智能城市</button>
+                            <button class="tag-pill" data-tag="绿色建筑">绿色建筑</button>
+                            <button class="tag-pill" data-tag="地铁">地铁</button>
+                            <button class="tag-pill" data-tag="碳中和">碳中和</button>
+                            <button class="tag-pill" data-tag="AI城市">AI城市</button>
+                            <button class="tag-pill" data-tag="房价">房价</button>
+                            <button class="tag-pill" data-tag="旅游">旅游</button>
+                            <button class="tag-pill" data-tag="移民">移民</button>
+                            <button class="tag-pill" data-tag="城市规划">城市规划</button>
+                            <button class="tag-pill" data-tag="数字化">数字化</button>
+                            <button class="tag-pill" data-tag="公共交通">公共交通</button>
+                            <button class="tag-pill" data-tag="文化遗产">文化遗产</button>
+                            <button class="tag-pill" data-tag="经济复苏">经济复苏</button>
+                            <button class="tag-pill" data-tag="可持续发展">可持续发展</button>
+                            <button class="tag-pill" data-tag="奥运会">奥运会</button>
+                            <button class="tag-pill" data-tag="智慧交通">智慧交通</button>
+                        </div>
+                    </div>
+
+                    <!-- Submit News Tip -->
+                    <div class="sidebar-card">
+                        <h3>📮 提供新闻线索</h3>
+                        <div class="submit-tip-form" id="tipForm">
+                            <textarea placeholder="告诉我们你知道的城市新闻线索..."></textarea>
+                            <button class="btn-submit-tip" id="btnSubmitTip">📤 提交线索</button>
+                            <div class="tip-success" id="tipSuccess">✅ 感谢您的线索！我们会尽快核实。</div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== NEWS DETAIL MODAL ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2 id="modalTitle"></h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-image" id="modalImage"></div>
+                <div class="modal-meta" id="modalMeta"></div>
+                <div class="modal-story" id="modalStory"></div>
+                <div class="modal-topics" id="modalTopics"></div>
+                <div class="modal-source-box">
+                    <span style="font-size:1.2rem;">📰</span>
+                    <div>
+                        <div class="src-label">新闻来源</div>
+                        <div class="src-name" id="modalSource"></div>
+                    </div>
+                </div>
+                <div class="modal-related" style="margin-top:16px;">
+                    <h4>📎 相关新闻</h4>
+                    <ul class="modal-related-list" id="modalRelated"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer"><p>© 2025 CityLens | 新闻内容来源公开资讯 | 仅供学习使用</p></footer>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+    // ============================================================
+    // NEWS DATA - 33 items across 10 categories
+    // ============================================================
+    const allNews = [
+        // --- Urban Development (城市发展) - 4 items ---
+        {id:1,tag:'城市发展',title:'东京2025年城市更新计划发布：打造全球最智慧城市',date:'2025-06-14',icon:'🏗️',img:'🏙️',city:'东京',region:'亚洲',source:'东京都政府公报',readTime:'8分钟',impactLevel:'高',trendingScore:98,discussionCount:1240,relatedTopics:['智能城市','数字化','城市规划'],summary:'东京都政府公布了2025-2030年城市更新计划，将投入500亿美元用于智慧交通、绿色建筑和数字化基础设施建设。该计划涵盖23个特别区，预计将使东京的全球智慧城市排名升至第一位。项目将包括5G全覆盖、AI交通管理系统以及零碳建筑标准推广。',fullStory:'东京都知事在新闻发布会上公布了名为"Tokyo Smart City 2030"的宏大蓝图。该计划总投资500亿美元，将分三个阶段实施。第一阶段（2025-2027年）重点建设数字基础设施，包括全区5G+网络覆盖、物联网传感器网络部署和城市数据中台建设。第二阶段（2027-2029年）将聚焦交通系统智能化改造，引入AI交通信号控制、自动驾驶专用车道和智能停车系统。第三阶段（2029-2030年）将全面推进零碳建筑标准，目标到2030年将城市碳排放降低40%。该计划预计将创造超过15万个就业岗位，并吸引全球科技企业在东京设立研发中心。'},
+        {id:2,tag:'城市发展',title:'纽约Hudson Yards二期工程正式启动',date:'2025-05-28',icon:'🏗️',img:'🏙️',city:'纽约',region:'美洲',source:'纽约时报',readTime:'6分钟',impactLevel:'高',trendingScore:85,discussionCount:980,relatedTopics:['城市规划','绿色建筑'],summary:'纽约市历史上最大的私人房地产开发项目Hudson Yards二期正式破土动工。该项目将在曼哈顿西区新增6座摩天大楼和12英亩的公共绿地空间。预计总投资超过250亿美元，将提供8000套住宅和200万平方英尺的零售空间。项目还包含一所公立学校和一座文化中心。',fullStory:'Hudson Yards二期项目被称为"西部庭院计划"（Western Yard），由Related Companies和Oxford Properties联合开发。项目将包括六座由世界知名建筑师设计的摩天大楼，高度从600英尺到1200英尺不等。其中一座将成为纽约市最高的住宅楼。公共绿地由景观设计师Thomas Heatherwick设计，将包括空中花园、水景广场和儿童游乐区。项目还将建设一所可容纳750名学生的公立学校，以及一座专注于数字艺术的表演中心。施工预计将持续8年，分四个阶段完成。'},
+        {id:3,tag:'城市发展',title:'深圳前海深港合作区扩容方案获批',date:'2025-06-08',icon:'🏗️',img:'🏙️',city:'深圳',region:'亚洲',source:'新华社',readTime:'5分钟',impactLevel:'高',trendingScore:91,discussionCount:1150,relatedTopics:['城市规划','经济复苏'],summary:'国务院正式批准深圳前海深港现代服务业合作区扩容方案，总面积从14.92平方公里扩大至120.56平方公里。扩容后的前海将重点发展金融科技、专业服务和数字经济。这一举措将进一步加强深港合作，推动粤港澳大湾区一体化发展。',fullStory:'扩容后的前海合作区将涵盖蛇口及大小南山片区、会展新城及海洋新城片区、机场及周边片区、宝安中心区及大铲湾片区等。根据规划，到2030年，前海将建成具有全球影响力的国际化城市新中心，集聚一批世界一流企业总部和研发中心，形成金融、现代物流、信息服务、科技服务等现代服务业产业集群，GDP目标达到3000亿元。香港特区政府表示将积极配合，推动港深创科合作。'},
+        {id:4,tag:'城市发展',title:'利雅得"新穆拉巴"巨型城市项目破土',date:'2025-05-22',icon:'🏗️',img:'🏙️',city:'利雅得',region:'亚洲',source:'阿拉伯新闻',readTime:'7分钟',impactLevel:'高',trendingScore:82,discussionCount:760,relatedTopics:['智能城市','城市规划'],summary:'沙特阿拉伯首都利雅得启动了"新穆拉巴"（New Murabba）巨型城市开发项目，将打造一座可容纳50万居民的现代化城区。项目核心是一座名为"Mukaab"的巨型立方体建筑，高400米，将成为世界上最大的单体建筑之一。',fullStory:'"新穆拉巴"项目是沙特2030愿景的重要组成部分，总开发面积达19平方公里。项目核心"Mukaab"立方体建筑将包含住宅、酒店、零售、文化和娱乐设施，内部将运用全息投影技术打造沉浸式数字体验空间。项目还将建设超过25平方公里的绿色空间、步行和自行车友好街道系统，以及100多座文化和娱乐设施。整个项目预计2030年完工，将为利雅得的经济多元化转型提供重要支撑。'},
+
+        // --- Transportation (交通) - 4 items ---
+        {id:5,tag:'交通',title:'上海地铁总里程突破900公里，全球第一',date:'2025-06-05',icon:'🚇',img:'🚆',city:'上海',region:'亚洲',source:'上海地铁集团',readTime:'5分钟',impactLevel:'中',trendingScore:93,discussionCount:1350,relatedTopics:['地铁','公共交通'],summary:'随着上海地铁19号线一期和23号线北延伸段开通运营，上海地铁网络总运营里程正式突破900公里，达到912公里，继续稳居全球城市轨道交通运营里程第一位。新开通线路将惠及浦东、闵行等区域超过200万居民。',fullStory:'上海地铁19号线一期全长29.5公里，设站21座，连接浦东前滩地区和浦东北部地区。23号线北延伸段全长11.2公里，设站8座，串联闵行开发区和上海交通大学。新线路采用了全自动驾驶技术（GoA4级别），列车运行间隔最短可达90秒。上海地铁日均客流量已突破1200万人次，占全市公共交通出行量的73%。根据规划，到2028年上海地铁总里程将突破1000公里。'},
+        {id:6,tag:'交通',title:'伦敦Crossrail 2项目正式获批，总投资320亿英镑',date:'2025-05-25',icon:'🚇',img:'🚆',city:'伦敦',region:'欧洲',source:'BBC News',readTime:'6分钟',impactLevel:'高',trendingScore:88,discussionCount:1020,relatedTopics:['地铁','公共交通','城市规划'],summary:'英国政府正式批准了Crossrail 2铁路项目，这条南北走向的铁路将连接伦敦南部的Wimbledon和北部的Tottenham Hale。项目全长37公里，设站16座，预计总投资320亿英镑，将极大缓解伦敦南北交通压力。',fullStory:'Crossrail 2是继伊丽莎白线（Crossrail 1）之后伦敦第二条贯穿式铁路线。线路将采用地下隧道穿越伦敦市中心，连接现有的国家铁路网络。项目预计2032年完工，届时每小时可运送27万名乘客，将Kingston、Wimbledon等南部地区到伦敦市中心的通勤时间缩短一半以上。建设期间将创造超过6万个工作岗位。项目还计划在沿线建设1.8万套新住宅。'},
+        {id:7,tag:'交通',title:'洛杉矶首条自动驾驶公交线路投入运营',date:'2025-06-02',icon:'🚇',img:'🚌',city:'洛杉矶',region:'美洲',source:'洛杉矶时报',readTime:'4分钟',impactLevel:'中',trendingScore:76,discussionCount:680,relatedTopics:['AI城市','公共交通','智慧交通'],summary:'洛杉矶大都会交通局在市中心开通首条全自动驾驶电动公交线路，配备L4级别自动驾驶系统。初期投入20辆电动公交车，运营路线覆盖市中心至圣莫尼卡，全长24公里。这是美国大城市中首条真正意义上的自动驾驶公共交通线路。',fullStory:'该自动驾驶公交线路采用中国比亚迪和Waymo联合开发的K9型电动公交车，配备32个传感器和5个激光雷达，可在复杂城市环境中安全运行。车辆仍配备安全员，但不参与驾驶操作。初期票价与普通公交相同，为1.75美元。线路运营时间为每天早上6点至晚上10点，发车间隔10分钟。项目前6个月免费试乘，旨在收集运营数据和市民反馈。'},
+        {id:8,tag:'交通',title:'新加坡-柔佛新山RTS轻轨连接线通车',date:'2025-05-18',icon:'🚇',img:'🚆',city:'新加坡',region:'亚洲',source:'联合早报',readTime:'5分钟',impactLevel:'高',trendingScore:90,discussionCount:1180,relatedTopics:['公共交通','智能城市'],summary:'连接新加坡和马来西亚柔佛新山的RTS轻轨系统正式通车运营。这条4公里长的跨境轨道交通线每小时可运送1万名乘客，大幅缓解了两地之间每天超过30万人次的通关压力。新加坡和马来西亚两国总理共同出席了通车仪式。',fullStory:'RTS轻轨连接线从新加坡兀兰北站到柔佛新山武吉查卡站，全程仅需5分钟。采用"一地两检"通关模式，乘客在离境站完成双方出入境手续，抵达后可直接出站。列车运营时间为早上5点至凌晨1点，高峰期每4分钟一班。RTS的建成标志着新马两地交通一体化迈出关键一步，预计将带动柔佛新山周边地区的房地产开发和经济活动，日均跨境人流量预计将增至40万人次。'},
+
+        // --- Environment (环境) - 3 items ---
+        {id:9,tag:'环境',title:'柏林宣布2030年前实现全面碳中和',date:'2025-05-20',icon:'🌿',img:'🌳',city:'柏林',region:'欧洲',source:'德国之声',readTime:'5分钟',impactLevel:'高',trendingScore:84,discussionCount:920,relatedTopics:['碳中和','可持续发展','绿色建筑'],summary:'柏林市议会通过了一项雄心勃勃的气候法案，承诺在2030年前实现全市碳中和。该计划包括逐步淘汰化石燃料供暖系统、将全市建筑能效提升50%、扩大绿色交通网络以及建设"城市森林"项目。',fullStory:'柏林气候法案包含147项具体措施，总投资约120亿欧元。主要措施包括：2027年起禁止新建建筑安装燃油或燃气锅炉，2028年起所有新公交车和出租车必须为零排放车辆，每年在城区种植10万棵树，到2029年屋顶太阳能装机容量翻两番。柏林还计划建立"气候创新基金"，支持清洁能源初创企业。预计到2030年，柏林的碳排放将在1990年基础上减少90%，剩余排放将通过碳捕获和本地碳补偿项目中和。'},
+        {id:10,tag:'环境',title:'哥本哈根当选全球最可持续城市，C40峰会召开',date:'2025-06-11',icon:'🌿',img:'🌍',city:'哥本哈根',region:'欧洲',source:'C40 Cities',readTime:'4分钟',impactLevel:'中',trendingScore:72,discussionCount:540,relatedTopics:['可持续发展','碳中和'],summary:'C40城市气候领导小组在年度评选中将哥本哈根评为全球最可持续城市。哥本哈根在空气质量、自行车基础设施、可再生能源利用率和绿色建筑比例等指标上均名列前茅。2025年C40峰会在哥本哈根同期举行。',fullStory:'哥本哈根已实现62%的市民出行使用自行车，城市拥有超过450公里的专用自行车道。可再生能源占城市总能源消耗的78%，全市98%的区域供暖来自废热回收和生物质能。在城市绿化方面，所有市民步行15分钟内均可到达公园或绿地。C40峰会上，全球96个主要城市市长共同签署了"哥本哈根宣言"，承诺到2030年将城市碳排放降低50%。'},
+        {id:11,tag:'环境',title:'广州"珠江碧道"120公里全线贯通',date:'2025-06-03',icon:'🌿',img:'🌊',city:'广州',region:'亚洲',source:'南方日报',readTime:'4分钟',impactLevel:'中',trendingScore:78,discussionCount:620,relatedTopics:['可持续发展','城市规划'],summary:'广州市宣布全长120公里的"珠江碧道"全线贯通，这条沿珠江两岸打造的城市生态廊道成为亚洲最长的城市滨水绿道。项目包括骑行道、跑步道和步行道，串联起广州塔、花城广场、琶洲等城市地标。',fullStory:'"珠江碧道"项目总投资86亿元，历时4年建成。碧道沿线种植了超过50万株乔木和灌木，建设了48个景观节点和12个湿地公园。沿线设有智能照明系统、环境监测站和紧急呼救装置。项目还恢复了珠江沿岸的红树林生态系统，水质从劣V类提升至III类标准。碧道日均使用人数超过15万人次，已成为广州市民最重要的休闲运动场所之一。'},
+
+        // --- Technology (科技) - 3 items ---
+        {id:12,tag:'科技',title:'迪拜推出全球首个AI城市管理系统',date:'2025-05-15',icon:'🤖',img:'🏗️',city:'迪拜',region:'亚洲',source:'海湾新闻',readTime:'6分钟',impactLevel:'高',trendingScore:95,discussionCount:1560,relatedTopics:['AI城市','数字化','智能城市'],summary:'迪拜市政府正式推出"迪拜AI大脑"城市管理系统，这是全球首个全面运行的人工智能城市治理平台。系统整合了交通、能源、警务、应急、环境等20多个城市部门的实时数据，通过AI算法进行城市运行态势感知和决策辅助。',fullStory:'"迪拜AI大脑"由迪拜数字管理局和华为联合开发，基于盘古大模型的城市版本进行定制训练。系统连接了超过100万个IoT传感器，实时处理来自交通摄像头、环境监测站、智能电表、应急呼叫中心等源头的数据。系统可提前15分钟预测交通拥堵，准确率达93%；可在火灾发生后30秒内自动调度最近的消防资源；可实时优化全市交通信号灯配时，平均减少通行时间22%。系统还支持自然语言查询，市民可以通过手机App直接向AI询问城市服务。'},
+        {id:13,tag:'科技',title:'首尔建成全球最大5G智慧路灯网络',date:'2025-05-08',icon:'🤖',img:'💡',city:'首尔',region:'亚洲',source:'韩国联合通讯社',readTime:'4分钟',impactLevel:'中',trendingScore:70,discussionCount:480,relatedTopics:['智能城市','AI城市','智慧交通'],summary:'首尔市完成了全球最大规模的5G智慧路灯部署，全市12万盏路灯升级为5G智慧终端。这些路灯集成了5G小基站、WiFi热点、监控摄像头、环境传感器、电动汽车充电桩和信息显示屏等多种功能。',fullStory:'智慧路灯项目是首尔"数字孪生城市"战略的一部分。每盏路灯都配备了AI边缘计算模块，可实时分析监控画面识别异常事件（如交通事故、火灾、可疑行为），并自动向相关部门报警。路灯上的环境传感器监测空气质量、噪音和温度，数据公开发布在市政府数据平台。路灯内置的显示屏提供实时公交信息、天气预警和紧急通知。约20%的路灯配备了电动汽车充电功能，支持市民路边充电。项目总投资12亿美元，预计每年可节约电费30%。'},
+        {id:14,tag:'科技',title:'新加坡测试无人驾驶空中出租车服务',date:'2025-06-07',icon:'🤖',img:'🚁',city:'新加坡',region:'亚洲',source:'海峡时报',readTime:'5分钟',impactLevel:'中',trendingScore:86,discussionCount:870,relatedTopics:['AI城市','交通'],summary:'新加坡民航局批准了Volocopter和Skyports联合开展的空中出租车商业测试服务。初期将在滨海湾和圣淘沙之间运营两条航线，使用电动垂直起降飞行器（eVTOL），单程约8分钟，票价120新加坡元。',fullStory:'新加坡成为亚洲首个批准eVTOL商业测试的国家。Volocopter的VoloCity飞行器可搭载2名乘客，最高时速110公里，噪音仅为普通直升机的四分之一。航线经过严格的安全评估，飞行高度保持在150-300米之间。测试期将持续18个月，期间将评估运营安全、噪音影响和商业可行性。如果测试成功，新加坡计划在2027年前将空中出租车服务扩展到全岛10个起降点，形成覆盖全岛的空中交通网络。'},
+
+        // --- Culture (文化) - 3 items ---
+        {id:15,tag:'文化',title:'首尔获选2025世界设计之都，主题展览开幕',date:'2025-05-01',icon:'🎨',img:'🏯',city:'首尔',region:'亚洲',source:'世界设计组织',readTime:'4分钟',impactLevel:'中',trendingScore:68,discussionCount:520,relatedTopics:['文化遗产','城市规划'],summary:'首尔正式以2025世界设计之都身份亮相，在东大门设计广场（DDP）举办了为期三个月的"设计重塑城市"主题展览。展览展示了全球50个城市的设计创新案例，首尔重点展示了其"设计驱动城市更新"的成功经验。',fullStory:'首尔"设计重塑城市"展览分为四个展区：城市更新、公共设计、数字创意和可持续设计。城市更新展区展示了清溪川改造、麻浦油罐文化公园等标志性项目。公共设计展区呈现了首尔在公共标识、公交站台、街道家具等方面的创新设计。数字创意展区运用AR/VR技术让观众体验"设计中的未来首尔"。展览期间还将举办18场国际设计论坛和45场工作坊。首尔市政府同时宣布投入2000亿韩元用于城市公共设计提升计划。'},
+        {id:16,tag:'文化',title:'米兰三年展聚焦"城市与人类"主题',date:'2025-06-09',icon:'🎨',img:'🏛️',city:'米兰',region:'欧洲',source:'米兰三年展官方',readTime:'5分钟',impactLevel:'低',trendingScore:60,discussionCount:340,relatedTopics:['文化遗产','可持续发展'],summary:'第24届米兰三年展（Triennale Milano）以"城市与人类——可持续共存"为主题正式开幕。来自60个国家的300多位建筑师、设计师和艺术家参与，共同探讨未来城市的可持续生活方式。',fullStory:'本届米兰三年展分为六大主题板块：住房革新、食物城市、移动的未来、共生生态、数字公共空间和慢生活运动。主展馆设在米兰三年展博物馆，同时在全市设置了12个卫星展区。亮点包括：日本建筑师隈研吾的"森林塔"1:50模型、荷兰团队设计的模块化漂浮社区原型、中国建筑师马岩松的"山水城市"概念展。展会期间还将举办"米兰设计周"联动活动，预计吸引超过80万参观者。'},
+        {id:17,tag:'文化',title:'伊斯坦布尔海峡文化节吸引千万游客',date:'2025-06-04',icon:'🎨',img:'🎭',city:'伊斯坦布尔',region:'亚洲',source:'土耳其每日新闻',readTime:'4分钟',impactLevel:'中',trendingScore:74,discussionCount:590,relatedTopics:['旅游','文化遗产'],summary:'伊斯坦布尔第15届海峡文化节（Bosphorus Culture Festival）在博斯普鲁斯海峡两岸盛大举行，为期10天的活动吸引了超过1000万国内外游客。文化节包括了传统音乐演出、美食市集、灯光秀和海峡游船音乐会等300多场活动。',fullStory:'海峡文化节是伊斯坦布尔每年最重要的文化旅游活动。今年文化节以"两大洲的交响"为主题，在欧亚两岸同时举办活动。博斯普鲁斯大桥被改造成步行艺术长廊，展示了土耳其当代艺术家的装置作品。海峡上空首次上演了1500架无人机的灯光秀，呈现出奥斯曼帝国建筑和现代伊斯坦布尔天际线的画面。美食节汇集了土耳其81个省份的特色美食，海峡两岸设置了长达5公里的美食长廊。文化节为伊斯坦布尔带来了约15亿美元的旅游收入。'},
+
+        // --- Real Estate (房产) - 2 items ---
+        {id:18,tag:'房产',title:'全球房价指数：悉尼涨幅领跑，香港止跌回升',date:'2025-05-05',icon:'📈',img:'🏠',city:'悉尼',region:'大洋洲',source:'莱坊国际',readTime:'5分钟',impactLevel:'高',trendingScore:87,discussionCount:1050,relatedTopics:['房价','经济复苏'],summary:'莱坊国际发布2025年第一季度全球城市房价指数报告。悉尼以年涨幅12.3%领跑全球主要城市，香港结束连续20个月下跌首次回升1.7%，伦敦上涨4.2%，纽约上涨5.1%。全球46个主要城市平均涨幅为3.8%。',fullStory:'报告显示，悉尼房价上涨受移民回流和住房供应不足双重推动。澳大利亚2024年净海外移民达55万人，其中超过40%选择在悉尼定居。与此同时，悉尼新房开工量降至10年最低。香港房价止跌回升主要受到人才引进计划（高才通）的推动，2024年已有超过18万人通过该计划来港。伦敦和纽约的高端住宅市场表现强劲，1000万美元以上的豪宅成交量同比增长23%。报告预测2025年全年全球城市房价平均涨幅在4-5%之间。'},
+        {id:19,tag:'房产',title:'多伦多出台外国买家空置税，年征收2%',date:'2025-06-01',icon:'📈',img:'🏠',city:'多伦多',region:'美洲',source:'多伦多市政府',readTime:'4分钟',impactLevel:'中',trendingScore:66,discussionCount:780,relatedTopics:['房价','政策'],summary:'多伦多市议会通过新规，自2025年7月1日起对非居民拥有的空置住宅征收每年2%的空置税。这是继温哥华之后加拿大第二个实施此类措施的大城市，旨在释放更多住房供应，降低租金水平。',fullStory:'多伦多空置税政策要求所有住宅物业所有者每年申报物业占用状态。非加拿大公民或永久居民拥有的住宅，如果一年内空置超过6个月，将被征收评估价值的2%作为空置税。预计该政策将影响约2.5万套住宅，迫使其中至少一半投入租赁市场。市长表示此举每年可为财政增收约3.5亿加元，全部将投入可负担住房建设基金。渥太华和蒙特利尔也在考虑类似政策。'},
+
+        // --- Tourism (旅游) - 3 items ---
+        {id:20,tag:'旅游',title:'2025全球最受欢迎旅游城市：曼谷蝉联榜首',date:'2025-05-10',icon:'✈️',img:'🌍',city:'曼谷',region:'亚洲',source:'万事达卡',readTime:'4分钟',impactLevel:'中',trendingScore:80,discussionCount:720,relatedTopics:['旅游','经济复苏'],summary:'万事达卡发布2025年全球目的地城市指数报告，曼谷以2400万国际过夜游客蝉联全球最受欢迎旅游城市。排名前五依次为：曼谷、巴黎、伦敦、迪拜、新加坡。亚洲城市在前十名中占据六席，显示出亚洲旅游市场的强劲复苏。',fullStory:'曼谷2024年接待了2400万国际过夜游客，同比增长28%。中国游客是最大客源市场，占游客总量的29%，其次是印度、韩国和日本游客。曼谷游客平均停留4.7晚，人均消费1580美元。巴黎受益于2024年奥运会的持续效应，游客量达到1950万，位列第二。迪拜以1700万游客排名第四，其"全球最长城市"营销活动成效显著。报告指出中国出境游市场的强劲复苏是推动亚洲城市排名上升的主要动力。'},
+        {id:21,tag:'旅游',title:'京都推出"数字寺庙"夜间游览新体验',date:'2025-05-30',icon:'✈️',img:'⛩️',city:'京都',region:'亚洲',source:'京都市观光协会',readTime:'3分钟',impactLevel:'低',trendingScore:64,discussionCount:310,relatedTopics:['旅游','文化遗产','数字化'],summary:'京都市推出了一项创新的夜间文化旅游体验——"数字寺庙夜游"。通过3D投影映射技术，在清水寺、金阁寺等五座世界遗产寺庙内呈现绚丽的光影艺术，讲述千年古都的故事。',fullStory:'"数字寺庙夜游"项目运用了最新的3D投影映射和空间音频技术，在不触碰古建筑的前提下将寺庙墙面和庭院变成动态画布。清水寺的投影秀时长25分钟，讲述了从平安时代到现代的京都变迁史。金阁寺以池泉回游式庭院为舞台，投影出四季更迭的绝美画面。项目由日本数字艺术团队teamLab和京都大学文化遗产研究所合作开发。每晚两场，每场限流300人，票价5000日元。推出首月即售罄，预订已排至三个月后。'},
+        {id:22,tag:'旅游',title:'开普敦入选"全球最佳美食城市"前三',date:'2025-06-12',icon:'✈️',img:'🍷',city:'开普敦',region:'非洲',source:'Time Out',readTime:'4分钟',impactLevel:'低',trendingScore:58,discussionCount:250,relatedTopics:['旅游','文化'],summary:'《Time Out》杂志发布2025年全球最佳美食城市排名，开普敦凭借其独特的多元饮食文化和对本地食材的创造性运用获得第三名，仅次于东京和巴塞罗那。南非葡萄酒和海鲜料理成为主要加分项。',fullStory:'开普敦美食排名的提升得益于一批新生代厨师的崛起，他们融合了非洲、马来、荷兰和印度饮食传统，创造出独特的"开普风味"。V&A海滨区的Time Out Market汇集了15位本地最受欢迎的主厨摊位。斯泰伦博斯和弗兰斯胡克葡萄酒产区为城市餐厅提供了世界级的葡萄酒搭配。美食之旅还包括五彩缤纷的Bo-Kaap马来社区的历史料理体验。杂志评价开普敦为"性价比最高的世界级美食目的地"，人均高端餐饮消费仅为巴黎的三分之一。'},
+
+        // --- Policy (政策) - 3 items ---
+        {id:23,tag:'政策',title:'多伦多推出"新移民安居计划"，每年投入5亿加元',date:'2025-04-25',icon:'📋',img:'🏙️',city:'多伦多',region:'美洲',source:'加拿大移民局',readTime:'5分钟',impactLevel:'高',trendingScore:89,discussionCount:1420,relatedTopics:['移民','城市规划'],summary:'多伦多市与安大略省联合推出了"新移民安居2025"综合计划，每年投入5亿加元用于支持新移民的住房、就业、语言培训和社区融入服务。这是加拿大历史上最大规模的地方移民安居计划。',fullStory:'该计划包括四个核心板块：住房支持（提供租金补贴和过渡性住房）、就业匹配（与1200家企业合作设立新移民招聘通道）、语言服务（免费英语/法语培训至CLB 7级）和社区导航（设立35个社区服务中心）。计划特别关注难民和女性移民群体。2024年多伦多接收了12.8万新移民，预计2025年将增至14万人。市长表示新移民是多伦多经济增长的核心动力，这项投资预计将在5年内带来18亿加元的GDP回报。'},
+        {id:24,tag:'政策',title:'欧盟通过《城市气候韧性法案》',date:'2025-05-12',icon:'📋',img:'📜',city:'布鲁塞尔',region:'欧洲',source:'欧盟委员会',readTime:'6分钟',impactLevel:'高',trendingScore:83,disscussionCount:890,relatedTopics:['碳中和','可持续发展','政策'],summary:'欧洲议会正式通过了《城市气候韧性法案》，要求所有人口超过10万的欧盟城市必须在2027年前制定气候适应计划，并每三年更新一次。法案设立了1000亿欧元的"城市气候基金"用于支持城市的气候适应投资。',fullStory:'《城市气候韧性法案》是欧盟"绿色新政"的重要组成部分，适用于欧盟境内约600个城市。法案要求各城市的气候适应计划必须涵盖：极端高温应对、洪水防范、水资源管理、绿色基础设施和脆弱人群保护五个方面。1000亿欧元的城市气候基金将由欧盟预算和私人投资共同出资，其中400亿欧元为直接拨款，600亿欧元为低息贷款和技术援助。对未按时提交计划的城市，将暂停其欧盟凝聚基金的资格。巴黎、哥本哈根和阿姆斯特丹等领先城市将在2026年前提交首批计划。'},
+        {id:25,tag:'政策',title:'雅加达迁都努山塔拉：政府机构开始搬迁',date:'2025-06-15',icon:'📋',img:'🏛️',city:'努山塔拉',region:'亚洲',source:'印尼安塔拉通讯社',readTime:'6分钟',impactLevel:'高',trendingScore:92,disscussionCount:1280,relatedTopics:['城市规划','可持续发展'],summary:'印度尼西亚正式启动了从雅加达向新首都努山塔拉（Nusantara）的政府机构搬迁工作。首批12个部委和约1.5万名公务员将在未来3个月内迁往位于东加里曼丹的新首都。新首都设计为零碳智慧城市，预计到2045年将容纳200万人口。',fullStory:'努山塔拉位于东加里曼丹省，距离雅加达约1200公里。新首都规划面积25.6万公顷，其中城市核心区5.6万公顷，其余为保护林和缓冲区。城市设计以"森林城市"为理念，保留75%的原有热带雨林。全部建筑按照绿色建筑标准建造，100%使用可再生能源，80%的出行由公共交通和慢行系统承担。总统府和国会大厦为首批建成建筑，设计融合了印尼传统建筑元素和现代设计语言。搬迁原因包括雅加达的严重拥堵、地面沉降（年沉降速率达25厘米）和区域发展不平衡。'},
+        {id:26,tag:'政策',title:'德国通过"城市住房改革法"，租金上限全国推行',date:'2025-06-06',icon:'📋',img:'🏘️',city:'柏林',region:'欧洲',source:'德国联邦政府',readTime:'5分钟',impactLevel:'高',trendingScore:88,disscussionCount:1350,relatedTopics:['房价','政策'],summary:'德国联邦议院通过了《城市住房改革法》，在全国范围内推行租金上限机制，规定租金涨幅每年不得超过通货膨胀率的一半。该法还要求城市每年新增住房中30%为社会住房，并赋予市政府优先购买闲置地块的权利。',fullStory:'新法案的核心条款包括：将此前仅在柏林等少数城市实施的"租金刹车"机制推广至全国约380个城市；租金在三年内上涨不得超过11%（少数例外情况除外）；对于超过当地租金指数50%的高租金合同，租户可投诉要求降价；联邦政府每年拨款200亿欧元支持社会住房建设；市政府对闲置超过5年的建设用地享有优先购买权。法案在议会以379票赞成、282票反对获得通过。房地产行业协会表示担忧该法可能减少私人住房投资，但租户协会称这是"德国租房者历史性的一天"。'},
+
+        // --- Economy (经济) - 2 items ---
+        {id:27,tag:'经济',title:'深圳GDP超越香港，成为大湾区经济总量第一城',date:'2025-06-10',icon:'💰',img:'📊',city:'深圳',region:'亚洲',source:'深圳市统计局',readTime:'5分钟',impactLevel:'中',trendingScore:79,discussionCount:960,relatedTopics:['经济复苏','城市规划'],summary:'深圳市统计局公布2024年经济数据，深圳地区生产总值达到3.48万亿元人民币，首次超过香港（约3.42万亿港元折合3.15万亿元人民币），成为粤港澳大湾区经济体量最大的城市。',fullStory:'深圳GDP超越香港标志着大湾区经济格局的重要变化。深圳经济增长主要得益于高新技术产业的强劲表现，数字经济核心产业增加值占GDP比重达35%。华为、腾讯、比亚迪、大疆等本土企业在全球市场持续扩张。深圳的研发投入占GDP比重达5.8%，是全国平均水平的两倍多。尽管GDP总量超越香港，但深圳的人均GDP（约2.8万美元）仍低于香港（约4.7万美元）。分析人士指出，深港两地从竞争走向竞合，互补优势明显——深圳强于科技创新和制造业，香港强于金融和专业服务。'},
+        {id:28,tag:'经济',title:'伦敦金融科技产业规模突破2000亿英镑',date:'2025-05-28',icon:'💰',img:'💷',city:'伦敦',region:'欧洲',source:'伦敦金融城',readTime:'4分钟',impactLevel:'中',trendingScore:73,discussionCount:620,relatedTopics:['经济复苏','数字化'],summary:'伦敦金融城发布报告显示，伦敦金融科技（FinTech）产业总规模首次突破2000亿英镑。伦敦目前拥有超过3500家金融科技公司，涵盖支付、区块链、数字银行、保险科技和监管科技等领域，从业人员超过12万人。',fullStory:'报告指出伦敦金融科技产业增长受到四个因素的推动：脱欧后英国灵活的金融监管框架、世界级的人才库（伦敦拥有60多所高校）、活跃的风险投资市场（2024年伦敦金融科技融资总额达180亿英镑）以及开放的金融基础设施（开放银行API标准全球领先）。Revolut、Wise、Monzo等伦敦本土金融科技公司已成为估值超过100亿美元的"十角兽"。伦敦金融城市长宣布将在金丝雀码头设立"金融科技创新园区"，提供税收优惠和监管沙盒支持。'},
+
+        // --- Events (活动) - 3 items ---
+        {id:29,tag:'活动',title:'上海举办2025世界城市论坛，100国城市代表参加',date:'2025-06-05',icon:'🎪',img:'🌐',city:'上海',region:'亚洲',source:'联合国人居署',readTime:'6分钟',impactLevel:'高',trendingScore:94,discussionCount:1450,relatedTopics:['城市规划','可持续发展','智能城市'],summary:'联合国人居署主办的2025年世界城市论坛（WUF13）在上海国家会展中心开幕，来自100多个国家的城市代表、规划专家和NGO领袖共聚一堂，探讨"面向未来的包容性城市"主题。',fullStory:'WUF13是疫情后规模最大的世界城市论坛，设有六大议题：住房可负担性、气候适应性城市、数字包容、城市治理创新、公共空间和城市文化。会议组织了200多场分论坛和工作坊，以及全球城市最佳实践展览。中国住房和城乡建设部与联合国人居署在论坛上共同发布了《全球智慧城市发展报告2025》。论坛期间，上海还与纽约、伦敦、东京等城市签署了城市创新合作备忘录。下一届世界城市论坛将于2027年在开罗举行。'},
+        {id:30,tag:'活动',title:'巴塞罗那"智慧城市博览会"展示最新城市科技',date:'2025-06-13',icon:'🎪',img:'🏪',city:'巴塞罗那',region:'欧洲',source:'Smart City Expo官方',readTime:'5分钟',impactLevel:'中',trendingScore:77,discussionCount:680,relatedTopics:['智能城市','AI城市','数字化'],summary:'2025年智慧城市博览会（Smart City Expo World Congress）在巴塞罗那Fira会展中心开幕，吸引了来自800个城市的代表和1000多家参展商。主题为"重新定义城市"（Redefining Cities），展示了AI治理、数字孪生和可持续交通等领域的最新技术。',fullStory:'本届展会设有五大主题展区：使能技术（含5G、IoT、AI）、能源与环境、出行交通、治理与金融、安全与韧性。华为、西门子、思科、微软和三星等科技巨头均发布了最新的城市解决方案。展会在户外设置了"体验城市"示范区，展示了自动驾驶接驳车、智能垃圾分类机器人、AR导航等可互动技术。展会期间还举办了"全球智慧城市奖"（World Smart City Awards）颁奖典礼，新加坡获得"年度城市"大奖，天津生态城获得"能源与环境"奖。'},
+        {id:31,tag:'活动',title:'里约热内卢狂欢节回归：500万游客涌入',date:'2025-05-25',icon:'🎪',img:'🎉',city:'里约热内卢',region:'美洲',source:'里约旅游局',readTime:'4分钟',impactLevel:'中',trendingScore:68,discussionCount:450,relatedTopics:['旅游','文化'],summary:'里约热内卢2025年狂欢节创造了新纪录，5天活动期间共吸引了超过500万国内外游客，为城市带来约12亿美元的收入。这是疫情后规模最大的狂欢节，桑巴舞学校竞演和街头派对成为最大亮点。',fullStory:'本届狂欢节共有12所特级组桑巴舞学校在萨普卡伊体育场进行竞演游行，每所学校有3000-4000名表演者。特级组冠军由传统强校Mangueira获得，其"亚马逊之声"主题获得评委一致好评。全市同时举办了超过500场街头派对（blocos），最大的"街头之王"派对吸引了超过100万人参加。为保障安全，市政府部署了2.5万名警察和5000个面部识别摄像头。尽管游客量巨大，重大犯罪率较去年下降了18%。狂欢节为里约带来了约1.2万个临时就业岗位。'},
+
+        // --- 2 additional items for variety ---
+        {id:32,tag:'科技',title:'奥斯陆建成全球首座全电动建筑工地',date:'2025-06-04',icon:'🤖',img:'🔌',city:'奥斯陆',region:'欧洲',source:'挪威广播公司',readTime:'3分钟',impactLevel:'低',trendingScore:55,discussionCount:210,relatedTopics:['碳中和','绿色建筑','可持续发展'],summary:'挪威首都奥斯陆在市中心一处在建工地上实现了全球首座全电动化建筑工地。所有工程机械——包括挖掘机、起重机、混凝土搅拌车和运输卡车——全部由电力驱动，实现零排放施工。',fullStory:'该项目是奥斯陆市政府"零排放城市建设"试点的一部分，由Veidekke建筑公司承建。工地共投入28台电动工程机械，每日电力消耗约3.5兆瓦时，全部来自挪威水力发电。与传统柴油工地相比，不仅实现了零碳排放，噪音水平也降低了40%，受到周边居民的好评。奥斯陆市政府计划从2027年起要求所有公共建筑项目必须使用零排放施工设备。挪威电动工程机械制造商NASTA的股价在该消息发布后上涨了12%。'},
+        {id:33,tag:'活动',title:'成都举办"公园城市"国际论坛，发布公园城市指数',date:'2025-05-16',icon:'🎪',img:'🌳',city:'成都',region:'亚洲',source:'成都市公园城市建设管理局',readTime:'5分钟',impactLevel:'低',trendingScore:62,discussionCount:370,relatedTopics:['可持续发展','城市规划','绿色建筑'],summary:'成都市举办了第三届"公园城市"国际论坛，邀请了来自30多个国家的城市规划专家和生态学者。论坛发布了全球首个"公园城市指数"，从蓝绿空间、生物多样性、公园可达性和市民满意度四个维度评估城市生态品质。',fullStory:'"公园城市指数"由成都市政府与联合国开发计划署（UNDP）合作研发，评估了全球50个主要城市的公园城市发展水平。成都作为"公园城市"概念的起源地，在蓝绿空间比例（42%）和公园500米覆盖率（87%）方面表现优异。论坛上成都宣布将再建设100个"口袋公园"，确保每个社区步行10分钟内至少有1个公园。论坛还发布了《公园城市成都共识》，倡导将"在公园中建城市"理念推广到全球更多城市。成都已建成各类公园超过1500个，公园绿道总长超过7000公里。'}
+    ];
+
+    // ============================================================
+    // GLOBAL STATE
+    // ============================================================
+    let currentCategory = '全部';
+    let currentRegion = '全部';
+    let currentImpact = '全部';
+    let currentSearch = '';
+    let currentTag = '';
+    let currentPage = 1;
+    const itemsPerPage = 9;
+    let loadMoreCount = 9; // initial visible items for load-more mode
+    let isPaginated = true; // true=pagination, false=load-more
+
+    // ============================================================
+    // DOM REFS
+    // ============================================================
+    const $ = id => document.getElementById(id);
+    const newsMasonry = $('newsMasonry');
+    const pagination = $('pagination');
+    const loadMoreWrap = $('loadMoreWrap');
+    const resultCount = $('resultCount');
+    const noResults = $('noResults');
+    const dateRange = $('dateRange');
+    const searchInput = $('searchInput');
+    const searchClear = $('searchClear');
+    const regionFilter = $('regionFilter');
+    const impactFilter = $('impactFilter');
+    const trendingList = $('trendingList');
+    const discussedList = $('discussedList');
+    const tickerTrack = $('tickerTrack');
+    const breakingBanner = $('breakingBanner');
+    const breakingTitle = $('breakingTitle');
+    const breakingMeta = $('breakingMeta');
+    const modalOverlay = $('modalOverlay');
+
+    // ============================================================
+    // FILTERING LOGIC
+    // ============================================================
+    function getFilteredNews() {
+        let filtered = [...allNews];
+        if (currentCategory !== '全部') filtered = filtered.filter(n => n.tag === currentCategory);
+        if (currentRegion !== '全部') filtered = filtered.filter(n => n.region === currentRegion);
+        if (currentImpact !== '全部') filtered = filtered.filter(n => n.impactLevel === currentImpact);
+        if (currentSearch) {
+            const q = currentSearch.toLowerCase();
+            filtered = filtered.filter(n => n.title.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q) || n.city.toLowerCase().includes(q) || n.tag.toLowerCase().includes(q));
+        }
+        if (currentTag) {
+            filtered = filtered.filter(n => n.relatedTopics.some(t => t === currentTag));
+        }
+        return filtered;
+    }
+
+    function updateDateRange(filtered) {
+        if (filtered.length === 0) { dateRange.textContent = ''; return; }
+        const dates = filtered.map(n => new Date(n.date)).sort((a,b) => a-b);
+        const min = dates[0];
+        const max = dates[dates.length-1];
+        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        dateRange.innerHTML = `📅 <span>${fmt(min)} - ${fmt(max)}</span>`;
+    }
+
+    // ============================================================
+    // RENDER CARDS
+    // ============================================================
+    function renderCard(n) {
+        return `<div class="news-card" data-id="${n.id}" onclick="openModal(${n.id})">
+            <div class="news-card-img">${n.img}</div>
+            <div class="news-card-body">
+                <span class="news-card-tag">${n.tag}</span>
+                <span class="impact-badge impact-${n.impactLevel === '高' ? 'high' : n.impactLevel === '中' ? 'mid' : 'low'}">${n.impactLevel === '高' ? '⚡ 高影响' : n.impactLevel === '中' ? '📌 中影响' : '🔹 低影响'}</span>
+                <div class="news-card-title">${n.title}</div>
+                <div class="news-card-date">${n.icon} ${n.city} · ${n.date}</div>
+                <div class="news-card-footer">
+                    <span class="card-source">📰 ${n.source}</span>
+                    <span class="card-read">⏱️ ${n.readTime}</span>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function renderGrid(filtered) {
+        if (filtered.length === 0) {
+            newsMasonry.innerHTML = '';
+            noResults.classList.remove('hidden');
+            pagination.innerHTML = '';
+            loadMoreWrap.classList.add('hidden');
+            resultCount.textContent = '(0 条)';
+            return;
+        }
+        noResults.classList.add('hidden');
+
+        let pageItems;
+        if (isPaginated) {
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+            const start = (currentPage - 1) * itemsPerPage;
+            pageItems = filtered.slice(start, start + itemsPerPage);
+            renderPagination(totalPages);
+            loadMoreWrap.classList.add('hidden');
+        } else {
+            pageItems = filtered.slice(0, loadMoreCount);
+            if (loadMoreCount >= filtered.length) {
+                loadMoreWrap.classList.add('hidden');
+            } else {
+                loadMoreWrap.classList.remove('hidden');
+            }
+            pagination.innerHTML = '';
+        }
+
+        newsMasonry.innerHTML = pageItems.map(n => renderCard(n)).join('');
+        resultCount.textContent = `(${filtered.length} 条新闻)`;
+    }
+
+    function renderPagination(totalPages) {
+        if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+        let html = `<button class="page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>◀ 上一页</button>`;
+        const maxShow = 7;
+        let startPage = Math.max(1, currentPage - 3);
+        let endPage = Math.min(totalPages, startPage + maxShow - 1);
+        if (endPage - startPage < maxShow - 1) startPage = Math.max(1, endPage - maxShow + 1);
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="page-btn${i === currentPage ? ' active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        html += `<button class="page-btn" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>下一页 ▶</button>`;
+        html += `<span style="font-size:0.8rem;color:var(--text-secondary);margin-left:8px;">共 ${totalPages} 页</span>`;
+        pagination.innerHTML = html;
+    }
+
+    // ============================================================
+    // RENDER SIDEBARS
+    // ============================================================
+    function renderTrending() {
+        const trending = [...allNews].sort((a,b) => b.trendingScore - a.trendingScore).slice(0,5);
+        trendingList.innerHTML = trending.map((n,i) => {
+            const rc = i===0 ? 'r1' : i===1 ? 'r2' : i===2 ? 'r3' : 'rn';
+            return `<li class="trending-item" onclick="openModal(${n.id})">
+                <span class="trending-rank ${rc}">${i+1}</span>
+                <div class="trending-info">
+                    <div class="t-title">${n.title}</div>
+                    <div class="t-meta">🔥 ${n.trendingScore} · ${n.city}</div>
+                </div>
+            </li>`;
+        }).join('');
+    }
+
+    function renderDiscussed() {
+        const discussed = [...allNews].sort((a,b) => b.discussionCount - a.discussionCount).slice(0,5);
+        discussedList.innerHTML = discussed.map((n,i) => {
+            return `<li class="discussed-item" onclick="openModal(${n.id})">
+                <span class="discussed-rank">${i+1}</span>
+                <div class="discussed-info">
+                    <div class="d-title">${n.title}</div>
+                    <div class="d-count">💬 ${n.discussionCount.toLocaleString()} 条讨论</div>
+                </div>
+            </li>`;
+        }).join('');
+    }
+
+    // ============================================================
+    // TICKER
+    // ============================================================
+    function renderTicker() {
+        const headlines = allNews.slice(0,15).map(n => n.title);
+        const doubled = [...headlines, ...headlines]; // for seamless loop
+        tickerTrack.innerHTML = doubled.map(h =>
+            `<span class="news-ticker-item"><span class="ticker-dot"></span>${h}</span>`
+        ).join('');
+    }
+
+    // ============================================================
+    // BREAKING BANNER
+    // ============================================================
+    function renderBreakingBanner() {
+        const breaking = allNews.sort((a,b) => b.trendingScore - a.trendingScore)[0];
+        breakingTitle.textContent = `🚨 ${breaking.title}`;
+        breakingMeta.textContent = `${breaking.city} · ${breaking.date} · 来源: ${breaking.source}`;
+        breakingBanner.classList.add('active');
+    }
+
+    // ============================================================
+    // MODAL
+    // ============================================================
+    function openModal(id) {
+        const n = allNews.find(x => x.id === id);
+        if (!n) return;
+        $('modalTitle').textContent = n.title;
+        $('modalImage').innerHTML = `<span style="font-size:5rem;">${n.img}</span>`;
+        $('modalMeta').innerHTML = `
+            <span>🏷️ ${n.tag}</span><span>📍 ${n.city}</span><span>🌍 ${n.region}</span>
+            <span>📅 ${n.date}</span><span>⏱️ ${n.readTime}</span>
+            <span class="impact-badge impact-${n.impactLevel === '高' ? 'high' : n.impactLevel === '中' ? 'mid' : 'low'}">${n.impactLevel === '高' ? '⚡ 高影响' : n.impactLevel === '中' ? '📌 中影响' : '🔹 低影响'}</span>
+        `;
+        $('modalStory').textContent = n.fullStory;
+        $('modalTopics').innerHTML = n.relatedTopics.map(t =>
+            `<span class="topic-tag">#${t}</span>`
+        ).join('');
+        $('modalSource').textContent = n.source;
+        // Related news: same tag, exclude self
+        const related = allNews.filter(x => x.id !== n.id && x.tag === n.tag).slice(0,4);
+        $('modalRelated').innerHTML = related.map(r =>
+            `<li><a href="#" onclick="event.preventDefault();openModal(${r.id});modalOverlay.scrollTop=0;">📰 ${r.title}</a></li>`
+        ).join('');
+        modalOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ============================================================
+    // MAIN UPDATE
+    // ============================================================
+    function updateAll() {
+        const filtered = getFilteredNews();
+        updateDateRange(filtered);
+        renderGrid(filtered);
+    }
+
+    // ============================================================
+    // EVENT HANDLERS
+    // ============================================================
+
+    // Category tabs
+    document.getElementById('categoryTabs').addEventListener('click', e => {
+        const tab = e.target.closest('.cat-tab');
+        if (!tab) return;
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentCategory = tab.dataset.cat;
+        currentPage = 1;
+        loadMoreCount = 9;
+        currentTag = '';
+        document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
+        updateAll();
+    });
+
+    // Region filter
+    regionFilter.addEventListener('change', () => {
+        currentRegion = regionFilter.value;
+        currentPage = 1;
+        loadMoreCount = 9;
+        updateAll();
+    });
+
+    // Impact filter
+    impactFilter.addEventListener('change', () => {
+        currentImpact = impactFilter.value;
+        currentPage = 1;
+        loadMoreCount = 9;
+        updateAll();
+    });
+
+    // Search
+    searchInput.addEventListener('input', () => {
+        currentSearch = searchInput.value.trim();
+        currentPage = 1;
+        loadMoreCount = 9;
+        searchClear.style.display = currentSearch ? 'block' : 'none';
+        updateAll();
+    });
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        currentSearch = '';
+        searchClear.style.display = 'none';
+        currentPage = 1;
+        loadMoreCount = 9;
+        updateAll();
+    });
+
+    // Tag cloud
+    document.getElementById('tagCloud').addEventListener('click', e => {
+        const pill = e.target.closest('.tag-pill');
+        if (!pill) return;
+        document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
+
+        if (currentTag === pill.dataset.tag) {
+            // Deselect
+            currentTag = '';
+            pill.classList.remove('active');
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.cat-tab[data-cat="全部"]').classList.add('active');
+            currentCategory = '全部';
+        } else {
+            currentTag = pill.dataset.tag;
+            pill.classList.add('active');
+            // Clear category selection
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+            currentCategory = '全部';
+            // Try to find matching category
+            const catTab = document.querySelector(`.cat-tab[data-cat="全部"]`);
+            if (catTab) catTab.classList.add('active');
+        }
+        currentPage = 1;
+        loadMoreCount = 9;
+        updateAll();
+    });
+
+    // Pagination
+    pagination.addEventListener('click', e => {
+        const btn = e.target.closest('.page-btn');
+        if (!btn || btn.disabled) return;
+        const page = btn.dataset.page;
+        const filtered = getFilteredNews();
+        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+        if (page === 'prev') { currentPage = Math.max(1, currentPage - 1); }
+        else if (page === 'next') { currentPage = Math.min(totalPages, currentPage + 1); }
+        else { currentPage = parseInt(page); }
+        updateAll();
+        newsMasonry.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+
+    // Load More
+    $('btnLoadMore').addEventListener('click', () => {
+        loadMoreCount += 9;
+        updateAll();
+    });
+
+    // Modal close
+    $('modalClose').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', e => {
+        if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
+    });
+
+    // Breaking banner close
+    $('breakingClose').addEventListener('click', () => {
+        breakingBanner.classList.remove('active');
+    });
+
+    // Submit tip
+    $('btnSubmitTip').addEventListener('click', () => {
+        const textarea = document.querySelector('#tipForm textarea');
+        if (textarea.value.trim()) {
+            $('tipSuccess').classList.add('show');
+            textarea.value = '';
+            setTimeout(() => $('tipSuccess').classList.remove('show'), 3000);
+        }
+    });
+
+    // ============================================================
+    // NAVBAR / THEME / MOBILE (Preserved)
+    // ============================================================
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 50));
+
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => document.getElementById('navLinks').classList.toggle('active'));
+    document.querySelectorAll('#navLinks a').forEach(l => l.addEventListener('click', () => document.getElementById('navLinks').classList.remove('active')));
+
+    const bt = document.getElementById('btnThemeToggle');
+    const s = localStorage.getItem('citylens-theme');
+    if (s === 'light') { document.body.classList.add('light-mode'); bt.textContent = '◑'; }
+    bt.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+        bt.textContent = document.body.classList.contains('light-mode') ? '◑' : '◐';
+        localStorage.setItem('citylens-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    function init() {
+        renderTicker();
+        renderBreakingBanner();
+        renderTrending();
+        renderDiscussed();
+        updateAll();
+        console.log('%c📰 CityLens 城市新闻已就绪 | 共加载 ' + allNews.length + ' 条新闻 | 10 个分类 | 5 个地区', 'color:#4a9eff;font-size:1.1rem;');
+        console.log('%c🔍 支持搜索 | 📂 分类筛选 | 🌍 地区筛选 | 📊 影响级别筛选 | 🏷️ 话题标签 | 📄 分页/加载更多', 'color:#00d4ff;');
+    }
+    init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地标建筑库 - CityLens</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e17;--bg-secondary:#111620;--bg-tertiary:#1a1f2e;--bg-card:#151a28;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-gold:#ffd700;
+            --accent-purple:#a855f7;--border-glow:#1e2d3d;--glass-bg:rgba(21,26,40,0.85);
+            --shadow-card:0 4px 25px rgba(0,0,0,0.6);--shadow-hover:0 8px 40px rgba(168,85,247,0.2);
+            --border-radius:10px;--transition-speed:0.3s;--nav-height:72px;--max-width:1400px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--glass-bg:rgba(255,255,255,0.85);--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:var(--glass-bg);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#a855f7,#4a9eff);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:8px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;position:relative;}.nav-links li a::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%) scaleX(0);width:50%;height:2px;background:var(--accent-purple);transition:transform var(--transition-speed);}.nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);background:rgba(168,85,247,0.08);}.nav-links li a:hover::after,.nav-links li a.active::after{transform:translateX(-50%) scaleX(1);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(168,85,247,0.15);background:rgba(168,85,247,0.05);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}.btn-icon:hover{background:rgba(168,85,247,0.15);border-color:var(--accent-purple);color:var(--accent-purple);}
+        .mobile-menu-btn{display:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-purple);}
+        .page-header{margin-top:var(--nav-height);background:linear-gradient(160deg,#0a0e17 0%,#140d1a 30%,#0a0e17 100%);padding:55px 0;text-align:center;border-bottom:1px solid var(--border-glow);}.page-header h1{font-size:2.3rem;font-weight:900;color:var(--text-highlight);}
+        .page-header .breadcrumb{margin-top:8px;color:var(--text-secondary);font-size:0.85rem;}.page-header .breadcrumb a{color:var(--accent-purple);text-decoration:none;}.page-header .breadcrumb a:hover{text-decoration:underline;}
+        .main-content{padding:40px 0 70px;}.container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+
+        /* ===== STATS BAR ===== */
+        .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px;}
+        .stats-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:22px 20px;text-align:center;transition:all var(--transition-speed);}
+        .stats-card:hover{border-color:var(--accent-purple);box-shadow:var(--shadow-hover);transform:translateY(-2px);}
+        .stats-card .stats-icon{font-size:2rem;margin-bottom:8px;}
+        .stats-card .stats-value{font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--accent-purple),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .stats-card .stats-label{font-size:0.78rem;color:var(--text-secondary);margin-top:4px;}
+
+        /* ===== SEARCH & FILTER ===== */
+        .search-filter-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap;align-items:center;}
+        .search-wrapper{position:relative;flex:1;min-width:260px;}
+        .search-wrapper .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--text-secondary);pointer-events:none;}
+        .search-input{width:100%;padding:12px 16px 12px 42px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.9rem;font-family:inherit;outline:none;transition:all var(--transition-speed);}
+        .search-input:focus{border-color:var(--accent-purple);box-shadow:0 0 0 3px rgba(168,85,247,0.1);}
+        .search-input::placeholder{color:var(--text-secondary);}
+        .autocomplete-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:0 0 var(--border-radius) var(--border-radius);max-height:220px;overflow-y:auto;z-index:100;margin-top:2px;}
+        .autocomplete-dropdown.active{display:block;}
+        .autocomplete-item{padding:10px 16px;cursor:pointer;color:var(--text-primary);font-size:0.85rem;transition:background var(--transition-speed);display:flex;align-items:center;gap:8px;}
+        .autocomplete-item:hover,.autocomplete-item.selected{background:rgba(168,85,247,0.1);color:var(--accent-purple);}
+        .autocomplete-item .ac-icon{font-size:1.1rem;}
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+        .filter-btn{padding:8px 18px;border:1px solid var(--border-glow);background:var(--bg-card);color:var(--text-secondary);border-radius:20px;cursor:pointer;font-size:0.82rem;font-family:inherit;transition:all var(--transition-speed);white-space:nowrap;}
+        .filter-btn:hover{border-color:var(--accent-purple);color:var(--text-highlight);background:rgba(168,85,247,0.08);}
+        .filter-btn.active{background:var(--accent-purple);border-color:var(--accent-purple);color:#fff;font-weight:600;}
+        .filter-count{font-size:0.7rem;opacity:0.7;margin-left:4px;}
+
+        /* ===== LANDMARK GRID ===== */
+        .landmark-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px;}
+        .landmark-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;transition:all var(--transition-speed);cursor:pointer;position:relative;}
+        .landmark-card:hover{transform:translateY(-4px);border-color:var(--accent-purple);box-shadow:var(--shadow-hover);}
+        .landmark-card-img{width:100%;aspect-ratio:16/10;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:4.5rem;color:var(--text-secondary);position:relative;overflow:hidden;}
+        .landmark-card-city{position:absolute;bottom:10px;left:10px;padding:4px 12px;background:rgba(0,0,0,0.7);color:var(--accent-cyan);font-size:0.75rem;border-radius:8px;}
+        .landmark-card-badge{position:absolute;top:10px;right:10px;padding:5px 10px;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000;font-size:0.68rem;font-weight:700;border-radius:12px;animation:pulse 2s ease-in-out infinite;}
+        .landmark-card-body{padding:20px;}
+        .landmark-card-name{font-size:1.1rem;font-weight:700;color:var(--text-highlight);}
+        .landmark-card-type{display:inline-block;padding:3px 10px;background:rgba(168,85,247,0.1);color:var(--accent-purple);border-radius:8px;font-size:0.7rem;margin-bottom:8px;}
+        .landmark-card-desc{font-size:0.85rem;color:var(--text-secondary);line-height:1.6;}
+        .landmark-card-meta{display:flex;gap:12px;margin-top:10px;font-size:0.72rem;color:var(--text-secondary);flex-wrap:wrap;}
+        .landmark-card-meta span{display:flex;align-items:center;gap:4px;}
+        .landmark-card-unesco{position:absolute;top:10px;left:10px;padding:4px 10px;background:rgba(0,200,100,0.2);color:var(--accent-green);font-size:0.65rem;border-radius:8px;font-weight:600;}
+
+        /* ===== MUST VISIT BADGE ===== */
+        @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+        @keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+
+        /* ===== LANDMARK DETAIL MODAL ===== */
+        .landmark-detail-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:2000;overflow-y:auto;padding:40px 20px;}
+        .landmark-detail-modal.active{display:flex;align-items:flex-start;justify-content:center;}
+        .landmark-detail-content{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);max-width:720px;width:100%;padding:30px;animation:modalSlide 0.3s ease;position:relative;}
+        .landmark-detail-close{position:absolute;top:16px;right:16px;width:36px;height:36px;background:rgba(255,255,255,0.05);border:1px solid var(--border-glow);color:var(--text-secondary);border-radius:6px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;z-index:10;}.landmark-detail-close:hover{background:var(--accent-red);color:#fff;border-color:var(--accent-red);}
+        .landmark-detail-content h2{font-size:1.5rem;color:var(--text-highlight);margin-bottom:5px;}
+        .landmark-detail-content .detail-icon{font-size:5rem;text-align:center;display:block;margin-bottom:15px;}
+        .landmark-detail-content .detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+        .landmark-detail-content .detail-meta .meta-tag{padding:4px 12px;background:rgba(168,85,247,0.1);color:var(--accent-purple);border-radius:12px;font-size:0.75rem;}
+        .landmark-detail-content .detail-meta .meta-tag.unesco-tag{background:rgba(0,200,100,0.1);color:var(--accent-green);}
+        .landmark-detail-content .detail-meta .meta-tag.gold-tag{background:rgba(255,215,0,0.1);color:var(--accent-gold);}
+
+        /* Detail Tabs */
+        .detail-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border-glow);margin-bottom:18px;overflow-x:auto;}
+        .detail-tab{padding:10px 16px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.82rem;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;transition:all var(--transition-speed);}
+        .detail-tab:hover{color:var(--text-highlight);}
+        .detail-tab.active{color:var(--accent-purple);border-bottom-color:var(--accent-purple);font-weight:600;}
+        .detail-tab-content{display:none;animation:fadeIn 0.25s ease;}
+        .detail-tab-content.active{display:block;}
+        .detail-tab-content p{color:var(--text-secondary);line-height:1.8;font-size:0.9rem;}
+
+        /* Gallery thumbs */
+        .gallery-thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+        .gallery-thumb{width:60px;height:60px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;transition:all var(--transition-speed);}
+        .gallery-thumb:hover{border-color:var(--accent-purple);transform:scale(1.08);}
+
+        /* Info grid in modal */
+        .detail-info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px;}
+        .detail-info-item{background:var(--bg-tertiary);padding:12px;border-radius:8px;}
+        .detail-info-item .info-label{font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;}
+        .detail-info-item .info-value{font-size:0.9rem;color:var(--text-highlight);font-weight:600;margin-top:2px;}
+
+        @keyframes modalSlide{from{opacity:0;transform:translateY(-25px);}to{opacity:1;transform:translateY(0);}}
+
+        /* ===== COUNTRY GROUPING ===== */
+        .section-title{font-size:1.4rem;font-weight:800;color:var(--text-highlight);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+        .section-title .st-icon{font-size:1.6rem;}
+        .country-group{margin-bottom:24px;border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;background:var(--bg-card);}
+        .country-group-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;cursor:pointer;background:var(--bg-secondary);transition:background var(--transition-speed);}
+        .country-group-header:hover{background:rgba(168,85,247,0.05);}
+        .country-group-header .cg-title{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;color:var(--text-highlight);}
+        .country-group-header .cg-flag{font-size:1.5rem;}
+        .country-group-header .cg-count{font-size:0.75rem;color:var(--text-secondary);background:var(--bg-tertiary);padding:3px 10px;border-radius:12px;}
+        .country-group-header .cg-arrow{color:var(--text-secondary);transition:transform var(--transition-speed);font-size:0.9rem;}
+        .country-group-header.open .cg-arrow{transform:rotate(90deg);}
+        .country-group-body{display:none;padding:16px 22px 22px;}
+        .country-group-body.open{display:block;animation:slideDown 0.3s ease;}
+        .country-landmark-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:all var(--transition-speed);margin-bottom:6px;}
+        .country-landmark-row:hover{background:rgba(168,85,247,0.06);}
+        .country-landmark-row .clr-icon{font-size:1.8rem;width:40px;text-align:center;}
+        .country-landmark-row .clr-info{flex:1;}
+        .country-landmark-row .clr-name{font-weight:600;color:var(--text-highlight);font-size:0.9rem;}
+        .country-landmark-row .clr-type{font-size:0.72rem;color:var(--text-secondary);}
+        .country-landmark-row .clr-arrow{color:var(--text-secondary);}
+
+        /* ===== QUIZ SECTION ===== */
+        .quiz-section{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:30px;margin-top:50px;}
+        .quiz-section .quiz-title{font-size:1.3rem;font-weight:800;color:var(--text-highlight);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+        .quiz-section .quiz-subtitle{font-size:0.85rem;color:var(--text-secondary);margin-bottom:22px;}
+        .quiz-question-block{margin-bottom:22px;}
+        .quiz-question-block .qq-question{font-weight:700;color:var(--text-highlight);margin-bottom:10px;font-size:0.95rem;}
+        .quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .quiz-option{padding:12px 16px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:8px;cursor:pointer;color:var(--text-primary);font-size:0.85rem;transition:all var(--transition-speed);text-align:left;font-family:inherit;}
+        .quiz-option:hover{border-color:var(--accent-purple);background:rgba(168,85,247,0.08);}
+        .quiz-option.correct{background:rgba(0,255,136,0.15);border-color:var(--accent-green);color:var(--accent-green);}
+        .quiz-option.wrong{background:rgba(255,71,87,0.15);border-color:var(--accent-red);color:var(--accent-red);}
+        .quiz-option:disabled{cursor:default;opacity:0.8;}
+        .quiz-score{text-align:center;font-size:1.1rem;font-weight:700;color:var(--accent-purple);margin-top:16px;padding:14px;background:rgba(168,85,247,0.05);border-radius:8px;display:none;}
+        .quiz-score.show{display:block;animation:fadeInUp 0.4s ease;}
+        .quiz-reset-btn{padding:10px 24px;background:var(--accent-purple);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;margin-top:12px;transition:all var(--transition-speed);}
+        .quiz-reset-btn:hover{background:#9333ea;transform:translateY(-1px);box-shadow:0 4px 15px rgba(168,85,247,0.3);}
+
+        /* ===== NO RESULTS ===== */
+        .no-results{text-align:center;padding:60px 20px;color:var(--text-secondary);}
+        .no-results .nr-icon{font-size:4rem;margin-bottom:14px;}
+        .no-results .nr-text{font-size:1rem;}
+
+        /* ===== RESULT COUNT ===== */
+        .result-count{font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;}
+
+        /* ===== FOOTER ===== */
+        .footer{background:var(--bg-secondary);border-top:1px solid var(--border-glow);padding:28px;text-align:center;color:var(--text-secondary);font-size:0.78rem;}
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:768px){
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,23,0.98);flex-direction:column;padding:20px;z-index:999;}.nav-links.active{display:flex;}
+            .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+            .landmark-grid{grid-template-columns:1fr;}
+            .stats-bar{grid-template-columns:repeat(2,1fr);}
+            .quiz-options{grid-template-columns:1fr;}
+            .search-filter-row{flex-direction:column;}
+            .filter-bar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;}
+            .detail-tabs{flex-wrap:nowrap;overflow-x:auto;}
+            .detail-info-grid{grid-template-columns:1fr 1fr;}
+            .page-header h1{font-size:1.6rem;}
+            .landmark-card-img{font-size:3.5rem;}
+        }
+        @media(max-width:480px){
+            .stats-bar{grid-template-columns:1fr;}
+            .detail-info-grid{grid-template-columns:1fr;}
+            .landmark-card-meta{flex-direction:column;gap:4px;}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar"><div class="container"><a href="home.html" class="logo"><div class="logo-icon">C</div><span class="logo-text">CityLens</span></a><ul class="nav-links" id="navLinks"><li><a href="home.html">首页</a></li><li><a href="cities.html">城市大全</a></li><li><a href="compare.html">对比</a></li><li><a href="ranking.html">排行榜</a></li><li><a href="landmarks.html" class="active">地标</a></li><li><a href="cost.html">生活成本</a></li></ul><div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div></div></nav>
+
+    <section class="page-header"><h1>🏛️ 地标建筑库</h1><p class="breadcrumb"><a href="home.html">首页</a> / 地标建筑库</p></section>
+
+    <section class="main-content"><div class="container">
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="statsBar"></div>
+
+        <!-- Search & Filter Row -->
+        <div class="search-filter-row">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索地标名称、城市或国家..." autocomplete="off">
+                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+            </div>
+        </div>
+
+        <!-- Category Filter Bar -->
+        <div class="filter-bar" id="filterBar">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="religious">⛪ 宗教建筑</button>
+            <button class="filter-btn" data-filter="modern">🏗️ 现代建筑</button>
+            <button class="filter-btn" data-filter="historic">🏛️ 历史遗迹</button>
+            <button class="filter-btn" data-filter="natural">🌿 自然奇观</button>
+            <button class="filter-btn" data-filter="government">🏛️ 政府建筑</button>
+            <button class="filter-btn" data-filter="cultural">🎭 文化场馆</button>
+        </div>
+
+        <!-- Result Count -->
+        <div class="result-count" id="resultCount"></div>
+
+        <!-- Landmark Grid -->
+        <div class="landmark-grid" id="landmarkGrid"></div>
+        <div class="no-results" id="noResults" style="display:none;"><div class="nr-icon">🔍</div><div class="nr-text">没有找到匹配的地标，请尝试其他搜索条件</div></div>
+
+        <!-- Country Grouping Section -->
+        <div style="margin-top:50px;">
+            <div class="section-title"><span class="st-icon">🌍</span> 按国家浏览</div>
+            <div id="countryGroups"></div>
+        </div>
+
+        <!-- Landmark Quiz Section -->
+        <div class="quiz-section" id="quizSection">
+            <div class="quiz-title">🧠 地标知识问答</div>
+            <div class="quiz-subtitle">测试一下你对中国及世界著名地标的了解程度吧！</div>
+            <div id="quizQuestions"></div>
+            <button class="quiz-reset-btn" id="quizResetBtn" style="display:none;">🔄 重新挑战</button>
+        </div>
+    </div></section>
+
+    <div class="landmark-detail-modal" id="landmarkModal"><div class="landmark-detail-content" id="landmarkDetail"></div></div>
+
+    <footer class="footer"><p>© 2025 CityLens | 地标数据来源公开资料 | 仅供学习使用</p></footer>
+
+    <script>
+        // ===== LANDMARK DATA =====
+        const landmarks=[
+            // Original 6 (preserved)
+            {id:'tokyotower',name:'东京塔',icon:'🗼',city:'东京',country:'日本',flag:'🇯🇵',category:'modern',type:'通讯塔',yearBuilt:1958,height:332.9,architect:'内藤多仲',architecturalStyle:'现代主义',unesco:'否',annualVisitors:'300万',entryFee:'1200日元',bestTimeToVisit:'傍晚至夜间',funFact:'东京塔的橙白相间涂装是航空安全色，每5年重新涂装一次，共需28000升油漆。',desc:'东京塔高332.9米，是东京的标志性建筑。建于1958年，仿照巴黎埃菲尔铁塔设计。夜晚的灯光秀使其成为东京最浪漫的景点之一。',detail:'东京塔位于东京都港区芝公园，是东京天际线最显著的标志。塔身涂有橙白相间的航空警示色，每5年重新涂装一次，使用约28000升油漆。展望台分为两层：大展望台（150米）和特别展望台（250米），天气晴朗时可远眺富士山。塔底设有商业设施"FootTown"，包含水族馆、餐厅和纪念品商店。东京塔不仅是广播电视信号发射塔，更是日本经济腾飞的象征。',howToGetThere:'乘坐都营大江户线至赤羽桥站步行5分钟；或JR山手线至滨松町站步行15分钟。',bestPhotoSpots:'芝公园内的樱花树下、增上寺正门前、东京王子大饭店的空中走廊。',nearbyAttractions:'增上寺、芝公园、台场海滨公园、六本木之丘。',gallery:['🗼','🌃','🌸','🏯']},
+            {id:'statueofliberty',name:'自由女神像',icon:'🗽',city:'纽约',country:'美国',flag:'🇺🇸',category:'historic',type:'雕塑',yearBuilt:1886,height:93,architect:'弗雷德里克·巴托尔迪',architecturalStyle:'新古典主义',unesco:'是',annualVisitors:'420万',entryFee:'$24.50',bestTimeToVisit:'春季和秋季',funFact:'自由女神像的七道尖芒代表七大洲和七大洋，脚下的断裂锁链象征废除奴隶制。',desc:'自由女神像是法国赠送给美国的礼物，1886年落成。高46米（含基座93米），是纽约乃至美国的象征。',detail:'自由女神像位于纽约港自由岛上，由法国雕塑家巴托尔迪设计，古斯塔夫·埃菲尔负责内部铁架结构。女神右手高举火炬象征启蒙之光，左手捧着刻有"1776年7月4日"的《独立宣言》。铜像表面由2.4毫米厚的铜片制成，经氧化形成现今的绿色铜锈。游客可登上皇冠观景台（需提前数月预约），360度俯瞰曼哈顿天际线、埃利斯岛和纽约港。',howToGetThere:'从曼哈顿炮台公园乘坐Statue Cruises渡轮前往自由岛，航程约15分钟。',bestPhotoSpots:'渡轮甲板上可拍正面全身像、自由岛南侧草坪可避开人群、埃利斯岛远眺角度最佳。',nearbyAttractions:'埃利斯岛移民博物馆、炮台公园、华尔街、911纪念馆。',gallery:['🗽','🚢','🗿','🏙️']},
+            {id:'eiffel',name:'埃菲尔铁塔',icon:'🗼',city:'巴黎',country:'法国',flag:'🇫🇷',category:'modern',type:'铁塔',yearBuilt:1889,height:330,architect:'古斯塔夫·埃菲尔',architecturalStyle:'现代主义',unesco:'是',annualVisitors:'700万',entryFee:'€28.30',bestTimeToVisit:'日落时分',funFact:'埃菲尔铁塔在夏季因热胀冷缩会增高约15厘米，强风中塔顶摆动幅度可达7厘米。',desc:'埃菲尔铁塔高330米，1889年建成。是全球最著名的建筑之一，每年吸引超过700万游客登塔参观。',detail:'埃菲尔铁塔是为1889年巴黎世界博览会而建，最初遭到巴黎艺术界强烈反对，被称为"丑陋的金属怪物"。塔身由18038个铁质部件组成，用250万个铆钉连接，总重约10100吨。铁塔共有三层观景台：一层（57米）设有透明玻璃地板和餐厅；二层（115米）视野最佳；顶层（276米）有古斯塔夫·埃菲尔的复刻办公室。夜间整点时分，塔身会闪烁5分钟的灯光秀（由20000个灯泡组成），是巴黎最浪漫的夜景。',howToGetThere:'地铁6号线至Bir-Hakeim站或9号线至Trocadero站，步行5-10分钟。',bestPhotoSpots:'特罗卡德罗广场的阶梯上、战神广场中央草坪、塞纳河游船上。',nearbyAttractions:'战神广场、塞纳河、夏乐宫、凯旋门、卢浮宫。',gallery:['🗼','✨','🌉','🍷']},
+            {id:'burjkhalifa',name:'哈利法塔',icon:'🏗️',city:'迪拜',country:'阿联酋',flag:'🇦🇪',category:'modern',type:'摩天大楼',yearBuilt:2010,height:828,architect:'阿德里安·史密斯',architecturalStyle:'现代主义',unesco:'否',annualVisitors:'350万',entryFee:'AED 169',bestTimeToVisit:'黄昏时分',funFact:'哈利法塔的电梯速度达10米/秒，从底层到124层仅需60秒，是世界最快的双层电梯之一。',desc:'哈利法塔高828米，是目前世界上最高的建筑。2010年竣工，共163层，是迪拜现代建筑的巅峰之作。',detail:'哈利法塔的设计灵感来自沙漠蜘蛛百合（Hymenocallis）的几何形态，采用Y字形平面布局以最大化结构稳定性和景观视野。塔身由钢筋混凝土核心筒和高性能玻璃幕墙构成。124层的"At the Top"观景台（452米）和148层的"SKY"观景台（555米）可俯瞰迪拜全景、阿拉伯沙漠和波斯湾。塔内包含阿玛尼酒店、豪华公寓、企业办公室和4个泳池。底部的迪拜购物中心和水舞喷泉与哈利法塔共同构成迪拜市中心最繁华的区域。',howToGetThere:'迪拜地铁红线至Burj Khalifa/Dubai Mall站，经空调连廊步行约15分钟。',bestPhotoSpots:'迪拜购物中心外的水舞喷泉广场、Souk Al Bahar拱桥、朱美拉海滩远眺。',nearbyAttractions:'迪拜购物中心、迪拜水舞喷泉、迪拜歌剧院、Souk Al Bahar。',gallery:['🏗️','🌃','🏜️','⛲']},
+            {id:'opera',name:'悉尼歌剧院',icon:'🎭',city:'悉尼',country:'澳大利亚',flag:'🇦🇺',category:'cultural',type:'歌剧院',yearBuilt:1973,height:65,architect:'约恩·乌松',architecturalStyle:'表现主义',unesco:'是',annualVisitors:'820万',entryFee:'AUD 28',bestTimeToVisit:'全年皆宜',funFact:'悉尼歌剧院的屋顶由超过100万片瑞典瓷砖覆盖，具有自洁功能——雨水就能将其冲洗干净。',desc:'悉尼歌剧院以其独特的帆船造型闻名于世，1973年落成。是20世纪最具代表性的建筑之一，世界文化遗产。',detail:'悉尼歌剧院由丹麦建筑师约恩·乌松设计，其贝壳形屋顶的灵感来自剥开的橙子瓣。建造过程持续14年（1959-1973），远超最初3年的预期和700万澳元的预算（实际耗费1.02亿澳元）。屋顶结构由预制的混凝土肋骨和超过100万片瑞典Höganäs瓷砖覆盖。歌剧院包含多个演出厅：主音乐厅（2679座）、歌剧厅（1507座）、戏剧厅等。每年举办超过1500场演出，吸引约120万观众，是澳大利亚最繁忙的表演艺术中心。',howToGetThere:'乘坐悉尼火车至Circular Quay站，沿海滨步行约10分钟即达。',bestPhotoSpots:'麦考利夫人座椅是经典机位、皇家植物园北端、海港大桥上俯瞰歌剧院全景。',nearbyAttractions:'悉尼海港大桥、皇家植物园、岩石区、当代艺术博物馆。',gallery:['🎭','🌊','🐚','🌉']},
+            {id:'bigben',name:'大本钟',icon:'🕰️',city:'伦敦',country:'英国',flag:'🇬🇧',category:'historic',type:'钟楼',yearBuilt:1859,height:96,architect:'奥古斯塔斯·普金',architecturalStyle:'哥特复兴',unesco:'是',annualVisitors:'120万',entryFee:'£25',bestTimeToVisit:'整点报时',funFact:'大本钟的正式名称是"伊丽莎白塔"，"大本"实际上是钟楼内最大那口钟（13.7吨）的昵称。',desc:'大本钟（伊丽莎白塔）是伦敦最著名的地标，建于1859年。钟楼高96米，钟声通过BBC广播传遍世界。',detail:'大本钟位于威斯敏斯特宫北端，是英国议会大厦的一部分。钟楼高96米，拥有334级石灰岩台阶。钟面直径7米，分针长4.2米（重100公斤），时针长2.7米（重300公斤）。四面钟盘由乳白色玻璃和铸铁框架制成。钟楼内最大的钟"大本"重13.7吨，每小时敲响一次，钟声通过BBC广播自1924年起传遍世界。2017年起进行了为期5年的大规模修缮，耗资8000万英镑，于2022年重新开放。',howToGetThere:'伦敦地铁至Westminster站（Jubilee/District/Circle线），出站即见。',bestPhotoSpots:'威斯敏斯特桥南侧、议会广场花园、伦敦眼上远眺钟楼。',nearbyAttractions:'威斯敏斯特宫、威斯敏斯特教堂、伦敦眼、圣詹姆斯公园。',gallery:['🕰️','🏛️','🇬🇧','🎡']},
+
+            // Rome
+            {id:'colosseum',name:'罗马斗兽场',icon:'🏟️',city:'罗马',country:'意大利',flag:'🇮🇹',category:'historic',type:'古代竞技场',yearBuilt:80,height:48,architect:'未知（弗拉维王朝）',architecturalStyle:'古罗马建筑',unesco:'是',annualVisitors:'760万',entryFee:'€18',bestTimeToVisit:'清晨或傍晚',funFact:'斗兽场可容纳50000-80000名观众，设有80个入口，全部观众可在15分钟内疏散完毕，其设计至今仍被现代体育场馆借鉴。',desc:'罗马斗兽场是古罗马帝国最宏伟的建筑之一，建于公元72-80年。这座椭圆形竞技场可容纳5万多名观众，是古代世界最伟大的建筑工程。',detail:'罗马斗兽场（原名弗拉维安露天剧场）由韦斯帕芗皇帝下令建造，提图斯皇帝在位时竣工。它长轴188米、短轴156米，外墙高48米，分为四层。前三层每层有80个拱门，分别装饰多立克、爱奥尼和科林斯式壁柱。斗兽场用于角斗士竞技、野兽搏斗、模拟海战等表演，地下层（hypogeum）设有复杂的通道、笼舍和升降装置。尽管经历地震和石料掠夺，斗兽场仍是罗马帝国工程技术的巅峰象征，1980年被列入世界文化遗产。',howToGetThere:'罗马地铁B线至Colosseo站，出站即达；或乘公交75、81、175路。',bestPhotoSpots:'罗马广场高处的法尔内塞花园、斗兽场对面的Oppio公园、夜景灯光下最为壮观。',nearbyAttractions:'罗马广场、帕拉蒂尼山、君士坦丁凯旋门、威尼斯广场。',gallery:['🏟️','🏛️','🗿','🏺']},
+            {id:'vatican',name:'圣彼得大教堂',icon:'⛪',city:'梵蒂冈',country:'梵蒂冈',flag:'🇻🇦',category:'religious',type:'教堂',yearBuilt:1626,height:136,architect:'米开朗基罗等',architecturalStyle:'文艺复兴/巴洛克',unesco:'是',annualVisitors:'700万',entryFee:'免费（登顶€10）',bestTimeToVisit:'清晨',funFact:'圣彼得大教堂是世界上最大的教堂，内部面积达15160平方米，可容纳6万人同时祈祷。',desc:'圣彼得大教堂是罗马天主教的中心，位于梵蒂冈城内。由米开朗基罗设计的巨大穹顶高136米，是罗马天际线最显著的标志。',detail:'圣彼得大教堂建于君士坦丁时期的老教堂地基之上，历时120年（1506-1626）建成。伯拉孟特、拉斐尔、米开朗基罗、贝尔尼尼等文艺复兴大师先后参与设计。大穹顶由米开朗基罗设计，内径42米，登顶需攀登551级台阶。教堂内部珍藏有米开朗基罗的雕塑《圣母哀子》、贝尔尼尼的青铜华盖和圣彼得宝座。圣彼得广场由贝尔尼尼设计了284根多立克圆柱环绕的椭圆形柱廊。大教堂是天主教最重要的朝圣地，每年教宗在此主持复活节和圣诞节弥撒。',howToGetThere:'罗马地铁A线至Ottaviano站，沿Via Ottaviano步行约10分钟。',bestPhotoSpots:'圣彼得广场中央面向大教堂、登顶穹顶俯瞰广场和罗马城、圣天使桥远眺。',nearbyAttractions:'梵蒂冈博物馆、西斯廷礼拜堂、圣天使堡、纳沃纳广场。',gallery:['⛪','🕍','🇻🇦','🙏']},
+            {id:'trevifountain',name:'特雷维喷泉',icon:'⛲',city:'罗马',country:'意大利',flag:'🇮🇹',category:'historic',type:'喷泉',yearBuilt:1762,height:26,architect:'尼古拉·萨尔维',architecturalStyle:'巴洛克',unesco:'否',annualVisitors:'1000万',entryFee:'免费',bestTimeToVisit:'清晨或深夜',funFact:'每天约有3000欧元硬币被投入喷泉中（每年约100万欧元），这些钱全部捐赠给天主教慈善机构Caritas。',desc:'特雷维喷泉是罗马最著名的巴洛克式喷泉，也是世界上游客最多的喷泉之一。传说背对喷泉投掷硬币可以确保重返罗马。',detail:'特雷维喷泉由教皇克莱门特十二世委托建造，建筑师尼古拉·萨尔维设计，1762年完工。喷泉以波利宫的外墙为背景，中央是海神涅普顿驾驭由海马拉着的贝壳战车，两侧是丰裕女神和健康女神。喷泉宽20米，高达26米，是罗马最大的巴洛克喷泉。特雷维（Trevi）意为"三条道路"，因喷泉位于三条街道的交汇处而得名。这里曾是费里尼电影《甜蜜的生活》中安妮塔·埃克伯格涉水而过的经典场景。',howToGetThere:'罗马地铁A线至Barberini站，步行约8分钟即达。',bestPhotoSpots:'喷泉正前方的阶梯上、左侧二楼的咖啡馆阳台、深夜灯光下最梦幻。',nearbyAttractions:'万神殿、西班牙广场、纳沃纳广场、奎里纳尔宫。',gallery:['⛲','🏛️','💎','🎬']},
+
+            // Barcelona
+            {id:'sagradafamilia',name:'圣家堂',icon:'⛪',city:'巴塞罗那',country:'西班牙',flag:'🇪🇸',category:'religious',type:'教堂',yearBuilt:1882,height:172.5,architect:'安东尼·高迪',architecturalStyle:'现代主义/加泰罗尼亚现代主义',unesco:'是',annualVisitors:'450万',entryFee:'€26',bestTimeToVisit:'上午9-11点',funFact:'圣家堂已建造超过140年仍未完工，是目前世界上最大的未完工教堂，预计2026年（高迪逝世100周年）竣工。',desc:'圣家堂是高迪的旷世杰作，也是巴塞罗那的象征。这座建了140多年的教堂以其独特的自然主义设计成为世界建筑史上的奇迹。',detail:'圣家堂全称"圣家族赎罪殿"，1882年动工。高迪于1883年接手设计，将余生43年全部奉献给这一项目。教堂设计18座尖塔：12座代表十二使徒，4座代表四福音书作者，1座代表圣母玛利亚，最高的一座（172.5米）代表耶稣基督。诞生立面以自然装饰展现基督诞生，受难立面以棱角分明的雕塑表现苦难，荣耀立面正在建造中。高迪将哥特式与自然形态完美融合，内部立柱如森林般分叉支撑穹顶，彩色玻璃窗将光线变为彩虹般的神圣色彩。',howToGetThere:'巴塞罗那地铁L2或L5至Sagrada Familia站，出站即达。',bestPhotoSpots:'对面小公园的人工湖前可拍倒影、诞生立面正对面、登塔后俯瞰巴塞罗那城市全景。',nearbyAttractions:'圣十字圣保罗医院、古埃尔公园、巴塞罗那海滩、格拉西亚大道。',gallery:['⛪','🏗️','🌈','🌿']},
+            {id:'parkguell',name:'古埃尔公园',icon:'🌳',city:'巴塞罗那',country:'西班牙',flag:'🇪🇸',category:'cultural',type:'公园',yearBuilt:1914,height:0,architect:'安东尼·高迪',architecturalStyle:'加泰罗尼亚现代主义',unesco:'是',annualVisitors:'900万',entryFee:'€10',bestTimeToVisit:'春季/秋季的上午',funFact:'古埃尔公园最初被规划为60栋住宅的高档花园社区，但最终只卖出了2套——其中一套被高迪自己买下并居住。',desc:'古埃尔公园是高迪创作的梦幻花园城市，色彩斑斓的马赛克和曲线建筑使其成为巴塞罗那最受欢迎的旅游景点之一。',detail:'古埃尔公园由富商尤塞比·古埃尔委托高迪设计，最初定位为英式花园城市住宅区。项目商业上失败后于1922年作为公共公园开放。公园标志性的入口阶梯上有一只彩色马赛克蜥蜴（"El Drac"），已成为巴塞罗那的象征之一。百柱厅由86根多立克式柱子支撑波浪形天花板，原本规划为社区市场。广场上的蛇形长凳用碎瓷砖拼贴（"trencadís"技术），同时兼顾美学与人体工学。高迪故居现为博物馆，展示其设计的家具和作品。',howToGetThere:'地铁L3至Vallcarca站步行15分钟；或乘公交24路、92路至公园入口。',bestPhotoSpots:'入口阶梯的马赛克蜥蜴、百柱厅、蛇形长凳俯瞰城市、高迪故居阳台。',nearbyAttractions:'圣家堂、格拉西亚街区、文森之家、提比达波山。',gallery:['🌳','🦎','🌈','🏰']},
+
+            // Beijing
+            {id:'greatwall',name:'万里长城',icon:'🧱',city:'北京',country:'中国',flag:'🇨🇳',category:'historic',type:'古代防御工事',yearBuilt:-700,height:8,architect:'中国古代军民',architecturalStyle:'中国古代防御建筑',unesco:'是',annualVisitors:'1000万',entryFee:'¥40',bestTimeToVisit:'春季/秋季',funFact:'长城总长度超过21196公里，是唯一从太空中肉眼可见的人类建筑（虽然这存在争议），但它确实是人类历史上最长的建筑工程。',desc:'万里长城是中国古代最伟大的军事防御工程，始建于春秋战国时期，跨越15个省份。八达岭段是游客最多的长城段落。',detail:'长城的建造历史跨越2000多年，从公元前7世纪的春秋战国到明代（1368-1644）达到鼎盛。明长城东起山海关、西至嘉峪关，全长约8851公里。城墙平均高7-8米，宽4-6米，由夯土、砖石砌筑而成。烽火台是古代通讯系统，通过燃放狼烟传递军情——据说信号可在3小时内从边疆传至北京。八达岭长城是最早对游客开放的段落（1957年），慕田峪和司马台段因保存完好和独特景观也备受推崇。1987年长城被列入世界文化遗产。',howToGetThere:'从北京德胜门乘877路直达八达岭；或乘坐S2线市郊铁路（春季花海列车）至八达岭站。',bestPhotoSpots:'八达岭北四楼俯瞰、慕田峪大角楼、金山岭日落、箭扣长城（野长城，徒步需谨慎）。',nearbyAttractions:'明十三陵、颐和园、奥林匹克公园、798艺术区。',gallery:['🧱','🏔️','🇨🇳','🐉']},
+            {id:'forbiddencity',name:'故宫博物院',icon:'🏯',city:'北京',country:'中国',flag:'🇨🇳',category:'government',type:'皇宫',yearBuilt:1420,height:0,architect:'蒯祥等',architecturalStyle:'中国古代皇家建筑',unesco:'是',annualVisitors:'1900万',entryFee:'¥60',bestTimeToVisit:'春秋两季',funFact:'故宫共有9999间半房间（民间传说天宫有10000间，皇帝不敢僭越），实际统计为8707间。故宫博物院收藏了超过186万件文物。',desc:'故宫是中国明清两代的皇家宫殿，也是世界上现存规模最大、保存最完整的木质结构古建筑群。每年接待超过1900万游客，是世界最繁忙的博物馆。',detail:'故宫始建于明永乐四年（1406年），永乐十八年（1420年）竣工，历时14年。占地面积72万平方米，建筑面积15万平方米，外朝三大殿（太和殿、中和殿、保和殿）为皇帝处理政务之处，内廷后三宫（乾清宫、交泰殿、坤宁宫）为皇家居住区。太和殿是故宫最大的宫殿，也是中国最大的木结构建筑之一，殿前广场可容纳10万人。故宫博物院成立于1925年，馆藏包括青铜器、陶瓷、书画、钟表、玉器等珍贵文物，其中《清明上河图》等堪称国宝。',howToGetThere:'北京地铁1号线至天安门东或天安门西站；地铁2号线至前门站。',bestPhotoSpots:'景山公园万春亭俯瞰故宫全景、太和殿前汉白玉阶梯、角楼倒影（护城河）。',nearbyAttractions:'天安门广场、景山公园、北海公园、国家博物馆、国家大剧院。',gallery:['🏯','🐉','🏮','🎎']},
+
+            // Moscow
+            {id:'stbasils',name:'圣瓦西里大教堂',icon:'🕌',city:'莫斯科',country:'俄罗斯',flag:'🇷🇺',category:'religious',type:'大教堂',yearBuilt:1561,height:47.5,architect:'巴尔马和波斯特尼克',architecturalStyle:'俄罗斯建筑',unesco:'是',annualVisitors:'300万',entryFee:'₽500',bestTimeToVisit:'夏季白天',funFact:'传说伊凡雷帝被教堂的美丽所震撼，下令刺瞎建筑师双目，以防他们再建造出同样美丽的建筑。不过历史学家普遍认为这只是传说。',desc:'圣瓦西里大教堂是莫斯科红场最著名的地标，以其五彩缤纷的洋葱式穹顶闻名世界。建于16世纪，是俄罗斯建筑的杰出代表。',detail:'圣瓦西里大教堂由伊凡雷帝下令建造，为纪念征服喀山汗国。教堂由9座独立的礼拜堂组成，环绕中央的主教堂（圣母代祷大教堂），每座都有独特的洋葱式穹顶。穹顶最初为金色，17-19世纪逐渐改为现在的多彩图案——红、绿、蓝、金色交织。教堂内部为狭窄的通道和低矮的拱顶，与宏伟外观形成对比。苏联时期教堂险些被拆除（为红场阅兵腾出空间），幸得建筑师巴拉诺夫斯基以绝食抗议才得以保存。1990年与克里姆林宫一同列入世界文化遗产。',howToGetThere:'莫斯科地铁至Ploshchad Revolyutsii站或Okhotny Ryad站，步行至红场。',bestPhotoSpots:'红场中央正面拍摄、从古姆百货二楼窗户取景、扎里亚季耶公园飞桥上俯瞰。',nearbyAttractions:'克里姆林宫、红场、古姆百货、列宁墓、国家历史博物馆。',gallery:['🕌','🎪','❄️','🏰']},
+            {id:'kremlin',name:'克里姆林宫',icon:'🏰',city:'莫斯科',country:'俄罗斯',flag:'🇷🇺',category:'government',type:'城堡/政府驻地',yearBuilt:1495,height:0,architect:'多位意大利建筑师',architecturalStyle:'俄罗斯/文艺复兴',unesco:'是',annualVisitors:'280万',entryFee:'₽700',bestTimeToVisit:'春夏',funFact:'克里姆林宫的斯巴斯克塔钟（克里姆林宫钟声）是俄罗斯新年钟声的来源，所有俄罗斯人在新年夜都会听着这钟声迎接新年。',desc:'克里姆林宫是俄罗斯的政治中心，坐落在莫斯科河畔。红砖城墙环绕的宫殿群包括多座大教堂、宫殿和政府建筑，是俄罗斯的象征。',detail:'克里姆林宫（意为"城中之城"）位于莫斯科市中心博罗维茨基山丘上，占地面积27.5公顷。红砖城墙全长2235米，高5-19米，设有20座塔楼。主要建筑包括：圣母升天大教堂（沙皇加冕地）、天使长大教堂（皇家陵墓）、圣母领报大教堂（皇家私人礼拜堂）、伊凡大帝钟楼（高81米）、多棱宫、大克里姆林宫、武器库博物馆和军械库。重达200吨的沙皇钟和40吨的沙皇炮是院中著名的巨型文物。克里姆林宫现为俄罗斯总统官邸和办公场所，部分区域对公众开放。',howToGetThere:'莫斯科地铁至Borovitskaya站或Biblioteka imeni Lenina站。',bestPhotoSpots:'大石桥上拍摄克里姆林宫沿河全景、红场端拍摄斯巴斯克塔、莫斯科河游船。',nearbyAttractions:'红场、圣瓦西里大教堂、古姆百货、扎里亚季耶公园、普希金美术馆。',gallery:['🏰','⭐','🔔','🛡️']},
+
+            // Istanbul
+            {id:'hagiasophia',name:'圣索菲亚大教堂',icon:'🕌',city:'伊斯坦布尔',country:'土耳其',flag:'🇹🇷',category:'religious',type:'清真寺/博物馆',yearBuilt:537,height:55.6,architect:'安提莫斯和伊西多尔',architecturalStyle:'拜占庭建筑',unesco:'是',annualVisitors:'600万',entryFee:'€25',bestTimeToVisit:'清晨',funFact:'圣索菲亚大教堂的巨大穹顶直径31米，在建成后的近1000年里一直是世界上最大的穹顶，直到圣母百花大教堂建成。',desc:'圣索菲亚大教堂是拜占庭建筑的巅峰之作，建成于公元537年。它曾是天主教大教堂、东正教大教堂、清真寺和博物馆，见证了东西方文明的交汇。',detail:'圣索菲亚由拜占庭皇帝查士丁尼一世下令建造，仅用5年10个月完工。巨型穹顶直径31米、高55.6米，由四根巨型柱墩和帆拱支撑，营造出"穹顶悬浮于空中"的震撼效果。教堂内部镶嵌有金底马赛克壁画——包括耶稣、圣母玛利亚和拜占庭皇帝的肖像。1453年奥斯曼帝国征服后改为清真寺，加盖四座宣礼塔。1935年改为博物馆，2020年重新作为清真寺开放。圣索菲亚对伊斯兰建筑影响深远，蓝色清真寺的穹顶设计即借鉴于此。',howToGetThere:'伊斯坦布尔T1有轨电车至Sultanahmet站，步行3分钟。',bestPhotoSpots:'苏丹艾哈迈德广场正面、对面天台咖啡馆、加拉塔塔上远眺。',nearbyAttractions:'蓝色清真寺、托普卡帕宫、地下水宫、大巴扎。',gallery:['🕌','☪️','🏛️','🕊️']},
+            {id:'bluemosque',name:'蓝色清真寺',icon:'🕌',city:'伊斯坦布尔',country:'土耳其',flag:'🇹🇷',category:'religious',type:'清真寺',yearBuilt:1616,height:43,architect:'塞德夫卡尔·穆罕默德·阿加',architecturalStyle:'奥斯曼建筑',unesco:'是',annualVisitors:'500万',entryFee:'免费',bestTimeToVisit:'上午',funFact:'蓝色清真寺是世界上唯一拥有6座宣礼塔的清真寺（建成时引发争议，因为当时只有麦加禁寺拥有6座宣礼塔，后来苏丹出资为麦加禁寺增建第7座宣礼塔以平息争议）。',desc:'蓝色清真寺（苏丹艾哈迈德清真寺）因其内部装饰超过20000片伊兹尼克蓝色瓷砖而得名，是伊斯坦布尔最著名的清真寺。',detail:'蓝色清真寺由苏丹艾哈迈德一世下令建造，选址于拜占庭帝国大皇宫旧址，正对圣索菲亚大教堂，以彰显奥斯曼建筑同样辉煌。建筑师塞德夫卡尔·穆罕默德·阿加是著名建筑师米马尔·希南的学生。清真寺中央穹顶高43米，由四根5米粗的"象脚柱"支撑。内部超过20000片手工伊兹尼克瓷砖以蓝、绿、红色调的花卉图案装饰，260扇彩色玻璃窗透入柔和光线。庭院是奥斯曼清真寺中最大的庭院之一。清真寺今日仍作为宗教场所使用，每日五次礼拜时间游客需避开。',howToGetThere:'T1有轨电车至Sultanahmet站，步行3分钟，位于圣索菲亚对面。',bestPhotoSpots:'圣索菲亚广场一侧拍摄六座宣礼塔、庭院拱廊内侧、黄昏时灯光初亮的全景。',nearbyAttractions:'圣索菲亚大教堂、托普卡帕宫、地下水宫、苏丹艾哈迈德广场。',gallery:['🕌','💙','☪️','🏛️']},
+
+            // Bangkok
+            {id:'grandpalace',name:'大皇宫',icon:'🏰',city:'曼谷',country:'泰国',flag:'🇹🇭',category:'government',type:'皇宫',yearBuilt:1782,height:0,architect:'多位泰国工匠',architecturalStyle:'泰式传统建筑',unesco:'否',annualVisitors:'800万',entryFee:'฿500',bestTimeToVisit:'清晨开门时',funFact:'大皇宫内的玉佛寺供奉的玉佛由一整块翡翠雕刻而成，每年由泰国国王亲自为其更换三套金缕衣（夏季、雨季和冬季各一套）。',desc:'大皇宫是曼谷最耀眼的地标，自1782年以来一直是泰国王室的官方住所。金碧辉煌的佛塔和精美的壁画使其成为泰国建筑的集大成者。',detail:'大皇宫由拉玛一世国王建造，占地面积218400平方米。皇宫包含100多座建筑，其中最重要的玉佛寺（Wat Phra Kaew）供奉着泰国最神圣的佛像——一尊66厘米高的翡翠玉佛。玉佛安放在11米高的镀金祭坛上。寺内壁画长廊描绘了《罗摩衍那》史诗故事，全长约2公里。大皇宫建筑融合泰式、高棉式、中国式和西方建筑风格：金色的佛塔（chedi）、彩色玻璃马赛克装饰、神话中的夜叉（Yaksha）守卫雕像。大王宫（Chakri Maha Prasat）最特别，下部为西式建筑、屋顶为泰式尖顶。',howToGetThere:'曼谷BTS至Saphan Taksin站换乘湄南河快船至Tha Chang码头；或乘公交船至The Chang码头。',bestPhotoSpots:'玉佛寺金色佛塔前、Chakri Maha Prasat大殿正面、壁画长廊内侧。',nearbyAttractions:'卧佛寺、郑王庙（黎明寺）、国家博物馆、考山路、湄南河。',gallery:['🏰','👑','🛕','🇹🇭']},
+            {id:'watarun',name:'郑王庙（黎明寺）',icon:'🛕',city:'曼谷',country:'泰国',flag:'🇹🇭',category:'religious',type:'佛寺',yearBuilt:1847,height:79,architect:'拉玛二世/三世',architecturalStyle:'高棉式',unesco:'否',annualVisitors:'300万',entryFee:'฿100',bestTimeToVisit:'日落时分',funFact:'郑王庙的主塔表面镶嵌着数万片中国瓷器碎片——这些是当年中泰贸易中用作压舱物的碎瓷片，被巧妙回收利用为建筑装饰。',desc:'郑王庙（Wat Arun）是曼谷最独特的地标，以其高耸的高棉式佛塔和陶瓷马赛克装饰而闻名。坐落在湄南河畔，黎明时分尤为壮丽。',detail:'郑王庙的历史可追溯至大城王朝时期。原名Wat Makok，后因郑信王（达信大帝）在此建立吞武里王朝而被尊称为郑王庙。主塔（prang）高79米，四面环绕四座小塔。塔身以花卉、神像和几何图案的彩色瓷片镶嵌装饰——这些瓷片来自中国商船用作压舱物的碎陶瓷。登塔阶梯极为陡峭（约80度），象征修行之路的艰难。登顶可360度俯瞰湄南河、大皇宫和对岸的曼谷老城。寺庙的正式名称"Arun"意为"黎明"，相传郑信王在黎明时分到达此寺。',howToGetThere:'从大皇宫的Tha Tien码头乘渡轮过河（฿4）即达；或乘湄南河快船至Wat Arun码头。',bestPhotoSpots:'河对岸拍摄日出或日落时的逆光全景、登顶俯瞰湄南河弯道、夜间灯光下更显神秘。',nearbyAttractions:'大皇宫、卧佛寺、暹罗博物馆、鲜花市场、唐人街。',gallery:['🛕','🌅','🏞️','🌺']},
+
+            // Cairo
+            {id:'pyramids',name:'吉萨大金字塔',icon:'🔺',city:'开罗',country:'埃及',flag:'🇪🇬',category:'historic',type:'古代陵墓',yearBuilt:-2560,height:138.8,architect:'赫米乌努（推测）',architecturalStyle:'古埃及建筑',unesco:'是',annualVisitors:'1460万',entryFee:'EGP 240',bestTimeToVisit:'冬季（11月至2月）',funFact:'大金字塔在埃菲尔铁塔建成前（1889年）一直是世界上最高的人造建筑，这一纪录保持了约3800年之久。',desc:'吉萨大金字塔是古代世界七大奇迹中最古老也是唯一幸存至今的。建于4500多年前，至今仍然震撼着每一位到访的游客。',detail:'吉萨大金字塔（胡夫金字塔）建于埃及第四王朝，是法老胡夫的陵墓。原高146.6米（现因风化减少至138.8米），由约230万块石灰岩和花岗岩组成，平均每块重2.5-15吨。底座各边精确对准东、南、西、北四个方向，误差不超过0.05度。建造方式至今仍是未解之谜——从螺旋坡道到水浮法等理论不一而足。金字塔内部有三间墓室：国王墓室、王后墓室和未完工的地下墓室。旁边还有哈夫拉金字塔（顶部保留部分石灰岩外壳）和门卡拉金字塔。狮身人面像守护在金字塔群前方。',howToGetThere:'从开罗市中心乘出租车或Uber约40分钟；或乘公交至Giza站转当地交通工具。',bestPhotoSpots:'金字塔全景平台（需骑骆驼或步行进入沙漠）、狮身人面像正前方、夜晚声光秀。',nearbyAttractions:'狮身人面像、太阳船博物馆、埃及博物馆、大开罗博物馆。',gallery:['🔺','🐪','🏜️','🌅']},
+            {id:'sphinx',name:'狮身人面像',icon:'🦁',city:'开罗',country:'埃及',flag:'🇪🇬',category:'historic',type:'古代雕塑',yearBuilt:-2500,height:20,architect:'古埃及工匠',architecturalStyle:'古埃及建筑',unesco:'是',annualVisitors:'1460万',entryFee:'包含在吉萨门票中',bestTimeToVisit:'清晨',funFact:'狮身人面像的鼻子缺失一直以来被归咎于拿破仑军队的炮击，但18世纪的素描显示鼻子在拿破仑出生前就已缺失——很可能是在14世纪被伊斯兰教苏菲派信徒毁坏的。',desc:'狮身人面像是世界上最大、最古老的巨型雕塑之一，长73米、高20米。它静静地守护吉萨金字塔群已超过4500年。',detail:'狮身人面像（阿拉伯语：Abu al-Hol，意为"恐怖之父"）位于吉萨高原，是一尊由整块基岩雕刻而成的石灰岩巨像。狮身象征力量和守护，法老头戴尼美斯头饰，面容可能为法老哈夫拉。雕像长73米、宽19米、高20米，前爪之间有图特摩斯四世的"梦碑"（Dream Stele），记录了他登基前的一个预言梦。狮身人面像历经风沙侵蚀、地下水位上升和空气污染等多重威胁。近年来埃及政府进行了大规模修复工程，包括加固脆弱的胸部和颈部区域。它至今仍是考古学最大的谜团之一。',howToGetThere:'位于吉萨金字塔群入口处，从金字塔步行约10分钟。',bestPhotoSpots:'正面偏侧拍摄可同时拍到狮身人面像和哈夫拉金字塔、清晨无人时最佳、夜晚声光秀中变幻色彩。',nearbyAttractions:'吉萨大金字塔、太阳船博物馆、大开罗博物馆、萨卡拉阶梯金字塔。',gallery:['🦁','🏛️','📜','🐪']},
+
+            // Rio
+            {id:'christredeemer',name:'基督救世主雕像',icon:'✝️',city:'里约热内卢',country:'巴西',flag:'🇧🇷',category:'religious',type:'巨型雕塑',yearBuilt:1931,height:38,architect:'保罗·兰多夫斯基（雕塑）',architecturalStyle:'装饰艺术',unesco:'是',annualVisitors:'200万',entryFee:'R$ 65',bestTimeToVisit:'清晨或傍晚',funFact:'基督像的建造使用了巴西本国几乎不产的皂石——所有材料从瑞典进口，据说这些皂石碎片至今仍被当地人当作纪念品出售给游客。',desc:'基督救世主雕像是里约热内卢乃至整个巴西的标志。高38米的基督像张开双臂俯瞰着这座"上帝之城"，是世界新七大奇迹之一。',detail:'基督救世主雕像位于科尔科瓦多山（Corcovado，意为"驼背山"）山顶，海拔710米。雕像高30米（不含8米基座），双臂展开宽28米，总重635吨。由巴西工程师海托尔·达·席尔瓦·科斯塔设计，法国波兰裔雕塑家保罗·兰多夫斯基雕刻，历时9年（1922-1931）建成。雕像面部朝向东方——日出的方向。2007年入选世界新七大奇迹。游客需乘坐小火车穿越蒂茹卡国家森林公园登顶，或挑战222级阶梯。山顶观景台可360度俯瞰里约全景——科帕卡瓦纳海滩、面包山、瓜纳巴拉湾尽收眼底。',howToGetThere:'从科帕卡瓦纳或市中心乘出租车/Uber至Corcovado小火车站；或乘官方接驳巴士。',bestPhotoSpots:'小火车到站前的观景台、雕像正前方广场、回程小火车上拍山景和海景。',nearbyAttractions:'面包山、科帕卡瓦纳海滩、伊帕内马海滩、蒂茹卡国家森林公园。',gallery:['✝️','⛰️','🌊','🏖️']},
+
+            // Agra
+            {id:'tajmahal',name:'泰姬陵',icon:'🕌',city:'阿格拉',country:'印度',flag:'🇮🇳',category:'historic',type:'陵墓',yearBuilt:1653,height:73,architect:'乌斯塔德·艾哈迈德·拉合里',architecturalStyle:'莫卧儿建筑',unesco:'是',annualVisitors:'800万',entryFee:'₹1100',bestTimeToVisit:'日出时',funFact:'泰姬陵的白色大理石在不同时刻呈现不同颜色——晨曦中是粉红色，正午是白色，黄昏时变成金色，月光下则泛着幽蓝。',desc:'泰姬陵是世界最著名的爱情象征，由莫卧儿皇帝沙贾汗为纪念爱妻穆姆塔兹·玛哈尔而建。纯白色大理石陵墓被誉为"大理石上的眼泪"。',detail:'泰姬陵建于1632-1653年，动用约20000名工匠和1000头大象运输建材。主体建筑用印度拉贾斯坦邦马克拉纳的白色大理石建造，镶嵌来自波斯、阿富汗、西藏和中国的水晶、玉石、玛瑙、青金石、珊瑚和绿松石。中央洋葱式穹顶高73米，由四座高40米的宣礼塔环绕（略微向外倾斜，以防地震时砸到主陵墓）。陵墓内部为八边形，沙贾汗和穆姆塔兹的石棺安放在正中（实际棺椁在地下室）。镜面水池倒映出完美的泰姬陵对称倒影，是莫卧儿花园（charbagh）的典范。',howToGetThere:'从新德里乘火车至阿格拉（Taj Express约2小时）；或从德里驱车经Yamuna高速约3小时。',bestPhotoSpots:'正门入口处（经典的"框中之景"）、镜面水池前拍倒影、亚穆纳河对岸的月光花园。',nearbyAttractions:'阿格拉堡、法塔赫布尔·西格里、小泰姬陵、阿克巴大帝陵。',gallery:['🕌','💎','🌅','🤍']},
+
+            // Athens
+            {id:'parthenon',name:'帕特农神庙',icon:'🏛️',city:'雅典',country:'希腊',flag:'🇬🇷',category:'historic',type:'古代神庙',yearBuilt:-438,height:13.72,architect:'伊克梯诺和卡里克拉特',architecturalStyle:'多立克式古希腊建筑',unesco:'是',annualVisitors:'720万',entryFee:'€20',bestTimeToVisit:'春季/秋季清晨',funFact:'帕特农神庙的柱子没有一根是真正笔直的——每根柱子都略微向内倾斜，四角的柱子比中间的柱子粗2英寸，这些"光学修正"使建筑在视觉上显得完美。',desc:'帕特农神庙是古希腊建筑的巅峰，矗立在雅典卫城之上。建于公元前5世纪的黄金时代，是献给雅典娜女神的圣殿。',detail:'帕特农神庙（意为"处女之殿"）由政治家伯里克利委托建造，雕塑装饰由菲迪亚斯主持。神庙长69.5米、宽30.9米，由46根多立克式大理石柱环绕（正面8根、侧面17根）。每根柱子高10.4米，由11段柱鼓叠加而成，柱身有20道凹槽。东侧山花雕塑描绘雅典娜从宙斯头中诞生的场景，西侧山花是雅典娜与波塞冬争夺雅典守护权的故事。内殿原矗立着高12米的黄金象牙雅典娜巨像（已毁）。神庙历经2500年风雨——被改为教堂、清真寺，1687年在威尼斯军队炮击下严重损毁（当时被用作火药库）。',howToGetThere:'雅典地铁至Acropolis站步行5分钟；或从蒙纳斯提拉奇广场步行10分钟上卫城山。',bestPhotoSpots:'菲利帕普山丘拍摄卫城全景、卫城博物馆三楼餐厅、夜间灯光下从普拉卡街区远眺。',nearbyAttractions:'卫城博物馆、古市集、宙斯神庙、普拉卡老城区、泛雅典娜体育场。',gallery:['🏛️','🏺','🏔️','🇬🇷']},
+
+            // Washington DC
+            {id:'whitehouse',name:'白宫',icon:'🏛️',city:'华盛顿特区',country:'美国',flag:'🇺🇸',category:'government',type:'政府驻地',yearBuilt:1800,height:21,architect:'詹姆斯·霍本',architecturalStyle:'新古典主义',unesco:'否',annualVisitors:'100万',entryFee:'免费（需预约）',bestTimeToVisit:'春季樱花季',funFact:'白宫有132间房间、35间浴室、412扇门、147扇窗户、28个壁炉和3部电梯，还有1个保龄球道和1个电影院。',desc:'白宫是美国总统的官邸和办公场所，位于华盛顿特区的宾夕法尼亚大道1600号。这座新古典主义建筑是美国民主政治的标志性符号。',detail:'白宫由爱尔兰裔建筑师詹姆斯·霍本设计，1792年奠基、1800年竣工。1814年英美战争中英军焚毁白宫（外墙被烧黑），战后重建时用白色涂料覆盖焦痕，此后被称为"白宫"。建筑包括主楼（行政官邸）、西翼（总统办公室——椭圆形办公室所在）和东翼（第一夫人办公室）。主楼一层为东厅、国宴厅、蓝厅等用于接待国宾的公共房间，二层为总统家庭居住区。白宫花园包括玫瑰园、杰奎琳·肯尼迪花园和南草坪。参观需通过本国驻美大使馆提前数月预约。',howToGetThere:'华盛顿地铁蓝线/橙线/银线至Federal Triangle站，步行约10分钟。',bestPhotoSpots:'拉法耶特广场北侧正面拍摄、椭圆广场（The Ellipse）南侧远拍、夜间灯光下的北门廊。',nearbyAttractions:'国家广场、林肯纪念堂、国会大厦、史密森尼博物馆群、华盛顿纪念碑。',gallery:['🏛️','🇺🇸','🦅','🌸']},
+            {id:'capitol',name:'美国国会大厦',icon:'🏛️',city:'华盛顿特区',country:'美国',flag:'🇺🇸',category:'government',type:'政府建筑',yearBuilt:1800,height:88,architect:'威廉·桑顿等',architecturalStyle:'新古典主义',unesco:'否',annualVisitors:'300万',entryFee:'免费（需预约）',bestTimeToVisit:'春季/秋季',funFact:'国会大厦穹顶上的自由女神铜像高6米、重6800公斤，她的头盔上装饰着鹰头和羽毛，象征美国原住民传统。',desc:'美国国会大厦是华盛顿特区天际线最著名的标志。巨大的铸铁穹顶和自由女神像使其成为美国立法权力的象征。',detail:'国会大厦由多位建筑师参与设计和扩建：威廉·桑顿（最初设计）、本杰明·拉特罗布和托马斯·沃尔特（穹顶设计）。穹顶高88米（288英尺），由8900吨铸铁建成，1866年完工——当时正值美国内战，林肯总统坚持继续建造以象征国家统一。穹顶内部有康斯坦丁诺·布鲁米迪的壁画《华盛顿的神化》。建筑包括北翼（参议院）和南翼（众议院），圆顶大厅（Rotunda）以历史油画和雕塑装饰。参观可预约导览（含议会厅旁听），国家广场上的国会大厦访客中心免预约进入。',howToGetThere:'华盛顿地铁红线至Union Station步行10分钟；或蓝线/橙线/银线至Capitol South站。',bestPhotoSpots:'国家广场东端、国会大厦西侧大台阶、联合车站方向远拍、夜间穹顶灯光。',nearbyAttractions:'国会图书馆、最高法院、国家广场、国家美术馆、植物园。',gallery:['🏛️','🗽','🇺🇸','🏗️']},
+
+            // San Francisco
+            {id:'goldengate',name:'金门大桥',icon:'🌉',city:'旧金山',country:'美国',flag:'🇺🇸',category:'modern',type:'悬索桥',yearBuilt:1937,height:227,architect:'约瑟夫·斯特劳斯',architecturalStyle:'现代工程',unesco:'否',annualVisitors:'1000万',entryFee:'免费（步行/骑行）',bestTimeToVisit:'夏季清晨（避开雾）',funFact:'金门大桥的"国际橙"色并非最初的选择——美国海军原要求涂成黄黑条纹（便于舰船识别），但建筑师坚持用橙色底漆，最终这种暖橙色大受欢迎并成为永久颜色。',desc:'金门大桥是旧金山的灵魂标志，横跨金门海峡连接旧金山和马林县。桥身独特的"国际橙"涂装与蓝色海天形成绝美对比。',detail:'金门大桥长2737米，主跨1280米，建成时是世界最长悬索桥（记录保持至1964年）。两座主塔高227米（水面以上），由6万吨钢材建造。每根主缆直径92厘米，由27572根钢丝绞合而成——如果首尾相连可绕地球3圈。桥面距水面67米，大型货轮可从下方通过。大桥以其"国际橙"（International Orange）涂装闻名——这种颜色在旧金山常见的浓雾中清晰可见。大桥设有人行步道和自行车道，建议步行过桥感受太平洋海风和壮观景色。金门大桥也是世界上最"上镜"的桥梁之一。',howToGetThere:'从旧金山市中心乘Golden Gate Transit巴士；或从渔人码头骑行经滨海步道约30分钟。',bestPhotoSpots:'大桥南端的Golden Gate Overlook、贝克海滩、马林岬角（Marin Headlands）、Crissy Field。',nearbyAttractions:'渔人码头、恶魔岛、金门公园、索萨利托小镇、缪尔森林国家纪念地。',gallery:['🌉','🌁','🚢','🏞️']},
+
+            // Dubai (additional)
+            {id:'burjalarab',name:'阿拉伯塔酒店（帆船酒店）',icon:'⛵',city:'迪拜',country:'阿联酋',flag:'🇦🇪',category:'modern',type:'酒店',yearBuilt:1999,height:321,architect:'汤姆·赖特',architecturalStyle:'现代主义',unesco:'否',annualVisitors:'50万（访客）',entryFee:'AED 249起（下午茶）',bestTimeToVisit:'冬季',funFact:'帆船酒店的室内装饰使用了约1790平方米的24K金箔——如果把这些金箔铺开，可以覆盖将近3个篮球场。',desc:'阿拉伯塔酒店（俗称帆船酒店）是世界上最具辨识度的酒店之一。高321米，建在波斯湾的人工岛上，帆船造型象征着迪拜的航海传统。',detail:'帆船酒店由英国建筑师汤姆·赖特设计，灵感来自阿拉伯单桅帆船（dhow）的风帆。酒店建在距朱美拉海滩280米的人工岛上，通过私人桥梁与陆地相连。酒店内部极尽奢华：中庭高180米，是世界最高的酒店中庭；22K金箔装修随处可见；皇家套房（每晚约$24000）拥有私人电梯、旋转床和黄金装饰的浴室。酒店设有海底餐厅（Al Mahara，需模拟潜水艇进入）、天空酒吧和直升机停机坪（曾被用于网球表演赛——费德勒和阿加西的直升机停机坪对决）。',howToGetThere:'迪拜地铁红线至Mall of the Emirates站，换乘出租车约10分钟。',bestPhotoSpots:'朱美拉公共海滩（Jumeirah Public Beach）、Souk Madinat内的运河景观、直升机或跳伞视角（需要预订）。',nearbyAttractions:'朱美拉海滩、Souk Madinat Jumeirah、疯狂维迪水上乐园、朱美拉棕榈岛。',gallery:['⛵','🏨','🌊','✨']},
+            {id:'palmjumeirah',name:'朱美拉棕榈岛',icon:'🌴',city:'迪拜',country:'阿联酋',flag:'🇦🇪',category:'modern',type:'人工岛屿',yearBuilt:2006,height:0,architect:'Nakheel Properties',architecturalStyle:'现代工程',unesco:'否',annualVisitors:'300万',entryFee:'免费（单轨列车另付）',bestTimeToVisit:'冬季',funFact:'朱美拉棕榈岛的建造使用了9400万立方米沙子和700万吨岩石——这些材料如果排成一列可以绕地球两圈。从太空中肉眼可见这座棕榈树形状的人工岛。',desc:'朱美拉棕榈岛是世界上最大的人工岛屿群之一，棕榈树形的设计从太空中清晰可见。这里是迪拜奢华生活的缩影，集酒店、住宅、娱乐于一体。',detail:'朱美拉棕榈岛是迪拜三个规划棕榈岛中唯一完工的（另外两个——杰贝阿里棕榈岛和德拉棕榈岛因金融危机暂停）。岛屿由"树干"、"17片棕榈叶"和11公里长的环形防波堤组成。防波堤由岩石堆砌，高出水面3米，保护岛内海域平静。"树干"区是高层公寓和商业区，"叶子"上是豪华别墅，外围防波堤坐落着亚特兰蒂斯酒店等知名度假村。单轨列车沿"树干"运行，连接大陆和亚特兰蒂斯酒店。跳伞者可从13000英尺高空俯瞰棕榈岛全景——这是迪拜最热门的极限运动之一。',howToGetThere:'迪拜有轨电车至Palm Jumeirah站，换乘棕榈岛单轨列车（The Palm Monorail）。',bestPhotoSpots:'跳伞视角（Skydive Dubai）、直升机观光、亚特兰蒂斯酒店水上乐园的The Leap水滑梯顶端。',nearbyAttractions:'亚特兰蒂斯水上乐园、失落的空间水族馆、迪拜码头、JBR海滩。',gallery:['🌴','🏝️','🏨','🪂']},
+
+            // Singapore
+            {id:'marinabay',name:'滨海湾金沙酒店',icon:'🏨',city:'新加坡',country:'新加坡',flag:'🇸🇬',category:'modern',type:'酒店/综合度假村',yearBuilt:2010,height:194,architect:'摩西·萨夫迪',architecturalStyle:'现代主义',unesco:'否',annualVisitors:'500万',entryFee:'SGD 26（空中花园观景台）',bestTimeToVisit:'傍晚',funFact:'金沙酒店顶部的空中花园长达340米，可以停放4架半A380客机——它是世界上最大的悬臂式公共观景台之一，拥有150米长的无边泳池。',desc:'滨海湾金沙酒店是新加坡天际线的标志。三座塔楼顶着一艘"飞船"般的空中花园，无边泳池和空中观景台吸引了全球游客。',detail:'滨海湾金沙由以色列裔加拿大建筑师摩西·萨夫迪设计，耗资约80亿新元。三座55层塔楼呈略微倾斜的角度排列，顶部由340米长的"金沙空中花园"（SkyPark）连接。空中花园设有举世闻名的150米无边泳池（仅限酒店住客）、观景台（对公众开放）和餐厅。建筑群还包括赌场、剧院、会展中心、购物中心和艺术科学博物馆（莲花形建筑）。夜晚的金沙灯光秀（Spectra）以水幕、激光和音乐展现新加坡的多元文化。对面的滨海湾花园以"超级树"灯光秀与之呼应，共同构成新加坡最震撼的城市夜景。',howToGetThere:'新加坡地铁环线或滨海市区线至Bayfront站（CE1/DT16），出站即达。',bestPhotoSpots:'滨海湾对岸的鱼尾狮公园、金沙购物中心外的Event Plaza、Helix Bridge上。',nearbyAttractions:'滨海湾花园、鱼尾狮公园、新加坡摩天观景轮、艺术科学博物馆、滨海湾堤坝。',gallery:['🏨','🏊','🌃','🚢']},
+            {id:'gardensbythebay',name:'滨海湾花园',icon:'🌿',city:'新加坡',country:'新加坡',flag:'🇸🇬',category:'natural',type:'城市花园',yearBuilt:2012,height:50,architect:'Grant Associates',architecturalStyle:'可持续建筑',unesco:'否',annualVisitors:'800万',entryFee:'免费（部分场馆收费）',bestTimeToVisit:'傍晚至夜间',funFact:'滨海湾花园的超级树在夜晚化身灯光秀的屏幕——18棵超级树中有11棵嵌入太阳能电池板，白天收集能量，夜间点亮灯光和音乐秀。',desc:'滨海湾花园是新加坡从"花园城市"迈向"城中花园"的旗舰项目。超级树、云雾森林和花穹三大亮点使这里成为世界级生态旅游目的地。',detail:'滨海湾花园占地101公顷，由英国Grant Associates事务所设计。核心景区包括：18棵"超级树"（Supertrees）——高25-50米的垂直花园，种植超过16万株植物，部分超级树通过空中走道（OCBC Skyway）连接；花穹（Flower Dome）——世界最大的无柱冷室温室，模拟地中海和半干旱气候；云雾森林（Cloud Forest）——35米高的室内瀑布和人造山上覆盖着热带山地植物，讲述气候变化和生态保护的故事。花园贯彻可持续发展理念：超级树收集雨水、利用太阳能，冷却系统使用湖水循环降温。每晚的"花园狂想曲"（Garden Rhapsody）灯光音乐秀免费向公众开放。',howToGetThere:'地铁至Bayfront站（CE1/DT16），经金沙酒店步行桥或地下通道约10分钟。',bestPhotoSpots:'超级树丛中的空中走道、云雾森林瀑布前、金沙酒店天桥俯瞰花园全景。',nearbyAttractions:'滨海湾金沙、鱼尾狮公园、新加坡摩天观景轮、滨海湾堤坝。',gallery:['🌿','🌳','🌺','✨']},
+
+            // Paris (additional)
+            {id:'notredame',name:'巴黎圣母院',icon:'⛪',city:'巴黎',country:'法国',flag:'🇫🇷',category:'religious',type:'大教堂',yearBuilt:1345,height:69,architect:'多位中世纪建筑师',architecturalStyle:'法国哥特式',unesco:'是',annualVisitors:'1200万',entryFee:'免费',bestTimeToVisit:'清晨',funFact:'巴黎圣母院的玫瑰窗直径13米，由超过1100块彩色玻璃组成——二战期间巴黎人为保护它们，将每块玻璃拆卸编号、秘密隐藏，战后完好无损地重新组装。',desc:'巴黎圣母院是法国哥特式建筑的杰作，位于巴黎市中心西岱岛上。2019年大火后正在进行全面修复，预计2024年底重新开放。',detail:'巴黎圣母院（Notre-Dame de Paris，意为"我们的巴黎圣母"）始建于1163年，1345年竣工，历时182年。教堂长128米，中殿高35米，双塔高69米——南塔内悬挂着13吨重的埃曼纽尔大钟。西立面三座大门雕刻精细：圣母门、最后的审判门和圣安妮门。内部三大玫瑰窗（北、南、西）是13世纪彩色玻璃艺术的登峰造极之作。2019年4月15日严重火灾烧毁了木质屋顶和19世纪的尖塔（由维欧勒·勒·杜克设计），但主结构和三大玫瑰窗奇迹般幸存。法国政府承诺"5年内重建"，修复工程汇集了法国最顶尖的工匠和现代技术。',howToGetThere:'巴黎地铁4号线至Cité站；或RER B/C至Saint-Michel - Notre-Dame站。',bestPhotoSpots:'托内尔桥（Pont de la Tournelle）拍摄圣母院侧影和塞纳河、蒙泰贝洛堤岸的花园、莎士比亚书店前。',nearbyAttractions:'圣礼拜堂、卢浮宫、莎士比亚书店、先贤祠、拉丁区。',gallery:['⛪','🏰','🌹','🔔']},
+            {id:'louvre',name:'卢浮宫博物馆',icon:'🏛️',city:'巴黎',country:'法国',flag:'🇫🇷',category:'cultural',type:'博物馆',yearBuilt:1793,height:21,architect:'贝聿铭（金字塔）',architecturalStyle:'古典复兴/现代（金字塔）',unesco:'是',annualVisitors:'1000万',entryFee:'€22',bestTimeToVisit:'周三/周五晚间（开放至21:45）',funFact:'卢浮宫是世界上最大、参观人数最多的博物馆。如果每件展品前停留30秒，需要连续看100多天才能看完所有展品。',desc:'卢浮宫是世界上最大的艺术博物馆，从12世纪的城堡演变为今天的"艺术圣殿"。贝聿铭的玻璃金字塔入口已成为巴黎的现代地标。',detail:'卢浮宫建筑群从1190年的中世纪城堡起步，经弗朗索瓦一世（16世纪）、路易十四（凡尔赛宫建成前卢浮宫是皇家主要住所）、拿破仑一世和三世的不断扩建。1793年法国大革命期间作为公共博物馆开放。贝聿铭的玻璃金字塔于1989年落成，最初引发巨大争议，如今已成为巴黎天际线不可分割的一部分。卢浮宫收藏逾38万件艺术品，包括达芬奇《蒙娜丽莎》、米洛斯的维纳斯、胜利女神像、汉谟拉比法典等镇馆之宝。展品跨越史前至19世纪，分为东方古物、埃及古物、希腊罗马古物、绘画、雕塑、装饰艺术等八大部门。',howToGetThere:'巴黎地铁1号线或7号线至Palais Royal - Musée du Louvre站，直达地下入口。',bestPhotoSpots:'玻璃金字塔前方喷水池、黎塞留通道（Passage Richelieu）、杜乐丽花园望向卢浮宫。',nearbyAttractions:'杜乐丽花园、奥赛博物馆、皇家宫殿花园、协和广场、圣奥诺雷街区。',gallery:['🏛️','🔺','🎨','🖼️']}
+        ];
+
+        // Must-visit IDs (Top 5)
+        const mustVisitIds=new Set(['eiffel','tajmahal','greatwall','pyramids','colosseum']);
+
+        // ===== STATE =====
+        let activeFilter='all';
+        let searchQuery='';
+        let quizAnswered=0;
+        let quizScore=0;
+        let quizFinished=false;
+
+        // ===== HELPER: Get category in Chinese =====
+        function getCategoryLabel(cat){const m={religious:'宗教建筑',modern:'现代建筑',historic:'历史遗迹',natural:'自然奇观',government:'政府建筑',cultural:'文化场馆'};return m[cat]||cat;}
+
+        // ===== RENDER STATS BAR =====
+        function renderStats(filteredLms){
+            const all=landmarks;
+            const oldest=all.reduce((a,b)=>a.yearBuilt<b.yearBuilt?a:b);
+            const tallest=all.reduce((a,b)=>a.height>b.height?a:b);
+            const countries=new Set(all.map(l=>l.country)).size;
+            document.getElementById('statsBar').innerHTML=`
+                <div class="stats-card"><div class="stats-icon">🏛️</div><div class="stats-value">${all.length}</div><div class="stats-label">收录地标</div></div>
+                <div class="stats-card"><div class="stats-icon">🌍</div><div class="stats-value">${countries}</div><div class="stats-label">覆盖国家</div></div>
+                <div class="stats-card"><div class="stats-icon">📜</div><div class="stats-value">${oldest.name}</div><div class="stats-label">最古老 · ${Math.abs(oldest.yearBuilt)}年</div></div>
+                <div class="stats-card"><div class="stats-icon">🏗️</div><div class="stats-value">${tallest.name}</div><div class="stats-label">最高 · ${tallest.height}米</div></div>`;
+        }
+
+        // ===== FILTER & SEARCH =====
+        function getFilteredLandmarks(){
+            let filtered=landmarks;
+            if(activeFilter!=='all')filtered=filtered.filter(l=>l.category===activeFilter);
+            if(searchQuery.trim()){const q=searchQuery.trim().toLowerCase();filtered=filtered.filter(l=>l.name.toLowerCase().includes(q)||l.city.toLowerCase().includes(q)||l.country.toLowerCase().includes(q)||l.type.toLowerCase().includes(q));}
+            return filtered;
+        }
+
+        // ===== RENDER LANDMARK GRID =====
+        function renderLandmarkGrid(){
+            const filtered=getFilteredLandmarks();
+            const grid=document.getElementById('landmarkGrid');
+            const noRes=document.getElementById('noResults');
+            const resultCount=document.getElementById('resultCount');
+            resultCount.textContent=filtered.length===landmarks.length?`显示全部 ${landmarks.length} 个地标`:`找到 ${filtered.length} 个地标（共 ${landmarks.length} 个）`;
+            if(filtered.length===0){grid.innerHTML='';noRes.style.display='block';}else{noRes.style.display='none';grid.innerHTML=filtered.map((l,i)=>`<div class="landmark-card" style="animation:fadeInUp 0.35s ease forwards;animation-delay:${i*0.04}s" data-id="${l.id}">
+                <div class="landmark-card-img">${l.icon}${l.unesco==='是'?'<span class="landmark-card-unesco">🏛️ 世界遗产</span>':''}${mustVisitIds.has(l.id)?'<span class="landmark-card-badge">⭐ 必游</span>':''}<span class="landmark-card-city">${l.flag} ${l.city}</span></div>
+                <div class="landmark-card-body"><span class="landmark-card-type">${l.type}</span><div class="landmark-card-name">${l.name}</div><div class="landmark-card-desc">${l.desc}</div><div class="landmark-card-meta"><span>📅 ${l.yearBuilt<0?Math.abs(l.yearBuilt)+' BCE':l.yearBuilt+'年'}</span>${l.height>0?`<span>📏 ${l.height}米</span>`:''}<span>💰 ${l.entryFee}</span></div></div></div>`).join('');}
+            document.querySelectorAll('.landmark-card').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
+        }
+
+        // ===== SEARCH INPUT =====
+        document.getElementById('searchInput').addEventListener('input',function(){
+            searchQuery=this.value;
+            renderLandmarkGrid();
+            renderAutocomplete(this.value);
+        });
+        function renderAutocomplete(query){
+            const dropdown=document.getElementById('autocompleteDropdown');
+            if(!query.trim()||query.trim().length<1){dropdown.classList.remove('active');return;}
+            const q=query.trim().toLowerCase();
+            const matches=landmarks.filter(l=>l.name.toLowerCase().includes(q)||l.city.toLowerCase().includes(q)||l.country.toLowerCase().includes(q)).slice(0,8);
+            if(matches.length===0){dropdown.classList.remove('active');return;}
+            dropdown.innerHTML=matches.map(m=>`<div class="autocomplete-item" data-id="${m.id}"><span class="ac-icon">${m.icon}</span>${m.name} — ${m.flag} ${m.city}, ${m.country}</div>`).join('');
+            dropdown.classList.add('active');
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item=>{item.addEventListener('click',function(){const id=this.dataset.id;openDetail(id);dropdown.classList.remove('active');document.getElementById('searchInput').value='';searchQuery='';renderLandmarkGrid();});});
+        }
+        document.addEventListener('click',function(e){if(!e.target.closest('.search-wrapper'))document.getElementById('autocompleteDropdown').classList.remove('active');});
+
+        // ===== FILTER BAR =====
+        document.querySelectorAll('.filter-btn').forEach(btn=>{btn.addEventListener('click',function(){document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');activeFilter=this.dataset.filter;renderLandmarkGrid();});});
+
+        // ===== ENHANCED DETAIL MODAL =====
+        function openDetail(id){
+            const l=landmarks.find(x=>x.id===id);if(!l)return;
+            const detail=document.getElementById('landmarkDetail');
+            detail.innerHTML=`
+                <button class="landmark-detail-close" onclick="closeDetail()">✕</button>
+                <span class="detail-icon">${l.icon}</span>
+                ${mustVisitIds.has(l.id)?'<div style="text-align:center;margin-bottom:10px;"><span style="background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000;padding:4px 14px;border-radius:14px;font-size:0.78rem;font-weight:700;">⭐ 必游地标 Top 5</span></div>':''}
+                <h2>${l.name}</h2>
+                <div style="color:var(--accent-cyan);margin-bottom:4px;">${l.flag} ${l.city}, ${l.country} · ${l.type}</div>
+                <div class="detail-meta">
+                    <span class="meta-tag">📅 ${l.yearBuilt<0?Math.abs(l.yearBuilt)+' BCE':l.yearBuilt+'年'}</span>
+                    ${l.height>0?`<span class="meta-tag">📏 ${l.height}米</span>`:''}
+                    <span class="meta-tag">🏛️ ${l.architecturalStyle}</span>
+                    <span class="meta-tag">👤 ${l.architect}</span>
+                    ${l.unesco==='是'?'<span class="meta-tag unesco-tag">🏛️ 世界遗产</span>':''}
+                    <span class="meta-tag" style="background:rgba(0,212,255,0.1);color:var(--accent-cyan);">👥 ${l.annualVisitors}游客/年</span>
+                    <span class="meta-tag gold-tag">⭐ ${l.bestTimeToVisit}</span>
+                </div>
+
+                <!-- Gallery Thumbs -->
+                <div class="gallery-thumbs">${l.gallery.map(g=>`<span class="gallery-thumb">${g}</span>`).join('')}</div>
+
+                <!-- Tabs -->
+                <div class="detail-tabs" style="margin-top:18px;">
+                    <button class="detail-tab active" data-tab="desc">📖 详细介绍</button>
+                    <button class="detail-tab" data-tab="howto">🚇 如何到达</button>
+                    <button class="detail-tab" data-tab="photo">📸 最佳拍照点</button>
+                    <button class="detail-tab" data-tab="nearby">📍 附近景点</button>
+                    <button class="detail-tab" data-tab="funfact">💡 趣闻轶事</button>
+                </div>
+                <div class="detail-tab-content active" data-content="desc"><p>${l.detail}</p></div>
+                <div class="detail-tab-content" data-content="howto"><p>${l.howToGetThere}</p></div>
+                <div class="detail-tab-content" data-content="photo"><p>${l.bestPhotoSpots}</p></div>
+                <div class="detail-tab-content" data-content="nearby"><p>${l.nearbyAttractions}</p></div>
+                <div class="detail-tab-content" data-content="funfact"><p>${l.funFact}</p></div>`;
+
+            // Tab switching
+            detail.querySelectorAll('.detail-tab').forEach(tab=>{tab.addEventListener('click',function(){detail.querySelectorAll('.detail-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active');detail.querySelectorAll('.detail-tab-content').forEach(c=>c.classList.remove('active'));detail.querySelector(`[data-content="${this.dataset.tab}"]`).classList.add('active');});});
+
+            document.getElementById('landmarkModal').classList.add('active');document.body.style.overflow='hidden';
+            document.getElementById('landmarkModal').scrollTop=0;
+        }
+        function closeDetail(){document.getElementById('landmarkModal').classList.remove('active');document.body.style.overflow='';}
+        document.getElementById('landmarkModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDetail();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
+
+        // ===== NAVBAR =====
+        const navbar=document.getElementById('navbar');window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.scrollY>50));
+        document.getElementById('mobileMenuBtn').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('active'));document.querySelectorAll('#navLinks a').forEach(l=>l.addEventListener('click',()=>document.getElementById('navLinks').classList.remove('active')));
+        const bt=document.getElementById('btnThemeToggle'),s=localStorage.getItem('citylens-theme');if(s==='light'){document.body.classList.add('light-mode');bt.textContent='◑';}bt.addEventListener('click',()=>{document.body.classList.toggle('light-mode');bt.textContent=document.body.classList.contains('light-mode')?'◑':'◐';localStorage.setItem('citylens-theme',document.body.classList.contains('light-mode')?'light':'dark');});
+
+        // ===== COUNTRY GROUPING =====
+        function renderCountryGroups(){
+            const groups={};
+            landmarks.forEach(l=>{if(!groups[l.country])groups[l.country]={flag:l.flag,landmarks:[]};groups[l.country].landmarks.push(l);});
+            const sortedCountries=Object.entries(groups).sort((a,b)=>b[1].landmarks.length-a[1].landmarks.length);
+            document.getElementById('countryGroups').innerHTML=sortedCountries.map(([country,data])=>`
+                <div class="country-group">
+                    <div class="country-group-header" onclick="toggleCountryGroup(this)">
+                        <div class="cg-title"><span class="cg-flag">${data.flag}</span>${country}<span class="cg-count">${data.landmarks.length}个地标</span></div>
+                        <span class="cg-arrow">▶</span>
+                    </div>
+                    <div class="country-group-body">
+                        ${data.landmarks.map(l=>`<div class="country-landmark-row" onclick="openDetail('${l.id}')">
+                            <span class="clr-icon">${l.icon}</span>
+                            <div class="clr-info"><div class="clr-name">${l.name}</div><div class="clr-type">${l.city} · ${l.type}${l.unesco==='是'?' · 🏛️世界遗产':''}</div></div>
+                            <span class="clr-arrow">→</span>
+                        </div>`).join('')}
+                    </div>
+                </div>`).join('');
+        }
+        function toggleCountryGroup(header){
+            const body=header.nextElementSibling;
+            const isOpen=body.classList.contains('open');
+            body.classList.toggle('open');
+            if(isOpen){header.classList.remove('open');}else{header.classList.add('open');}
+        }
+
+        // ===== LANDMARK QUIZ =====
+        function generateQuiz(){
+            const pool=[...landmarks];
+            shuffleArray(pool);
+            const picked=pool.slice(0,5);
+            const questions=[];
+            picked.forEach(correct=>{
+                const wrongs=pool.filter(l=>l.id!==correct.id);
+                shuffleArray(wrongs);
+                const options=shuffleArray([correct,...wrongs.slice(0,3)]);
+                const questionTypes=['nameFromIcon','detailFromName','cityFromName','typeFromName','countryFromName'];
+                const qt=questionTypes[questions.length%questionTypes.length];
+                let qText='';
+                switch(qt){
+                    case 'nameFromIcon':qText=`哪个地标的图标是 ${correct.icon}？`;break;
+                    case 'detailFromName':qText=`${correct.name} 位于哪个城市？`;break;
+                    case 'cityFromName':qText=`${correct.flag} ${correct.city} 最著名的地标是？`;break;
+                    case 'typeFromName':qText=`${correct.name} 属于什么类型的建筑？`;break;
+                    case 'countryFromName':qText=`${correct.name} 位于哪个国家？`;break;
+                }
+                questions.push({question:qText,options:options.map(o=>{let ans='';switch(qt){case 'nameFromIcon':ans=o.name;break;case 'detailFromName':ans=o.city;break;case 'cityFromName':ans=o.name;break;case 'typeFromName':ans=o.type;break;case 'countryFromName':ans=o.country;break;}return{id:o.id,text:ans,isCorrect:o.id===correct.id};}),correctId:correct.id});
+            });
+            return questions;
+        }
+        function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+        function renderQuiz(){
+            const questions=generateQuiz();
+            quizAnswered=0;quizScore=0;quizFinished=false;
+            const container=document.getElementById('quizQuestions');
+            const resetBtn=document.getElementById('quizResetBtn');
+            const scoreDiv=document.createElement('div');scoreDiv.className='quiz-score';scoreDiv.id='quizScoreDisplay';
+            const existingScore=document.getElementById('quizScoreDisplay');if(existingScore)existingScore.remove();
+            resetBtn.style.display='none';
+            container.innerHTML=questions.map((q,i)=>`
+                <div class="quiz-question-block" data-qindex="${i}">
+                    <div class="qq-question">${i+1}. ${q.question}</div>
+                    <div class="quiz-options">
+                        ${q.options.map(o=>`<button class="quiz-option" data-correct="${o.isCorrect}" data-qidx="${i}">${o.text}</button>`).join('')}
+                    </div>
+                </div>`).join('');
+            container.after(scoreDiv);
+            container.querySelectorAll('.quiz-option').forEach(btn=>{btn.addEventListener('click',function(){if(this.disabled||quizFinished)return;const isCorrect=this.dataset.correct==='true';const qIdx=parseInt(this.dataset.qidx);const block=container.querySelector(`[data-qindex="${qIdx}"]`);block.querySelectorAll('.quiz-option').forEach(b=>{b.disabled=true;if(b.dataset.correct==='true')b.classList.add('correct');else if(b===this&&!isCorrect)b.classList.add('wrong');});if(isCorrect)quizScore++;quizAnswered++;if(quizAnswered===5){quizFinished=true;const sd=document.getElementById('quizScoreDisplay');sd.textContent=`🎉 你答对了 ${quizScore} / 5 题！${quizScore===5?'🏆 满分！你是地标大师！':quizScore>=3?'👍 不错哦，继续加油！':'📚 还需要多了解世界地标哦~'}`;sd.classList.add('show');resetBtn.style.display='inline-block';}});});
+        }
+        renderQuiz();
+        document.getElementById('quizResetBtn').addEventListener('click',renderQuiz);
+
+        // ===== INITIAL RENDER =====
+        renderStats();
+        renderLandmarkGrid();
+        renderCountryGroups();
+        console.log('%c🏛️ 地标建筑库已就绪 | 共 %d 个地标 | %d 个国家','color:#a855f7;',landmarks.length,new Set(landmarks.map(l=>l.country)).size);
+    </script>
+</body>
+</html>
