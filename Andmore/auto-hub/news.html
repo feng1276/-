@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>车展新闻 - AutoHub</title>
+    <style>
+        :root {
+            --bg-primary:#0a0e14;--bg-secondary:#11161d;--bg-tertiary:#1a1f2b;--bg-card:#141a23;
+            --text-primary:#c9d1d9;--text-secondary:#8b949e;--text-highlight:#f0f6fc;
+            --accent-blue:#4a9eff;--accent-cyan:#00d4ff;--accent-green:#00ff88;--accent-red:#ff4757;
+            --accent-purple:#a855f7;--border-glow:#1e2d3d;--shadow-card:0 4px 25px rgba(0,0,0,0.6);
+            --shadow-hover:0 8px 40px rgba(74,158,255,0.2);--border-radius:8px;--transition-speed:0.3s;
+            --nav-height:72px;--max-width:1400px;
+        }
+        body.light-mode{--bg-primary:#f0f2f5;--bg-secondary:#ffffff;--bg-tertiary:#e4e6eb;--bg-card:#ffffff;--text-primary:#1a1a2e;--text-secondary:#5a6c7d;--text-highlight:#0a0a0a;--border-glow:#d0d5dd;--shadow-card:0 4px 20px rgba(0,0,0,0.08);}
+        *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;font-size:16px;}
+        body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background-color:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background-color var(--transition-speed),color var(--transition-speed);}
+        ::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg-secondary);}::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:4px;}
+        .navbar{position:fixed;top:0;left:0;width:100%;height:var(--nav-height);background:rgba(10,14,20,0.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(74,158,255,0.1);z-index:1000;}.navbar.scrolled{box-shadow:0 4px 30px rgba(0,0,0,0.7);}
+        .navbar .container{max-width:var(--max-width);margin:0 auto;padding:0 30px;height:100%;display:flex;align-items:center;justify-content:space-between;}
+        .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-highlight);font-size:1.5rem;font-weight:800;}.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#4a9eff,#00d4ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;}.logo-text{background:linear-gradient(135deg,#4a9eff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .nav-links{display:flex;list-style:none;gap:2px;}.nav-links li a{display:block;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:6px;transition:all var(--transition-speed);font-size:0.88rem;font-weight:500;}.nav-links li a:hover,.nav-links li a.active{color:var(--text-highlight);background:rgba(74,158,255,0.06);}
+        .nav-actions{display:flex;gap:8px;}.btn-icon{width:38px;height:38px;border:1px solid rgba(74,158,255,0.15);background:rgba(74,158,255,0.03);color:var(--text-secondary);border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;}.btn-icon:hover{background:rgba(74,158,255,0.1);border-color:var(--accent-blue);color:var(--accent-cyan);}
+        .mobile-menu-btn{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}.mobile-menu-btn span{display:block;width:24px;height:2px;background:var(--accent-cyan);}
+        .page-header{margin-top:var(--nav-height);background:linear-gradient(160deg,#0a0e14 0%,#0d1525 30%,#0a0e14 100%);padding:55px 0;text-align:center;border-bottom:1px solid var(--border-glow);}.page-header h1{font-size:2.3rem;font-weight:900;color:var(--text-highlight);}
+        .main-content{padding:20px 0 70px;}.container{max-width:var(--max-width);margin:0 auto;padding:0 30px;}
+        .featured-news{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:30px;}.featured-main{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);overflow:hidden;cursor:pointer;transition:all var(--transition-speed);}.featured-main:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);}.featured-main-img{width:100%;aspect-ratio:21/9;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:4rem;}.featured-main-body{padding:22px;}.featured-main-body h3{color:var(--text-highlight);margin-bottom:8px;}.featured-main-body p{color:var(--text-secondary);font-size:0.85rem;}
+        .featured-side{display:flex;flex-direction:column;gap:15px;}.featured-side-item{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:16px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:all var(--transition-speed);flex:1;}.featured-side-item:hover{border-color:var(--accent-blue);transform:translateX(3px);}.featured-side-icon{font-size:2rem;}.featured-side-title{font-weight:600;color:var(--text-highlight);font-size:0.85rem;}
+
+        /* ========== NEW: Breadcrumb ========== */
+        .breadcrumb{margin-top:6px;font-size:0.8rem;color:var(--text-secondary);}.breadcrumb a{color:var(--accent-cyan);text-decoration:none;}.breadcrumb a:hover{text-decoration:underline;}
+
+        /* ========== NEW: Breaking News Ticker ========== */
+        .breaking-ticker{background:rgba(255,71,87,0.08);border-top:1px solid rgba(255,71,87,0.2);border-bottom:1px solid rgba(255,71,87,0.2);padding:10px 0;overflow:hidden;position:relative;margin-bottom:0;}
+        .breaking-ticker-label{display:inline-flex;align-items:center;gap:6px;background:var(--accent-red);color:#fff;padding:4px 14px;border-radius:4px;font-size:0.72rem;font-weight:700;white-space:nowrap;position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:2;margin-left:4px;}
+        .breaking-ticker-track{display:flex;animation:ticker-scroll 50s linear infinite;white-space:nowrap;padding-left:120px;}
+        .breaking-ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 32px;color:var(--text-highlight);font-size:0.82rem;font-weight:600;cursor:pointer;transition:color var(--transition-speed);}.breaking-ticker-item:hover{color:var(--accent-red);}
+        .breaking-ticker-dot{width:5px;height:5px;background:var(--accent-red);border-radius:50%;flex-shrink:0;}
+        @keyframes ticker-scroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+        /* ========== NEW: Search ========== */
+        .search-box{position:relative;margin-bottom:18px;max-width:420px;}
+        .search-input{width:100%;padding:12px 18px 12px 44px;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.9rem;font-family:inherit;transition:all var(--transition-speed);outline:none;}
+        .search-input:focus{border-color:var(--accent-blue);box-shadow:0 0 0 3px rgba(74,158,255,0.08);}
+        .search-input::placeholder{color:var(--text-secondary);}
+        .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--text-secondary);pointer-events:none;}
+
+        /* ========== NEW: Category Tabs ========== */
+        .category-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+        .category-tabs::-webkit-scrollbar{height:3px;}.category-tabs::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:3px;}
+        .category-tab{padding:7px 16px;border:1px solid var(--border-glow);border-radius:20px;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap;transition:all var(--transition-speed);font-family:inherit;flex-shrink:0;}
+        .category-tab:hover{border-color:var(--accent-blue);color:var(--text-highlight);}
+        .category-tab.active{background:rgba(74,158,255,0.12);border-color:var(--accent-blue);color:var(--accent-cyan);}
+
+        /* ========== NEW: Layout Grid ========== */
+        .content-grid{display:grid;grid-template-columns:1fr 320px;gap:30px;align-items:start;}
+        .content-main{min-width:0;}
+        .content-sidebar{display:flex;flex-direction:column;gap:20px;position:sticky;top:calc(var(--nav-height) + 30px);}
+
+        /* ========== NEW: Sidebar Cards ========== */
+        .sidebar-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);padding:20px;}
+        .sidebar-card h4{font-size:0.95rem;font-weight:700;color:var(--text-highlight);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+        .most-read-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all var(--transition-speed);}
+        .most-read-item:last-child{border-bottom:none;}
+        .most-read-item:hover .most-read-title{color:var(--accent-cyan);}
+        .most-read-rank{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;background:var(--bg-tertiary);color:var(--text-secondary);}
+        .most-read-rank.top3{background:rgba(74,158,255,0.15);color:var(--accent-cyan);}
+        .most-read-info{flex:1;min-width:0;}
+        .most-read-title{font-size:0.8rem;font-weight:600;color:var(--text-primary);line-height:1.4;transition:color var(--transition-speed);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+        .most-read-views{font-size:0.68rem;color:var(--text-secondary);margin-top:3px;}
+
+        /* ========== NEW: Newsletter ========== */
+        .newsletter-form{display:flex;flex-direction:column;gap:10px;}
+        .newsletter-input{padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-primary);font-size:0.85rem;font-family:inherit;outline:none;transition:all var(--transition-speed);}
+        .newsletter-input:focus{border-color:var(--accent-blue);}
+        .newsletter-btn{padding:10px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));border:none;border-radius:var(--border-radius);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;transition:all var(--transition-speed);}
+        .newsletter-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 15px rgba(74,158,255,0.3);}
+
+        /* ========== ENHANCED: News Cards ========== */
+        .news-masonry{column-count:3;column-gap:20px;}
+        .news-card{break-inside:avoid;background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--border-radius);margin-bottom:20px;overflow:hidden;cursor:pointer;transition:all var(--transition-speed);}
+        .news-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);}
+        .news-card .news-card-img{width:100%;aspect-ratio:16/10;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text-secondary);}
+        .news-card-body{padding:16px;}
+        .news-card-tag{display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.7rem;font-weight:600;margin-bottom:8px;}
+        .news-card-title{font-weight:700;color:var(--text-highlight);font-size:0.95rem;margin-bottom:6px;line-height:1.4;}
+        .news-card-summary{font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+        .news-card-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.7rem;color:var(--text-secondary);margin-bottom:10px;}
+        .news-card-meta span{display:inline-flex;align-items:center;gap:4px;}
+        .news-card-source{color:var(--accent-cyan);}
+        .related-news-links{border-top:1px solid var(--border-glow);padding-top:10px;margin-top:2px;}
+        .related-news-link{display:block;font-size:0.7rem;color:var(--text-secondary);text-decoration:none;padding:2px 0;transition:color var(--transition-speed);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .related-news-link:hover{color:var(--accent-cyan);}
+        .related-news-label{font-size:0.65rem;font-weight:700;color:var(--accent-purple);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;}
+
+        /* Category tag color variants */
+        .tag-新车发布{background:rgba(74,158,255,0.15);color:var(--accent-blue);}
+        .tag-行业新闻{background:rgba(0,255,136,0.12);color:var(--accent-green);}
+        .tag-赛事动态{background:rgba(255,71,87,0.12);color:var(--accent-red);}
+        .tag-技术突破{background:rgba(168,85,247,0.12);color:var(--accent-purple);}
+        .tag-概念车{background:rgba(0,212,255,0.12);color:var(--accent-cyan);}
+        .tag-谍照曝光{background:rgba(255,165,0,0.12);color:#ffa500;}
+        .tag-召回信息{background:rgba(255,107,107,0.12);color:#ff6b6b;}
+        .tag-获奖新闻{background:rgba(255,215,0,0.12);color:#ffd700;}
+        .tag-试驾评测{background:rgba(0,180,216,0.12);color:#00b4d8;}
+
+        /* ========== NEW: Load More ========== */
+        .load-more-wrap{text-align:center;margin-top:30px;}
+        .load-more-btn{padding:13px 40px;background:transparent;border:1px solid var(--border-glow);border-radius:var(--border-radius);color:var(--text-secondary);font-size:0.88rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all var(--transition-speed);}
+        .load-more-btn:hover{border-color:var(--accent-blue);color:var(--text-highlight);background:rgba(74,158,255,0.05);}
+        .load-more-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+        /* ========== NEW: Modal ========== */
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.78);z-index:2000;display:flex;align-items:center;justify-content:center;padding:30px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+        .modal-overlay.active{opacity:1;pointer-events:auto;}
+        .modal-content{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:12px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.8);}
+        .modal-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:1px solid var(--border-glow);border-radius:50%;background:var(--bg-tertiary);color:var(--text-secondary);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;transition:all var(--transition-speed);}
+        .modal-close:hover{color:var(--text-highlight);border-color:var(--accent-red);}
+        .modal-img{width:100%;aspect-ratio:21/9;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:5rem;}
+        .modal-body{padding:28px;}
+        .modal-body .modal-tag{display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.72rem;font-weight:700;margin-bottom:12px;}
+        .modal-body h2{font-size:1.6rem;font-weight:900;color:var(--text-highlight);margin-bottom:10px;line-height:1.3;}
+        .modal-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border-glow);}
+        .modal-meta span{display:inline-flex;align-items:center;gap:5px;}
+        .modal-article{font-size:0.9rem;color:var(--text-primary);line-height:1.8;}
+        .modal-article p{margin-bottom:14px;}
+        .modal-related-cars{margin-top:18px;padding-top:14px;border-top:1px solid var(--border-glow);}
+        .modal-related-cars h4{font-size:0.82rem;color:var(--text-secondary);margin-bottom:8px;}
+        .modal-car-tags{display:flex;flex-wrap:wrap;gap:6px;}
+        .modal-car-tag{padding:4px 12px;background:var(--bg-tertiary);border-radius:14px;font-size:0.75rem;color:var(--text-primary);}
+        .modal-actions{display:flex;gap:10px;margin-top:18px;}
+        .btn-share{padding:9px 22px;border:1px solid var(--border-glow);border-radius:var(--border-radius);background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-family:inherit;font-size:0.82rem;transition:all var(--transition-speed);display:inline-flex;align-items:center;gap:6px;}
+        .btn-share:hover{border-color:var(--accent-blue);color:var(--accent-cyan);}
+
+        /* ========== NEW: Toast ========== */
+        .toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent-green);color:#000;padding:12px 28px;border-radius:var(--border-radius);font-weight:700;font-size:0.88rem;z-index:3000;opacity:0;transition:all 0.4s;pointer-events:none;}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+        .toast.error{background:var(--accent-red);color:#fff;}
+
+        /* ========== NEW: No Results ========== */
+        .no-results{text-align:center;padding:50px 20px;color:var(--text-secondary);grid-column:1/-1;}
+        .no-results .no-results-icon{font-size:3rem;margin-bottom:12px;}
+        .no-results p{font-size:0.9rem;}
+
+        /* ========== RESPONSIVE ========== */
+        @media(max-width:1100px){
+            .content-grid{grid-template-columns:1fr;}
+            .content-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+        }
+        @media(max-width:900px){
+            .featured-news{grid-template-columns:1fr;}
+            .news-masonry{column-count:2;}
+            .content-sidebar{grid-template-columns:1fr;}
+        }
+        @media(max-width:768px){
+            .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;width:100%;background:rgba(10,14,20,0.98);flex-direction:column;padding:20px;z-index:999;}.nav-links.active{display:flex;}
+            .mobile-menu-btn{display:flex;}
+            .news-masonry{column-count:1;}
+            .modal-overlay{padding:10px;align-items:flex-end;}
+            .modal-content{border-radius:12px 12px 0 0;max-height:90vh;}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="home.html" class="logo"><div class="logo-icon">A</div><span class="logo-text">AutoHub</span></a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">首页</a></li><li><a href="models.html">车型大全</a></li><li><a href="brands.html">品牌中心</a></li><li><a href="suv.html">SUV</a></li><li><a href="sports.html">跑车</a></li><li><a href="electric.html">电动车</a></li><li><a href="compare.html">对比</a></li><li><a href="ranking.html">排行榜</a></li>
+            </ul>
+            <div class="nav-actions"><button class="btn-icon" id="btnThemeToggle">◐</button><button class="mobile-menu-btn" id="mobileMenuBtn"><span></span><span></span><span></span></button></div>
+        </div>
+    </nav>
+
+    <section class="page-header">
+        <h1>📰 车展新闻</h1>
+        <p class="breadcrumb"><a href="home.html">首页</a> / 车展新闻</p>
+    </section>
+
+    <!-- Breaking News Ticker -->
+    <div class="breaking-ticker" id="breakingTicker">
+        <span class="breaking-ticker-label">⚡ 快讯</span>
+        <div class="breaking-ticker-track" id="breakingTrack"></div>
+    </div>
+
+    <section class="main-content">
+        <div class="container">
+            <!-- Featured News -->
+            <div class="featured-news">
+                <div class="featured-main" data-news-id="0" onclick="openModal(0)">
+                    <div class="featured-main-img">🏎️</div>
+                    <div class="featured-main-body">
+                        <span style="color:var(--accent-red);font-size:0.75rem;font-weight:700;">📢 重磅发布</span>
+                        <h3>2026款保时捷911 GT3全球首发</h3>
+                        <p>新一代911 GT3延续自然吸气传统，4.0L水平对置六缸发动机，红线转速9000rpm，提供手动和PDK两种变速箱选择。纽博格林圈速再创新纪录，成为有史以来最快的自然吸气911。</p>
+                        <div class="news-card-meta" style="margin-top:8px;">
+                            <span class="news-card-source">来源: MotorTrend</span>
+                            <span>📅 2025-06-14</span>
+                            <span>🕐 阅读 8 分钟</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="featured-side">
+                    <div class="featured-side-item" data-news-id="4" onclick="openModal(4)"><span class="featured-side-icon">⚡</span><span class="featured-side-title">全球电动车销量突破40%市场份额，燃油车时代进入倒计时</span></div>
+                    <div class="featured-side-item" data-news-id="28" onclick="openModal(28)"><span class="featured-side-icon">🏆</span><span class="featured-side-title">2025年度世界汽车大奖揭晓，雷诺R5荣膺桂冠</span></div>
+                    <div class="featured-side-item" data-news-id="12" onclick="openModal(12)"><span class="featured-side-icon">🔋</span><span class="featured-side-title">固态电池量产取得重大突破，续航突破1000公里</span></div>
+                </div>
+            </div>
+
+            <!-- Content Grid: Main + Sidebar -->
+            <div class="content-grid">
+                <div class="content-main">
+                    <!-- Search -->
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="searchInput" placeholder="搜索新闻标题或内容..." autocomplete="off">
+                    </div>
+
+                    <!-- Category Tabs -->
+                    <div class="category-tabs" id="categoryTabs"></div>
+
+                    <!-- News Masonry Grid -->
+                    <div class="news-masonry" id="newsMasonry"></div>
+
+                    <!-- No Results -->
+                    <div class="no-results" id="noResults" style="display:none;">
+                        <div class="no-results-icon">🔍</div>
+                        <p>没有找到匹配的新闻</p>
+                        <p style="font-size:0.78rem;">试试更换搜索关键词或筛选条件</p>
+                    </div>
+
+                    <!-- Load More -->
+                    <div class="load-more-wrap" id="loadMoreWrap">
+                        <button class="load-more-btn" id="loadMoreBtn">加载更多新闻 ⬇</button>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <aside class="content-sidebar">
+                    <!-- Most Read -->
+                    <div class="sidebar-card">
+                        <h4>🔥 热门阅读</h4>
+                        <div class="most-read-list" id="mostReadList"></div>
+                    </div>
+
+                    <!-- Newsletter -->
+                    <div class="sidebar-card">
+                        <h4>📬 订阅资讯</h4>
+                        <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:12px;">每周获取最新汽车行业资讯</p>
+                        <form class="newsletter-form" id="newsletterForm">
+                            <input type="email" class="newsletter-input" placeholder="输入您的邮箱地址" required>
+                            <button type="submit" class="newsletter-btn">立即订阅</button>
+                        </form>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <!-- News Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModalDirect()">✕</button>
+            <div class="modal-img" id="modalImg">🏎️</div>
+            <div class="modal-body">
+                <span class="modal-tag" id="modalTag">新车发布</span>
+                <h2 id="modalTitle"></h2>
+                <div class="modal-meta">
+                    <span id="modalDate"></span>
+                    <span id="modalSource"></span>
+                    <span id="modalReadTime"></span>
+                </div>
+                <div class="modal-article" id="modalArticle"></div>
+                <div class="modal-related-cars">
+                    <h4>🚗 相关车型</h4>
+                    <div class="modal-car-tags" id="modalCarTags"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-share" onclick="shareArticle()">🔗 分享文章</button>
+                    <button class="btn-share" onclick="closeModalDirect()">✕ 关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <footer class="footer"><p>&copy; 2025 AutoHub | 新闻内容来源于公开汽车资讯 | 仅供学习使用</p></footer>
+
+    <script>
+        // ============ NEWS DATA: 36 items ============
+        const allNews = [
+            {id:0,tag:'新车发布',title:'2026款保时捷911 GT3全球首发',date:'2025-06-14',summary:'新一代911 GT3延续自然吸气传统，4.0L水平对置六缸发动机，红线转速9000rpm，提供手动和PDK两种变速箱选择。纽博格林圈速再创新纪录。',source:'来源: MotorTrend',readTime:'阅读 8 分钟',relatedCars:['保时捷911 GT3','保时捷911 GT3 Touring'],img:'🏎️',icon:'🏁',views:156234,related:[1,5],breaking:true,content:'<p>保时捷于斯图加特总部正式发布了2026款911 GT3，这款车延续了品牌最纯粹的自然吸气传统。新车搭载4.0升水平对置六缸自然吸气发动机，在8400rpm时输出525马力，红线转速高达9000rpm。</p><p>底盘方面，新款GT3采用前双叉臂后多连杆悬架结构，搭配PASM主动悬架管理系统，整车重量控制在1435kg。纽博格林北环圈速达到6分54秒，比上代车型快了4秒，创下了自然吸气911的圈速纪录。</p><p>传动系统方面，保时捷提供6速手动变速箱和7速PDK双离合变速箱两种选择。手动挡车型0-100km/h加速时间为3.9秒，PDK版本为3.4秒，最高时速可达320km/h。新车预计2025年第四季度开始交付，起售价为198,500欧元。</p>'},
+            {id:1,tag:'新车发布',title:'2026款BMW M5正式发布：插电混动性能猛兽',date:'2025-06-13',summary:'全新一代BMW M5搭载4.4T V8双涡轮增压发动机+电动机组合的插电混动系统，综合功率达到748马力，纯电续航72公里。',source:'来源: Car and Driver',readTime:'阅读 6 分钟',relatedCars:['BMW M5','BMW M5 Touring','梅赛德斯AMG E63'],img:'🚙',icon:'⚡',views:132567,related:[2,7],content:'<p>BMW正式发布了代号G90的全新一代M5，这是M5历史上首次采用插电式混合动力系统。新车搭载4.4升V8双涡轮增压发动机与一台集成在8速M Steptronic变速箱中的电动机，系统综合输出功率高达748马力，峰值扭矩达到1000牛米。</p><p>得益于18.6kWh的锂电池组，M5可以纯电行驶72公里（WLTP工况），最高纯电时速为140km/h。0-100km/h加速仅需3.5秒，选装M Driver\'s Package后极速可达305km/h。</p><p>新车外观更加激进，前脸采用全新M风格双肾格栅，后轮拱加宽以容纳更大的轮胎。内饰配备最新iDrive 8.5曲面屏幕系统，M运动方向盘带有换挡拨片和M模式切换按钮。</p>'},
+            {id:2,tag:'新车发布',title:'全新奔驰AMG C63 S E Performance登场',date:'2025-06-11',summary:'梅赛德斯AMG C63正式换代为插电混动，2.0T四缸+电动机组合输出680马力，F1技术加持令其性能超越前代V8车型。',source:'来源: Autocar',readTime:'阅读 7 分钟',relatedCars:['奔驰AMG C63','BMW M3 Competition'],img:'🏎️',icon:'🔥',views:118923,related:[1,31],content:'<p>梅赛德斯AMG发布了全新C63 S E Performance，这款车采用了源自F1的E PERFORMANCE混合动力技术。动力系统由一具2.0升四缸涡轮增压发动机和后轴电动机组成，综合功率680马力，峰值扭矩1020牛米，是C级AMG历史上动力最强的车型。</p><p>虽然从V8换成了四缸机令不少车迷遗憾，但性能数据不会说谎。新C63 0-100km/h加速时间仅为3.4秒，比上一代V8车型快了0.6秒。纯电模式下可行驶13公里，最高纯电时速125km/h。</p><p>底盘配备AMG RIDE CONTROL自适应悬架、后轮转向系统和AMG高性能复合制动系统。外观方面采用AMG专属Panamericana竖条格栅和宽体轮拱，四出排气彰显性能身份。</p>'},
+            {id:3,tag:'新车发布',title:'2026款奥迪RS6 Avant性能旅行车亮相',date:'2025-06-09',summary:'奥迪发布改款RS6 Avant，4.0T V8双涡轮增压发动机提升至640马力，quattro四驱与RS自适应空气悬架确保卓越操控。',source:'来源: Top Gear',readTime:'阅读 5 分钟',relatedCars:['奥迪RS6 Avant','保时捷Panamera Turbo S'],img:'🚗',icon:'💨',views:105234,related:[5,7],content:'<p>奥迪发布了2026款RS6 Avant中期改款车型，这款高性能旅行车在保持实用性的同时将性能推向新高度。4.0升V8双涡轮增压发动机经过重新调校，最大功率提升至640马力，峰值扭矩850牛米，搭配8速tiptronic自动变速箱和quattro全时四驱系统。</p><p>0-100km/h加速时间缩短至3.4秒，选装RS Dynamic套件后极速可达305km/h。RS自适应空气悬架可提供从舒适到赛道模式的多级调节，四轮转向系统大幅提升了弯道灵活性和高速稳定性。</p><p>外观上改款车型采用更细长的矩阵LED大灯和重新设计的蜂窝状格栅，尾部扩散器和椭圆形RS排气尾管强调了运动气质。旅行车的大空间使其成为日常通勤与周末赛道的完美兼顾选择。</p>'},
+            {id:4,tag:'行业新闻',title:'全球电动车销量占比突破40%，燃油车时代步入倒计时',date:'2025-06-15',summary:'根据最新全球汽车销量报告，2025年5月纯电动车和插电混动车合计市场份额首次突破40%。中国、欧洲和美国三大市场的政策推动是主要驱动力。',source:'来源: Bloomberg',readTime:'阅读 9 分钟',relatedCars:['Tesla Model Y','比亚迪海鸥','大众ID.4'],img:'📊',icon:'📈',views:128445,related:[6,12],breaking:true,content:'<p>根据国际能源署（IEA）和BloombergNEF联合发布的最新报告，2025年5月全球新能源汽车（BEV+PHEV）销量占比首次突破40%大关，达到42.3%。这一里程碑标志着汽车行业电动化转型进入不可逆转的快车道。</p><p>中国市场以55%的新能源渗透率继续领跑全球，欧洲以36%紧随其后，美国市场在IRA法案激励下达29%。分析师预计到2027年全球新能源汽车销量将超过传统燃油车。比亚迪以18.6%的全球市占率位居第一，Tesla以13.2%排名第二。</p><p>值得注意的是，充电基础设施的快速增长也是推动电动化的关键因素。截至2025年5月，全球公共充电桩数量已突破800万个，中国占比超过60%。多家石油巨头加速向充电网络转型。</p>'},
+            {id:5,tag:'行业新闻',title:'欧盟确认2035年禁售燃油车最后期限不变',date:'2025-06-12',summary:'欧盟委员会重申2035年起禁售新燃油车的规定不会改变，并公布合成燃料（e-fuel）认证实施细则。德国和意大利对e-fuel豁免条款表示审慎欢迎。',source:'来源: Reuters',readTime:'阅读 6 分钟',relatedCars:['保时捷911','法拉利F250'],img:'🇪🇺',icon:'📋',views:112678,related:[4,6],content:'<p>欧盟委员会在布鲁塞尔的记者会上明确表示，2035年全面禁售新内燃机乘用车和轻型商用车的目标保持不变。委员会同时公布了合成燃料（e-fuel）车辆的认证实施细则，为使用碳中和燃料的内燃机车辆留下了法律通道。</p><p>根据新规，车企必须证明其车辆只能使用通过欧盟认证的碳中和合成燃料才能获得豁免。这一条款主要受益方是保时捷、法拉利等高端跑车制造商。保时捷已在智利建立e-fuel试点工厂，计划2026年开始规模化生产。</p><p>德国交通部长表示该妥协方案\"保护了德国的工程传统同时推进了气候目标\"。意大利超跑制造商协会称e-fuel豁免为\"马拉内罗和圣亚加塔保留了未来\"。环保组织则认为该条款是\"石油产业的游说胜利\"。</p>'},
+            {id:6,tag:'行业新闻',title:'中国新能源汽车渗透率突破55%，自主品牌强势崛起',date:'2025-06-10',summary:'中国汽车工业协会数据显示，2025年5月国内新能源乘用车渗透率达到56.2%，自主品牌在新能源市场占比超过82%，合资品牌面临巨大压力。',source:'来源: 新华社',readTime:'阅读 7 分钟',relatedCars:['比亚迪秦PLUS','蔚来ET5','小米SU7'],img:'🇨🇳',icon:'📊',views:135890,related:[4,12],content:'<p>中国汽车工业协会发布的最新数据显示，2025年5月中国新能源乘用车零售渗透率攀升至56.2%，意味着每卖出两辆新车就有一辆以上是新能源车。自主品牌在新能源市场的份额达到82.7%，比亚迪以超过25%的单一品牌市占率继续称霸。</p><p>比亚迪5月单月销量达到42万辆，其中秦PLUS、宋PLUS和海鸥三款车型合计超过20万辆。蔚来、理想、小鹏等新势力品牌合计交付突破8万辆。小米SU7月交付量稳定在1.5万辆以上。</p><p>合资品牌在新能源转型中明显落后，大众ID.系列是唯一进入销量前20名的合资新能源产品线。日系品牌的新能源渗透率不足3%。业内分析人士认为，中国品牌的\"智能化+电动化\"组合拳已形成难以撼动的优势。</p>'},
+            {id:7,tag:'行业新闻',title:'Tesla柏林超级工厂产能突破每周1万辆',date:'2025-06-08',summary:'Tesla柏林超级工厂经过多次扩产，Model Y周产能突破1万辆大关。工厂采用一体化压铸技术和4680电池，大幅提升了生产效率。',source:'来源: Electrek',readTime:'阅读 5 分钟',relatedCars:['Tesla Model Y','Tesla Model 3'],img:'🏭',icon:'⚡',views:98765,related:[4,14],content:'<p>Tesla CEO埃隆·马斯克在社交媒体上宣布，柏林超级工厂的Model Y周产能已突破1万辆大关，这是该工厂自2022年投产以来的最新里程碑。工厂采用了最新的一体化压铸技术，将车身零件从原本的171个减少到2个，大幅简化了制造流程。</p><p>柏林工厂同时是Tesla 4680电池的主要生产基地之一。新一代4680电池采用干法电极工艺，能量密度提升16%，生产成本降低54%。目前该工厂员工总数超过1.2万人，是德国东部最大的工业雇主。</p><p>Tesla计划在柏林工厂南侧扩建，增加年产100GWh的电池产能和第二条整车生产线。当地政府已原则同意扩建计划，但环保组织的反对声音仍然强烈。</p>'},
+            {id:8,tag:'赛事动态',title:'F1 2026赛季全新技术规则正式公布',date:'2025-06-14',summary:'FIA正式公布2026赛季F1技术规则，全新动力单元采用50%电动化比例，使用100%可持续燃料，车身尺寸缩小以提升竞赛观赏性。',source:'来源: F1官方',readTime:'阅读 8 分钟',relatedCars:['法拉利F1','梅赛德斯AMG F1'],img:'🏁',icon:'🏎️',views:115672,related:[9,10],breaking:true,content:'<p>国际汽联（FIA）在摩纳哥正式发布了2026赛季F1世界锦标赛的技术规则，这是F1十年来最重大的技术变革。全新动力单元将内燃机输出功率降到400kW，而电动机输出功率提升到350kW，使电动化比例接近50%。</p><p>所有赛车必须使用100%可持续合成燃料，燃料由碳捕获技术和可再生电力合成，实现全生命周期碳中和。MGU-H热能回收系统被移除，MGU-K动能回收功率提升至350kW。车身尺寸从当前的5.63米缩短至5.4米，宽度减少10厘米，车重降低30公斤。</p><p>奥迪将从2026赛季起以动力单元供应商身份正式加入F1，福特将为红牛车队提供技术支持。新规则吸引了更多制造商参与，通用汽车凯迪拉克品牌也已提交2028年参赛申请。</p>'},
+            {id:9,tag:'赛事动态',title:'勒芒24小时耐力赛：保时捷成功卫冕',date:'2025-06-13',summary:'第93届勒芒24小时耐力赛圆满落幕，保时捷963赛车以领先第二名2圈的绝对优势卫冕成功，法拉利499P和丰田GR010分获二三。',source:'来源: Autosport',readTime:'阅读 7 分钟',relatedCars:['保时捷963','法拉利499P','丰田GR010'],img:'🏆',icon:'🏁',views:108234,related:[8,10],content:'<p>第93届勒芒24小时耐力赛在法国拉萨特赛道圆满落幕。保时捷Penske Motorsport车队的6号保时捷963赛车以绝对优势成功卫冕Hypercar组别冠军，领先第二名法拉利AF Corse车队的499P赛车整整2圈。</p><p>比赛前半程戏剧性十足，丰田GR010在比赛第6小时因变速箱故障退出争冠行列。法拉利在夜间展现了强大速度，一度将差距缩小到30秒以内，但保时捷车手在黎明时分连续做出全场最快圈速，将优势重新扩大。</p><p>中国队叶一飞所在的Hertz Team JOTA保时捷963收获Hypercar组别第6名，创造了中国车手在勒芒的历史最好成绩。LMP2组别和LMGT3组别的冠军分别由United Autosports和Corvette Racing获得。</p>'},
+            {id:10,tag:'赛事动态',title:'纽博格林24小时耐力赛：BMW M4 GT3创纪录夺冠',date:'2025-06-10',summary:'2025年纽博格林24小时耐力赛，BMW M4 GT3在雨天恶劣条件下以148圈完赛，刷新了赛事总里程纪录，奥迪R8 LMS获第二。',source:'来源: Motorsport.com',readTime:'阅读 5 分钟',relatedCars:['BMW M4 GT3','奥迪R8 LMS GT3'],img:'🇩🇪',icon:'🌧️',views:87654,related:[8,9],content:'<p>2025年纽博格林24小时耐力赛在极其严酷的天气条件下举行。ROWE Racing车队的BMW M4 GT3在持续降雨和浓雾中以148圈的惊人成绩夺冠，打破了保持三年的总里程纪录。</p><p>今年的比赛因大雾两次出动安全车，总时长超过4小时。但BMW车队在绿旗阶段的节奏无人能敌，车手阵容包括两位前DTM冠军和一位纽博格林专家，他们在湿滑的\"绿色地狱\"上做出了全场最稳定的圈速。</p><p>Audi Sport Team Land的R8 LMS GT3在比赛最后两小时向领先者发起猛烈追击，但因一次慢车阻挡损失了关键的15秒，最终以47秒的差距获得亚军。保时捷Manthey Racing的911 GT3 R获得季军。</p>'},
+            {id:11,tag:'赛事动态',title:'WRC世界拉力锦标赛芬兰站精彩回顾',date:'2025-06-07',summary:'WRC芬兰站以高速跳跃路段闻名，丰田车手罗万佩拉主场作战赢得连胜。现代和Ford在砂石路面上展开激烈追逐战。',source:'来源: WRC官方',readTime:'阅读 5 分钟',relatedCars:['丰田GR Yaris Rally1','现代i20 N Rally1'],img:'🚗',icon:'💨',views:76543,related:[8,9],content:'<p>WRC世界拉力锦标赛2025赛季第八站在芬兰于韦斯屈莱举行。丰田GAZOO Racing车队的本土英雄卡勒·罗万佩拉一骑绝尘，在芬兰标志性的高速砂石赛道上发挥完美，以领先第二名1分12秒的成绩夺得冠军。</p><p>芬兰站以平均时速超过130km/h的高速跳跃路段闻名于世，最高跳跃超过70米。现代Shell Mobis车队的诺伊维尔和坦纳克分别获得第二和第三名，M-Sport Ford的Puma Rally1赛车则遭遇了涡轮增压问题，整体竞争力不足。</p><p>本站后罗万佩拉在车手积分榜上以38分的优势领先，丰田在制造商积分榜上同样遥遥领先。下一站将在希腊举行，这将是全年最艰苦的砂石路比赛。</p>'},
+            {id:12,tag:'技术突破',title:'固态电池量产取得重大突破，续航突破1000公里',date:'2025-06-15',summary:'丰田和三星SDI先后宣布固态电池量产时间表，能量密度达到450Wh/kg，装车后续航有望突破1000公里，充电时间缩短至15分钟。',source:'来源: Nature Energy',readTime:'阅读 9 分钟',relatedCars:['丰田bZ5X','蔚来ET9','大众ID.7'],img:'🔋',icon:'⚡',views:142891,related:[13,14],breaking:true,content:'<p>固态电池技术在本月迎来了里程碑式突破。丰田汽车宣布其与出光兴产联合开发的硫化物固态电池已完成耐久性验证，计划2027年在雷克萨斯品牌车型上首次量产搭载。三星SDI则宣布将在2026年下半年开始为高端电动汽车客户交付固态电池样品。</p><p>新一代固态电池的能量密度达到450Wh/kg，是目前主流三元锂电池（约250Wh/kg）的1.8倍。搭载该电池的电动汽车续航里程有望突破1000公里（CLTC工况），且从10%充至80%仅需15分钟。更关键的是，固态电解质从根本上消除了液态电解液的热失控风险。</p><p>业内预测，固态电池将在2028-2030年进入大规模量产阶段，2035年全球固态电池市场规模将达到2500亿美元。中国宁德时代、比亚迪和国轩高科也在加速布局，预计2027年将推出半固态电池产品。</p>'},
+            {id:13,tag:'技术突破',title:'800V高压架构成为2026年新车标配',date:'2025-06-13',summary:'随着SiC碳化硅功率器件成本下降，800V高压电气架构正从中高端车型向15-20万元主流市场渗透。充电10分钟续航400公里成为现实。',source:'来源: IEEE Spectrum',readTime:'阅读 6 分钟',relatedCars:['小鹏G9','极氪001','起亚EV6'],img:'⚡',icon:'🔌',views:95678,related:[12,15],content:'<p>800V高压电气架构正在从高端市场向主流市场快速普及。随着SiC碳化硅功率模块的制造成本在过去两年下降了约40%，越来越多的车企宣布将在2026年车型中标配800V系统。</p><p>800V系统的核心优势在于：在相同电流下充电功率翻倍，意味着从10%充至80%仅需15-18分钟；同时也降低了整车线束重量和能量损耗。小鹏G9、极氪001、起亚EV6等车型已率先搭载800V系统并获得市场验证。</p><p>比亚迪计划在2026年将800V架构下放至15万元价位的车型，这意味着高压快充将从\"高端专属\"变成\"大众标配\"。保时捷Taycan作为800V的先驱，其经验正被大众集团全品牌借鉴。</p>'},
+            {id:14,tag:'技术突破',title:'L4级自动驾驶在中国多个城市获批商业化运营',date:'2025-06-11',summary:'北京、上海、广州、深圳等10个城市已发放L4级自动驾驶商业化运营许可。百度Apollo、小马智行和滴滴自动驾驶率先启动收费Robotaxi服务。',source:'来源: 36氪',readTime:'阅读 8 分钟',relatedCars:['百度Apollo RT6','小马智行PonyAlpha X'],img:'🤖',icon:'🚗',views:98334,related:[12,15],content:'<p>中国自动驾驶行业迎来历史性时刻。截至目前全国已有10个城市发放了L4级自动驾驶公开道路商业化运营许可，这意味着Robotaxi终于可以在特定区域内向公众收费。百度Apollo在武汉运营超过500辆无人驾驶出租车，日均订单量突破8万单。</p><p>小马智行在北京亦庄和广州南沙提供商业服务，滴滴自动驾驶则聚焦上海安亭地区。车辆均配备激光雷达、毫米波雷达和高精地图冗余系统，远程安全员可同时监控多辆车辆。安全事故率仅为人类驾驶员的1/5。</p><p>政策层面，工信部正在制定L4级自动驾驶国家标准，预计2026年上半年出台。特斯拉FSD V13.5也在中国多个城市获批进行数据采集，为后续功能推送做准备。L4自动驾驶的商业化元年已经到来。</p>'},
+            {id:15,tag:'技术突破',title:'线控转向技术实现量产，方向盘与车轮彻底解耦',date:'2025-06-09',summary:'日产和雷克萨斯率先量产线控转向系统（Steer-by-Wire），消除机械转向柱，方向盘转角可动态调整转向比，泊车时无需双手交叉打方向。',source:'来源: Automotive News',readTime:'阅读 5 分钟',relatedCars:['雷克萨斯RZ','日产Ariya','特斯拉Cybertruck'],img:'🔄',icon:'🛠️',views:82345,related:[13,14],content:'<p>线控转向（Steer-by-Wire）技术今年正式进入量产阶段。雷克萨斯RZ 500e和日产Ariya Nismo成为首批搭载该系统的量产车型。线控转向取消了传统的机械转向柱，方向盘与车轮之间仅通过电信号连接。</p><p>这一技术带来的最大优势是转向比可以动态变化：高速行驶时转向比增大以提高稳定性，低速泊车时转向比缩小，方向盘的转动角度从传统的540度减少到150度，倒车入库再也不用双手交叉打方向。系统还提供了三重冗余设计确保安全性。</p><p>特斯拉Cybertruck同样采用了线控转向，配合后轮转向系统使得这辆巨大皮卡的转弯半径与小型轿车相当。博世和ZF等供应商预计到2028年将有超过30%的新车配备线控转向系统。</p>'},
+            {id:16,tag:'概念车',title:'日内瓦车展2025十大概念车大盘点',date:'2025-06-12',summary:'2025年日内瓦国际车展虽已落幕，但留下的概念车令人难忘。从BMW到雷诺，从飞行汽车到AI座舱，盘点本届车展十大惊艳概念车。',source:'来源: Car Design News',readTime:'阅读 10 分钟',relatedCars:['BMW Vision Neue Klasse','雷诺R17 Restomod'],img:'🎪',icon:'✨',views:104567,related:[17,18],content:'<p>2025年日内瓦国际车展在阔别两年后重回Palexpo展览中心。尽管规模不如疫情前，但本届车展的概念车含金量极高。BMW Vision Neue Klasse展现了下一代3系的设计方向，极简内饰搭配全景HUD令人耳目一新。</p><p>雷诺带来的R17 Electric Restomod概念车由设计师Ora Ito操刀，将70年代的雷诺17轿跑以电动化方式复活，碳纤维车身和LED灯光艺术的结合赢得全场最佳概念车奖。中国品牌比亚迪展出的\"海空一号\"概念飞行汽车成为社交媒体讨论热点。</p><p>其他值得关注的概念车包括：宾利EXP 100 GT纯电豪华轿跑、大众ID. Buzz Adventure露营概念车、Alpine A390_β电动运动轿跑SUV、本田\"0系列\"Saloon概念车以及宾尼法利纳的Pura Vision跨界概念车。</p>'},
+            {id:17,tag:'概念车',title:'BMW Vision Neue Klasse概念车揭示下一代3系',date:'2025-06-10',summary:'BMW在日内瓦展出Vision Neue Klasse概念车，预示2027年量产的下一代3系。设计语言大幅革新，六边形\"双肾格栅\"和全景视界桥HUD惊艳全场。',source:'来源: BMW Blog',readTime:'阅读 6 分钟',relatedCars:['BMW 3系','BMW i3'],img:'🚙',icon:'🔮',views:92345,related:[16,18],content:'<p>BMW Vision Neue Klasse概念车真实程度极高，据悉已非常接近2027年量产的下一代3系（代号NA0/i3）。概念车展现了BMW全新的\"电动优先\"设计哲学，前脸六边形发光格栅取代了传统的\"双肾\"造型，整体线条干净锐利。</p><p>座舱内部最大的亮点是\"全景视界桥\"（Panoramic Vision Bridge），这是一条从前挡风玻璃底部横贯整个仪表台的投影显示带，将导航、车速和娱乐信息分层呈现给驾驶员和乘客。物理按键几乎全部取消，代之以触控和语音交互。</p><p>新车将基于BMW全新的Neue Klasse纯电平台，采用第六代eDrive电驱系统和圆柱形电池。BMW承诺续航里程将提升30%，充电速度提升30%。首发车型将于2027年在匈牙利德布勒森新工厂下线。</p>'},
+            {id:18,tag:'概念车',title:'梅赛德斯Vision One-Eleven：致敬经典转子发动机跑车',date:'2025-06-08',summary:'梅赛德斯发布Vision One-Eleven概念车，向1969年的C111实验跑车致敬。搭载轴向磁通电机，800V架构，橙色内饰灵感来自70年代超跑。',source:'来源: Mercedes-Benz',readTime:'阅读 5 分钟',relatedCars:['梅赛德斯C111','梅赛德斯AMG GT EV'],img:'✨',icon:'🧡',views:84567,related:[16,17],content:'<p>梅赛德斯奔驰发布了Vision One-Eleven概念车，向1969年震惊世界的C111系列实验跑车致敬。原版C111以转子发动机和鸥翼门著称，而新概念车则以全电动形式诠释了这一精神遗产，车身高度仅1170毫米，配合标志性的橙色涂装。</p><p>Vision One-Eleven搭载了YASA公司开发的轴向磁通电机，这种电机比传统的径向电机更薄更轻，却能输出480马力。电机直接安装在车轮旁边，取消了传统传动轴，为座舱设计释放了大量空间。</p><p>内饰采用了70年代风格的橙色皮革和现代科技的结合，桶形座椅一体成型，仪表盘为像素化LED显示。虽然梅赛德斯表示这只是一款设计研究作品，但外界普遍认为它预示了未来AMG电动跑车的方向。</p>'},
+            {id:19,tag:'概念车',title:'丰田FT-Se电动跑车概念车亮相',date:'2025-06-06',summary:'丰田在日本移动展发布了FT-Se纯电双座跑车概念车，暗示MR2的精神继承者。中置电池布局确保低重心和均衡的操控特性。',source:'来源: Toyota Global',readTime:'阅读 5 分钟',relatedCars:['丰田MR2','保时捷718 Cayman EV'],img:'🏎️',icon:'🇯🇵',views:78901,related:[16,18],content:'<p>丰田在东京移动展上正式发布了FT-Se纯电双座跑车概念车，被广泛视为经典MR2的精神继承者。FT-Se采用中置电池布局，如同中置发动机跑车一样，将最重的电池组放置在驾驶员身后，实现了前后50:50的完美重量分配。</p><p>FT-Se车长仅4380毫米，轴距却长达2750毫米，短前后悬赋予了它极其敏捷的操控特性。丰田宣称其重量控制在1300公斤以下，对于搭载大容量电池的电动跑车来说非常出色。动力系统细节尚未公布，但预计将采用双电机四驱布局。</p><p>丰田章男亲自参与了该车的动态评价，并表示\"我们希望FT-Se成为一款让驾驶者脸上自然露出笑容的跑车\"。这款车预计最快于2027年投入量产，定位在GR Supra和GR86之下。</p>'},
+            {id:20,tag:'谍照曝光',title:'2027款法拉利F250超跑谍照曝光：LaFerrari继任者',date:'2025-06-14',summary:'法拉利下一代旗舰超跑代号F250，近日在马拉内罗周边道路被拍到伪装测试车。V6双涡轮+三电机混合动力系统，预计输出超1200马力。',source:'来源: Motor1',readTime:'阅读 6 分钟',relatedCars:['法拉利LaFerrari','法拉利SF90 Stradale'],img:'🔍',icon:'📸',views:126789,related:[1,21],content:'<p>海外媒体在法拉利总部马拉内罗附近公路捕捉到了一辆重度伪装的测试车，确认是代号F250的法拉利下一代旗舰超跑——LaFerrari的正式继任者。测试车虽覆盖着厚重迷彩，但低矮宽阔的姿态和巨大的后扩散器暴露了其Hypercar身份。</p><p>据内部消息，F250将采用源自F1和499P耐力赛车的V6双涡轮增压发动机，搭配三台电动机组成插电式混合动力系统，综合输出预计超过1200马力。碳纤维单体壳车身将重量控制在1300公斤以内。法拉利计划仅生产599台Coupe和199台Aperta敞篷版。</p><p>消息人士透露，F250的官方首发日期锁定在2026年日内瓦车展，售价预计超过250万欧元。但即使在这个价位，全部配额据说已被法拉利VIP客户预订一空。F250将加入法拉利\"Icona\"系列，与Daytona SP3并列品牌旗舰。</p>'},
+            {id:21,tag:'谍照曝光',title:'新一代Tesla Roadster路试车现身加州',date:'2025-06-11',summary:'拖延已久的Tesla Roadster终于有了新进展，一辆满载传感器的测试车在加州帕洛阿尔托被拍到。马斯克确认2026年量产，0-60mph加速不到1秒。',source:'来源: Electrek',readTime:'阅读 5 分钟',relatedCars:['Tesla Roadster','Tesla Model S Plaid'],img:'🔍',icon:'🚀',views:114567,related:[20,22],content:'<p>自2017年首次亮相以来便一直拖延的Tesla Roadster终于出现了实质性进展。近期一辆搭载了大量传感器和测试设备的Roadster原型车在加州帕洛阿尔托Tesla总部附近道路上频繁出现，表明路试程序已正式启动。</p><p>埃隆·马斯克随后在社交平台上确认Roadster将于2026年正式量产交付。他重申了令人难以置信的性能指标：0-60mph加速时间不到1秒（需选装SpaceX冷气推进器套件），0-100mph不到2.1秒，四分之一英里加速低于8.8秒，最高时速超过400公里。</p><p>新款Roadster采用200kWh电池组，实现了620英里（约1000公里）的综合续航里程。双门四座敞篷布局，硬顶可拆卸存放于后备箱。起售价预计为20万美元，Founders Series版本售价25万美元。</p>'},
+            {id:22,tag:'谍照曝光',title:'保时捷Cayenne EV首次在纽博格林被拍到',date:'2025-06-09',summary:'保时捷第四代Cayenne纯电版在纽博格林北环进行测试被拍到，将与燃油版Cayenne并行销售。PPE平台打造，800V架构，预计2027年上市。',source:'来源: Autobild',readTime:'阅读 5 分钟',relatedCars:['保时捷Cayenne','保时捷Macan EV'],img:'🔍',icon:'🚙',views:102345,related:[21,23],content:'<p>海外媒体在纽博格林北环捕捉到了保时捷第四代Cayenne纯电版（Cayenne EV）的测试车。与已上市的Macan EV一样，Cayenne EV将采用大众集团与奥迪联合开发的PPE（Premium Platform Electric）平台，标配800V高压电气架构。</p><p>Cayenne EV将与燃油版Cayenne并行销售至少到2030年，以服务不同市场的需求。纯电版在外观上与燃油版有明显区别——它采用了与新款Taycan相似的全封闭式前脸和大灯造型，但保留了Cayenne标志性的车身比例。测试车在纽北的圈速据称已经接近现款Cayenne Turbo GT。</p><p>预计Cayenne EV的电池容量为100-120kWh，续航里程在500-600公里之间（WLTP），高性能版本将提供超过700马力的输出。新车预计将于2027年上半年全球首发。</p>'},
+            {id:23,tag:'谍照曝光',title:'奥迪Q9旗舰全尺寸SUV谍照流出',date:'2025-06-07',summary:'奥迪内部代号SQ9的全尺寸旗舰SUV测试车被拍到，七座布局，车身长度超过5.2米。将提供V6插电混动和纯电两种动力，2027年正式亮相。',source:'来源: CarScoops',readTime:'阅读 4 分钟',relatedCars:['奥迪Q9','BMW X7','梅赛德斯GLS'],img:'🔍',icon:'🚙',views:92345,related:[22,3],content:'<p>奥迪即将推出的全尺寸旗舰SUV——定名Q9——在德国高速公路上被拍到伪装测试车。这将是奥迪品牌历史上尺寸最大的SUV，车身长度超过5.2米，采用三排七座布局，直接对标BMW X7和梅赛德斯-奔驰GLS。</p><p>Q9将提供V6涡轮增压插电混动系统和纯电两种动力总成。插混版本综合功率预计为450马力，纯电版本则基于PPE平台开发，搭载双电机四驱系统，最大功率可达600马力。空气悬架、后轮转向和主动防侧倾系统将是标配。</p><p>内饰预计采用奥迪最新\"数字舞台\"座舱设计概念，前排配备三块大尺寸OLED屏幕，后排提供独立娱乐屏幕和行政座椅。Q9预计将于2027年上半年全球首发，主要面向中国、北美和中东市场。</p>'},
+            {id:24,tag:'召回信息',title:'宝马因高压电池隐患召回部分iX和i4车型',date:'2025-06-13',summary:'宝马宣布在全球范围内召回2022年至2024年间生产的约18000辆iX和i4电动汽车，原因是高压电池模块可能在极端条件下发生内部短路。',source:'来源: NHTSA',readTime:'阅读 4 分钟',relatedCars:['BMW iX','BMW i4'],img:'⚠️',icon:'🛑',views:67890,related:[25,26],content:'<p>宝马集团宣布在全球范围内主动召回2022年3月至2024年1月期间生产的部分iX（iX xDrive40、iX xDrive50、iX M60）和i4（i4 eDrive35、i4 eDrive40、i4 M50）车型，涉及约18000辆汽车。</p><p>召回原因是在极少数情况下，高压电池内部模块的焊接点可能存在微小缺陷，在经历大幅度温度变化和多次快充循环后可能引发内部短路。宝马强调目前全球范围内未收到任何与此缺陷相关的事故或伤害报告，此次召回为预防性措施。</p><p>受影响车辆的车主将收到邮件通知，可前往授权经销商进行免费电池检测和必要的模块更换。整个过程大约需要4-6小时，宝马将提供代步车服务。中国市场涉及的车辆数量约为3200辆。</p>'},
+            {id:25,tag:'召回信息',title:'奔驰因MBUX系统软件问题召回EQS和EQE',date:'2025-06-10',summary:'梅赛德斯-奔驰召回约2.5万辆EQS和EQE轿车，原因是MBUX车机系统的一个软件错误可能导致中控屏幕在行驶中黑屏重启，影响驾驶安全。',source:'来源: 奔驰中国',readTime:'阅读 3 分钟',relatedCars:['奔驰EQS','奔驰EQE'],img:'⚠️',icon:'💻',views:58901,related:[24,26],content:'<p>梅赛德斯-奔驰向国家市场监督管理总局备案了召回计划，决定召回2023年5月至2024年12月期间生产的部分进口及国产EQS和EQE车型，涉及车辆约25000辆。</p><p>召回范围内的车辆存在MBUX信息娱乐系统的一个软件逻辑错误，当车辆在特定信号环境下（如经过某些隧道或高压线下方）时，系统可能错误地触发安全重置机制，导致中控屏幕和仪表盘在行驶中短暂黑屏重启。整个重启过程约持续15-20秒，期间车速表、导航等重要信息暂时无法显示。奔驰表示目前已在开发OTA修复程序。</p><p>车主可通过Mercedes me应用或联系授权服务中心确认车辆是否在召回范围内。软件修复预计2025年7月通过OTA远程升级推送，无需进店处理。奔驰为此延保受影响车辆电子系统2年。</p>'},
+            {id:26,tag:'召回信息',title:'Tesla Cybertruck召回：油门踏板可能卡住',date:'2025-06-08',summary:'Tesla宣布召回约4000辆Cybertruck，原因是油门踏板上的塑料盖可能在湿润鞋底时发生滑脱并卡在脚踏和内饰板之间，意外触发全油门加速。',source:'来源: Tesla官方',readTime:'阅读 3 分钟',relatedCars:['Tesla Cybertruck','Tesla Model X'],img:'⚠️',icon:'🛻',views:72345,related:[24,25],content:'<p>Tesla主动向美国国家公路交通安全管理局（NHTSA）备案，召回2023年11月至2024年3月期间生产的约4000辆Cybertruck。问题出在油门踏板总成的一个设计细节——踏板表面的塑料装饰盖在遇到驾驶员鞋底湿润或泥泞的情况时可能发生松脱，塑料盖卡在踏板后方和车内饰板之间，导致刹车踏板被踩下时油门无法回位。</p><p>Tesla工程师提供了两种修复方案：一是更换改进的踏板总成，二是在现有踏板上加装固定螺丝和防滑纹路。服务中心将为受影响车辆免费执行修复，耗时约30分钟。目前未有因该缺陷导致的事故报告。</p><p>这也是Cybertruck自2023年底开始交付以来的首次正式召回。此前社交媒体上已有用户发布了油门踏板松脱的视频，引发广泛关注。</p>'},
+            {id:27,tag:'召回信息',title:'大众汽车ID.4门把手冬季故障引发大规模召回',date:'2025-06-05',summary:'大众汽车因隐藏式电动门把手在严寒环境中可能冻结无法弹出，召回超过98000辆2021-2024款ID.4电动车，将在门把手内加装加热元件解决。',source:'来源: 大众汽车',readTime:'阅读 4 分钟',relatedCars:['大众ID.4','大众ID. Buzz'],img:'⚠️',icon:'❄️',views:65432,related:[25,26],content:'<p>大众汽车宣布在北美、欧洲和中国同时召回2021至2024款ID.4电动SUV，总计约98000辆。问题集中在隐藏式电动门把手设计——在严寒环境下（-15℃以下），门把手内部可能因冷凝水结冰而无法正常弹出，导致车门无法从外部打开。</p><p>大众工程团队开发的解决方案是在每个门把手内加装一个微型PTC加热元件，当环境温度低于冰点时自动启动，确保门把手始终可以正常弹出。新的门把手总成已经过零下30℃的环境舱测试验证。</p><p>受影响车主将在2025年8月起陆续收到召回通知。在中国市场，大众将为约12000辆ID.4更换改良版门把手，并免费提供一年延保服务。2025款及之后的ID.4已在生产线上采用了新的门把手设计。</p>'},
+            {id:28,tag:'获奖新闻',title:'2025年度世界汽车大奖揭晓：雷诺R5斩获年度车',date:'2025-06-15',summary:'2025年度世界汽车大奖在纽约车展揭晓。雷诺R5 E-Tech Electric荣获年度世界汽车大奖，起亚EV9获得年度世界电动车型，丰田普锐斯获年度设计奖。',source:'来源: World Car Awards',readTime:'阅读 7 分钟',relatedCars:['雷诺R5','起亚EV9','丰田普锐斯'],img:'🏆',icon:'🌟',views:112345,related:[29,30],content:'<p>2025年度世界汽车大奖（World Car Awards）在纽约国际车展开幕日举行了颁奖典礼。由来自30个国家的100位资深汽车记者组成的评审团投票选出了各奖项得主。</p><p>雷诺R5 E-Tech Electric在六款入围车型中脱颖而出，获得年度世界汽车大奖（World Car of the Year）。评审团称赞它\"以可负担的价格将复古设计与现代电动技术完美融合，是电气化时代向大众普及的标志性车型\"。雷诺R5起售价仅2.5万欧元，一经推出便在欧洲市场供不应求。</p><p>起亚EV9获得年度世界电动车型，丰田全新普锐斯赢得年度世界汽车设计奖，BMW 5系/i5获得年度世界豪华车型，现代Ioniq 5 N则夺得了世界年度性能车型奖项。</p>'},
+            {id:29,tag:'获奖新闻',title:'欧洲年度车2025：雷诺Scenic E-Tech夺冠',date:'2025-06-12',summary:'雷诺Scenic E-Tech Electric在58位欧洲汽车记者的投票中胜出，获得2025欧洲年度车型桂冠。BMW 5系、标致3008分列二三。',source:'来源: Car of the Year',readTime:'阅读 5 分钟',relatedCars:['雷诺Scenic E-Tech','BMW 5系','标致3008'],img:'🏆',icon:'🇪🇺',views:87654,related:[28,30],content:'<p>2025年欧洲年度车型（European Car of the Year）的评选结果在日内瓦正式公布。雷诺Scenic E-Tech Electric以总分329分的成绩击败其他六款入围车型夺冠。这是雷诺品牌继2024年的Scenic（燃油版）后再次获得该殊荣。</p><p>雷诺Scenic E-Tech是一款紧凑型纯电SUV，基于CMF-EV平台打造，提供60kWh和87kWh两种电池选项，续航里程最高可达620公里（WLTP）。评审团特别赞赏其出色的空间利用率、创新的后座折叠系统和亲民的定价策略。58位评审来自23个欧洲国家。</p><p>BMW 5系/i5以308分获得亚军，标致3008（含纯电版E-3008）以286分获得季军。其他入围车型包括起亚EV9（247分）、沃尔沃EX30（238分）和丰田C-HR（184分）。</p>'},
+            {id:30,tag:'获奖新闻',title:'2025红点设计大奖汽车类获奖名单公布',date:'2025-06-09',summary:'2025年红点产品设计大奖汽车与摩托车类别结果揭晓。法拉利Purosangue、起亚EV9、沃尔沃EX90荣获Best of Best最高荣誉。',source:'来源: Red Dot Award',readTime:'阅读 5 分钟',relatedCars:['法拉利Purosangue','起亚EV9','沃尔沃EX90'],img:'🎨',icon:'🏅',views:82345,related:[28,29],content:'<p>2025年红点产品设计大奖（Red Dot Award: Product Design）汽车与摩托车类别的评选结果在埃森揭晓。三项最高荣誉Best of Best分别授予了法拉利Purosangue、起亚EV9和沃尔沃EX90。</p><p>评审团称赞法拉利Purosangue\"以前所未见的方式将超级跑车比例与SUV实用空间融为一体，开创了全新的车型品类\"。起亚EV9的\"几何雕塑般的车身线条和创新的对开门座舱\"获得了高度评价。沃尔沃EX90则因\"将斯堪的纳维亚极简设计与最新安全科技无缝结合\"而获奖。</p><p>其他获得红点奖的车型包括：BMW 5系/i5、小鹏G6、蔚来ET5 Touring、比亚迪海豹、丰田普锐斯、现代Santa Fe和大众ID. Buzz。中国品牌的获奖数量创下历史新高。</p>'},
+            {id:31,tag:'获奖新闻',title:'2025 IIHS顶级安全Pick+名单公布：中国品牌首度入围',date:'2025-06-06',summary:'美国公路安全保险协会公布2025年度TOP SAFETY PICK+最高安全评级名单。蔚来ET5成为中国品牌首款获得该最高安全评级的车型。',source:'来源: IIHS',readTime:'阅读 5 分钟',relatedCars:['蔚来ET5','沃尔沃EX90','本田雅阁'],img:'🛡️',icon:'✅',views:74567,related:[29,30],content:'<p>美国公路安全保险协会（IIHS）公布2025年度的TOP SAFETY PICK+最高安全评级名单。今年共有48款车型获得Pick+评级，较去年增加12款，反映出车辆安全性能的普遍提升。</p><p>最具标志性的里程碑是蔚来ET5成为中国品牌首款获得IIHS TOP SAFETY PICK+评级的车型。ET5在所有碰撞测试项目（包括更新的侧面碰撞标准）中均获得\"优秀\"评级，前碰撞预防系统在白天和夜间测试中均获\"卓越\"评分。蔚来创始人李斌表示这是对品牌\"安全是一切的基础\"理念的最好证明。</p><p>其他获得Pick+评级的车型包括：沃尔沃EX90、BMW 5系、本田雅阁、特斯拉Model Y、马自达CX-90、梅赛德斯-奔驰EQS SUV等。IIHS主席表示2025年开始严苛的夜间行人检测要求淘汰了大量车型。</p>'},
+            {id:32,tag:'试驾评测',title:'全面评测：2026款保时捷911 GT3赛道深度驾驶',date:'2025-06-14',summary:'我们在葡萄牙波尔蒂芒赛道深度试驾了全新911 GT3。自然吸气4.0L水平对置六缸发动机的声浪、前桥抬升系统和魔鬼般的转向精度令人难忘。',source:'来源: AutoHub原创',readTime:'阅读 12 分钟',relatedCars:['保时捷911 GT3','保时捷911 GT3 Touring','BMW M4 CSL'],img:'🏎️',icon:'🔬',views:145678,related:[0,33],content:'<p>受邀前往葡萄牙波尔蒂芒赛道——这条被誉为\"欧洲铃鹿\"的技术型赛道，我们对全新的992.2代保时捷911 GT3进行了为期两天的深度赛道驾驶和公路体验。</p><p>启动4.0升自然吸气水平对置六缸发动机的瞬间，低沉的轰鸣从身后传来，这是涡轮时代弥足珍贵的声音体验。在波尔蒂芒高低起伏、弯道复杂的全赛道驾驶中，GT3展现了超凡的抓地力和平衡性。双叉臂前悬架大幅提升了入弯精准度，车头指向性如同利刃切入弯心。即使关闭所有电子辅助，车辆依然以一种可预判、渐进的方式滑动，让驾驶者始终充满信心。</p><p>公路行驶方面，最实用的配置是前桥抬升系统——只需按下按钮，前悬架可在3秒内升高30mm，轻松通过减速带和地库坡道。标配的桶形座椅在长途驾驶中出人意料地舒适。新款GT3就是一台可以在赛道日碾压超跑、第二天又能舒适通勤的完美911。它的存在，本身就是对\"驾驶乐趣\"最好的诠释。</p>'},
+            {id:33,tag:'试驾评测',title:'Tesla Model S Plaid长期使用报告：一年后的真实感受',date:'2025-06-11',summary:'我们对特斯拉Model S Plaid进行了一年的长期测试。三电机1020马力的狂暴加速令人上瘾，但车内品质和服务体验与BBA仍有差距的真实感受。',source:'来源: AutoHub原创',readTime:'阅读 10 分钟',relatedCars:['Tesla Model S Plaid','保时捷Taycan Turbo S','Lucid Air Sapphire'],img:'⚡',icon:'📝',views:132456,related:[14,34],content:'<p>经过一年的日常使用和超过25000公里的里程积累，我们终于可以给Model S Plaid一个全面的长期评价。在加速性能上，它依然是无与伦比的——我们实测0-100km/h的2.1秒加速感觉像是被弹射器发射出去一样，每次都会让乘客尖叫。</p><p>日常使用中最让人满意的是超充网络的覆盖和便利性。Tesla V3超充站15分钟从10%充到80%的体验让里程焦虑几乎不存在。智能驾驶辅助系统在高速公路上表现稳定，但在复杂的城市路况中仍有明显的犹豫和误判。</p><p>最大的槽点在于50万级别车型应有的豪华质感缺失。皮革用料偏向廉价，长期使用后异响开始出现。中央大屏虽然功能强大，但在行驶中操作空调和座椅加热需要多层级菜单切换，缺乏便利性。售后服务预约排期长达两周。总结来说：买加速送车，性能无出其右，豪华体验仍需向德国对手学习。</p>'},
+            {id:34,tag:'试驾评测',title:'BMW M3 Touring对比奥迪RS4 Avant：性能旅行车双雄对决',date:'2025-06-08',summary:'同样来自德国，同样的高性能旅行车，M3 Touring和RS4 Avant的对比测试在苏格兰高地展开。M3的发动机更具激情，RS4的日常舒适性更胜一筹。',source:'来源: AutoHub原创',readTime:'阅读 11 分钟',relatedCars:['BMW M3 Touring','奥迪RS4 Avant','梅赛德斯AMG C63 Estate'],img:'🚙',icon:'⚔️',views:118234,related:[32,33],content:'<p>将两台超过500马力的性能旅行车带到苏格兰高地蜿蜒曲折的A82公路上，这可能是我职业生涯中做过的最好决定之一。BMW M3 Competition Touring和奥迪RS4 Avant Competition，价格相差无几，理念却截然不同。</p><p>M3 Touring的3.0升直列六缸双涡轮增压S58发动机拥有510马力，8速M Steptronic变速器换挡如剃刀般精准。在开阔的高速弯中，M3的尾部愿意在可控范围内滑动，让驾驶体验充满参与感和戏剧性。RS4 Avant的2.9升V6双涡轮增压和8速tiptronic则更加沉稳，quattro四驱系统偏向推头，但极限来得温和可测。</p><p>日常层面RS4扳回一城。空气悬架的舒适模式在破碎路面上的滤震能力远胜M3的M Adaptive悬架。内饰用料和做工也是奥迪更显精致。但当你打开M3的排气阀门，在山谷间回响的直六声浪带来的快感足以覆盖所有理智的权衡。这次对比的最终结论：选M3 Touring，你的心脏会感谢你；选RS4 Avant，你的脊椎会感谢你。</p>'},
+            {id:35,tag:'试驾评测',title:'比亚迪仰望U8：百万级硬派越野车的越野能力实测',date:'2025-06-05',summary:'我们驾驶比亚迪仰望U8在甘肃戈壁和沙漠进行极限越野测试。四轮独立电机、应急浮水和原地调头等黑科技功能到底是不是噱头？',source:'来源: AutoHub原创',readTime:'阅读 9 分钟',relatedCars:['比亚迪仰望U8','梅赛德斯G-Class','路虎卫士'],img:'🏔️',icon:'🏜️',views:143210,related:[6,12],content:'<p>仰望U8作为比亚迪冲击百万元级市场的首款产品，其1200马力的四轮独立电机驱动系统在参数层面令人难以置信。我们来到了甘肃敦煌周边的戈壁沙漠地带，对这辆超过3.5吨重的大家伙进行了为期三天的极限越野实测。</p><p>原地调头功能（比亚迪叫\"坦克转向\"）确实是名副其实的黑科技。在狭窄的河谷转弯处，车辆以中心点为轴在场地上画了一个完美的圆，围观群众纷纷掏出手机。沙地攀爬中，四轮独立电机的毫秒级扭矩分配让每个车轮都能精确获得需要的动力，在松软的沙丘上如履平地。最震撼的是应急浮水模式——在一个受控的浅水区域，U8真的靠着轮毂电机转动提供的推力和密封车身浮在了水面上并缓缓前进。</p><p>但回到公路后的表现揭示了它的短板。超过3.5吨的车重让悬挂系统在应对破损路面时显得力不从心，车身的横向晃动幅度偏大。1200马力的全部功率在日常行驶中几乎没有用武之地。这是一款技术含量极高、在特定场景下令人惊叹的产品，但作为日常座驾的使用体验仍有提升空间。</p>'}
+        ];
+
+        const breakingItems = [
+            {text:'🚨 2026款保时捷911 GT3纽博格林圈速破纪录：6分54秒',id:0},
+            {text:'🔴 全球电动车销量突破40%市场份额，历史首次超越燃油车',id:4},
+            {text:'🏁 F1 2026赛季新规正式公布：50%电动化 + 可持续燃料',id:8},
+            {text:'🔋 丰田宣布固态电池2027年量产，续航突破1000公里',id:12},
+            {text:'⚠️ 宝马全球召回iX/i4，高压电池模块需检测',id:24}
+        ];
+
+        const categories = ['全部','新车发布','行业新闻','赛事动态','技术突破','概念车','谍照曝光','召回信息','获奖新闻','试驾评测'];
+        let activeCategory = '全部', searchQuery = '', visibleCount = 9, currentModalId = null;
+
+        // ============ Render Category Tabs ============
+        function renderCategoryTabs(){
+            document.getElementById('categoryTabs').innerHTML = categories.map(c =>
+                `<button class="category-tab${c===activeCategory?' active':''}" onclick="setCategory('${c}')">${c==='全部'?'📋 ':''}${c}</button>`
+            ).join('');
+        }
+
+        function setCategory(cat){
+            activeCategory = cat;
+            visibleCount = 9;
+            renderCategoryTabs();
+            renderNewsGrid();
+            window.scrollTo({top:document.getElementById('newsMasonry').offsetTop-100,behavior:'smooth'});
+        }
+
+        // ============ Filter & Render News Grid ============
+        function getFilteredNews(){
+            let filtered = allNews;
+            if(activeCategory !== '全部') filtered = filtered.filter(n => n.tag === activeCategory);
+            if(searchQuery.trim()) {
+                const q = searchQuery.trim().toLowerCase();
+                filtered = filtered.filter(n => n.title.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q) || n.tag.toLowerCase().includes(q));
+            }
+            return filtered;
+        }
+
+        function renderNewsGrid(){
+            const filtered = getFilteredNews();
+            const visible = filtered.slice(0, visibleCount);
+            const masonry = document.getElementById('newsMasonry');
+            const noResults = document.getElementById('noResults');
+            const loadMoreWrap = document.getElementById('loadMoreWrap');
+
+            if(filtered.length === 0){
+                masonry.innerHTML = '';
+                noResults.style.display = 'block';
+                loadMoreWrap.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                loadMoreWrap.style.display = visible.length < filtered.length ? 'block' : 'none';
+                masonry.innerHTML = visible.map(n => {
+                    const relatedTitles = n.related.map(rid => {
+                        const rn = allNews.find(x => x.id === rid);
+                        return rn ? rn.title : '';
+                    }).filter(Boolean);
+                    return `<div class="news-card" onclick="openModal(${n.id})">
+                        <div class="news-card-img">${n.img}</div>
+                        <div class="news-card-body">
+                            <span class="news-card-tag tag-${n.tag}">${n.tag}</span>
+                            <div class="news-card-title">${n.title}</div>
+                            <div class="news-card-summary">${n.summary}</div>
+                            <div class="news-card-meta">
+                                <span>📅 ${n.date}</span>
+                                <span>🕐 ${n.readTime}</span>
+                            </div>
+                            <div class="news-card-meta">
+                                <span class="news-card-source">${n.source}</span>
+                            </div>
+                            ${relatedTitles.length ? `<div class="related-news-links">
+                                <div class="related-news-label">📎 相关新闻</div>
+                                ${relatedTitles.map((t,i) => `<span class="related-news-link" onclick="event.stopPropagation();openModal(${n.related[i]})">▸ ${t}</span>`).join('')}
+                            </div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            document.getElementById('loadMoreBtn').disabled = visible.length >= filtered.length;
+            document.getElementById('loadMoreBtn').textContent = visible.length >= filtered.length ? '已加载全部新闻 ✓' : `加载更多新闻 ⬇ (还剩 ${filtered.length - visible.length} 条)`;
+        }
+
+        function loadMore(){
+            visibleCount += 9;
+            renderNewsGrid();
+        }
+
+        // ============ Search with Debounce ============
+        let searchTimer;
+        document.getElementById('searchInput').addEventListener('input', function(e){
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                searchQuery = e.target.value;
+                visibleCount = 9;
+                renderNewsGrid();
+            }, 300);
+        });
+
+        // ============ Render Most Read Sidebar ============
+        function renderMostRead(){
+            const sorted = [...allNews].sort((a,b) => b.views - a.views).slice(0,5);
+            document.getElementById('mostReadList').innerHTML = sorted.map((n,i) => `
+                <div class="most-read-item" onclick="openModal(${n.id})">
+                    <div class="most-read-rank${i<3?' top3':''}">${i+1}</div>
+                    <div class="most-read-info">
+                        <div class="most-read-title">${n.title}</div>
+                        <div class="most-read-views">👁 ${(n.views/10000).toFixed(1)}万 阅读</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============ Modal ============
+        function openModal(id){
+            currentModalId = id;
+            const n = allNews.find(x => x.id === id);
+            if(!n) return;
+            document.getElementById('modalImg').textContent = n.img;
+            const tagEl = document.getElementById('modalTag');
+            tagEl.textContent = n.tag;
+            tagEl.className = 'modal-tag tag-' + n.tag;
+            document.getElementById('modalTitle').textContent = n.title;
+            document.getElementById('modalDate').innerHTML = '📅 ' + n.date;
+            document.getElementById('modalSource').innerHTML = n.source;
+            document.getElementById('modalReadTime').innerHTML = '🕐 ' + n.readTime;
+            document.getElementById('modalArticle').innerHTML = n.content;
+            document.getElementById('modalCarTags').innerHTML = n.relatedCars.map(c => `<span class="modal-car-tag">${c}</span>`).join('');
+            document.getElementById('modalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('modalContent').scrollTop = 0;
+        }
+
+        function closeModal(e){
+            if(e && e.target !== document.getElementById('modalOverlay')) return;
+            closeModalDirect();
+        }
+
+        function closeModalDirect(){
+            document.getElementById('modalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+            currentModalId = null;
+        }
+
+        function shareArticle(){
+            if(currentModalId === null) return;
+            const url = window.location.href.split('?')[0] + '?article=' + currentModalId;
+            if(navigator.clipboard){
+                navigator.clipboard.writeText(url).then(() => showToast('链接已复制到剪贴板! 📋'));
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = url; ta.style.position='fixed'; ta.style.left='-9999px';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                showToast('链接已复制到剪贴板! 📋');
+            }
+        }
+
+        // ============ Keyboard: Escape closes modal ============
+        document.addEventListener('keydown', function(e){
+            if(e.key === 'Escape' && document.getElementById('modalOverlay').classList.contains('active')){
+                closeModalDirect();
+            }
+        });
+
+        // ============ Newsletter ============
+        document.getElementById('newsletterForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            const email = this.querySelector('input').value.trim();
+            if(!email || !email.includes('@')){
+                showToast('请输入有效的邮箱地址', true);
+                return;
+            }
+            showToast('订阅成功! 每周五您将收到最新汽车资讯 📬');
+            this.reset();
+        });
+
+        // ============ Toast ============
+        function showToast(msg, isError){
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast' + (isError ? ' error' : '');
+            clearTimeout(toast._timeout);
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            toast._timeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // ============ Breaking News Ticker ============
+        function renderBreakingTicker(){
+            const items = breakingItems.map(b =>
+                `<span class="breaking-ticker-item" onclick="openModal(${b.id})"><span class="breaking-ticker-dot"></span>${b.text}</span>`
+            ).join('');
+            document.getElementById('breakingTrack').innerHTML = items + items;
+        }
+
+        // ============ EXISTING: Navbar Scroll ============
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => { navbar.classList.toggle('scrolled', window.scrollY > 50); });
+
+        // ============ EXISTING: Mobile Menu ============
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => document.getElementById('navLinks').classList.toggle('active'));
+        document.querySelectorAll('#navLinks a').forEach(l => l.addEventListener('click', () => document.getElementById('navLinks').classList.remove('active')));
+
+        // ============ EXISTING: Theme Toggle ============
+        const btnTheme = document.getElementById('btnThemeToggle'), saved = localStorage.getItem('autohub-theme');
+        if(saved === 'light'){ document.body.classList.add('light-mode'); btnTheme.textContent = '◑'; }
+        btnTheme.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            btnTheme.textContent = document.body.classList.contains('light-mode') ? '◑' : '◐';
+            localStorage.setItem('autohub-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+
+        // ============ INIT ============
+        renderCategoryTabs();
+        renderNewsGrid();
+        renderMostRead();
+        renderBreakingTicker();
+        console.log('%c📰 AutoHub 车展新闻已就绪 | 36篇文章 | 9个分类 | 搜索 + 筛选 + 加载更多 | 热门阅读 | 快讯播报',
+            'color:#4a9eff;font-size:0.9rem;');
+    </script>
+</body>
+</html>
