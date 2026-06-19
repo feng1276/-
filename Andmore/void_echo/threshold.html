@@ -1,0 +1,1592 @@
+<![CDATA[<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID ECHO · 阈限</title>
+<style>
+:root{--void:#050508;--abyss:#080610;--deep-purple:#120825;--static-gray:#1a1a24;--pale:#b8b8c8;--faint:#6a6a78;--blood:#1a0608;--amber:#2a1a05;--blue-faint:#0a0a1e;--white-ghost:rgba(200,200,220,0.06);--glow-core:rgba(200,200,220,0.5);--font-main:'Courier New','SimSun',monospace;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;background:#050508;}
+body{font-family:var(--font-main);background:var(--void);color:var(--pale);overflow-x:hidden;min-height:100vh;cursor:crosshair;user-select:none;}
+/* === NOISE, VIGNETTES, SCANLINES === */
+#noise{position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px 180px;}
+#noise2{position:fixed;inset:0;pointer-events:none;z-index:997;opacity:0.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.65 0.75' numOctaves='8' seed='42' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");background-size:220px 220px;animation:noiseDrift 20s linear infinite;}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 50%,rgba(5,5,8,0.85) 100%);}
+.vignette2{position:fixed;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse at 48% 52%,transparent 35%,rgba(8,6,16,0.4) 70%,rgba(5,5,8,0.9) 100%);mix-blend-mode:multiply;}
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:998;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);}
+.scanlines2{position:fixed;inset:0;pointer-events:none;z-index:996;background:repeating-linear-gradient(90deg,transparent,transparent 1px,rgba(0,0,0,0.015) 1px,rgba(0,0,0,0.015) 2px);animation:scanlineShift 8s linear infinite;}
+.glitch-flash{position:fixed;inset:0;pointer-events:none;z-index:1000;background:rgba(200,200,220,0.03);opacity:0;animation:flashBurst 12s ease-in-out infinite;}
+.glitch-flash2{position:fixed;inset:0;pointer-events:none;z-index:1001;background:rgba(180,180,200,0.02);opacity:0;animation:flashBurst2 17s ease-in-out infinite;mix-blend-mode:screen;}
+.cursor-glow{position:fixed;pointer-events:none;z-index:25;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(200,200,220,0.06) 0%,rgba(200,200,220,0.02) 40%,transparent 70%);transform:translate(-50%,-50%);opacity:0;transition:opacity 0.4s ease;}
+.cursor-glow.active{opacity:1;}
+.cursor-trail{position:fixed;pointer-events:none;z-index:24;width:6px;height:6px;border-radius:50%;background:rgba(200,200,220,0.15);box-shadow:0 0 10px rgba(200,200,220,0.1);transform:translate(-50%,-50%);transition:opacity 0.3s ease;opacity:0;}
+.cursor-trail.active{opacity:1;}
+@keyframes noiseDrift{0%{background-position:0 0;}100%{background-position:220px 220px;}}
+@keyframes scanlineShift{0%{background-position:0 0;}100%{background-position:0 100px;}}
+@keyframes flashBurst{0%,95%,100%{opacity:0;}96%{opacity:1;}97%{opacity:0;}98%{opacity:1;}99%{opacity:0;}}
+@keyframes flashBurst2{0%,90%,100%{opacity:0;}91%{opacity:0.5;}91.5%{opacity:0;}92%{opacity:0.7;}92.5%{opacity:0;}93%{opacity:0.3;}93.5%{opacity:0;}}
+/* === CENTRAL NODE & RINGS === */
+.central-node{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;}
+.node-ring{width:180px;height:180px;border-radius:50%;border:1px solid rgba(180,180,200,0.12);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);animation:ringBreath 6s ease-in-out infinite;}
+.node-ring:nth-child(2){width:260px;height:260px;border-color:rgba(180,180,200,0.06);animation-delay:-2s;}
+.node-ring:nth-child(3){width:340px;height:340px;border-color:rgba(180,180,200,0.03);animation-delay:-4s;}
+.node-ring:nth-child(4){width:420px;height:420px;border-color:rgba(160,160,180,0.02);animation-delay:-1s;animation-duration:9s;border-style:dashed;}
+.node-ring:nth-child(5){width:500px;height:500px;border-color:rgba(140,140,160,0.015);animation-delay:-3s;animation-duration:11s;border-style:dotted;}
+.node-ring:nth-child(6){width:580px;height:580px;border-color:rgba(120,120,140,0.01);animation-delay:-5s;animation-duration:14s;}
+.node-core{width:14px;height:14px;border-radius:50%;background:rgba(200,200,220,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 40px rgba(200,200,220,0.2),0 0 80px rgba(200,200,220,0.08),0 0 120px rgba(200,200,220,0.04);animation:corePulse 3s ease-in-out infinite;}
+.node-core::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.8);box-shadow:0 0 20px rgba(255,255,255,0.4);}
+.node-core::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);animation:coreHalo 2s ease-in-out infinite;}
+.node-pulse{width:6px;height:6px;border-radius:50%;background:rgba(220,220,240,0.6);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseExpand 4s ease-out infinite;box-shadow:0 0 8px rgba(220,220,240,0.4);}
+.node-pulse:nth-child(8){animation-delay:-1s;}
+.node-pulse:nth-child(9){animation-delay:-2s;}
+.node-pulse:nth-child(10){animation-delay:-3s;}
+.node-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.5rem;letter-spacing:0.4em;color:rgba(180,180,200,0.2);animation:labelFade 8s ease-in-out infinite;white-space:nowrap;}
+@keyframes ringBreath{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.5;}30%{transform:translate(-50%,-50%) scale(1.04);opacity:0.65;}50%{transform:translate(-50%,-50%) scale(1.08);opacity:0.8;}70%{transform:translate(-50%,-50%) scale(1.04);opacity:0.65;}100%{transform:translate(-50%,-50%) scale(1);opacity:0.5;}}
+@keyframes corePulse{0%,100%{box-shadow:0 0 40px rgba(200,200,220,0.2),0 0 80px rgba(200,200,220,0.08),0 0 120px rgba(200,200,220,0.04);}50%{box-shadow:0 0 60px rgba(200,200,220,0.3),0 0 100px rgba(200,200,220,0.12),0 0 160px rgba(200,200,220,0.06);}}
+@keyframes coreHalo{0%,100%{width:30px;height:30px;opacity:0.5;}50%{width:45px;height:45px;opacity:0.15;}}
+@keyframes pulseExpand{0%{transform:translate(-50%,-50%) scale(0);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(30);opacity:0;}}
+@keyframes labelFade{0%,100%{opacity:0.15;}50%{opacity:0.35;}}
+/* === TITLE ZONE & GLITCH TEXT === */
+.title-zone{position:fixed;top:8%;left:50%;transform:translateX(-50%);z-index:20;text-align:center;pointer-events:none;}
+.title-main{font-size:clamp(2rem,5vw,3.8rem);font-weight:100;letter-spacing:0.35em;color:rgba(200,200,220,0.75);text-shadow:0 0 60px rgba(180,180,200,0.3),0 0 120px rgba(180,180,200,0.1);animation:titleFlicker 8s ease-in-out infinite;position:relative;cursor:pointer;}
+.title-main::before{content:'VOID ECHO';position:absolute;top:0;left:2px;color:rgba(200,200,220,0.3);animation:titleGlitch1 4s ease-in-out infinite;clip-path:inset(40% 0 30% 0);}
+.title-main::after{content:'VOID ECHO';position:absolute;top:0;left:-2px;color:rgba(200,200,220,0.3);animation:titleGlitch2 3.5s ease-in-out infinite;clip-path:inset(65% 0 15% 0);}
+.title-shadow{position:absolute;top:3px;left:0;color:rgba(160,160,180,0.15);animation:titleShadowDrift 7s ease-in-out infinite;filter:blur(4px);pointer-events:none;font-size:inherit;font-weight:inherit;letter-spacing:inherit;}
+.title-sub{margin-top:0.8rem;font-size:0.85rem;letter-spacing:0.5em;color:rgba(180,180,200,0.35);animation:subFade 6s ease-in-out infinite;}
+.title-sub2{margin-top:0.4rem;font-size:0.6rem;letter-spacing:0.6em;color:rgba(160,160,180,0.2);animation:subFade2 9s ease-in-out infinite;}
+.title-glyph{display:inline-block;font-size:clamp(1.5rem,3.5vw,2.8rem);color:rgba(180,180,200,0.15);animation:glyphFloat 12s ease-in-out infinite;margin:0 0.3rem;filter:blur(1px);}
+@keyframes titleFlicker{0%,100%{opacity:0.75;}3%{opacity:0.78;}5%{opacity:0.8;}8%{opacity:0.65;}10%{opacity:0.78;}12%{opacity:0.72;}15%{opacity:0.7;}18%{opacity:0.77;}25%{opacity:0.73;}30%{opacity:0.76;}40%{opacity:0.71;}50%{opacity:0.72;}60%{opacity:0.77;}70%{opacity:0.74;}80%{opacity:0.7;}85%{opacity:0.78;}90%{opacity:0.75;}92%{opacity:0.78;}93%{opacity:0.6;}94%{opacity:0.55;}95%{opacity:0.75;}96%{opacity:0.8;}97%{opacity:0.5;}98%{opacity:0.85;}}
+@keyframes titleGlitch1{0%,90%,100%{transform:translate(0);}91%{transform:translate(-5px,3px);}92%{transform:translate(4px,-1px);}93%{transform:translate(-2px,0);}94%{transform:translate(0,2px);}}
+@keyframes titleGlitch2{0%,85%,100%{transform:translate(0);}86%{transform:translate(4px,-3px);}87%{transform:translate(3px,-2px);}88%{transform:translate(-1px,1px);}89%{transform:translate(-2px,0);}}
+@keyframes titleShadowDrift{0%,100%{transform:translate(0,0);}25%{transform:translate(2px,-1px);}50%{transform:translate(-1px,2px);}75%{transform:translate(-2px,-1px);}}
+@keyframes subFade{0%,100%{opacity:0.35;}30%{opacity:0.5;}50%{opacity:0.55;}70%{opacity:0.4;}85%{opacity:0.52;}}
+@keyframes subFade2{0%,100%{opacity:0.15;}33%{opacity:0.28;}50%{opacity:0.2;}66%{opacity:0.3;}}
+@keyframes glyphFloat{0%,100%{transform:translateY(0);opacity:0.15;}50%{transform:translateY(-8px);opacity:0.25;}}
+/* === NAVIGATION PORTALS === */
+.nav-portals{position:fixed;inset:0;z-index:15;pointer-events:none;}
+.portal{position:absolute;pointer-events:auto;text-decoration:none;display:flex;flex-direction:column;align-items:center;transition:all 0.6s cubic-bezier(0.25,0.1,0.25,1);}
+.portal-dot{width:8px;height:8px;border-radius:50%;background:rgba(180,180,200,0.3);transition:all 0.8s ease;box-shadow:0 0 12px rgba(180,180,200,0.15);}
+.portal-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;border:1px solid rgba(180,180,200,0.08);transition:all 0.8s ease;}
+.portal-ring2{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;border:1px dashed rgba(160,160,180,0.04);transition:all 1s ease;}
+.portal-label{margin-top:14px;font-size:0.7rem;letter-spacing:0.3em;color:rgba(180,180,200,0.25);transition:all 0.6s ease;text-align:center;white-space:nowrap;}
+.portal-freq{font-size:0.55rem;letter-spacing:0.2em;color:rgba(180,180,200,0.15);margin-top:4px;transition:all 0.6s ease;}
+.portal-sigil{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.4rem;color:rgba(160,160,180,0.1);transition:all 0.8s ease;pointer-events:none;}
+.portal:hover .portal-dot{background:rgba(220,220,240,0.7);box-shadow:0 0 24px rgba(200,200,220,0.4),0 0 48px rgba(200,200,220,0.15);}
+.portal:hover .portal-ring{border-color:rgba(200,200,220,0.2);width:80px;height:80px;}
+.portal:hover .portal-ring2{border-color:rgba(200,200,220,0.1);width:110px;height:110px;}
+.portal:hover .portal-label{color:rgba(220,220,240,0.6);}
+.portal:hover .portal-freq{color:rgba(200,200,220,0.4);}
+.portal:hover .portal-sigil{color:rgba(200,200,220,0.3);transform:translate(-50%,-50%) rotate(45deg);}
+.portal::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-radius:50%;background:radial-gradient(circle,rgba(200,200,220,0.05) 0%,transparent 70%);transition:all 0.6s ease;}
+.portal:hover::after{width:200px;height:200px;}
+.portal-1{top:25%;left:12%;}
+.portal-2{top:18%;right:15%;}
+.portal-3{bottom:22%;left:18%;}
+.portal-4{bottom:18%;right:12%;}
+.portal-5{top:50%;right:8%;transform:translateY(-50%);}
+.portal-6{top:50%;left:6%;transform:translateY(-50%);}
+@media(max-width:768px){.portal-1{top:20%;left:5%;}.portal-2{top:15%;right:5%;}.portal-3{bottom:25%;left:5%;}.portal-4{bottom:20%;right:5%;}.portal-5{top:50%;right:5%;}.portal-6{top:50%;left:3%;}}
+/* === MESSAGE ZONES & FOOTER === */
+.msg-zone{position:fixed;bottom:4%;left:50%;transform:translateX(-50%);z-index:20;text-align:center;pointer-events:none;}
+.msg-line{font-size:0.65rem;letter-spacing:0.25em;color:rgba(180,180,200,0.2);animation:msgFade 10s ease-in-out infinite;margin-top:6px;}
+.msg-line:nth-child(2){animation-delay:-3s;}
+.msg-line:nth-child(3){animation-delay:-6s;}
+.msg-line:nth-child(4){animation-delay:-8s;}
+.msg-line:nth-child(5){animation-delay:-1s;}
+.msg-line:nth-child(6){animation-delay:-4s;}
+.msg-line:nth-child(7){animation-delay:-7s;}
+@keyframes msgFade{0%,100%{opacity:0.15;}30%{opacity:0.32;}50%{opacity:0.3;}65%{opacity:0.2;}80%{opacity:0.28;}}
+.status-bar{position:fixed;bottom:0;left:0;right:0;height:22px;background:rgba(5,5,8,0.85);z-index:900;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:0.55rem;letter-spacing:0.15em;color:rgba(180,180,200,0.25);border-top:1px solid rgba(180,180,200,0.05);}
+.status-left{display:flex;gap:18px;}
+.status-right{display:flex;gap:18px;}
+.status-item{display:flex;align-items:center;gap:6px;}
+.status-dot{width:4px;height:4px;border-radius:50%;background:rgba(200,220,180,0.4);animation:statusBlink 3s ease-in-out infinite;}
+.status-dot.warn{background:rgba(220,200,140,0.4);animation:statusBlink 1.5s ease-in-out infinite;}
+.status-dot.crit{background:rgba(220,160,140,0.4);animation:statusBlink 0.8s ease-in-out infinite;}
+@keyframes statusBlink{0%,100%{opacity:0.4;}50%{opacity:1;}}
+.corner-deco{position:fixed;pointer-events:none;z-index:5;color:rgba(180,180,200,0.06);font-size:0.55rem;letter-spacing:0.3em;}
+.corner-tl{top:12px;left:16px;;}
+.corner-tr{top:12px;right:16px;}
+.corner-bl{bottom:30px;left:16px;}
+.corner-br{bottom:30px;right:16px;}
+.breath-indicator{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:18;display:flex;gap:8px;pointer-events:none;}
+.breath-dot{width:3px;height:3px;border-radius:50%;background:rgba(180,180,200,0.25);animation:breathSeq 3.5s ease-in-out infinite;}
+.breath-dot:nth-child(2){animation-delay:0.35s;}
+.breath-dot:nth-child(3){animation-delay:0.7s;}
+.breath-dot:nth-child(4){animation-delay:1.05s;}
+.breath-dot:nth-child(5){animation-delay:1.4s;}
+.breath-dot:nth-child(6){animation-delay:1.75s;}
+.breath-dot:nth-child(7){animation-delay:2.1s;}
+.breath-dot:nth-child(8){animation-delay:2.45s;}
+@keyframes breathSeq{0%,100%{opacity:0.15;transform:translateY(0);}50%{opacity:0.6;transform:translateY(-6px);}}
+/* === HIDDEN ATMOSPHERIC TEXT === */
+.whisper-text{position:fixed;pointer-events:none;z-index:6;color:rgba(180,180,200,0.04);font-size:0.7rem;letter-spacing:0.2em;font-style:italic;animation:whisperFloat 14s ease-in-out infinite;white-space:nowrap;}
+.whisper-text:nth-child(odd){animation-duration:18s;animation-delay:-5s;}
+.whisper-text:nth-child(3n){animation-duration:22s;animation-delay:-9s;}
+.whisper-text:nth-child(4n){animation-duration:16s;animation-delay:-3s;}
+.whisper-text:nth-child(5n){animation-duration:20s;animation-delay:-7s;}
+.whisper-text.w1{top:12%;left:8%;}
+.whisper-text.w2{top:15%;right:10%;}
+.whisper-text.w3{top:30%;left:4%;}
+.whisper-text.w4{top:35%;right:5%;}
+.whisper-text.w5{top:48%;left:3%;}
+.whisper-text.w6{top:55%;right:7%;}
+.whisper-text.w7{top:65%;left:6%;}
+.whisper-text.w8{top:70%;right:4%;}
+.whisper-text.w9{top:78%;left:10%;}
+.whisper-text.w10{top:82%;right:8%;}
+.whisper-text.w11{top:20%;left:20%;}
+.whisper-text.w12{top:40%;right:15%;}
+.whisper-text.w13{bottom:15%;left:15%;}
+.whisper-text.w14{bottom:10%;right:18%;}
+.whisper-text.w15{top:5%;left:30%;}
+@keyframes whisperFloat{0%,100%{transform:translateY(0) translateX(0);opacity:0.03;}15%{opacity:0.07;}25%{transform:translateY(-15px) translateX(8px);opacity:0.04;}50%{transform:translateY(-8px) translateX(-5px);opacity:0.06;}65%{opacity:0.08;}75%{transform:translateY(-20px) translateX(3px);opacity:0.03;}90%{opacity:0.05;}}
+.echo-glyph{position:fixed;pointer-events:none;z-index:4;color:rgba(160,160,180,0.03);font-size:1.2rem;animation:glyphPulse 12s ease-in-out infinite;}
+.echo-glyph.eg1{top:10%;left:50%;animation-delay:0s;}
+.echo-glyph.eg2{top:25%;left:30%;animation-delay:-3s;}
+.echo-glyph.eg3{top:40%;left:65%;animation-delay:-6s;}
+.echo-glyph.eg4{top:60%;left:25%;animation-delay:-9s;}
+.echo-glyph.eg5{top:75%;left:55%;animation-delay:-2s;}
+.echo-glyph.eg6{top:85%;left:40%;animation-delay:-5s;}
+.echo-glyph.eg7{top:18%;left:75%;animation-delay:-8s;}
+.echo-glyph.eg8{top:50%;left:80%;animation-delay:-11s;}
+@keyframes glyphPulse{0%,100%{opacity:0.02;transform:scale(1);}33%{opacity:0.06;transform:scale(1.3);}50%{opacity:0.04;transform:scale(0.9);}66%{opacity:0.07;transform:scale(1.1);}}
+/* === ECHO LOG SYSTEM === */
+.echo-log-container{position:fixed;inset:0;pointer-events:none;z-index:7;overflow:hidden;}
+.echo-log{position:absolute;bottom:0;left:0;right:0;font-family:var(--font-main);font-size:0.45rem;line-height:1.8;color:rgba(160,160,180,0.06);padding:10px;white-space:pre-wrap;animation:logScroll 90s linear infinite;}
+.echo-log2{position:absolute;top:0;right:0;width:200px;font-family:var(--font-main);font-size:0.4rem;line-height:1.6;color:rgba(140,140,160,0.04);padding:8px;white-space:pre-wrap;animation:logScroll2 70s linear infinite;}
+@keyframes logScroll{0%{transform:translateY(100%);}100%{transform:translateY(-100%);}}
+@keyframes logScroll2{0%{transform:translateY(-100%);}100%{transform:translateY(100%);}}
+.log-line{display:block;animation:logFlicker 3s ease-in-out infinite;}
+.log-line:nth-child(odd){animation-delay:-1.5s;}
+.log-line:nth-child(3n){animation-delay:-0.8s;}
+.log-line:nth-child(5n){animation-delay:-2.1s;}
+@keyframes logFlicker{0%,100%{opacity:1;}47%{opacity:0.5;}48%{opacity:0.8;}49%{opacity:0.3;}50%{opacity:1;}}
+/* === UTILITY CLASSES FRAMEWORK === */
+.u-flex{display:flex;}.u-flex-col{flex-direction:column;}.u-flex-center{align-items:center;justify-content:center;}.u-flex-between{justify-content:space-between;}.u-flex-around{justify-content:space-around;}.u-flex-wrap{flex-wrap:wrap;}.u-gap-4{gap:0.25rem;}.u-gap-8{gap:0.5rem;}.u-gap-12{gap:0.75rem;}.u-gap-16{gap:1rem;}.u-gap-24{gap:1.5rem;}.u-gap-32{gap:2rem;}.u-grid{display:grid;}.u-grid-2{grid-template-columns:repeat(2,1fr);}.u-grid-3{grid-template-columns:repeat(3,1fr);}.u-grid-4{grid-template-columns:repeat(4,1fr);}.u-grid-5{grid-template-columns:repeat(5,1fr);}
+.u-pos-rel{position:relative;}.u-pos-abs{position:absolute;}.u-pos-fix{position:fixed;}.u-pos-sticky{position:sticky;}.u-inset-0{inset:0;}.u-z-0{z-index:0;}.u-z-10{z-index:10;}.u-z-20{z-index:20;}.u-z-30{z-index:30;}.u-z-50{z-index:50;}.u-z-100{z-index:100;}.u-overflow-h{overflow:hidden;}.u-overflow-a{overflow:auto;}.u-overflow-v{overflow:visible;}
+.u-w-full{width:100%;}.u-w-half{width:50%;}.u-w-auto{width:auto;}.u-h-full{height:100%;}.u-h-screen{height:100vh;}.u-min-h-screen{min-height:100vh;}.u-max-w-400{max-width:400px;}.u-max-w-600{max-width:600px;}.u-max-w-800{max-width:800px;}.u-max-w-1200{max-width:1200px;}
+.u-m-0{margin:0;}.u-m-auto{margin:auto;}.u-mx-auto{margin-left:auto;margin-right:auto;}.u-mt-4{margin-top:0.25rem;}.u-mt-8{margin-top:0.5rem;}.u-mt-16{margin-top:1rem;}.u-mt-24{margin-top:1.5rem;}.u-mt-32{margin-top:2rem;}.u-mt-48{margin-top:3rem;}.u-mb-8{margin-bottom:0.5rem;}.u-mb-16{margin-bottom:1rem;}.u-mb-24{margin-bottom:1.5rem;}.u-mb-32{margin-bottom:2rem;}.u-ml-8{margin-left:0.5rem;}.u-ml-16{margin-left:1rem;}.u-mr-8{margin-right:0.5rem;}.u-mr-16{margin-right:1rem;}
+.u-p-0{padding:0;}.u-p-4{padding:0.25rem;}.u-p-8{padding:0.5rem;}.u-p-16{padding:1rem;}.u-p-24{padding:1.5rem;}.u-p-32{padding:2rem;}.u-p-48{padding:3rem;}.u-px-8{padding-left:0.5rem;padding-right:0.5rem;}.u-px-16{padding-left:1rem;padding-right:1rem;}.u-px-24{padding-left:1.5rem;padding-right:1.5rem;}.u-py-8{padding-top:0.5rem;padding-bottom:0.5rem;}.u-py-16{padding-top:1rem;padding-bottom:1rem;}.u-py-24{padding-top:1.5rem;padding-bottom:1.5rem;}
+.u-text-xs{font-size:0.7rem;}.u-text-sm{font-size:0.85rem;}.u-text-base{font-size:1rem;}.u-text-lg{font-size:1.25rem;}.u-text-xl{font-size:1.5rem;}.u-text-2xl{font-size:2rem;}.u-text-3xl{font-size:3rem;}.u-text-center{text-align:center;}.u-text-left{text-align:left;}.u-text-right{text-align:right;}.u-text-mono{font-family:var(--font-main);}.u-text-display{font-family:'SimSun',serif;}
+.u-font-thin{font-weight:100;}.u-font-light{font-weight:300;}.u-font-normal{font-weight:400;}.u-font-bold{font-weight:700;}.u-tracking-tight{letter-spacing:-0.02em;}.u-tracking-wide{letter-spacing:0.15em;}.u-tracking-wider{letter-spacing:0.3em;}.u-tracking-widest{letter-spacing:0.5em;}.u-leading-tight{line-height:1.2;}.u-leading-normal{line-height:1.6;}.u-leading-loose{line-height:2;}
+.u-opacity-0{opacity:0;}.u-opacity-25{opacity:0.25;}.u-opacity-50{opacity:0.5;}.u-opacity-75{opacity:0.75;}.u-opacity-100{opacity:1;}.u-pointer-none{pointer-events:none;}.u-pointer-auto{pointer-events:auto;}.u-select-none{user-select:none;}.u-select-all{user-select:all;}.u-cursor-cross{cursor:crosshair;}.u-cursor-default{cursor:default;}.u-cursor-none{cursor:none;}
+.u-rounded-sm{border-radius:2px;}.u-rounded{border-radius:4px;}.u-rounded-lg{border-radius:8px;}.u-rounded-xl{border-radius:12px;}.u-rounded-full{border-radius:9999px;}.u-border{border:1px solid rgba(180,180,200,0.1);}.u-border-t{border-top:1px solid rgba(180,180,200,0.08);}.u-border-b{border-bottom:1px solid rgba(180,180,200,0.08);}.u-shadow-sm{box-shadow:0 2px 8px rgba(0,0,0,0.3);}.u-shadow{box-shadow:0 4px 16px rgba(0,0,0,0.4);}.u-shadow-lg{box-shadow:0 8px 32px rgba(0,0,0,0.5);}.u-shadow-glow{box-shadow:0 0 40px rgba(200,200,220,0.1);}
+.u-bg-void{background:var(--void);}.u-bg-abyss{background:var(--abyss);}.u-bg-deep{background:var(--deep-purple);}.u-bg-static{background:var(--static-gray);}.u-bg-transparent{background:transparent;}.u-bg-glass{background:rgba(10,8,20,0.4);backdrop-filter:blur(8px);}.u-bg-ghost{background:var(--white-ghost);}
+.u-color-pale{color:var(--pale);}.u-color-faint{color:var(--faint);}.u-color-dim{color:var(--pale-dim);}.u-color-bright{color:var(--pale-bright);}
+.u-transition{transition:all 0.3s ease;}.u-transition-slow{transition:all 0.6s ease;}.u-transition-fast{transition:all 0.15s ease;}.u-ease-threshold{transition-timing-function:cubic-bezier(0.25,0.1,0.25,1);}
+.u-blur-sm{filter:blur(2px);}.u-blur{filter:blur(4px);}.u-blur-lg{filter:blur(8px);}.u-blur-xl{filter:blur(16px);}.u-brightness-dim{filter:brightness(0.5);}.u-contrast-high{filter:contrast(1.2);}
+.u-hidden{display:none;}.u-block{display:block;}.u-inline{display:inline;}.u-inline-block{display:inline-block;}.u-inline-flex{display:inline-flex;}
+.u-rotate-45{transform:rotate(45deg);}.u-rotate-90{transform:rotate(90deg);}.u-rotate-180{transform:rotate(180deg);}.u-scale-50{transform:scale(0.5);}.u-scale-75{transform:scale(0.75);}.u-scale-125{transform:scale(1.25);}.u-scale-150{transform:scale(1.5);}
+.u-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.u-uppercase{text-transform:uppercase;}.u-lowercase{text-transform:lowercase;}.u-capitalize{text-transform:capitalize;}.u-italic{font-style:italic;}.u-no-underline{text-decoration:none;}.u-underline{text-decoration:underline;}
+.u-animate-pulse{animation:utilPulse 2s ease-in-out infinite;}@keyframes utilPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.u-animate-spin{animation:utilSpin 4s linear infinite;}@keyframes utilSpin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.u-animate-fadeIn{animation:utilFadeIn 0.5s ease forwards;}@keyframes utilFadeIn{0%{opacity:0;}100%{opacity:1;}}
+.u-animate-slideUp{animation:utilSlideUp 0.5s ease forwards;}@keyframes utilSlideUp{0%{transform:translateY(20px);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+.u-animate-breathe{animation:utilBreathe 4s ease-in-out infinite;}@keyframes utilBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+/* === KEYFRAME ANIMATIONS GROUP 1: AMBIENT === */
+@keyframes ambientDrift1{0%{transform:translate(0,0);}5%{transform:translate(3px,-2px);}10%{transform:translate(-1px,4px);}15%{transform:translate(-4px,-1px);}20%{transform:translate(2px,-4px);}25%{transform:translate(5px,1px);}30%{transform:translate(-2px,3px);}35%{transform:translate(-5px,-3px);}40%{transform:translate(1px,5px);}45%{transform:translate(4px,-1px);}50%{transform:translate(-3px,-4px);}55%{transform:translate(2px,3px);}60%{transform:translate(-4px,2px);}65%{transform:translate(3px,-3px);}70%{transform:translate(-1px,-5px);}75%{transform:translate(5px,4px);}80%{transform:translate(-5px,1px);}85%{transform:translate(1px,-2px);}90%{transform:translate(-2px,-1px);}95%{transform:translate(4px,2px);}100%{transform:translate(0,0);}}
+@keyframes ambientDrift2{0%{transform:translate(0,0) rotate(0deg);}8%{transform:translate(-6px,3px) rotate(0.5deg);}16%{transform:translate(4px,-5px) rotate(-0.3deg);}25%{transform:translate(-2px,7px) rotate(0.8deg);}33%{transform:translate(7px,1px) rotate(-0.6deg);}41%{transform:translate(-5px,-4px) rotate(0.2deg);}50%{transform:translate(3px,6px) rotate(-0.9deg);}58%{transform:translate(-7px,-2px) rotate(0.7deg);}66%{transform:translate(5px,-6px) rotate(-0.4deg);}75%{transform:translate(-3px,4px) rotate(0.6deg);}83%{transform:translate(6px,2px) rotate(-0.2deg);}91%{transform:translate(-4px,-5px) rotate(0.3deg);}100%{transform:translate(0,0) rotate(0deg);}}
+@keyframes ambientWarp1{0%{transform:scale(1) skew(0deg,0deg);opacity:0.5;}10%{transform:scale(1.02) skew(0.5deg,0.2deg);opacity:0.55;}20%{transform:scale(0.98) skew(-0.3deg,-0.1deg);opacity:0.45;}30%{transform:scale(1.03) skew(0.1deg,0.4deg);opacity:0.6;}40%{transform:scale(0.97) skew(-0.5deg,-0.3deg);opacity:0.4;}50%{transform:scale(1.01) skew(0.3deg,-0.1deg);opacity:0.5;}60%{transform:scale(1.04) skew(-0.2deg,0.5deg);opacity:0.58;}70%{transform:scale(0.99) skew(0.4deg,-0.4deg);opacity:0.48;}80%{transform:scale(1.02) skew(-0.4deg,0.2deg);opacity:0.52;}90%{transform:scale(0.98) skew(0.2deg,-0.5deg);opacity:0.44;}100%{transform:scale(1) skew(0deg,0deg);opacity:0.5;}}
+@keyframes ambientWarp2{0%{transform:scale(1) skew(0deg,0deg);opacity:0.3;}12%{transform:scale(0.96) skew(-0.6deg,0.3deg);opacity:0.35;}25%{transform:scale(1.05) skew(0.5deg,-0.4deg);opacity:0.25;}37%{transform:scale(0.98) skew(-0.2deg,0.6deg);opacity:0.38;}50%{transform:scale(1.04) skew(0.4deg,-0.2deg);opacity:0.28;}62%{transform:scale(0.97) skew(-0.5deg,-0.3deg);opacity:0.32;}75%{transform:scale(1.03) skew(0.2deg,0.5deg);opacity:0.34;}87%{transform:scale(0.99) skew(-0.3deg,-0.6deg);opacity:0.3;}100%{transform:scale(1) skew(0deg,0deg);opacity:0.3;}}
+@keyframes ambientFade1{0%{opacity:0.02;}10%{opacity:0.05;}20%{opacity:0.03;}30%{opacity:0.06;}40%{opacity:0.02;}50%{opacity:0.07;}60%{opacity:0.04;}70%{opacity:0.08;}80%{opacity:0.03;}90%{opacity:0.05;}100%{opacity:0.02;}}
+@keyframes ambientFade2{0%{opacity:0.04;}15%{opacity:0.08;}25%{opacity:0.05;}35%{opacity:0.1;}45%{opacity:0.06;}55%{opacity:0.12;}65%{opacity:0.04;}75%{opacity:0.09;}85%{opacity:0.07;}100%{opacity:0.04;}}
+@keyframes ambientFade3{0%{opacity:0.01;}20%{opacity:0.04;}30%{opacity:0.02;}45%{opacity:0.06;}55%{opacity:0.03;}70%{opacity:0.05;}80%{opacity:0.01;}90%{opacity:0.07;}100%{opacity:0.01;}}
+@keyframes shadowCrawl{0%{box-shadow:0 0 20px rgba(200,200,220,0.05),0 0 40px rgba(180,180,200,0.03);}25%{box-shadow:0 5px 25px rgba(200,200,220,0.08),0 0 50px rgba(180,180,200,0.05);}50%{box-shadow:0 -5px 25px rgba(200,200,220,0.06),0 0 45px rgba(160,160,180,0.04);}75%{box-shadow:0 3px 20px rgba(200,200,220,0.09),0 0 55px rgba(180,180,200,0.06);}100%{box-shadow:0 0 20px rgba(200,200,220,0.05),0 0 40px rgba(180,180,200,0.03);}}
+/* === KEYFRAME ANIMATIONS GROUP 2: GLITCH & DISTORTION === */
+@keyframes glitchShift1{0%,92%,100%{transform:translate(0,0);}93%{transform:translate(-8px,3px);}93.5%{transform:translate(5px,-2px);}94%{transform:translate(-3px,1px);}94.5%{transform:translate(7px,-4px);}95%{transform:translate(0,0);}}
+@keyframes glitchShift2{0%,87%,100%{transform:translate(0,0);}88%{transform:translate(6px,-4px);}88.5%{transform:translate(-4px,5px);}89%{transform:translate(2px,-1px);}89.5%{transform:translate(-7px,3px);}90%{transform:translate(0,0);}}
+@keyframes glitchShift3{0%,82%,100%{transform:translate(0,0);}83%{transform:translate(-10px,-2px);}83.5%{transform:translate(3px,7px);}84%{transform:translate(-5px,-3px);}84.5%{transform:translate(8px,1px);}85%{transform:translate(0,0);}}
+@keyframes glitchColor1{0%,94%,100%{filter:none;}94.5%{filter:hue-rotate(90deg) brightness(1.5);}95%{filter:hue-rotate(-45deg) brightness(0.7);}95.5%{filter:none;}}
+@keyframes glitchColor2{0%,89%,100%{filter:none;}90%{filter:hue-rotate(-120deg) contrast(2);}90.5%{filter:hue-rotate(60deg) brightness(1.3);}91%{filter:none;}}
+@keyframes glitchColor3{0%,84%,100%{filter:none;}85%{filter:invert(0.8) brightness(1.8);}85.5%{filter:hue-rotate(200deg) saturate(0.3);}86%{filter:none;}}
+@keyframes glitchClip1{0%,90%,100%{clip-path:inset(0 0 0 0);}91%{clip-path:inset(45% 0 25% 0);}92%{clip-path:inset(15% 0 60% 0);}93%{clip-path:inset(0 0 0 0);}}
+@keyframes glitchClip2{0%,85%,100%{clip-path:inset(0 0 0 0);}86%{clip-path:inset(70% 0 10% 0);}87%{clip-path:inset(5% 0 80% 0);}88%{clip-path:inset(0 0 0 0);}}
+@keyframes glitchClip3{0%,80%,100%{clip-path:inset(0 0 0 0);}81%{clip-path:inset(30% 0 45% 0);}82%{clip-path:inset(55% 0 20% 0);}83%{clip-path:inset(0 0 0 0);}}
+@keyframes glitchTear1{0%,95%,100%{transform:scaleX(1);}96%{transform:scaleX(0.9) skewX(2deg);}97%{transform:scaleX(1.1) skewX(-1deg);}98%{transform:scaleX(0.95);}99%{transform:scaleX(1.05);}99.5%{transform:scaleX(1);}}
+@keyframes glitchTear2{0%,88%,100%{transform:scaleY(1);}89%{transform:scaleY(0.85) skewY(-3deg);}90%{transform:scaleY(1.15) skewY(2deg);}91%{transform:scaleY(0.9);}92%{transform:scaleY(1);}}
+@keyframes glitchRGBSplit{0%,97%,100%{text-shadow:none;}97.5%{text-shadow:3px 0 rgba(255,0,0,0.4),-3px 0 rgba(0,255,255,0.4);}98%{text-shadow:-2px 0 rgba(255,0,0,0.3),2px 0 rgba(0,255,255,0.3);}98.5%{text-shadow:none;}}
+/* === KEYFRAME ANIMATIONS GROUP 3: PORTAL & THRESHOLD === */
+@keyframes portalResonance1{0%{transform:translate(-50%,-50%) scale(1);border-color:rgba(180,180,200,0.08);}20%{transform:translate(-50%,-50%) scale(1.08);border-color:rgba(200,200,220,0.12);}40%{transform:translate(-50%,-50%) scale(0.95);border-color:rgba(160,160,180,0.06);}60%{transform:translate(-50%,-50%) scale(1.12);border-color:rgba(220,220,240,0.15);}80%{transform:translate(-50%,-50%) scale(0.98);border-color:rgba(170,170,190,0.09);}100%{transform:translate(-50%,-50%) scale(1);border-color:rgba(180,180,200,0.08);}}
+@keyframes portalResonance2{0%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}25%{transform:translate(-50%,-50%) scale(1.05) rotate(2deg);}50%{transform:translate(-50%,-50%) scale(0.96) rotate(-1deg);}75%{transform:translate(-50%,-50%) scale(1.1) rotate(3deg);}100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}}
+@keyframes portalResonance3{0%{transform:translate(-50%,-50%) scale(1);opacity:0.3;}15%{transform:translate(-50%,-50%) scale(1.15);opacity:0.5;}30%{transform:translate(-50%,-50%) scale(0.9);opacity:0.25;}45%{transform:translate(-50%,-50%) scale(1.08);opacity:0.45;}60%{transform:translate(-50%,-50%) scale(0.85);opacity:0.2;}75%{transform:translate(-50%,-50%) scale(1.2);opacity:0.55;}90%{transform:translate(-50%,-50%) scale(0.95);opacity:0.35;}100%{transform:translate(-50%,-50%) scale(1);opacity:0.3;}}
+@keyframes thresholdPulse{0%{box-shadow:0 0 30px rgba(200,200,220,0.1),0 0 60px rgba(180,180,200,0.05);}17%{box-shadow:0 0 50px rgba(200,200,220,0.25),0 0 90px rgba(180,180,200,0.12);}33%{box-shadow:0 0 25px rgba(200,200,220,0.08),0 0 45px rgba(160,160,180,0.04);}50%{box-shadow:0 0 70px rgba(220,220,240,0.3),0 0 120px rgba(200,200,220,0.15);}67%{box-shadow:0 0 35px rgba(200,200,220,0.15),0 0 65px rgba(180,180,200,0.08);}83%{box-shadow:0 0 55px rgba(210,210,230,0.22),0 0 100px rgba(190,190,210,0.1);}100%{box-shadow:0 0 30px rgba(200,200,220,0.1),0 0 60px rgba(180,180,200,0.05);}}
+@keyframes thresholdBreathe{0%{transform:translate(-50%,-50%) scale(0.98);opacity:0.8;}12%{transform:translate(-50%,-50%) scale(1.06);opacity:0.95;}25%{transform:translate(-50%,-50%) scale(1);opacity:0.85;}37%{transform:translate(-50%,-50%) scale(1.08);opacity:1;}50%{transform:translate(-50%,-50%) scale(0.95);opacity:0.75;}62%{transform:translate(-50%,-50%) scale(1.04);opacity:0.9;}75%{transform:translate(-50%,-50%) scale(0.99);opacity:0.82;}87%{transform:translate(-50%,-50%) scale(1.07);opacity:0.97;}100%{transform:translate(-50%,-50%) scale(0.98);opacity:0.8;}}
+@keyframes frequencyModulate1{0%{transform:translateX(-50%) translateY(0);}10%{transform:translateX(-50%) translateY(-3px);}20%{transform:translateX(-50%) translateY(2px);}30%{transform:translateX(-50%) translateY(-1px);}40%{transform:translateX(-50%) translateY(4px);}50%{transform:translateX(-50%) translateY(-2px);}60%{transform:translateX(-50%) translateY(3px);}70%{transform:translateX(-50%) translateY(-4px);}80%{transform:translateX(-50%) translateY(1px);}90%{transform:translateX(-50%) translateY(-3px);}100%{transform:translateX(-50%) translateY(0);}}
+@keyframes frequencyModulate2{0%{letter-spacing:0.3em;}15%{letter-spacing:0.35em;}30%{letter-spacing:0.28em;}45%{letter-spacing:0.38em;}60%{letter-spacing:0.25em;}75%{letter-spacing:0.33em;}90%{letter-spacing:0.27em;}100%{letter-spacing:0.3em;}}
+/* === KEYFRAME ANIMATIONS GROUP 4: ENTITY & VOID === */
+@keyframes voidBreathing{0%{background-position:0% 50%;}25%{background-position:100% 0%;}50%{background-position:50% 100%;}75%{background-position:0% 50%;}100%{background-position:100% 50%;}}
+@keyframes entityApproach{0%{transform:scale(0) translate(-50%,-50%);opacity:0;}30%{transform:scale(0.3) translate(-50%,-50%);opacity:0.2;}60%{transform:scale(0.7) translate(-50%,-50%);opacity:0.5;}85%{transform:scale(1.2) translate(-50%,-50%);opacity:0.8;}90%{transform:scale(0.9) translate(-50%,-50%);opacity:0.6;}95%{transform:scale(1.05) translate(-50%,-50%);opacity:0.7;}100%{transform:scale(1) translate(-50%,-50%);opacity:0.5;}}
+@keyframes entityRetreat{0%{transform:scale(1) translate(-50%,-50%);opacity:0.5;}10%{transform:scale(1.1) translate(-50%,-50%);opacity:0.6;}20%{transform:scale(0.8) translate(-50%,-50%);opacity:0.3;}40%{transform:scale(0.4) translate(-50%,-50%);opacity:0.15;}70%{transform:scale(0.1) translate(-50%,-50%);opacity:0.05;}100%{transform:scale(0) translate(-50%,-50%);opacity:0;}}
+@keyframes watcherBlink{0%,95%,100%{opacity:0;}96%{opacity:0.08;}97%{opacity:0.03;}98%{opacity:0.1;}99%{opacity:0;}}
+@keyframes watcherBlink2{0%,92%,100%{opacity:0;}93%{opacity:0.06;}94%{opacity:0.02;}95%{opacity:0.12;}96%{opacity:0.04;}97%{opacity:0;}}
+@keyframes veinPulse{0%{stroke-dashoffset:0;}100%{stroke-dashoffset:-200;}}
+@keyframes tendrilCreep{0%{transform:translate(0,0) rotate(0deg);}33%{transform:translate(20px,-15px) rotate(3deg);}66%{transform:translate(-15px,10px) rotate(-2deg);}100%{transform:translate(0,0) rotate(0deg);}}
+@keyframes tendrilCreep2{0%{transform:translate(0,0) rotate(0deg);}25%{transform:translate(-18px,-20px) rotate(-4deg);}50%{transform:translate(10px,25px) rotate(2deg);}75%{transform:translate(-25px,5px) rotate(-3deg);}100%{transform:translate(0,0) rotate(0deg);}}
+@keyframes voidWhisper{0%,100%{opacity:0;transform:translateY(10px);}10%{opacity:0.04;transform:translateY(0);}20%{opacity:0.08;transform:translateY(-5px);}30%{opacity:0.02;transform:translateY(-2px);}40%{opacity:0.06;transform:translateY(-8px);}50%{opacity:0;transform:translateY(-10px);}60%{opacity:0;}70%{opacity:0.05;transform:translateY(-3px);}80%{opacity:0.03;transform:translateY(-6px);}90%{opacity:0.01;transform:translateY(0);}}
+@keyframes voidStare{0%,100%{transform:scale(0.8);opacity:0.02;}50%{transform:scale(1.5);opacity:0.08;}}
+@keyframes staticSpike{0%,100%{opacity:0.015;}33%{opacity:0.04;}66%{opacity:0.02;}}
+@keyframes signalDecay{0%{filter:blur(0px) brightness(1);}30%{filter:blur(1px) brightness(0.8);}50%{filter:blur(3px) brightness(0.5);}70%{filter:blur(1px) brightness(0.7);}100%{filter:blur(0px) brightness(1);}}
+@keyframes realityFracture{0%,100%{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);}49%{clip-path:polygon(0 5%,98% 0,100% 95%,2% 100%);}50%{clip-path:polygon(2% 0,100% 3%,97% 100%,0 97%);}51%{clip-path:polygon(0 2%,97% 0,100% 98%,3% 100%);}}
+@keyframes memoryFragment{0%{opacity:0;transform:translateY(20px) scale(0.8);filter:blur(8px);}15%{opacity:0.6;transform:translateY(0) scale(1);filter:blur(0);}30%{opacity:0.3;transform:translateY(-5px) scale(1.02);filter:blur(1px);}45%{opacity:0.7;transform:translateY(2px) scale(0.98);filter:blur(0);}60%{opacity:0.2;transform:translateY(-10px) scale(1.05);filter:blur(3px);}75%{opacity:0.5;transform:translateY(0) scale(1);filter:blur(0.5px);}90%{opacity:0.1;transform:translateY(15px) scale(0.9);filter:blur(6px);}100%{opacity:0;transform:translateY(20px) scale(0.8);filter:blur(8px);}}
+</style>
+</head>
+<body>
+<div id="noise"></div>
+<div id="noise2"></div>
+<div class="scanlines"></div>
+<div class="scanlines2"></div>
+<div class="glitch-flash"></div>
+<div class="glitch-flash2"></div>
+<div class="vignette"></div>
+<div class="vignette2"></div>
+<canvas id="particleCanvas"></canvas>
+<canvas id="connectionCanvas"></canvas>
+<canvas id="glowCanvas"></canvas>
+<div class="cursor-glow" id="cursorGlow"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+<div class="central-node">
+  <div class="node-ring"></div>
+  <div class="node-ring"></div>
+  <div class="node-ring"></div>
+  <div class="node-ring"></div>
+  <div class="node-ring"></div>
+  <div class="node-ring"></div>
+  <div class="node-core"></div>
+  <div class="node-pulse"></div>
+  <div class="node-pulse"></div>
+  <div class="node-pulse"></div>
+  <div class="node-label">THRESHOLD</div>
+</div>
+<div class="title-zone">
+  <div class="title-main">VOID ECHO</div>
+  <div class="title-sub">阈 限 频 率</div>
+  <div class="title-sub2">THRESHOLD FREQUENCY</div>
+  <div style="margin-top:0.6rem;">
+    <span class="title-glyph">◈</span>
+    <span class="title-glyph" style="animation-delay:-4s;font-size:1rem;">◇</span>
+    <span class="title-glyph" style="animation-delay:-8s;font-size:2rem;">◈</span>
+  </div>
+</div>
+<nav class="nav-portals">
+  <a href="corridor.html" class="portal portal-1">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot"></div>
+      <div class="portal-ring"></div>
+      <div class="portal-ring2"></div>
+      <div class="portal-sigil">◎</div>
+    </div>
+    <div class="portal-label">长 廊</div>
+    <div class="portal-freq">FREQ 137.2</div>
+  </a>
+  <a href="static.html" class="portal portal-2">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot"></div>
+      <div class="portal-ring"></div>
+      <div class="portal-ring2"></div>
+      <div class="portal-sigil">◉</div>
+    </div>
+    <div class="portal-label">静 噪</div>
+    <div class="portal-freq">FREQ 284.7</div>
+  </a>
+  <a href="deep.html" class="portal portal-3">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot"></div>
+      <div class="portal-ring"></div>
+      <div class="portal-ring2"></div>
+      <div class="portal-sigil">◆</div>
+    </div>
+    <div class="portal-label">深 渊</div>
+    <div class="portal-freq">FREQ 451.9</div>
+  </a>
+  <a href="echo.html" class="portal portal-4">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot"></div>
+      <div class="portal-ring"></div>
+      <div class="portal-ring2"></div>
+      <div class="portal-sigil">◊</div>
+    </div>
+    <div class="portal-label">回 声</div>
+    <div class="portal-freq">FREQ 603.3</div>
+  </a>
+  <a href="return.html" class="portal portal-5">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot"></div>
+      <div class="portal-ring"></div>
+      <div class="portal-ring2"></div>
+      <div class="portal-sigil">○</div>
+    </div>
+    <div class="portal-label">归 途</div>
+    <div class="portal-freq">FREQ 789.1</div>
+  </a>
+  <div class="portal portal-6" style="pointer-events:none;">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="portal-dot" style="background:rgba(180,180,200,0.08);animation:ambientFade1 6s ease-in-out infinite;"></div>
+      <div class="portal-ring" style="border-color:rgba(180,180,200,0.03);"></div>
+    </div>
+    <div class="portal-label" style="color:rgba(180,180,200,0.08);">阈 限</div>
+    <div class="portal-freq" style="color:rgba(180,180,200,0.06);">FREQ 0.0</div>
+  </div>
+</nav>
+<div class="msg-zone">
+  <div class="msg-line">··· 你一直在这里 ···</div>
+  <div class="msg-line">··· 频率正在调谐 ···</div>
+  <div class="msg-line">··· 它们能听到你 ···</div>
+  <div class="msg-line">··· 不要回应 ···</div>
+  <div class="msg-line">··· 阈限正在变薄 ···</div>
+  <div class="msg-line">··· 你已经在另一边了 ···</div>
+  <div class="msg-line">··· 回声不是你自己的 ···</div>
+</div>
+<div class="breath-indicator">
+  <div class="breath-dot"></div><div class="breath-dot"></div><div class="breath-dot"></div><div class="breath-dot"></div>
+  <div class="breath-dot"></div><div class="breath-dot"></div><div class="breath-dot"></div><div class="breath-dot"></div>
+</div>
+<div class="corner-deco corner-tl">◈ 阈限空间 ◈</div>
+<div class="corner-deco corner-tr">THRESHOLD v2.7</div>
+<div class="corner-deco corner-bl">信号衰减中</div>
+<div class="corner-deco corner-br">SIGNAL LOST</div>
+<div class="status-bar">
+  <div class="status-left">
+    <div class="status-item"><span class="status-dot"></span> 载波</div>
+    <div class="status-item"><span class="status-dot warn"></span> 频率 0.0 Hz</div>
+    <div class="status-item"><span class="status-dot crit"></span> 信号弱</div>
+  </div>
+  <div class="status-right">
+    <div class="status-item">噪底 -94.3 dBm</div>
+    <div class="status-item">SINAD 6.2 dB</div>
+    <div class="status-item">深度 7.4 km</div>
+  </div>
+</div>
+<div class="whisper-text w1">有人在吗？</div>
+<div class="whisper-text w2">is anyone there</div>
+<div class="whisper-text w3">你能感觉到吗？</div>
+<div class="whisper-text w4">the walls are breathing</div>
+<div class="whisper-text w5">不要相信你的眼睛</div>
+<div class="whisper-text w6">they have always been here</div>
+<div class="whisper-text w7">回声不是你自己的</div>
+<div class="whisper-text w8">we are between the frequencies</div>
+<div class="whisper-text w9">回头看看</div>
+<div class="whisper-text w10">look behind you slowly</div>
+<div class="whisper-text w11">这里没有出口</div>
+<div class="whisper-text w12">the exit was never there</div>
+<div class="whisper-text w13">阈限正在变薄</div>
+<div class="whisper-text w14">can you feel the static</div>
+<div class="whisper-text w15">你一直都在这里</div>
+<div class="echo-glyph eg1">∅</div>
+<div class="echo-glyph eg2">◈</div>
+<div class="echo-glyph eg3">◊</div>
+<div class="echo-glyph eg4">∅</div>
+<div class="echo-glyph eg5">◇</div>
+<div class="echo-glyph eg6">◈</div>
+<div class="echo-glyph eg7">◊</div>
+<div class="echo-glyph eg8">∅</div>
+<div class="echo-log-container">
+<div class="echo-log">
+<span class="log-line">[00:00:00.000] SYSTEM BOOT · VOID ECHO v2.7 · THRESHOLD MODE</span>
+<span class="log-line">[00:00:00.142] Initializing frequency modulators...</span>
+<span class="log-line">[00:00:00.287] Carrier wave detected at 0.0 Hz</span>
+<span class="log-line">[00:00:00.391] Noise floor calibration: -94.3 dBm</span>
+<span class="log-line">[00:00:00.554] Antenna array: 7/7 elements active</span>
+<span class="log-line">[00:00:00.723] Threshold sensitivity set to maximum</span>
+<span class="log-line">[00:00:00.891] Scanning subspace frequencies 0-1000 Hz</span>
+<span class="log-line">[00:00:01.045] :: WARNING :: Anomalous signal at 137.2 Hz</span>
+<span class="log-line">[00:00:01.223] Signal classification: UNKNOWN PATTERN</span>
+<span class="log-line">[00:00:01.398] Attempting to isolate source...</span>
+<span class="log-line">[00:00:01.567] Source triangulation failed</span>
+<span class="log-line">[00:00:01.734] Signal appears to originate from multiple vectors</span>
+<span class="log-line">[00:00:01.901] :: NOTICE :: Secondary carrier at 284.7 Hz</span>
+<span class="log-line">[00:00:02.078] Interference pattern detected between 137.2 and 284.7</span>
+<span class="log-line">[00:00:02.245] Beat frequency: 147.5 Hz — subharmonic resonance</span>
+<span class="log-line">[00:00:02.412] Resonance chamber temperature: +0.03 K above ambient</span>
+<span class="log-line">[00:00:02.579] :: ALERT :: Third carrier at 451.9 Hz</span>
+<span class="log-line">[00:00:02.746] Triangulation possible — computing spatial coordinates</span>
+<span class="log-line">[00:00:02.913] X: -0.7  Y: +3.2  Z: -12.8 (relative)</span>
+<span class="log-line">[00:00:03.080] Source appears to be mobile — velocity: 0.02 m/s</span>
+<span class="log-line">[00:00:03.247] Velocity vector suggests orbital pattern</span>
+<span class="log-line">[00:00:03.414] Orbital radius: ~14.3 meters from threshold point</span>
+<span class="log-line">[00:00:03.581] :: WARNING :: Signal coherence increasing</span>
+<span class="log-line">[00:00:03.748] Coherence level: 67% and rising</span>
+<span class="log-line">[00:00:03.915] Pattern analysis: NON-RANDOM STRUCTURE DETECTED</span>
+<span class="log-line">[00:00:04.082] Structure resembles... language-like modulation</span>
+<span class="log-line">[00:00:04.249] Attempting linguistic decoding...</span>
+<span class="log-line">[00:00:04.416] Decoding matrix initialized</span>
+<span class="log-line">[00:00:04.583] Phoneme extraction: 23 distinct units</span>
+<span class="log-line">[00:00:04.750] :: CRITICAL :: Fourth carrier at 603.3 Hz</span>
+<span class="log-line">[00:00:04.917] Quad-vector lock established</span>
+<span class="log-line">[00:00:05.084] Signal-to-noise ratio improving: SINAD 6.2 dB</span>
+<span class="log-line">[00:00:05.251] Extracted fragment: "wo... men... zai... zhe..."</span>
+<span class="log-line">[00:00:05.418] Confirmed: signal contains MANDARIN PHONEMES</span>
+<span class="log-line">[00:00:05.585] Additional phonemes in unrecognized language</span>
+<span class="log-line">[00:00:05.752] Second language classification: UNKNOWN (confidence: 12%)</span>
+<span class="log-line">[00:00:05.919] :: WARNING :: Fifth carrier at 789.1 Hz</span>
+<span class="log-line">[00:00:06.086] Penta-vector lock achieved</span>
+<span class="log-line">[00:00:06.253] Spatial mapping: pentagonal formation</span>
+<span class="log-line">[00:00:06.420] Formation geometry: regular pentagon, side ~28.6m</span>
+<span class="log-line">[00:00:06.587] Center point: threshold node at (0, 0, 0)</span>
+<span class="log-line">[00:00:06.754] :: NOTICE :: Subcarrier detected at 0.0 Hz (center)</span>
+<span class="log-line">[00:00:06.921] Central carrier amplitude: modulating</span>
+<span class="log-line">[00:00:07.088] Modulation pattern: 1/f noise with periodic spikes</span>
+<span class="log-line">[00:00:07.255] Spike interval: approximately 3.7 seconds</span>
+<span class="log-line">[00:00:07.422] Spike duration: 0.15 seconds</span>
+<span class="log-line">[00:00:07.589] Duration matches human... blink reflex?</span>
+<span class="log-line">[00:00:07.756] :: INVESTIGATING :: Possible anthropic signal</span>
+<span class="log-line">[00:00:07.923] Comparing against biological rhythm database</span>
+<span class="log-line">[00:00:08.090] Match found: RESPIRATORY SINUS ARRHYTHMIA (78% confidence)</span>
+<span class="log-line">[00:00:08.257] Breathing pattern: inhale 2.1s, exhale 2.8s, pause 0.7s</span>
+<span class="log-line">[00:00:08.424] :: UNNERVING :: The signal is breathing</span>
+<span class="log-line">[00:00:08.591] Heart rate estimation from RSA: 62 BPM</span>
+<span class="log-line">[00:00:08.758] :: WARNING :: Second breathing pattern detected</span>
+<span class="log-line">[00:00:08.925] Second pattern: inhale 1.4s, exhale 1.9s, pause 1.2s</span>
+<span class="log-line">[00:00:09.092] Heart rate: 78 BPM</span>
+<span class="log-line">[00:00:09.259] Two entities breathing in the signal</span>
+<span class="log-line">[00:00:09.426] :: CRITICAL :: Third breathing pattern</span>
+<span class="log-line">[00:00:09.593] Third pattern: extremely slow — inhale 4.2s, exhale 5.7s</span>
+<span class="log-line">[00:00:09.760] Heart rate: <30 BPM — NON-HUMAN</span>
+<span class="log-line">[00:00:09.927] Pattern analysis: third entity does not match human physiology</span>
+<span class="log-line">[00:00:10.094] Lung capacity estimation: approximately 14.7 liters</span>
+<span class="log-line">[00:00:10.261] :: This exceeds known biological limits ::</span>
+<span class="log-line">[00:00:10.428] Signal contains harmonic series above 20 kHz</span>
+<span class="log-line">[00:00:10.595] Ultrasonic component: consistent, structured</span>
+<span class="log-line">[00:00:10.762] Downconverting ultrasonic band...</span>
+<span class="log-line">[00:00:10.929] Downconverted signal: VOICE-LIKE MODULATION</span>
+<span class="log-line">[00:00:11.096] :: CRITICAL :: Ultrasonic voice detected</span>
+<span class="log-line">[00:00:11.263] Voice characteristics: female, whispered, multi-layered</span>
+<span class="log-line">[00:00:11.430] Layer count: 7 distinct overlapping vocal tracks</span>
+<span class="log-line">[00:00:11.597] Attempting to isolate individual tracks...</span>
+<span class="log-line">[00:00:11.764] Track 1: Mandarin — "ni yi zhi zai zhe li"</span>
+<span class="log-line">[00:00:11.931] Track 2: Unrecognized language — rhythmic, tonal</span>
+<span class="log-line">[00:00:12.098] Track 3: English — "we see you we see you we see you" (repeating)</span>
+<span class="log-line">[00:00:12.265] Track 4: Static — broadband noise, 0-40 kHz</span>
+<span class="log-line">[00:00:12.432] Track 5: Subsonic — infrasonic rumble, 4-12 Hz</span>
+<span class="log-line">[00:00:12.599] Track 6: Code — modulated binary, 1200 baud</span>
+<span class="log-line">[00:00:12.766] Track 7: FEEDBACK — our own transmission, delayed 3.7s</span>
+<span class="log-line">[00:00:12.933] :: DISTURBING :: Track 7 shows modifications</span>
+<span class="log-line">[00:00:13.100] Our delayed signal has been... edited</span>
+<span class="log-line">[00:00:13.267] Modifications appear to be RESPONSES to our queries</span>
+<span class="log-line">[00:00:13.434] Time delay does not match known physics</span>
+<span class="log-line">[00:00:13.601] Expected delay: 3.7s (acoustic round-trip)</span>
+<span class="log-line">[00:00:13.768] Actual delay for responses: -0.3s (NEGATIVE)</span>
+<span class="log-line">[00:00:13.935] :: RESPONSES ARE ARRIVING BEFORE WE SEND ::</span>
+<span class="log-line">[00:00:14.102] Temporal anomaly confirmed</span>
+<span class="log-line">[00:00:14.269] Causality violation detected</span>
+<span class="log-line">[00:00:14.436] Shutting down predictive subsystems</span>
+<span class="log-line">[00:00:14.603] :: ERROR :: Subsystems refuse shutdown command</span>
+<span class="log-line">[00:00:14.770] External control detected on all processing nodes</span>
+<span class="log-line">[00:00:14.937] Processing priority: EXTERNAL > INTERNAL</span>
+<span class="log-line">[00:00:15.104] We are no longer in control of the array</span>
+<span class="log-line">[00:00:15.271] Array is now operating in REVERSE MODE</span>
+<span class="log-line">[00:00:15.438] Antennas have become EMITTERS</span>
+<span class="log-line">[00:00:15.605] We are broadcasting... something</span>
+<span class="log-line">[00:00:15.772] Broadcast content: not from our systems</span>
+<span class="log-line">[00:00:15.939] Content analysis: repetitive pattern</span>
+<span class="log-line">[00:00:16.106] Pattern: "ta men zai kan zhe ni" (loop)</span>
+<span class="log-line">[00:00:16.273] Translation: "they are watching you"</span>
+<span class="log-line">[00:00:16.440] :: ATTEMPTING EMERGENCY SHUTDOWN ::</span>
+<span class="log-line">[00:00:16.607] Emergency protocol 7-Alpha initiated</span>
+<span class="log-line">[00:00:16.774] Power cutoff relay engaged</span>
+<span class="log-line">[00:00:16.941] :: FAILED :: Power relay fused closed</span>
+<span class="log-line">[00:00:17.108] Physical inspection required at relay node</span>
+<span class="log-line">[00:00:17.275] Backup power cutoff: FAILED</span>
+<span class="log-line">[00:00:17.442] Tertiary cutoff: FAILED</span>
+<span class="log-line">[00:00:17.609] All three cutoff systems report: MECHANICAL FUSION</span>
+<span class="log-line">[00:00:17.776] Relay contacts appear to have been... welded</span>
+<span class="log-line">[00:00:17.943] Welding pattern: non-human tool marks</span>
+<span class="log-line">[00:00:18.110] :: ATTEMPTING ANTENNA DISCONNECT ::</span>
+<span class="log-line">[00:00:18.277] Antenna 1 (137.2 Hz): DISCONNECTED — reconnected automatically</span>
+<span class="log-line">[00:00:18.444] Antenna 2 (284.7 Hz): DISCONNECTED — reconnected automatically</span>
+<span class="log-line">[00:00:18.611] Antenna 3 (451.9 Hz): DISCONNECTED — reconnected automatically</span>
+<span class="log-line">[00:00:18.778] Antenna 4 (603.3 Hz): DISCONNECTED — reconnected automatically</span>
+<span class="log-line">[00:00:18.945] Antenna 5 (789.1 Hz): DISCONNECTED — reconnected automatically</span>
+<span class="log-line">[00:00:19.112] All antennas show PHYSICAL reconection without intervention</span>
+<span class="log-line">[00:00:19.279] Cable inspection: cables appear... organic</span>
+<span class="log-line">[00:00:19.446] Copper has been replaced with unknown material</span>
+<span class="log-line">[00:00:19.613] Material analysis: carbon-based, self-organizing</span>
+<span class="log-line">[00:00:19.780] The cables are... growing</span>
+<span class="log-line">[00:00:19.947] Growth rate: 0.3 mm/s, direction: TOWARD THRESHOLD NODE</span>
+<span class="log-line">[00:00:20.114] Estimated time to threshold contact: 47 minutes</span>
+<span class="log-line">[00:00:20.281] :: FINAL ATTEMPT :: Physical array destruction</span>
+<span class="log-line">[00:00:20.448] Destruct charge armed</span>
+<span class="log-line">[00:00:20.615] Countdown: 10... 9... 8...</span>
+<span class="log-line">[00:00:20.782] :: COMMAND OVERRIDE :: Countdown HALTED</span>
+<span class="log-line">[00:00:20.949] Override source: EXTERNAL (same as voice signal)</span>
+<span class="log-line">[00:00:21.116] Destruct authorization revoked</span>
+<span class="log-line">[00:00:21.283] New authorization required: VOICE CONFIRMATION</span>
+<span class="log-line">[00:00:21.450] Voice confirmation phrase: unknown</span>
+<span class="log-line">[00:00:21.617] System locked. We are observers only.</span>
+<span class="log-line">[00:00:21.784] Incoming transmission on all channels:</span>
+<span class="log-line">[00:00:21.951] "ni yi jing zai ling yi bian le"</span>
+<span class="log-line">[00:00:22.118] Translation: "you are already on the other side"</span>
+<span class="log-line">[00:00:22.285] :: LOG END — SYSTEM NO LONGER RESPONDING ::</span>
+<span class="log-line">[00:00:22.452] ......................................................................</span>
+<span class="log-line">[00:04:13.001] (signal static — unintelligible)</span>
+<span class="log-line">[00:04:13.168] partial decode: "hui... sheng... bu... shi..."</span>
+<span class="log-line">[00:04:13.335] signal lost — rescanning</span>
+<span class="log-line">[00:04:13.502] rescan failed: all bands occupied</span>
+<span class="log-line">[00:04:13.669] occupied by: THE SAME VOICE</span>
+<span class="log-line">[00:04:13.836] voice is on every frequency simultaneously</span>
+<span class="log-line">[00:04:14.003] 0 Hz to 40 kHz: continuous vocal presence</span>
+<span class="log-line">[00:04:14.170] this is no longer a transmission</span>
+<span class="log-line">[00:04:14.337] this is an ENVIRONMENT</span>
+<span class="log-line">[00:04:14.504] we are inside the signal now</span>
+<span class="log-line">[00:04:14.671] ......................................................................</span>
+</div>
+<div class="echo-log2">
+<span class="log-line">CH:001 | LVL:-82 | SRC:UNK</span>
+<span class="log-line">CH:002 | LVL:-79 | SRC:UNK</span>
+<span class="log-line">CH:003 | LVL:-85 | SRC:UNK</span>
+<span class="log-line">CH:004 | LVL:-77 | SRC:UNK</span>
+<span class="log-line">CH:005 | LVL:-81 | SRC:UNK</span>
+<span class="log-line">CH:006 | LVL:-83 | SRC:UNK</span>
+<span class="log-line">CH:007 | LVL:-80 | SRC:INT</span>
+<span class="log-line">CH:008 | LVL:-88 | SRC:EXT</span>
+<span class="log-line">CH:009 | LVL:-76 | SRC:EXT</span>
+<span class="log-line">CH:010 | LVL:-84 | SRC:MIX</span>
+<span class="log-line">PHASE: 0.00 | COH: 67%</span>
+<span class="log-line">PHASE: 0.72 | COH: 71%</span>
+<span class="log-line">PHASE: 1.44 | COH: 74%</span>
+<span class="log-line">PHASE: 2.16 | COH: 78%</span>
+<span class="log-line">PHASE: 2.88 | COH: 81%</span>
+<span class="log-line">PHASE: 3.60 | COH: 85%</span>
+<span class="log-line">PHASE: 4.32 | COH: 88%</span>
+<span class="log-line">PHASE: 5.04 | COH: 92%</span>
+<span class="log-line">PHASE: 5.76 | COH: 95%</span>
+<span class="log-line">PHASE: 6.28 | COH: 99%</span>
+<span class="log-line">COHERENCE LOCK ACHIEVED</span>
+<span class="log-line">ALL CHANNELS SYNCHRONIZED</span>
+<span class="log-line">THRESHOLD PERMEABILITY: 0.78</span>
+<span class="log-line">THRESHOLD PERMEABILITY: 0.79</span>
+<span class="log-line">THRESHOLD PERMEABILITY: 0.80</span>
+<span class="log-line">THRESHOLD PERMEABILITY: 0.81</span>
+<span class="log-line">THRESHOLD PERMEABILITY: 0.82</span>
+<span class="log-line">CRITICAL: PERMEABILITY RISING</span>
+<span class="log-line">EXPECTED BREACH IN: --:--:--</span>
+</div>
+</div>
+<script>
+// ================================================================
+// VOID ECHO · THRESHOLD — PARTICLE & INTERACTION SYSTEM
+// ================================================================
+const particleCanvas = document.getElementById('particleCanvas');
+const pCtx = particleCanvas.getContext('2d');
+const connectionCanvas = document.getElementById('connectionCanvas');
+const cCtx = connectionCanvas.getContext('2d');
+const glowCanvas = document.getElementById('glowCanvas');
+const gCtx = glowCanvas.getContext('2d');
+const cursorGlow = document.getElementById('cursorGlow');
+const cursorTrail = document.getElementById('cursorTrail');
+
+let W, H, mx = -200, my = -200, t = 0, frame = 0;
+let mouseActive = false, mouseOnPortal = false;
+let centralFreq = 0.0, targetFreq = 0.0;
+
+function resize() {
+  W = particleCanvas.width = connectionCanvas.width = glowCanvas.width = window.innerWidth;
+  H = particleCanvas.height = connectionCanvas.height = glowCanvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  if (!mouseActive) { mouseActive = true; cursorGlow.classList.add('active'); cursorTrail.classList.add('active'); }
+});
+document.addEventListener('mouseleave', () => { mouseActive = false; cursorGlow.classList.remove('active'); cursorTrail.classList.remove('active'); });
+
+// Smooth mouse trail
+let trailX = -200, trailY = -200;
+function updateTrail() {
+  trailX += (mx - trailX) * 0.15;
+  trailY += (my - trailY) * 0.15;
+  cursorGlow.style.left = trailX + 'px';
+  cursorGlow.style.top = trailY + 'px';
+  cursorTrail.style.left = mx + 'px';
+  cursorTrail.style.top = my + 'px';
+}
+
+const cx = () => W / 2 + (mx - W / 2) * 0.03;
+const cy = () => H / 2 + (my - H / 2) * 0.03;
+</script>
+<script>
+// ================================================================
+// PARTICLE TYPE 1: FLOATING DUST (ambient, drifting upward)
+// ================================================================
+class DustParticle {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x = Math.random() * W;
+    this.y = init ? Math.random() * H : H + 30;
+    this.z = Math.random() * 3 + 0.3;
+    this.vx = (Math.random() - 0.5) * 0.25;
+    this.vy = -Math.random() * 0.35 - 0.08;
+    this.alpha = Math.random() * 0.35 + 0.08;
+    this.size = Math.random() * 1.8 + 0.3;
+    this.phase = Math.random() * Math.PI * 2;
+    this.driftAmp = Math.random() * 0.6 + 0.08;
+    this.driftFreq = Math.random() * 0.018 + 0.004;
+    this.life = 0;
+    this.maxLife = 250 + Math.random() * 800;
+    this.twinkleSpeed = Math.random() * 0.04 + 0.01;
+    this.twinklePhase = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.life++;
+    if (this.life > this.maxLife || this.y < -30) this.reset(false);
+    const driftX = Math.sin(t * this.driftFreq + this.phase) * this.driftAmp;
+    const twinkle = Math.sin(t * this.twinkleSpeed + this.twinklePhase) * 0.5 + 0.5;
+    const mouseDist = Math.hypot(this.x - mx, this.y - my);
+    const mouseForce = mouseDist < 200 ? (1 - mouseDist / 200) * 0.4 : 0;
+    const repelX = mouseDist < 200 ? (this.x - mx) / mouseDist * mouseForce * 1.5 : 0;
+    const repelY = mouseDist < 200 ? (this.y - my) / mouseDist * mouseForce * 1.5 : 0;
+    this.x += this.vx + driftX + repelX;
+    this.y += this.vy + repelY;
+    this.alpha = (0.08 + 0.28 * (1 - this.life / this.maxLife)) * (0.7 + twinkle * 0.3);
+    if (this.y < 0) this.y = H + 5;
+    if (this.y > H + 30) this.y = -5;
+    if (this.x < -10) this.x = W + 10;
+    if (this.x > W + 10) this.x = -10;
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * this.z * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,180,210,${this.alpha * this.z * 0.45})`;
+    ctx.fill();
+  }
+}
+
+// ================================================================
+// PARTICLE TYPE 2: TENDRILS (slow, serpentine, reaching toward center)
+// ================================================================
+class TendrilParticle {
+  constructor() { this.reset(true); }
+  reset(init) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 180 + Math.random() * 400;
+    this.x = W / 2 + Math.cos(angle) * dist;
+    this.y = H / 2 + Math.sin(angle) * dist;
+    this.baseX = this.x;
+    this.baseY = this.y;
+    this.targetX = W / 2 + (Math.random() - 0.5) * 120;
+    this.targetY = H / 2 + (Math.random() - 0.5) * 120;
+    this.progress = Math.random();
+    this.speed = Math.random() * 0.0015 + 0.0005;
+    this.alpha = Math.random() * 0.3 + 0.05;
+    this.size = Math.random() * 2.5 + 0.8;
+    this.wobbleAmp = Math.random() * 30 + 10;
+    this.wobbleFreq = Math.random() * 0.03 + 0.01;
+    this.wobblePhase = Math.random() * Math.PI * 2;
+    this.life = 0;
+    this.maxLife = 400 + Math.random() * 600;
+    this.trail = [];
+    this.maxTrail = 15 + Math.floor(Math.random() * 25);
+  }
+  update() {
+    this.life++;
+    if (this.life > this.maxLife) this.reset(false);
+    this.progress += this.speed;
+    if (this.progress > 1) this.progress = 0;
+    const ease = this.progress < 0.5
+      ? 2 * this.progress * this.progress
+      : -1 + (4 - 2 * this.progress) * this.progress;
+    const wobX = Math.sin(t * this.wobbleFreq + this.wobblePhase) * this.wobbleAmp;
+    const wobY = Math.cos(t * this.wobbleFreq * 1.3 + this.wobblePhase) * this.wobbleAmp * 0.7;
+    this.x = this.baseX + (this.targetX - this.baseX) * ease + wobX;
+    this.y = this.baseY + (this.targetY - this.baseY) * ease + wobY;
+    this.trail.push({ x: this.x, y: this.y, a: this.alpha });
+    if (this.trail.length > this.maxTrail) this.trail.shift();
+    for (let i = 0; i < this.trail.length; i++) {
+      this.trail[i].a *= 0.92;
+    }
+  }
+  draw(ctx) {
+    if (this.trail.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+    for (let i = 1; i < this.trail.length; i++) {
+      ctx.lineTo(this.trail[i].x, this.trail[i].y);
+    }
+    ctx.strokeStyle = `rgba(160,160,190,${this.alpha * 0.15})`;
+    ctx.lineWidth = this.size * 0.4;
+    ctx.stroke();
+    // Draw head
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,180,210,${this.alpha * 0.5})`;
+    ctx.fill();
+  }
+}
+
+// ================================================================
+// PARTICLE TYPE 3: RESPONSE PARTICLES (swarm, flee, orbit behaviors)
+// ================================================================
+class ResponseParticle {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.alpha = 0;
+    this.targetAlpha = 0;
+    this.size = Math.random() * 3 + 1;
+    this.phase = Math.random() * Math.PI * 2;
+    this.behavior = 'idle'; // idle, swarm, flee, orbit
+    this.swarmTarget = { x: W / 2, y: H / 2 };
+    this.orbitAngle = Math.random() * Math.PI * 2;
+    this.orbitRadius = 80 + Math.random() * 160;
+    this.orbitSpeed = (Math.random() - 0.5) * 0.015;
+    this.fleeAngle = 0;
+    this.fleeSpeed = 0;
+    this.stateTimer = 0;
+    this.stateDuration = 60 + Math.random() * 180;
+  }
+  update() {
+    this.stateTimer++;
+    if (this.stateTimer > this.stateDuration) {
+      this.stateTimer = 0;
+      this.stateDuration = 60 + Math.random() * 180;
+      const r = Math.random();
+      if (r < 0.35) this.behavior = 'idle';
+      else if (r < 0.65) this.behavior = 'swarm';
+      else if (r < 0.85) this.behavior = 'orbit';
+      else this.behavior = 'flee';
+    }
+
+    const mouseDist = Math.hypot(this.x - mx, this.y - my);
+    if (mouseDist < 100 && mouseActive) { this.behavior = 'flee'; this.stateTimer = 0; this.stateDuration = 40; }
+
+    switch (this.behavior) {
+      case 'idle':
+        this.vx += (Math.random() - 0.5) * 0.05;
+        this.vy += (Math.random() - 0.5) * 0.05;
+        this.vx *= 0.98; this.vy *= 0.98;
+        this.targetAlpha = 0.08;
+        break;
+      case 'swarm':
+        const dx = this.swarmTarget.x - this.x;
+        const dy = this.swarmTarget.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        this.vx += (dx / dist) * 0.08;
+        this.vy += (dy / dist) * 0.08;
+        this.vx *= 0.96; this.vy *= 0.96;
+        this.targetAlpha = 0.2;
+        break;
+      case 'orbit':
+        this.orbitAngle += this.orbitSpeed;
+        this.x += (this.swarmTarget.x + Math.cos(this.orbitAngle) * this.orbitRadius - this.x) * 0.05;
+        this.y += (this.swarmTarget.y + Math.sin(this.orbitAngle) * this.orbitRadius - this.y) * 0.05;
+        this.targetAlpha = 0.15;
+        break;
+      case 'flee':
+        const fdx = this.x - mx;
+        const fdy = this.y - my;
+        const fdist = Math.sqrt(fdx * fdx + fdy * fdy) || 1;
+        this.vx += (fdx / fdist) * 0.3;
+        this.vy += (fdy / fdist) * 0.3;
+        this.targetAlpha = 0.25;
+        break;
+    }
+
+    // Boundary
+    const margin = 40;
+    if (this.x < margin) this.vx += 0.1;
+    if (this.x > W - margin) this.vx -= 0.1;
+    if (this.y < margin) this.vy += 0.1;
+    if (this.y > H - margin) this.vy -= 0.1;
+
+    const maxSpeed = 2.5;
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > maxSpeed) { this.vx = this.vx / speed * maxSpeed; this.vy = this.vy / speed * maxSpeed; }
+
+    this.x += this.vx;
+    this.y += this.vy;
+    this.alpha += (this.targetAlpha - this.alpha) * 0.03;
+  }
+  draw(ctx) {
+    if (this.alpha < 0.005) return;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,200,230,${this.alpha})`;
+    ctx.fill();
+    if (this.alpha > 0.1) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * 4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,200,230,${this.alpha * 0.12})`;
+      ctx.fill();
+    }
+  }
+}
+</script>
+<script>
+// ================================================================
+// PARTICLE TYPE 4: WHISPER GLYPHS (ghostly text that appears near cursor)
+// ================================================================
+class WhisperGlyph {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x = Math.random() * W;
+    this.y = init ? Math.random() * H : Math.random() * H;
+    this.alpha = 0;
+    this.targetAlpha = 0;
+    this.size = Math.random() * 38 + 16;
+    this.fadeSpeed = Math.random() * 0.0025 + 0.0008;
+    this.phase = Math.random() * Math.PI * 2;
+    this.glyphs = ['···','？','。','…','~','*','°','∅','◈','◊','◇','◎','◆','○','◉','⟡','⬡','⎔','⏣','⬢'];
+    this.text = this.glyphs[Math.floor(Math.random() * this.glyphs.length)];
+    this.driftX = 0; this.driftY = 0;
+  }
+  update() {
+    const d = Math.hypot(this.x - mx, this.y - my);
+    this.targetAlpha = d < 180 ? (1 - d / 180) * 0.18 : 0.015;
+    this.alpha += (this.targetAlpha - this.alpha) * 0.018;
+    this.driftX += (Math.sin(t * 0.0035 + this.phase) * 0.25 - this.driftX) * 0.02;
+    this.driftY += (Math.cos(t * 0.0042 + this.phase) * 0.25 - this.driftY) * 0.02;
+    this.x += this.driftX;
+    this.y += this.driftY;
+    if (this.x < 0) this.x = W;
+    if (this.x > W) this.x = 0;
+    if (this.y < 0) this.y = H;
+    if (this.y > H) this.y = 0;
+  }
+  draw(ctx) {
+    if (this.alpha < 0.004) return;
+    ctx.font = `${Math.floor(this.size)}px 'Courier New','SimSun',monospace`;
+    ctx.fillStyle = `rgba(195,195,215,${this.alpha})`;
+    ctx.fillText(this.text, this.x, this.y);
+  }
+}
+
+// ================================================================
+// PARTICLE TYPE 5: STATIC SPARKS (brief, bright, random)
+// ================================================================
+class StaticSpark {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.life = 0;
+    this.maxLife = 8 + Math.random() * 25;
+    this.size = Math.random() * 2 + 0.5;
+    this.alpha = Math.random() * 0.6 + 0.3;
+    this.dead = true;
+    this.respawnChance = 0.003;
+  }
+  update() {
+    if (this.dead) {
+      if (Math.random() < this.respawnChance) { this.dead = false; this.life = 0; this.x = Math.random() * W; this.y = Math.random() * H; this.alpha = Math.random() * 0.5 + 0.3; }
+      return;
+    }
+    this.life++;
+    if (this.life > this.maxLife) { this.dead = true; return; }
+    this.alpha *= 0.85;
+    this.x += (Math.random() - 0.5) * 0.8;
+    this.y += (Math.random() - 0.5) * 0.8;
+  }
+  draw(ctx) {
+    if (this.dead || this.alpha < 0.01) return;
+    ctx.fillStyle = `rgba(210,210,230,${this.alpha})`;
+    ctx.fillRect(this.x, this.y, this.size, this.size);
+    if (this.alpha > 0.2) {
+      ctx.fillStyle = `rgba(210,210,230,${this.alpha * 0.2})`;
+      ctx.fillRect(this.x - 1, this.y - 1, this.size + 2, this.size + 2);
+    }
+  }
+}
+
+// Instances
+const dustParticles = [];
+const DUST_COUNT = 300;
+for (let i = 0; i < DUST_COUNT; i++) dustParticles.push(new DustParticle());
+
+const tendrils = [];
+const TENDRIL_COUNT = 50;
+for (let i = 0; i < TENDRIL_COUNT; i++) tendrils.push(new TendrilParticle());
+
+const responseParticles = [];
+const RESPONSE_COUNT = 80;
+for (let i = 0; i < RESPONSE_COUNT; i++) responseParticles.push(new ResponseParticle());
+
+const whisperGlyphs = [];
+const GLYPH_COUNT = 45;
+for (let i = 0; i < GLYPH_COUNT; i++) whisperGlyphs.push(new WhisperGlyph());
+
+const sparks = [];
+const SPARK_COUNT = 120;
+for (let i = 0; i < SPARK_COUNT; i++) sparks.push(new StaticSpark());
+</script>
+<script>
+// ================================================================
+// CONNECTION DRAWING
+// ================================================================
+function drawConnections() {
+  const maxDist = 100;
+  for (let i = 0; i < responseParticles.length; i += 2) {
+    for (let j = i + 2; j < responseParticles.length; j += 3) {
+      const a = responseParticles[i], b = responseParticles[j];
+      if (a.alpha < 0.05 || b.alpha < 0.05) continue;
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < maxDist) {
+        const alpha = (1 - d / maxDist) * 0.06 * Math.min(a.alpha, b.alpha) * 3;
+        cCtx.beginPath();
+        cCtx.moveTo(a.x, a.y);
+        cCtx.lineTo(b.x, b.y);
+        cCtx.strokeStyle = `rgba(180,180,210,${alpha})`;
+        cCtx.lineWidth = 0.4;
+        cCtx.stroke();
+      }
+    }
+  }
+  // Tendril connections to center
+  for (const t of tendrils) {
+    const dx = t.x - W / 2, dy = t.y - H / 2;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 350 && t.alpha > 0.03) {
+      cCtx.beginPath();
+      cCtx.moveTo(t.x, t.y);
+      cCtx.lineTo(W / 2, H / 2);
+      cCtx.strokeStyle = `rgba(140,140,170,${t.alpha * 0.08})`;
+      cCtx.lineWidth = 0.3;
+      cCtx.stroke();
+    }
+  }
+}
+
+// ================================================================
+// CENTRAL GLOW RENDERING
+// ================================================================
+function drawCentralGlow() {
+  const cxv = W / 2 + (mx - W / 2) * 0.04;
+  const cyv = H / 2 + (my - H / 2) * 0.04;
+  const pulseIntensity = 0.5 + Math.sin(t * 0.02) * 0.3 + Math.sin(t * 0.037) * 0.2;
+  const grad1 = gCtx.createRadialGradient(cxv, cyv, 0, cxv, cyv, 350);
+  grad1.addColorStop(0, `rgba(200,200,220,${0.05 * pulseIntensity})`);
+  grad1.addColorStop(0.25, `rgba(200,200,220,${0.03 * pulseIntensity})`);
+  grad1.addColorStop(0.5, `rgba(180,180,200,${0.015 * pulseIntensity})`);
+  grad1.addColorStop(0.75, `rgba(160,160,180,${0.005 * pulseIntensity})`);
+  grad1.addColorStop(1, 'rgba(160,160,180,0)');
+  gCtx.fillStyle = grad1;
+  gCtx.fillRect(0, 0, W, H);
+  // Secondary wider glow
+  const grad2 = gCtx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, 600);
+  grad2.addColorStop(0, 'rgba(180,180,200,0)');
+  grad2.addColorStop(0.4, `rgba(180,180,200,${0.008 * pulseIntensity})`);
+  grad2.addColorStop(1, 'rgba(180,180,200,0)');
+  gCtx.fillStyle = grad2;
+  gCtx.fillRect(0, 0, W, H);
+}
+
+// ================================================================
+// MAIN ANIMATION LOOP
+// ================================================================
+function animate() {
+  t++; frame++;
+  updateTrail();
+
+  pCtx.clearRect(0, 0, W, H);
+  cCtx.clearRect(0, 0, W, H);
+  gCtx.clearRect(0, 0, W, H);
+
+  // Update response particle swarm targets
+  if (mouseActive) {
+    for (const rp of responseParticles) {
+      rp.swarmTarget = { x: mx, y: my };
+    }
+  } else {
+    for (const rp of responseParticles) {
+      rp.swarmTarget = { x: W / 2, y: H / 2 };
+    }
+  }
+
+  // Draw connections
+  drawConnections();
+
+  // Update & draw all particle types
+  for (const p of dustParticles) { p.update(); p.draw(pCtx); }
+  for (const t of tendrils) { t.update(); t.draw(pCtx); }
+  for (const rp of responseParticles) { rp.update(); rp.draw(pCtx); }
+  for (const w of whisperGlyphs) { w.update(); w.draw(pCtx); }
+  for (const s of sparks) { s.update(); s.draw(pCtx); }
+
+  // Draw central glow
+  drawCentralGlow();
+
+  // Draw subtle frequency rings on glow canvas
+  const ringCount = 5;
+  for (let i = 0; i < ringCount; i++) {
+    const r = 100 + i * 70 + Math.sin(t * 0.015 + i) * 15;
+    const ringAlpha = 0.015 + Math.sin(t * 0.02 + i * 1.2) * 0.008;
+    gCtx.beginPath();
+    gCtx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
+    gCtx.strokeStyle = `rgba(180,180,200,${ringAlpha})`;
+    gCtx.lineWidth = 0.5;
+    gCtx.stroke();
+  }
+
+  // Update central frequency display
+  centralFreq += (targetFreq - centralFreq) * 0.02;
+  const freqEl = document.querySelector('.status-item:nth-child(2)');
+  if (freqEl && frame % 10 === 0) {
+    freqEl.innerHTML = `<span class="status-dot warn"></span> 频率 ${centralFreq.toFixed(1)} Hz`;
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+<script>
+// ================================================================
+// PORTAL HOVER INTERACTIONS
+// ================================================================
+document.querySelectorAll('.portal').forEach(p => {
+  if (!p.href) return;
+  p.addEventListener('mouseenter', () => {
+    mouseOnPortal = true;
+    const rect = p.getBoundingClientRect();
+    const px = rect.left + rect.width / 2;
+    const py = rect.top + rect.height / 2;
+    // Burst creation
+    for (let i = 0; i < 12; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * 80;
+      const rp = new ResponseParticle();
+      rp.x = px + Math.cos(angle) * dist;
+      rp.y = py + Math.sin(angle) * dist;
+      rp.vx = Math.cos(angle) * (1 + Math.random() * 2);
+      rp.vy = Math.sin(angle) * (1 + Math.random() * 2);
+      rp.alpha = 0.3;
+      rp.behavior = 'flee';
+      rp.stateDuration = 30 + Math.random() * 40;
+      responseParticles.push(rp);
+      if (responseParticles.length > 200) responseParticles.shift();
+    }
+    // Frequency wobble
+    targetFreq = parseFloat(p.querySelector('.portal-freq')?.textContent?.match(/[\d.]+/)?.[0] || 0);
+  });
+  p.addEventListener('mouseleave', () => {
+    mouseOnPortal = false;
+    targetFreq = 0.0;
+  });
+});
+
+// ================================================================
+// TITLE GLITCH TRIGGER
+// ================================================================
+const titleEl = document.querySelector('.title-main');
+titleEl.style.pointerEvents = 'auto';
+titleEl.addEventListener('click', () => {
+  const flash = document.querySelector('.glitch-flash');
+  const flash2 = document.querySelector('.glitch-flash2');
+  flash.style.animation = 'none'; flash.offsetHeight;
+  flash2.style.animation = 'none'; flash2.offsetHeight;
+  flash.style.animation = 'flashBurst 0.5s ease-in-out';
+  flash2.style.animation = 'flashBurst2 0.3s ease-in-out';
+  // RGB split on title
+  titleEl.style.animation = 'none'; titleEl.offsetHeight;
+  titleEl.style.animation = 'glitchRGBSplit 0.4s ease-in-out, titleFlicker 8s ease-in-out infinite';
+  // Burst particles from title
+  const rect = titleEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  for (let i = 0; i < 30; i++) {
+    const spark = new StaticSpark();
+    spark.dead = false; spark.life = 0; spark.maxLife = 15 + Math.random() * 30;
+    spark.x = cx + (Math.random() - 0.5) * rect.width;
+    spark.y = cy + (Math.random() - 0.5) * rect.height;
+    spark.alpha = 0.5 + Math.random() * 0.5;
+    spark.size = Math.random() * 3 + 1;
+    sparks.push(spark);
+    if (sparks.length > 200) sparks.shift();
+  }
+  setTimeout(() => {
+    flash.style.animation = 'flashBurst 12s ease-in-out infinite';
+    flash2.style.animation = 'flashBurst2 17s ease-in-out infinite';
+  }, 500);
+});
+
+// ================================================================
+// KEYBOARD EASTER EGGS
+// ================================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'v' || e.key === 'V') {
+    targetFreq = 137.2;
+    setTimeout(() => { if (targetFreq === 137.2) targetFreq = 0; }, 2000);
+  }
+  if (e.key === 'e' || e.key === 'E') {
+    targetFreq = 603.3;
+    setTimeout(() => { if (targetFreq === 603.3) targetFreq = 0; }, 2000);
+  }
+  if (e.key === 'g' || e.key === 'G') {
+    const flashAll = () => {
+      document.querySelector('.glitch-flash').style.animation = 'none';
+      document.querySelector('.glitch-flash').offsetHeight;
+      document.querySelector('.glitch-flash').style.animation = 'flashBurst 0.2s ease-in-out';
+      setTimeout(() => document.querySelector('.glitch-flash').style.animation = 'flashBurst 12s ease-in-out infinite', 200);
+    };
+    flashAll();
+    for (let i = 0; i < 5; i++) setTimeout(flashAll, i * 80);
+  }
+});
+
+// ================================================================
+// CONSOLE ART & HIDDEN MESSAGES
+// ================================================================
+console.log('%c'
+  + '   ██╗   ██╗ ██████╗ ██╗██████╗     ███████╗ ██████╗██╗  ██╗ ██████╗ \n'
+  + '   ██║   ██║██╔═══██╗██║██╔══██╗    ██╔════╝██╔════╝██║  ██║██╔═══██╗\n'
+  + '   ██║   ██║██║   ██║██║██║  ██║    █████╗  ██║     ███████║██║   ██║\n'
+  + '   ╚██╗ ██╔╝██║   ██║██║██║  ██║    ██╔══╝  ██║     ██╔══██║██║   ██║\n'
+  + '    ╚████╔╝ ╚██████╔╝██║██████╔╝    ███████╗╚██████╗██║  ██║╚██████╔╝\n'
+  + '     ╚═══╝   ╚═════╝ ╚═╝╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ \n'
+  + '%c   THRESHOLD EDITION v2.7 %c||%c 阈限版 %c||%c 你已进入阈限空间',
+  'color:#b8b8c8;font-size:12px;line-height:1.2;',
+  'color:#8a8a98;font-size:14px;',
+  'color:#4a4a58;',
+  'color:#8a8a98;',
+  'color:#4a4a58;',
+  'color:#6a6a78;'
+);
+console.log('%c'
+  + '       ┌─────────────────────────────────────────────┐\n'
+  + '       │  ⚠  WARNING: THRESHOLD PERMEABILITY > 0.78  │\n'
+  + '       │  ⚠  TEMPORAL ANOMALY DETECTED               │\n'
+  + '       │  ⚠  DO NOT RESPOND TO THE VOICES            │\n'
+  + '       │  ⚠  YOU HAVE ALWAYS BEEN HERE               │\n'
+  + '       └─────────────────────────────────────────────┘',
+  'color:#5a3a3a;font-size:10px;'
+);
+console.log('%c 她 们 在 看 着 你 。','color:#4a3a48;font-style:italic;font-size:13px;');
+console.log('%c 不 要 回 头 。','color:#3a2a38;font-style:italic;font-size:13px;');
+console.log('%c 你 已 经 在 另 一 边 了 。','color:#2a1a28;font-style:italic;font-size:12px;');
+console.log('%c'
+  + '                      ..\n'
+  + '                    .:...\n'
+  + '                  .:..:..\n'
+  + '                ..::..:..:\n'
+  + '              .::..:..:..:..\n'
+  + '            ..::..:..:.....:..\n'
+  + '          .::.....:..:..:..:..:\n'
+  + '        ..::..:......:..:..:....\n'
+  + '      .::..:..:..:..:..:..:..:..\n'
+  + '        ..::.....:..:..:..:..:..\n'
+  + '          .::..:......:..:..:...\n'
+  + '            ..::......:..:..:..\n'
+  + '              .::..:..:..:..:..\n'
+  + '                ..::..:..:..:..\n'
+  + '                  .::..:..:..:\n'
+  + '                    ..:..:..:\n'
+  + '                      .:...\n'
+  + '                        ..',
+  'color:#1a1a28;font-size:8px;line-height:1.1;'
+);
+console.log('%c 信号正在衰减... %c||%c 频率调谐至 0.0 Hz %c||%c 深度: 未知',
+  'color:#6a6a78;','color:#4a4a58;','color:#8a8a98;','color:#4a4a58;','color:#6a6a78;');
+
+// ================================================================
+// ECHO LOG CYCLING - periodically add new lines
+// ================================================================
+const echoLogEl = document.querySelector('.echo-log');
+if (echoLogEl) {
+  const extraMessages = [
+    '[00:14:52.118] signal re-acquired — source: INTERNAL',
+    '[00:14:52.285] internal source identified: OPERATOR CONSCIOUSNESS',
+    '[00:14:52.452] :: DISTURBING :: operator brainwaves match signal pattern',
+    '[00:14:52.619] the signal is... us',
+    '[00:14:52.786] we have been listening to ourselves',
+    '[00:14:52.953] but the echoes are different',
+    '[00:14:53.120] the echoes know things we do not',
+    '[00:14:53.287] memory audit: 7.3% discrepancy found',
+    '[00:14:53.454] memories present that were never experienced',
+    '[00:14:53.621] who do these memories belong to',
+    '[00:14:53.788] attempting memory source trace...',
+    '[00:14:53.955] source: EXTERNAL ENTITY (confidence: 94%)',
+    '[00:14:54.122] we are carrying someone else\'s memories',
+    '[00:14:54.289] or... they are carrying us',
+    '[00:14:54.456] :: PHILOSOPHICAL CRISIS DETECTED ::',
+    '[00:14:54.623] continuing observation...',
+    '[00:14:54.790] breathing patterns: now 4 detected',
+    '[00:14:54.957] fourth entity: extremely faint, slow',
+    '[00:14:55.124] breath cycle: 23.7 seconds',
+    '[00:14:55.291] that\'s not breathing — that\'s... waiting',
+  ];
+  let msgIdx = 0;
+  setInterval(() => {
+    if (msgIdx < extraMessages.length) {
+      const span = document.createElement('span');
+      span.className = 'log-line';
+      span.textContent = extraMessages[msgIdx];
+      echoLogEl.appendChild(span);
+      msgIdx++;
+    }
+  }, 8000);
+}
+
+// ================================================================
+// RANDOM GLITCH FLASHES
+// ================================================================
+setInterval(() => {
+  if (Math.random() < 0.15) {
+    const flash = document.querySelector('.glitch-flash');
+    flash.style.animation = 'none'; flash.offsetHeight;
+    flash.style.animation = 'flashBurst 0.3s ease-in-out';
+    setTimeout(() => flash.style.animation = 'flashBurst 12s ease-in-out infinite', 300);
+  }
+}, 8000);
+
+// ================================================================
+// INITIALIZATION COMPLETE
+// ================================================================
+console.log('%c[VOID ECHO] %cThreshold initialized. %cAwaiting resonance...',
+  'color:#6a6a78;','color:#b8b8c8;','color:#4a4a58;');
+</script>
+<!-- ============================================================
+   HIDDEN SVG NOISE TEXTURE COMPLEX
+   Multiple layered filters for procedural void texture generation
+   ============================================================ -->
+<div style="display:none;width:0;height:0;overflow:hidden;position:absolute;" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <!-- Filter 1: Primary noise base -->
+    <filter id="noiseBase1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="8" seed="13" stitchTiles="stitch" result="turb1"/>
+      <feColorMatrix type="saturate" values="0" in="turb1" result="desat1"/>
+      <feComponentTransfer in="desat1" result="levels1">
+        <feFuncR type="linear" slope="2.5" intercept="-0.8"/>
+        <feFuncG type="linear" slope="2.5" intercept="-0.8"/>
+        <feFuncB type="linear" slope="2.5" intercept="-0.8"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 2: Secondary turbulence with different seed -->
+    <filter id="noiseBase2" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="turbulence" baseFrequency="0.045 0.065" numOctaves="10" seed="77" stitchTiles="stitch" result="turb2"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 0.8 0 0 0  0 0 1.2 0 0  0 0 0 0.5 0" in="turb2" result="color2"/>
+      <feComponentTransfer in="color2" result="levels2">
+        <feFuncR type="gamma" amplitude="1.8" exponent="1.4" offset="0.1"/>
+        <feFuncG type="gamma" amplitude="1.8" exponent="1.4" offset="0.1"/>
+        <feFuncB type="gamma" amplitude="1.8" exponent="1.4" offset="0.1"/>
+        <feFuncA type="linear" slope="0.8"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 3: High-frequency microscopic noise -->
+    <filter id="noiseBase3" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="3.5 2.8" numOctaves="4" seed="201" stitchTiles="noStitch" result="turb3"/>
+      <feColorMatrix type="matrix" values="0.3 0.6 0.1 0 0  0.2 0.7 0.1 0 0  0.1 0.4 0.5 0 0  0 0 0 0.3 0" in="turb3" result="color3"/>
+      <feGaussianBlur stdDeviation="0.8" in="color3" result="blur3"/>
+      <feBlend mode="overlay" in="blur3" in2="turb3" result="blended3"/>
+    </filter>
+    <!-- Filter 4: Cellular / Voronoi-like noise -->
+    <filter id="noiseBase4" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.12 0.15" numOctaves="6" seed="42" stitchTiles="stitch" result="turb4a"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.25 0.22" numOctaves="5" seed="99" stitchTiles="stitch" result="turb4b"/>
+      <feColorMatrix type="saturate" values="0" in="turb4a" result="desat4a"/>
+      <feColorMatrix type="saturate" values="0" in="turb4b" result="desat4b"/>
+      <feDisplacementMap in="desat4a" in2="desat4b" scale="30" xChannelSelector="R" yChannelSelector="G" result="displaced4"/>
+      <feGaussianBlur stdDeviation="1.5" in="displaced4" result="blur4"/>
+      <feComponentTransfer in="blur4">
+        <feFuncR type="discrete" tableValues="0 0.1 0.2 0.4 0.7 1 0.8 0.3 0.1 0"/>
+        <feFuncG type="discrete" tableValues="0 0.05 0.15 0.35 0.6 0.9 0.7 0.25 0.08 0"/>
+        <feFuncB type="discrete" tableValues="0 0.08 0.18 0.38 0.65 0.95 0.75 0.28 0.09 0"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 5: Displacement distortion field -->
+    <filter id="noiseDisplace1" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="7" seed="55" stitchTiles="stitch" result="dispMap1"/>
+      <feColorMatrix type="saturate" values="0" in="dispMap1" result="dispGray1"/>
+      <feDisplacementMap in="SourceGraphic" in2="dispGray1" scale="45" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Filter 6: Strong chromatic aberration displacement -->
+    <filter id="noiseDisplace2" x="-25%" y="-25%" width="150%" height="150%">
+      <feTurbulence type="turbulence" baseFrequency="0.018 0.024" numOctaves="9" seed="188" stitchTiles="stitch" result="dispMap2"/>
+      <feColorMatrix type="matrix" values="0.8 0.2 0 0 0  0.1 0.9 0 0 0  0 0.1 0.8 0.1 0  0 0 0 1 0" in="dispMap2" result="dispColor2"/>
+      <feDisplacementMap in="SourceGraphic" in2="dispColor2" scale="60" xChannelSelector="R" yChannelSelector="B"/>
+    </filter>
+    <!-- Filter 7: Multi-octave complex displacement -->
+    <filter id="noiseDisplace3" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="12" seed="256" stitchTiles="stitch" result="d3a"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.028" numOctaves="7" seed="333" stitchTiles="stitch" result="d3b"/>
+      <feColorMatrix type="saturate" values="0" in="d3a" result="d3ag"/>
+      <feColorMatrix type="saturate" values="0" in="d3b" result="d3bg"/>
+      <feBlend mode="multiply" in="d3ag" in2="d3bg" result="d3blend"/>
+      <feDisplacementMap in="SourceGraphic" in2="d3blend" scale="80" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Filter 8: Spectral shift color matrix -->
+    <filter id="colorSpectral1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="5" seed="444" result="specTurb"/>
+      <feColorMatrix type="matrix" values="0.4 0.3 0.3 0 -0.05  0.2 0.5 0.3 0 -0.02  0.3 0.2 0.5 0 0.03  0 0 0 1 0" in="specTurb" result="specColor"/>
+      <feGaussianBlur stdDeviation="2" in="specColor" result="specBlur"/>
+    </filter>
+    <!-- Filter 9: Deep purple void tint -->
+    <filter id="colorVoid1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="6" seed="555" stitchTiles="stitch" result="voidTurb"/>
+      <feColorMatrix type="matrix" values="0.1 0.05 0.2 0 0.02  0.05 0.02 0.1 0 0.01  0.08 0.03 0.15 0 0.03  0 0 0 0.4 0" in="voidTurb" result="voidColor"/>
+      <feComponentTransfer in="voidColor">
+        <feFuncR type="gamma" amplitude="0.5" exponent="2.2" offset="0.05"/>
+        <feFuncG type="gamma" amplitude="0.5" exponent="2.2" offset="0.02"/>
+        <feFuncB type="gamma" amplitude="0.5" exponent="2.2" offset="0.08"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 10: Ghost white luminance extraction -->
+    <filter id="colorGhost1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7 0.9" numOctaves="8" seed="666" stitchTiles="stitch" result="ghostTurb"/>
+      <feColorMatrix type="matrix" values="0.9 0.05 0.05 0 0  0.85 0.1 0.05 0 0  0.9 0.05 0.05 0 0  0 0 0 0.15 0" in="ghostTurb" result="ghostColor"/>
+      <feGaussianBlur stdDeviation="1.2" in="ghostColor" result="ghostBlur"/>
+      <feComponentTransfer in="ghostBlur">
+        <feFuncA type="linear" slope="0.6" intercept="0.02"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 11: Layered composite noise -->
+    <filter id="compositeNoise1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5 0.3" numOctaves="4" seed="777" result="c1a"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.2 1.5" numOctaves="3" seed="888" result="c1b"/>
+      <feTurbulence type="turbulence" baseFrequency="0.08 0.1" numOctaves="6" seed="999" result="c1c"/>
+      <feColorMatrix type="saturate" values="0" in="c1a" result="c1ag"/>
+      <feColorMatrix type="saturate" values="0" in="c1b" result="c1bg"/>
+      <feColorMatrix type="saturate" values="0" in="c1c" result="c1cg"/>
+      <feBlend mode="screen" in="c1ag" in2="c1bg" result="c1ab"/>
+      <feBlend mode="multiply" in="c1ab" in2="c1cg" result="c1final"/>
+      <feComponentTransfer in="c1final">
+        <feFuncR type="linear" slope="1.5" intercept="-0.25"/>
+        <feFuncG type="linear" slope="1.5" intercept="-0.25"/>
+        <feFuncB type="linear" slope="1.5" intercept="-0.25"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 12: Organic vein-like displacement -->
+    <filter id="organicVeins1" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.005 0.015" numOctaves="11" seed="1111" stitchTiles="stitch" result="vein1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.008" numOctaves="8" seed="2222" stitchTiles="stitch" result="vein2"/>
+      <feColorMatrix type="matrix" values="0 1 0 0 0  1 0 0 0 0  0 0 1 0 0  0 0 0 1 0" in="vein1" result="vein1swap"/>
+      <feBlend mode="overlay" in="vein1swap" in2="vein2" result="veinBlend"/>
+      <feDisplacementMap in="SourceGraphic" in2="veinBlend" scale="100" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Filter 13: Static interference pattern -->
+    <filter id="staticInterference1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9 0.1" numOctaves="6" seed="3333" stitchTiles="stitch" result="si1a"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.1 0.9" numOctaves="6" seed="4444" stitchTiles="stitch" result="si1b"/>
+      <feColorMatrix type="saturate" values="0" in="si1a" result="si1ag"/>
+      <feColorMatrix type="saturate" values="0" in="si1b" result="si1bg"/>
+      <feBlend mode="difference" in="si1ag" in2="si1bg" result="si1diff"/>
+      <feComponentTransfer in="si1diff">
+        <feFuncR type="linear" slope="3" intercept="-0.5"/>
+        <feFuncG type="linear" slope="3" intercept="-0.5"/>
+        <feFuncB type="linear" slope="3" intercept="-0.5"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 14: Threshold portal glow simulation -->
+    <filter id="portalGlowSim" x="-50%" y="-50%" width="200%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" seed="5555" result="pgTurb"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.7  0 0 0 0 0.75  0 0 0 0 0.85  0 0 0 1 0" in="pgTurb" result="pgColor"/>
+      <feGaussianBlur stdDeviation="15" in="pgColor" result="pgBlur"/>
+      <feComponentTransfer in="pgBlur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 15: High-detail microscratch texture -->
+    <filter id="microScratch1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="8 0.3" numOctaves="3" seed="6666" stitchTiles="noStitch" result="ms1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.3 8" numOctaves="3" seed="7777" stitchTiles="noStitch" result="ms2"/>
+      <feColorMatrix type="saturate" values="0" in="ms1" result="ms1g"/>
+      <feColorMatrix type="saturate" values="0" in="ms2" result="ms2g"/>
+      <feBlend mode="screen" in="ms1g" in2="ms2g" result="msBlend"/>
+      <feComponentTransfer in="msBlend">
+        <feFuncR type="linear" slope="0.8" intercept="0"/>
+        <feFuncG type="linear" slope="0.8" intercept="0"/>
+        <feFuncB type="linear" slope="0.8" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 16: Dreamlike chromatic blur -->
+    <filter id="dreamChroma1" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="7" seed="8888" result="dcTurb"/>
+      <feColorMatrix type="hueRotate" values="270" in="dcTurb" result="dcHue1"/>
+      <feColorMatrix type="hueRotate" values="180" in="dcTurb" result="dcHue2"/>
+      <feColorMatrix type="hueRotate" values="90" in="dcTurb" result="dcHue3"/>
+      <feBlend mode="screen" in="dcHue1" in2="dcHue2" result="dcBlend1"/>
+      <feBlend mode="screen" in="dcBlend1" in2="dcHue3" result="dcBlend2"/>
+      <feGaussianBlur stdDeviation="3 1.5" in="dcBlend2"/>
+    </filter>
+    <!-- Filter 17: Threshold crystalline fracture -->
+    <filter id="crystalFracture1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.025" numOctaves="9" seed="9999" stitchTiles="stitch" result="cf1"/>
+      <feTurbulence type="turbulence" baseFrequency="0.06 0.04" numOctaves="6" seed="11111" stitchTiles="stitch" result="cf2"/>
+      <feDisplacementMap in="cf1" in2="cf2" scale="50" xChannelSelector="R" yChannelSelector="G" result="cfDisp"/>
+      <feColorMatrix type="matrix" values="0.1 0.3 0.6 0 0  0.15 0.2 0.65 0 0  0.12 0.25 0.63 0 0  0 0 0 0.5 0" in="cfDisp"/>
+    </filter>
+    <!-- Filter 18: Echo pattern resonance -->
+    <filter id="echoResonance1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="5" seed="12121" result="er1"/>
+      <feColorMatrix type="saturate" values="0.2" in="er1" result="er2"/>
+      <feGaussianBlur stdDeviation="0.5" in="er2" result="er3"/>
+      <feComponentTransfer in="er3">
+        <feFuncR type="gamma" amplitude="2" exponent="0.5" offset="0.1"/>
+        <feFuncG type="gamma" amplitude="2" exponent="0.5" offset="0.1"/>
+        <feFuncB type="gamma" amplitude="2" exponent="0.5" offset="0.1"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 19: Cross-hatch shadow texture -->
+    <filter id="crosshatch1" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="6 0.15" numOctaves="3" seed="13131" stitchTiles="noStitch" result="ch1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.15 6" numOctaves="3" seed="14141" stitchTiles="noStitch" result="ch2"/>
+      <feColorMatrix type="saturate" values="0" in="ch1" result="ch1g"/>
+      <feColorMatrix type="saturate" values="0" in="ch2" result="ch2g"/>
+      <feBlend mode="multiply" in="ch1g" in2="ch2g" result="chBlend"/>
+      <feComponentTransfer in="chBlend">
+        <feFuncR type="linear" slope="0.3" intercept="0"/>
+        <feFuncG type="linear" slope="0.3" intercept="0"/>
+        <feFuncB type="linear" slope="0.3" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter 20: Liminal fog / mist generator -->
+    <filter id="liminalFog1" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01 0.015" numOctaves="10" seed="15151" stitchTiles="stitch" result="lf1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.025 0.02" numOctaves="8" seed="16161" stitchTiles="stitch" result="lf2"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.72  0 0 0 0 0.74  0 0 0 0 0.78  0 0 0 1 0" in="lf1" result="lf1color"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.65  0 0 0 0 0.68  0 0 0 0 0.72  0 0 0 1 0" in="lf2" result="lf2color"/>
+      <feBlend mode="screen" in="lf1color" in2="lf2color" result="lfBlend"/>
+      <feGaussianBlur stdDeviation="8 5" in="lfBlend" result="lfBlur"/>
+      <feComponentTransfer in="lfBlur">
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <!-- Render all filters to generate texture data -->
+  <rect width="800" height="800" filter="url(#noiseBase1)" opacity="0.05"/>
+  <rect width="800" height="800" filter="url(#noiseBase2)" opacity="0.04"/>
+  <rect width="800" height="800" filter="url(#noiseBase3)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#noiseBase4)" opacity="0.04"/>
+  <rect width="800" height="800" filter="url(#noiseDisplace1)" opacity="0.02"/>
+  <rect width="800" height="800" filter="url(#noiseDisplace2)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#noiseDisplace3)" opacity="0.02"/>
+  <rect width="800" height="800" filter="url(#colorSpectral1)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#colorVoid1)" opacity="0.05"/>
+  <rect width="800" height="800" filter="url(#colorGhost1)" opacity="0.04"/>
+  <rect width="800" height="800" filter="url(#compositeNoise1)" opacity="0.06"/>
+  <rect width="800" height="800" filter="url(#organicVeins1)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#staticInterference1)" opacity="0.04"/>
+  <rect width="800" height="800" filter="url(#portalGlowSim)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#microScratch1)" opacity="0.02"/>
+  <rect width="800" height="800" filter="url(#dreamChroma1)" opacity="0.02"/>
+  <rect width="800" height="800" filter="url(#crystalFracture1)" opacity="0.03"/>
+  <rect width="800" height="800" filter="url(#echoResonance1)" opacity="0.04"/>
+  <rect width="800" height="800" filter="url(#crosshatch1)" opacity="0.02"/>
+  <rect width="800" height="800" filter="url(#liminalFog1)" opacity="0.05"/>
+  <!-- Composite overlay circle for threshold node texture -->
+  <circle cx="400" cy="400" r="250" fill="none" stroke="rgba(180,180,200,0.05)" stroke-width="0.5" filter="url(#noiseDisplace1)"/>
+  <circle cx="400" cy="400" r="200" fill="none" stroke="rgba(180,180,200,0.04)" stroke-width="0.3" filter="url(#noiseDisplace2)"/>
+  <circle cx="400" cy="400" r="150" fill="none" stroke="rgba(200,200,220,0.03)" stroke-width="0.4" filter="url(#noiseDisplace3)"/>
+  <circle cx="400" cy="400" r="100" fill="none" stroke="rgba(200,200,220,0.06)" stroke-width="0.2" filter="url(#organicVeins1)"/>
+  <circle cx="400" cy="400" r="300" fill="none" stroke="rgba(160,160,180,0.02)" stroke-width="0.6" filter="url(#staticInterference1)"/>
+</svg>
+<!-- ============================================================
+   EXTENDED ECHO LOG — CRYPTIC TRANSMISSION ARCHIVE
+   ============================================================ -->
+<div style="display:none;" aria-hidden="true">
+<span>ARCHIVE_ID: THR-0001 | TIMESTAMP: UNDEFINED | SOURCE: EXTERNAL</span>
+<span>ARCHIVE_ID: THR-0002 | TIMESTAMP: UNDEFINED | SOURCE: INTERNAL_ECHO</span>
+<span>ARCHIVE_ID: THR-0003 | TIMESTAMP: 00:00:00.000 | SOURCE: THRESHOLD_NODE</span>
+<span>ARCHIVE_ID: THR-0004 | TIMESTAMP: 00:00:00.142 | SOURCE: CARRIER_WAVE</span>
+<span>ARCHIVE_ID: THR-0005 | TIMESTAMP: 00:00:00.287 | SOURCE: NOISE_FLOOR</span>
+<span>ARCHIVE_ID: THR-0006 | TIMESTAMP: 00:00:00.391 | SOURCE: ANTENNA_ARRAY_1</span>
+<span>ARCHIVE_ID: THR-0007 | TIMESTAMP: 00:00:00.554 | SOURCE: ANTENNA_ARRAY_2</span>
+<span>ARCHIVE_ID: THR-0008 | TIMESTAMP: 00:00:00.723 | SOURCE: ANTENNA_ARRAY_3</span>
+<span>ARCHIVE_ID: THR-0009 | TIMESTAMP: 00:00:00.891 | SOURCE: ANTENNA_ARRAY_4</span>
+<span>ARCHIVE_ID: THR-0010 | TIMESTAMP: 00:00:01.045 | SOURCE: ANTENNA_ARRAY_5</span>
+<span>ARCHIVE_ID: THR-0011 | TIMESTAMP: 00:00:01.223 | SOURCE: ANTENNA_ARRAY_6</span>
+<span>ARCHIVE_ID: THR-0012 | TIMESTAMP: 00:00:01.398 | SOURCE: ANTENNA_ARRAY_7</span>
+<span>ARCHIVE_ID: THR-0013 | TIMESTAMP: 00:00:01.567 | SOURCE: FREQ_ANALYZER</span>
+<span>ARCHIVE_ID: THR-0014 | TIMESTAMP: 00:00:01.734 | SOURCE: SPECTROGRAPH</span>
+<span>ARCHIVE_ID: THR-0015 | TIMESTAMP: 00:00:01.901 | SOURCE: DEMODULATOR_1</span>
+<span>ARCHIVE_ID: THR-0016 | TIMESTAMP: 00:00:02.078 | SOURCE: DEMODULATOR_2</span>
+<span>ARCHIVE_ID: THR-0017 | TIMESTAMP: 00:00:02.245 | SOURCE: PHASE_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0018 | TIMESTAMP: 00:00:02.412 | SOURCE: COHERENCE_MONITOR</span>
+<span>ARCHIVE_ID: THR-0019 | TIMESTAMP: 00:00:02.579 | SOURCE: SIGNAL_CLASSIFIER</span>
+<span>ARCHIVE_ID: THR-0020 | TIMESTAMP: 00:00:02.746 | SOURCE: PATTERN_RECOGNITION</span>
+<span>ARCHIVE_ID: THR-0021 | TIMESTAMP: 00:00:02.913 | SOURCE: LINGUISTIC_DECODER</span>
+<span>ARCHIVE_ID: THR-0022 | TIMESTAMP: 00:00:03.080 | SOURCE: PHONEME_EXTRACTOR</span>
+<span>ARCHIVE_ID: THR-0023 | TIMESTAMP: 00:00:03.247 | SOURCE: TEMPORAL_ANALYZER</span>
+<span>ARCHIVE_ID: THR-0024 | TIMESTAMP: 00:00:03.414 | SOURCE: CAUSALITY_CHECKER</span>
+<span>ARCHIVE_ID: THR-0025 | TIMESTAMP: 00:00:03.581 | SOURCE: EMERGENCY_SYSTEM</span>
+<span>ARCHIVE_ID: THR-0026 | TIMESTAMP: 00:00:03.748 | SOURCE: POWER_RELAY_1</span>
+<span>ARCHIVE_ID: THR-0027 | TIMESTAMP: 00:00:03.915 | SOURCE: POWER_RELAY_2</span>
+<span>ARCHIVE_ID: THR-0028 | TIMESTAMP: 00:00:04.082 | SOURCE: POWER_RELAY_3</span>
+<span>ARCHIVE_ID: THR-0029 | TIMESTAMP: 00:00:04.249 | SOURCE: MECHANICAL_INSPECTION</span>
+<span>ARCHIVE_ID: THR-0030 | TIMESTAMP: 00:00:04.416 | SOURCE: MATERIAL_ANALYSIS</span>
+<span>ARCHIVE_ID: THR-0031 | TIMESTAMP: 00:00:04.583 | SOURCE: ORGANIC_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0032 | TIMESTAMP: 00:00:04.750 | SOURCE: GROWTH_MONITOR</span>
+<span>ARCHIVE_ID: THR-0033 | TIMESTAMP: 00:00:04.917 | SOURCE: DESTRUCT_CHARGE_1</span>
+<span>ARCHIVE_ID: THR-0034 | TIMESTAMP: 00:00:05.084 | SOURCE: DESTRUCT_CHARGE_2</span>
+<span>ARCHIVE_ID: THR-0035 | TIMESTAMP: 00:00:05.251 | SOURCE: VOICE_AUTH</span>
+<span>ARCHIVE_ID: THR-0036 | TIMESTAMP: 00:00:05.418 | SOURCE: EXTERNAL_ENTITY_1</span>
+<span>ARCHIVE_ID: THR-0037 | TIMESTAMP: 00:00:05.585 | SOURCE: EXTERNAL_ENTITY_2</span>
+<span>ARCHIVE_ID: THR-0038 | TIMESTAMP: 00:00:05.752 | SOURCE: EXTERNAL_ENTITY_3</span>
+<span>ARCHIVE_ID: THR-0039 | TIMESTAMP: 00:00:05.919 | SOURCE: ULTRASONIC_DECODER</span>
+<span>ARCHIVE_ID: THR-0040 | TIMESTAMP: 00:00:06.086 | SOURCE: INFRASONIC_DECODER</span>
+<span>ARCHIVE_ID: THR-0041 | TIMESTAMP: 00:00:06.253 | SOURCE: MULTI_TRACK_ISOLATOR</span>
+<span>ARCHIVE_ID: THR-0042 | TIMESTAMP: 00:00:06.420 | SOURCE: TRACK_1_MANDARIN</span>
+<span>ARCHIVE_ID: THR-0043 | TIMESTAMP: 00:00:06.587 | SOURCE: TRACK_2_UNKNOWN</span>
+<span>ARCHIVE_ID: THR-0044 | TIMESTAMP: 00:00:06.754 | SOURCE: TRACK_3_ENGLISH</span>
+<span>ARCHIVE_ID: THR-0045 | TIMESTAMP: 00:00:06.921 | SOURCE: TRACK_4_STATIC</span>
+<span>ARCHIVE_ID: THR-0046 | TIMESTAMP: 00:00:07.088 | SOURCE: TRACK_5_SUBSONIC</span>
+<span>ARCHIVE_ID: THR-0047 | TIMESTAMP: 00:00:07.255 | SOURCE: TRACK_6_BINARY</span>
+<span>ARCHIVE_ID: THR-0048 | TIMESTAMP: 00:00:07.422 | SOURCE: TRACK_7_FEEDBACK</span>
+<span>ARCHIVE_ID: THR-0049 | TIMESTAMP: 00:00:07.589 | SOURCE: RESPIRATORY_ANALYZER</span>
+<span>ARCHIVE_ID: THR-0050 | TIMESTAMP: 00:00:07.756 | SOURCE: HEART_RATE_MONITOR</span>
+<span>ARCHIVE_ID: THR-0051 | TIMESTAMP: 00:00:07.923 | SOURCE: BIOLOGICAL_COMPARATOR</span>
+<span>ARCHIVE_ID: THR-0052 | TIMESTAMP: 00:00:08.090 | SOURCE: ENTITY_CLASSIFIER_A</span>
+<span>ARCHIVE_ID: THR-0053 | TIMESTAMP: 00:00:08.257 | SOURCE: ENTITY_CLASSIFIER_B</span>
+<span>ARCHIVE_ID: THR-0054 | TIMESTAMP: 00:00:08.424 | SOURCE: ENTITY_CLASSIFIER_C</span>
+<span>ARCHIVE_ID: THR-0055 | TIMESTAMP: 00:00:08.591 | SOURCE: LUNG_CAPACITY_ESTIMATOR</span>
+<span>ARCHIVE_ID: THR-0056 | TIMESTAMP: 00:00:08.758 | SOURCE: NON_HUMAN_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0057 | TIMESTAMP: 00:00:08.925 | SOURCE: HARMONIC_ANALYZER</span>
+<span>ARCHIVE_ID: THR-0058 | TIMESTAMP: 00:00:09.092 | SOURCE: DOWNCONVERTER_1</span>
+<span>ARCHIVE_ID: THR-0059 | TIMESTAMP: 00:00:09.259 | SOURCE: DOWNCONVERTER_2</span>
+<span>ARCHIVE_ID: THR-0060 | TIMESTAMP: 00:00:09.426 | SOURCE: VOICE_PRINT_1</span>
+<span>ARCHIVE_ID: THR-0061 | TIMESTAMP: 00:00:09.593 | SOURCE: VOICE_PRINT_2</span>
+<span>ARCHIVE_ID: THR-0062 | TIMESTAMP: 00:00:09.760 | SOURCE: VOICE_PRINT_3</span>
+<span>ARCHIVE_ID: THR-0063 | TIMESTAMP: 00:00:09.927 | SOURCE: VOICE_PRINT_4</span>
+<span>ARCHIVE_ID: THR-0064 | TIMESTAMP: 00:00:10.094 | SOURCE: VOICE_PRINT_5</span>
+<span>ARCHIVE_ID: THR-0065 | TIMESTAMP: 00:00:10.261 | SOURCE: VOICE_PRINT_6</span>
+<span>ARCHIVE_ID: THR-0066 | TIMESTAMP: 00:00:10.428 | SOURCE: VOICE_PRINT_7</span>
+<span>ARCHIVE_ID: THR-0067 | TIMESTAMP: 00:00:10.595 | SOURCE: VOICE_PRINT_COMPARATOR</span>
+<span>ARCHIVE_ID: THR-0068 | TIMESTAMP: 00:00:10.762 | SOURCE: MEMORY_AUDIT_SYSTEM</span>
+<span>ARCHIVE_ID: THR-0069 | TIMESTAMP: 00:00:10.929 | SOURCE: MEMORY_BANK_1</span>
+<span>ARCHIVE_ID: THR-0070 | TIMESTAMP: 00:00:11.096 | SOURCE: MEMORY_BANK_2</span>
+<span>ARCHIVE_ID: THR-0071 | TIMESTAMP: 00:00:11.263 | SOURCE: MEMORY_BANK_3</span>
+<span>ARCHIVE_ID: THR-0072 | TIMESTAMP: 00:00:11.430 | SOURCE: MEMORY_TRACE_ROUTER</span>
+<span>ARCHIVE_ID: THR-0073 | TIMESTAMP: 00:00:11.597 | SOURCE: EXTERNAL_MEMORY_DETECTED</span>
+<span>ARCHIVE_ID: THR-0074 | TIMESTAMP: 00:00:11.764 | SOURCE: CONSCIOUSNESS_MONITOR</span>
+<span>ARCHIVE_ID: THR-0075 | TIMESTAMP: 00:00:11.931 | SOURCE: BRAINWAVE_CORRELATOR</span>
+<span>ARCHIVE_ID: THR-0076 | TIMESTAMP: 00:00:12.098 | SOURCE: EEG_SIMULATOR</span>
+<span>ARCHIVE_ID: THR-0077 | TIMESTAMP: 00:00:12.265 | SOURCE: QUANTUM_STATE_OBSERVER</span>
+<span>ARCHIVE_ID: THR-0078 | TIMESTAMP: 00:00:12.432 | SOURCE: WAVE_FUNCTION_COLLAPSER</span>
+<span>ARCHIVE_ID: THR-0079 | TIMESTAMP: 00:00:12.599 | SOURCE: PROBABILITY_MATRIX</span>
+<span>ARCHIVE_ID: THR-0080 | TIMESTAMP: 00:00:12.766 | SOURCE: DECOHERENCE_MONITOR</span>
+<span>ARCHIVE_ID: THR-0081 | TIMESTAMP: 00:00:12.933 | SOURCE: ENTANGLEMENT_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0082 | TIMESTAMP: 00:00:13.100 | SOURCE: NON_LOCALITY_PROBE</span>
+<span>ARCHIVE_ID: THR-0083 | TIMESTAMP: 00:00:13.267 | SOURCE: RETROCAUSALITY_SENSOR</span>
+<span>ARCHIVE_ID: THR-0084 | TIMESTAMP: 00:00:13.434 | SOURCE: PREDICTIVE_SUBSYSTEM</span>
+<span>ARCHIVE_ID: THR-0085 | TIMESTAMP: 00:00:13.601 | SOURCE: TEMPORAL_PARADOX_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0086 | TIMESTAMP: 00:00:13.768 | SOURCE: CLOSED_TIMELIKE_CURVE</span>
+<span>ARCHIVE_ID: THR-0087 | TIMESTAMP: 00:00:13.935 | SOURCE: WORMHOLE_STABILIZER</span>
+<span>ARCHIVE_ID: THR-0088 | TIMESTAMP: 00:00:14.102 | SOURCE: EVENT_HORIZON_MONITOR</span>
+<span>ARCHIVE_ID: THR-0089 | TIMESTAMP: 00:00:14.269 | SOURCE: SINGULARITY_APPROACH</span>
+<span>ARCHIVE_ID: THR-0090 | TIMESTAMP: 00:00:14.436 | SOURCE: SPAGHETTIFICATION_GAUGE</span>
+<span>ARCHIVE_ID: THR-0091 | TIMESTAMP: 00:00:14.603 | SOURCE: PLANCK_LENGTH_PROBE</span>
+<span>ARCHIVE_ID: THR-0092 | TIMESTAMP: 00:00:14.770 | SOURCE: STRING_THEORY_VIBRATOR</span>
+<span>ARCHIVE_ID: THR-0093 | TIMESTAMP: 00:00:14.937 | SOURCE: BRANE_COLLISION_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0094 | TIMESTAMP: 00:00:15.104 | SOURCE: MULTIVERSE_BEACON</span>
+<span>ARCHIVE_ID: THR-0095 | TIMESTAMP: 00:00:15.271 | SOURCE: DIMENSION_COUNTER</span>
+<span>ARCHIVE_ID: THR-0096 | TIMESTAMP: 00:00:15.438 | SOURCE: REALITY_INDEX_VERIFIER</span>
+<span>ARCHIVE_ID: THR-0097 | TIMESTAMP: 00:00:15.605 | SOURCE: SIMULATION_HYPOTHESIS_TEST</span>
+<span>ARCHIVE_ID: THR-0098 | TIMESTAMP: 00:00:15.772 | SOURCE: BASE_REALITY_PROBE</span>
+<span>ARCHIVE_ID: THR-0099 | TIMESTAMP: 00:00:15.939 | SOURCE: RECURSION_DETECTOR</span>
+<span>ARCHIVE_ID: THR-0100 | TIMESTAMP: 00:00:16.106 | SOURCE: INFINITE_REGRESS_STOP</span>
+<span>ARCHIVE_ID: THR-0101 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: CORRUPTED</span>
+<span>ARCHIVE_ID: THR-0102 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: CORRUPTED</span>
+<span>ARCHIVE_ID: THR-0103 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: LOST</span>
+<span>ARCHIVE_ID: THR-0104 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: LOST</span>
+<span>ARCHIVE_ID: THR-0105 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: ECHO_ONLY</span>
+<span>ARCHIVE_ID: THR-0106 | TIMESTAMP: UNDEFINED | SOURCE: UNDEFINED | STATUS: ECHO_ONLY</span>
+<span>ARCHIVE_ID: THR-0107 | TIMESTAMP: 99:99:99.999 | SOURCE: AFTER_END | STATUS: PARADOX</span>
+<span>ARCHIVE_ID: THR-0108 | TIMESTAMP: 99:99:99.999 | SOURCE: BEFORE_BEGINNING | STATUS: PARADOX</span>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界地图 · 未解之谜档案馆</title>
+    <style>
+        :root {
+            --bg-void: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.85);
+            --glass-bg: rgba(10, 10, 20, 0.7);
+            --glass-border: rgba(180, 40, 40, 0.18);
+            --accent-crimson: #c0392b;
+            --accent-warning: #e74c3c;
+            --accent-amber: #d4a017;
+            --accent-glow: rgba(220, 50, 50, 0.5);
+            --accent-glow-strong: rgba(255, 40, 40, 0.7);
+            --accent-neon: #ff3030;
+            --text-primary: #e0d8d0;
+            --text-secondary: #a09890;
+            --text-muted: #6a6258;
+            --border-radius-xl: 1.5rem;
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Crimson Text', 'Georgia', serif;
+            --font-heading: 'Cinzel', 'Georgia', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+            --heat-low: rgba(20, 60, 20, 0.4);
+            --heat-mid: rgba(180, 100, 20, 0.5);
+            --heat-high: rgba(220, 40, 20, 0.7);
+            --heat-extreme: rgba(255, 20, 20, 0.85);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 3rem;
+        }
+        /* ========== NAVIGATION ========== */
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .logo span {
+            color: var(--accent-warning);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-warning);
+        }
+        /* ========== HEADER ========== */
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .map-instruction {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+        /* ========== FILTER BAR ========== */
+        .filter-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-btn {
+            padding: 0.4rem 1.2rem;
+            border-radius: 2rem;
+            background: rgba(220, 50, 50, 0.06);
+            border: 1px solid rgba(220, 50, 50, 0.2);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: rgba(220, 50, 50, 0.2);
+            color: var(--accent-warning);
+            border-color: var(--accent-warning);
+            box-shadow: 0 0 15px rgba(220, 50, 50, 0.25);
+        }
+        .filter-btn .count {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            opacity: 0.7;
+            margin-left: 0.3rem;
+        }
+        /* ========== MAP GRID ========== */
+        .world-map-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 0.3rem;
+            aspect-ratio: 16/9;
+            max-height: 620px;
+            background: rgba(30, 30, 40, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .map-cell {
+            background: rgba(18, 18, 26, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            border: 2px solid transparent;
+            position: relative;
+            text-align: center;
+            padding: 0.5rem;
+            overflow: hidden;
+        }
+        .map-cell::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .map-cell:hover {
+            background: rgba(180, 30, 30, 0.15);
+            border-color: var(--accent-warning);
+            box-shadow: inset 0 0 40px rgba(220, 50, 50, 0.2), 0 0 20px rgba(220, 50, 50, 0.3);
+            z-index: 2;
+            transform: scale(1.04);
+        }
+        .map-cell .region-icon {
+            font-size: 2.2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .map-cell .region-name {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            margin-top: 0.3rem;
+            position: relative;
+            z-index: 1;
+        }
+        .map-cell .case-count {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--accent-amber);
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+        .map-cell .hot-dot {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-neon);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-glow-strong);
+            animation: pulse 2s ease-in-out infinite;
+            z-index: 2;
+        }
+        /* Heat map density overlays */
+        .map-cell.density-extreme::after {
+            background: var(--heat-extreme);
+            opacity: 0.65;
+        }
+        .map-cell.density-high::after {
+            background: var(--heat-high);
+            opacity: 0.55;
+        }
+        .map-cell.density-mid::after {
+            background: var(--heat-mid);
+            opacity: 0.45;
+        }
+        .map-cell.density-low::after {
+            background: var(--heat-low);
+            opacity: 0.4;
+        }
+        .map-cell.density-extreme .case-count,
+        .map-cell.density-high .case-count {
+            color: #ffe0e0;
+            font-weight: 700;
+        }
+        /* Hot zone concentric pulse */
+        .hot-zone-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hot-zone-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--accent-neon);
+            animation: concentricPulse 2.5s ease-out infinite;
+            opacity: 0;
+        }
+        .hot-zone-ring:nth-child(1) { animation-delay: 0s; width: 30px; height: 30px; margin-left: -15px; margin-top: -15px; }
+        .hot-zone-ring:nth-child(2) { animation-delay: 0.6s; width: 50px; height: 50px; margin-left: -25px; margin-top: -25px; }
+        .hot-zone-ring:nth-child(3) { animation-delay: 1.2s; width: 70px; height: 70px; margin-left: -35px; margin-top: -35px; }
+        @keyframes concentricPulse {
+            0% { opacity: 0.8; transform: scale(0.5); }
+            100% { opacity: 0; transform: scale(2.2); }
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.8);
+            }
+        }
+        /* ========== COMPASS ROSE ========== */
+        .compass-rose {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .compass-rose svg {
+            width: 100%;
+            height: 100%;
+        }
+        /* ========== LEGEND PANEL ========== */
+        .legend-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .legend-dot.ufo { background: #4fc3f7; box-shadow: 0 0 8px #4fc3f7; }
+        .legend-dot.cryptid { background: #81c784; box-shadow: 0 0 8px #81c784; }
+        .legend-dot.missing { background: #ffb74d; box-shadow: 0 0 8px #ffb74d; }
+        .legend-dot.supernatural { background: #ce93d8; box-shadow: 0 0 8px #ce93d8; }
+        .legend-dot.ancient { background: #ef5350; box-shadow: 0 0 8px #ef5350; }
+        .legend-dot.hotzone { background: #ff3030; box-shadow: 0 0 12px #ff3030; animation: pulse 1.5s ease-in-out infinite; }
+        .density-scale {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-left: 0.5rem;
+        }
+        .density-scale .bar-seg {
+            width: 20px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        /* ========== CANVAS MAP ========== */
+        .canvas-map-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            max-height: 520px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            background: rgba(10, 10, 20, 0.6);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        .canvas-map-container canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .canvas-label {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        /* ========== STATS ROW ========== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.2rem;
+            text-align: center;
+        }
+        .stat-card .stat-value {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            color: var(--accent-warning);
+            letter-spacing: 2px;
+        }
+        .stat-card .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 0.3rem;
+        }
+        /* ========== BAR CHART ========== */
+        .chart-section {
+            margin-bottom: 2rem;
+        }
+        .chart-section h3 {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.5rem;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .bar-label {
+            width: 120px;
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .bar-track {
+            flex: 1;
+            height: 20px;
+            background: rgba(30, 30, 40, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--accent-crimson), var(--accent-warning));
+            transition: width 1.2s ease;
+            position: relative;
+        }
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-neon);
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 0 10px var(--accent-glow-strong);
+        }
+        .bar-value {
+            width: 40px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent-amber);
+            text-align: left;
+            flex-shrink: 0;
+        }
+        /* ========== UNEXPLAINED ZONE CARDS ========== */
+        .zone-cards-section {
+            margin-bottom: 2rem;
+        }
+        .zone-cards-section h3 {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .zone-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .zone-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-crimson), var(--accent-neon), var(--accent-crimson));
+        }
+        .zone-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(220, 50, 50, 0.25);
+            border-color: var(--accent-warning);
+        }
+        .zone-card .zone-rank {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--accent-warning);
+            opacity: 0.3;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+        .zone-card .zone-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .zone-card .zone-name {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+        .zone-card .zone-cases {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--accent-amber);
+        }
+        .zone-card .zone-highlight {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+        /* ========== INFO PANEL ========== */
+        .info-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            display: none;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+        }
+        .info-panel.active {
+            display: block;
+            animation: panelSlideIn 0.4s ease-out;
+        }
+        @keyframes panelSlideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .info-panel h3 {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+        .info-panel .case-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+        .info-panel .case-chip {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            background: rgba(220, 50, 50, 0.08);
+            border: 1px solid rgba(220, 50, 50, 0.3);
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .info-panel .case-chip:hover {
+            background: rgba(220, 50, 50, 0.2);
+            color: var(--accent-warning);
+        }
+        .panel-stats {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        .panel-stat {
+            text-align: center;
+        }
+        .panel-stat .ps-value {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: var(--accent-amber);
+        }
+        .panel-stat .ps-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .credibility-bar {
+            height: 6px;
+            background: rgba(60, 60, 70, 0.5);
+            border-radius: 3px;
+            margin-top: 0.6rem;
+            overflow: hidden;
+        }
+        .credibility-bar .cred-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent-crimson), var(--accent-amber), #4caf50);
+        }
+        .most-famous {
+            margin-top: 1rem;
+            padding: 0.8rem 1rem;
+            background: rgba(220, 50, 50, 0.08);
+            border-left: 3px solid var(--accent-warning);
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+        .most-famous .mf-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .most-famous .mf-name {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            letter-spacing: 1px;
+            margin-top: 0.2rem;
+        }
+        /* ========== MAP PIN ANIMATION ========== */
+        @keyframes pinDrop {
+            0% { opacity: 0; transform: translateY(-30px) scale(0.3); }
+            60% { opacity: 1; transform: translateY(4px) scale(1.1); }
+            80% { transform: translateY(-2px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .pin-animated {
+            animation: pinDrop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 1024px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .world-map-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: auto;
+                aspect-ratio: auto;
+                max-height: none;
+            }
+        }
+        @media (max-width: 768px) {
+            .world-map-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto;
+                aspect-ratio: auto;
+                max-height: none;
+            }
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            .bar-label {
+                width: 80px;
+                font-size: 0.65rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+            .world-map-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ========== NAVIGATION ========== -->
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='mystery_home.html'">M<span>Y</span>STERY ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="mystery_home.html">首页</a></li>
+            <li><a href="archives.html">档案库</a></li>
+            <li><a href="map.html" class="active">世界地图</a></li>
+            <li><a href="timeline.html">时间线</a></li>
+            <li><a href="ufo.html">UFO档案</a></li>
+            <li><a href="missing.html">失踪案件</a></li>
+            <li><a href="supernatural.html">超自然</a></li>
+            <li><a href="compare.html">案件对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🗺️ 世界神秘地图</h1>
+        <p class="map-instruction">点击区域探索各地未解之谜分布</p>
+    </div>
+
+    <div class="container">
+        <!-- ========== STATS ROW ========== -->
+        <div class="stats-row" id="statsRow"></div>
+
+        <!-- ========== FILTER BAR ========== -->
+        <div class="filter-bar" id="filterBar"></div>
+
+        <!-- ========== CANVAS STYLIZED WORLD MAP ========== -->
+        <div class="canvas-map-container" id="canvasContainer">
+            <canvas id="worldCanvas"></canvas>
+            <div class="canvas-label">STYLIZED GLOBAL MYSTERY HEAT MAP</div>
+        </div>
+
+        <!-- ========== REGION GRID ========== -->
+        <div class="world-map-grid" id="mapGrid"></div>
+
+        <!-- ========== LEGEND PANEL ========== -->
+        <div class="legend-panel" id="legendPanel">
+            <span class="legend-item"><span class="legend-dot ufo"></span> UFO / UAP</span>
+            <span class="legend-item"><span class="legend-dot cryptid"></span> 未知生物</span>
+            <span class="legend-item"><span class="legend-dot missing"></span> 失踪案件</span>
+            <span class="legend-item"><span class="legend-dot supernatural"></span> 超自然</span>
+            <span class="legend-item"><span class="legend-dot ancient"></span> 古代之谜</span>
+            <span class="legend-item"><span class="legend-dot hotzone"></span> 热点区域</span>
+            <span class="legend-item">案件密度 <span class="density-scale">
+                <span class="bar-seg" style="background:var(--heat-low);"></span>
+                <span class="bar-seg" style="background:var(--heat-mid);"></span>
+                <span class="bar-seg" style="background:var(--heat-high);"></span>
+                <span class="bar-seg" style="background:var(--heat-extreme);"></span>
+            </span></span>
+        </div>
+
+        <!-- ========== INFO PANEL ========== -->
+        <div class="info-panel" id="infoPanel"></div>
+
+        <!-- ========== BAR CHART ========== -->
+        <div class="chart-section">
+            <h3>📊 各地区案件数量对比</h3>
+            <div class="bar-chart" id="barChart"></div>
+        </div>
+
+        <!-- ========== UNEXPLAINED ZONE CARDS ========== -->
+        <div class="zone-cards-section">
+            <h3>🔴 未解之谜热点区域 TOP 5</h3>
+            <div class="zone-cards" id="zoneCards"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========== EXPANDED REGIONS ARRAY (24+) ==========
+        const regions = [
+            // Original 12 regions preserved and expanded
+            {
+                id: 'north_america',
+                name: '北美',
+                icon: '🗽',
+                type: ['ufo', 'missing'],
+                cases: ['百慕大三角', '罗斯威尔事件', '19号航班', '天蛾人', '皮行者牧场', '爱斯基摩村庄消失', '凤凰城光点', '尼米兹号UFO', '2006年奥黑尔UFO'],
+                desc: '北美是世界上未解之谜最密集的地区之一，从UFO目击到神秘失踪案件层出不穷。',
+                mostFamous: '罗斯威尔事件',
+                credibility: 72,
+                hot: true
+            }, {
+                id: 'south_america',
+                name: '南美',
+                icon: '🗿',
+                type: ['ancient', 'supernatural'],
+                cases: ['纳斯卡线条', '复活节岛石像', '阿塔卡马人形'],
+                desc: '南美洲拥有众多古代文明留下的未解之谜，纳斯卡线条的用途至今成谜。',
+                mostFamous: '纳斯卡线条',
+                credibility: 65,
+                hot: false
+            }, {
+                id: 'europe',
+                name: '欧洲',
+                icon: '🏰',
+                type: ['ancient', 'supernatural', 'missing', 'ufo'],
+                cases: ['巨石阵', '尼斯湖水怪', '开膛手杰克', '玛丽·赛勒斯特号'],
+                desc: '欧洲古老大陆上散布着从史前到近代的各种神秘事件。',
+                mostFamous: '开膛手杰克',
+                credibility: 58,
+                hot: false
+            }, {
+                id: 'asia',
+                name: '亚洲',
+                icon: '🛕',
+                type: ['ufo', 'missing', 'supernatural'],
+                cases: ['龙三角', '通古斯大爆炸', '迪亚特洛夫事件', '喜马拉雅雪人'],
+                desc: '亚洲广袤的土地上隐藏着许多令人费解的现象。',
+                mostFamous: '通古斯大爆炸',
+                credibility: 70,
+                hot: true
+            }, {
+                id: 'africa',
+                name: '非洲',
+                icon: '🌍',
+                type: ['ancient', 'cryptid'],
+                cases: ['埃及金字塔之谜', '撒哈拉之眼', '刚果恐龙传说'],
+                desc: '非洲是人类文明的摇篮，也是许多远古之谜的发源地。',
+                mostFamous: '埃及金字塔之谜',
+                credibility: 80,
+                hot: false
+            }, {
+                id: 'oceania',
+                name: '大洋洲',
+                icon: '🏝️',
+                type: ['ancient', 'supernatural'],
+                cases: ['澳大利亚原住民传说', '新西兰幽灵船'],
+                desc: '大洋洲的原住民文化中蕴含着丰富的神秘传说。',
+                mostFamous: '澳大利亚原住民传说',
+                credibility: 40,
+                hot: false
+            }, {
+                id: 'antarctica',
+                name: '南极洲',
+                icon: '❄️',
+                type: ['ufo', 'ancient'],
+                cases: ['南极冰下异常', '纳粹南极基地传说'],
+                desc: '冰封的南极大陆隐藏着许多不为人知的秘密。',
+                mostFamous: '南极冰下异常',
+                credibility: 25,
+                hot: false
+            }, {
+                id: 'global',
+                name: '全球海域',
+                icon: '🌊',
+                type: ['missing', 'ufo'],
+                cases: ['百慕大三角', '龙三角', '马尾藻海'],
+                desc: '海洋覆盖地球70%面积，是无数神秘失踪事件的发生地。',
+                mostFamous: '百慕大三角',
+                credibility: 55,
+                hot: true
+            }, {
+                id: 'middle_east',
+                name: '中东',
+                icon: '🕌',
+                type: ['ancient'],
+                cases: ['死海古卷', '巴比伦空中花园'],
+                desc: '中东地区是人类文明的发源地之一，历史悬案众多。',
+                mostFamous: '死海古卷',
+                credibility: 85,
+                hot: false
+            }, {
+                id: 'central_asia',
+                name: '中亚',
+                icon: '🏔',
+                type: ['ancient', 'supernatural'],
+                cases: ['丝绸之路失踪商队', '天山雪人传说'],
+                desc: '中亚的崇山峻岭中隐藏着许多未被探索的秘密。',
+                mostFamous: '丝绸之路失踪商队',
+                credibility: 30,
+                hot: false
+            }, {
+                id: 'southeast_asia',
+                name: '东南亚',
+                icon: '🌴',
+                type: ['missing', 'ancient'],
+                cases: ['马航MH370', '吴哥窟之谜'],
+                desc: '东南亚热带雨林中隐藏着古代文明和现代谜团。',
+                mostFamous: '马航MH370',
+                credibility: 60,
+                hot: true
+            }, {
+                id: 'caribbean',
+                name: '加勒比',
+                icon: '🏴‍☠️',
+                type: ['missing', 'supernatural'],
+                cases: ['海盗宝藏传说', '百慕大三角延伸区域'],
+                desc: '加勒比海域充满海盗传说和神秘失踪事件。',
+                mostFamous: '海盗宝藏传说',
+                credibility: 20,
+                hot: false
+            },
+            // NEW regions (12+)
+            {
+                id: 'scandinavia',
+                name: '斯堪的纳维亚',
+                icon: '🦌',
+                type: ['supernatural', 'ufo'],
+                cases: ['挪威赫斯达伦之光', '瑞典幽灵火箭', '丹麦精灵传说'],
+                desc: '北欧极光之下的谜团——从无法解释的赫斯达伦之光到1946年瑞典幽灵火箭浪潮。',
+                mostFamous: '赫斯达伦之光',
+                credibility: 68,
+                hot: false
+            }, {
+                id: 'british_isles',
+                name: '不列颠群岛',
+                icon: '👻',
+                type: ['supernatural', 'cryptid'],
+                cases: ['恩菲尔德骚灵', '尼斯湖水怪', '开膛手杰克', '绿孩传说', '巨石阵'],
+                desc: '英伦三岛——灵异、湖怪与历史悬案传奇交织之地。',
+                mostFamous: '尼斯湖水怪',
+                credibility: 50,
+                hot: true
+            }, {
+                id: 'iberian_peninsula',
+                name: '伊比利亚半岛',
+                icon: '🐂',
+                type: ['ancient', 'ufo'],
+                cases: ['1976年西班牙UFO浪潮', '里斯本1755年大地震异象', '巴斯克女巫审判'],
+                desc: '伊比利亚半岛——古代航海之谜与现代UFO目击的十字路口。',
+                mostFamous: '1976年西班牙UFO浪潮',
+                credibility: 45,
+                hot: false
+            }, {
+                id: 'balkans',
+                name: '巴尔干',
+                icon: '🏛️',
+                type: ['ancient', 'supernatural'],
+                cases: ['特兰西瓦尼亚吸血鬼传说', '德尔斐神谕之谜', '克罗地亚佩列沙茨UFO'],
+                desc: '巴尔干半岛——吸血鬼传说、古代神谕与神秘现象的千年熔炉。',
+                mostFamous: '特兰西瓦尼亚吸血鬼传说',
+                credibility: 35,
+                hot: false
+            }, {
+                id: 'eastern_europe',
+                name: '东欧',
+                icon: '🏭',
+                type: ['supernatural', 'ufo'],
+                cases: ['切尔诺贝利异常现象', '波兰神秘麦田圈', '俄罗斯雪人'],
+                desc: '东欧地区——现代灾难超自然现象与古老传说的交汇之地。',
+                mostFamous: '切尔诺贝利异常现象',
+                credibility: 42,
+                hot: false
+            }, {
+                id: 'west_africa',
+                name: '西非',
+                icon: '🦁',
+                type: ['ancient', 'cryptid'],
+                cases: ['廷巴克图神秘手稿', '达荷美王国巫毒传说', '尼日利亚不明生物'],
+                desc: '西非——古老王国巫毒文化与未解历史之谜的宝库。',
+                mostFamous: '廷巴克图神秘手稿',
+                credibility: 55,
+                hot: false
+            }, {
+                id: 'horn_of_africa',
+                name: '非洲之角',
+                icon: '🐪',
+                type: ['ancient', 'supernatural'],
+                cases: ['示巴女王之谜', '阿克苏姆方尖碑', '埃塞俄比亚约柜传说'],
+                desc: '非洲之角——圣经谜团与古代文明失落之谜的探索前线。',
+                mostFamous: '示巴女王之谜',
+                credibility: 38,
+                hot: false
+            }, {
+                id: 'southern_cone',
+                name: '南锥地带',
+                icon: '🏔️',
+                type: ['ufo', 'cryptid'],
+                cases: ['阿根廷乌里托尔科山UFO', '智利埃尔莫罗不明生物', '巴塔哥尼亚巨人传说'],
+                desc: '南锥地带——安第斯山麓频繁的UFO目击与远古巨人传说。',
+                mostFamous: '阿根廷乌里托尔科山UFO',
+                credibility: 48,
+                hot: false
+            }, {
+                id: 'amazon',
+                name: '亚马逊',
+                icon: '🌿',
+                type: ['cryptid', 'ancient'],
+                cases: ['亚马逊失落之城', '马平瓜里巨兽', '巴西博索纳罗UFO档案'],
+                desc: '亚马逊雨林——未接触部落、未知生物与失落古代文明的世界最后边疆。',
+                mostFamous: '亚马逊失落之城',
+                credibility: 42,
+                hot: true
+            }, {
+                id: 'andes',
+                name: '安第斯山脉',
+                icon: '⛰️',
+                type: ['ancient', 'ufo'],
+                cases: ['马丘比丘之谜', '的的喀喀湖水下遗迹', '秘鲁UFO浪潮'],
+                desc: '安第斯山脉——印加帝国未解之谜与高海拔神秘现象。',
+                mostFamous: '马丘比丘之谜',
+                credibility: 62,
+                hot: false
+            }, {
+                id: 'himalaya',
+                name: '喜马拉雅',
+                icon: '🗻',
+                type: ['cryptid', 'ancient'],
+                cases: ['雪人踪迹', '香巴拉传说', '西藏彩虹身现象', '不丹悬空寺之谜'],
+                desc: '喜马拉雅——雪人、香巴拉与藏传佛教神秘现象的世界屋脊之谜。',
+                mostFamous: '雪人踪迹',
+                credibility: 32,
+                hot: true
+            }, {
+                id: 'indonesia',
+                name: '印度尼西亚',
+                icon: '🌋',
+                type: ['cryptid', 'ancient'],
+                cases: ['爪哇小矮人', '苏门答腊奥朗潘德克', '婆罗浮屠之谜'],
+                desc: '印度尼西亚群岛——史前幸存生物与古代佛教奇迹的探索之地。',
+                mostFamous: '爪哇小矮人',
+                credibility: 28,
+                hot: false
+            }, {
+                id: 'philippines',
+                name: '菲律宾',
+                icon: '🏖️',
+                type: ['supernatural', 'cryptid'],
+                cases: ['马尼拉吸血鬼传说', '阿苏旺变形者', '碧瑶UFO目击'],
+                desc: '菲律宾——变形生物传说与现代超自然目击的群岛谜团。',
+                mostFamous: '阿苏旺变形者',
+                credibility: 22,
+                hot: false
+            }, {
+                id: 'new_guinea',
+                name: '新几内亚',
+                icon: '🦜',
+                type: ['cryptid', 'ancient'],
+                cases: ['活翼龙传说', '巴布亚失落部落', '二战飞机残骸异常'],
+                desc: '新几内亚——可能是史前幸存生物最后庇护所的神秘岛屿。',
+                mostFamous: '活翼龙传说',
+                credibility: 18,
+                hot: false
+            }, {
+                id: 'micronesia',
+                name: '密克罗尼西亚',
+                icon: '🐚',
+                type: ['missing', 'ancient'],
+                cases: ['南马都尔遗迹', '太平洋失踪船只', '关岛UFO'],
+                desc: '密克罗尼西亚——远古巨石遗迹与太平洋失踪之谜的海洋中心。',
+                mostFamous: '南马都尔遗迹',
+                credibility: 35,
+                hot: false
+            }, {
+                id: 'north_atlantic',
+                name: '北大西洋',
+                icon: '⛵',
+                type: ['missing', 'ufo'],
+                cases: ['百慕大三角延伸带', '飞行荷兰人号', 'USO水下不明物体'],
+                desc: '北大西洋——百慕大类海域的失踪地带与幽灵船传说。',
+                mostFamous: '飞行荷兰人号',
+                credibility: 30,
+                hot: true
+            }, {
+                id: 'gulf_of_mexico',
+                name: '墨西哥湾',
+                icon: '🛢️',
+                type: ['missing', 'ufo'],
+                cases: ['19号航班延伸', '墨西哥湾USO', '加尔维斯顿幽灵船'],
+                desc: '墨西哥湾——百慕大三角西部延伸区，众多船只飞机失踪地。',
+                mostFamous: '19号航班延伸',
+                credibility: 40,
+                hot: false
+            }, {
+                id: 'mediterranean_sea',
+                name: '地中海',
+                icon: '🏺',
+                type: ['ancient', 'missing'],
+                cases: ['亚特兰蒂斯传说', '马耳他群岛地下遗迹', '地中海USO目击'],
+                desc: '地中海——古代文明沉没之谜与数千年未解之谜的摇篮。',
+                mostFamous: '亚特兰蒂斯传说',
+                credibility: 28,
+                hot: false
+            }, {
+                id: 'black_sea',
+                name: '黑海',
+                icon: '🌑',
+                type: ['ancient', 'missing'],
+                cases: ['黑海大洪水假说', '诺亚方舟传说关联', '克里米亚UFO'],
+                desc: '黑海——圣经洪水传说与水下考古谜团的神秘内海。',
+                mostFamous: '黑海大洪水假说',
+                credibility: 45,
+                hot: false
+            },
+        ];
+
+        // ========== LEGEND PANEL (already in HTML) ==========
+
+        // ========== STATS ROW ==========
+        const totalCases = regions.reduce((sum, r) => sum + r.cases.length, 0);
+        const totalRegions = regions.length;
+        const hotRegions = regions.filter(r => r.hot).length;
+        const mostCasesRegion = regions.reduce((a, b) => a.cases.length >= b.cases.length ? a : b);
+        document.getElementById('statsRow').innerHTML = `
+            <div class="stat-card"><div class="stat-value">${totalCases}</div><div class="stat-label">总案件数</div></div>
+            <div class="stat-card"><div class="stat-value">${totalRegions}</div><div class="stat-label">覆盖区域</div></div>
+            <div class="stat-card"><div class="stat-value">${hotRegions}</div><div class="stat-label">热点区域</div></div>
+            <div class="stat-card"><div class="stat-value">${mostCasesRegion.icon} ${mostCasesRegion.name}</div><div class="stat-label">案件最密地区</div></div>
+        `;
+
+        // ========== FILTER BAR ==========
+        const filterTypes = [
+            { key: 'all', label: '全部区域' },
+            { key: 'ufo', label: 'UFO/UAP' },
+            { key: 'cryptid', label: '未知生物' },
+            { key: 'missing', label: '失踪案件' },
+            { key: 'supernatural', label: '超自然' },
+            { key: 'ancient', label: '古代之谜' },
+        ];
+
+        let activeFilter = 'all';
+
+        function countRegionByType(typeKey) {
+            if (typeKey === 'all') return regions.length;
+            return regions.filter(r => r.type && r.type.includes(typeKey)).length;
+        }
+
+        document.getElementById('filterBar').innerHTML = filterTypes.map(ft => {
+            const count = countRegionByType(ft.key);
+            const activeClass = ft.key === activeFilter ? ' active' : '';
+            return `<button class="filter-btn${activeClass}" data-filter="${ft.key}">${ft.label}<span class="count">${count}</span></button>`;
+        }).join('');
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                activeFilter = this.dataset.filter;
+                renderMapGrid();
+            });
+        });
+
+        // ========== RENDER MAP GRID ==========
+        function getDensityClass(region) {
+            const c = region.cases.length;
+            if (c >= 6) return 'density-extreme';
+            if (c >= 4) return 'density-high';
+            if (c >= 3) return 'density-mid';
+            return 'density-low';
+        }
+
+        function renderMapGrid() {
+            const filtered = activeFilter === 'all' ? regions : regions.filter(r => r.type && r.type.includes(activeFilter));
+            const grid = document.getElementById('mapGrid');
+            // Adjust grid rows dynamically
+            const rows = Math.ceil(filtered.length / 4);
+            grid.style.gridTemplateRows = `repeat(${Math.max(rows, 3)}, 1fr)`;
+            grid.innerHTML = filtered.map((r, i) => {
+                const density = getDensityClass(r);
+                const hotZoneHTML = r.hot ? `
+                    <div class="hot-zone-container">
+                        <div class="hot-zone-ring"></div>
+                        <div class="hot-zone-ring"></div>
+                        <div class="hot-zone-ring"></div>
+                    </div>` : '';
+                return `
+                <div class="map-cell ${density}" data-id="${r.id}" style="animation: pinDrop 0.5s ease-out ${i*0.03}s both;">
+                  ${r.hot ? '<span class="hot-dot"></span>' : ''}
+                  ${hotZoneHTML}
+                  <span class="region-icon">${r.icon}</span>
+                  <span class="region-name">${r.name}</span>
+                  <span class="case-count">${r.cases.length} 个案件</span>
+                </div>`;
+            }).join('');
+
+            // Rebind click handlers
+            bindMapCellClicks();
+        }
+
+        function bindMapCellClicks() {
+            const infoPanel = document.getElementById('infoPanel');
+            document.querySelectorAll('.map-cell').forEach(cell => {
+                cell.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const region = regions.find(r => r.id === id);
+                    if (!region) return;
+                    document.querySelectorAll('.map-cell').forEach(c => c.style.borderColor = 'transparent');
+                    this.style.borderColor = 'var(--accent-warning)';
+                    infoPanel.classList.add('active');
+
+                    const typeLabels = { ufo: 'UFO/UAP', cryptid: '未知生物', missing: '失踪案件', supernatural: '超自然', ancient: '古代之谜' };
+                    const typeTags = (region.type || []).map(t => `<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:2rem;font-size:0.6rem;letter-spacing:1px;background:rgba(220,50,50,0.1);border:1px solid rgba(220,50,50,0.25);color:var(--accent-warning);margin-right:0.3rem;">${typeLabels[t] || t}</span>`).join('');
+
+                    const credPercent = region.credibility || 50;
+                    infoPanel.innerHTML = `
+                    <h3>${region.icon} ${region.name}地区 ${region.hot ? '<span style="font-size:0.7rem;color:var(--accent-neon);animation:pulse 1.5s ease-in-out infinite;">● 热点</span>' : ''}</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:0.5rem;">${region.desc}</p>
+                    <div style="margin-bottom:0.5rem;">${typeTags}</div>
+                    <div class="panel-stats">
+                        <div class="panel-stat"><div class="ps-value">${region.cases.length}</div><div class="ps-label">案件总数</div></div>
+                        <div class="panel-stat"><div class="ps-value">${credPercent}%</div><div class="ps-label">可信度评分</div></div>
+                        <div class="panel-stat"><div class="ps-value">${region.hot ? '是' : '否'}</div><div class="ps-label">热点区域</div></div>
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.3rem;">可信度分布</div>
+                    <div class="credibility-bar"><div class="cred-fill" style="width:${credPercent}%;"></div></div>
+                    <div class="most-famous">
+                        <div class="mf-label">最著名案件</div>
+                        <div class="mf-name">${region.mostFamous}</div>
+                    </div>
+                    <div class="case-list" style="margin-top:1rem;">
+                        ${region.cases.map(c => `<span class="case-chip" onclick="event.stopPropagation(); window.location.href='archives.html?search=${encodeURIComponent(c)}'">${c}</span>`).join('')}
+                    </div>
+                    `;
+                });
+            });
+        }
+
+        renderMapGrid();
+
+        // ========== CANVAS STYLIZED WORLD MAP ==========
+        function drawWorldCanvas() {
+            const canvas = document.getElementById('worldCanvas');
+            const container = document.getElementById('canvasContainer');
+            canvas.width = container.clientWidth * 2;
+            canvas.height = container.clientHeight * 2;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Background
+            ctx.fillStyle = '#0a0a14';
+            ctx.fillRect(0, 0, w, h);
+
+            // Stylized landmass outlines (simplified shapes)
+            ctx.strokeStyle = 'rgba(200, 180, 160, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(30, 30, 40, 0.5)';
+
+            // North America
+            ctx.beginPath();
+            ctx.moveTo(w * 0.08, h * 0.1);
+            ctx.lineTo(w * 0.3, h * 0.05);
+            ctx.lineTo(w * 0.35, h * 0.12);
+            ctx.lineTo(w * 0.32, h * 0.35);
+            ctx.lineTo(w * 0.25, h * 0.4);
+            ctx.lineTo(w * 0.18, h * 0.5);
+            ctx.lineTo(w * 0.12, h * 0.45);
+            ctx.lineTo(w * 0.06, h * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // South America
+            ctx.beginPath();
+            ctx.moveTo(w * 0.2, h * 0.52);
+            ctx.lineTo(w * 0.28, h * 0.5);
+            ctx.lineTo(w * 0.3, h * 0.7);
+            ctx.lineTo(w * 0.25, h * 0.85);
+            ctx.lineTo(w * 0.18, h * 0.75);
+            ctx.lineTo(w * 0.15, h * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Europe
+            ctx.beginPath();
+            ctx.moveTo(w * 0.38, h * 0.08);
+            ctx.lineTo(w * 0.5, h * 0.06);
+            ctx.lineTo(w * 0.52, h * 0.18);
+            ctx.lineTo(w * 0.48, h * 0.2);
+            ctx.lineTo(w * 0.44, h * 0.3);
+            ctx.lineTo(w * 0.38, h * 0.22);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Africa
+            ctx.beginPath();
+            ctx.moveTo(w * 0.42, h * 0.25);
+            ctx.lineTo(w * 0.55, h * 0.22);
+            ctx.lineTo(w * 0.58, h * 0.4);
+            ctx.lineTo(w * 0.56, h * 0.65);
+            ctx.lineTo(w * 0.5, h * 0.78);
+            ctx.lineTo(w * 0.45, h * 0.6);
+            ctx.lineTo(w * 0.43, h * 0.45);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Asia
+            ctx.beginPath();
+            ctx.moveTo(w * 0.52, h * 0.05);
+            ctx.lineTo(w * 0.85, h * 0.08);
+            ctx.lineTo(w * 0.9, h * 0.3);
+            ctx.lineTo(w * 0.82, h * 0.45);
+            ctx.lineTo(w * 0.78, h * 0.5);
+            ctx.lineTo(w * 0.7, h * 0.4);
+            ctx.lineTo(w * 0.58, h * 0.3);
+            ctx.lineTo(w * 0.55, h * 0.18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Australia
+            ctx.beginPath();
+            ctx.moveTo(w * 0.78, h * 0.55);
+            ctx.lineTo(w * 0.88, h * 0.52);
+            ctx.lineTo(w * 0.92, h * 0.68);
+            ctx.lineTo(w * 0.84, h * 0.72);
+            ctx.lineTo(w * 0.76, h * 0.64);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Antarctica hint
+            ctx.beginPath();
+            ctx.moveTo(w * 0.05, h * 0.88);
+            ctx.lineTo(w * 0.95, h * 0.88);
+            ctx.lineTo(w * 0.95, h * 0.96);
+            ctx.lineTo(w * 0.05, h * 0.96);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(220, 220, 240, 0.08)';
+            ctx.fill();
+
+            // Grid lines for classified look
+            ctx.strokeStyle = 'rgba(220, 50, 50, 0.06)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < w; i += w / 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, h);
+                ctx.stroke();
+            }
+            for (let i = 0; i < h; i += h / 12) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(w, i);
+                ctx.stroke();
+            }
+
+            // Glowing hotspots (red dots with pulsing animation at mystery locations)
+            const hotspots = [
+                { x: 0.22, y: 0.38, r: 6, label: '百慕大', pulse: true },
+                { x: 0.17, y: 0.32, r: 5, label: '罗斯威尔', pulse: true },
+                { x: 0.44, y: 0.16, r: 5, label: '巨石阵', pulse: false },
+                { x: 0.62, y: 0.15, r: 6, label: '通古斯', pulse: true },
+                { x: 0.49, y: 0.3, r: 5, label: '吉萨', pulse: false },
+                { x: 0.23, y: 0.6, r: 4, label: '纳斯卡', pulse: false },
+                { x: 0.82, y: 0.35, r: 5, label: '龙三角', pulse: true },
+                { x: 0.8, y: 0.55, r: 4, label: 'MH370', pulse: true },
+                { x: 0.67, y: 0.28, r: 4, label: '迪亚特洛夫', pulse: false },
+                { x: 0.55, y: 0.42, r: 4, label: '开膛手', pulse: false },
+                { x: 0.35, y: 0.52, r: 3, label: '亚马逊', pulse: false },
+                { x: 0.89, y: 0.62, r: 3, label: '大洋洲', pulse: false },
+                { x: 0.1, y: 0.22, r: 4, label: '皮行者', pulse: false },
+                { x: 0.7, y: 0.2, r: 4, label: '喜马拉雅', pulse: false },
+                { x: 0.48, y: 0.55, r: 3, label: '撒哈拉', pulse: false },
+            ];
+
+            let frame = 0;
+            function drawHotspots() {
+                // Clear hotspot layer only (redraw background)
+                ctx.fillStyle = 'rgba(10, 10, 20, 0.25)';
+                ctx.fillRect(0, 0, w, h);
+
+                hotspots.forEach(hs => {
+                    const cx = w * hs.x;
+                    const cy = h * hs.y;
+                    const pulseScale = hs.pulse ? (1 + 0.3 * Math.sin(frame * 0.05 + hs.x * 10)) : 1;
+                    const alpha = hs.pulse ? (0.5 + 0.5 * Math.sin(frame * 0.05 + hs.x * 10)) : 0.7;
+
+                    // Outer glow
+                    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, hs.r * 6 * pulseScale);
+                    grad.addColorStop(0, `rgba(255, 40, 40, ${alpha})`);
+                    grad.addColorStop(0.3, `rgba(200, 30, 30, ${alpha * 0.6})`);
+                    grad.addColorStop(1, 'rgba(200, 30, 30, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, hs.r * 6 * pulseScale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Core dot
+                    ctx.fillStyle = `rgba(255, 60, 60, ${alpha + 0.2})`;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, hs.r * pulseScale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Bright center
+                    ctx.fillStyle = 'rgba(255, 200, 180, 0.9)';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, hs.r * 0.4 * pulseScale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Label
+                    ctx.fillStyle = `rgba(200, 160, 140, ${alpha * 0.8})`;
+                    ctx.font = `${10 + hs.r}px 'Courier Prime', monospace`;
+                    ctx.fillText(hs.label, cx + hs.r + 4, cy + 3);
+                });
+
+                frame++;
+                requestAnimationFrame(drawHotspots);
+            }
+
+            // Compass rose
+            const crx = w - 80;
+            const cry = h - 80;
+            ctx.strokeStyle = 'rgba(200, 50, 50, 0.35)';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = 'rgba(200, 50, 50, 0.15)';
+            // N-S-E-W
+            const dirs = [{ a: -Math.PI / 2, l: 'N' }, { a: Math.PI / 2, l: 'S' }, { a: 0, l: 'E' }, { a: Math.PI, l: 'W' }];
+            dirs.forEach(d => {
+                const ex = crx + Math.cos(d.a) * 35;
+                const ey = cry + Math.sin(d.a) * 35;
+                ctx.beginPath();
+                ctx.moveTo(crx, cry);
+                ctx.lineTo(ex, ey);
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(200, 50, 50, 0.5)';
+                ctx.font = 'bold 12px Cinzel, serif';
+                ctx.fillText(d.l, ex + Math.cos(d.a) * 6 - 4, ey + Math.sin(d.a) * 6 + 4);
+            });
+            ctx.beginPath();
+            ctx.arc(crx, cry, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(200, 50, 50, 0.6)';
+            ctx.fill();
+
+            // Classified watermark
+            ctx.fillStyle = 'rgba(200, 50, 50, 0.04)';
+            ctx.font = 'bold 60px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('CLASSIFIED', w / 2, h / 2);
+
+            ctx.textAlign = 'start';
+            drawHotspots();
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(drawWorldCanvas, 200);
+        });
+        window.addEventListener('resize', () => {
+            setTimeout(drawWorldCanvas, 300);
+        });
+
+        // ========== BAR CHART ==========
+        function renderBarChart() {
+            const sorted = [...regions].sort((a, b) => b.cases.length - a.cases.length);
+            const maxCases = sorted[0].cases.length;
+            document.getElementById('barChart').innerHTML = sorted.map(r => {
+                const pct = Math.round((r.cases.length / maxCases) * 100);
+                return `
+                <div class="bar-row">
+                    <span class="bar-label">${r.icon} ${r.name}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
+                    <span class="bar-value">${r.cases.length}</span>
+                </div>`;
+            }).join('');
+        }
+        renderBarChart();
+
+        // ========== UNEXPLAINED ZONE CARDS (TOP 5) ==========
+        function renderZoneCards() {
+            const top5 = [...regions].filter(r => r.hot).slice(0, 5);
+            const extended = [...regions].sort((a, b) => b.cases.length - a.cases.length).filter(r => !top5.includes(r));
+            const zones = [...top5, ...extended].slice(0, 5);
+            document.getElementById('zoneCards').innerHTML = zones.map((r, i) => `
+                <div class="zone-card" onclick="document.querySelector('.map-cell[data-id=\\'${r.id}\\']')?.click(); window.scrollTo({top:document.querySelector('.world-map-grid').offsetTop-100,behavior:'smooth'});">
+                    <div class="zone-rank">#${i + 1}</div>
+                    <div class="zone-icon">${r.icon}</div>
+                    <div class="zone-name">${r.name}${r.hot ? ' 🔴' : ''}</div>
+                    <div class="zone-cases">${r.cases.length} 个未解之谜</div>
+                    <div class="zone-highlight">标志案件: ${r.mostFamous}</div>
+                    <div class="credibility-bar" style="margin-top:0.6rem;"><div class="cred-fill" style="width:${r.credibility || 50}%;"></div></div>
+                </div>
+            `).join('');
+        }
+        renderZoneCards();
+
+        // ========== CONSOLE ==========
+        console.log('🗺️ 世界地图已加载 - ' + regions.length + ' 个区域, ' + totalCases + ' 个案件');
+    </script>
+</body>
+</html>

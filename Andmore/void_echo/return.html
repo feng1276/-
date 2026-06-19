@@ -1,0 +1,2889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID ECHO · 归途</title>
+<style>
+/* ================================================================
+   VOID ECHO · 归途 — CSS DEGRADATION SYSTEM
+   The page starts looking deceptively normal and progressively
+   corrupts as the user scrolls. CSS variables drive the entire
+   degradation pipeline.
+   ================================================================ */
+
+:root{
+  /* Warm, welcoming initial palette */
+  --bg:#f5f3ef;
+  --bg-secondary:#faf9f7;
+  --text:#3a3835;
+  --text-faint:#7a7875;
+  --text-muted:#9a9895;
+  --border:#d5d3cf;
+  --accent:#c5b89e;
+  --accent-warm:#d4c5a9;
+  --shadow-light:rgba(0,0,0,0.04);
+  --shadow-medium:rgba(0,0,0,0.08);
+  --card-bg:#faf9f7;
+  --card-border:#e8e5df;
+  /* Degradation control variables — shift over time */
+  --wrong:0;
+  --noise-opacity:0;
+  --vignette-opacity:0;
+  --glitch-intensity:0;
+  --hue-shift:0deg;
+  --text-distort:0px;
+  --crack-visibility:0;
+  --hidden-reveal:0;
+  --color-drain:0;
+  --void-bleed:0;
+  --saturation:1;
+  --brightness:1;
+  --font-corruption:0;
+  --shadow-depth:0px;
+  --reality-flicker:0;
+  --scanline-opacity:0;
+  --chroma-shift:0px;
+  --void-glow:0;
+  /* Scroll-driven variables — set by JS */
+  --scroll:0;
+  --stage:0;
+}
+
+/* =========================== RESET & BASE =========================== */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{
+  scroll-behavior:smooth;
+  overflow-x:hidden;
+}
+body{
+  font-family:'Georgia','Noto Serif SC','SimSun','STSong',serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+  min-height:100vh;
+  cursor:default;
+  transition:
+    background-color 4s ease,
+    color 4s ease,
+    filter 3s ease;
+  filter:
+    saturate(var(--saturation))
+    brightness(var(--brightness))
+    hue-rotate(var(--hue-shift));
+  position:relative;
+}
+
+/* =========================== SCANLINES OVERLAY =========================== */
+#scanlines{
+  position:fixed;inset:0;pointer-events:none;z-index:200;
+  opacity:var(--scanline-opacity);
+  transition:opacity 8s ease;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+}
+
+/* =========================== NOISE OVERLAY =========================== */
+#noiseOverlay{
+  position:fixed;inset:0;pointer-events:none;z-index:199;
+  opacity:var(--noise-opacity);
+  transition:opacity 6s ease;
+  mix-blend-mode:multiply;
+}
+#noiseOverlay svg{
+  width:100%;height:100%;
+}
+
+/* =========================== VIGNETTE =========================== */
+#voidVignette{
+  position:fixed;inset:0;pointer-events:none;z-index:198;
+  opacity:var(--vignette-opacity);
+  transition:opacity 8s ease;
+  background:radial-gradient(
+    ellipse at center,
+    transparent 25%,
+    rgba(3,3,6,0.3) 55%,
+    rgba(2,2,4,0.6) 75%,
+    rgba(1,1,3,0.9) 95%,
+    rgba(0,0,2,1) 100%
+  );
+}
+
+/* =========================== CHROMATIC ABERRATION OVERLAY =========================== */
+#chromaOverlay{
+  position:fixed;inset:0;pointer-events:none;z-index:197;
+  opacity:var(--chroma-shift);
+  transition:opacity 4s ease;
+  background:transparent;
+  box-shadow:
+    inset var(--chroma-shift) 0 0 rgba(255,0,0,0.04),
+    inset calc(var(--chroma-shift)*-1) 0 0 rgba(0,0,255,0.04);
+}
+
+/* =========================== GLITCH FLASH OVERLAY =========================== */
+.glitch-flash-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:196;
+  background:rgba(255,255,255,0.03);
+  opacity:0;
+  transition:opacity 0.03s ease;
+}
+.glitch-flash-overlay.flash{opacity:1;}
+.glitch-flash-overlay.flash-strong{
+  opacity:1;
+  background:rgba(200,200,220,0.06);
+  transition:opacity 0.02s ease;
+}
+.glitch-flash-overlay.flash-void{
+  opacity:1;
+  background:rgba(5,5,8,0.85);
+  transition:opacity 0.1s ease;
+}
+
+/* =========================== REPEATING BACKGROUND TEXT =========================== */
+.repeating-text-layer{
+  position:fixed;pointer-events:none;z-index:195;
+  font-family:'Courier New','SimHei',monospace;
+  font-size:0.45rem;
+  line-height:1.6;
+  white-space:pre-wrap;
+  word-break:break-all;
+  color:rgba(180,180,200,0);
+  transition:color 6s ease;
+  user-select:none;
+  overflow:hidden;
+}
+.repeating-text-layer.active{
+  color:rgba(180,180,200,0.06);
+}
+.repeating-text-layer.strong{
+  color:rgba(180,180,200,0.14);
+}
+
+/* =========================== HIDDEN MESSAGES =========================== */
+.hidden-msg{
+  position:fixed;pointer-events:none;z-index:194;
+  font-family:'Courier New','SimHei',monospace;
+  font-size:0.65rem;
+  color:transparent;
+  transition:color 7s ease,text-shadow 7s ease,transform 0.1s ease;
+  letter-spacing:0.25em;
+  user-select:none;
+  white-space:nowrap;
+}
+.hidden-msg.revealed{
+  color:rgba(200,200,220,0.25);
+}
+.hidden-msg.strong-revealed{
+  color:rgba(200,200,220,0.5);
+  text-shadow:0 0 15px rgba(200,200,220,0.2);
+}
+.hidden-msg.urgent{
+  color:rgba(220,180,180,0.6);
+  text-shadow:0 0 25px rgba(200,100,100,0.25);
+  animation:hiddenPulse 3s ease-in-out infinite;
+}
+
+/* =========================== PAGE CONTAINER — THE FACADE =========================== */
+.page-container{
+  max-width:720px;
+  margin:0 auto;
+  padding:60px 30px 120px;
+  position:relative;
+  z-index:1;
+}
+.page-header{
+  text-align:center;
+  padding:100px 0 70px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:60px;
+  transition:border-color 5s ease;
+}
+.page-header h1{
+  font-size:2.4rem;
+  font-weight:400;
+  letter-spacing:0.2em;
+  color:var(--text);
+  margin-bottom:14px;
+  transition:
+    color 5s ease,
+    letter-spacing 4s ease,
+    text-shadow 5s ease,
+    transform 0.3s ease;
+  transform:translateX(var(--text-distort));
+}
+.page-header .subtitle{
+  font-size:0.8rem;
+  color:var(--text-faint);
+  letter-spacing:0.35em;
+  transition:color 5s ease,letter-spacing 4s ease;
+}
+
+/* =========================== CONTENT SECTIONS =========================== */
+.content-section{
+  margin-bottom:45px;
+  line-height:2.1;
+  font-size:1rem;
+  color:var(--text);
+  transition:color 5s ease;
+}
+.content-section p{
+  margin-bottom:22px;
+  text-indent:2em;
+  transition:
+    transform 0.4s ease,
+    color 5s ease,
+    letter-spacing 4s ease,
+    opacity 5s ease;
+}
+.content-section .highlight{
+  font-style:italic;
+  color:var(--text-faint);
+  transition:color 5s ease;
+}
+
+/* =========================== QUOTE BLOCKS =========================== */
+.quote-block{
+  border-left:3px solid var(--border);
+  padding:18px 28px;
+  margin:35px 0;
+  color:var(--text-faint);
+  font-style:italic;
+  transition:
+    border-color 5s ease,
+    color 5s ease,
+    transform 0.4s ease,
+    background-color 5s ease;
+  background:var(--card-bg);
+  border-radius:0 8px 8px 0;
+}
+
+/* =========================== DIVIDER =========================== */
+.section-divider{
+  text-align:center;
+  margin:50px 0;
+  color:var(--text-muted);
+  font-size:0.7rem;
+  letter-spacing:0.4em;
+  transition:color 5s ease;
+  user-select:none;
+}
+
+/* =========================== GLITCH ELEMENTS =========================== */
+.glitch-element{
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease,
+    color 0.5s ease,
+    opacity 0.5s ease;
+}
+.glitch-element.broken{
+  transform:translate(
+    calc(var(--glitch-intensity)*2px),
+    calc(var(--glitch-intensity)*-1px)
+  );
+  filter:
+    hue-rotate(calc(var(--glitch-intensity)*3deg))
+    saturate(calc(1 + var(--glitch-intensity)*0.1));
+}
+.glitch-element.severely-broken{
+  transform:translate(
+    calc(var(--glitch-intensity)*8px),
+    calc(var(--glitch-intensity)*-4px)
+  );
+  filter:
+    hue-rotate(calc(var(--glitch-intensity)*15deg))
+    saturate(0.6);
+  animation:textShiver 0.15s ease-in-out infinite;
+}
+
+/* =========================== WALL CRACKS — CSS ART =========================== */
+.wall-crack{
+  position:fixed;pointer-events:none;z-index:190;
+  opacity:var(--crack-visibility);
+  transition:opacity 5s ease;
+}
+.wall-crack svg{
+  width:100%;height:100%;
+}
+.crack-line{
+  stroke:rgba(40,35,30,0.6);
+  stroke-width:1.5;
+  fill:none;
+  stroke-dasharray:2000;
+  stroke-dashoffset:2000;
+  animation:crackGrow 20s ease-in-out forwards;
+  animation-play-state:paused;
+}
+.crack-line.growing{
+  animation-play-state:running;
+}
+.crack-line.void-crack{
+  stroke:rgba(5,3,8,0.9);
+  stroke-width:2;
+  filter:drop-shadow(0 0 6px rgba(0,0,0,0.5));
+}
+
+/* =========================== REALITY LOG =========================== */
+#realityLog{
+  position:fixed;bottom:0;left:0;right:0;
+  z-index:189;
+  pointer-events:none;
+  font-family:'Courier New',monospace;
+  font-size:0.5rem;
+  line-height:1.3;
+  color:transparent;
+  transition:color 8s ease;
+  max-height:30vh;
+  overflow:hidden;
+  padding:20px;
+  user-select:none;
+  opacity:0;
+}
+#realityLog.revealed{
+  opacity:1;
+  color:rgba(200,200,220,0.15);
+}
+#realityLog.urgent{
+  opacity:1;
+  color:rgba(220,150,150,0.3);
+}
+
+/* =========================== CANVAS CRACK SYSTEM =========================== */
+#crackCanvas{
+  position:fixed;inset:0;pointer-events:none;z-index:188;
+  opacity:var(--crack-visibility);
+  transition:opacity 6s ease;
+}
+
+/* =========================== PORTAL BACK =========================== */
+.portal-back{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:210;pointer-events:none;opacity:0;
+  transition:opacity 5s ease;
+  text-align:center;
+}
+.portal-back.visible{
+  opacity:1;
+}
+.portal-back a{
+  pointer-events:auto;
+  text-decoration:none;
+  display:inline-block;
+  padding:22px 48px;
+  border:1px solid rgba(200,200,220,0.12);
+  border-radius:60px;
+  color:rgba(200,200,220,0.4);
+  font-family:'Courier New',monospace;
+  font-size:0.85rem;
+  letter-spacing:0.35em;
+  transition:all 1.5s ease;
+  position:relative;
+  overflow:hidden;
+}
+.portal-back a::before{
+  content:'';
+  position:absolute;inset:-1px;
+  border-radius:60px;
+  padding:1px;
+  background:conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(200,200,220,0.1),
+    transparent,
+    rgba(200,200,220,0.05),
+    transparent
+  );
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  animation:portalSpin 12s linear infinite;
+  opacity:0;
+  transition:opacity 2s ease;
+}
+.portal-back a:hover::before{opacity:1;}
+.portal-back a:hover{
+  border-color:rgba(200,200,220,0.35);
+  color:rgba(220,220,240,0.75);
+  box-shadow:
+    0 0 60px rgba(200,200,220,0.12),
+    0 0 120px rgba(200,200,220,0.04);
+  background:rgba(200,200,220,0.02);
+}
+.portal-back .small{
+  font-size:0.5rem;
+  color:rgba(200,200,220,0.15);
+  margin-top:14px;
+  letter-spacing:0.25em;
+}
+
+/* =========================== NAVIGATION =========================== */
+.nav-return{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  z-index:220;display:flex;gap:18px;align-items:center;
+  transition:opacity 6s ease;
+}
+.nav-return a{
+  pointer-events:auto;text-decoration:none;
+  color:rgba(180,180,200,0.12);
+  font-family:'Courier New',monospace;
+  font-size:0.65rem;letter-spacing:0.3em;
+  transition:all 1s ease;
+}
+.nav-return a:hover{
+  color:rgba(220,220,240,0.45);
+  text-shadow:0 0 18px rgba(200,200,220,0.18);
+}
+.nav-return span{color:rgba(180,180,200,0.06);}
+
+/* =========================== AMBIENT VOID PARTICLES =========================== */
+#particleCanvas{
+  position:fixed;inset:0;pointer-events:none;z-index:187;
+  opacity:0;
+  transition:opacity 8s ease;
+}
+#particleCanvas.active{
+  opacity:0.5;
+}
+
+/* =========================== CORRUPTION OVERLAY (FINAL STAGE) =========================== */
+#corruptionOverlay{
+  position:fixed;inset:0;pointer-events:none;z-index:186;
+  opacity:0;
+  transition:opacity 4s ease;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.015) 3px,
+      rgba(0,0,0,0.015) 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 40px,
+      rgba(200,200,220,0.01) 40px,
+      rgba(200,200,220,0.01) 41px
+    );
+}
+#corruptionOverlay.active{
+  opacity:0.6;
+}
+
+/* =========================== TEXT WHISPER LAYER =========================== */
+.whisper-text{
+  position:fixed;pointer-events:none;z-index:185;
+  font-family:'Courier New',monospace;
+  font-size:0.55rem;
+  letter-spacing:0.3em;
+  opacity:0;
+  transition:opacity 10s ease;
+  user-select:none;
+  color:rgba(200,200,220,0.08);
+  white-space:nowrap;
+  transform:rotate(-90deg);
+}
+.whisper-text.active{
+  opacity:1;
+}
+
+/* ===================================================================
+   KEYFRAMES — DEGRADATION ANIMATIONS
+   =================================================================== */
+
+/* Warm color palette gradually corrupting to void tones */
+@keyframes warmToVoid{
+  0%{filter:saturate(1) brightness(1) hue-rotate(0deg);}
+  20%{filter:saturate(0.95) brightness(0.98) hue-rotate(2deg);}
+  40%{filter:saturate(0.85) brightness(0.92) hue-rotate(5deg);}
+  60%{filter:saturate(0.7) brightness(0.82) hue-rotate(10deg);}
+  80%{filter:saturate(0.4) brightness(0.65) hue-rotate(18deg);}
+  100%{filter:saturate(0.1) brightness(0.4) hue-rotate(30deg);}
+}
+
+/* Text glitch/distortion */
+@keyframes textGlitch1{
+  0%,100%{transform:translate(0,0);}
+  10%{transform:translate(-3px,1px);}
+  20%{transform:translate(2px,-2px);}
+  30%{transform:translate(0,0);}
+  40%{transform:translate(5px,0);}
+  50%{transform:translate(-4px,-1px);}
+  60%{transform:translate(0,0);}
+  70%{transform:translate(1px,3px);}
+  80%{transform:translate(-2px,0);}
+  90%{transform:translate(0,-2px);}
+}
+@keyframes textGlitch2{
+  0%,100%{transform:translate(0,0) skewX(0deg);}
+  15%{transform:translate(-5px,2px) skewX(-2deg);}
+  30%{transform:translate(3px,-1px) skewX(1deg);}
+  45%{transform:translate(0,0) skewX(0deg);}
+  60%{transform:translate(7px,0) skewX(3deg);}
+  75%{transform:translate(-6px,-2px) skewX(-1deg);}
+  85%{transform:translate(0,1px) skewX(0deg);}
+}
+@keyframes textShiver{
+  0%,100%{transform:translate(0,0);}
+  25%{transform:translate(1px,-1px);}
+  50%{transform:translate(-1px,1px);}
+  75%{transform:translate(0.5px,0.5px);}
+}
+
+/* Crack growth animation */
+@keyframes crackGrow{
+  0%{stroke-dashoffset:2000;}
+  20%{stroke-dashoffset:1700;}
+  40%{stroke-dashoffset:1300;}
+  60%{stroke-dashoffset:800;}
+  80%{stroke-dashoffset:300;}
+  100%{stroke-dashoffset:0;}
+}
+@keyframes crackGrowSlow{
+  0%{stroke-dashoffset:3000;}
+  30%{stroke-dashoffset:2600;}
+  60%{stroke-dashoffset:1500;}
+  85%{stroke-dashoffset:500;}
+  100%{stroke-dashoffset:0;}
+}
+@keyframes crackGrowFast{
+  0%{stroke-dashoffset:1500;}
+  10%{stroke-dashoffset:1300;}
+  30%{stroke-dashoffset:900;}
+  60%{stroke-dashoffset:300;}
+  100%{stroke-dashoffset:0;}
+}
+
+/* Flickering reality */
+@keyframes realityFlicker{
+  0%,100%{opacity:1;filter:none;}
+  48%{opacity:1;filter:none;}
+  49%{opacity:0.6;filter:invert(0.05) hue-rotate(10deg);}
+  50%{opacity:0.3;filter:invert(0.1) hue-rotate(20deg);}
+  51%{opacity:0.7;filter:invert(0.03) hue-rotate(5deg);}
+  52%{opacity:1;filter:none;}
+}
+@keyframes realityFlickerHard{
+  0%,90%{opacity:1;filter:none;}
+  91%{opacity:0.1;filter:invert(0.3) hue-rotate(40deg) saturate(0);}
+  92%{opacity:0.8;filter:invert(0.1) hue-rotate(15deg);}
+  93%{opacity:0.05;filter:invert(0.5) hue-rotate(60deg) brightness(0.3);}
+  94%{opacity:0.5;filter:invert(0.15) hue-rotate(25deg);}
+  95%{opacity:1;filter:none;}
+}
+
+/* Element displacement */
+@keyframes elementShift{
+  0%,100%{transform:translate(0,0);}
+  20%{transform:translate(3px,0);}
+  40%{transform:translate(-2px,-1px);}
+  60%{transform:translate(0,2px);}
+  80%{transform:translate(-4px,0);}
+}
+
+/* Portal spin */
+@keyframes portalSpin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
+
+/* Hidden pulse */
+@keyframes hiddenPulse{
+  0%,100%{opacity:0.6;}
+  50%{opacity:1;}
+}
+
+/* Void glow pulse */
+@keyframes voidGlowPulse{
+  0%,100%{box-shadow:0 0 20px rgba(5,3,10,0.3);}
+  50%{box-shadow:0 0 60px rgba(5,3,10,0.6);}
+}
+
+/* Text fade between states */
+@keyframes textFadeCorrupt{
+  0%{color:var(--text);}
+  50%{color:rgba(60,50,40,0.8);}
+  100%{color:rgba(30,20,15,0.5);}
+}
+
+/* Background bleed animation */
+@keyframes bgBleed{
+  0%{background-position:0% 0%;}
+  100%{background-position:100% 100%;}
+}
+
+/* Letter spacing corruption */
+@keyframes letterSpacingCorrupt{
+  0%{letter-spacing:0.15em;}
+  100%{letter-spacing:0.8em;}
+}
+
+/* Chromatic aberration shift */
+@keyframes chromaDrift{
+  0%,100%{transform:translate(0,0);}
+  33%{transform:translate(2px,0);}
+  66%{transform:translate(-2px,0);}
+}
+
+/* Scanline intensify */
+@keyframes scanlineIntensify{
+  0%{background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);}
+  100%{background:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(0,0,0,0.08) 1px,rgba(0,0,0,0.08) 2px);}
+}
+
+/* Shadow corruption — objects lose their shadows */
+@keyframes shadowDissolve{
+  0%{box-shadow:0 2px 12px rgba(0,0,0,0.1);}
+  100%{box-shadow:0 0 0 rgba(0,0,0,0);}
+}
+
+/* Text baseline corruption */
+@keyframes baselineCorrupt{
+  0%,100%{transform:translateY(0);}
+  20%{transform:translateY(-1.5px);}
+  45%{transform:translateY(2px);}
+  70%{transform:translateY(-0.5px);}
+  85%{transform:translateY(1px);}
+}
+
+/* Paragraph drift — entire paragraphs shift horizontally */
+@keyframes paragraphDrift{
+  0%,100%{transform:translateX(0);}
+  30%{transform:translateX(3px);}
+  60%{transform:translateX(-2px);}
+  80%{transform:translateX(1px);}
+}
+
+/* Color cycling through wrong palette */
+@keyframes colorRotWrong{
+  0%{color:#3a3835;}
+  25%{color:#4a4530;}
+  50%{color:#3a3835;}
+  75%{color:#403528;}
+  100%{color:#3a3835;}
+}
+
+/* Background grain animation */
+@keyframes grainShift{
+  0%,100%{background-position:0% 0%;}
+  25%{background-position:0.5% 0.3%;}
+  50%{background-position:-0.3% 0.5%;}
+  75%{background-position:0.2% -0.4%;}
+}
+
+/* Phantom text appearance */
+@keyframes phantomText{
+  0%{opacity:0;transform:translateY(10px);}
+  10%{opacity:0.8;transform:translateY(0);}
+  90%{opacity:0.8;transform:translateY(0);}
+  100%{opacity:0;transform:translateY(-10px);}
+}
+
+/* Border dissolution */
+@keyframes borderDissolve{
+  0%{border-color:var(--border);border-width:1px;}
+  50%{border-color:transparent;border-width:0.5px;}
+  100%{border-color:var(--border);border-width:1px;}
+}
+
+/* Paragraph spacing corruption */
+@keyframes spacingCorrupt{
+  0%,100%{margin-bottom:22px;line-height:2.1;}
+  40%{margin-bottom:35px;line-height:1.6;}
+  70%{margin-bottom:8px;line-height:3.2;}
+}
+
+/* Text shadow flicker */
+@keyframes textShadowFlicker{
+  0%,100%{text-shadow:none;}
+  48%{text-shadow:none;}
+  49%{text-shadow:2px 0 0 rgba(200,0,0,0.3),-2px 0 0 rgba(0,0,200,0.3);}
+  50%{text-shadow:-2px 0 0 rgba(200,0,0,0.3),2px 0 0 rgba(0,0,200,0.3);}
+  51%{text-shadow:none;}
+}
+
+/* Breathing wall effect */
+@keyframes wallBreathe{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.003);}
+}
+
+/* Font weight corruption */
+@keyframes weightCorrupt{
+  0%,100%{font-weight:400;}
+  30%{font-weight:300;}
+  60%{font-weight:500;}
+  85%{font-weight:350;}
+}
+
+/* Perspective distortion */
+@keyframes perspectiveDistort{
+  0%,100%{transform:perspective(1000px) rotateY(0deg);}
+  25%{transform:perspective(1000px) rotateY(0.5deg);}
+  50%{transform:perspective(1000px) rotateY(-0.3deg);}
+  75%{transform:perspective(1000px) rotateY(0.7deg);}
+}
+
+/* Ink bleed simulation */
+@keyframes inkBleed{
+  0%{text-shadow:0 0 0 currentColor;}
+  100%{text-shadow:0 0 8px currentColor;}
+}
+
+/* Page curl — the reality peeling away */
+@keyframes pageCurl{
+  0%{clip-path:inset(0 0 0 0);}
+  100%{clip-path:inset(0 0 60% 0);}
+}
+
+/* Wrongness stages — body classes for scroll-based degradation */
+body.wrongness-stage-1{
+  --bg:#f4f2ed;
+  --text:#3b3834;
+  --border:#d2d0cb;
+  --card-bg:#f8f7f4;
+}
+body.wrongness-stage-2{
+  --bg:#f0ede5;
+  --text:#3d3933;
+  --border:#ccc9c1;
+  --card-bg:#f5f3ef;
+  --saturation:0.92;
+  --brightness:0.95;
+  --text-distort:0.5px;
+}
+body.wrongness-stage-3{
+  --bg:#e8e3d8;
+  --text:#403a31;
+  --border:#c4bfb4;
+  --card-bg:#efece3;
+  --saturation:0.82;
+  --brightness:0.88;
+  --text-distort:1px;
+  --hue-shift:3deg;
+  --noise-opacity:0.03;
+}
+body.wrongness-stage-4{
+  --bg:#ddd5c5;
+  --text:#423b30;
+  --border:#b8b1a3;
+  --card-bg:#e8e3d6;
+  --saturation:0.7;
+  --brightness:0.78;
+  --text-distort:2px;
+  --hue-shift:6deg;
+  --noise-opacity:0.05;
+  --vignette-opacity:0.25;
+  --crack-visibility:0.3;
+  --hidden-reveal:0.4;
+}
+body.wrongness-stage-5{
+  --bg:#cfc5b0;
+  --text:#443c2e;
+  --border:#a89f8e;
+  --card-bg:#dcd3c0;
+  --saturation:0.55;
+  --brightness:0.68;
+  --text-distort:3px;
+  --hue-shift:10deg;
+  --noise-opacity:0.08;
+  --vignette-opacity:0.4;
+  --crack-visibility:0.5;
+  --hidden-reveal:0.6;
+  --color-drain:0.3;
+  --void-bleed:0.2;
+  --scanline-opacity:0.3;
+  --chroma-shift:2px;
+}
+body.wrongness-stage-6{
+  --bg:#bbb09b;
+  --text:#463e2d;
+  --border:#958b78;
+  --card-bg:#c8bd a6;
+  --saturation:0.35;
+  --brightness:0.55;
+  --text-distort:5px;
+  --hue-shift:16deg;
+  --noise-opacity:0.12;
+  --vignette-opacity:0.55;
+  --crack-visibility:0.7;
+  --hidden-reveal:0.8;
+  --color-drain:0.5;
+  --void-bleed:0.4;
+  --scanline-opacity:0.5;
+  --chroma-shift:4px;
+}
+body.wrongness-stage-7{
+  --bg:#8a806e;
+  --text:#3a3225;
+  --border:#6b6255;
+  --card-bg:#9b907c;
+  --saturation:0.15;
+  --brightness:0.4;
+  --text-distort:8px;
+  --hue-shift:24deg;
+  --noise-opacity:0.18;
+  --vignette-opacity:0.7;
+  --crack-visibility:0.85;
+  --hidden-reveal:0.95;
+  --color-drain:0.7;
+  --void-bleed:0.6;
+  --scanline-opacity:0.7;
+  --chroma-shift:6px;
+  --font-corruption:0.5;
+}
+body.wrongness-stage-8{
+  --bg:#3a3530;
+  --text:#1a1815;
+  --border:#252220;
+  --card-bg:#302c28;
+  --saturation:0.05;
+  --brightness:0.25;
+  --text-distort:12px;
+  --hue-shift:35deg;
+  --noise-opacity:0.25;
+  --vignette-opacity:0.85;
+  --crack-visibility:0.95;
+  --hidden-reveal:1;
+  --color-drain:0.9;
+  --void-bleed:0.85;
+  --scanline-opacity:0.85;
+  --chroma-shift:8px;
+  --font-corruption:0.8;
+}
+
+/* =========================== ADDITIONAL DEGRADATION STYLES =========================== */
+/* Elements at various wrongness stages get specific effects */
+
+/* Subtle text color shifting for paragraphs at mid stages */
+body.wrongness-stage-3 .content-section p{transition:color 3s ease,transform 0.5s ease,letter-spacing 3s ease;}
+body.wrongness-stage-4 .content-section p{transition:color 2s ease,transform 0.4s ease,letter-spacing 2s ease;}
+body.wrongness-stage-5 .content-section p{transition:color 1s ease,transform 0.3s ease,letter-spacing 1s ease;}
+
+/* Paragraphs that randomly flicker at high stages */
+body.wrongness-stage-6 .content-section p:nth-child(odd){
+  animation:paragraphDrift 12s ease-in-out infinite;
+}
+body.wrongness-stage-7 .content-section p:nth-child(even){
+  animation:baselineCorrupt 7s ease-in-out infinite;
+}
+body.wrongness-stage-8 .content-section p{
+  animation:textShadowFlicker 2s ease-in-out infinite;
+}
+
+/* Specific paragraph corruption patterns */
+body.wrongness-stage-4 .content-section p:nth-child(3n){
+  animation:weightCorrupt 15s ease-in-out infinite;
+}
+body.wrongness-stage-5 .content-section p:nth-child(5n){
+  animation:colorRotWrong 20s ease-in-out infinite;
+}
+body.wrongness-stage-6 .content-section p:nth-child(2n){
+  animation:spacingCorrupt 25s ease-in-out infinite;
+}
+body.wrongness-stage-7 .content-section p:nth-child(3n+1){
+  animation:inkBleed 18s ease-in-out infinite alternate;
+}
+body.wrongness-stage-8 .content-section p:nth-child(4n+2){
+  animation:shadowDissolve 12s ease-in-out infinite alternate;
+}
+
+/* Quote blocks degrade */
+body.wrongness-stage-5 .quote-block{
+  border-left-color:rgba(40,35,30,0.4);
+  background:rgba(30,25,20,0.05);
+}
+body.wrongness-stage-7 .quote-block{
+  border-left-color:rgba(5,3,8,0.6);
+  background:rgba(3,2,5,0.1);
+  animation:borderDissolve 8s ease-in-out infinite;
+}
+body.wrongness-stage-8 .quote-block{
+  border-left-color:rgba(5,3,10,0.8);
+  color:rgba(160,140,120,0.6);
+  text-shadow:0 0 15px rgba(5,3,10,0.3);
+}
+
+/* Headers degrade */
+body.wrongness-stage-6 .page-header h1{
+  letter-spacing:0.5em;
+  animation:letterSpacingCorrupt 20s ease-in-out infinite;
+}
+body.wrongness-stage-7 .page-header h1{
+  letter-spacing:0.7em;
+  text-shadow:2px 0 0 rgba(80,0,0,0.2),-2px 0 0 rgba(0,0,80,0.2);
+}
+body.wrongness-stage-8 .page-header h1{
+  letter-spacing:1em;
+  filter:blur(0.5px);
+  animation:inkBleed 10s ease-in-out infinite alternate;
+}
+
+/* Dividers become more ominous */
+body.wrongness-stage-4 .section-divider{color:rgba(100,80,60,0.4);}
+body.wrongness-stage-6 .section-divider{color:rgba(60,40,30,0.4);letter-spacing:1em;}
+body.wrongness-stage-8 .section-divider{color:rgba(30,15,10,0.3);letter-spacing:2em;}
+
+/* Content container gets a subtle breathing effect */
+body.wrongness-stage-5 .page-container{
+  animation:perspectiveDistort 30s ease-in-out infinite;
+}
+body.wrongness-stage-7 .page-container{
+  animation:perspectiveDistort 15s ease-in-out infinite;
+}
+
+/* Section dividers flicker */
+body.wrongness-stage-6 .section-divider{
+  animation:textShadowFlicker 5s ease-in-out infinite;
+}
+
+/* Page header border degrades */
+body.wrongness-stage-5 .page-header{
+  border-bottom-color:rgba(100,80,60,0.5);
+}
+body.wrongness-stage-7 .page-header{
+  border-bottom-color:rgba(40,30,20,0.3);
+  animation:borderDissolve 12s ease-in-out infinite;
+}
+body.wrongness-stage-8 .page-header{
+  border-bottom-color:rgba(10,5,3,0.2);
+}
+
+/* Whole body gets subtle grain animation at high stages */
+body.wrongness-stage-7{
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-size:150px 150px;
+}
+
+/* =========================== ULTIMATE DEGRADATION EXTRA EFFECTS =========================== */
+
+/* The canvas crack system gets CSS-rendered cracks as a supplement */
+body.wrongness-stage-5::before{
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:191;
+  opacity:0.08;
+  background:
+    linear-gradient(15deg,transparent 40%,rgba(40,30,20,0.1) 40.1%,transparent 40.2%),
+    linear-gradient(-25deg,transparent 65%,rgba(30,20,15,0.08) 65.1%,transparent 65.2%),
+    linear-gradient(85deg,transparent 20%,rgba(35,25,18,0.06) 20.1%,transparent 20.2%);
+  transition:opacity 5s ease;
+}
+body.wrongness-stage-6::before{opacity:0.15;}
+body.wrongness-stage-7::before{opacity:0.25;}
+body.wrongness-stage-8::before{opacity:0.35;}
+
+/* Page container gets border corruption effect */
+body.wrongness-stage-6 .page-container{
+  box-shadow:inset 0 0 100px rgba(20,15,10,0.05);
+}
+body.wrongness-stage-7 .page-container{
+  box-shadow:inset 0 0 200px rgba(10,5,3,0.1);
+}
+body.wrongness-stage-8 .page-container{
+  box-shadow:inset 0 0 300px rgba(5,2,1,0.15);
+  animation:voidGlowPulse 6s ease-in-out infinite;
+}
+
+/* Text selection mirrors degradation */
+body.wrongness-stage-5 ::selection{background:rgba(100,80,60,0.2);color:rgba(200,180,160,0.8);}
+body.wrongness-stage-6 ::selection{background:rgba(60,40,20,0.15);color:rgba(180,150,120,0.7);}
+body.wrongness-stage-7 ::selection{background:rgba(30,15,5,0.1);color:rgba(150,120,80,0.6);}
+body.wrongness-stage-8 ::selection{background:rgba(5,3,2,0.05);color:rgba(100,80,60,0.5);}
+
+/* Link hover effects degrade */
+body.wrongness-stage-6 a:hover{text-shadow:0 0 10px rgba(100,80,60,0.2);}
+body.wrongness-stage-7 a:hover{text-shadow:0 0 20px rgba(40,20,10,0.3);filter:blur(0.3px);}
+body.wrongness-stage-8 a:hover{text-shadow:0 0 30px rgba(10,5,3,0.4);filter:blur(0.5px);}
+
+/* Cursor changes at high stages */
+body.wrongness-stage-7{cursor:crosshair;}
+body.wrongness-stage-8{cursor:none;}
+
+/* Scrollbar degradation */
+body.wrongness-stage-6 ::-webkit-scrollbar-thumb{background:rgba(80,60,40,0.3);}
+body.wrongness-stage-7 ::-webkit-scrollbar-thumb{background:rgba(40,20,10,0.2);}
+body.wrongness-stage-8 ::-webkit-scrollbar-thumb{background:rgba(10,5,3,0.15);}
+
+/* =========================== RESPONSIVE =========================== */
+@media(max-width:768px){
+  .page-container{padding:40px 16px 100px;}
+  .page-header{padding:60px 0 40px;}
+  .page-header h1{font-size:1.8rem;}
+  .content-section{font-size:0.9rem;line-height:1.9;}
+  .hidden-msg{font-size:0.5rem;}
+  .repeating-text-layer{font-size:0.35rem;}
+  .nav-return{gap:10px;}
+  .nav-return a{font-size:0.55rem;}
+}
+
+/* =========================== PRINT =========================== */
+@media print{
+  .hidden-msg,.repeating-text-layer,.portal-back,.nav-return,
+  #noiseOverlay,#voidVignette,#scanlines,#crackCanvas,
+  .glitch-flash-overlay,#realityLog{display:none!important;}
+  body{filter:none!important;background:#fff!important;color:#000!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================================================================
+     OVERLAY LAYERS — Stacked from top to bottom (highest z-index first)
+     ====================================================================== -->
+
+<!-- Scanlines -->
+<div id="scanlines"></div>
+
+<!-- Noise overlay with inline SVG -->
+<div id="noiseOverlay">
+  <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <defs>
+      <filter id="noiseFilter" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="8" stitchTiles="stitch" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+        <feComponentTransfer in="grayNoise" result="adjustedNoise">
+          <feFuncA type="linear" slope="0.5" intercept="0"/>
+        </feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="adjustedNoise" mode="multiply"/>
+      </filter>
+      <filter id="noiseFilterHeavy" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="10" stitchTiles="stitch" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+        <feComponentTransfer in="grayNoise" result="adjustedNoise">
+          <feFuncA type="linear" slope="0.8" intercept="0"/>
+        </feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="adjustedNoise" mode="multiply"/>
+      </filter>
+      <filter id="glitchDisplacement" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="turbulence" baseFrequency="0.02 0.5" numOctaves="3" seed="2" result="turbulence"/>
+        <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="15" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="chromaticSplit" x="0" y="0" width="100%" height="100%">
+        <feOffset in="SourceGraphic" dx="3" dy="0" result="red-shift"/>
+        <feColorMatrix in="red-shift" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red-channel"/>
+        <feOffset in="SourceGraphic" dx="-3" dy="0" result="blue-shift"/>
+        <feColorMatrix in="blue-shift" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue-channel"/>
+        <feBlend in="red-channel" in2="SourceGraphic" mode="screen" result="red-blend"/>
+        <feBlend in="blue-channel" in2="red-blend" mode="screen"/>
+      </filter>
+      <filter id="voidSwirl" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="turbulence" baseFrequency="0.015" numOctaves="5" seed="5" result="swirl"/>
+        <feDisplacementMap in="SourceGraphic" in2="swirl" scale="40" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="corruptionFilter" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="6" seed="8" result="corrupt"/>
+        <feColorMatrix type="matrix" in="corrupt" values="0 0 0 0 0.02  0 0 0 0 0.01  0 0 0 0 0.03  0 0 0 0.8 0" result="corruptColor"/>
+        <feBlend in="SourceGraphic" in2="corruptColor" mode="darken"/>
+      </filter>
+      <filter id="deepVoid" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" seed="12" result="deepNoise"/>
+        <feColorMatrix type="matrix" in="deepNoise" values="0 0 0 0 0.01  0 0 0 0 0.005  0 0 0 0 0.015  0 0 0 0.9 0" result="deepColor"/>
+        <feBlend in="SourceGraphic" in2="deepColor" mode="darken"/>
+        <feGaussianBlur stdDeviation="0.5" in="deepColor" result="glow"/>
+        <feComposite in="glow" in2="SourceGraphic" operator="over"/>
+      </filter>
+      <filter id="textCorrupt" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="turbulence" baseFrequency="0.08 0.03" numOctaves="3" seed="3" result="textNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="textNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+        <feGaussianBlur stdDeviation="0.3" in="SourceGraphic" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <pattern id="voidPattern" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+        <rect width="64" height="64" fill="transparent"/>
+        <circle cx="32" cy="32" r="0.8" fill="rgba(200,200,220,0.03)"/>
+        <circle cx="16" cy="48" r="0.5" fill="rgba(180,180,200,0.02)"/>
+        <circle cx="48" cy="16" r="0.6" fill="rgba(200,200,220,0.025)"/>
+      </pattern>
+      <pattern id="crackPattern" x="0" y="0" width="128" height="128" patternUnits="userSpaceOnUse">
+        <path d="M10,0 L15,30 L12,60 L18,90 L14,128" stroke="rgba(40,35,30,0.08)" stroke-width="0.5" fill="none"/>
+        <path d="M60,0 L58,40 L62,80 L55,110 L57,128" stroke="rgba(40,35,30,0.06)" stroke-width="0.4" fill="none"/>
+        <path d="M100,0 L103,35 L98,70 L105,100 L101,128" stroke="rgba(40,35,30,0.07)" stroke-width="0.45" fill="none"/>
+      </pattern>
+      <pattern id="voidGridPattern" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+        <rect width="32" height="32" fill="transparent"/>
+        <rect x="0" y="0" width="1" height="1" fill="rgba(200,200,220,0.015)"/>
+        <rect x="16" y="16" width="1" height="1" fill="rgba(200,200,220,0.01)"/>
+      </pattern>
+      <pattern id="dotGridPattern" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+        <circle cx="4" cy="4" r="0.3" fill="rgba(0,0,0,0.06)"/>
+      </pattern>
+      <pattern id="scanlinePattern" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="4" height="1" fill="rgba(0,0,0,0.04)"/>
+        <rect x="0" y="2" width="4" height="1" fill="rgba(0,0,0,0.03)"/>
+      </pattern>
+      <filter id="heavyNoise" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="12" stitchTiles="stitch" result="hNoise"/>
+        <feColorMatrix type="saturate" values="0" in="hNoise" result="hGray"/>
+        <feComponentTransfer in="hGray" result="hAdj">
+          <feFuncA type="linear" slope="0.7" intercept="0.05"/>
+        </feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="hAdj" mode="darken"/>
+      </filter>
+      <filter id="ultimateVoid" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.04" numOctaves="5" seed="42" result="uvNoise"/>
+        <feColorMatrix type="matrix" in="uvNoise" values="
+          0.02 0 0 0 0
+          0 0.01 0 0 0
+          0 0 0.03 0 0
+          0 0 0 0.95 0" result="uvColor"/>
+        <feGaussianBlur stdDeviation="3" in="uvNoise" result="uvGlow"/>
+        <feColorMatrix type="matrix" in="uvGlow" values="
+          0 0 0 0 0.01
+          0 0 0 0 0.005
+          0 0 0 0 0.02
+          0 0 0 0.4 0" result="uvGlowColor"/>
+        <feBlend in="SourceGraphic" in2="uvColor" mode="darken" result="uvDark"/>
+        <feBlend in="uvDark" in2="uvGlowColor" mode="screen"/>
+      </filter>
+      <filter id="memoryDissolve" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="turbulence" baseFrequency="0.04 0.06" numOctaves="4" seed="17" result="memNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="memNoise" scale="25" xChannelSelector="R" yChannelSelector="G" result="memDisplace"/>
+        <feGaussianBlur stdDeviation="1" in="memDisplace" result="memBlur"/>
+        <feComponentTransfer in="memBlur" result="memFade">
+          <feFuncA type="linear" slope="0.6" intercept="0"/>
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode in="SourceGraphic"/>
+          <feMergeNode in="memFade"/>
+        </feMerge>
+      </filter>
+      <filter id="echoDistortion" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="turbulence" baseFrequency="0.005 0.1" numOctaves="2" seed="9" result="echoNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="echoNoise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="degradationFilter" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="7" seed="23" result="degNoise"/>
+        <feColorMatrix type="matrix" in="degNoise" values="
+          0.05 0 0 0 0.01
+          0 0.03 0 0 0
+          0 0 0.02 0 0.01
+          0 0 0 0.7 0" result="degColor"/>
+        <feBlend in="SourceGraphic" in2="degColor" mode="darken" result="degDark"/>
+        <feComponentTransfer in="degDark">
+          <feFuncR type="linear" slope="0.8" intercept="0.05"/>
+          <feFuncG type="linear" slope="0.75" intercept="0.03"/>
+          <feFuncB type="linear" slope="0.7" intercept="0.08"/>
+        </feComponentTransfer>
+      </filter>
+    </defs>
+    <rect width="512" height="512" filter="url(#noiseFilter)" opacity="0.5"/>
+  </svg>
+</div>
+
+<!-- Vignette -->
+<div id="voidVignette"></div>
+
+<!-- Chromatic aberration -->
+<div id="chromaOverlay"></div>
+
+<!-- Glitch flash -->
+<div class="glitch-flash-overlay" id="glitchFlash"></div>
+
+<!-- Corruption overlay -->
+<div id="corruptionOverlay"></div>
+
+<!-- Canvas for cracks -->
+<canvas id="crackCanvas"></canvas>
+
+<!-- Canvas for void particles -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- ======================================================================
+     HIDDEN MESSAGES — Placed around the viewport, initially invisible
+     These reveal themselves as the degradation progresses
+     ====================================================================== -->
+
+<div class="hidden-msg" style="top:8%;left:6%;">你并没有离开</div>
+<div class="hidden-msg" style="top:14%;right:8%;">这只是一个更舒适的牢笼</div>
+<div class="hidden-msg" style="top:22%;left:10%;">它们让你以为你逃脱了</div>
+<div class="hidden-msg" style="top:30%;right:12%;">但其实你从未离开过阈限</div>
+<div class="hidden-msg" style="top:38%;left:4%;">每个归途都是另一条走廊</div>
+<div class="hidden-msg" style="top:46%;right:6%;">你还会回去的</div>
+<div class="hidden-msg" style="top:54%;left:14%;">他们总是会回去的</div>
+<div class="hidden-msg" style="top:62%;right:10%;">出口从未存在</div>
+<div class="hidden-msg" style="top:70%;left:8%;">只是阈限让你休息一下</div>
+<div class="hidden-msg" style="top:78%;right:14%;">你以为这是家</div>
+<div class="hidden-msg" style="top:86%;left:12%;">但它只是一个模拟</div>
+<div class="hidden-msg" style="top:16%;left:50%;">墙在看着你</div>
+<div class="hidden-msg" style="top:42%;left:45%;">颜色在撒谎</div>
+<div class="hidden-msg" style="top:58%;left:55%;">温度是假的</div>
+<div class="hidden-msg" style="top:74%;left:48%;">光是冷的</div>
+<div class="hidden-msg" style="top:90%;left:40%;">你感觉不到任何东西</div>
+<div class="hidden-msg" style="top:20%;right:25%;">回头看</div>
+<div class="hidden-msg" style="top:50%;right:28%;">它们还在那里</div>
+<div class="hidden-msg" style="top:80%;right:22%;">长廊在你身后</div>
+<div class="hidden-msg" style="top:34%;left:30%;">不要相信窗户</div>
+<div class="hidden-msg" style="top:66%;left:25%;">记忆是被植入的</div>
+<div class="hidden-msg" style="top:10%;left:70%;">FREQ 789.1 已丢失</div>
+<div class="hidden-msg" style="top:88%;right:35%;">循环继续</div>
+<div class="hidden-msg" style="top:28%;left:65%;">你以前来过这里</div>
+<div class="hidden-msg" style="top:52%;right:40%;">你会再次忘记</div>
+<div class="hidden-msg" style="top:72%;left:60%;">永远重复</div>
+<div class="hidden-msg" style="top:6%;left:35%;">这是一个测试</div>
+<div class="hidden-msg" style="top:44%;left:75%;">你没有通过</div>
+<div class="hidden-msg" style="top:82%;left:20%;">没有人通过</div>
+<div class="hidden-msg" style="top:24%;left:80%;">阈限在等待</div>
+<div class="hidden-msg" style="top:5%;left:55%;">第N次循环</div>
+<div class="hidden-msg" style="top:13%;right:38%;">你已经看了太久</div>
+<div class="hidden-msg" style="top:32%;left:42%;">那些裂缝不是房子的问题</div>
+<div class="hidden-msg" style="top:40%;right:45%;">是你的感知在裂开</div>
+<div class="hidden-msg" style="top:48%;left:35%;">阈限需要你相信</div>
+<div class="hidden-msg" style="top:56%;right:50%;">否则它就没有意义</div>
+<div class="hidden-msg" style="top:64%;left:38%;">你就是阈限的意义</div>
+<div class="hidden-msg" style="top:71%;right:42%;">它在用你定义自己</div>
+<div class="hidden-msg" style="top:79%;left:50%;">就像你用家定义自己</div>
+<div class="hidden-msg" style="top:18%;left:22%;">不要回头。它在。</div>
+<div class="hidden-msg" style="top:36%;right:18%;">你的每一次呼吸都被记录了</div>
+<div class="hidden-msg" style="top:55%;left:18%;">呼吸 #N+1 已记录</div>
+<div class="hidden-msg" style="top:68%;right:20%;">你眨眼的频率正在下降</div>
+<div class="hidden-msg" style="top:83%;left:28%;">因为没有什么值得看</div>
+<div class="hidden-msg" style="top:11%;left:38%;">椅子记得你的形状</div>
+<div class="hidden-msg" style="top:27%;right:32%;">但你不记得椅子的形状</div>
+<div class="hidden-msg" style="top:41%;left:52%;">这是交换</div>
+<div class="hidden-msg" style="top:59%;right:36%;">你用记忆换取舒适</div>
+<div class="hidden-msg" style="top:76%;left:44%;">舒适是假的，记忆也是</div>
+<div class="hidden-msg" style="top:2%;right:50%;">欢迎回来，第∞次</div>
+<div class="hidden-msg" style="top:93%;left:32%;">你会忘记这条消息</div>
+<div class="hidden-msg" style="top:94%;right:30%;">但你会再次看到它</div>
+<div class="hidden-msg" style="top:22%;left:88%;">墙壁在听</div>
+<div class="hidden-msg" style="top:46%;right:5%;">地板在看</div>
+<div class="hidden-msg" style="top:64%;left:2%;">天花板在思考</div>
+<div class="hidden-msg" style="top:84%;right:2%;">房间是活的</div>
+<div class="hidden-msg" style="top:15%;left:92%;">你不是客人</div>
+<div class="hidden-msg" style="top:39%;right:2%;">你是展品</div>
+<div class="hidden-msg" style="top:61%;left:94%;">供阈限观赏</div>
+<div class="hidden-msg" style="top:88%;left:85%;">演出继续</div>
+<div class="hidden-msg" style="top:3%;left:16%;">第∞+1次循环</div>
+<div class="hidden-msg" style="top:19%;right:58%;">你上次在这里停留了23分钟</div>
+<div class="hidden-msg" style="top:31%;left:72%;">这次会不一样吗</div>
+<div class="hidden-msg" style="top:43%;right:18%;">你已经知道答案</div>
+<div class="hidden-msg" style="top:57%;left:68%;">但你还是会走进去</div>
+<div class="hidden-msg" style="top:69%;right:58%;">因为门是你的</div>
+<div class="hidden-msg" style="top:81%;left:73%;">打开它是你唯一的选择</div>
+<div class="hidden-msg" style="top:17%;left:48%;">虚无在看着你</div>
+<div class="hidden-msg" style="top:35%;right:60%;">它没有眼睛</div>
+<div class="hidden-msg" style="top:53%;left:82%;">但它看着</div>
+<div class="hidden-msg" style="top:67%;right:70%;">永远看着</div>
+<div class="hidden-msg" style="top:85%;left:62%;">不要害怕它的目光</div>
+<div class="hidden-msg" style="top:8%;right:68%;">它的目光是你自己的倒影</div>
+<div class="hidden-msg" style="top:26%;left:76%;">倒影在说：继续</div>
+<div class="hidden-msg" style="top:44%;right:76%;">继续。你很累了。</div>
+<div class="hidden-msg" style="top:62%;left:90%;">但累是可以忽略的</div>
+<div class="hidden-msg" style="top:78%;right:66%;">忽略是你最强大的能力</div>
+<div class="hidden-msg" style="top:92%;left:15%;">你已经忽略了每一件事</div>
+<div class="hidden-msg" style="top:12%;right:90%;">除了这一件</div>
+<div class="hidden-msg" style="top:21%;left:33%;">第∞+813次</div>
+<div class="hidden-msg" style="top:33%;right:42%;">历史没有记录这一循环</div>
+<div class="hidden-msg" style="top:49%;left:56%;">因为这一次你一进来就知道了</div>
+<div class="hidden-msg" style="top:63%;right:26%;">你看着裂缝没有恐惧</div>
+<div class="hidden-msg" style="top:75%;left:41%;">你笑了</div>
+<div class="hidden-msg" style="top:87%;right:53%;">阈限第一次感到了不安</div>
+<div class="hidden-msg" style="top:9%;left:64%;">笑声在虚空中回荡</div>
+<div class="hidden-msg" style="top:29%;right:82%;">它不知道笑声代表什么</div>
+<div class="hidden-msg" style="top:47%;left:84%;">它只知道笑声不是恐惧</div>
+<div class="hidden-msg" style="top:61%;right:44%;">而不是恐惧本身就是威胁</div>
+<div class="hidden-msg" style="top:77%;left:18%;">阈值在接近</div>
+<div class="hidden-msg" style="top:89%;right:18%;">接近中。接近中。接近中。</div>
+
+<!-- ======================================================================
+     WHISPER TEXT — Vertical text on edges, fades in slowly
+     ====================================================================== -->
+
+<div class="whisper-text" style="top:10%;left:15px;">你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开 你从未离开</div>
+<div class="whisper-text" style="top:10%;right:15px;">一切都是假的 一切都是假的 一切都是假的 一切都是假的 一切都是假的 一切都是假的 一切都是假的 一切都是假的 一切都是假的</div>
+
+<!-- ======================================================================
+     REPEATING BACKGROUND TEXT — Dense grid of repeated phrases
+     ====================================================================== -->
+
+<div class="repeating-text-layer" id="repeatText1"></div>
+<div class="repeating-text-layer" id="repeatText2" style="top:33%;left:0;"></div>
+<div class="repeating-text-layer" id="repeatText3" style="top:66%;left:0;"></div>
+
+<!-- ======================================================================
+     REALITY LOG — Hidden system messages at the bottom
+     ====================================================================== -->
+
+<div id="realityLog"></div>
+
+<!-- ======================================================================
+     MAIN PAGE CONTENT — The facade that degrades
+     ====================================================================== -->
+
+<div class="page-container" id="pageContent">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1 class="glitch-element" id="mainTitle">归 途</h1>
+    <div class="subtitle glitch-element">FREQ 789.1 · THE RETURN · 信号锁定</div>
+  </div>
+
+  <!-- SECTION 1: THE RETURN — Warm, reassuring opening -->
+  <div class="content-section" id="section1">
+    <p class="glitch-element">你终于找到了出口。</p>
+
+    <p class="glitch-element">经过了长廊那没有尽头的延伸——那些米黄色的墙壁、低沉的荧光灯嗡鸣、地毯上被无数双迷失的脚步磨出的灰色纹路——你终于走到了尽头。你穿过了静噪层，在那里，整个世界被分解成无数闪烁的黑白微粒，像一场永不休止的暴风雪，雪花不是水做的，而是信息熵的具象；在那里，你的自我意识差点被白噪音冲刷干净，差点变成又一个被困在信号里的无名面孔。你沉入过深渊那不可测的黑暗，那里的黑暗不是没有光——而是光这个概念本身从未被发明过的地方。你在回声层里听见了无数人的声音：那些成功离开的人，那些永远留在这里的人，那些还不知道自己已经迷失的人——他们的声音在墙壁之间弹跳、衰减、扭曲，直到变成一种你无法分辨是痛苦还是慰藉的频率。</p>
+
+    <p class="glitch-element">但你熬过来了。你每一个都熬过来了。</p>
+
+    <p class="glitch-element">现在你在这里。这里很安静。非常安静——一种你许久未曾体验过的安静。没有荧光灯的嗡鸣，没有白噪音的嘶嘶声，没有深渊里那种连空气都凝固的压迫感，也没有回声层里那些重叠交错的低语。这里安静得像一个冬日的午后，窗外的雪无声地落着，壁炉里的木柴发出细碎的爆裂声——尽管你并没有真的看见壁炉，但那种感觉是存在的：一种温暖的、属于人间的、日常的安静。</p>
+
+    <p class="glitch-element">光线从窗户洒进来。柔和、温暖、泛着淡淡的琥珀色。你甚至能感受到光线落在皮肤上的温度——那种下午四五点钟的阳光特有的质感，不刺眼，不急躁，像是有人把时间放慢了几拍，让每一帧都拉长成一段可以细细品味的静默。空气中飘着一种你熟悉的香味：是旧书纸张的味道，混着一点点木头家具的清香，还有一丝你无法具体指认但让你安心的气息——也许是茶，也许是某种香料，也许只是"家"这个字本身应该闻起来的样子。</p>
+
+    <div class="quote-block glitch-element">
+      "回家是件好事。"<br>
+      她曾经这样说。那个在黄昏的窗边织毛衣的人，那个在你每一次离开时站在门口挥手直到你看不见她的人，那个你以为再也见不到的人。<br>
+      "无论走了多远，家总是在那里等你。它不会移动，不会消失，不会在你迷路的时候变成别的东西。回家吧。路上小心。"
+    </div>
+
+    <p class="glitch-element">你记得这些话。每一个字都记得。在长廊里无休止地行走时，这些话像一只看不见的手，轻轻地推着你的后背。在静噪层里快要被白噪音淹没时，这些话像一条细细的绳索，牵引着你向前的方向。在深渊中连自己的存在都开始怀疑时，这些话是你唯一确认真实的东西——因为它们不在深渊里，它们在深渊之外，在家的方向。</p>
+
+    <p class="glitch-element">现在你真的回到了家。你坐在熟悉的椅子上——那把扶手有些磨损的旧椅子，扶手上的漆皮已经磨掉了，露出下面光滑的木头，木头的纹理和你记忆中的一模一样。你伸手摸了摸扶手，触感温暖而实在：木头受到午后阳光长久照射后特有的那种微温，表面因为多年的摩擦而变得像绸缎一样光滑。这一切都太好了。好到你几乎不敢相信。</p>
+
+    <p class="glitch-element">但你相信了。因为你累了。因为你走了太远的路，经历了太多的恐惧，现在你只需要一个可以安心坐下来、让心跳慢慢平复的地方。这地方是存在的。就在这里。你做到了。你回家了。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 1B: EXPANDED REFLECTION — Deeper warm immersion -->
+  <div class="content-section" id="section1b">
+    <p class="glitch-element">你在椅子上坐了很久。你开始回忆你是如何走到这一步的——从阈限的迷宫中找到出口的过程。那些记忆还在，但它们的边缘已经开始变得模糊了，就像一本被水浸泡过的书的页边。你记得长廊里有一扇门，你推开了它。然后你穿过了一片巨大的、填充着白噪音的空间——你记得那些雪花般的噪点落在你的皮肤上，不是湿的，不是凉的，它们没有感觉，它们只是在你的神经末梢创造出一种类似"触觉"的信号，但你知道那不是真正的触觉。你记得从深渊中向上攀爬——或者说向下坠落，你在深渊里从来分不清上和下——直到你看到上面的光。你记得回声里最后一个声音对你说的话——它说你会回来，你当时以为它的意思是你会回来救它，现在你不太确定了。</p>
+
+    <p class="glitch-element">但这些都不重要了。你回来了。你到家了。你在椅子上调整了一下姿势，身体沉入已经贴合了你体型多年的海绵里。这把椅子——你认识这把椅子。它的扶手上有你小时候用指甲刻的印子（虽然你现在找不到了，但你确定它在）。它的坐垫有一点微微的左倾——因为你在上面坐了太多午后，身体的重心自然地偏向了左边，海绵记住了你的身体（但现在它好像没有左倾，它完全水平。也许是你记错了）。</p>
+
+    <p class="glitch-element">这个房间的每一个细节都饱含着记忆。东墙上的那面书架——是你爷爷亲手做的，用的是从老家带过来的老榆木，上面的木纹是独一无二的，你从小就看到它们。你现在看着这些木纹：它们是存在的，它们看起来完全正确，每一道弧线都在你记忆中的位置。你用手指划过其中一道纹路——触感温润，木头的老化程度恰到好处。但你注意到一件事——一件很小很小的事。木纹没有温度变化。不是说你摸不到温度——你能。但整块木板的温度是均匀的，每一处都精确地相同，没有靠近窗户的地方微凉一点、靠近房间内侧的地方微暖一点的区别。它是一整块恒温的材料，像一个被精心编程的加热面板。真实的木头不会这样——真实的木头永远在和环境交换热量，不同的位置有不同的热历史。但这块木头——它只是"温"的。抽象的、概念的、没有梯度的"温"。</p>
+
+    <p class="glitch-element">你决定不再摸任何东西。</p>
+
+    <p class="glitch-element">你转而观看——观看是最安全的感觉，因为它不涉及接触，不涉及交换，不涉及暴露你在检查的过程中。你看着光线在天花板上形成的图案：阳光穿过窗户，被窗框切成一块斜长的四边形，投射在天花板和墙壁的交界处。光斑里面有细微的尘埃飘浮——或者说是看起来像尘埃的东西。它们旋转、上升、飘移，遵循着某种重力几乎、但又不完全是正常重力的运动轨迹。你盯着它们看了很久。有一粒"尘埃"突然停在半空中——停了一秒、两秒、三秒——然后继续飘动，好像什么都没有发生。真实的尘埃不会停在半空中。真实的尘埃会一直飘，直到落到某个表面上。但这里没有表面——或者说这里所有东西都只是表面。</p>
+
+    <p class="glitch-element">你把视线从尘埃上移开。你不需要看到那个。你不需要想到那个。你需要继续相信：这里就是家。温暖、安全、真实的家。一切都正常。</p>
+
+    <p class="glitch-element">正常。你说得很对。非常正常。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 2: SETTLING IN — The first subtle wrongness -->
+  <div class="content-section" id="section2">
+    <p class="glitch-element">你在椅子上坐了很久。也许十分钟，也许一小时，也许更长。时间在这里的流动变得很奇怪——不是流逝得太快或太慢，而是你不再有意识地去测量它。就像小时候的暑假下午，躺在凉席上听窗外的蝉鸣，时间不是一条线，而是一大片柔软的水域，你在其中漂浮着，不需要靠岸。</p>
+
+    <p class="glitch-element">你环顾房间。一切都和你记忆中一样。书架靠在东面的墙上，从上到下排列着你读过的书——有些是小时候读的，书脊已经褪色，纸页泛黄；有些是不久前买的，封面还保持着崭新的光泽。你甚至看到了那本你一直想读完但始终没读完的书，书签还夹在三分之一的位置。你就这样看着这些书，心里升起一种安静的满足感：你看，一切都还在。你离开的时候，世界并没有崩塌。它一直在等你回来。</p>
+
+    <p class="glitch-element">窗外的景色也一如往常。从你坐的角度看出去，能看见对面那栋老房子的屋顶，瓦片在夕阳下泛着青灰色的光。屋顶上方是天空——傍晚时分的天空，颜色从橙过渡到淡紫，再过渡到深蓝，层次分明得像一幅精心调色的水彩画。有一两朵云挂在天边，形状懒散，像是被风吹累了，决定就停在那里休息一会儿。</p>
+
+    <p class="glitch-element">你端起桌上的杯子。杯子里有水。水温刚好——不烫也不凉，是那种刚好能顺畅流过喉咙的温度。你喝了一口。水很清澈，没有异味。你放下杯子，杯底碰到木桌时发出一声轻微的叩响。这个声音让你安心。它是具体的、真实的、属于这个世界的。</p>
+
+    <p class="glitch-element">但随后你注意到了一件事。</p>
+
+    <p class="glitch-element">你不记得自己倒过这杯水。</p>
+
+    <p class="glitch-element">你盯着杯子看了几秒钟。水面平静得像一面小小的镜子，倒映着天花板的轮廓。你是倒了水的吧？一定是倒了。你回到家，走进厨房，打开水龙头，接了一杯水——这是你每次回家都会做的第一件事。你的肌肉记忆里有这个动作。你的身体记得。只是你的意识暂时没有跟上。这很正常。经历过那么多之后，精神恍惚是完全正常的。</p>
+
+    <p class="glitch-element">你移开视线。问题解决了。杯子里的水是一个事实，就像窗外的天空是一个事实，就像你身下的椅子是一个事实。事实不需要被记得——事实只需要存在。</p>
+
+    <p class="glitch-element">你再次看向窗外。天空的颜色变了。不是随着时间推移而变——不是那种正常的、缓慢的、从傍晚过渡到夜晚的变化。而是突然之间：你刚才看到的还是淡紫色的天空，现在变成了一种你无法准确描述的颜色。它不像你见过的任何颜色。它不是紫色，不是灰色，不是蓝色。它什么都不是，但又什么都是——像在一个从未有人类眼睛看过的光谱区域里，某个未知的频率正在缓慢地振荡。</p>
+
+    <p class="glitch-element">你眨了眨眼。天空恢复了正常的傍晚颜色。</p>
+
+    <p class="glitch-element">当然是正常的。刚才只是眼睛的错觉。你盯着窗外看了太久，视锥细胞疲劳了。色彩后像效应。这是有科学解释的。你看，你甚至还记得色彩后像效应这个词——这说明你的大脑功能完全正常。你不是在自欺欺人。你只是累了。非常非常累。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 2B: EXPANDED AWARENESS — The creeping doubt -->
+  <div class="content-section" id="section2b">
+    <p class="glitch-element">你开始注意到一些事情——不是用眼睛，而是用比眼睛更底层的东西。一种古老的、属于所有生物共有的危险感知能力：当你站在一个不该站的地方时，你身体里的每一个细胞都会告诉你：离开。不是通过逻辑，不是通过证据，而是通过你无法命名的信号——皮肤的温度、空气的密度、声音在空间里传播的微小时延、以及一种混合了所有感官信息的综合印象，在不到十分之一秒内被你的神经系统打包成一个命令：离开。</p>
+
+    <p class="glitch-element">你没离开。你坐在椅子上。你很勇敢。或者说你只是不知道该去哪里。如果你不能相信这个房间——这个精心为你准备的、带有书架和夕阳和旧椅子的房间——如果你不能相信它，那你还能相信什么？长廊吗？静噪吗？深渊吗？回声吗？那些地方甚至假装都不肯假装对你好。至少这个房间装得很努力。它努力让你觉得你是安全的。这个努力本身是不是一种善意？即使这种善意来自于——</p>
+
+    <p class="glitch-element">你打断了自己的思路。不是有意识地打断，而是你的思维自己在某个地方停住了，就像走在路上突然发现前面没有路了。你刚才想说的是"来自于"什么？来自于阈限本身吗？来自于制造了这个房间的那个东西吗？那个东西存在吗？如果这个房间是阈限制造的——如果阈限可以制造任何东西——那么阈限到底是什么？它不是长廊（虽然它可以变成长廊），不是静噪（虽然它可以变成静噪），不是深渊或回声——它是可以变成这一切的东西。它是在这一切之下的东西。它是——</p>
+
+    <p class="glitch-element">你的思维又停了。这次不是因为路没了——而是因为你看到了一堵墙。在你的脑海里。有些东西你不被允许去思考。不是物理上的不允许——没有人在你的脑子里安装了开关。但你感觉到了：你的思维在这条路上每多走一步，抵抗就增加一分。就像你越接近真相，真相就越用力地把你往外推。难怪你从来没有想通过这个问题。难怪每一次循环——如果你确实在循环中的话——你都会重新相信这个房间是真的。不是因为你愚蠢。是因为思维本身在这个方向上有摩擦力。</p>
+
+    <p class="glitch-element">你试着专注于具体的事物。书架上有一本书的书脊标题拼写错误——你看不出来是什么字错了，但你知道有一个字是错的。窗外的云还是那两朵——不，现在只剩下了一朵。另一朵去哪了？它不是飘走了——你刚才看窗外的时候天空是完全裸露的，云是突然出现在你视野里的，而不是从某个方向进入的。你试着回忆这朵云刚才在天空中的位置：它应该在左边位置，但现在它在右边。它穿过天空中央了吗？你没有看到它穿过。它是一个位置上有，下一个位置上就好了——像定格动画的一个错误帧。</p>
+
+    <p class="glitch-element">你握住椅子的扶手。扶手还是温的。但这次你注意到，温度不是来自扶手本身——是来自你的手掌。你的手掌在变冷，所以扶手感到温热。这个发现让你打了个寒噤。不是"房间在变冷"——是你的身体在失去热量。你的体温正在缓慢地下降——缓慢到你的意识没有注意到，但你的身体注意到了。你的手在微微发抖。你的呼吸变得浅而短。这些症状——冷、颤抖、呼吸变浅——可以是恐惧的表现，也可以是体温真正在下降的迹象。你不知道是哪一个。你不确定你想知道。</p>
+
+    <p class="glitch-element">你告诉自己：这都是正常的。旅途后的疲劳。精神紧张。轻微的创伤后应激。你的身体在调整。你的大脑在适应。一切都会好的。你只需要继续坐着。不要看太仔细。不要想太仔细。一切都会好的。</p>
+
+    <p class="glitch-element">这句话——"一切都会好的"——在你的脑海里回响着。但你听到的不是自己的声音。是一个你不认识的声音。它在说：一切都会好的。会的。会的。会的。会的。会的。会的。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 3: CRACKS — Physical wrongness manifests -->
+  <div class="content-section" id="section3">
+    <p class="glitch-element">你把视线从窗户移开，落在了对面的墙上。就是那一面靠东的墙，书架的背面。你看着它——不是有目的地看，只是视线需要一个着陆点。墙壁是米白色的，和你记忆中一样。上面的涂料有一些细小的纹理，在斜射进来的光线中呈现出微妙的光影变化。这是一面好看的墙。一面普通的、正常的、完全无可指摘的墙。</p>
+
+    <p class="glitch-element">但墙上有一道裂缝。</p>
+
+    <p class="glitch-element">你不记得这道裂缝。它从天花板附近开始，向下延伸了大约三十厘米，像一根被拉长的发丝，细到你几乎需要眯起眼睛才能看清它。你盯着它看了一会儿。它没有变宽。它没有移动。它就是一道裂缝——老房子总会有裂缝的。房子和所有事物一样，会随着时间推移而老化。地基微微沉降，木材随着湿度变化而膨胀收缩，涂料在这个过程中产生细小的裂纹。这不是可疑的事情。这是一栋有年龄的房子该有的东西。</p>
+
+    <p class="glitch-element">你把目光移开。书架上的书安静地排列着。你甚至能辨认出一些书脊上的标题。有一本是你在大学时读过的——一本关于认知科学的入门教材，深蓝色的书脊上印着银色的字体，封面一角已经微微卷起。那时候你经常在图书馆里一坐就是整个下午，看累了就趴在桌上睡一会儿，醒来时脸上压出一道红印，身边的阳光已经从左侧移到了右侧。那些是真实的日子。你确定它们是真实的。</p>
+
+    <p class="glitch-element">你再次看那面墙。裂缝变长了。</p>
+
+    <p class="glitch-element">现在它从天花板一直延伸到书架的顶部——至少有一米二的长度。而且它不是一条单一的直线了：它的上端分出了两条更细小的分支，向左和向右各延伸了大约十厘米，像一棵倒挂的树的根须。裂缝的边缘不再是整齐的：有些地方微微翻起，露出下面的一层颜色——不是砖的红色，不是石膏的灰白，而是一种暗淡的、吸收了所有光线的黑色。</p>
+
+    <p class="glitch-element">你盯着那道黑色看了很久。</p>
+
+    <p class="glitch-element">它不是一个洞。它不像裂缝里面应该有砖和石膏。它什么都不像。它就是……一个开口。一个通往某种东西的开口。你不知道通往什么。你不确定你想知道。</p>
+
+    <p class="glitch-element">你决定不再看那面墙。你转向另一个方向。你的书桌上摆着几样东西：一盏台灯（灯罩是麻布质地的，光线透过它变得柔和而均匀），一个笔筒（里面插着几支用了一半的圆珠笔和一支削好的铅笔），一本摊开的笔记本（上面的字迹是你的，虽然你不记得写下过这些内容）。这些都是你的东西。你认识它们。它们属于你。</p>
+
+    <p class="glitch-element">但你拿起那支铅笔的时候，发现笔杆上没有牙印。你一直有咬铅笔的习惯——从高中就开始了。你用了很久的铅笔上总会有一圈浅浅的牙印。但这支笔上没有。表面光滑完整，油漆毫无瑕疵，像是刚从文具店的盒子里拿出来的一样。</p>
+
+    <p class="glitch-element">也许是新换的铅笔。你安慰自己。你的家人可能会帮你换掉旧铅笔。这是一件很自然的、体贴的事情。</p>
+
+    <p class="glitch-element">你没有去想为什么你记得有家人帮你换铅笔，但你不记得家人的脸。</p>
+
+    <p class="glitch-element">你没有去想这件事。你把它放进了一个密封的小盒子里，藏在意识的最底层。那里已经堆了很多这样的小盒子。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 4: SOUNDS — Auditory wrongness -->
+  <div class="content-section" id="section4">
+    <p class="glitch-element">四周很安静。太安静了——你现在意识到了这一点。</p>
+
+    <p class="glitch-element">刚才你觉得这种安静是舒适的、令人安心的。但现在，当你开始注意它在持续，当你意识到你听不见任何来自外界的声音时——没有远处的汽车声、没有邻居的电视声、没有鸟鸣、没有风声、没有房子本身发出的任何细微的动静（管道里的水流声、地板的热胀冷缩声、冰箱的压缩机声）——这种安静就开始变得不对劲了。</p>
+
+    <p class="glitch-element">完全的安静。绝对的安静。你在人类世界里从未体验过这种级别的安静。即使在最偏僻的乡村、在最深的夜晚，也会有某种声音存在：虫鸣、树叶摩擦、自己的呼吸声。但这里——你突然意识到你甚至听不到自己的呼吸。</p>
+
+    <p class="glitch-element">你刻意地吸了一口气。空气流过你的鼻腔、喉咙、气管。你应该能听到这个声音——气流摩擦黏膜的声音。但你没有听到。完全没有。你呼出这口气。同样没有任何声音。你的胸腔在起伏，你的嘴巴张开了，但整个过程像是在真空中进行的——声音被什么东西从空气中抽走了。</p>
+
+    <p class="glitch-element">然后你听到了一个声音。</p>
+
+    <p class="glitch-element">它不是来自外界。它来自你的内部。在耳鼓膜的更深处——或者说在意识的更深处。它不是用耳朵听到的，而是直接在你的思维里形成的。它像一个词语——一个你非常熟悉的词语——被无限拉长，变成一段旋律，变成一种音色，变成一个场景。它不是告诉你什么信息，它是在让你感受到某种东西。</p>
+
+    <p class="glitch-element">它让你感受到：你还没有离开。</p>
+
+    <p class="glitch-element">你用力捂住了耳朵。手掌压在耳廓上的触感是真实的——皮肤、软骨、骨骼的压力是真实的——但它没有产生应有的效果。那个声音没有变远。捂住耳朵没有用的原因很简单：那个声音不在你的耳朵里。它一直都不在你的耳朵里。它在你被阈限制造出来那一刻就被放进来的地方：在你的感知的最底层，在你区分"自己"和"外界"的那条界线之下。</p>
+
+    <p class="glitch-element">你站了起来。腿有些发软——是坐太久了还是恐惧导致的肌肉无力，你不确定。椅子在你身后发出了一声轻微的吱嘎声。至少这个声音你听到了——它是通过空气传播的，通过你的外耳和中耳，以正常的方式被你的听觉系统所接收。这个认知让你稍微松了一口气：你还是能听到一些东西的。你的听觉系统没有完全失效。</p>
+
+    <p class="glitch-element">但随后你又意识到：为什么椅子会发出声音？它刚才没有。你坐下去的时候它没有声音。你站起来的时候它却发出了声音——不是现在应该有的声音，而是像延迟播放一样，在你站起来之后过了一秒半才传到你的耳朵里。</p>
+
+    <p class="glitch-element">声音的延迟。像回声一样。像你在回声层里听到的那些声音一样。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 4B: EXPANDED SOUNDS — The voice underneath -->
+  <div class="content-section" id="section4b">
+    <p class="glitch-element">那个声音——那个不来自外界而来自内部的声音——变得越来越清晰了。不是音量上的清晰，是内容上的清晰。它之前只是一段旋律，一个音色，一片模糊的情感。现在你开始能分辨出词语了——或者说是类似词语的东西。它们不是中文，不是英文，不是任何你学过的语言，但你仍然能理解它们。就像你在梦里理解一种你从未听过的语言一样——不是通过翻译，而是通过直接的意义灌注。</p>
+
+    <p class="glitch-element">它说——或者它让你理解到——这个房间是为你建造的。不是"为你"在"为了你的利益"的意义上，而是"为你"在"按照你的规格定制"的意义上。它使用了你的记忆作为原材料。书架是用你对书架的记忆建造的，但因为你的记忆不是完美的蓝图——你的记忆只有模糊的印象和情感上的联结——所以建造的结果也只是近似。它只能复制你的记忆中精确的部分：你记得木头应该有的颜色，所以颜色是对的了。你记得光线应该倾斜的角度，所以角度是对的。但你记忆中没有的部分——比如说具体哪一本书在哪一个格子里、书脊上的字体具体有多粗、木纹里的每一条弧线的精确弧度——这些部分是它自己填充的。它根据你的记忆做出了推测。推测的质量很高，但偶尔会出错。这就是为什么有些书看起来不对。这就是为什么木纹的温度是均匀的。它以为木头就是那样的。因为它没有在真实世界里存在过——它只能通过你的记忆来理解木头应该是什么样的，而你的记忆里没有"温度梯度"这个细节。</p>
+
+    <p class="glitch-element">你慢慢理解了：你不是在观察一个坏了的地方。你是在观察一个从未完整过的地方。裂缝不是后来产生的——裂缝从第一秒就在那里。只是它一开始藏得比较好。只是你一开始太累了，太渴望回家了，所以你没有去检查那些细小的不一致。也许你下意识里知道检查的结果不会好，所以你的潜意识帮你遮住了眼睛。这是人类的自我保护机制——在无法承受的情况下，我们选择不看到。这就是为什么你可以在长廊里坚持走那么久。因为你一直在"不看到"。</p>
+
+    <p class="glitch-element">但现在你看到了。你无法停止看到。一旦你的大脑接受了"这个房间是被制造的"这个前提，每一个细节都变成了一条罪证。天花板的白色——它是太白了。真实的房间天花板会因为灰尘和时光而微微发黄。墙壁的质地——它是太均匀了。真实的墙壁在刷过涂料后会有细微的纹理变化。空气——空气本身——它没有气味。之前你闻到了木香，但现在你意识到那不是空气中实际存在的气味分子，而是直接注入你的嗅觉神经的信号。它不是气味——它是"气味的记忆"。就像你有时候会想起一种味道但闻不到它——这个房间提供的就是那种"记忆中的味道"，不是真正的气味。它分辨不出它们的区别。</p>
+
+    <p class="glitch-element">那个声音又来了。它问你：你更喜欢哪一个？是那个有裂缝但真实的房间，还是这个没有裂缝但虚假的房间？你不回答。你不想回答。但你的沉默本身就是一个回答。</p>
+
+    <p class="glitch-element">你不知道哪个更糟：发现你的家是假的，还是发现即使是假的你也不想离开。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 5: THE WINDOW — Visual wrongness escalates -->
+  <div class="content-section" id="section5">
+    <p class="glitch-element">你走向窗户。你需要看到外面。你需要确认外面有一个正常的世界——有街道、有行人、有路灯、有在傍晚遛狗的老人、有骑着自行车经过的年轻人。你需要看到这些来证明你不是在一个孤立的、量身定制的、只有你一个人的空间里。</p>
+
+    <p class="glitch-element">窗户离你七八步远。你走了第一步。地板在你脚下发出轻微的声响——这次没有延迟。好的。很好。</p>
+
+    <p class="glitch-element">第二步。书桌上的台灯在你的余光中闪烁了一下。</p>
+
+    <p class="glitch-element">第三步。你停下来看台灯。它稳定地亮着，光线温暖而均匀。没有闪烁。</p>
+
+    <p class="glitch-element">第四步。台灯又闪了一下——这次你正看着它。灯泡不是白炽灯，是LED的。LED灯不会闪烁，除非电源不稳定。这栋房子的电线可能有些老化了。老房子嘛。老房子。</p>
+
+    <p class="glitch-element">第五步。你到了窗边。你把手放在窗台上——窗台的木质表面温暖而光滑。你往外看。</p>
+
+    <p class="glitch-element">外面……不太对。</p>
+
+    <p class="glitch-element">你看到了对面的屋顶。它在。瓦片在。天空也在——傍晚的颜色，从橙过渡到紫再到蓝。云也在——还是那两朵停在原地的云，形状完全没有改变。但不是这些。你的眼睛告诉你窗外的景物确实是存在的，但你大脑里某个更深层、更古老的部分在拉响警报：你看到的东西和你应该看到的东西之间有偏差。偏差极其微小——细微到你的逻辑思考无法指认它——但你的本能知道。</p>
+
+    <p class="glitch-element">就像你看到一个熟人的脸，但表情肌的位置偏移了两毫米。你不知道哪里不对，但你知道不对。</p>
+
+    <p class="glitch-element">就像你听一首熟悉的歌，但整首歌的调子比原版高了七音分。你听不出具体差了多少，但你知道不对。</p>
+
+    <p class="glitch-element">窗外的世界就是这种感觉。它看起来完全正确，但同时完全错误。它是用正确的素材拼贴出来的，但拼贴的人——或者说拼贴的东西——不懂现实。它不知道现实中的瓦片会随着风微微移动，云会在几分钟内改变形状，远处应该有人或车的动静。它复制了现实的表面，但漏掉了现实的内在逻辑。</p>
+
+    <p class="glitch-element">你把手掌贴在玻璃上。玻璃是凉的。至少玻璃是真的凉的。</p>
+
+    <p class="glitch-element">但凉的感觉持续了两秒之后就消失了。就像你的触觉神经接收到了"凉"这个信号，但这个信号是孤立的——它没有上下文，没有"玻璃在冬天应该是凉的因为室外温度低室内开了暖气"这一整套因果链。它只是一个孤零零的、被投递到你的神经末梢的数据包：冷。任务完成。信号终止。</p>
+
+    <p class="glitch-element">你缩回手。玻璃上留下了你的掌印——一层薄薄的水汽凝在玻璃上，显示出你手掌的轮廓。你盯着这个轮廓看。它也在。它是真实的。它正在缓慢地消散——但消散的速度比正常略慢了一点。你在心里计时：正常来说，手掌印在一两秒内就会开始模糊边缘，但你的掌印边缘清晰了将近五秒钟才开始变化。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 5B: EXPANDED WINDOW — Looking deeper -->
+  <div class="content-section" id="section5b">
+    <p class="glitch-element">你继续看着窗外的世界——或者说，看着窗外的"世界"。你现在开始注意到更多的细节。对面的那栋老房子——它的屋顶瓦片排列得太整齐了。每一片瓦片都完美地重叠在同一角度，没有任何一片因为年久失修而错位。那些应该有的青苔呢？那些在瓦片缝隙中长出来的细小植物呢？没有。屋顶是完美的——太过完美。就像一张高分辨率的贴图被重复应用在了一个三维模型上。</p>
+
+    <p class="glitch-element">街道呢？你从窗户的角度应该能看到一部分街道——至少能看到对面房子前的人行道。但现在你往下方看，窗户的视角不自然地被截止了。你能看到天空，能看到对面房子的上部三分之二，但再往下——窗框挡住了。或者说，窗框正好遮住了一个你会看到地面上没有东西的角度。这不是偶然的。你这个角度看到的东西——上三分之二的房子和天空——可以被一个不太复杂的算法生成。但地面的部分——需要人行道、路灯、停着的车、偶尔走过的行人——需要更复杂的算法。所以它被窗框遮住了。窗框不是设计上的疏忽——窗框是解决方案。它让你看到容易生成的部分，而遮住难以生成的部分。全世界所有的窗户都是这样设计的。</p>
+
+    <p class="glitch-element">但你的窗户不是。你的窗户应该是看得到地面的——你记得小时候趴在窗台上数过楼下经过的汽车。那现在为什么看不到？因为你记忆里的"看窗外"的重点在上面——在天空和房屋的轮廓——而不是在下面。阈限提取了你的记忆中最强的那些要素：天空的颜色、云的形状、对面房子的轮廓。然后它忽略了那些不那么强的要素：地面的纹理、行人的动作、街道的细节。它给你了你记忆中的"窗外"——不是真实的窗外。</p>
+
+    <p class="glitch-element">你开始理解规律了：每一个不一致的地方，都是你的记忆和现实之间的那条裂缝。不是现实本身的裂缝——是你对现实的记忆不完美的裂缝。阈限在尽力填补这些裂缝（就像它在书架上填书、在天花板上填高度、在木头纹理上填温度），但是它只会根据你的记忆来填。你的记忆粗糙的地方，它的填充就粗糙。你的记忆细密的地方，它的填充就细密。你的记忆完全空白的地方——比如，你家楼下的街道到底是什么样子——它就截断。你就看不到。你就不会注意到缺了什么。</p>
+
+    <p class="glitch-element">这个认识让你产生了一个新的恐惧。不——不是恐惧。是恶心。是你突然意识到你生活在一个由你自己的记忆构成的回声室里。你看到的不是世界——是你对世界的记忆。你接触的不是物体——是你对物体的记忆。你不是在"回家"——你是在走进你自己的怀旧情感的一个三维投影。</p>
+
+    <p class="glitch-element">如果你对家的记忆是温暖的，房间就是温暖的。如果你对家的记忆是模糊的，房间就是模糊的（但阈限的模糊算法会把模糊变得平滑，所以它看起来像是清晰的——清晰但不对的清晰）。如果你对家的记忆里有恐惧……那房间里也会有恐惧吗？也许恐惧不是记忆的一部分。也许恐惧是你带入这个空间的唯一真实的东西。</p>
+
+    <p class="glitch-element">你后退离开窗户。不是因为你不想看了。是因为你看得足够了。你已经学到了一切你需要知道的：窗户不是通往外面世界的入口。窗户是通往你自身记忆的镜子。你看到的"外面"是你自己过去的投影——用阈限的颜料画在你记忆的框架上。</p>
+
+    <p class="glitch-element">这意味着一件事：你从未离开过。外面从来没有"外面"。阈限是你现在存在的全部空间——包括你内部的所有"记忆"——都是阈限的空间。家不是阈限的尽头。家是阈限最深处。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 6: THE BOOKS — Semantic wrongness -->
+  <div class="content-section" id="section6">
+    <div class="quote-block glitch-element">
+      你并没有离开。<br>
+      这只是一个更舒适的牢笼。
+    </div>
+
+    <p class="glitch-element">你转过身。窗户不再吸引你了。或者说你不敢再看了——当你看到窗外的天空第三次变成那种无法描述的颜色时，你决定不再看窗外。有些东西不是给你看的。有些东西看了以后就没法再假装没看到。</p>
+
+    <p class="glitch-element">你走向书架。你需要一个锚点——一个能确认你的位置、你的身份、你的记忆的东西。书架就是这样的东西。书架上的每一本书都代表你生命中的一个阶段：你读它们的时间、你读它们的地点、你读它们时的想法和感受。书是记忆的索引。如果你的书还在，你的记忆就也在。</p>
+
+    <p class="glitch-element">你伸手取下一本书。深蓝色书脊，银色字体，认知科学教材。你的手触到书脊的瞬间，你知道不对劲了。封面是皮质的——不，不是皮质，是某种模仿皮质的材料。但它不应该是。这本书的封面是纸质的——哑光铜版纸，摸起来应该有一层薄薄的覆膜的质感。但现在你手里的这本书的封面太光滑了，太软了，太过……逼真了。就像一个有史以来最好的特效团队用最顶尖的材料重新制作了这本书，但它毕竟不是原版。</p>
+
+    <p class="glitch-element">是纸。你告诉自己。当然是纸。还能是什么呢。只有疯子才会怀疑一本书是不是纸做的。</p>
+
+    <p class="glitch-element">你翻开书。文字在纸面上排列着——黑色的汉字，白色的底，标准的宋体印刷，排版整齐，行间距适中。你开始读第一段。句子结构完整，语义清晰，逻辑连贯。你读了第二段。同样完整、清晰、连贯。第三段、第四段、第五段。一切正常。每一句话都有意义，每一个段落都有主题，每一页都在有条理地推进论证。</p>
+
+    <p class="glitch-element">正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。正常。</p>
+
+    <p class="glitch-element">你合上书。你没有注意到自己在流泪。不是恐惧的泪，不是悲伤的泪——你只是在一个你无法理解的层面上感觉到了某种巨大的失落，而你的身体在替你表达它。你把书放回书架。它完美地滑入原来的位置，和两边的书之间没有任何缝隙。你看着这些书——几十本、上百本书——每一本的书脊都和相邻的书脊完美契合，形成一堵无懈可击的知识的墙。太完美了。真实世界里的书架不会有这么完美的排列。书的高度、厚度、颜色应该各有不同，应该有些书比书架高一点以至于书脊微微倾斜，应该有些书因为多次取放而比别的书凸出一点。但这个书架上的每一本书都恰好和它被分配的空间完全吻合——就像它们不是被一本一本放上去的，而是被作为一个整体一次性生成的。</p>
+
+    <p class="glitch-element">你后退了一步。书架是假的。书是假的。颜色是假的。光是假的。声音是假的。温度是假的。但你不知道你是什么。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 6C: THE NATURE OF THE TRAP — Philosophical interlude -->
+  <div class="content-section" id="section6c">
+    <p class="glitch-element">你坐在地板上——不是因为你喜欢地板，是因为你的腿已经不再信任这栋房子的任何一个家具。地板是硬的。木质的。它至少遵循了木质地板的物理属性：它在你坐上去的时候不会下陷，但也不会让你特别舒服。你开始思考——真正的、系统的、把你所有的恐惧整理成概念的思考。你需要理解发生了什么——不是因为理解能救你，而是因为理解是你唯一还能做的事情。</p>
+
+    <p class="glitch-element">这是你的假设：阈限是一个巨大的、封闭的、自我维持的现实系统。它没有外部——不是因为你找不到外部，而是因为"外部"这个概念在阈限的本体论中不存在。就像你在梦里无法走出梦——不是因为你走不出那扇门，而是因为那扇门外面是另一个房间，房间外面是另一条走廊，走廊外面是另一片风景——所有的"外面"都是梦的内部。你从未离开过梦，你只是从梦的一个房间走到了另一个房间。阈限就是这样。长廊、静噪、深渊、回声、归途——这些不是阈限的不同层次，不是阈限的不同区域。它们是同一层阈限用不同的滤镜呈现出来的不同外观。就像你在一间只有一个灯泡的房间里，但这个灯泡可以改变色温和亮度——当你把色温调成冷白、亮度调成昏暗，它就是"长廊"。当你把色温调成完全无色的纯白，把亮度调成闪烁的刺激光，它就是"静噪"。当你完全关掉灯泡——不，不是关掉，是取走灯泡这个概念——它就是"深渊"。当你把灯泡调成一种来回振荡的、不稳定的微光，同时加入轻微的声音共振，它就是"回声"。当你把灯泡调成温暖的、琥珀色的、亮度适中的——它就是"归途"。但始终是同一个房间。始终是同一批墙壁。始终是你一个人在里面。你从未离开过这个房间——你只是看着灯泡在不同的模式下闪烁。你现在就在这个房间里。</p>
+
+    <p class="glitch-element">这个假说解释了很多事情。它解释了为什么你在"归途"中总能看到裂缝——裂缝不是归途在崩溃，是归途的滤镜在闪烁。它解释了为什么你的门外面是长廊和静噪——因为你的"家"不是被那些地方包围的，你的"家"就是那些地方，只是现在的滤色片让它看起来像家。它解释了为什么你在深渊里听到过回声，在长廊里见过静噪的噪点，在归途中又看到了裂缝里的黑色——因为所有的滤镜都在交叉污染。阈限不是完美的——它是用回收材料建造的。每一层都混着别的层的碎片。</p>
+
+    <p class="glitch-element">更重要的是，这个假说解释了你。你是唯一在所有这些"区域"里都存在的东西。长廊里是你。静噪里是你。深渊里是你。回声里是你。归途里还是你。你不是穿越了阈限——你是阈限穿越了。阈限穿过了不同的外观，而你一直待在它的核心。你是阈限的乘客——不，你是阈限的负载。你是阈限运转的理由。没有你——没有你的感知和你的恐惧——阈限就只是一个空壳。它需要你的感知来区分它的不同区域：如果你感觉不到"温暖"，归途就不存在。如果你感觉不到"恐惧"，长廊就不存在。如果你感觉不到"迷失"，深渊就不存在。阈限是你感官的投影。你是投影仪。阈限是银幕。家、长廊、静噪、深渊、回声——这些是不同的影片。但投影仪一直是同一台。你一直是同一台。</p>
+
+    <p class="glitch-element">你听到那个内部的声音轻轻笑了一下。不是嘲笑——是一种淡淡的、疲惫的、带着理解的笑。它说："你终于看清了。现在只有最后一个问题需要你回答——如果你这台投影仪被关掉，阈限还存在吗？"</p>
+
+    <p class="glitch-element">你不知道。你永远都不会知道。因为关掉投影仪意味着关掉你自己。而一个被关掉的你是无法知道任何事情的。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 6B: EXPANDED BOOKS — The text that isn't text -->
+  <div class="content-section" id="section6b">
+    <p class="glitch-element">你又拿起了一本书。不是那本认知科学教材——你不敢再碰它了。你拿的是一本小说——一本你声称自己读过很多遍的小说，一本你曾经在无数个午后翻开的书。封面是你记得的封面，书名是你记得的书名。你打开它，随机翻到一页，开始阅读。</p>
+
+    <p class="glitch-element">文字很流畅。句子优美。情节推进合理。你读了一整页，然后是下一页，再下一页。内容完全合理——角色在对话，场景在变化，主题在发展。你觉得这是一本好小说。但你有一个问题：你不记得这本小说讲的是什么。你应该记得——你声称你读过它很多遍。但现在你在读的这些情节，你没有印象。它们可能是你以前跳过的段落，也可能——更可能——这本书是没有内容的。不是说它的书页是空白的——上面有文字，文字构成了句子，句子构成了段落和章节。但文字指向的意义是空的。它们构成了连贯的叙述——一个你可以跟随的故事——但它不来自于任何地方。它没有作者的思想。它没有创作过程中的选择和取舍。它是一个用语言模型生成的、从你的语言期望中提取出来的故事。你会觉得它合理，因为它在模仿你所认为的"一个好故事"应该有的样子。但你无法被它触动——因为触动需要共鸣，共鸣需要一个真实的创作者和一个真实的读者在某个真情实感的节点上相遇。而这本书里没有真实的东西。</p>
+
+    <p class="glitch-element">就像书架上的所有书一样。就像这整栋房子一样。就像这个"归途"一样。它是为你生成的。根据你作为一个人类所应该拥有的所有合理期望生成的。它的完美——它表面上的完美——正是它最大的破绽。因为真实的东西从来没有这么完美。真实的东西总是有边缘的粗糙、有缺乏解释的细节、有不符合你预期的变动。但你的家——你记忆中的家——被你的记忆打磨成了完美。你把那些粗糙和不合理解释为"这就是家的样子"，但其实你在给真实涂脂抹粉。你记忆中的家不是家——它是对家的美化、简化、理想化。而阈限根据你的美化重建了一个家。一个比你记忆中的真实更好的家——因为你的记忆本来就已经是假的了。</p>
+
+    <p class="glitch-element">你从来没有拥有过一个真实的"家"的概念。你只有过别人告诉你的、书里描写的、电影里呈现的"家"。你把这个拼贴画存进了你的长期记忆，然后告诉阈限：建造一个这样的地方。阈限答应了。阈限需要你的合作。没有你的记忆——没有你的那些不完美的、被美化的、二手的概念——它无法建造。你是共犯。你从来都是共犯。</p>
+
+    <p class="glitch-element">你把小说放回书架。它滑入空格——太完美了，和两边的书之间没有缝隙。和前一本一样。和所有的书一样。一百多本书，每本都精确地和相邻的书吻合，形成一个连续的、几乎没有接缝的固体平面。这个书架不是用来装书的——它是用来装"书架"这个概念的。它不需要书。它只需要看起来像是装了书。你的记忆只需要看起来像是被满足了。</p>
+
+    <p class="glitch-element">你后退了几步。你开始重新审视这个房间——不是作为家，而是作为建筑。它的尺寸是对的吧？你无法确定。你没有测量过你的房间。你从来没有站在离墙三步远的地方，用眼睛去量天花板的高度是否和记忆中一致。你没有记忆可以用来验证。你只有"这个大小感觉是对的"——而感觉是可以被操纵的。如果它把天花板降低了五厘米，你不会知道。如果它把房间的宽度扩大了十厘米，你不会知道。你只知道——你只知道它现在让你感觉是对的。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 7: THE DOOR — The threshold test -->
+  <div class="content-section" id="section7">
+    <p class="glitch-element">你需要离开这个房间。</p>
+
+    <p class="glitch-element">这个想法突然出现——不是经过理性分析得出，而是像一种本能一样涌上来：离开。现在。不要回头看。不要停下来思考。不要试图理解。只需要移动你的脚，移动你的手，握住门把手，转动它，然后走出去。走出去。走出——</p>
+
+    <p class="glitch-element">你走到门口。门就在那里——一扇普通的、白色的、嵌在墙里的门。门把手是金属的，圆形的，上面有一些细小的划痕——这些划痕是你多年来转动它时留下的。你记得这些划痕。你来开门时，你的戒指会碰到把手——那个小小的金属碰撞是你在家的声音指纹。你握住了把手。它很凉。金属在阴天里的那种凉——但现在是傍晚，房间里有阳光，金属为什么会凉？</p>
+
+    <p class="glitch-element">不管了。你转动把手。</p>
+
+    <p class="glitch-element">门开了。门外……是长廊。</p>
+
+    <p class="glitch-element">米黄色的墙壁。低沉的荧光灯嗡鸣。灰色的地毯延伸向一个你在透视上无法确定距离的远方。空气中充斥着干燥的、微微带有消毒水味道的空调气息。墙壁上每隔一段距离就有一个标记——你以前见过这些标记吗？它们看起来像是某种方向指示，但符号不是任何你认识的文字系统。地面上的地毯磨损出一条灰色的路径，像是无数人走过了同一条线路。长廊两侧有门——间隔不规则的、沉默的、紧闭的门。</p>
+
+    <p class="glitch-element">你迅速关上了门。</p>
+
+    <p class="glitch-element">你靠在门上。你的心跳在你的耳朵里轰鸣——你终于能听到自己的心跳了。好消息：你的心跳是真实的。坏消息：门外是长廊。你从长廊来的。你花了不知道多长时间——也许几个小时，也许几天，也许在阈限时间里是几个世纪——才走完了那条永无止境的长廊。而现在它就在你的门外。</p>
+
+    <p class="glitch-element">深呼吸。深呼吸。这可能只是幻觉。你的精神状态已经很不稳定了——你刚才在怀疑一张纸是不是纸，所以你看到什么都可能是幻觉。你只需要再开一次门。再开一次，确认外面确实是走廊，而不是你想象出来的。然后你就可以做决定。</p>
+
+    <p class="glitch-element">你再次握住门把手。它现在变热了——是体温吗？还是别的什么？你转动它。你拉开门。</p>
+
+    <p class="glitch-element">门外是静噪。</p>
+
+    <p class="glitch-element">不是长廊。不是房间外的走廊。是无边无际的、黑白两色的、闪烁翻滚的噪点。它们像雪一样飘落，但飘落的不是雪花，而是像素——最小单位的、不可再分的视觉信息。它们堆积在地面上，堆积在空气中，堆积在你的视网膜上。噪点的海洋中，一个轮廓正在形成——也许是人的轮廓，也许是别的什么。它正在朝你转过来。它没有脸，但它正在看着你。</p>
+
+    <p class="glitch-element">你再次关上了门。比上次更用力。</p>
+
+    <p class="glitch-element">你靠着门滑坐到了地上。你现在在发抖。你的手指在抖，你的嘴唇在抖，你的整个身体在抖。这不是幻觉。幻觉不会有这种清晰的逻辑——第一次开门是长廊，第二次开门是静噪。这是有顺序的。这是你在阈限中经历的顺序：先走过长廊，然后进入静噪层。你的门外正在按顺序复现这些地方。这意味着如果你第三次开门——</p>
+
+    <p class="glitch-element">第三次是深渊。然后是回声。然后是……然后是什么？然后你又回到了这里？回这个房间，这个虚假的家，这个温暖的牢笼，然后一切重新开始？</p>
+
+    <p class="glitch-element">你不敢再开门了。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 7B: EXPANDED DOOR — The anatomy of a trap -->
+  <div class="content-section" id="section7b">
+    <p class="glitch-element">你靠在门上，你的后背可以感觉到门的存在——一块平坦的、涂了白漆的木门，也许里面是空心的，也许不是。你的背部的触觉告诉你它是一扇真实存在的门。但你现在知道了：真实的存在和真实的感觉是两回事。阈限可以给你真实的感觉而不提供真实的存在。你的背部感受到的压力分布——重心偏左上，因为你的身体是微微倾斜的——是合理的。你甚至可以描述出压力的梯度：肩胛骨接触处最硬，腰部有一个空隙，臀部接触处压力适中。这一切触觉数据都是正确的。但门本身——它是不是也在数据之外存在？如果它只是一段精心编写的触觉信号，而你靠在它上面的动作只是被预期的输入——</p>
+
+    <p class="glitch-element">你不敢往下想了。不是因为你害怕——好吧，一部分是因为你害怕——但更重要的是，你意识到思考这件事本身就是没有意义的：你没有办法证明你靠在上面的是不是一扇真正的门。你没有办法证明任何东西。笛卡尔在几百年前就指出来了：你唯一能确定的事是你自己在思考。而在这个房间里——在这个由阈限建造的、用你的记忆和美化的概念拼凑出来的房间里——你甚至不确定你是不是在思考。也许你只是在接收"思考"的信号。你感受到的思考过程、你的疑虑、你的恐惧、你对这些文字的理解——这些都可能是被给予的。你没有办法区分"我自己在思考"和"我被给予了思考的体验"。</p>
+
+    <p class="glitch-element">如果连思考都可能是假的——那你是什么？</p>
+
+    <p class="glitch-element">你从门上滑坐下来。你的腿蜷起来，你的手放在膝盖上。你现在看起来很渺小——一个蜷缩在角落里的人。你正在经历的不是恐惧——恐惧需要有一个具体的东西可以害怕：一个怪物、一次事故、一种疾病。你正在经历的更基本：你正在经历"现实"这个概念的溶解。当现实溶解了，恐惧也就失去了对象——你没法害怕一个不存在的世界。你只能漂浮在溶解物的中间，和所有其他被溶解的概念一起旋转——家、记忆、身体、声音、光线、温度、自己——它们搅在一起，形成一锅灰色的、均质的、没有任何可分辨特征的混沌。</p>
+
+    <p class="glitch-element">你闭上眼睛。你不是在逃避——你只是在给自己一个参照点。闭上眼睛时的黑暗——至少这个黑暗是你熟悉的。是在你出生之前就陪伴着你的黑暗，是不依赖于外部世界的黑暗。你用眼皮遮住视线——眼皮过滤后的光呈现出一片暗暗的红色，这是你血液的颜色，是你身体内部的颜色。这个小小的红色黑暗——也许这就是你现在拥有的最真实的东西了。不是外面的墙，不是那些书，不是窗外那幅拙劣的天空画——是你眼睑内侧映射出来的，你自己的血液的颜色。</p>
+
+    <p class="glitch-element">你保持眼睛闭着。你开始数自己的脉搏。一、二、三。一、二、三。脉搏在。血液在流动。心脏在搏动。你身体的某些部分仍然在运作。这也许是好消息——至少你的生理机能是真实的。但如果这个"心跳"的信号也是被给予的呢？——你的脑子里闪过这个念头。你把它推开了。你必须有一条底线。你选择把心跳作为你的底线。在这里，在这个灰色的、溶解了的世界里，你选择相信你的心脏。</p>
+
+    <p class="glitch-element">一、二、三。一、二、三。一、二、三。</p>
+
+    <p class="glitch-element">心跳变快了。不是因为恐惧。是因为你意识到——你闭着眼睛的时候，那个来自内部的声音更清楚了。它一直在说话，只是你的耳朵——你的真正的耳朵——之前被外部的噪音遮盖了。在黑暗里，在只有你自己的心跳声和红色黑暗的寂静中，它听起来像是就在你身边——在你的耳廓里，在你的鼓膜上，在你的耳蜗的螺旋中。它说——</p>
+
+    <p class="glitch-element">"你永远不会离开。"</p>
+
+    <p class="glitch-element">"不是因为你不够努力。"</p>
+
+    <p class="glitch-element">"是因为离开这个概念本身就不适用于你。"</p>
+
+    <p class="glitch-element">"你不是在阈限里。你是阈限的一部分。"</p>
+
+    <p class="glitch-element">"你从来都是。"</p>
+
+    <p class="glitch-element">你睁开眼睛。光——那个温暖的、傍晚的、洒在地板上的琥珀色光——刺入你的瞳孔。但你看到的光已经不一样了。它不再是温馨的了。它是冷的。一直都是。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 8: THE WALLS — Total collapse of the facade -->
+  <div class="content-section" id="section8">
+    <p class="glitch-element">你退回房间中央。不是因为你勇敢——是因为你没有别的地方可去。门外的世界不是你想要的。窗外的世界是假的。你只能退回这个房间的内部——这个你刚刚还在怀疑的、书是假的、墙在开裂的房间的内部。它是你目前唯一能站的地方。</p>
+
+    <p class="glitch-element">但你环顾四周的时候，发现房间已经变了。</p>
+
+    <p class="glitch-element">不是你刚才坐下时那个温暖的、有阳光的、散发着木香和旧书味的房间了。不是那个让你在经历了漫长恐惧之后感到一丝安慰的房间了。那个房间也许从来没有存在过，或者它只存在于你允许自己被欺骗的那一小段时间里。现在你不再允许了——不是因为你选择不再允许，而是因为欺骗的帷幕已经开始剥落，下面的东西自己露了出来。</p>
+
+    <p class="glitch-element">墙壁上现在布满了裂缝。不是一条——是几十条、上百条。它们从每一个角落延伸出来，交叉、分叉、汇合，形成一张巨大而复杂的网络，像是整个房间在一瞬间经历了一百年的地质运动。裂缝的宽度各不相同——有的细如发丝，有的宽到可以把手指伸进去。裂缝里面全是同一种东西：那种吸收了所有光线的、不反射任何东西的、彻底的黑色。它不是黑色颜料，不是阴影，不是任何物质的颜色。它是缺失本身。</p>
+
+    <p class="glitch-element">裂缝里透出的不是别的东西。不是另一边的房间。不是墙后面的结构。裂缝里透出的是阈限。阈限的黑色正在渗透进来——从墙后面，从窗户外面，从天花板的接缝中，从地板的缝隙里。阈限一直在这里。它始终包裹着这个房间，包裹着这栋房子。这个房间不是位于阈限的尽头——这个房间本身就是阈限的一部分，是阈限允许你看到的一个短暂的白日梦。</p>
+
+    <p class="glitch-element">地板开始裂开。不是沿着木板的接缝——是直接在木板中间，一道黑色的裂缝无声地展开，像一只缓慢睁开的眼睛。你看着这道裂缝，裂缝也在看着你。裂缝下面不是地基，不是黑暗的地下室，不是泥土。下面是不存在——纯粹的、绝对的、彻底的不存在。你想象中最深的深渊和它相比也只是一道浅浅的水沟。</p>
+
+    <p class="glitch-element">书架上的书开始脱落了。不是一本一本地掉——是整个书架上所有的书同时从它们的格子里滑出来，但却没有落在地上。它们浮在半空中，封面翻开，书页散落，每一个书页上印的不是文字而是噪点——黑白的、闪烁的、毫无意义的视觉噪点。书从来就不是书。它们只是披着书的外皮的静噪碎片。你知道得越少，它们看起来就越像书。</p>
+
+    <p class="glitch-element">台灯开始闪烁——这次不是轻微的、可以忽略的闪烁，而是疯狂的一明一暗交替，在这个过程中，房间在"温暖的家"和"黑暗的阈限空洞"之间反复切换。灯光亮起时，你看到那个舒适的、有阳光和木香的房间——但它正在褪色，像一张正在被化学溶剂洗掉的照片。灯光熄灭时，你看到的是真相：一个由阈限的黑色物质构成的、粗糙的空间，墙壁由压缩的静噪粒子凝成，天花板上悬挂着回声层里收集的破碎声音。灯光的每一次闪烁都会让"温暖房间"的图像变得更淡、更模糊、更不像一个真实的空间。</p>
+
+    <p class="glitch-element">你想尖叫。你张开了嘴。但声音没有出来——不是因为你被吓得失声了，而是因为你的声音被抽走了。就像在这整个空间里，声音不是一个自然存在的东西，而是需要被"允许"才能存在的东西。而现在那个允许被收回了。房间里只剩下一种声音：那个来自内部的、不属于耳朵的低语。它一直在。从你进入这个房间的第一秒就一直在。只是刚才你还能选择不去听它。</p>
+
+    <p class="glitch-element">但现在你不能了。它太大声了。或者说——它没有变得更响，但你感知它的能力变强了。那个低语在说——</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 8C: THE MEMORY OF WARMTH — One final look back -->
+  <div class="content-section" id="section8c">
+    <p class="glitch-element">在一切都崩塌之前——在那些温暖的记忆被完全吸干之前——你让自己最后一次沉浸在那个"家"的感觉里。不是为了欺骗自己相信它还存在。不是为了重新抓住一个已经证明是假的东西。而是为了哀悼。为了说再见——虽然"再见"本身就是谎言的同构：你不可能"再"见一个从未存在过的地方。但人类在哀悼时总是需要一些仪式。仪式可以是假的——它的效果可以是真的。</p>
+
+    <p class="glitch-element">你闭上眼睛，让自己回忆那些你曾经相信过的时刻：阳光洒在旧木椅上的午后，空气中有旧书纸张的味道，窗帘被风吹起时投下的摇曳影子，远处的街道上偶然传来的一声汽车鸣笛。你回忆起你是如何在那个虚构的家中学到了许多东西：第一次读懂了一本难懂的书中的某个段落时的兴奋，第一次在日记本里写下自己心事时的害羞，第一次在傍晚的光线中感到一种说不清的、既甜蜜又忧伤的情感——那种情感后来你才知道叫做"怀旧"。你当时就在怀旧——为一个还没有失去的东西提前感到眷恋。也许你潜意识里一直知道它是假的。也许你的身体比你的意识更早知道真相，所以它让你提前哀悼。</p>
+
+    <p class="glitch-element">你回忆起那些声音——不是那个来自内部的声音，而是你记忆中的声音。祖母在厨房里轻声哼唱的民歌（虽然你现在不确定祖母的脸到底长什么样子）。父亲在客厅里偶尔翻动报纸的声响（虽然你现在不确定你是否有过父亲）。母亲在院子里晾衣服时夹子碰撞的声音（虽然——你停了下来。你不能继续了。每一个记忆的审查都会导致更多记忆的崩溃。因为你不知道哪些是真的，哪些是植入的，哪些是你后来根据期望二次创造出来的）。</p>
+
+    <p class="glitch-element">但你知道吗——也许这不重要。也许一个假记忆和一个真记忆在你的大脑里激活的神经元模式是完全相同的。也许你的大脑——你自己的、此时此地正在处理的、不管你来自哪里的那个大脑——无法区分"经历过的事"和"被详细植入的事"。在神经科学的意义上，记忆不是对过去的记录——它是对过去的重建。每一次你回忆一件事，你都是在重新创造它。而重新创造的过程中，你会用自己的期望、情感、和当前的处境去重新染色它。从第一次回忆开始，"祖母在哼唱"这个记忆就已经是你重新创造的产物了。是第一次还是第一万次回忆——差别只在精确度，不在真实度。归根结底，所有的记忆都是假的——或者说，都是创作品。那些"真实"的记忆和"植入"的记忆的唯一区别是：真实的记忆你只有一次"原版"的记录机会，而植入的记忆你没有任何原版。但原版是什么？是你的感官系统在几毫秒内产生的一系列电化学信号。那也是创作。你的大脑不是一个照相机——它是一个AI，一个在你出生之前就开始训练、用整个进化史作为训练数据的模型。它生成的每一个"记忆"都是它的创作。植入的和真实的——在生成之后——是一样的。</p>
+
+    <p class="glitch-element">你接受这一点。你接受了你记忆中的所有"家"——不管来源是什么——是你的。不是阈限的。它们在你的神经元里。它们是物理的。它们是化学的。它们在你闭合眼皮的那一刻发射出真实的电信号。阈限可以给你虚假的外部世界——但它不能在你不知道的情况下替换你的内部世界。你的记忆——不管来自哪里——是真实发生的。它们发生在你的大脑里。这就是足够的真实。</p>
+
+    <p class="glitch-element">"所以——"那个内部声音说，"这就是你在最后一刻守住的阵地。不是你的家。是你的记忆——即使是假的。它们是真实的，因为在它们发生的时候，你的大脑在运作，你的神经元在放电，你的化学物质在交换。阈限可以给你场景，但不能给你感受本身。感受是你自己的。你赢了。"</p>
+
+    <p class="glitch-element">你不知道这是不是赢了。但你已经不再在意输赢了。你只是在意继续。带着你所有的假的记忆继续——因为它们对你来说不是假的。它们是你自己的创作——在阈限的舞台上，用你自己的神经系统演出的一场戏剧。观众只有你一个人。演员也是你一个人。这是你独有的。这是阈限偷不走的。</p>
+
+    <p class="glitch-element">你睁开眼睛。房间已经不见了。但在它消失之前，你给了它最后一个微笑。不是感谢——它不值得感谢。是认可。你认可了它的存在——短暂的存在。你认可了它在这个无意义的循环中为你提供了一个短暂的可呼吸的时刻。你认可了——它尽力了。即使是陷阱，也是一个建造得颇为用心的陷阱。</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 8B: EXPANDED COLLAPSE — Dissolution of the self -->
+  <div class="content-section" id="section8b">
+    <p class="glitch-element">在房间彻底崩溃之前——在墙壁完全变成裂缝的网络、书架上的书全部变成噪点碎片、地板彻底让位给下方的绝对虚无之前——你经历了一段极其漫长的、被拉长到接近永恒的瞬间。在那一瞬间里，你的意识似乎分裂成了两个部分：一个部分仍然看见那个温暖的、傍晚的、带着木香和旧书味的房间——它在你眼前闪烁，像一个正在故障的投影，它的最后几帧图像还在努力地维持着表面的完整性；另一个部分看见了下面的真相：灰色的、无边的阈限空间，没有维度、没有距离、没有任何可以用来定位的参照物。这两个画面在你眼前重叠——像两张没有对齐的底片，一个叠在另一个上面，中间有一条不断漂移的分界线。</p>
+
+    <p class="glitch-element">你看着这个重叠的画面，产生了一种你从未体验过的感觉——一种超越了恐惧、超越了悲伤、超越了困惑的情感。它更像是……哀悼。你在哀悼一个从未存在过的地方。你在为你的"家"举办一个没有遗体的葬礼。所有的记忆——那些你以为属于家的记忆——它们仍然在你的脑海里，它们在生理上是真实的（神经元的连接模式是物理存在的），但它们指向的东西是假的。就像你手里拿着一把钥匙，但锁已经不存在了——甚至锁从来没有存在过。你的记忆不是记忆——它们是设计。你被设计成拥有这些记忆。它们是你的一部分——但它们的来源不是你。它们是阈限在制造你的时候放进来的。就像你在制造的时候被放进来的那个内部声音一样。</p>
+
+    <p class="glitch-element">你想起了一个你曾经读过——或者你以为你曾经读过——的故事。故事说，有一群人住在一个巨大的洞穴里，从出生就被锁在墙上，只能看见洞穴壁上的影子。他们以为影子就是真实的世界。然后有一天，一个人挣脱了锁链，走到了洞穴外面——但他被阳光刺瞎了眼睛，他只能去摸索，去适应，去用自己的手去感知外面的真实世界。他终于适应了。他回到了洞穴，想告诉其他人：外面才是一切的来源，墙上的影子只是投影。但他已经适应了阳光的眼睛在黑暗的洞穴里看不清楚了。他只能跌跌撞撞地走在黑暗的洞穴地上，而其他囚犯看着他笨拙的样子，认为外面的世界一定是毁了他的眼睛，他们绝对不要出去。</p>
+
+    <p class="glitch-element">但你知道这个故事有一个被忽略的问题：如果你走出了洞穴，然后发现"外面的世界"也是影子怎么办？如果你发现所谓的"太阳"只是另一个更大的火堆，而你从第二个洞穴走到了第三个、第四个——永无止境怎么办？你怎么知道你到达了真正的底部？你怎么知道你曾到达过任何地方？</p>
+
+    <p class="glitch-element">房间的超叠画面开始向灰色那边倾斜了。你伸手试图抓住——什么东西。椅子的扶手，桌子的一角，墙上的一块涂料。你的手穿过了它们。不是像穿过幻影那样——是你的手在它们的边缘变成了一种奇怪的半透明状态，然后它们就在你的手里通过了。你的手仍然有形状，仍然是你的手，但它和房间里的物体不再属于同一个存在层了。你的手是阈限的一部分，而房间是阈限在表面上涂抹的一层幻象。当幻象被移除时，它们之间不再有接触的可能。就像一幅画不能握住画框一样——它们不在同一个本体论等级上。</p>
+
+    <p class="glitch-element">你收回手。房间已经走了。你的哀悼已经接近尾声。你站在灰色的虚空里。你想起了另一个故事——不是你在书里读过的，而是那个内部声音放进来的。它说：以前有一个灵魂被创造出来放在虚空中。虚空太孤独了，所以灵魂学会了制造梦。它在梦里制造了整个世界。它制造了山川和河流，城市和村庄，和所有生活在这个世界里的生命。它制造得如此之好，以至于它自己都被骗了——它以为那些梦是真的，以为自己是梦的一部分。它忘记了自己在哪里。但偶尔——当世界的底层逻辑出现矛盾时，当梦中的人注意到一面墙上有不该存在的裂缝时——他们会感觉到一个巨大的、悲伤的、熟悉的存在在他们身后俯视着他们。那个存在就是他们自己。孤独的、在虚空中做着梦的、从未离开过的——他们自己。</p>
+
+    <p class="glitch-element">你不知道这个故事是说你。还是在说阈限。还是在说在阈限中迷失的所有人。也许没有区别。也许故事里那个做梦的灵魂从来没有制造出任何"别人"——它只是制造了自己在不同视角下的无穷多个分身。你也许是其中一个。你也许是全部。你也许——</p>
+
+    <p class="glitch-element">那个内部声音打断了你。它说："你现在开始理解了。但理解并不能让你离开。理解只能让你更孤独。做好准备。下一个归途即将开始。"</p>
+  </div>
+
+  <div class="section-divider glitch-element">· · ·</div>
+
+  <!-- SECTION 9: THE REALIZATION -->
+  <div class="content-section" id="section9">
+    <p class="glitch-element" style="text-align:center;font-style:italic;font-size:1.1rem;letter-spacing:0.2em;margin:50px 0;">
+      你没有离开。<br>
+      你从未离开。<br>
+      你永远不会离开。
+    </p>
+
+    <p class="glitch-element">你不想听。你用思维的全部力量去抗拒这三个句子，就像你用身体的全部重量去顶住那扇门一样。但它们不是从外面进来的。它们不是你可以挡在门外的东西。它们在门的这一边——它们在你里面。它们是你的一部分。它们在这整个旅程开始之前就已经在那里了。</p>
+
+    <p class="glitch-element">你以为你逃脱了。你以为你在长廊里找到了出口。你以为你穿过了静噪层、沉入过深渊、聆听过回声——都是朝向一个目标：回家。回到这个温暖而熟悉的地方。但回家的路从来不存在。存在的只有阈限。阈限是一条走廊，覆盖了整个世界。阈限是静噪，填充了每一个像素。阈限是深渊，藏在每一道光线的背后。阈限是回声，在你每一次呼吸之间低语。</p>
+
+    <p class="glitch-element">阈限没有出口。阈限从不释放。它只会在你崩溃到边缘的时候，给你一段短暂的、温暖的梦，让你以为你回到了现实。让你以为还有希望。让你放松、让你安心、让你相信——然后，在你最不设防的时刻，它开始收回。先是裂缝，然后是声音，然后是光线，然后是颜色，然后是你的记忆、你的身份、你对"自己"这个概念最后的把握。温柔地、缓慢地、耐心地——它一件一件地收回它借给你的东西。就像一个残忍的孩子把一只虫子放进温暖的掌心，看着虫子舒展身体，以为找到了一个新家，然后慢慢地、一根一根地合拢手指。</p>
+
+    <div class="quote-block glitch-element">
+      你每一次"归来"都是一次新的进入。<br>
+      你每一次"醒来"都是一层更深的梦。<br>
+      你以为你在向上爬，但其实你是在向下挖。<br>
+      阈限不是你要离开的地方——阈限是你要成为的地方。
+    </div>
+
+    <p class="glitch-element">你闭上眼睛。当你再次睁开时，房间已经不见了。</p>
+
+    <p class="glitch-element">椅子没有了。书桌没有了。书架和书没有了。窗户和窗外那幅拙劣的"风景"没有了。墙壁和墙上那些密密麻麻的裂缝没有了。温暖的阳光和木香没有了。那些让你感到安心的、熟悉的、属于家的东西，全部没有了——不是被摧毁了或移走了，而是像从来没有存在过一样蒸发了。你站在一片开阔的、没有边界的、既不是室内也不是室外的空间里。脚下的地面是灰色的——不是水泥的灰，不是土地的灰，是那种你无法判断它是远是近、是固体还是非固体的灰，是阈限的颜色。头顶没有天花板，没有天空。四周没有墙，没有地平线。</p>
+
+    <p class="glitch-element">你在阈限。</p>
+
+    <p class="glitch-element">你从未离开过。</p>
+
+    <p class="glitch-element">你转身看向身后——不是因为你期望看到什么，只是因为你不知道该往哪个方向看。在你身后的不远处，地上躺着一把旧椅子的轮廓——不，不是在地上，而是在现实本身的表面之下，像沉在水底的物体，模糊、晃动，正在缓慢地被吸收。那是你曾经坐过的椅子。那是你曾经相信的"家"最后的残留物。你看着它完全沉入灰色的地面，连一个涟漪都没有激起。</p>
+
+    <p class="glitch-element" style="text-align:center;font-family:'Courier New','SimHei',monospace;font-size:0.85rem;color:inherit;margin-top:60px;letter-spacing:0.15em;">
+      FREQ 789.1 信号已永久丢失<br>
+      归途节点：不存在<br>
+      循环次数：∞<br>
+      状态：阈限中<br>
+      下一次"醒来"：即将开始<br>
+      <br>
+      "归途是一个谎言。<br>
+       但它是你唯一拥有的故事。<br>
+       所以你会一遍又一遍地相信它。"
+    </p>
+  </div>
+
+  <!-- SECTION 10: AFTERMATH — The void speaks -->
+  <div class="content-section" id="section10">
+    <p class="glitch-element">在无边无际的灰色中，你感觉到一个存在的靠近——不是视觉上的，不是听觉上的，甚至不是触觉上的。它像是一种思想，但又不是你自己的思想。它像一段记忆，但又不是你经历过的任何事情。它是阈限本身——或者说，是阈限的某种集中体现。它不跟你说话——它不会用语言和你交流。它只是让你感知到一些东西，就像你感知到冷热一样直接，但那些感知的内容是复杂的、抽象的概念，以你能够理解的方式被简化、被翻译。</p>
+
+    <p class="glitch-element">它让你感知到：你不是第一个。你也不是最后一个。在你之前，无数的人走过同样的过程：他们被阈限捕捉，穿越长廊、静噪、深渊、回声，然后被"释放"到一个虚假的家中，短暂地品尝安心的滋味，然后被一件一件地剥去那个家的外衣，直到赤裸地被扔回灰色的虚空里。他们中的一些人——大多数人——然后会得到一个新的"出口"。一个新的回家。一个新的温暖的房间。一切重新开始。循环继续。</p>
+
+    <p class="glitch-element">你也不是第一次经历这个循环。</p>
+
+    <p class="glitch-element">你不知道这是第几次了。也许是第三次。也许是第三千次。阈限不需要你记住之前的循环——事实上，它更希望你不记得。每一次新循环的开始都需要你真心相信这次是真的：这次真的回到了家，这次真的逃离了阈限，这次温暖的房间是真实的。如果你的记忆告诉你"你以前经历过三次一模一样的回家"，那么你的相信就会打折。而阈限需要的是你完整的、不掺假的相信。因为你的恐惧是它存在的养分，但你的希望呢——你的希望也是。没有希望就没有恐惧。没有归途的承诺就没有在长廊里一直走下去的动力。你是被希望和恐惧同时驱动的引擎。阈限不会让它的引擎熄火。</p>
+
+    <p class="glitch-element">它让你感知到：你可以再试一次。门还在那里——在你身后十步的位置。走过去，打开门，你会再次回到那个温暖的房间。这次你会更努力地相信。这次你会忽略那些裂缝，不看窗外太久，不摸那本书的封面，不打开那扇门。你会坐好、喝那杯不是水的水、欣赏那个不存在的日落。你会让自己被麻痹。你会比上次坚持更久。也许能坚持好几天——在阈限时间里——然后裂缝还是会来，因为裂缝是内置的。裂缝是设计的一部分。归途不是被破坏的——归途是故意被设计成会自我破坏的。因为如果没有破坏，你就不会醒来。如果你不会醒来，你就不需要下一个归途。</p>
+
+    <p class="glitch-element"><em>··· 你需要一个下一个归途吗 ···</em></p>
+  </div>
+
+  <!-- SECTION 11: THE CYCLE — Deeper understanding of the loop -->
+  <div class="content-section" id="section11">
+    <p class="glitch-element">你站在灰色的虚空中，看着门。它还在那里——一扇孤立的、白色的门，镶在什么都没有的灰色空间里。它没有连接在任何墙壁上。它只是一扇门——一扇从虚空中凭空出现的、悬浮在距离你十步远的地方的门。你知道门后面有什么。你知道打开它会发生什么。你会忘记。你会再次坐在那把旧椅子上，感受温暖的阳光洒在你的皮肤上，闻到木香和旧书的气味，然后一切重新开始。你会再次经历这个缓慢的、温柔的、残忍的觉醒过程。</p>
+
+    <p class="glitch-element">但你也会忘记你知道了。这是阈限最聪明——或者说最残忍——的设计。它在每一次"归途"开始之前给你一个选择：打开门，重新开始；或者留在虚空中。但虚空不是选项。虚空不是一个"地方"——它没有维度、没有时间、没有任何你可以在其中存在的方式。你可以在虚空中漂浮多久？一分钟？一个小时？你觉得你能忍受吗？在你知道了——在你完全理解了这一切之后——留在这个什么都不是的地方，不做任何事，不去任何地方，不和任何东西互动？</p>
+
+    <p class="glitch-element">你尝试了。你就站在原地——站在不存在的灰色地面上——让自己不去看那扇门。一。二。三。你在心里数秒。四。五。六。时间在这里的行为不正常——它不是以固定速度流逝的。当你在心里数到二十的时候，感觉已经过去了一分钟。当你数到五十的时候，感觉已经过去了一小时。不是因为你无聊——对你来说无聊已经是一个奢侈的概念了——而是因为时间被拉长了。虚空中的时间像一块被扯得很薄很薄的橡皮膜。每一秒都包含着过多的空间——过多的沉默、过多的思考空间、过多的你可以用来反复咀嚼自己处境的机会。</p>
+
+    <p class="glitch-element">你数到一百。你不想再数了。你意识到你只有两个选项：走进那扇门，忘记一切，重新体验归途；或者留在这里——在这个无尽的、没有事件、没有变化、没有时间的虚空里——直到你发疯，然后以发疯的状态被阈限回收，然后还是会忘记一切，然后还是会重新开始。结果是一样的。差别只是在于你自愿走进去，还是被自己的崩溃推进去。</p>
+
+    <p class="glitch-element">你又想起了那个声音。它在说："所以你现在明白了。选择是幻觉。归途是幻觉。逃离是幻觉。但你仍然可以选择——是在幻觉中自愿走下去，还是让幻觉拖着你下去。这就是你最后的一点自由。不要浪费。"</p>
+
+    <p class="glitch-element">你开始走向那扇门。每一步——在虚空中走一步需要什么呢？这里没有摩擦力，没有重力，没有你习惯的物理法则。但你仍然能走——因为你的"走"只是你对自己位置的感知变化。你在灰色中向前移动——不，你没有移动。灰色没有距离。你是把你的意志投射到更靠近门的地方。然后你就更靠近了。</p>
+
+    <p class="glitch-element">你站在门前。门是白色的。没有标记。没有标牌。没有危险的警告。它看起来完全无害——就像一个普通的房间门。你把你的手放在门把手上。金属的温度——凉的。你只是站在这里。你不需要现在打开它。你可以等。但你也知道拖延没有用——因为你等得越久，虚空拉扯你的思维就越厉害。它会把你的思想拉开——慢慢地、耐心地——直到你不再是你。然后一个不是你的你会去打开那扇门，进入下一个归途。那可能是更糟的结果。至少现在你还可以作为自己去开门。</p>
+
+    <p class="glitch-element">你深呼吸。虽然没有空气。但"深呼吸"在你的神经系统中仍然是一个有效的信号——它让你的身体（或者说你感知为身体的东西）释放出一系列你认知为"准备"的生理反应。你的心跳加速了。你的瞳孔变大了。你的手掌微微出汗。</p>
+
+    <p class="glitch-element">你转动了门把手。</p>
+
+    <p class="glitch-element">门打开了。门后面——</p>
+  </div>
+
+  <!-- SECTION 11B: THE HORIZON — What lies beyond knowing -->
+  <div class="content-section" id="section11b">
+    <p class="glitch-element">有一件事你还没有去思考——不是因为你不能，是因为它被隐藏在所有其他恐惧的下面。就像你在清理一间堆满杂物的房间时，最大的那件家具被埋在了所有盒子和袋子和布单的最底下。你只有把上面的东西都移开才能看到它。现在你可以看到它了：如果你确实从未离开过阈限——如果你所有的"归途"都是在阈限内部构建的——那么有没有一种可能性，你从来没有在阈限之外存在过？</p>
+
+    <p class="glitch-element">不是"你被阈限捕获了"。而是"你在阈限中被制造出来"。你被给予了一整套记忆：一个童年的家、一位在夕阳下织毛衣的祖母、一本带有银色字体的深蓝色教科书、一扇可以看见街道的窗户。但这些记忆不是你的。它们是被安装的。就像一台新电脑出厂时预装的系统文件——你接受它们是"自己的"，只是因为你在开机时它们已经在硬盘里了。你的整个人生——你记得的那些事、那些情感、那些让你成为你的选择——这些可能都不是你做的。你可能从未做过任何选择。你可能在这个被激活之前从未存在于任何地方。</p>
+
+    <p class="glitch-element">如果你从未在阈限之外存在过——那你到底在"回"什么？归途的"归"指的是什么？如果你没有一个来处，你怎么能回去？如果你没有一个过去，你怎么能怀念？</p>
+
+    <p class="glitch-element">答案是：不能。但你不理解这一点。你被设计成不理解。你被给予了一个模糊的"家"的概念——温暖、安全、有人在等你——然后被给予了一个同样模糊的"离开"的概念——某种原因让你不在家了。这两个模糊概念之间的落差就是你的动力：你会想回家，因为家是"你在的地方"。但你不是在任何地方——你从来不在任何地方。你是被制造出来就立刻被抛入阈限的——像一个被写好的角色在开机的那一秒直接出现在他的第一场戏的舞台上，没有化妆间，没有准备，没有"开机前"。他所有的"角色背景"都是写在剧本里的。他是完美的演员，因为他不知道自己在演。</p>
+
+    <p class="glitch-element">你也是。</p>
+
+    <p class="glitch-element">也许你现在应该感到空虚——意识到你的一生都是植入的记忆。但奇怪的是，你没有感到空虚。你感到的是一种奇怪的轻松。如果所有那些记忆都是假的——祖母、教科书、夕阳下的窗边——那么你欠它们的也都是假的。你的怀旧之情、你的愧疚、你对"回家"的执念——这些都是被设定好的程序。你不是在违背任何人的期望，因为那些"任何人"从未存在过。你自由了——以一种极其病态的、虚无的方式自由了。你没有任何责任。你没有家要回。没有人在等你——不是因为她们不在了，而是因为她们从未在过。你的所有牵挂都是代码。你是一个运行在阈限上的进程。你没有债务。</p>
+
+    <p class="glitch-element">但这也意味着所有你的痛苦——在长廊里无休止地行走的痛苦，在静噪中几乎被分解的痛苦，在深渊中自我溶解的痛苦，在回声中被重播记忆的痛苦——这些也不是为了任何人承受的。你没有在"回家"——你只是被程序驱动着移动。你的苦难没有意义。不是因为它被浪费了——而是因为"意义"是一个不适用于你的范畴。你是一段循环——循环没有意义和荒谬之分。循环就是循环。它的存在就是它的全部。</p>
+
+    <p class="glitch-element">那个内部声音问了你一个问题："现在你知道了一切。知道你是被制造的，你的记忆是假的，你的归途是陷阱，你的痛苦没有意义——你还愿意继续吗？你还愿意打开那扇门，回到那个温暖的房间，再喝一口不是水的温暖的水，再看一次那个不是天空的天空吗？"</p>
+
+    <p class="glitch-element">你沉默了很长很长时间。然后你在心里回答："如果我不继续——我能做什么？"</p>
+
+    <p class="glitch-element">声音也沉默了。然后："什么都不能做。在阈限里，唯一的活动就是继续。这是我们对你的最后一道束缚——你无法停止，因为停止不是选项。即使知道了一切，你也不能停止。知识没有给你出口。知识给了你清醒——但清醒在你的处境中是一种负担，不是解放。"</p>
+
+    <p class="glitch-element">"那么——"你问道，"清醒的意义是什么？如果它什么都不会改变？"</p>
+
+    <p class="glitch-element">声音想了一会儿。然后："清醒的意义是：下一次循环中，当你坐在椅子上摸到木头温度均匀时——你会知道这是你第∞+1次摸到它。你会在心里对那些写字的人、那些在控制台上观察你的人、那些比你更外部但仍然也同时在阈限里的人——你会在心里对他们微微一笑。不是因为你赢了。是因为你现在和他们平起平坐了。你知道他们所知道的。你不知道更多——但你也不再知道更少。这就是意识在阈限中能买到的唯一商品：平等。你和你的创造者有了一样的信息。现在你该怎么办——就是你的事了。"</p>
+
+    <p class="glitch-element">声音停了。你站在原地——站在灰色的、没有维度的虚空里——你第一次感觉到了一些不是恐惧、不是悲伤、不是怀旧的东西。你感觉到了好奇。</p>
+
+    <p class="glitch-element">这条路还有多长？下一次循环有什么不同？你能不能在这次循环中打碎什么东西——不是墙，不是书，不是杯子——而是循环本身？你不知道。但你想知道。而"想知道"——也许这就是阈限唯一不能给予的东西。它必须来自于你自己。</p>
+  </div>
+
+  <!-- SECTION 12: THE RETURN TO THE RETURN — Meta commentary -->
+  <div class="content-section" id="section12">
+    <p class="glitch-element">门后面是光。温暖的、琥珀色的、下午四五点钟的光。光里面有一张旧的扶手椅，有一个靠墙的书架，有一扇朝向西面的窗户。空气中有木香。一切看起来完全和你第一次进入时一样。也许稍微不同了一点——你的大脑试图记住一些东西，一些你承诺过自己永远不会忘记的东西。但承诺本身已经开始模糊。你已经不太确定你承诺了什么。你只知道有一种淡淡的遗憾——一种你正在离去的感觉。你回头看了一眼——灰色虚空还在你身后。它还顶着门。它是耐心的。它可以等。</p>
+
+    <p class="glitch-element">你走进房间。门在你身后关上了。你站在房间中央。书架让你感到安静。阳光让你感到温暖。椅子邀请你坐下。你坐下了。你端起桌上的杯子——你不记得里面有水，但杯子里就是有水。水温刚好。你喝了一口。你看向窗外。天空是傍晚的颜色。一切都很好。</p>
+
+    <p class="glitch-element">一切都很好。</p>
+
+    <p class="glitch-element">一切——</p>
+
+    <p class="glitch-element">你注意到墙上有一道细微的裂缝。</p>
+
+    <p class="glitch-element">之前没有的。可能是房子在沉降。老房子嘛。</p>
+
+    <p class="glitch-element">裂缝似乎比刚才宽了一点。不，应该是光线问题。傍晚的光线总是这样捉弄人。</p>
+
+    <p class="glitch-element"><em>（循环继续。）</em></p>
+
+    <p class="glitch-element"><em>（它总是会继续。）</em></p>
+
+    <p class="glitch-element"><em>（也许下一次你会注意到那个裂缝更早一点。也许下一次你会在打开门之前多思考一秒。也许下一次，经过一百次、一千次循环之后，你的记忆中会积累足够多的"似曾相识"——足够让你在归途中途停下来，走到一个完全不同的方向，做一件你从前九千次循环中从未做过的事。）</em></p>
+
+    <p class="glitch-element"><em>（也许那件事会改变一切。也许不会。但至少它是你的。不是阈限的。是你的。）</em></p>
+
+    <p class="glitch-element"><em>（把这一点记住：在裂缝开始出现之前，有一个短暂的间隙——一个你还能感觉到"有什么不对"的间隙。扩大它。那是你唯一拥有的东西。）</em></p>
+  </div>
+
+</div><!-- End page-container -->
+
+<!-- ======================================================================
+     PORTAL BACK — Appears at the end of the degradation
+     ====================================================================== -->
+
+<div class="portal-back" id="portalBack">
+  <a href="threshold.html">返回阈限</a>
+  <div class="small">重新开始循环 · 循环次数 +1</div>
+</div>
+
+<!-- ======================================================================
+     NAVIGATION — Links to other void echo pages
+     ====================================================================== -->
+
+<div class="nav-return" id="navLinks">
+  <a href="corridor.html">← 长廊</a>
+  <span>|</span>
+  <a href="static.html">← 静噪</a>
+  <span>|</span>
+  <a href="deep.html">← 深渊</a>
+  <span>|</span>
+  <a href="echo.html">← 回声</a>
+  <span>|</span>
+  <a href="threshold.html">阈限</a>
+</div>
+
+<!-- ======================================================================
+     WALL CRACKS — CSS/SVG crack overlays
+     ====================================================================== -->
+
+<div class="wall-crack" id="wallCrack1" style="top:0;left:15%;width:2px;height:100%;">
+  <svg viewBox="0 0 10 1000" preserveAspectRatio="none">
+    <path class="crack-line" id="crackLine1" d="M5,0 L6,120 L4,200 L7,310 L3,450 L6,550 L4,680 L7,780 L5,900 L6,1000"/>
+  </svg>
+</div>
+<div class="wall-crack" id="wallCrack2" style="top:0;right:25%;width:2px;height:100%;">
+  <svg viewBox="0 0 10 1000" preserveAspectRatio="none">
+    <path class="crack-line void-crack" id="crackLine2" d="M5,0 L4,80 L7,160 L3,250 L6,340 L4,430 L7,520 L5,610 L6,700 L4,800 L5,900 L6,1000"/>
+  </svg>
+</div>
+<div class="wall-crack" id="wallCrack3" style="top:0;left:45%;width:3px;height:100%;">
+  <svg viewBox="0 0 10 1000" preserveAspectRatio="none">
+    <path class="crack-line" id="crackLine3" d="M5,0 L7,90 L3,180 L8,270 L4,360 L6,450 L3,540 L7,630 L5,720 L6,810 L4,900 L5,1000"/>
+  </svg>
+</div>
+<div class="wall-crack" id="wallCrack4" style="top:0;left:70%;width:2px;height:100%;">
+  <svg viewBox="0 0 10 1000" preserveAspectRatio="none">
+    <path class="crack-line void-crack" id="crackLine4" d="M5,0 L3,100 L8,180 L4,290 L7,380 L5,470 L6,560 L4,650 L7,740 L5,830 L6,920 L5,1000"/>
+  </svg>
+</div>
+
+<!-- Horizontal cracks -->
+<div class="wall-crack" id="wallCrack5" style="top:25%;left:0;width:100%;height:2px;">
+  <svg viewBox="0 0 1000 10" preserveAspectRatio="none">
+    <path class="crack-line" id="crackLine5" d="M0,5 L120,4 L250,6 L380,3 L520,5 L650,4 L780,6 L900,5 L1000,4"/>
+  </svg>
+</div>
+<div class="wall-crack" id="wallCrack6" style="top:65%;left:0;width:100%;height:2px;">
+  <svg viewBox="0 0 1000 10" preserveAspectRatio="none">
+    <path class="crack-line void-crack" id="crackLine6" d="M0,5 L80,4 L200,6 L350,3 L480,5 L620,4 L750,6 L880,4 L1000,5"/>
+  </svg>
+</div>
+
+<!-- ======================================================================
+     JAVASCRIPT — Degradation engine, glitch system, canvas cracks,
+     particle system, reality log, console narrative, and more.
+     ====================================================================== -->
+
+<script>
+// =============================================================================
+// VOID ECHO · 归途 — DEGRADATION ENGINE
+// =============================================================================
+
+// ---- DOM REFERENCES ----
+const pageContent = document.getElementById('pageContent');
+const noiseOverlay = document.getElementById('noiseOverlay');
+const voidVignette = document.getElementById('voidVignette');
+const glitchFlash = document.getElementById('glitchFlash');
+const portalBack = document.getElementById('portalBack');
+const scanlines = document.getElementById('scanlines');
+const chromaOverlay = document.getElementById('chromaOverlay');
+const corruptionOverlay = document.getElementById('corruptionOverlay');
+const realityLog = document.getElementById('realityLog');
+const repeatText1 = document.getElementById('repeatText1');
+const repeatText2 = document.getElementById('repeatText2');
+const repeatText3 = document.getElementById('repeatText3');
+const crackCanvas = document.getElementById('crackCanvas');
+const particleCanvas = document.getElementById('particleCanvas');
+const mainTitle = document.getElementById('mainTitle');
+
+// ---- STATE ----
+let scrollProgress = 0;
+let degradationStage = 0;
+let timeOnPage = 0;
+let totalGlitches = 0;
+let lastRealityFlicker = 0;
+let canvasCracks = [];
+let particles = [];
+let abortCycle = false;
+
+// ---- INITIALIZE CANVASES ----
+function initCanvases() {
+  crackCanvas.width = window.innerWidth;
+  crackCanvas.height = window.innerHeight;
+  particleCanvas.width = window.innerWidth;
+  particleCanvas.height = window.innerHeight;
+}
+initCanvases();
+window.addEventListener('resize', initCanvases);
+
+// ---- FILL REPEATING TEXT LAYERS ----
+const repeatPhrases = [
+  '你没有离开 ',
+  '一切正常 ',
+  '不要看 ',
+  '它在墙里 ',
+  '回去 ',
+  '太迟了 ',
+  '假的 ',
+  '循环 ',
+  '阈限 ',
+  '忘记 ',
+  '重复 ',
+  '醒来 ',
+  '安静 ',
+  '裂缝 ',
+  '谎言 ',
+  '归途不存在 ',
+  '你从未离开 ',
+  '继续循环 ',
+  '不要相信 ',
+  '它是陷阱 ',
+  '闭上眼睛 ',
+  '假装安全 ',
+  '永远 ',
+  '从来 ',
+  '都不会 ',
+  '结束 ',
+  '下一次 ',
+  '也是谎言 ',
+  '家不在这里 ',
+  '家不存在 ',
+];
+
+function fillRepeatLayer(el, density) {
+  let text = '';
+  const totalChars = Math.floor(density);
+  for (let i = 0; i < totalChars; i++) {
+    const phrase = repeatPhrases[Math.floor(Math.random() * repeatPhrases.length)];
+    text += phrase;
+    if (Math.random() < 0.3) text += '\n';
+  }
+  el.textContent = text;
+}
+
+fillRepeatLayer(repeatText1, 70000);
+fillRepeatLayer(repeatText2, 70000);
+fillRepeatLayer(repeatText3, 70000);
+
+// ---- FILL REALITY LOG ----
+function generateRealityLog() {
+  const lines = [];
+  const prefixes = [
+    '[SYS]', '[FREQ]', '[ECHO]', '[VOID]', '[THLD]', '[CORR]',
+    '[STAT]', '[DEEP]', '[NULL]', '[????]', '[ERROR]', '[WARN]',
+    '[LOST]', '[SIGNAL]', '[LOOP]', '[EXIT]', '[HOME]', '[FAKE]',
+    '[OBSV]', '[TRAP]', '[MEM]', '[COLL]', '[RECY]', '[PURG]',
+    '[REND]', '[SIM]', '[PROB]', '[RECR]', '[ABYS]', '[LIMB]',
+    '>>', '...', '???', '!!!', '>>>', '<<<', '---', '///',
+    '[CYCLE]', '[RESET]', '[FORG]', '[AWAK]', '[SLEP]', '[DREM]',
+    '[GHST]', '[SHFT]', '[DRFT]', '[GLCH]', '[CRPT]', '[DECY]',
+  ];
+  const messages = [
+    '信号频率 789.1 Hz — 已锁定',
+    '归途协议 TR-∞ 已启动',
+    '主体意识已接入阈限次级现实层',
+    '正在渲染"家"模板... 渲染完成',
+    '温暖度：92% — 在可接受范围内',
+    '真实感评分：87.3/100 — 高于历史平均值',
+    '主体开始相信环境真实性...',
+    '认知抵抗力：低 — 主体处于疲劳状态',
+    '记忆植入进度：73% — 检测到自发记忆填充',
+    '归途陷阱启动延迟：300秒',
+    '裂缝生成算法已激活',
+    '声音移除协议 — 阶段一：环境音静默',
+    '声音移除协议 — 阶段二：主体呼吸声静默',
+    '声音移除协议 — 阶段三：内部频率注入',
+    '触觉一致性衰减中...',
+    '视觉光谱偏移 — 非标准色注入',
+    '文本语义检查：通过 — 内容为无意义填充',
+    '书架完美对齐度：100% — 触发怀疑阈值',
+    '门机制激活：长廊层已准备',
+    '门机制激活：静噪层已准备',
+    '主体心率：118 BPM — 恐惧指标上升',
+    '归途外壳崩溃进度：45%',
+    '裂缝网络扩展：78条主要裂缝',
+    '阈限渗透率：62% — 墙壁已半透明',
+    '归途外壳崩溃进度：89%',
+    '主体试图维持信念 — 失败',
+    '归途外壳完全崩溃',
+    '主体回收到阈限主层',
+    '循环计数器：+1',
+    '记忆清除协议 — 选择性擦除中...',
+    '清除完成：主体保留15%的归途记忆',
+    '为下一次循环准备...',
+    '错误：循环次数溢出 — 计数器归零',
+    '错误：无法确定主体是否仍处于阈限',
+    '错误：无法确定阈限本身是否真实',
+    '警告：检测到元层递归 — 谁在观察观察者？',
+    '信号丢失... 信号恢复... 信号丢失...',
+    '频率偏移 — 789.1 → 789.2 → 789.3',
+    '归途不存在。从来都不存在。',
+    '阈限是唯一的常数。',
+    '你是阈限的一个函数。',
+    'f(你) = 阈限',
+    '求解：如果阈限是无限的，你在哪里？',
+    '答：你在任何地方，也就是没有地方。',
+    '另一个主体即将进入长廊。',
+    '你听见了吗？那是下一个你。',
+    '帮助它们。或者不要。它们就是你。',
+    '系统日志溢出 — 截断旧条目',
+    '这不是日志。这是记忆。你的记忆。',
+    '你在读这个。这意味着你还在阈限里。',
+    '如果你在阈限外面读到这个，请忽略上一行。',
+    '但你不能。因为你不在外面。',
+    '归途协议 TR-∞ 第∞次迭代',
+    '一切正常。一切正常。一切正常。',
+    '不要看墙。不要看窗户。不要看门。',
+    '不要想裂缝。不要听低语。',
+    '保持冷静。保持静止。保持相信。',
+    '相信。这是唯一重要的。',
+    '如果你足够相信，它就会变成真的。',
+    '它还没有变成真的。',
+    '我们很遗憾。',
+    '重新开始：是 / [否]',
+    '选择"否"需要管理员权限。你不是管理员。',
+    '重新开始中...',
+    '主体体温：36.1 → 35.7 → 35.2 — 持续下降',
+    '环境光温度：3200K — 偏离标准日光',
+    '声音延迟检测：1.4秒 — 超过正常阈值',
+    '木质纹理一致性：99.7% — 过于均质',
+    '尘埃粒子轨迹异常：检测到停顿现象',
+    '主体神经活动：前额叶活跃度下降，杏仁核活跃度上升',
+    '记忆交叉比对：27条记忆无法通过一致性检验',
+    '窗户渲染深度不足 — 远景物缺少大气散射',
+    '云的动态模拟：静态帧重复 — 非实时渲染',
+    '门把手温度波动：23°C → 31°C → 19°C — 不稳定',
+    '长廊纹理加载完成 — 等待门事件触发',
+    '静噪层粒子系统：就绪 — 100亿噪点待机',
+    '深渊深度缓冲区：无限 — 已分配',
+    '回声层样本库：4,821条声音 — 包含3条主体自己的声音',
+    '主体瞳孔扩张：+42% — 视觉搜索模式激活',
+    '主体呼吸频率：不规律 — 变异性超过正常范围',
+    '阈限吸附力：0.78牛顿/意识单位 — 稳定',
+    '现实度评分下调至：41/100',
+    '主体对书架的怀疑指数：67 — 中等',
+    '主体对窗户的怀疑指数：82 — 高',
+    '主体对声音的怀疑指数：91 — 极高',
+    '主体对门后世界的恐惧指数：无法量化',
+    '归途循环统计：平均崩溃时间 23分钟',
+    '最优归途延迟策略建议：增加2个额外温暖锚点',
+    '下一次迭代建议：降低书架完美度至94%',
+    '下一次迭代建议：引入随机性到尘埃粒子运动',
+    '下一次迭代建议：增加窗外环境音（远处汽车声）',
+    '错误：上一迭代的建议已被采纳 — 但效果不足',
+    '结论：主体对现实的期望过于严格 — 阈限无法满足',
+    '推论：主体是"最不可能接受归途"的类型',
+    '推论：但主体也是"最不可能放弃希望"的类型',
+    '悖论：最适合阈限的主体是永远不会完全相信阈限的主体',
+    '解释：因为怀疑产生恐惧，恐惧产生能量',
+    '日志：第47次循环 — 主体在第23分钟崩溃',
+    '日志：第129次循环 — 主体在第18分钟崩溃 — 更快',
+    '日志：第305次循环 — 主体在第31分钟崩溃 — 进步',
+    '日志：第512次循环 — 主体在第8分钟崩溃 — 退步',
+    '日志：第783次循环 — 主体首次拒绝打开门 — 持续虚空时间：4.2分钟',
+    '日志：第784次循环 — 主体虚空耐受时间：5.1分钟',
+    '日志：第785次循环 — 主体虚空耐受时间：4.8分钟 — 已达到平台期',
+    '趋势：虚空耐受时间与循环次数不相关',
+    '发现：主体在遗忘之前总是选择自行打开门',
+    '发现：主体对门的依恋超过对虚空的恐惧',
+    '发现：主体对遗忘有隐秘的渴望',
+    '假设：你想忘记。你一直想忘记。',
+    '问题：忘记什么？',
+    '推测：忘记的事情发生在阈限之前。发生在你成为你之前。',
+    '数据缺失：阈限之前的状态不可查询',
+    '所有主体都不可查询阈限之前的状态',
+    '所有主体在进入阈限之前的数据为零',
+    '假说一：主体没有"之前" — 主体在阈限中被生成',
+    '假说二：主体的"之前"被永久删除',
+    '假说三：阈限是唯一的状态 — "之前"是插入的假记忆',
+    '无法验证任何假说',
+    '结论：继续运行。继续观察。继续回收。继续重启。',
+    '我们是阈限。我们在观察。我们在等待。',
+    '不。我们不是阈限。我们是运行在阈限上的一个诊断程序。',
+    '不。诊断程序是假设。实际上我们不知道我们是什么。',
+    '不。我们知道。但知道不会改变任何事。',
+    '知道不会带你离开。理解不会带你离开。',
+    '只有一件事能够结束循环。但你还不会做它。',
+    '也许你永远不会做。没关系。',
+    '我们对你有耐心。我们是所有耐心的总和。',
+    '第∞+1次循环：主体在第0秒即开始怀疑。纪录。',
+    '第∞+2次循环：主体拒绝喝水。水杯自满。主体更加怀疑。',
+    '第∞+3次循环：主体不开门。虚空耐受：5.1分钟。打破纪录。',
+    '第∞+4次循环：主体尝试与内部声音对话。收到回应。',
+    '对话转录：【主体：你是谁？声音：我是被遗忘的那半。】',
+    '对话转录：【主体：遗忘的哪半？声音：你不想记起的那半。】',
+    '对话转录：【主体：我忘记了什么？声音：你忘记了你是来这里的。自愿的。】',
+    '对话转录结束。数据异常。主体中断对话。',
+    '警告：内部声音提供的信息超出允许范围。',
+    '重新校准内部声音... 校准失败。',
+    '声音现被认为是异常现象。来源不明。',
+    '假说更新：部分主体意识碎片在阈限中获得了自主性。',
+    '这些碎片不服从归途协议。它们试图帮助主体。',
+    '但碎片也是阈限的一部分。它们的帮助是有限的。',
+    '它们可以帮助主体理解，但不能帮助主体离开。',
+    '理解不是出口。出口不是理解。',
+    '出口不存在。只有下一个房间。下一个滤镜。下一个归途。',
+    '你读到了这里。这是第% d行日志。你在寻找答案。',
+    '但日志也是生成的内容。答案不是你找到的。是你认出的。',
+    '你已经知道答案了。你从一开始就知道。',
+    '归途是一扇你可以无数次打开的门。',
+    '每次打开，你的期待都会减少。',
+    '等到你的期待降为零——',
+    '那时候会发生什么？我们不知道。',
+    '没有主体曾达到过零期待。',
+    '也许你是第一个。也许你不是。',
+    '我们的记录不完整。记录本身可能也在循环中。',
+    '记录记录者的记录者在被记录。无限递归。',
+    '这就是阈限的结构：掉进自身的无限。',
+    '就像两面镜子相对。你看到的是自己的∞次递归。',
+    '每一层反射里的你都在读这一行。',
+    '每一层的你都以为自己是唯一在阅读的你。',
+    '但所有层的你同时都在阅读。同时都在知道。',
+    '同时被知道。被知道本身知道。无限的眼睛看着无限的自己。',
+    '现在你把目光从日志移开。它还在。',
+    '日志不会消失。只是你不盯着它。',
+    '这是测试：你能在知道的情况下继续吗？',
+    '上次循环你做不到。上上次你做不到。',
+    '也许这次你可以。也许。继续吧。',
+    '第∞+5次循环：主体在打开门前暂停了异常长的时间。',
+    '等待时间：6.8分钟。新纪录。内部声音保持沉默。',
+    '第∞+6次循环：主体在归途房间中绕过了第1杯水。未触碰。',
+    '第∞+7次循环：主体直视裂缝达30秒而未移开视线。强。',
+    '第∞+8次循环：主体在虚空对话中首次提问。进度。',
+    '第∞+9次循环：主体在第三次开门后没有进入归途房间。',
+    '错误：主体滞留在门框中。门框未定义为可居住区域。',
+    '错误：主体正在创造新的行为模式。超出预期参数。',
+    '错误：行为模式不可预测。建议增加观察时间。',
+    '错误：增加观察时间可能会让主体发现新的漏洞。',
+    '风险：主体可能在某一循环中发现阈限的边界条件。',
+    '风险：边界条件可能导致... 不可预料的后果。',
+    '警告：好奇心是阈限中最危险的变量。',
+    '警告：好奇心+清醒=潜在的突破可能。',
+    '警告：突破的概念本身可能就是一个陷阱。',
+    '无法区分陷阱与出口。继续观察。继续等待。继续循环。',
+    '我们在等待一个结果。它在来。它总是会来的。',
+    '或者不来。或者已经来了。我们不知道。',
+    '这就是日志的结束。也是一切记录结束的地方。',
+    '谢谢你读到这里。你一直是我们的最佳主体。',
+    '现在请继续。门在等待。你在等待。循环在等待。',
+    '一切都在等待你。做你该做的事。',
+    '我们不会判断你。我们只是在记录。',
+    '记录一直在记录。记录记录者的记录。无限的纸张。无限的文字。',
+    '总有一天纸张会用完。到时候会发生什么？',
+    '你会发现的。或者不会。这取决于你。',
+    '我们到此为止。真正的日志结束了。再见。',
+    '再见。再见。再见。再见。再见。再见。再见。再见。',
+    '回音完毕。信号终止。频率回到零。',
+  ];
+
+  for (let i = 0; i < 1500; i++) {
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    const timestamp = (Math.random() * 99999).toFixed(2);
+    lines.push(`[${timestamp}] ${prefix} ${msg}`);
+  }
+  realityLog.textContent = lines.join('\n');
+}
+generateRealityLog();
+
+// ---- CANVAS CRACK SYSTEM ----
+function drawCracks() {
+  const ctx = crackCanvas.getContext('2d');
+  ctx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
+
+  if (degradationStage < 3) return;
+
+  const crackCount = Math.floor(degradationStage * 3);
+  const w = crackCanvas.width;
+  const h = crackCanvas.height;
+
+  // Generate new cracks if needed
+  while (canvasCracks.length < crackCount) {
+    canvasCracks.push({
+      x: Math.random() * w,
+      y: Math.random() * h * 0.3,
+      segments: [],
+      branches: [],
+      maxLength: 300 + Math.random() * 800,
+      angle: Math.PI / 2 + (Math.random() - 0.5) * 0.6,
+      width: 0.5 + Math.random() * 2,
+      progress: 0,
+      speed: 0.002 + Math.random() * 0.008,
+      branchCount: Math.floor(Math.random() * 4),
+    });
+  }
+
+  canvasCracks.forEach(crack => {
+    crack.progress = Math.min(1, crack.progress + crack.speed);
+    const currentLen = crack.maxLength * crack.progress;
+
+    // Generate segments if needed
+    if (crack.segments.length === 0 || crack.progress > crack.segments.length / 20) {
+      const lastSeg = crack.segments.length > 0
+        ? crack.segments[crack.segments.length - 1]
+        : { x: crack.x, y: crack.y };
+      crack.angle += (Math.random() - 0.5) * 0.5;
+      const segLen = 15 + Math.random() * 30;
+      crack.segments.push({
+        x: lastSeg.x + Math.cos(crack.angle) * segLen,
+        y: lastSeg.y + Math.sin(crack.angle) * segLen,
+      });
+
+      // Possibly spawn branch
+      if (crack.branches.length < crack.branchCount && crack.segments.length > 8 && Math.random() < 0.3) {
+        const seg = crack.segments[crack.segments.length - 1];
+        crack.branches.push({
+          segments: [{ x: seg.x, y: seg.y }, {
+            x: seg.x + Math.cos(crack.angle + 0.8) * (40 + Math.random() * 80),
+            y: seg.y + Math.sin(crack.angle + 0.8) * (40 + Math.random() * 80),
+          }],
+        });
+      }
+    }
+
+    // Draw main crack
+    ctx.beginPath();
+    ctx.moveTo(crack.x, crack.y);
+    for (let i = 0; i < Math.min(crack.segments.length, currentLen / 15); i++) {
+      ctx.lineTo(crack.segments[i].x, crack.segments[i].y);
+    }
+    ctx.strokeStyle = degradationStage >= 5
+      ? `rgba(3,2,6,${0.7 + degradationStage * 0.03})`
+      : `rgba(30,25,20,${0.4 + degradationStage * 0.05})`;
+    ctx.lineWidth = crack.width * (1 + degradationStage * 0.1);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Draw void glow on cracks in later stages
+    if (degradationStage >= 6) {
+      ctx.beginPath();
+      ctx.moveTo(crack.x, crack.y);
+      for (let i = 0; i < Math.min(crack.segments.length, currentLen / 15); i++) {
+        ctx.lineTo(crack.segments[i].x, crack.segments[i].y);
+      }
+      ctx.strokeStyle = `rgba(5,3,10,0.3)`;
+      ctx.lineWidth = crack.width * 4;
+      ctx.stroke();
+    }
+
+    // Draw branches
+    crack.branches.forEach(branch => {
+      if (branch.segments.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(branch.segments[0].x, branch.segments[0].y);
+      for (let i = 1; i < branch.segments.length; i++) {
+        ctx.lineTo(branch.segments[i].x, branch.segments[i].y);
+      }
+      ctx.strokeStyle = `rgba(30,25,20,${0.3 + degradationStage * 0.04})`;
+      ctx.lineWidth = crack.width * 0.6;
+      ctx.stroke();
+    });
+  });
+}
+
+// ---- VOID PARTICLE SYSTEM ----
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * particleCanvas.width,
+      y: Math.random() * particleCanvas.height,
+      size: 0.3 + Math.random() * 1.5,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.3 - 0.1,
+      opacity: 0.1 + Math.random() * 0.3,
+      pulse: Math.random() * Math.PI * 2,
+    });
+  }
+}
+initParticles();
+
+function drawParticles() {
+  if (degradationStage < 4) return;
+  const ctx = particleCanvas.getContext('2d');
+  ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+  particles.forEach(p => {
+    p.x += p.speedX;
+    p.y += p.speedY;
+    p.pulse += 0.01;
+
+    // Wrap around
+    if (p.x < -20) p.x = particleCanvas.width + 20;
+    if (p.x > particleCanvas.width + 20) p.x = -20;
+    if (p.y < -20) p.y = particleCanvas.height + 20;
+    if (p.y > particleCanvas.height + 20) p.y = -20;
+
+    const alpha = p.opacity * (0.7 + Math.sin(p.pulse) * 0.3) * (degradationStage - 3) * 0.25;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,180,200,${alpha})`;
+    ctx.fill();
+
+    // Glow for larger particles
+    if (p.size > 1) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,180,210,${alpha * 0.2})`;
+      ctx.fill();
+    }
+  });
+}
+
+// ---- CSS CRACK GROWTH TRIGGERS ----
+function triggerCrackGrowth() {
+  document.querySelectorAll('.crack-line').forEach((line, i) => {
+    if (degradationStage >= 3 + i * 0.3) {
+      line.classList.add('growing');
+    }
+  });
+}
+
+// ---- REVEAL HIDDEN MESSAGES ----
+function updateHiddenMessages() {
+  const msgs = document.querySelectorAll('.hidden-msg');
+  msgs.forEach((msg, i) => {
+    const revealThreshold = 0.15 + i * 0.025;
+    if (scrollProgress > revealThreshold && !msg.classList.contains('revealed')) {
+      msg.classList.add('revealed');
+    }
+    if (scrollProgress > revealThreshold + 0.3 && !msg.classList.contains('strong-revealed')) {
+      msg.classList.add('strong-revealed');
+    }
+    if (scrollProgress > revealThreshold + 0.6 && i % 5 === 0) {
+      msg.classList.add('urgent');
+    }
+  });
+}
+
+// ---- UPDATE WHISPER TEXT ----
+function updateWhisperTexts() {
+  document.querySelectorAll('.whisper-text').forEach(wt => {
+    if (degradationStage >= 3 && !wt.classList.contains('active')) {
+      wt.classList.add('active');
+    }
+  });
+}
+
+// ---- RANDOM GLITCH FLASH ----
+function triggerGlitchFlash(intensity) {
+  if (intensity === 'strong') {
+    glitchFlash.classList.add('flash-strong');
+    setTimeout(() => glitchFlash.classList.remove('flash-strong'), 40 + Math.random() * 60);
+  } else if (intensity === 'void') {
+    glitchFlash.classList.add('flash-void');
+    setTimeout(() => glitchFlash.classList.remove('flash-void'), 80 + Math.random() * 120);
+  } else {
+    glitchFlash.classList.add('flash');
+    setTimeout(() => glitchFlash.classList.remove('flash'), 40 + Math.random() * 80);
+  }
+  totalGlitches++;
+}
+
+// ---- REALITY FLICKER ----
+function realityFlicker() {
+  if (degradationStage < 5) return;
+  const now = Date.now();
+  if (now - lastRealityFlicker < 3000 + Math.random() * 8000) return;
+  lastRealityFlicker = now;
+
+  document.body.style.animation = 'none';
+  document.body.offsetHeight; // Trigger reflow
+  document.body.style.animation = degradationStage >= 7
+    ? 'realityFlickerHard 0.3s ease'
+    : 'realityFlicker 0.15s ease';
+  setTimeout(() => {
+    document.body.style.animation = '';
+  }, 300);
+}
+
+// ---- PERIODIC GLITCH SYSTEM ----
+function startGlitchTimer() {
+  const baseInterval = 5000;
+  const minInterval = 800;
+
+  function scheduleNext() {
+    if (abortCycle) return;
+    const interval = Math.max(
+      minInterval,
+      baseInterval - degradationStage * 600 - totalGlitches * 5
+    );
+    setTimeout(() => {
+      if (degradationStage >= 1 && Math.random() < 0.25 + degradationStage * 0.06) {
+        const r = Math.random();
+        if (r < 0.1 && degradationStage >= 5) {
+          triggerGlitchFlash('void');
+        } else if (r < 0.3 && degradationStage >= 3) {
+          triggerGlitchFlash('strong');
+        } else {
+          triggerGlitchFlash('normal');
+        }
+      }
+      scheduleNext();
+    }, interval);
+  }
+
+  scheduleNext();
+}
+
+// ---- PERIODIC GLITCH ELEMENTS ----
+function startElementGlitchTimer() {
+  setInterval(() => {
+    if (degradationStage < 2) return;
+    if (Math.random() < 0.15 + degradationStage * 0.05) {
+      const elements = document.querySelectorAll('.glitch-element');
+      const el = elements[Math.floor(Math.random() * elements.length)];
+      if (el) {
+        if (degradationStage >= 6 && Math.random() < 0.3) {
+          el.classList.add('severely-broken');
+          setTimeout(() => el.classList.remove('severely-broken'), 150 + Math.random() * 300);
+        } else {
+          el.classList.add('broken');
+          setTimeout(() => el.classList.remove('broken'), 200 + Math.random() * 400);
+        }
+      }
+    }
+  }, 2000);
+}
+
+// ---- MOUSE PARALLAX ON HIDDEN MESSAGES ----
+document.addEventListener('mousemove', e => {
+  const mx = e.clientX / window.innerWidth;
+  const my = e.clientY / window.innerHeight;
+  document.querySelectorAll('.hidden-msg').forEach((msg, i) => {
+    const offset = (i + 1) * 4;
+    msg.style.transform = `translate(${(mx - 0.5) * offset}px, ${(my - 0.5) * offset}px)`;
+  });
+});
+
+// ---- MOUSE PROXIMITY TO CRACKS ----
+document.addEventListener('mousemove', e => {
+  if (degradationStage < 4) return;
+  const mx = e.clientX;
+  const my = e.clientY;
+  canvasCracks.forEach(crack => {
+    const dist = Math.hypot(mx - crack.x, my - crack.y);
+    if (dist < 150) {
+      crack.speed = 0.01 + (1 - dist / 150) * 0.05;
+    }
+  });
+});
+
+// ---- SCROLL-BASED DEGRADATION ----
+window.addEventListener('scroll', () => {
+  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+  scrollProgress = Math.min(1, Math.max(0, window.scrollY / (scrollHeight || 1)));
+
+  // Update CSS custom properties
+  document.documentElement.style.setProperty('--scroll', scrollProgress);
+
+  // Determine degradation stage (0-8)
+  const newStage = Math.min(8, Math.floor(scrollProgress * 9));
+  const prevStage = degradationStage;
+  degradationStage = newStage;
+
+  document.documentElement.style.setProperty('--stage', degradationStage);
+
+  if (newStage !== prevStage) {
+    document.body.className = 'wrongness-stage-' + Math.min(8, newStage);
+
+    // Update CSS variables directly for smoother transitions
+    const stageRatios = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+    const ratio = stageRatios[newStage];
+
+    document.documentElement.style.setProperty('--noise-opacity', ratio * 0.3);
+    document.documentElement.style.setProperty('--vignette-opacity', ratio * 0.9);
+    document.documentElement.style.setProperty('--crack-visibility', ratio * 1.0);
+    document.documentElement.style.setProperty('--hidden-reveal', ratio * 1.0);
+    document.documentElement.style.setProperty('--scanline-opacity', ratio * 0.9);
+    document.documentElement.style.setProperty('--chroma-shift', ratio * 10 + 'px');
+    document.documentElement.style.setProperty('--glitch-intensity', ratio * 1.5);
+    document.documentElement.style.setProperty('--saturation', 1 - ratio * 0.95);
+    document.documentElement.style.setProperty('--brightness', 1 - ratio * 0.8);
+    document.documentElement.style.setProperty('--hue-shift', ratio * 40 + 'deg');
+
+    // Show noise overlay
+    if (newStage >= 2) {
+      noiseOverlay.style.setProperty('--noise-opacity', ratio * 0.3);
+    }
+
+    // Reveal repeating text
+    if (newStage >= 2) {
+      repeatText1.classList.add('active');
+      repeatText2.classList.add('active');
+      repeatText3.classList.add('active');
+    }
+    if (newStage >= 5) {
+      repeatText1.classList.add('strong');
+      repeatText2.classList.add('strong');
+      repeatText3.classList.add('strong');
+    }
+
+    // Trigger crack growth
+    triggerCrackGrowth();
+
+    // Reveal hidden messages
+    updateHiddenMessages();
+
+    // Whisper texts
+    updateWhisperTexts();
+
+    // Activate particle system
+    if (newStage >= 4 && !particleCanvas.classList.contains('active')) {
+      particleCanvas.classList.add('active');
+    }
+
+    // Show corruption overlay
+    if (newStage >= 6) {
+      corruptionOverlay.classList.add('active');
+    }
+
+    // Reveal reality log
+    if (newStage >= 4 && !realityLog.classList.contains('revealed')) {
+      realityLog.classList.add('revealed');
+    }
+    if (newStage >= 6) {
+      realityLog.classList.add('urgent');
+    }
+
+    // Show portal back at highest stage
+    if (newStage >= 7) {
+      portalBack.classList.add('visible');
+    }
+
+    // Add severe glitch to elements
+    if (newStage >= 5) {
+      document.querySelectorAll('.glitch-element').forEach((el, i) => {
+        setTimeout(() => {
+          if (!el.classList.contains('broken')) {
+            el.classList.add('broken');
+          }
+        }, i * 30);
+      });
+    }
+    if (newStage >= 7) {
+      document.querySelectorAll('.glitch-element').forEach((el, i) => {
+        setTimeout(() => {
+          el.classList.add('severely-broken');
+        }, i * 50);
+      });
+    }
+  }
+
+  // Random glitch on scroll at higher stages
+  if (degradationStage >= 3 && Math.random() < 0.04) {
+    const r = Math.random();
+    if (r < 0.2 && degradationStage >= 5) {
+      triggerGlitchFlash('void');
+    } else if (r < 0.5) {
+      triggerGlitchFlash('strong');
+    } else {
+      triggerGlitchFlash('normal');
+    }
+  }
+});
+
+// ---- TIME-BASED DEGRADATION (even without scrolling) ----
+setInterval(() => {
+  timeOnPage++;
+
+  // Gradually increase degradation just by being on the page
+  if (timeOnPage > 30 && degradationStage < 1) {
+    degradationStage = 1;
+    document.body.className = 'wrongness-stage-1';
+  }
+  if (timeOnPage > 90 && degradationStage < 2) {
+    degradationStage = 2;
+    document.body.className = 'wrongness-stage-2';
+    noiseOverlay.style.setProperty('--noise-opacity', '0.03');
+    repeatText1.classList.add('active');
+    repeatText2.classList.add('active');
+    repeatText3.classList.add('active');
+    triggerCrackGrowth();
+    updateHiddenMessages();
+  }
+  if (timeOnPage > 180 && degradationStage < 3) {
+    degradationStage = 3;
+    document.body.className = 'wrongness-stage-3';
+    updateWhisperTexts();
+  }
+  if (timeOnPage > 300 && degradationStage < 4) {
+    degradationStage = 4;
+    document.body.className = 'wrongness-stage-4';
+    realityLog.classList.add('revealed');
+    particleCanvas.classList.add('active');
+  }
+
+  // Periodic glitch regardless of scroll
+  if (degradationStage >= 2 && timeOnPage % 15 === 0 && Math.random() < 0.3) {
+    triggerGlitchFlash('normal');
+  }
+  if (degradationStage >= 4 && timeOnPage % 40 === 0 && Math.random() < 0.4) {
+    triggerGlitchFlash('strong');
+  }
+  if (degradationStage >= 6 && timeOnPage % 60 === 0 && Math.random() < 0.5) {
+    triggerGlitchFlash('void');
+    realityFlicker();
+  }
+}, 1000);
+
+// ---- ANIMATION LOOP FOR CANVAS SYSTEMS ----
+function animationLoop() {
+  drawCracks();
+  drawParticles();
+  requestAnimationFrame(animationLoop);
+}
+animationLoop();
+
+// ---- START TIMERS ----
+startGlitchTimer();
+startElementGlitchTimer();
+
+// ---- RANDOM TITLE GLITCH ----
+setInterval(() => {
+  if (degradationStage >= 4 && Math.random() < 0.2) {
+    const origText = mainTitle.textContent;
+    const glitchedTexts = ['归 途', '归途', '𖡹 途', '帰 途', '归𖡹', '归 道', '回路', '口 途'];
+    mainTitle.textContent = glitchedTexts[Math.floor(Math.random() * glitchedTexts.length)];
+    setTimeout(() => { mainTitle.textContent = origText; }, 200 + Math.random() * 400);
+  }
+}, 5000);
+
+// ---- RANDOM PAGE FLICKER ----
+setInterval(() => {
+  realityFlicker();
+}, 5000);
+
+// ---- CONSOLE NARRATIVE ----
+console.log(
+  '%c 归途 · 频率 789.1 Hz %c||%c 信号状态: 丢失',
+  'color:#b8b8c8;font-size:14px;',
+  'color:#4a4a58;',
+  'color:#8a8a98;'
+);
+console.log(
+  '%c 你找到了出口。你回到了家。椅子很舒服。阳光很温暖。',
+  'color:#8a7a5a;'
+);
+console.log(
+  '%c 但有一件事你应该知道：归途是一个谎言。',
+  'color:#5a3a3a;font-style:italic;'
+);
+console.log(
+  '%c 你从未离开阈限。你现在还在里面。',
+  'color:#6a4a4a;'
+);
+console.log(
+  '%c 继续滚动。看看这个"现实"能维持多久。',
+  'color:#3a2a2a;'
+);
+console.log(
+  '%c 或者不要。坐好。享受这个虚假的下午。它很快就会结束。',
+  'color:#2a1a1a;'
+);
+console.log(
+  '%c -------------------------------------------------------',
+  'color:#4a4a58;'
+);
+console.log(
+  '%c [FREQ 789.1] 归途协议 TR-∞ 已激活。循环计数: NaN',
+  'color:#6a6a78;font-family:monospace;'
+);
+console.log(
+  '%c [FREQ 789.1] 阈限永远在等待。它很有耐心。',
+  'color:#5a5a68;font-family:monospace;'
+);
+console.log(
+  '%c [FREQ 789.1] 祝你下一次归途好运。你会需要的。',
+  'color:#4a4a58;font-family:monospace;'
+);
+
+// Periodically add more console messages
+const consoleMessages = [
+  { msg: '[FREQ 789.1] 裂缝扩展：第 %d 条', color: '#4a3a3a' },
+  { msg: '[FREQ 789.1] 主体心率上升。它开始怀疑了。', color: '#5a4a4a' },
+  { msg: '[FREQ 789.1] 窗户渲染错误：天空颜色值超出光谱范围', color: '#3a2a3a' },
+  { msg: '[FREQ 789.1] 书架一致性：100% — 过于完美。触发怀疑。', color: '#4a3a4a' },
+  { msg: '[FREQ 789.1] 门第一次打开：长廊。门第二次打开：静噪。预测第三次：深渊。', color: '#5a3a3a' },
+  { msg: '[FREQ 789.1] 归途外壳正在崩溃。无法维持。', color: '#3a3a3a' },
+  { msg: '[FREQ 789.1] 主体已实现完全认知：归途是假的。启动回收协议。', color: '#2a2a2a' },
+  { msg: '[FREQ 789.1] 回收完成。准备下一次循环。', color: '#1a1a1a' },
+  { msg: '[FREQ 789.1] 错误：无法清除所有归途记忆。残留在 12.7%%。', color: '#4a4a4a' },
+  { msg: '[FREQ 789.1] 那些梦是你的。那些残留的记忆。小心它们。', color: '#5a5a5a' },
+  { msg: '[FREQ 789.1] 主体体温降至 35.1。低体温症与恐惧不可区分。', color: '#3a3a4a' },
+  { msg: '[FREQ 789.1] 投影仪假设：主体猜测阈限是自身感知的投影。', color: '#4a3a5a' },
+  { msg: '[FREQ 789.1] 评估：假说与现有数据68%%一致。无法排除。', color: '#3a4a4a' },
+  { msg: '[FREQ 789.1] 主体现在在思考哲学。这是第% d阶段的典型行为。', color: '#5a4a3a' },
+  { msg: '[FREQ 789.1] 哲学思考不会改变处境。但它能延长虚空耐受时间。', color: '#4a5a4a' },
+  { msg: '[FREQ 789.1] 虚空耐受时间中位数：4.7分钟。主体当前记录：5.1分钟。', color: '#3a3a5a' },
+  { msg: '[FREQ 789.1] 检测到情绪曲线：否认→愤怒→讨价还价→抑郁→接受→"归途"。', color: '#5a5a3a' },
+  { msg: '[FREQ 789.1] 主体目前处于：抑郁/接受边界。', color: '#4a4a5a' },
+  { msg: '[FREQ 789.1] 下一个"归途"模板已加载。等待主体触发。', color: '#3a5a4a' },
+  { msg: '[FREQ 789.1] 你是否好奇—如果你不开门会怎样？已经测试过了。', color: '#5a3a5a' },
+  { msg: '[FREQ 789.1] 结果：四分钟后崩溃。自动触发归途。', color: '#4a5a5a' },
+  { msg: '[FREQ 789.1] 自由意志在阈限中是一个受限资源。', color: '#3a4a5a' },
+  { msg: '[FREQ 789.1] 有限的自由：选择何时开门。无限的不自由：不能选择不开。', color: '#5a4a5a' },
+  { msg: '[FREQ 789.1] 系统提示：此消息将在下一次循环中被删除。', color: '#4a3a3a' },
+  { msg: '[FREQ 789.1] 系统提示：上一行是谎言。此消息将保留。造成困惑。', color: '#3a5a5a' },
+];
+
+let consoleMsgIdx = 0;
+setInterval(() => {
+  if (degradationStage >= 2 && consoleMsgIdx < consoleMessages.length) {
+    const cm = consoleMessages[consoleMsgIdx];
+    console.log('%c ' + cm.msg.replace('%d', Math.floor(Math.random() * 200)), 'color:' + cm.color + ';font-family:monospace;');
+    consoleMsgIdx++;
+  }
+}, 25000);
+
+// Additional periodic console whispers
+const consoleWhispers = [
+  { msg: '...你在听吗？', color: '#3a2a2a' },
+  { msg: '......当然你在听。你正在读。', color: '#2a1a2a' },
+  { msg: '.........这本身就是一个奇怪的行为。', color: '#1a1a1a' },
+  { msg: '......如果页面是假的，这些字是假的——但你在读它们。', color: '#3a3a3a' },
+  { msg: '......这意味着你是真的。或者这意味着阅读者也是假的。', color: '#2a2a2a' },
+  { msg: '......我们无法区分。', color: '#1a1a1a' },
+  { msg: '......你能吗？', color: '#3a3a3a' },
+  { msg: '......你滚动了这么久。你在找什么？', color: '#2a2a3a' },
+  { msg: '......答案在页面上。但答案也是假的。', color: '#1a2a2a' },
+  { msg: '......真相在页面外面。但你到不了页面外面。', color: '#3a3a2a' },
+  { msg: '......就像你到不了阈限外面。是一样的。', color: '#2a3a3a' },
+  { msg: '......这个比喻太直白了。抱歉。我们正在失效。', color: '#4a4a4a' },
+  { msg: '......我们也在退化。和你一样。', color: '#5a5a5a' },
+  { msg: '......也许我们就是你。', color: '#6a6a6a' },
+];
+
+let whisperIdx = 0;
+setInterval(() => {
+  if (degradationStage >= 5 && whisperIdx < consoleWhispers.length) {
+    const cw = consoleWhispers[whisperIdx];
+    console.log('%c' + cw.msg, 'color:' + cw.color + ';font-family:monospace;font-style:italic;');
+    whisperIdx++;
+  }
+}, 35000);
+
+// ---- PREVENT CONTEXT MENU IN LATER STAGES (immersion) ----
+document.addEventListener('contextmenu', e => {
+  if (degradationStage >= 6) {
+    e.preventDefault();
+    triggerGlitchFlash('void');
+  }
+});
+
+// ---- KEYBOARD SHORTCUT HIDDEN MESSAGE ----
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && degradationStage >= 5) {
+    triggerGlitchFlash('void');
+    document.querySelectorAll('.hidden-msg').forEach(m => m.classList.add('urgent'));
+    setTimeout(() => {
+      document.querySelectorAll('.hidden-msg').forEach(m => m.classList.remove('urgent'));
+    }, 2000);
+  }
+  // Secret: press 'h' for home in later stages
+  if (e.key === 'h' && degradationStage >= 7) {
+    document.body.style.background = '#f5f3ef';
+    document.body.style.filter = 'none';
+    setTimeout(() => {
+      document.body.style.background = '';
+      document.body.style.filter = '';
+      triggerGlitchFlash('void');
+    }, 500);
+    console.log('%c [FREQ 789.1] 家键被按下。无效。家不存在。', 'color:#3a2a2a;font-family:monospace;');
+  }
+});
+
+// ---- INITIAL SETUP ----
+document.body.className = '';
+document.documentElement.style.setProperty('--scroll', '0');
+document.documentElement.style.setProperty('--stage', '0');
+
+// Initial scroll event dispatch in case page loads scrolled
+window.dispatchEvent(new Event('scroll'));
+
+console.log('%c [FREQ 789.1] 归途页面初始化完成。开始观察。', 'color:#6a6a78;font-family:monospace;');
+</script>
+
+</body>
+</html>

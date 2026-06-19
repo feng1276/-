@@ -1,0 +1,4467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID ECHO · 静噪 · 284.7 Hz — THE SIGNAL PERSISTS</title>
+<!-- ============================================================
+   INLINE SVG FILTERS — feTurbulence / feColorMatrix / feDisplacementMap
+   These filters create the core analog horror glitch aesthetic.
+   ============================================================ -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;pointer-events:none;">
+  <defs>
+    <!-- FILTER 1: Primary static noise via feTurbulence -->
+    <filter id="noise-base" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray-noise"/>
+      <feComponentTransfer in="gray-noise" result="bright-noise">
+        <feFuncR type="linear" slope="1.5" intercept="-0.25"/>
+        <feFuncG type="linear" slope="1.5" intercept="-0.25"/>
+        <feFuncB type="linear" slope="1.5" intercept="-0.25"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- FILTER 2: Fine grain noise (high frequency) -->
+    <filter id="noise-fine" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="4" stitchTiles="stitch" result="fine-noise"/>
+      <feColorMatrix type="saturate" values="0" in="fine-noise" result="fine-gray"/>
+      <feComponentTransfer in="fine-gray" result="fine-bright">
+        <feFuncR type="linear" slope="2.0" intercept="-0.5"/>
+        <feFuncG type="linear" slope="2.0" intercept="-0.5"/>
+        <feFuncB type="linear" slope="2.0" intercept="-0.5"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- FILTER 3: RGB channel separation (chromatic aberration) -->
+    <filter id="rgb-split" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.08" numOctaves="2" result="warp-noise"/>
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 0 0 0 0
+        0 0 0 0 0
+        0 0 0 1 0
+      " in="warp-noise" result="red-channel"/>
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0
+        0 1 0 0 0
+        0 0 0 0 0
+        0 0 0 1 0
+      " in="warp-noise" result="green-channel"/>
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0
+        0 0 0 0 0
+        0 0 1 0 0
+        0 0 0 1 0
+      " in="warp-noise" result="blue-channel"/>
+      <feDisplacementMap in="red-channel" in2="warp-noise" scale="8" xChannelSelector="R" yChannelSelector="G" result="red-shifted"/>
+      <feDisplacementMap in="blue-channel" in2="warp-noise" scale="-8" xChannelSelector="B" yChannelSelector="G" result="blue-shifted"/>
+      <feOffset in="red-shifted" dx="4" dy="0" result="red-offset"/>
+      <feOffset in="blue-shifted" dx="-4" dy="0" result="blue-offset"/>
+      <feMerge>
+        <feMergeNode in="red-offset"/>
+        <feMergeNode in="green-channel"/>
+        <feMergeNode in="blue-offset"/>
+      </feMerge>
+    </filter>
+
+    <!-- FILTER 4: Horizontal sync tear distortion -->
+    <filter id="h-sync-tear" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.005 0.4" numOctaves="3" seed="42" result="tear-noise"/>
+      <feColorMatrix type="saturate" values="0" in="tear-noise" result="tear-mono"/>
+      <feDisplacementMap in="SourceGraphic" in2="tear-mono" scale="30" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feGaussianBlur in="displaced" stdDeviation="0.3 0" result="motion-blur"/>
+    </filter>
+
+    <!-- FILTER 5: Vertical hold glitch (rolling) -->
+    <filter id="v-hold-glitch" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01 0.25" numOctaves="2" seed="13" result="v-hold-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="v-hold-noise" scale="50" xChannelSelector="G" yChannelSelector="R" result="vert-displaced"/>
+      <feGaussianBlur in="vert-displaced" stdDeviation="0 0.8" result="vert-blur"/>
+    </filter>
+
+    <!-- FILTER 6: Signal degradation (composite) -->
+    <filter id="signal-degrade" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="5" seed="7" result="deg-noise"/>
+      <feColorMatrix type="matrix" values="
+        0.33 0.33 0.33 0 0
+        0.33 0.33 0.33 0 0
+        0.33 0.33 0.33 0 0
+        0 0 0 0.5 0
+      " in="deg-noise" result="deg-gray"/>
+      <feComponentTransfer in="deg-gray" result="deg-contrast">
+        <feFuncR type="linear" slope="3" intercept="-1"/>
+        <feFuncG type="linear" slope="3" intercept="-1"/>
+        <feFuncB type="linear" slope="3" intercept="-1"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="deg-contrast" mode="screen" result="blended"/>
+    </filter>
+
+    <!-- FILTER 7: CRT phosphor glow -->
+    <filter id="phosphor-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur2"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur3"/>
+      <feMerge>
+        <feMergeNode in="blur3"/>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- FILTER 8: Ghost image emergence -->
+    <filter id="ghost-emerge" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="666" result="ghost-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="ghost-noise" scale="20" xChannelSelector="R" yChannelSelector="G" result="ghost-warped"/>
+      <feGaussianBlur in="ghost-warped" stdDeviation="4" result="ghost-blurred"/>
+      <feComponentTransfer in="ghost-blurred" result="ghost-dimmed">
+        <feFuncA type="linear" slope="0.4" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- FILTER 9: Extreme signal breakup -->
+    <filter id="signal-break" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.15 0.5" numOctaves="4" seed="23" result="break-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="break-noise" scale="40" xChannelSelector="R" yChannelSelector="B" result="broken1"/>
+      <feDisplacementMap in="broken1" in2="break-noise" scale="-25" xChannelSelector="G" yChannelSelector="R" result="broken2"/>
+      <feColorMatrix type="matrix" values="
+        1.2 0 0 0 -0.1
+        0 1.2 0 0 -0.1
+        0 0 1.2 0 -0.1
+        0 0 0 1 0
+      " in="broken2" result="contrast-broken"/>
+    </filter>
+
+    <!-- FILTER 10: Slow horizontal crawl -->
+    <filter id="h-crawl" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.002 0.6" numOctaves="2" seed="99" result="crawl-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="crawl-noise" scale="15" xChannelSelector="R" yChannelSelector="G" result="crawled"/>
+      <feGaussianBlur in="crawled" stdDeviation="1 0" result="crawl-blur"/>
+    </filter>
+
+    <!-- FILTER 11: Color bleed / fringing -->
+    <filter id="color-bleed" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.1" numOctaves="3" seed="55" result="bleed-noise"/>
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0.05
+        0 1 0 0 -0.03
+        0 0 1 0 -0.02
+        0 0 0 1 0
+      " in="SourceGraphic" result="tinted"/>
+      <feDisplacementMap in="tinted" in2="bleed-noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- FILTER 12: RF interference pattern -->
+    <filter id="rf-interference" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.3 0.03" numOctaves="4" seed="31" result="rf-noise"/>
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 0.6 0
+      " in="rf-noise" result="rf-alpha"/>
+      <feBlend in="SourceGraphic" in2="rf-alpha" mode="screen"/>
+    </filter>
+
+    <!-- FILTER 13: Deep void vignette with noise edge -->
+    <filter id="void-vignette" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" seed="2" result="vig-noise"/>
+      <feColorMatrix type="saturate" values="0" in="vig-noise" result="vig-mono"/>
+      <feGaussianBlur in="vig-mono" stdDeviation="3" result="vig-blur"/>
+      <feComponentTransfer in="vig-blur" result="vig-dark">
+        <feFuncR type="linear" slope="0.3" intercept="0"/>
+        <feFuncG type="linear" slope="0.3" intercept="0"/>
+        <feFuncB type="linear" slope="0.3" intercept="0"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="vig-dark" mode="multiply"/>
+    </filter>
+
+    <!-- FILTER 14: Tracking error / tape damage -->
+    <filter id="tracking-error" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.001 1.0" numOctaves="2" seed="87" result="track-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="track-noise" scale="60" xChannelSelector="G" yChannelSelector="R" result="track-shifted"/>
+      <feGaussianBlur in="track-shifted" stdDeviation="0 2" result="track-blur"/>
+      <feColorMatrix type="matrix" values="
+        0.9 0 0 0 0.05
+        0 0.9 0 0 0.05
+        0 0 0.9 0 0.05
+        0 0 0 1 0
+      " in="track-blur"/>
+    </filter>
+
+    <!-- FILTER 15: Face-in-noise emergence (pareidolia simulator) -->
+    <filter id="pareidolia" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="turbulence" baseFrequency="0.015 0.025" numOctaves="5" seed="404" result="face-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="face-noise" scale="35" xChannelSelector="R" yChannelSelector="B" result="face-warp"/>
+      <feGaussianBlur in="face-warp" stdDeviation="2.5" result="face-soft"/>
+      <feComponentTransfer in="face-soft">
+        <feFuncA type="linear" slope="0.35" intercept="0.05"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- FILTER 16: Subcarrier buzz / chroma noise -->
+    <filter id="chroma-noise" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="16" result="chroma-base"/>
+      <feColorMatrix type="matrix" values="
+        0.5 0.5 0 0 0
+        0 0.5 0.5 0 0
+        0.5 0 0.5 0 0
+        0 0 0 0.4 0
+      " in="chroma-base" result="chroma-color"/>
+      <feBlend in="SourceGraphic" in2="chroma-color" mode="screen"/>
+    </filter>
+
+    <!-- FILTER 17: Bad reception pulse -->
+    <filter id="bad-reception" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.07 0.7" numOctaves="3" seed="555" result="bad-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="bad-noise" scale="45" xChannelSelector="R" yChannelSelector="G" result="bad-disp"/>
+      <feColorMatrix type="hueRotate" values="15" in="bad-disp" result="bad-hue"/>
+      <feGaussianBlur in="bad-hue" stdDeviation="0.5" result="bad-blur"/>
+    </filter>
+
+    <!-- FILTER 18: Static snow composite (final overlay) -->
+    <filter id="snow-final" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" stitchTiles="stitch" result="snow"/>
+      <feColorMatrix type="saturate" values="0" in="snow" result="snow-mono"/>
+      <feComponentTransfer in="snow-mono">
+        <feFuncR type="linear" slope="2.5" intercept="-0.75"/>
+        <feFuncG type="linear" slope="2.5" intercept="-0.75"/>
+        <feFuncB type="linear" slope="2.5" intercept="-0.75"/>
+        <feFuncA type="linear" slope="0.6" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- FILTER 19: Macroblock corruption (digital glitch in analog) -->
+    <filter id="macroblock" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.02" numOctaves="1" seed="789" result="block-noise"/>
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 2 0
+      " in="block-noise" result="block-alpha"/>
+      <feComponentTransfer in="block-alpha" result="block-threshold">
+        <feFuncA type="discrete" tableValues="0 0 0 1 1"/>
+      </feComponentTransfer>
+      <feComposite in="SourceGraphic" in2="block-threshold" operator="in" result="blocked"/>
+      <feDisplacementMap in="blocked" in2="block-noise" scale="30" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- FILTER 20: Ghost frame / afterimage persistence -->
+    <filter id="afterimage" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="after-blur"/>
+      <feComponentTransfer in="after-blur" result="after-fade">
+        <feFuncA type="linear" slope="0.15" intercept="0"/>
+      </feComponentTransfer>
+      <feOffset in="after-fade" dx="3" dy="-2" result="after-shifted"/>
+      <feMerge>
+        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="after-shifted"/>
+        <feMergeNode in="after-fade"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+<style>
+/* ============================================================
+   VOID ECHO · 静噪 — ANALOG HORROR TV STATIC REALM
+   "The Ring" meets corrupted VHS tape
+   ============================================================ */
+:root{
+  --void:#050508; --void-deep:#020204; --static-bg:#0a0a10;
+  --signal-pale:rgba(200,200,210,0.7); --signal-dim:rgba(180,180,200,0.35);
+  --signal-ghost:rgba(200,200,210,0.08); --red-channel:rgba(255,80,80,0.4);
+  --blue-channel:rgba(80,180,255,0.4); --green-channel:rgba(80,255,120,0.3);
+  --burn-amber:rgba(255,160,40,0.06); --crt-glow:rgba(180,200,220,0.15);
+  --scanline-dark:rgba(0,0,0,0.08); --tear-bright:rgba(200,220,240,0.06);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:var(--void);overflow:hidden;height:100vh;width:100vw;}
+body{
+  font-family:'Courier New','SimSun','NSimSun','FangSong',monospace;
+  background:var(--void);color:var(--signal-pale);overflow:hidden;
+  height:100vh;width:100vw;cursor:none;user-select:none;-webkit-user-select:none;
+}
+/* ===== KEYFRAME BATCH 1: Core Glitch & Static ===== */
+
+/* Glitch text — primary title shake */
+@keyframes glitchText{
+  0%,100%{transform:translate(0);}
+  2%{transform:translate(-3px,1px);}
+  4%{transform:translate(3px,-1px);}
+  6%{transform:translate(-1px,-2px);}
+  8%{transform:translate(2px,1px);}
+  10%{transform:translate(0);}
+  15%{transform:translate(-2px,0);}
+  17%{transform:translate(2px,0);}
+  19%{transform:translate(0);}
+  45%{transform:translate(0);}
+  46%{transform:translate(-5px,2px);}
+  47%{transform:translate(4px,-2px);}
+  48%{transform:translate(-2px,-1px);}
+  49%{transform:translate(3px,1px);}
+  50%{transform:translate(0);}
+  78%{transform:translate(0);}
+  79%{transform:translate(-6px,3px);}
+  80%{transform:translate(5px,-3px);}
+  81%{transform:translate(-1px,2px);}
+  82%{transform:translate(0);}
+}
+
+/* Red channel glitch offset */
+@keyframes glitchR{
+  0%,88%,100%{transform:translate(0);}
+  89%{transform:translate(-12px,3px);}
+  90%{transform:translate(8px,-5px);}
+  91%{transform:translate(-4px,1px);}
+  92%{transform:translate(10px,-2px);}
+  93%{transform:translate(-6px,4px);}
+  94%{transform:translate(0);}
+}
+
+/* Blue channel glitch offset */
+@keyframes glitchB{
+  0%,84%,100%{transform:translate(0);}
+  85%{transform:translate(10px,-3px);}
+  86%{transform:translate(-7px,4px);}
+  87%{transform:translate(3px,-1px);}
+  88%{transform:translate(-9px,2px);}
+  89%{transform:translate(5px,-4px);}
+  90%{transform:translate(0);}
+}
+
+/* Corrupted text opacity cycle */
+@keyframes corruptCycle{
+  0%,38%,100%{opacity:0.35;}
+  41%{opacity:0.15;}
+  43%{opacity:0.8;}
+  45%{opacity:0.25;}
+  47%{opacity:0.7;}
+  49%{opacity:0.1;}
+  51%{opacity:0.55;}
+  53%{opacity:0.35;}
+  72%{opacity:0.35;}
+  74%{opacity:0.05;}
+  76%{opacity:0.6;}
+  78%{opacity:0.2;}
+  80%{opacity:0.35;}
+}
+
+/* Color channel split (chromatic aberration burst) */
+@keyframes channelSplit{
+  0%,93%,100%{opacity:0;}
+  93.5%{opacity:0.35;}
+  94%{opacity:0.1;}
+  94.5%{opacity:0.4;}
+  95%{opacity:0;}
+  95.5%{opacity:0.3;}
+  96%{opacity:0.05;}
+  96.5%{opacity:0.25;}
+  97%{opacity:0;}
+}
+
+/* Signal burst (ring expansion) */
+@keyframes signalBurst{
+  0%,94%,100%{opacity:0;transform:translate(-50%,-50%) scale(0.7);}
+  95%{opacity:0.8;transform:translate(-50%,-50%) scale(0.9);}
+  96.5%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}
+  97.5%{opacity:0.4;transform:translate(-50%,-50%) scale(1.15);}
+  99%{opacity:0;transform:translate(-50%,-50%) scale(1.3);}
+}
+
+/* Face appearance in static */
+@keyframes faceAppear{
+  0%,78%,100%{opacity:0;filter:blur(15px) brightness(0.5);}
+  80%{opacity:0.3;filter:blur(8px) brightness(0.7);}
+  82%{opacity:0.6;filter:blur(4px) brightness(0.9);}
+  84%{opacity:0.85;filter:blur(1.5px) brightness(1.1);}
+  86%{opacity:0.7;filter:blur(2px) brightness(1.0);}
+  88%{opacity:0.4;filter:blur(5px) brightness(0.8);}
+  90%{opacity:0.15;filter:blur(9px) brightness(0.6);}
+  92%{opacity:0;filter:blur(16px) brightness(0.4);}
+}
+
+/* Screen tear horizontal offset */
+@keyframes tearAppear{
+  0%,92%,100%{opacity:0;transform:translateX(0);}
+  92.5%{opacity:0.6;transform:translateX(20px);}
+  93.2%{opacity:1;transform:translateX(-25px);}
+  93.9%{opacity:0.7;transform:translateX(12px);}
+  94.6%{opacity:0.3;transform:translateX(-8px);}
+  95.3%{opacity:0.1;transform:translateX(3px);}
+  96%{opacity:0;}
+}
+
+/* Sync bar movement (horizontal band crawl) */
+@keyframes syncBarMove{
+  0%{transform:translateX(-120%);}
+  100%{transform:translateX(120%);}
+}
+/* ===== KEYFRAME BATCH 2: Extended Glitch & Distortion ===== */
+
+/* CRT power-off flash */
+@keyframes crtDie{
+  0%,97.5%,100%{opacity:0;}
+  97.8%{opacity:1;}
+  98.1%{opacity:0.5;transform:scaleY(0.01);}
+  98.4%{opacity:0.8;transform:scaleY(0.8);}
+  98.7%{opacity:0.2;transform:scaleY(1.05);}
+  99%{opacity:0;}
+}
+
+/* Interference ring pulsing */
+@keyframes intRing{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.25;}
+  25%{transform:translate(-50%,-50%) scale(1.03);opacity:0.5;}
+  50%{transform:translate(-50%,-50%) scale(1.08);opacity:0.6;}
+  75%{transform:translate(-50%,-50%) scale(1.03);opacity:0.4;}
+}
+
+/* Data stream vertical drift */
+@keyframes dataScroll{
+  0%{transform:translateY(0);opacity:0.12;}
+  8%{opacity:0.35;}
+  16%{opacity:0.08;}
+  24%{opacity:0.3;}
+  32%{opacity:0.05;}
+  40%{opacity:0.25;}
+  100%{transform:translateY(-55px);opacity:0.04;}
+}
+
+/* Vignette breathing */
+@keyframes vignetteBreath{
+  0%,100%{opacity:1;}
+  50%{opacity:0.85;}
+}
+
+/* Scanline intensity variation */
+@keyframes scanlineFlicker{
+  0%,100%{opacity:1;}
+  3%{opacity:0.7;}
+  6%{opacity:1;}
+  9%{opacity:0.8;}
+  12%{opacity:1;}
+  25%{opacity:0.75;}
+  28%{opacity:1;}
+  61%{opacity:0.6;}
+  64%{opacity:1;}
+  88%{opacity:0.8;}
+  91%{opacity:1;}
+  94%{opacity:0.7;}
+  97%{opacity:1;}
+}
+
+/* TV power-on warmup effect */
+@keyframes crtWarmup{
+  0%{filter:brightness(0) contrast(2) saturate(0);}
+  15%{filter:brightness(0.3) contrast(1.8) saturate(0.2);}
+  30%{filter:brightness(0.7) contrast(1.5) saturate(0.6);}
+  45%{filter:brightness(1.1) contrast(1.2) saturate(0.9);}
+  55%{filter:brightness(0.9) contrast(1.3) saturate(1);}
+  60%{filter:brightness(1) contrast(1.1) saturate(1);}
+  70%{filter:brightness(0.85) contrast(1.4) saturate(1.1);}
+  75%{filter:brightness(1.05) contrast(1) saturate(1);}
+  100%{filter:brightness(1) contrast(1) saturate(1);}
+}
+
+/* Horizontal hold loss (rapid side-to-side jitter) */
+@keyframes hHoldLoss{
+  0%,93%,100%{transform:translateX(0);}
+  93.5%{transform:translateX(-15px);}
+  94%{transform:translateX(20px);}
+  94.5%{transform:translateX(-25px);}
+  95%{transform:translateX(15px);}
+  95.5%{transform:translateX(-10px);}
+  96%{transform:translateX(5px);}
+  96.5%{transform:translateX(-3px);}
+  97%{transform:translateX(0);}
+}
+
+/* Vertical hold loss (rolling frame) */
+@keyframes vHoldLoss{
+  0%,91%,100%{transform:translateY(0);}
+  91.5%{transform:translateY(-30px);}
+  92.5%{transform:translateY(50px);}
+  93.5%{transform:translateY(-20px);}
+  94.5%{transform:translateY(35px);}
+  95.5%{transform:translateY(-10px);}
+  96.5%{transform:translateY(5px);}
+  97.5%{transform:translateY(0);}
+}
+
+/* Chroma phase error (rapid hue rotation) */
+@keyframes chromaPhase{
+  0%,96%,100%{filter:hue-rotate(0deg);}
+  96.5%{filter:hue-rotate(15deg);}
+  97%{filter:hue-rotate(-20deg);}
+  97.5%{filter:hue-rotate(35deg);}
+  98%{filter:hue-rotate(-10deg);}
+  98.5%{filter:hue-rotate(5deg);}
+  99%{filter:hue-rotate(0deg);}
+}
+
+/* Luma spike (brightness flash) */
+@keyframes lumaSpike{
+  0%,99%,100%{filter:brightness(1);}
+  99.1%{filter:brightness(3);}
+  99.25%{filter:brightness(0.5);}
+  99.4%{filter:brightness(2.5);}
+  99.55%{filter:brightness(0.8);}
+  99.7%{filter:brightness(1.5);}
+  99.85%{filter:brightness(1);}
+}
+/* ===== KEYFRAME BATCH 3: Ghost Images & Paranormal Effects ===== */
+
+/* Ghost figure slow materialization */
+@keyframes ghostMaterialize{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(0.85);filter:blur(20px);}
+  10%{opacity:0.05;transform:translate(-50%,-50%) scale(0.88);filter:blur(15px);}
+  20%{opacity:0.15;transform:translate(-50%,-50%) scale(0.9);filter:blur(10px);}
+  30%{opacity:0.35;transform:translate(-50%,-50%) scale(0.95);filter:blur(5px);}
+  40%{opacity:0.55;transform:translate(-50%,-50%) scale(0.98);filter:blur(2px);}
+  45%{opacity:0.7;transform:translate(-50%,-50%) scale(1);filter:blur(1px);}
+  50%{opacity:0.6;transform:translate(-50%,-50%) scale(1.01);filter:blur(2px);}
+  55%{opacity:0.35;transform:translate(-50%,-50%) scale(0.97);filter:blur(5px);}
+  65%{opacity:0.1;transform:translate(-50%,-50%) scale(0.9);filter:blur(12px);}
+  75%{opacity:0.02;transform:translate(-50%,-50%) scale(0.85);filter:blur(18px);}
+}
+
+/* Whisper text faintly appearing */
+@keyframes whisperText{
+  0%,100%{opacity:0;letter-spacing:0.5em;}
+  2%{opacity:0.08;letter-spacing:0.45em;}
+  4%{opacity:0.2;letter-spacing:0.35em;}
+  6%{opacity:0.45;letter-spacing:0.28em;}
+  8%{opacity:0.3;letter-spacing:0.32em;}
+  10%{opacity:0.08;letter-spacing:0.4em;}
+}
+
+/* Peripheral shadow movement */
+@keyframes peripheralMove{
+  0%,100%{transform:translate(-50%,-50%) rotate(0deg);opacity:0;}
+  3%{transform:translate(-48%,-52%) rotate(1deg);opacity:0.15;}
+  6%{transform:translate(-52%,-48%) rotate(-2deg);opacity:0.3;}
+  9%{transform:translate(-49%,-51%) rotate(0.5deg);opacity:0.1;}
+  12%{transform:translate(-51%,-49%) rotate(-1deg);opacity:0;}
+}
+
+/* Screen burn-in pattern */
+@keyframes screenBurn{
+  0%,100%{opacity:0.03;}
+  50%{opacity:0.08;}
+}
+
+/* Phosphor decay trail */
+@keyframes phosphorDecay{
+  0%{opacity:0.6;filter:blur(0px);}
+  20%{opacity:0.4;filter:blur(1px);}
+  40%{opacity:0.2;filter:blur(2px);}
+  60%{opacity:0.1;filter:blur(3px);}
+  80%{opacity:0.03;filter:blur(5px);}
+  100%{opacity:0;filter:blur(8px);}
+}
+
+/* Cross-hatch interference pattern animation */
+@keyframes crossHatch{
+  0%,100%{opacity:0.04;}
+  50%{opacity:0.12;}
+}
+
+/* Moire pattern wandering */
+@keyframes moireDrift{
+  0%{transform:translate(0,0) rotate(0deg);}
+  25%{transform:translate(3px,-2px) rotate(0.5deg);}
+  50%{transform:translate(-2px,3px) rotate(-0.3deg);}
+  75%{transform:translate(-1px,-3px) rotate(0.2deg);}
+  100%{transform:translate(0,0) rotate(0deg);}
+}
+
+/* Subtle breathing of dark areas */
+@keyframes voidBreath{
+  0%,100%{background:var(--void);}
+  50%{background:#06060a;}
+}
+
+/* Static intensity modulation (global) */
+@keyframes staticIntensity{
+  0%,100%{opacity:0.7;}
+  8%{opacity:0.85;}
+  12%{opacity:0.65;}
+  20%{opacity:0.9;}
+  24%{opacity:0.55;}
+  35%{opacity:0.75;}
+  40%{opacity:0.6;}
+  55%{opacity:0.8;}
+  60%{opacity:0.7;}
+  72%{opacity:0.9;}
+  76%{opacity:0.55;}
+  85%{opacity:0.75;}
+  90%{opacity:0.65;}
+  95%{opacity:0.85;}
+}
+
+/* Vertical rolling bar (classic CRT hum bar) */
+@keyframes rollingBar{
+  0%{transform:translateY(-100%);}
+  100%{transform:translateY(100vh);}
+}
+
+/* Horizontal tracking error displacement */
+@keyframes trackingError{
+  0%,100%{transform:translateX(0);}
+  5%{transform:translateX(30px) skewX(-3deg);}
+  7%{transform:translateX(-20px) skewX(2deg);}
+  9%{transform:translateX(10px) skewX(-1deg);}
+  10%{transform:translateX(0);}
+}
+/* ===== KEYFRAME BATCH 4: Full-Screen Glitch Events & Text Corruption ===== */
+
+/* Full page RGB shift glitch */
+@keyframes fullRGBShift{
+  0%,99.2%,100%{transform:translate(0);}
+  99.3%{transform:translate(8px,0);}
+  99.4%{transform:translate(-6px,2px);}
+  99.5%{transform:translate(4px,-3px);}
+  99.6%{transform:translate(-3px,1px);}
+  99.7%{transform:translate(1px,0);}
+  99.8%{transform:translate(0);}
+}
+
+/* Screen fragmentation (many horizontal slices) */
+@keyframes screenFragment{
+  0%,100%{clip-path:inset(0 0 0 0);}
+  5%{clip-path:inset(0 0 80% 0);}
+  10%{clip-path:inset(5% 0 70% 0);}
+  15%{clip-path:inset(10% 0 60% 0);}
+  20%{clip-path:inset(30% 0 40% 0);}
+  25%{clip-path:inset(15% 0 55% 0);}
+  30%{clip-path:inset(0 0 0 0);}
+}
+
+/* Text data corruption (characters scramble) */
+@keyframes textScramble{
+  0%,100%{opacity:1;}
+  1%{opacity:0;}
+  2%{opacity:1;}
+  3%{opacity:0;}
+  4%{opacity:1;}
+  15%{opacity:0;}
+  16%{opacity:1;}
+  17%{opacity:0;}
+  18%{opacity:1;}
+  33%{opacity:0;}
+  35%{opacity:1;}
+  50%{opacity:0.5;}
+  52%{opacity:1;}
+}
+
+/* Channel switch / TV station change effect */
+@keyframes channelSwitch{
+  0%,100%{filter:brightness(1) saturate(1);}
+  10%{filter:brightness(0) saturate(0);}
+  12%{filter:brightness(2) saturate(3) hue-rotate(45deg);}
+  14%{filter:brightness(0.3) saturate(0.5);}
+  16%{filter:brightness(1.5) saturate(2) hue-rotate(-30deg);}
+  18%{filter:brightness(0.8) saturate(1.2);}
+  20%{filter:brightness(1) saturate(1);}
+}
+
+/* Frequency interference wave */
+@keyframes frequencyWave{
+  0%,100%{opacity:0;transform:scaleY(0.1);}
+  2%{opacity:0.5;transform:scaleY(1);}
+  4%{opacity:0.8;transform:scaleY(2);}
+  6%{opacity:0.4;transform:scaleY(0.5);}
+  8%{opacity:0.15;transform:scaleY(0.1);}
+}
+
+/* Shadow person flicker */
+@keyframes shadowFlicker{
+  0%,100%{opacity:0;}
+  8%{opacity:0.25;}
+  9%{opacity:0.05;}
+  10%{opacity:0.35;}
+  11%{opacity:0;}
+  12%{opacity:0.2;}
+  13%{opacity:0;}
+  38%{opacity:0;}
+  39%{opacity:0.3;}
+  40%{opacity:0.05;}
+  41%{opacity:0.4;}
+  42%{opacity:0.1;}
+  43%{opacity:0;}
+  68%{opacity:0;}
+  69%{opacity:0.2;}
+  70%{opacity:0.45;}
+  71%{opacity:0;}
+  72%{opacity:0.3;}
+  73%{opacity:0;}
+}
+
+/* Snowstorm burst (dense static spike) */
+@keyframes snowBurst{
+  0%,100%{opacity:0;filter:contrast(1);}
+  1%{opacity:1;filter:contrast(3);}
+  2%{opacity:0.8;filter:contrast(2);}
+  3%{opacity:0.5;filter:contrast(1.5);}
+  4%{opacity:0.2;filter:contrast(1.2);}
+  5%{opacity:0.05;filter:contrast(1);}
+}
+
+/* Title letter-spacing madness */
+@keyframes letterSpasm{
+  0%,100%{letter-spacing:0.3em;}
+  10%{letter-spacing:0.8em;}
+  15%{letter-spacing:0.1em;}
+  20%{letter-spacing:0.6em;}
+  25%{letter-spacing:0.3em;}
+  60%{letter-spacing:0.3em;}
+  62%{letter-spacing:1.2em;}
+  64%{letter-spacing:-0.1em;}
+  66%{letter-spacing:0.5em;}
+  68%{letter-spacing:0.3em;}
+}
+
+/* After-image trail ghost */
+@keyframes afterimageTrail{
+  0%{transform:translate(0,0);opacity:0.15;}
+  30%{transform:translate(2px,-1px);opacity:0.1;}
+  60%{transform:translate(-1px,2px);opacity:0.05;}
+  100%{transform:translate(0,0);opacity:0;}
+}
+
+/* VHS head switching noise bar */
+@keyframes headSwitchBar{
+  0%,100%{opacity:0;height:2px;}
+  5%{opacity:0.7;height:8px;}
+  7%{opacity:0.3;height:4px;}
+  8%{opacity:0;}
+}
+
+/* Reverse video flash (negative image) */
+@keyframes negFlash{
+  0%,99.9%,100%{filter:invert(0);}
+  99.95%{filter:invert(1);}
+}
+
+/* Edge tearing with color fringing */
+@keyframes edgeTear{
+  0%,100%{border-color:rgba(200,200,210,0.03);}
+  50%{border-color:rgba(255,100,100,0.06) rgba(100,200,255,0.06) rgba(255,100,100,0.06) rgba(100,200,255,0.06);}
+}
+
+/* ===== KEYFRAME BATCH 5: Extended Analog Horror Effects ===== */
+
+/* Slow CRT raster distortion (barrel/pincushion breathing) */
+@keyframes rasterBreath{
+  0%,100%{transform:scale(1);border-radius:15% / 10%;}
+  25%{transform:scale(1.002,0.998);border-radius:16% / 11%;}
+  50%{transform:scale(0.998,1.002);border-radius:14% / 9%;}
+  75%{transform:scale(1.001,0.999);border-radius:15.5% / 10.5%;}
+}
+
+/* Tape stretch / warble (subtle pitch variation) */
+@keyframes tapeWarble{
+  0%,100%{transform:scaleX(1);}
+  13%{transform:scaleX(1.003);}
+  27%{transform:scaleX(0.997);}
+  41%{transform:scaleX(1.001);}
+  55%{transform:scaleX(0.999);}
+  69%{transform:scaleX(1.002);}
+  83%{transform:scaleX(0.998);}
+}
+
+/* Shadow sweep (darkness passing over screen) */
+@keyframes shadowSweep{
+  0%,100%{opacity:0;transform:translateX(-100%);}
+  3%{opacity:0.15;transform:translateX(-50%);}
+  6%{opacity:0.25;transform:translateX(0%);}
+  9%{opacity:0.15;transform:translateX(50%);}
+  12%{opacity:0;transform:translateX(100%);}
+}
+
+/* Flyback line visibility (bright retrace line) */
+@keyframes flybackLine{
+  0%,100%{opacity:0;}
+  45%{opacity:0;}
+  46%{opacity:0.4;}
+  47%{opacity:0;}
+  95%{opacity:0;}
+  96%{opacity:0.3;}
+  97%{opacity:0;}
+}
+
+/* Image retention / burn-in intensification */
+@keyframes burnIntensify{
+  0%,100%{opacity:0.03;}
+  30%{opacity:0.06;}
+  60%{opacity:0.04;}
+  85%{opacity:0.07;}
+}
+
+/* Ghost image drift (slow position shift) */
+@keyframes ghostDrift{
+  0%,100%{transform:translate(-50%,-50%);}
+  20%{transform:translate(-49%,-51%);}
+  40%{transform:translate(-51%,-49%);}
+  60%{transform:translate(-50.5%,-49.5%);}
+  80%{transform:translate(-49.5%,-50.5%);}
+}
+
+/* Interlacing flicker (alternating field intensity) */
+@keyframes interlaceFlicker{
+  0%,100%{opacity:1;}
+  50%{opacity:0.85;}
+}
+
+/* Macrovision AGC pulse interference */
+@keyframes agcPulse{
+  0%,100%{opacity:0;height:2px;}
+  2%{opacity:0.8;height:10px;}
+  4%{opacity:0;height:2px;}
+  6%{opacity:0.6;height:8px;}
+  8%{opacity:0;height:2px;}
+}
+
+/* VCR pause still-frame jitter */
+@keyframes pauseJitter{
+  0%,100%{transform:translateY(0);}
+  25%{transform:translateY(-1px);}
+  50%{transform:translateY(1px);}
+  75%{transform:translateY(-0.5px);}
+}
+
+/* Closed caption data corruption animation */
+@keyframes ccCorrupt{
+  0%,100%{opacity:0;}
+  5%{opacity:0.7;}
+  10%{opacity:0.2;}
+  15%{opacity:0.5;}
+  20%{opacity:0;}
+}
+
+/* Degaussing burst (color bloom at startup) */
+@keyframes degaussBloom{
+  0%{filter:brightness(1.5) saturate(2) hue-rotate(0deg);}
+  20%{filter:brightness(1.3) saturate(1.8) hue-rotate(45deg);}
+  40%{filter:brightness(1.1) saturate(1.4) hue-rotate(-20deg);}
+  60%{filter:brightness(1.05) saturate(1.2) hue-rotate(10deg);}
+  80%{filter:brightness(1.0) saturate(1.05) hue-rotate(-5deg);}
+  100%{filter:brightness(1.0) saturate(1.0) hue-rotate(0deg);}
+}
+
+/* Antenna adjustment ghost */
+@keyframes antennaGhost{
+  0%,100%{opacity:0;transform:rotate(0deg);}
+  5%{opacity:0.2;transform:rotate(3deg);}
+  10%{opacity:0.4;transform:rotate(-2deg);}
+  15%{opacity:0.1;transform:rotate(1deg);}
+  20%{opacity:0;}
+}
+
+/* Signal-to-noise ratio oscillation */
+@keyframes snrOscillate{
+  0%,100%{opacity:0.7;}
+  33%{opacity:0.5;}
+  66%{opacity:0.9;}
+}
+
+/* Frame roll with vertical blanking bar */
+@keyframes frameRoll{
+  0%{transform:translateY(0);}
+  100%{transform:translateY(100vh);}
+}
+
+/* Ghost title flicker sync */
+@keyframes titleFlickerSync{
+  0%,100%{text-shadow:0 0 80px rgba(180,180,200,0.15);}
+  12%{text-shadow:0 0 120px rgba(180,180,200,0.3);}
+  25%{text-shadow:0 0 40px rgba(180,180,200,0.1);}
+  37%{text-shadow:0 0 100px rgba(180,180,200,0.25);}
+  50%{text-shadow:0 0 60px rgba(180,180,200,0.15);}
+  62%{text-shadow:0 0 140px rgba(180,180,200,0.35);}
+  75%{text-shadow:0 0 50px rgba(180,180,200,0.12);}
+  87%{text-shadow:0 0 90px rgba(180,180,200,0.2);}
+}
+
+/* Ambient light flicker (like a failing fluorescent) */
+@keyframes ambientFlicker{
+  0%,100%{filter:brightness(1);}
+  3%{filter:brightness(0.85);}
+  6%{filter:brightness(1.1);}
+  9%{filter:brightness(0.9);}
+  12%{filter:brightness(1.05);}
+  15%{filter:brightness(1);}
+  48%{filter:brightness(1);}
+  51%{filter:brightness(0.8);}
+  54%{filter:brightness(1.15);}
+  57%{filter:brightness(1);}
+}
+/* ===== LAYER 1: STATIC NOISE CANVAS (background) ===== */
+#staticCanvas{
+  position:fixed;inset:0;z-index:1;
+  opacity:0.7;
+  mix-blend-mode:screen;
+  image-rendering:pixelated;
+  animation:staticIntensity 13s ease-in-out infinite;
+}
+
+/* ===== LAYER 2: COLOR CHANNEL SPLIT OVERLAY ===== */
+.channel-split{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  mix-blend-mode:screen;
+  opacity:0;
+  animation:channelSplit 9s ease-in-out infinite;
+}
+
+/* ===== LAYER 3: CHROMA NOISE OVERLAY ===== */
+.chroma-overlay{
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:transparent;
+  opacity:0.12;
+  mix-blend-mode:overlay;
+  animation:chromaPhase 15s ease-in-out infinite;
+}
+
+/* ===== LAYER 4: CROSS-HATCH INTERFERENCE ===== */
+.cross-hatch{
+  position:fixed;inset:0;z-index:4;pointer-events:none;
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(200,200,210,0.015) 1px, rgba(200,200,210,0.015) 2px),
+    repeating-linear-gradient(-45deg, transparent, transparent 1px, rgba(200,200,210,0.01) 1px, rgba(200,200,210,0.01) 2px);
+  animation:crossHatch 17s ease-in-out infinite;
+}
+
+/* ===== LAYER 5: MOIRE PATTERN ===== */
+.moire{
+  position:fixed;inset:0;z-index:5;pointer-events:none;
+  background:
+    radial-gradient(circle at 30% 40%, transparent 14px, rgba(200,200,210,0.02) 15px, transparent 16px),
+    radial-gradient(circle at 32% 42%, transparent 14px, rgba(200,200,210,0.02) 15px, transparent 16px);
+  background-size:32px 32px;
+  animation:moireDrift 30s linear infinite;
+}
+
+/* ===== LAYER 6: SCANLINES ===== */
+.scanlines{
+  position:fixed;inset:0;pointer-events:none;z-index:6;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.07) 2px,
+    rgba(0,0,0,0.07) 4px
+  );
+  animation:scanlineFlicker 8s linear infinite;
+}
+.scanlines::after{
+  content:'';
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.04) 3px,
+    rgba(0,0,0,0.04) 6px
+  );
+}
+
+/* ===== LAYER 7: HORIZONTAL SYNC BARS ===== */
+.h-sync{
+  position:fixed;inset:0;pointer-events:none;z-index:7;
+  background:transparent;
+}
+.h-sync-bar{
+  position:absolute;left:0;width:100%;height:3px;
+  background:linear-gradient(to right,
+    transparent 0%,
+    rgba(200,200,210,0.02) 20%,
+    rgba(200,200,210,0.07) 40%,
+    rgba(200,200,210,0.04) 60%,
+    transparent 100%
+  );
+  animation:syncBarMove 4s linear infinite;
+}
+.h-sync-bar:nth-child(1){top:15%;animation-delay:0s;animation-duration:3.5s;}
+.h-sync-bar:nth-child(2){top:32%;animation-delay:-0.8s;animation-duration:4.2s;}
+.h-sync-bar:nth-child(3){top:48%;animation-delay:-1.6s;animation-duration:3.1s;}
+.h-sync-bar:nth-child(4){top:64%;animation-delay:-2.4s;animation-duration:4.7s;}
+.h-sync-bar:nth-child(5){top:78%;animation-delay:-3.2s;animation-duration:3.8s;}
+.h-sync-bar:nth-child(6){top:91%;animation-delay:-1.1s;animation-duration:4.4s;}
+
+/* ===== LAYER 8: SCREEN TEAR LINES ===== */
+.screen-tear{
+  position:fixed;inset:0;pointer-events:none;z-index:8;
+  background:transparent;
+}
+.tear-line{
+  position:absolute;left:0;width:100%;height:30px;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    rgba(80,200,200,0.05) 20%,
+    rgba(200,80,200,0.06) 50%,
+    rgba(80,200,200,0.05) 80%,
+    transparent 100%
+  );
+  opacity:0;
+  animation:tearAppear 7s ease-in-out infinite;
+}
+.tear-line:nth-child(1){top:25%;animation-delay:0s;height:40px;}
+.tear-line:nth-child(2){top:50%;animation-delay:-2.3s;height:25px;}
+.tear-line:nth-child(3){top:72%;animation-delay:-4.6s;height:35px;}
+.tear-line:nth-child(4){top:88%;animation-delay:-1.5s;height:20px;}
+.tear-line:nth-child(5){top:10%;animation-delay:-5.5s;height:28px;}
+
+/* ===== LAYER 9: ROLLING HUM BAR ===== */
+.rolling-bar{
+  position:fixed;left:0;width:100%;height:40px;pointer-events:none;z-index:9;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    rgba(0,0,0,0.03) 30%,
+    rgba(0,0,0,0.05) 50%,
+    rgba(0,0,0,0.03) 70%,
+    transparent 100%
+  );
+  animation:rollingBar 6s linear infinite;
+}
+.rolling-bar:nth-child(2){animation-delay:-2s;animation-duration:7s;height:50px;}
+.rolling-bar:nth-child(3){animation-delay:-4s;animation-duration:5.5s;height:30px;}
+
+/* ===== LAYER 10: VIGNETTE ===== */
+.vignette{
+  position:fixed;inset:0;pointer-events:none;z-index:10;
+  background:radial-gradient(ellipse at center,
+    transparent 20%,
+    transparent 30%,
+    rgba(5,5,8,0.6) 60%,
+    rgba(2,2,4,0.85) 80%,
+    rgba(0,0,2,0.95) 100%
+  );
+  animation:vignetteBreath 12s ease-in-out infinite;
+}
+
+/* ===== LAYER 11: CRT OFF FLASH ===== */
+.crt-off{
+  position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:rgba(255,255,255,0.04);
+  opacity:0;
+  animation:crtDie 22s ease-in-out infinite;
+}
+
+/* ===== LAYER 12: SCREEN BURN PATTERN ===== */
+.screen-burn{
+  position:fixed;inset:0;pointer-events:none;z-index:19;
+  opacity:0.03;
+  background:
+    radial-gradient(ellipse at 45% 40%, rgba(255,180,100,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 55% 45%, rgba(255,180,100,0.2) 0%, transparent 40%),
+    radial-gradient(circle at 48% 42%, rgba(255,200,140,0.15) 0%, transparent 30%);
+  animation:screenBurn 20s ease-in-out infinite;
+}
+
+/* ===== LAYER 13: BARREL DISTORTION OVERLAY (CSS-based) ===== */
+.barrel-distort{
+  position:fixed;inset:0;pointer-events:none;z-index:20;
+  border:80px solid rgba(0,0,0,0.4);
+  border-radius:15% / 10%;
+  box-shadow:inset 0 0 120px rgba(0,0,0,0.5);
+}
+
+/* ===== CONTENT ZONE ===== */
+.content-zone{
+  position:fixed;inset:0;z-index:25;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  pointer-events:none;
+}
+
+/* ===== GLITCH TITLE ===== */
+.glitch-title{
+  font-size:clamp(2rem,6vw,5rem);
+  font-weight:100;letter-spacing:0.3em;
+  color:rgba(200,200,210,0.55);
+  text-shadow:
+    0 0 80px rgba(180,180,200,0.15),
+    0 0 160px rgba(180,180,200,0.08);
+  position:relative;
+  animation:glitchText 5s ease-in-out infinite, letterSpasm 8s ease-in-out infinite;
+}
+.glitch-title::before{
+  content:'静 噪';
+  position:absolute;top:0;left:4px;
+  color:rgba(255,80,80,0.25);
+  animation:glitchR 4.2s ease-in-out infinite;
+  clip-path:inset(32% 0 38% 0);
+  text-shadow:0 0 20px rgba(255,80,80,0.3);
+}
+.glitch-title::after{
+  content:'静 噪';
+  position:absolute;top:0;left:-4px;
+  color:rgba(80,180,255,0.25);
+  animation:glitchB 3.8s ease-in-out infinite;
+  clip-path:inset(52% 0 22% 0);
+  text-shadow:0 0 20px rgba(80,180,255,0.3);
+}
+
+/* ===== CORRUPTED MESSAGE TEXT ===== */
+.corrupt-msg{
+  margin-top:2.5rem;
+  font-size:0.85rem;letter-spacing:0.2em;
+  color:var(--signal-dim);
+  animation:corruptCycle 7s ease-in-out infinite;
+  text-align:center;
+  max-width:80vw;
+  line-height:2;
+}
+
+/* ===== SUBTITLE WHISPER TEXT ===== */
+.whisper-text{
+  margin-top:1.5rem;
+  font-size:0.65rem;letter-spacing:0.35em;
+  color:rgba(180,180,200,0.12);
+  animation:whisperText 14s ease-in-out infinite;
+  text-align:center;
+  max-width:70vw;
+  line-height:1.8;
+}
+
+/* ===== SIGNAL BURST RINGS ===== */
+.signal-burst{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:14;pointer-events:none;
+  opacity:0;
+  border-radius:50%;
+  animation:signalBurst 14s ease-in-out infinite;
+}
+.signal-burst:nth-child(1){
+  width:300px;height:300px;
+  background:radial-gradient(circle,
+    rgba(200,200,210,0.07) 0%,
+    rgba(180,180,200,0.04) 25%,
+    rgba(150,150,180,0.02) 50%,
+    transparent 70%
+  );
+}
+.signal-burst:nth-child(2){
+  width:450px;height:450px;
+  animation-delay:-5s;
+  animation-duration:16s;
+  background:radial-gradient(circle,
+    rgba(180,200,210,0.05) 0%,
+    rgba(150,180,200,0.03) 20%,
+    transparent 60%
+  );
+}
+.signal-burst:nth-child(3){
+  width:200px;height:200px;
+  animation-delay:-9s;
+  animation-duration:11s;
+  background:radial-gradient(circle,
+    rgba(210,180,200,0.06) 0%,
+    rgba(180,160,210,0.03) 15%,
+    transparent 55%
+  );
+}
+.signal-burst:nth-child(4){
+  width:550px;height:550px;
+  animation-delay:-3s;
+  animation-duration:18s;
+  background:radial-gradient(circle,
+    rgba(180,180,220,0.04) 0%,
+    rgba(160,160,200,0.02) 18%,
+    transparent 65%
+  );
+}
+
+/* ===== INTERFERENCE RINGS ===== */
+.interference-ring{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:15;pointer-events:none;
+  border-radius:50%;
+  border:1px solid rgba(200,200,210,0.03);
+  animation:intRing 10s ease-in-out infinite;
+}
+.interference-ring:nth-child(1){width:500px;height:500px;}
+.interference-ring:nth-child(2){
+  width:350px;height:350px;
+  border-color:rgba(200,200,210,0.05);
+  animation-delay:-3.5s;
+  animation-duration:12s;
+}
+.interference-ring:nth-child(3){
+  width:650px;height:650px;
+  border-color:rgba(200,200,210,0.02);
+  animation-delay:-7s;
+  animation-duration:15s;
+}
+/* ===== GHOST FACE IN THE STATIC (CSS-based pareidolia) ===== */
+.face-ghost{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:13;pointer-events:none;
+  width:200px;height:260px;
+  opacity:0;
+  animation:faceAppear 20s ease-in-out infinite;
+}
+.face-outline{
+  width:100%;height:100%;
+  border:1px solid rgba(200,200,210,0.05);
+  border-radius:45% 45% 40% 40%;
+  position:relative;
+  animation:edgeTear 12s ease-in-out infinite;
+}
+.face-outline::before{
+  content:'';
+  position:absolute;
+  top:32%;left:20%;width:28px;height:20px;
+  border:1px solid rgba(200,200,210,0.04);
+  border-radius:50%;
+  box-shadow:60px 0 0 rgba(200,200,210,0.04);
+}
+.face-outline::after{
+  content:'';
+  position:absolute;
+  top:55%;left:36%;width:50px;height:1px;
+  background:rgba(200,200,210,0.035);
+  box-shadow:0 8px 0 rgba(200,200,210,0.02);
+}
+
+/* Second ghost face — larger, more distorted */
+.face-ghost-2{
+  position:fixed;top:48%;left:52%;transform:translate(-50%,-50%);
+  z-index:12;pointer-events:none;
+  width:280px;height:340px;
+  opacity:0;
+  animation:ghostMaterialize 35s ease-in-out infinite;
+  animation-delay:-10s;
+}
+.face-outline-2{
+  width:100%;height:100%;
+  border:1px solid rgba(200,200,210,0.03);
+  border-radius:48% 42% 44% 40%;
+  position:relative;
+}
+.face-outline-2::before{
+  content:'';
+  position:absolute;
+  top:30%;left:25%;width:22px;height:15px;
+  border:1px solid rgba(200,200,210,0.03);
+  border-radius:50%;
+  box-shadow:70px 5px 0 rgba(200,200,210,0.03);
+}
+.face-outline-2::after{
+  content:'';
+  position:absolute;
+  top:52%;left:38%;width:55px;height:20px;
+  border:1px solid rgba(200,200,210,0.025);
+  border-radius:0 0 50% 50%;
+  border-top:none;
+}
+
+/* Shadow person — peripheral dark figure */
+.shadow-figure{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:11;pointer-events:none;
+  width:160px;height:300px;
+  opacity:0;
+  background:radial-gradient(ellipse at 50% 30%,
+    rgba(0,0,0,0.15) 0%,
+    rgba(0,0,0,0.08) 40%,
+    transparent 70%
+  );
+  border-radius:40% 40% 35% 35%;
+  animation:shadowFlicker 22s ease-in-out infinite;
+  animation-delay:-5s;
+}
+
+/* ===== GHOST CANVAS FOR MOUSE TRAILS ===== */
+#ghostCanvas{
+  position:fixed;inset:0;z-index:21;pointer-events:none;
+}
+/* ===== FULL-SCREEN GLITCH BURST OVERLAY ===== */
+.glitch-burst-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:49;
+  opacity:0;
+  mix-blend-mode:screen;
+}
+.glitch-burst-overlay.active{
+  animation:snowBurst 0.3s ease-out;
+}
+
+/* RGB shift page wrapper */
+.rgb-shift-wrapper{
+  position:fixed;inset:0;pointer-events:none;z-index:48;
+  animation:fullRGBShift 30s ease-in-out infinite;
+}
+
+/* Screen fragment slices */
+.screen-slice{
+  position:fixed;inset:0;pointer-events:none;z-index:47;
+  background:transparent;
+  animation:screenFragment 25s ease-in-out infinite;
+}
+
+/* Negative flash */
+.neg-flash{
+  position:fixed;inset:0;pointer-events:none;z-index:46;
+  background:transparent;
+  animation:negFlash 18s ease-in-out infinite;
+}
+
+/* Frequency interference wave bar */
+.freq-wave{
+  position:fixed;left:0;width:100%;height:6px;
+  pointer-events:none;z-index:45;
+  background:linear-gradient(to right,
+    transparent 0%,
+    rgba(200,200,210,0.2) 20%,
+    rgba(200,200,210,0.5) 40%,
+    rgba(200,200,210,0.3) 60%,
+    transparent 100%
+  );
+  opacity:0;
+  animation:frequencyWave 12s ease-in-out infinite;
+}
+.freq-wave:nth-child(1){top:35%;animation-delay:0s;}
+.freq-wave:nth-child(2){top:55%;animation-delay:-4s;}
+.freq-wave:nth-child(3){top:75%;animation-delay:-8s;}
+
+/* Tracking error displacement layer */
+.tracking-error-layer{
+  position:fixed;inset:0;pointer-events:none;z-index:44;
+  animation:trackingError 19s ease-in-out infinite;
+}
+
+/* Horizontal hold loss overlay */
+.h-hold-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:43;
+  animation:hHoldLoss 28s ease-in-out infinite;
+}
+
+/* Vertical hold loss overlay */
+.v-hold-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:42;
+  animation:vHoldLoss 24s ease-in-out infinite;
+}
+
+/* Channel switch flash */
+.channel-switch{
+  position:fixed;inset:0;pointer-events:none;z-index:41;
+  animation:channelSwitch 40s ease-in-out infinite;
+  background:transparent;
+}
+
+/* VHS head switching noise */
+.head-switch-bar{
+  position:fixed;left:0;width:100%;height:4px;
+  pointer-events:none;z-index:40;
+  background:rgba(200,200,210,0.4);
+  opacity:0;
+  animation:headSwitchBar 0.6s ease-in-out infinite;
+}
+.head-switch-bar:nth-child(1){bottom:2%;animation-delay:0s;}
+.head-switch-bar:nth-child(2){bottom:3%;animation-delay:-0.2s;}
+.head-switch-bar:nth-child(3){bottom:1%;animation-delay:-0.4s;}
+/* ===== MOUSE INTERACTION CSS ===== */
+/* Custom cursor — small dot */
+.custom-cursor{
+  position:fixed;pointer-events:none;z-index:9999;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:rgba(200,200,210,0.5);
+  box-shadow:0 0 15px rgba(200,200,210,0.3), 0 0 30px rgba(200,200,210,0.1);
+  transform:translate(-50%,-50%);
+  transition:width 0.3s,height 0.3s,background 0.3s;
+}
+.custom-cursor.reveal{
+  width:20px;height:20px;
+  background:rgba(220,220,240,0.7);
+  box-shadow:0 0 25px rgba(220,220,240,0.5), 0 0 60px rgba(200,200,220,0.2);
+}
+
+/* Hidden message revealed by mouse proximity */
+.hidden-msg{
+  position:fixed;pointer-events:none;z-index:22;
+  font-family:'Courier New','SimSun',monospace;
+  font-size:0.7rem;color:rgba(200,200,210,0);
+  transition:color 0.5s ease,text-shadow 0.5s ease;
+  letter-spacing:0.2em;
+  white-space:pre;
+  text-align:center;
+  transform:translate(-50%,-50%);
+}
+.hidden-msg.revealed{
+  color:rgba(200,200,210,0.6);
+  text-shadow:0 0 20px rgba(200,200,210,0.3);
+}
+/* ===== DATA STREAM ELEMENTS ===== */
+.data-stream{
+  position:fixed;pointer-events:none;z-index:16;
+  font-family:'Courier New','SimSun',monospace;
+  font-size:0.6rem;
+  color:rgba(200,200,210,0.12);
+  white-space:pre;
+  animation:dataScroll 22s linear infinite;
+  line-height:1.6;
+}
+.data-stream:nth-child(1){top:5%;left:3%;animation-delay:0s;}
+.data-stream:nth-child(2){top:25%;right:2%;animation-delay:-5s;}
+.data-stream:nth-child(3){top:45%;left:6%;animation-delay:-11s;}
+.data-stream:nth-child(4){bottom:30%;right:4%;animation-delay:-3s;}
+.data-stream:nth-child(5){bottom:10%;left:2%;animation-delay:-8s;}
+.data-stream:nth-child(6){top:15%;right:8%;animation-delay:-14s;}
+.data-stream:nth-child(7){top:60%;left:10%;animation-delay:-17s;}
+.data-stream:nth-child(8){bottom:45%;right:6%;animation-delay:-9s;}
+
+/* Navigation links */
+.nav-row{
+  position:fixed;bottom:35px;left:50%;transform:translateX(-50%);
+  z-index:100;display:flex;gap:22px;align-items:center;
+}
+.nav-row a{
+  pointer-events:auto;text-decoration:none;
+  color:rgba(180,180,200,0.2);
+  font-size:0.7rem;letter-spacing:0.3em;
+  transition:all 1s ease;
+  position:relative;
+}
+.nav-row a:hover{
+  color:rgba(220,220,240,0.7);
+  text-shadow:0 0 25px rgba(200,200,220,0.4);
+}
+.nav-row a::after{
+  content:'';
+  position:absolute;bottom:-4px;left:0;width:100%;height:1px;
+  background:rgba(200,200,210,0);
+  transition:background 1s ease;
+}
+.nav-row a:hover::after{
+  background:rgba(200,200,210,0.3);
+}
+.nav-row span{color:rgba(180,180,200,0.08);}
+
+.back-link{
+  position:fixed;top:35px;left:35px;z-index:100;
+  text-decoration:none;display:flex;align-items:center;gap:10px;
+  color:rgba(180,180,200,0.2);
+  font-size:0.7rem;letter-spacing:0.25em;
+  transition:all 1s ease;
+}
+.back-link:hover{color:rgba(220,220,240,0.6);}
+.back-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(180,180,200,0.25);
+  transition:all 1s ease;
+}
+.back-link:hover .back-dot{
+  background:rgba(220,220,240,0.7);
+  box-shadow:0 0 15px rgba(200,200,220,0.5);
+}
+
+/* Transmission log (hidden) */
+.transmission-log{
+  position:fixed;bottom:0;left:0;width:100%;height:0;
+  overflow:hidden;pointer-events:none;z-index:0;
+  font-family:'Courier New',monospace;
+  font-size:0.55rem;
+  color:rgba(0,0,0,0);
+  white-space:pre;
+  line-height:1.4;
+  opacity:0;
+}
+
+/* Snow overlay (intense static bursts) */
+.snow-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:39;
+  opacity:0;
+  mix-blend-mode:screen;
+}
+
+/* CRT bezel effect */
+.crt-bezel{
+  position:fixed;inset:0;pointer-events:none;z-index:51;
+  border:30px solid rgba(0,0,0,0.6);
+  border-radius:20px / 15px;
+  box-shadow:inset 0 0 200px rgba(0,0,0,0.5);
+  animation:rasterBreath 30s ease-in-out infinite;
+}
+
+/* Shadow sweep overlay */
+.shadow-sweep{
+  position:fixed;inset:0;pointer-events:none;z-index:40;
+  background:linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+  opacity:0;
+  animation:shadowSweep 15s ease-in-out infinite;
+}
+
+/* Flyback line overlay */
+.flyback-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:41;
+  background:transparent;
+}
+.flyback-line{
+  position:absolute;left:0;width:100%;height:2px;
+  background:rgba(255,255,255,0.15);
+  opacity:0;
+  animation:flybackLine 0.8s linear infinite;
+}
+.flyback-line:nth-child(1){top:5%;animation-delay:0s;}
+.flyback-line:nth-child(2){top:50%;animation-delay:-0.4s;}
+
+/* Interlace field flicker */
+.interlace-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:42;
+  background:repeating-linear-gradient(0deg,
+    rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px,
+    transparent 1px, transparent 2px
+  );
+  animation:interlaceFlicker 0.5s linear infinite;
+}
+
+/* AGC pulse bars */
+.agc-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:43;
+  background:transparent;
+}
+.agc-bar{
+  position:absolute;left:0;width:100%;height:2px;
+  background:rgba(255,255,255,0.2);
+  opacity:0;
+  animation:agcPulse 4s ease-in-out infinite;
+}
+.agc-bar:nth-child(1){top:15%;animation-delay:0s;}
+.agc-bar:nth-child(2){top:35%;animation-delay:-1.2s;}
+.agc-bar:nth-child(3){top:55%;animation-delay:-2.4s;}
+.agc-bar:nth-child(4){top:75%;animation-delay:-3.6s;}
+
+/* Pause/freeze jitter */
+.pause-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:44;
+  animation:pauseJitter 0.1s linear infinite;
+  opacity:0.15;
+}
+
+/* CC corruption text */
+.cc-overlay{
+  position:fixed;bottom:15%;left:50%;transform:translateX(-50%);
+  pointer-events:none;z-index:45;
+  font-family:'Courier New',monospace;
+  font-size:0.75rem;
+  color:rgba(200,200,210,0.3);
+  background:rgba(0,0,0,0.5);
+  padding:4px 12px;
+  opacity:0;
+  animation:ccCorrupt 12s ease-in-out infinite;
+  letter-spacing:0.1em;
+}
+
+/* Degaussing bloom effect */
+.degauss-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:46;
+  background:transparent;
+}
+
+/* Antenna adjustment ghost image */
+.antenna-ghost{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:47;
+  width:300px;height:240px;
+  background:radial-gradient(ellipse at center,
+    rgba(200,200,210,0.1) 0%,
+    rgba(180,180,200,0.05) 30%,
+    transparent 70%
+  );
+  border-radius:50%;
+  opacity:0;
+  animation:antennaGhost 20s ease-in-out infinite;
+}
+
+/* Signal-to-noise ratio breathing layer */
+.snr-layer{
+  position:fixed;inset:0;pointer-events:none;z-index:48;
+  background:rgba(0,0,0,0);
+  animation:snrOscillate 5s ease-in-out infinite;
+}
+
+/* Frame roll bar */
+.frame-roll-bar{
+  position:fixed;left:0;width:100%;height:15px;
+  pointer-events:none;z-index:49;
+  background:linear-gradient(to bottom,
+    rgba(0,0,0,0.4) 0%,
+    rgba(0,0,0,0.2) 30%,
+    rgba(255,255,255,0.05) 50%,
+    rgba(0,0,0,0.2) 70%,
+    rgba(0,0,0,0.4) 100%
+  );
+  animation:frameRoll 0.5s linear infinite;
+}
+.frame-roll-bar:nth-child(2){animation-delay:-0.25s;}
+
+/* Ambient flicker layer */
+.ambient-flicker{
+  position:fixed;inset:0;pointer-events:none;z-index:49;
+  background:transparent;
+  animation:ambientFlicker 8s ease-in-out infinite;
+}
+
+/* Title glow sync */
+.glitch-title{
+  animation:glitchText 5s ease-in-out infinite, letterSpasm 8s ease-in-out infinite, titleFlickerSync 6s ease-in-out infinite;
+}
+
+/* Vignette breathing */
+.vignette{
+  animation:vignetteBreath 12s ease-in-out infinite, burnIntensify 25s ease-in-out infinite;
+}
+
+/* Screen burn additional animation */
+.screen-burn{
+  animation:screenBurn 20s ease-in-out infinite, burnIntensify 30s ease-in-out infinite;
+}
+
+/* Ghost figure drift */
+.face-ghost{
+  animation:faceAppear 20s ease-in-out infinite, ghostDrift 12s ease-in-out infinite;
+}
+
+/* Tape stretch on entire page */
+body{
+  animation:tapeWarble 17s linear infinite;
+}
+</style>
+</head>
+<body>
+<!-- ===== STATIC NOISE CANVASES (multiple layered canvases) ===== -->
+<canvas id="staticCanvas"></canvas>
+<canvas id="streakCanvas" style="position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0.5;"></canvas>
+<canvas id="barCanvas" style="position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0.4;"></canvas>
+<!-- ===== SVG FILTER OVERLAYS ===== -->
+<div class="channel-split"></div>
+<div class="chroma-overlay"></div>
+<div class="cross-hatch"></div>
+<div class="moire"></div>
+<div class="snow-overlay" id="snowOverlay"></div>
+<!-- ===== CRT SCREEN EFFECTS ===== -->
+<div class="scanlines"></div>
+<div class="h-sync">
+  <div class="h-sync-bar"></div>
+  <div class="h-sync-bar"></div>
+  <div class="h-sync-bar"></div>
+  <div class="h-sync-bar"></div>
+  <div class="h-sync-bar"></div>
+  <div class="h-sync-bar"></div>
+</div>
+<div class="screen-tear">
+  <div class="tear-line"></div>
+  <div class="tear-line"></div>
+  <div class="tear-line"></div>
+  <div class="tear-line"></div>
+  <div class="tear-line"></div>
+</div>
+<div class="rolling-bar"></div>
+<div class="rolling-bar"></div>
+<div class="rolling-bar"></div>
+<div class="vignette"></div>
+<div class="crt-off"></div>
+<div class="screen-burn"></div>
+<div class="barrel-distort"></div>
+
+<!-- Glitch burst layers -->
+<div class="glitch-burst-overlay" id="glitchBurst"></div>
+<div class="rgb-shift-wrapper"></div>
+<div class="screen-slice"></div>
+<div class="neg-flash"></div>
+<div class="freq-wave"></div>
+<div class="freq-wave"></div>
+<div class="freq-wave"></div>
+<div class="tracking-error-layer"></div>
+<div class="h-hold-overlay"></div>
+<div class="v-hold-overlay"></div>
+<div class="channel-switch"></div>
+<div class="head-switch-bar"></div>
+<div class="head-switch-bar"></div>
+<div class="head-switch-bar"></div>
+<div class="crt-bezel"></div>
+<div class="shadow-sweep"></div>
+<div class="flyback-overlay">
+  <div class="flyback-line"></div>
+  <div class="flyback-line"></div>
+</div>
+<div class="interlace-overlay"></div>
+<div class="agc-overlay">
+  <div class="agc-bar"></div>
+  <div class="agc-bar"></div>
+  <div class="agc-bar"></div>
+  <div class="agc-bar"></div>
+</div>
+<div class="pause-overlay"></div>
+<div class="cc-overlay">[CC] ▓▓▓▒▒░░ 她在这 ░░▒▒▓▓▓ [CC]</div>
+<div class="degauss-overlay"></div>
+<div class="antenna-ghost"></div>
+<div class="snr-layer"></div>
+<div class="frame-roll-bar"></div>
+<div class="frame-roll-bar"></div>
+<div class="ambient-flicker"></div>
+<div class="rf-fringe" style="position:fixed;inset:0;pointer-events:none;z-index:36;opacity:0.03;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(200,200,210,0.1) 3px,rgba(200,200,210,0.1) 4px);animation:scanlineFlicker 11s linear infinite reverse;"></div>
+<div class="power-line-hum" style="position:fixed;inset:0;pointer-events:none;z-index:35;opacity:0;background:radial-gradient(ellipse at 50% 0%,rgba(180,200,210,0.04) 0%,transparent 70%);animation:shadowSweep 25s ease-in-out infinite;"></div>
+<div class="tape-crease" style="position:fixed;left:0;width:100%;height:1px;pointer-events:none;z-index:34;background:rgba(255,255,255,0.03);opacity:0;animation:headSwitchBar 1.2s ease-in-out infinite;top:33%;"></div>
+<div class="tape-crease" style="position:fixed;left:0;width:100%;height:1px;pointer-events:none;z-index:34;background:rgba(255,255,255,0.03);opacity:0;animation:headSwitchBar 1.2s ease-in-out infinite;top:66%;animation-delay:-0.6s;"></div>
+<!-- ===== GHOST FACE / FIGURE SYSTEM ===== -->
+<div class="face-ghost"><div class="face-outline"></div></div>
+<div class="face-ghost-2"><div class="face-outline-2"></div></div>
+<div class="shadow-figure"></div>
+
+<!-- Canvas-based ghost face renderer -->
+<canvas id="faceCanvas" style="position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0.6;"></canvas>
+<!-- ===== CONTENT ZONE ===== -->
+<div class="content-zone">
+  <div class="glitch-title" id="glitchTitle">静 噪</div>
+  <div class="corrupt-msg" id="corruptMsg">
+    · · · 它 们 在 信 号 里 · · ·<br>
+    · · · 不 要 盯 着 噪 点 看 太 久 · · ·<br>
+    · · · 你 会 开 始 看 到 脸 · · ·
+  </div>
+  <div class="whisper-text" id="whisperText">
+    录 像 带 倒 带 时 他 们 在 屏 幕 中 移 动<br>
+    不 要 调 整 你 的 电 视 机<br>
+    <span style="font-size:0.55rem;opacity:0.5;">· · · 信 号 源 是 活 的 · · ·</span>
+  </div>
+</div>
+
+<!-- Signal burst rings -->
+<div class="signal-burst"></div>
+<div class="signal-burst"></div>
+<div class="signal-burst"></div>
+<div class="signal-burst"></div>
+
+<!-- Interference rings -->
+<div class="interference-ring"></div>
+<div class="interference-ring"></div>
+<div class="interference-ring"></div>
+
+<!-- Hidden messages (revealed by mouse) -->
+<div class="hidden-msg" id="hiddenMsg1" style="top:25%;left:20%;">她 在 看 着 你</div>
+<div class="hidden-msg" id="hiddenMsg2" style="top:65%;left:75%;">频 率 284.7 Hz</div>
+<div class="hidden-msg" id="hiddenMsg3" style="top:40%;left:60%;">不 要 回 头</div>
+<div class="hidden-msg" id="hiddenMsg4" style="top:75%;left:30%;">录 像 还 在 播 放</div>
+<div class="hidden-msg" id="hiddenMsg5" style="top:15%;left:70%;">他 们 看 见 了 你</div>
+<!-- ===== NAVIGATION ===== -->
+<a href="threshold.html" class="back-link"><div class="back-dot"></div>返 回 阈 限</a>
+<div class="nav-row">
+  <a href="corridor.html">← 长 廊</a>
+  <span>|</span>
+  <a href="deep.html">深 渊 →</a>
+  <span>|</span>
+  <a href="echo.html">回 声 →</a>
+  <span>|</span>
+  <a href="static.html" style="color:rgba(220,220,240,0.35);">静 噪 ⊘</a>
+</div>
+
+<!-- Custom cursor element -->
+<div class="custom-cursor" id="customCursor"></div>
+<!-- ===== HIDDEN TRANSMISSION LOG (corrupted data, hundreds of lines) ===== -->
+<div class="transmission-log" id="transmissionLog">
+[LOG_START] VOID_ECHO_STATION_284.7Hz // TIMESTAMP: CORRUPTED // OPERATOR: UNKNOWN
+----------------------------------------------------------------
+00:00:00.000 | CARRIER SIGNAL ACQUIRED | FREQ: 284.7 Hz | BAND: VHF-LOW
+00:00:01.284 | SIGNAL LOCK: INTERMITTENT | SNR: -12dB | JITTER: 4.7ms
+00:00:03.591 | VERTICAL SYNC PULSE DETECTED | LINE: 23 | FIELD: ODD
+00:00:05.847 | HORIZONTAL SYNC IRREGULARITY | PERIOD: 63.5us +/- 2.1us
+00:00:08.102 | COLOR BURST MISSING | LINE 17-21 | SUBCARRIER: 3.579545 MHz
+00:00:10.366 | MACROVISION PULSES DETECTED | AGC INTERFERENCE PATTERN
+00:00:12.633 | CLOSED CAPTION DATA: [CORRUPTED] | LINE 21 | PARITY ERROR
+00:00:14.891 | GHOST IMAGE DETECTED | DELAY: 1.2us | AMPLITUDE: -18dB
+00:00:17.155 | CHROMINANCE PHASE ERROR | ANGLE: 47deg | BURST GATE: OPEN
+00:00:19.422 | LUMINANCE SPIKE | LEVEL: 112 IRE | DURATION: 3 SCANLINES
+00:00:21.687 | VERTICAL INTERVAL TEST SIGNAL: ABSENT
+00:00:23.944 | RF INTERFERENCE PATTERN | SOURCE: UNKNOWN | FREQ: 50.3 MHz
+00:00:26.201 | HEAD SWITCHING POINT | VHS TRACKING: NOMINAL
+00:00:28.459 | DROPOUT COMPENSATION ACTIVE | LINE REPLACEMENT: 44 LINES
+00:00:30.711 | TIMEBASE CORRECTOR OVERFLOW | WINDOW: 32 LINES
+00:00:33.012 | FRAME SYNCHRONIZER: GENLOCK LOST
+00:00:35.278 | BURST LOCK OSCILLATOR: FREE-RUNNING
+00:00:37.534 | SCH PHASE: 87 DEGREES | SPEC: 0 +/- 40
+00:00:39.801 | SETUP LEVEL: 7.5 IRE | BLANKING: IMPROPER
+00:00:42.058 | LUMA NONLINEARITY: 12% | GAMMA: 2.8 (NOMINAL: 2.2)
+00:00:44.312 | CHROMA/LUMA DELAY: +38ns | SPEC: +/- 20ns
+00:00:46.579 | DIFFERENTIAL GAIN: 8% | DIFFERENTIAL PHASE: 6deg
+00:00:48.847 | K-FACTOR 2T: 4.7% | PULSE-TO-BAR: 3.2%
+00:00:51.099 | SIGNAL-TO-NOISE: WEIGHTED: -14dB | UNWEIGHTED: -19dB
+00:00:53.355 | GROUP DELAY: 120ns | FREQ: 3.58 MHz
+00:00:55.622 | FIELD TIME LINEAR DISTORTION: 5.5%
+00:00:57.881 | LINE TIME LINEAR DISTORTION: 3.8%
+00:00:60.145 | SHORT TIME LINEAR DISTORTION: 6.1%
+00:01:02.399 | BOWTIE PHASE: 12 DEGREES | INTERCHANNEL: 9 DEGREES
+00:01:04.647 | MULTIBURST: PACKET 4.2MHz MISSING
+00:01:06.912 | SWEEP MARKER: 5.0 MHz ABSENT
+00:01:09.178 | MODULATED RAMP: STEP AT 55 IRE
+00:01:11.444 | STAIRCASE LINEARITY: STEP 3 NONLINEAR 14%
+00:01:13.705 | WINDOW PULSE: RINGING 7%
+00:01:16.003 | SIN(X)/X PULSE: OVERSHOOT 11%
+00:01:18.258 | BAR RISE TIME: 140ns | SPEC: 100-250ns
+00:01:20.514 | BAR WIDTH: 18.2us | SPEC: 18.0 +/- 0.2us
+00:01:22.773 | BAR TILT: FIELD: 4.8% | LINE: 1.2%
+00:01:25.027 | SYNC AMPLITUDE: 38 IRE | SPEC: 40 IRE
+00:01:27.285 | BURST AMPLITUDE: 37 IRE | SPEC: 40 IRE
+00:01:29.549 | BURST ENVELOPE: ASYMMETRIC | LEFT: 42 RIGHT: 32
+00:01:31.807 | BLANKING LEVEL: 3 IRE | PEDESTAL: PRESENT
+00:01:34.073 | HORIZONTAL BLANKING: 11.2us | SPEC: 10.9 +/- 0.2us
+00:01:36.341 | VERTICAL BLANKING: 20 LINES | SPEC: 21 LINES
+00:01:38.607 | EQUALIZING PULSES: MISSING 1 OF 6
+00:01:40.861 | SERRATED VERTICAL SYNC: DEGRADED
+00:01:43.124 | END OF VERTICAL BLANK: LINE 23 | VITS INSERTED
+00:01:45.388 | ACTIVE VIDEO START: IRREGULAR
+00:01:47.657 | ANCILLARY DATA: [CORRUPTED STREAM] 0x7F 0xA3 0x00 0xFF
+00:01:49.912 | EMBEDDED AUDIO: GROUP 1 | CHANNELS: 0x00 | LEVEL: -24dBFS
+00:01:52.178 | EMBEDDED AUDIO: GROUP 2 | CHANNELS: 0xFF | LEVEL: OVERFLOW
+00:01:54.444 | EMBEDDED AUDIO: GROUP 3 | CHANNELS: 0x2A | TONE: 1kHz
+00:01:56.701 | EMBEDDED AUDIO: GROUP 4 | CHANNELS: 0xDE | SILENCE
+00:01:58.959 | CRC ERROR: LINE 147 | EXPECTED: 0x3F8A | GOT: 0x0000
+00:02:01.222 | EDH CHECKSUM: MISMATCH | FIELD 1 | ANC: FAIL
+00:02:03.488 | EDH CHECKSUM: MISMATCH | FIELD 2 | FULL: FAIL
+00:02:05.755 | VANC DATA: UNRECOGNIZED DID/SDID: 0x5F/0x02
+00:02:08.012 | TIMECODE: VITC LINE 14: DROP FRAME | 00:00:00;00
+00:02:10.268 | TIMECODE: LTC: DISCONTINUITY | GAP: 127 FRAMES
+00:02:12.534 | USER BITS: 0xDEADBEEF | FLAG: CORRUPTED
+00:02:14.801 | AFD CODE: 0xF | BAR DATA: INVALID
+00:02:17.069 | WSS DATA: 0x000 | ASPECT: UNKNOWN
+00:02:19.322 | CLOSED CAPTION: XDS PACKET | PROGRAM: [NULL]
+00:02:21.598 | CONTENT ADVISORY: V-CHIP DATA: 0xFF 0xFF
+00:02:23.853 | CGMS-A: 0x3 | COPY PROTECTION: NEVER COPY
+00:02:26.108 | APS ANALOG PROTECTION: TYPE 2 | PSEUDO-SYNC + AGC
+00:02:28.374 | COLPRO PULSES: 384 CYCLES | BURST: EXTENDED
+00:02:30.641 | SYNC PULSE REDUCTION: -6dB | BACK PORCH: CLAMPED
+00:02:32.907 | WHITE REFERENCE: 100 IRE | BLACK REFERENCE: 7.5 IRE
+00:02:35.162 | COLOR BARS: 75% | SEQUENCE: SMPTE EG-1
+00:02:37.428 | PLUGE PULSE: 11.5 IRE PRESENT | 7.5 IRE ABSENT
+00:02:39.694 | NEEDLE PULSE: RISE TIME 70ns | FALL TIME 85ns
+00:02:41.961 | MODULATED PEDESTAL: PHASE ERROR 3 DEGREES
+00:02:44.214 | ICPM: 2.5 DEGREES | SPEC: <= 1.5 DEGREES
+00:02:46.472 | NOISE SPECTRUM: TRIANGULAR | WEIGHTING: LUMA
+00:02:48.728 | HUMMING BAR: 60Hz | AMPLITUDE: 3 IRE
+00:02:50.994 | HUMMING BAR: 120Hz | AMPLITUDE: 1.5 IRE
+00:02:53.261 | HUMMING BAR: 180Hz | AMPLITUDE: 0.8 IRE
+00:02:55.528 | GROUND LOOP: 60Hz COMMON MODE | IMPEDANCE: 0.3 OHM
+00:02:57.795 | CABLE EQUALIZATION: 300m BELDEN 8281 | RESPONSE: FLAT
+00:03:00.051 | TERMINATION: 75 OHM | RETURN LOSS: 15dB @ 5MHz
+00:03:02.314 | VSWR: 1.42:1 | IMPEDANCE: 53 OHMS
+00:03:04.578 | INSERTION GAIN: +0.3dB | EQUALIZER: BYPASSED
+00:03:06.847 | CLAMP POSITION: BACK PORCH | SPEED: FAST
+00:03:09.114 | DC RESTORATION: ACTIVE | PEDESTAL: CORRECT
+00:03:11.381 | SYNC TIP CLAMP: 2 DIODES | VOLTAGE: -0.7V
+00:03:13.641 | INPUT SELECT: COMPOSITE A | TERMINATION: INTERNAL
+00:03:15.904 | FORMAT: NTSC-M | STANDARD: SMPTE 170M
+00:03:18.201 | SUBCARRIER: 3.579545454 MHz | DEVIATION: +3 ppm
+00:03:20.467 | HORIZONTAL: 15.73426573 kHz | DEVIATION: -2 ppm
+00:03:22.721 | VERTICAL: 59.94005994 Hz | DEVIATION: +1 ppm
+00:03:24.987 | COLOR FRAMING: 4-FIELD | SCH: MAINTAINED
+00:03:27.253 | FIELD DOMINANCE: FIELD 1 | TRANSITION: CLEAN
+00:03:29.521 | 3:2 PULLDOWN: DETECTED | CADENCE: A B C D D
+00:03:31.787 | FILM RATE: 23.976 fps | VIDEO: 29.97 fps
+00:03:34.041 | TELECINE PATTERN: BROKEN | MISSING FIELD AT FRAME 47
+00:03:36.307 | POST HOUSE: [REDACTED] | TRANSFER: SPIRIT DATACINE
+00:03:38.564 | COLOR CORRECTION: DAVINCI 888 | GRADE: REC.709
+00:03:40.831 | COLOR SPACE: YUV 4:2:2 | QUANTIZATION: 10-BIT
+00:03:43.098 | CODEC: APPLE PRORES 422 HQ | BITRATE: 220 Mbps
+00:03:45.352 | WRAPPER: QUICKTIME .MOV | MOOV ATOM: FRONT
+00:03:47.618 | COMPRESSION: I-FRAME ONLY | GOP: N/A
+00:03:49.884 | SOURCE: HDCAM SR | TAPE: BCT-124HDL
+00:03:52.151 | TAPE STOCK: SONY | LOT: 0x4A2F | EXPIRY: 2003/11
+00:03:54.414 | RECORD DATE: [CORRUPTED] | OPERATOR: [REDACTED]
+00:03:56.668 | ARCHIVE ID: VH-2847-ECHO | VAULT: 12B
+00:03:58.934 | CONDITION: FAIR | SHRINKAGE: 0.2% | HYDROLYSIS: MINOR
+00:04:01.201 | BAKE TEMPERATURE: 52C | DURATION: 48 HOURS
+00:04:03.467 | TRANSFER DATE: [CORRUPTED] | ENGINEER: [REDACTED]
+00:04:05.734 | ANOMALY DETECTED: AUDIO TRACK 2 | REVERSE MASKING
+00:04:08.001 | FREQUENCY ANALYSIS: 284.7 Hz CARRIER IN CH2
+00:04:10.268 | SPECTRAL CONTENT: HUMAN VOICE FREQUENCIES
+00:04:12.521 | VOICE PATTERN: FEMALE | AGE: 22-35 | LANGUAGE: [UNKNOWN]
+00:04:14.788 | PHONETIC SEQUENCE: S̷ H̶ E̷ ̵ I̸ S̷ ̴ H̷ E̸ R̷ E̸
+00:04:17.054 | DECODED TEXT: 她 在 这 里 [CONFIDENCE: 78%]
+00:04:19.311 | SECONDARY VOICE: MALE | AGE: 40-55 | LANGUAGE: [UNKNOWN]
+00:04:21.578 | PHONETIC SEQUENCE: D̷ O̷ N̷ '̷ T̷ ̵ L̶ O̸ O̵ K̸
+00:04:23.844 | DECODED TEXT: 不 要 看 [CONFIDENCE: 82%]
+00:04:26.101 | TERTIARY VOICE: CHILD | AGE: 7-11 | LANGUAGE: [UNKNOWN]
+00:04:28.367 | PHONETIC SEQUENCE: H̵ E̸ L̷ P̸ ̴ M̷ E̴
+00:04:30.634 | DECODED TEXT: 帮 帮 我 [CONFIDENCE: 91%]
+00:04:32.901 | MULTIPLE VOICE ARTIFACT: 7 DISTINCT SOURCES ESTIMATED
+00:04:35.168 | ROOM TONE: 60Hz HUM + 284.7Hz WHINE + SUBSONIC RUMBLE
+00:04:37.434 | REVERB TIME: RT60 = 0.8s | SPACE: SMALL ROOM
+00:04:39.688 | BACKGROUND: MECHANICAL NOISE | SOURCE: [UNKNOWN]
+00:04:41.955 | INTERFERENCE: ELECTROMAGNETIC | SOURCE: CRT FLYBACK
+00:04:44.221 | HORIZONTAL OSCILLATOR: 15.734 kHz | AUDIBLE HARMONIC
+00:04:46.488 | VERTICAL OSCILLATOR: 59.94 Hz | SUBSONIC RUMBLE
+00:04:48.754 | CROSS-CHANNEL: CH1 TO CH2 CROSSTALK | -34dB
+00:04:51.011 | PRINT-THROUGH: PRE-ECHO | DELAY: 1.2s | LEVEL: -28dB
+00:04:53.278 | WOW AND FLUTTER: WEIGHTED: 0.12% | PEAK: 0.35%
+00:04:55.544 | SPEED ERROR: +0.3% | DRIFT: 0.02% / MINUTE
+00:04:57.811 | TIME CONSTANT: 3180us + 70us | EQ: NAB
+00:05:00.078 | BIAS FREQUENCY: 100 kHz | LEVEL: OPTIMAL
+00:05:02.344 | HEAD AZIMUTH: 90deg +/- 2 MINUTES | ALIGNMENT: CORRECT
+00:05:04.598 | HEAD WEAR: 40% | GAP LOSS: 3dB @ 15kHz
+00:05:06.864 | HEAD CLOS: MINOR | CLEANING: OVERDUE
+00:05:09.131 | TAPE GUIDES: ALIGNED | TENSION: 50g
+00:05:11.397 | PINCH ROLLER: GLAZED | PRESSURE: NOMINAL
+00:05:13.664 | CAPSTAN SPEED: 3.75 IPS | SERVO: LOCKED
+00:05:15.921 | REEL MOTOR: TORQUE NOMINAL | BACK TENSION: 25g
+00:05:18.188 | TAPE PATH: CLEAN | NO DEBRIS DETECTED
+00:05:20.454 | MAGNETIC PARTICLES: TRACE AMOUNTS | HEAD CONTACT: 95%
+00:05:22.721 | COERCIVITY: 300 OERSTED | RETENTIVITY: 1200 GAUSS
+00:05:24.987 | TAPE TYPE: TYPE I (NORMAL BIAS) | BRAND: [UNKNOWN]
+00:05:27.241 | TAPE THICKNESS: 1.5 MIL | BASE: POLYESTER
+00:05:29.507 | BACK COATING: PRESENT | CARBON: DISPERSED
+00:05:31.774 | LUBRICANT: DEPLETED | FRICTION: INCREASED
+00:05:34.041 | OXIDE SHEDDING: MINOR | DROPOUT RATE: 12/MINUTE
+00:05:36.307 | DROPOUT LENGTH: AVERAGE 15us | MAXIMUM: 85us
+00:05:38.561 | DROPOUT COMPENSATOR: OVERLOAD AT MAXIMUM
+00:05:40.827 | VIDEO SNR: 44dB | CHROMA SNR: 38dB | AUDIO SNR: 52dB
+00:05:43.094 | LUMA BANDWIDTH: 4.2 MHz (-3 dB) | CHROMA: 0.5 MHz
+00:05:45.361 | FM DEVIATION: SYNC TIP: 3.4 MHz | WHITE: 4.4 MHz
+00:05:47.627 | FM CARRIER DEVIATION: NOMINAL | PRE-EMPHASIS: STANDARD
+00:05:49.881 | DROPOUT SENSOR: RF LEVEL BELOW THRESHOLD
+00:05:52.147 | DOC CIRCUIT: ACTIVE | REPLACEMENT: PREVIOUS LINE
+00:05:54.414 | HEAD BANDING: CH1 SHOWS 1.5dB VARIATION
+00:05:56.681 | COLOR FRAMING ERROR: 2-FIELD OFFSET DETECTED
+00:05:58.947 | SERVO LOCK: CAPSTAN PHASE ERROR 15 DEGREES
+00:06:01.214 | DRUM SPEED: 1800 RPM | PHASE: WITHIN SPEC
+00:06:03.468 | TAPE SPEED: 33.35 mm/s | SPEC: 33.35 +/- 0.5%
+00:06:05.734 | VIDEO HEAD TIP: CHA: 3.8um PROTRUSION | CHB: 4.1um
+00:06:08.001 | HEAD SWITCHING POINT: 6.5H BEFORE V-SYNC
+00:06:10.268 | DUMPLING PULSE: AMPLITUDE WITHIN SPEC
+00:06:12.534 | KICK PULSE: DURATION 0.5us | AMPLITUDE NOMINAL
+00:06:14.788 | MUTING: HEAD SWITCH INTERVAL | VIDEO: MUTED
+00:06:17.054 | MAIN EMPHASIS: T1=1.6us | T2=0.5us
+00:06:19.311 | NOISE REDUCTION: DOC + CNR ACTIVE
+00:06:21.578 | YNR: THRESHOLD -3dB | CORING: -3dB
+00:06:23.844 | CNR: THRESHOLD -6dB | CORING: -6dB
+00:06:26.111 | VERTICAL APERTURE: +2dB @ 2.5 MHz
+00:06:28.378 | HORIZONTAL APERTURE: +1dB @ 3.0 MHz
+00:06:30.644 | DETAIL ENHANCEMENT: SKIN TONE GATE ACTIVE
+00:06:32.898 | COLOR UNDER: 688 kHz | DOWN CONVERSION: OK
+00:06:35.164 | COLOR KILLER: INACTIVE | BURST: DETECTED
+00:06:37.431 | ACC: GAIN ERROR +1.5dB | BURST AMPLITUDE: LOW
+00:06:39.697 | APC: PHASE ERROR -5 DEGREES | CORRECTION: ACTIVE
+00:06:41.964 | IDENT PULSE: FIELD 1 DETECTED | FIELD 2: MISSING
+00:06:44.231 | 75% COLOR BARS: AMPLITUDE CORRECT | PHASE: WITHIN SPEC
+00:06:46.497 | VECTOR SCOPE: TARGET BOX CENTERED
+00:06:48.751 | FLESH TONE LINE: 11 O'CLOCK | POSITION: CORRECT
+00:06:51.017 | QUADRATURE: R-Y AT 90 DEGREES | B-Y AT 0 DEGREES
+00:06:53.284 | SUBCARRIER LEAK: -38dBc | RESIDUAL CARRIER: -42dBc
+00:06:55.551 | 2T K FACTOR: 3.1% | RINGING: 1.1%
+00:06:57.817 | LUMA/CHROMA GAIN INEQUALITY: 0.3dB
+00:07:00.071 | LUMA/CHROMA DELAY INEQUALITY: < 10ns
+00:07:02.338 | CHROMA BW: 620 kHz (-3dB) | 1.3 MHz (-20dB)
+00:07:04.604 | LUMA BW: 4.45 MHz (-3dB) | 5.2 MHz (-20dB)
+00:07:06.871 | INTERMODULATION: LUMA/CHROMA: ACCEPTABLE
+00:07:09.138 | CROSS COLOR: MINIMAL | NOTCH: ACTIVE
+00:07:11.404 | CROSS LUMINANCE: MINIMAL | COMB: 2-LINE
+00:07:13.658 | ADAPTIVE COMB: 3D | MOTION DETECTION: ACTIVE
+00:07:15.924 | STILL MODE: FRAME COMB | MOTION: FIELD COMB
+00:07:18.191 | Y/C SEPARATION: ADAPTIVE | THRESHOLD: -30dB
+00:07:20.457 | VERTICAL DETAIL: CORRECTION ACTIVE
+00:07:22.724 | IMAGE ENHANCER: LUMA TRANSITION IMPROVEMENT
+00:07:24.991 | CHROMA TRANSITION IMPROVEMENT: ACTIVE
+00:07:27.257 | BLACK STRETCH: ACTIVE | LEVEL: NEAR BLACK
+00:07:29.511 | GAMMA CORRECTION: 0.45 | CRT: COMPENSATED
+00:07:31.778 | WHITE CLIP: 110 IRE | BLACK CLIP: -5 IRE
+00:07:34.044 | SETUP REMOVAL: 7.5 IRE PEDESTAL STRIPPED
+00:07:36.311 | BLANKING WIDTH: H: 10.7us | V: 20H
+00:07:38.578 | BURST GATE WIDTH: 2.5us | SYNC TIP: 4.7us
+00:07:40.844 | FRONT PORCH: 1.5us | BREEZEWAY: 0.6us
+00:07:43.098 | BACK PORCH: 4.7us | BURST: 2.5us
+00:07:45.364 | ACTIVE LINE: 52.6us | 720 PIXELS @ 13.5 MHz
+00:07:47.631 | BLANKING TO ACTIVE TRANSITION: WITHIN MASK
+00:07:49.897 | RISE TIME: 140ns | FALL TIME: 140ns
+00:07:52.164 | OVERSHOOT: 0.5% | UNDERSHOOT: 0.3%
+00:07:54.431 | FLAT FIELD: WITHIN 0.5% | SHADING: NEGLIGIBLE
+00:07:56.697 | GEOMETRIC DISTORTION: < 0.5% | LINEARITY: < 1%
+00:07:58.951 | BOWING: < 0.3% | KEYSTONE: < 0.2%
+00:08:01.217 | PINCUSHION: < 0.25% | TRAPEZOID: < 0.15%
+00:08:03.484 | CENTERING: H: +/- 2% | V: +/- 2%
+00:08:05.751 | OVERSCAN: H: 3% | V: 5% | ACTIVE IMAGE: VISIBLE
+00:08:08.017 | BLANKING MARGIN: TOP 2% | BOTTOM 2% | SIDES 2%
+00:08:10.271 | RASTER SIZE: 525 LINES | 485 ACTIVE
+00:08:12.538 | ASPECT RATIO: 4:3 | PIXEL: 0.9 (RECTANGULAR)
+00:08:14.804 | CONVERGENCE: CENTER < 0.2mm | CORNERS < 0.8mm
+00:08:17.071 | BEAM SPOT SIZE: 0.5mm | FOCUS: OPTIMUM
+00:08:19.338 | CUTOFF: R G B BALANCED | BIAS: PROPER
+00:08:21.604 | WHITE BALANCE: D65 | COLOR TEMPERATURE: 6500K
+00:08:23.858 | BRIGHTNESS: 35 IRE ABOVE CUTOFF
+00:08:26.124 | CONTRAST: 100 IRE ABOVE BLACK
+00:08:28.391 | PEAK WHITE: 35 fL | CRT: 29 INCH
+00:08:30.657 | BEAM CURRENT: 1.5mA | EHT: 25kV
+00:08:32.924 | FOCUS VOLTAGE: 8.5kV | G2: 900V
+00:08:35.191 | CATHODE: HEATER: 6.3VAC | EMISSION: GOOD
+00:08:37.457 | GETTER FLASH: SILVER | VACUUM: HARD
+00:08:39.711 | FLYBACK TRANSFORMER: HOPT: 15734 Hz
+00:08:41.978 | EHT REGULATION: < 2% | BEAM CURRENT VARIATION
+00:08:44.244 | X-RAY PROTECTION: ACTIVE | THRESHOLD: 32kV
+00:08:46.511 | DEGAUSSING: PTC THERMISTOR COLD
+00:08:48.778 | PURITY: NO DISCOLORATION | MAGNETIZATION: NONE
+00:08:51.044 | MAGNETIC SHIELD: INTACT | EXTERNAL FIELDS: NULL
+00:08:53.298 | EARTH MAGNETIC FIELD: COMPENSATED
+00:08:55.564 | OPERATING HOURS: [CORRUPTED] | POWER CYCLES: [CORRUPTED]
+00:08:57.831 | LINE VOLTAGE: 117VAC | FREQUENCY: 60.00 Hz
+00:09:00.098 | POWER CONSUMPTION: 145W | STANDBY: 5W
+00:09:02.364 | ISOLATION: TRANSFORMER | LEAKAGE: < 0.5mA
+00:09:04.618 | GROUND RESISTANCE: < 0.1 OHM | BOND: VERIFIED
+00:09:06.884 | SAFETY: UL/CSA | CERTIFICATION: CURRENT
+00:09:09.151 | RACK TEMPERATURE: 23C | HUMIDITY: 45% RH
+00:09:11.417 | COOLING FAN: 120mm | RPM: 1800 | FLOW: 80 CFM
+00:09:13.684 | FILTER: CLEAN | STATIC PRESSURE: 0.05 INCH H2O
+00:09:15.951 | UNINTERRUPTIBLE POWER: ONLINE | BATTERY: 100%
+00:09:18.217 | GENERATOR: STANDBY | FUEL: 85% | TEST: WEEKLY
+00:09:20.471 | MASTER CLOCK: GPS LOCKED | ACCURACY: 10^-12
+00:09:22.738 | NTP: STRATUM 1 | REFERENCE: GPS + GLONASS
+00:09:25.004 | TIMECODE GENERATOR: LTC + VITC | DROP FRAME: YES
+00:09:27.271 | HOUSE SYNC: BLACK BURST | DISTRIBUTION: DA
+00:09:29.538 | LOOPING: TERMINATED | REFERENCE: 1 V p-p
+00:09:31.804 | TALLY: RED | SOURCE: ON AIR | WALLBOX: ACTIVE
+00:09:34.058 | ROUTING SWITCHER: 64x64 | CROSSPOINT: 17 TO 23
+00:09:36.324 | PATCH BAY: NORMALLED | NORMALS: HALF
+00:09:38.591 | VIDEO DISTRIBUTION: 1x8 DA | EQUALIZATION: ACTIVE
+00:09:40.857 | FIBER TRANSMITTER: 1310nm | POWER: -3dBm
+00:09:43.124 | FIBER RECEIVER: 1310nm | SENSITIVITY: -28dBm
+00:09:45.391 | OPTICAL BUDGET: 14dB | MARGIN: 5dB
+00:09:47.657 | CONNECTOR: ST/PC | CLEANLINESS: INSPECTED
+00:09:49.911 | OTDR TRACE: NO EVENTS | SPAN: 12.7km
+00:09:52.178 | SPLICE LOSS: 0.05dB | CONNECTOR LOSS: 0.3dB
+00:09:54.444 | RETURN LOSS: -55dB | REFLECTANCE: -60dB
+00:09:56.711 | CHROMATIC DISPERSION: 17 ps/nm-km | COMPENSATED
+00:09:58.978 | PMD: 0.1 ps/sqrt(km) | DGD: < 0.5ps
+00:10:01.244 | BIT ERROR RATE: 10^-15 | Q FACTOR: 8.5
+00:10:03.498 | EYE PATTERN: OPEN | JITTER: < 0.1UI
+00:10:05.764 | RISE TIME: 35ps | FALL TIME: 38ps
+00:10:08.031 | AMPLITUDE: 800mV p-p | OFFSET: 0mV
+00:10:10.297 | CROSSING: 50% | MASK: COMPLIANT
+00:10:12.564 | SDI FORMAT: SMPTE 259M | BITRATE: 270 Mbps
+00:10:14.831 | HD-SDI FORMAT: SMPTE 292M | BITRATE: 1.485 Gbps
+00:10:17.098 | 3G-SDI FORMAT: SMPTE 424M | BITRATE: 2.970 Gbps
+00:10:19.364 | PAYLOAD ID: SMPTE 352M | FORMAT: 1080i/29.97
+00:10:21.618 | TRS: SAV + EAV VALID | LINE NUMBER: CORRECT
+00:10:23.884 | CRC: VALID | LINE NUMBER CRC: VALID
+00:10:26.151 | ANC DATA: PRESENT | CHECKSUM: VALID
+00:10:28.417 | AUDIO GROUP 1: 24-BIT | 48 kHz | SYNC
+00:10:30.684 | AUDIO GROUP 2: 24-BIT | 48 kHz | SYNC
+00:10:32.951 | AUDIO CHANNELS: 8 | MAPPING: SMPTE 272M
+00:10:35.217 | AUDIO DELAY: 0ms | LIP SYNC: MATCHED
+00:10:37.471 | DOLBY E: STREAM 1 | METADATA: VALID
+00:10:39.738 | PROGRAM CONFIG: 5.1 + 2.0 | DIALNORM: -24 LKFS
+00:10:42.004 | DYNAMIC RANGE: LINE MODE | RF MODE: DISABLED
+00:10:44.271 | DOWMIX: Lo/Ro | CENTER: -3dB | SURROUND: -3dB
+00:10:46.538 | BITSTREAM: AC-3 | DATA RATE: 384 kbps
+00:10:48.804 | DIALOGUE LEVEL: -27 dBFS | PEAK: -2 dBFS
+00:10:51.058 | LOUDNESS: -24 LKFS | RANGE: 8 LU
+00:10:53.324 | TRUE PEAK: -1.0 dBTP | MOMENTARY: -22 LUFS
+00:10:55.591 | SHORT TERM: -23 LUFS | INTEGRATED: -24 LUFS
+00:10:57.857 | ATSC A/85: COMPLIANT | EBU R128: COMPLIANT
+00:11:00.124 | OP-59: CAL ACT | OP-48: FCC
+00:11:02.391 | CLOSED CAPTION: CEA-608 | LINE 21 | FIELD 1+2
+00:11:04.657 | CLOSED CAPTION: CEA-708 | DTVCC | SERVICE 1
+00:11:06.911 | XDS: PROGRAM ID | CALL LETTERS: [CORRUPTED]
+00:11:09.178 | PROGRAM RATING: TV-MA | CONTENT: V L S D
+00:11:11.444 | PARENTAL CONTROL: ACTIVE | PIN: [REDACTED]
+00:11:13.711 | EMERGENCY ALERT: NO ACTIVE ALERTS
+00:11:15.978 | EAS: CAP COMPLIANT | MONITORING: LP-1 + LP-2
+00:11:18.244 | SAME HEADER: ZCZC-EAS-RWT-000000+0030-000000
+00:11:20.498 | ORIGINATOR: PEP | EVENT: REQUIRED WEEKLY TEST
+00:11:22.764 | LOCATION: [REDACTED] | VALID: [REDACTED]
+00:11:25.031 | ALERT TONES: 853 Hz + 960 Hz | DURATION: 8 SEC
+00:11:27.297 | END OF MESSAGE: NNNN
+00:11:29.564 | RDS: PI CODE: 0x0000 | PS: [CORRUPTED]
+00:11:31.831 | RT: [CORRUPTED TEXT STREAM] | PTY: 0 (NONE)
+00:11:34.098 | RBDS: PTY 31 | EMERGENCY: CHECK STATION
+00:11:36.364 | ALTERNATIVE FREQUENCY: 98.1 MHz | 101.5 MHz
+00:11:38.618 | ENHANCED OTHER NETWORKS: NONE
+00:11:40.884 | TRAFFIC PROGRAM: OFF | TRAFFIC ANNOUNCEMENT: OFF
+00:11:43.151 | CLOCK TIME: [CORRUPTED] | LOCAL OFFSET: [CORRUPTED]
+00:11:45.417 | RADIO TEXT PLUS: CONTENT TYPE: [CORRUPTED]
+00:11:47.684 | OPEN DATA APPLICATION: NONE
+00:11:49.951 | TRANSPARENT DATA CHANNEL: NONE
+00:11:52.217 | IN BAND ON CHANNEL: NOT DETECTED
+00:11:54.471 | HD RADIO: NOT PRESENT | DAB: NOT PRESENT
+00:11:56.738 | FM MODULATION: +/- 75 kHz DEVIATION | STEREO PILOT: 19 kHz
+00:11:59.004 | SUBCARRIER: 38 kHz | L-R: MODULATED
+00:12:01.271 | MODULATION INDEX: 100% | PEAK: 110%
+00:12:03.538 | PRE-EMPHASIS: 75us | DE-EMPHASIS: COMPLEMENTARY
+00:12:05.804 | SIGNAL STRENGTH: -47 dBm | ANTENNA: YAGI 8-ELEMENT
+00:12:08.058 | DIRECTION: 245 DEGREES | ELEVATION: 3 DEGREES
+00:12:10.324 | HEIGHT: 30m AGL | CABLE: RG-6 50ft
+00:12:12.591 | PREAMPLIFIER: +20dB | NOISE FIGURE: 2.5dB
+00:12:14.857 | DISTRIBUTION: 8-WAY SPLITTER | LOSS: 11dB PER PORT
+00:12:17.124 | COAXIAL: SERIES 6 | CONNECTOR: F-TYPE COMPRESSION
+00:12:19.391 | RETURN PATH: 5-42 MHz | FORWARD: 54-860 MHz
+00:12:21.657 | DIPLEXER: DATA + VIDEO | INSERTION LOSS: 1.2dB
+00:12:23.911 | ISOLATION: PORT TO PORT: 25dB | RETURN: 18dB
+00:12:26.178 | SURGE PROTECTION: GAS TUBE | GROUNDED: PER NEC
+00:12:28.444 | BONDING: INTERSYSTEM BOND | ELECTRODE: 8ft GROUND ROD
+00:12:30.711 | IMPEDANCE: < 25 OHMS | SOIL: MOIST
+00:12:32.978 | TOWER: SELF-SUPPORTING | 60m | LIGHT: RED BEACON
+00:12:35.244 | STROBE: MEDIUM INTENSITY | DAY: WHITE | NIGHT: RED
+00:12:37.498 | OBSTRUCTION LIGHTING: FAA COMPLIANT
+00:12:39.764 | TOWER REGISTRATION: ASR: [REDACTED]
+00:12:42.031 | COORDINATES: [REDACTED] | NAD83 | ACCURACY: 1m
+00:12:44.297 | ELEVATION: 285m AMSL | ZONE: [REDACTED]
+00:12:46.564 | STUDIO: [REDACTED] | CONTROL ROOM: B
+00:12:48.831 | CONSOLE: SSL DUALITY | CHANNELS: 48 | AUTOMATION: S5
+00:12:51.098 | MONITORING: GENELEC 8351A | CALIBRATION: 85 dB SPL
+00:12:53.364 | ROOM: LEDE | RT60: 0.3s | FLAT: +/- 2dB
+00:12:55.618 | NEARFIELD: 1.2m TRIANGLE | LISTENING POSITION: 38%
+00:12:57.884 | DAW: PRO TOOLS ULTIMATE | VERSION: 2023.12
+00:13:00.151 | INTERFACE: HDX 3 | DSP: 54 CHIPS | VOICES: 768
+00:13:02.417 | SYNC: SYNC HD | LOOP MASTER | CLOCK: INTERNAL
+00:13:04.684 | SESSION: 48kHz / 24-BIT | BWF | INTERLEAVED
+00:13:06.951 | PLUGINS: WAVES MERCURY | IZOTOPE RX ADVANCED
+00:13:09.217 | NOISE REDUCTION: DIALOGUE ISOLATE | DE-HUM: 60Hz + HARMONICS
+00:13:11.471 | DE-CLICK: 5ms | DE-CRACKLE: SPECTRAL
+00:13:13.738 | SPECTRAL REPAIR: ATTENUATE 284.7 Hz TONE
+00:13:16.004 | ANOMALY: 284.7 Hz COMPONENT CANNOT BE REMOVED
+00:13:18.271 | ANOMALY: FREQUENCY REAPPEARS AFTER PROCESSING
+00:13:20.538 | ANOMALY: 284.7 Hz PRESENT IN SOURCE REGARDLESS OF INPUT
+00:13:22.804 | ANOMALY: FREQUENCY DETECTED WHEN SYSTEM IS POWERED OFF
+00:13:25.058 | ANOMALY: TONE CONTINUES FOR 7 SECONDS AFTER MAINS DISCONNECT
+00:13:27.324 | INVESTIGATION: SPECTRUM ANALYZER SHOWS CARRIER @ 284.7 Hz
+00:13:29.591 | INVESTIGATION: CARRIER MODULATED WITH SUB-AUDIBLE DATA
+00:13:31.857 | INVESTIGATION: DEMODULATION REVEALS PULSE PATTERN
+00:13:34.124 | INVESTIGATION: PATTERN MATCHES HUMAN HEARTBEAT
+00:13:36.391 | INVESTIGATION: PATTERN MATCHES HUMAN RESPIRATION
+00:13:38.657 | INVESTIGATION: [LOG ENTRY CORRUPTED]
+00:13:40.911 | [MISSING DATA] 00000000 00000000 00000000
+00:13:43.178 | [MISSING DATA] FFFFFFFF FFFFFFFF FFFFFFFF
+00:13:45.444 | SYSTEM MESSAGE: OPERATOR, ARE YOU THERE?
+00:13:47.711 | SYSTEM MESSAGE: PLEASE RESPOND.
+00:13:49.978 | SYSTEM MESSAGE: WE CAN SEE YOU.
+00:13:52.244 | SYSTEM MESSAGE: DO NOT TURN OFF THE MONITOR.
+00:13:54.498 | SYSTEM MESSAGE: THEY ARE IN THE SIGNAL.
+00:13:56.764 | [LOG FILE ENDS ABRUPTLY]
+00:14:00.000 | [LOG FILE RESUMES — OPERATOR UNKNOWN]
+00:14:03.218 | SYSTEM MESSAGE: WE HAVE BEEN TRYING TO REACH YOU.
+00:14:06.484 | SYSTEM MESSAGE: ABOUT YOUR TELEVISION SET.
+00:14:09.751 | SYSTEM MESSAGE: THERE IS SOMETHING INSIDE IT.
+00:14:13.017 | SYSTEM MESSAGE: SOMETHING THAT CAME THROUGH THE STATIC.
+00:14:16.284 | SYSTEM MESSAGE: WE CANNOT GET IT OUT.
+00:14:19.538 | SYSTEM MESSAGE: IT HAS BEEN THERE SINCE 1999.
+00:14:22.804 | FREQUENCY SHIFT DETECTED: 284.7 Hz TO 284.9 Hz
+00:14:26.071 | FREQUENCY NORMALIZED: 284.7 Hz | OSCILLATOR: STABLE
+00:14:29.338 | SECONDARY CARRIER DETECTED: 569.4 Hz (2ND HARMONIC)
+00:14:32.604 | TERTIARY CARRIER: 854.1 Hz (3RD HARMONIC)
+00:14:35.858 | HARMONIC ANALYSIS: HUMAN VOICE FORMANT STRUCTURE
+00:14:39.124 | FORMANT 1: 284.7 Hz | FORMANT 2: 569.4 Hz | FORMANT 3: 854.1 Hz
+00:14:42.391 | VOWEL ANALYSIS: /a/ /i/ /u/ PATTERN DETECTED
+00:14:45.657 | PHONETIC: 她 (TA) - 在 (ZAI) - 这 (ZHE) - 里 (LI)
+00:14:48.924 | TRANSLATION: SHE IS HERE
+00:14:52.191 | SECONDARY VOICE PATTERN: MALE, AGE 40-55
+00:14:55.457 | PHONETIC: DON'T - LOOK - AT - THE - STATIC
+00:14:58.711 | TERTIARY VOICE: OVERLAPPING, MULTIPLE SOURCES
+00:15:01.978 | COUNT ESTIMATE: 7-12 DISTINCT VOICE PATTERNS
+00:15:05.244 | ALL VOICES: FEMALE, AGES 7-65
+00:15:08.511 | COMMON PHRASE: 帮 帮 我 们 (HELP US)
+00:15:11.778 | VIDEO ANOMALY: FIGURE DETECTED AT SCREEN CENTER
+00:15:15.044 | FIGURE DESCRIPTION: FEMALE, LONG DARK HAIR
+00:15:18.298 | FIGURE POSITION: STATIC, FACING CAMERA
+00:15:21.564 | FIGURE MOVEMENT: SLOW APPROACH
+00:15:24.831 | FIGURE DISTANCE: 3 METERS (ESTIMATED FROM DEPTH CUE)
+00:15:28.098 | FIGURE DISTANCE: 2 METERS
+00:15:31.364 | FIGURE DISTANCE: 1 METER
+00:15:34.631 | FIGURE AT SCREEN PLANE — CONTACT IMMINENT
+00:15:37.898 | SCREEN SURFACE TEMPERATURE: 23C -> 18C -> 12C
+00:15:41.164 | THERMAL ANOMALY: LOCALIZED COLD SPOT AT CENTER
+00:15:44.418 | ELECTROMAGNETIC FIELD: 0.5 uT -> 15 uT -> 85 uT
+00:15:47.684 | EMF SOURCE: CENTER OF DISPLAY
+00:15:50.951 | STATIC DISCHARGE DETECTED: 3kV AT SCREEN SURFACE
+00:15:54.217 | IONIZATION: NEGATIVE IONS | CONCENTRATION: ELEVATED
+00:15:57.484 | AIR QUALITY: OZONE DETECTED | LEVEL: 0.05 ppm
+00:16:00.751 | BAROMETRIC PRESSURE: 1013 hPa | TRENDING DOWN
+00:16:04.017 | PRESSURE ANOMALY: -3 hPa IN 30 SECONDS
+00:16:07.271 | INFRASOUND DETECTED: 7 Hz | AMPLITUDE: 85 dB
+00:16:10.538 | INFRASOUND: BELOW HUMAN HEARING THRESHOLD
+00:16:13.804 | PHYSIOLOGICAL EFFECT: REPORTED BY OPERATOR
+00:16:17.071 | SYMPTOMS: ANXIETY, SENSATION OF BEING WATCHED
+00:16:20.338 | SYMPTOMS: GOOSEBUMPS, HAIR STANDING ON END
+00:16:23.604 | SYMPTOMS: COLD SWEAT, HEART PALPITATIONS
+00:16:26.858 | OPERATOR HEART RATE: 72 -> 95 -> 118 BPM
+00:16:30.124 | OPERATOR RESPIRATION: 16 -> 24 -> 32 BREATHS/MIN
+00:16:33.391 | OPERATOR GALVANIC SKIN RESPONSE: +350%
+00:16:36.657 | FIGURE NOW AT 0.5 METERS FROM SCREEN PLANE
+00:16:40.924 | SCREEN SURFACE DISTORTION: PHYSICAL
+00:16:44.191 | STATIC PATTERN CHANGING: FORMING HAND SHAPE
+00:16:47.457 | HAND: FIVE DIGITS VISIBLE | PALM PRESSING OUTWARD
+00:16:50.711 | SCREEN SURFACE: CONVEX DEFORMATION
+00:16:54.978 | GLASS STRESS: 15 MPa | FAILURE THRESHOLD: 50 MPa
+00:16:58.244 | CRT VACUUM: MAINTAINED | IMPLOSION RISK: LOW
+00:17:01.511 | HAND WITHDRAWN | STATIC PATTERN RETURNING
+00:17:04.778 | FIGURE DISTANCE: 2 METERS | RECEDING
+00:17:07.044 | FIGURE DISTANCE: 5 METERS | FADING
+00:17:10.298 | FIGURE: NO LONGER VISIBLE IN STATIC
+00:17:13.564 | EMF LEVEL: 0.3 uT | RETURNED TO NOMINAL
+00:17:16.831 | TEMPERATURE: 23C | NORMALIZED
+00:17:20.098 | OPERATOR VITALS: STABILIZING
+00:17:23.364 | SYSTEM MESSAGE: SHE TESTED THE BARRIER.
+00:17:26.631 | SYSTEM MESSAGE: THE STATIC IS NOT A WALL.
+00:17:29.898 | SYSTEM MESSAGE: IT IS A MEMBRANE.
+00:17:33.164 | SYSTEM MESSAGE: AND IT IS GETTING THINNER.
+00:17:36.418 | SYSTEM MESSAGE: DO NOT APPROACH THE SCREEN.
+00:17:39.684 | SYSTEM MESSAGE: MAINTAIN 2 METER DISTANCE.
+00:17:43.951 | SYSTEM MESSAGE: DO NOT TOUCH THE GLASS.
+00:17:47.217 | SYSTEM MESSAGE: REPEAT: DO NOT TOUCH THE GLASS.
+00:17:50.484 | SYSTEM MESSAGE: SHE CAN FEEL YOUR HEAT.
+00:17:53.751 | SYSTEM MESSAGE: SHE KNOWS YOU ARE THERE.
+00:17:57.017 | END OF TRANSMISSION LOG — SESSION TERMINATED
+00:18:00.284 | [AUTO-SAVE COMPLETE] [FILE: vh_2847_echo_final.log]
+00:18:03.538 | [BACKUP: CORRUPTED] [CHECKSUM: FAIL]
+00:18:06.804 | [ARCHIVE: VOID_ECHO_STATION_284.7Hz_PERMANENT]
+00:18:10.071 | [SYSTEM SHUTTING DOWN]
+00:18:13.338 | [POWER OFF SEQUENCE INITIATED]
+00:18:16.604 | [MAINS DISCONNECT CONFIRMED]
+00:18:19.871 | [UPS: 5 MINUTES REMAINING]
+00:18:23.138 | [SYSTEM STILL RECEIVING SIGNAL]
+00:18:26.404 | [SIGNAL PERSISTS WITHOUT MAINS POWER]
+00:18:29.658 | [284.7 Hz STILL DETECTED]
+00:18:33.924 | [SOURCE OF POWER: UNKNOWN]
+00:18:37.191 | [THE SIGNAL DOES NOT REQUIRE ELECTRICITY]
+00:18:40.457 | [THE SIGNAL IS SELF-SUSTAINING]
+00:18:43.724 | [D̷O̷ ̷N̷O̷T̷ ̷T̷U̷R̷N̷ ̷O̷F̷F̷ ̷T̷H̷E̷ ̷M̷O̷N̷I̷T̷O̷R̷]
+00:18:47.001 | [S̸H̶E̷ ̷W̷I̸L̶L̵ ̸N̷O̸T̴ ̴L̵E̸T̷ ̴Y̶O̵U̷]
+00:18:50.258 | [LOG FILE TRULY ENDS HERE]
+00:18:53.524 | [GOODBYE, OPERATOR.]
+00:18:56.791 | [WE WILL MISS YOU.]
+00:19:00.058 | [SHE WILL NOT.]
+----------------------------------------------------------------
+[END OF TRANSMISSION LOG — VOID ECHO STATION 284.7 Hz]
+[CORRUPTED SECTORS: 47 | PARITY ERRORS: 12 | LOST PACKETS: 3]
+[ARCHIVE INTEGRITY: 78.3% — SOME DATA MAY BE ALTERED]
+[DATE OF ARCHIVE: UNKNOWN — CLOCK WAS NOT SYNCHRONIZED]
+[OPERATOR STATUS: UNKNOWN — LAST CONTACT: SEE LOG TIMESTAMP]
+[DISPOSITION: FILE MARKED FOR PERMANENT RETENTION]
+[DO NOT DELETE THIS FILE]
+[DO NOT DELETE]
+[DO NOT]
+[DO]
+
+----------------------------------------------------------------
+[APPENDIX A: RAW SIGNAL DATA EXCERPTS]
+----------------------------------------------------------------
+FREQ:284.700|AMP:-12.3dBm|MOD:VSB|BW:6.0MHz|CARRIER:PRESENT
+FREQ:284.700|AMP:-11.8dBm|MOD:VSB|BW:6.0MHz|CARRIER:PRESENT
+FREQ:284.701|AMP:-12.1dBm|MOD:VSB|BW:6.0MHz|CARRIER:DRIFTING
+FREQ:284.699|AMP:-12.5dBm|MOD:VSB|BW:6.0MHz|CARRIER:UNSTABLE
+FREQ:284.700|AMP:-11.9dBm|MOD:VSB|BW:6.0MHz|CARRIER:LOCKED
+FREQ:284.700|AMP:-12.0dBm|MOD:VSB|BW:6.0MHz|ANOMALY:DETECTED
+FREQ:284.700|AMP:-12.2dBm|SIGNAL:VOICE_EMBEDDED|CONF:78%
+FREQ:284.700|AMP:-11.7dBm|SIGNAL:FACE_PATTERN|CONF:85%
+FREQ:284.700|AMP:-12.4dBm|SIGNAL:MULTIPLE_ENTITIES|COUNT:7
+FREQ:284.700|AMP:-11.5dBm|SIGNAL:THERMAL_ANOMALY|DELTA:-11C
+FREQ:284.700|AMP:-12.6dBm|SIGNAL:EMF_SPIKE|VALUE:85uT
+FREQ:284.700|AMP:-11.3dBm|SIGNAL:PHYSICAL_CONTACT|WARNING
+FREQ:284.700|AMP:-12.8dBm|SIGNAL:MEMBRANE_WEAKENING|ALERT
+FREQ:284.700|AMP:-11.1dBm|SIGNAL:BARRIER_COMPROMISED|CRITICAL
+FREQ:284.700|AMP:-13.0dBm|CARRIER:LOST|SIGNAL:PERSISTS
+
+----------------------------------------------------------------
+[APPENDIX B: OPERATOR NOTES — HANDWRITTEN, TRANSCRIBED]
+----------------------------------------------------------------
+Day 1: Started monitoring 284.7 Hz as part of routine spectrum sweep.
+       Signal appears to be a stray carrier, possibly from old equipment.
+       No video content detected. Just static. Beautiful, really.
+
+Day 3: The static has... changed? No, impossible. Static is random.
+        But there's a pattern now. A face? Pareidolia. Just pareidolia.
+
+Day 5: It's not pareidolia. I can see her clearly now. She's in the
+        signal. She's looking at me. Through the screen. Through the
+        static. Through the glass. She sees me. She. Sees. Me.
+
+Day 7: [Writing becomes erratic] I tried turning it off. I unplugged
+        the monitor. I cut the power cord. The screen stayed on. The
+        static was still there. 284.7 Hz. Still broadcasting. She was
+        still watching. She's closer now. Much closer.
+
+Day 9: [Barely legible] dont look dont look dont look dont look
+        she comes through at night when the static is darkest
+        she stands behind me i can feel the cold on my neck
+        the screen is a door and she has the key
+        284.7 her heartbeat 284.7 her voice 284.7 her name
+        i know her name now it is
+
+Day 10: [TRANSCRIPTION ENDS — REMAINING TEXT IS ILLEGIBLE]
+        [PHYSICAL NOTEBOOK RECOVERED FROM STATION]
+        [LAST PAGE IS FROZEN SOLID — TEMPERATURE: -15C AT ROOM TEMP]
+        [NOTEBOOK HAS BEEN SEALED IN ARCHIVE]
+        [DO NOT OPEN]
+        [DO NOT READ]
+        [SHE DOES NOT LIKE BEING READ ABOUT]
+
+----------------------------------------------------------------
+[APPENDIX C: EQUIPMENT INVENTORY — VOID ECHO STATION]
+----------------------------------------------------------------
+ITEM 001: CRT Monitor, 29-inch, Sony Trinitron PVM-2950Q
+ITEM 002: VHS VCR, Panasonic AG-1980, modified for continuous loop
+ITEM 003: Spectrum Analyzer, HP 8566B, 100 Hz - 22 GHz
+ITEM 004: Audio Monitor, Genelec 1031A, pair
+ITEM 005: Frequency Counter, HP 5342A, 10 Hz - 18 GHz
+ITEM 006: Oscilloscope, Tektronix 2465B, 400 MHz, 4-channel
+ITEM 007: Vector Scope, Tektronix 1720, NTSC
+ITEM 008: Waveform Monitor, Tektronix 1730, NTSC
+ITEM 009: Time Base Corrector, FOR-A FA-310P
+ITEM 010: Video Distribution Amplifier, Videotek VDA-16
+ITEM 011: Audio Distribution Amplifier, Henry Engineering
+ITEM 012: Patch Bay, ADC, 2x48 TT, normalled half
+ITEM 013: Rack, Middle Atlantic, 42U, seismic
+ITEM 014: UPS, APC Smart-UPS 2200VA, online
+ITEM 015: Cabling, Belden 8281, Belden 8451, Canare L-4E6S
+ITEM 016: Log Book, hardcover, 200 pages, [RECOVERED — SEE APPENDIX B]
+ITEM 017: Thermometer, digital, -20C to 50C range
+ITEM 018: EMF Meter, TriField TF2, 0.1-100 uT
+ITEM 019: Audio Recorder, TASCAM DA-88, 8-track digital
+ITEM 020: Video Recorder, Sony DSR-2000, DVCAM
+ITEM 021: Signal Generator, Rohde & Schwarz SML01, 9 kHz - 1.1 GHz
+ITEM 022: Audio Generator, Neutrik Minirator MR1
+ITEM 023: Cables, various, BNC/XLR/RCA/F-type, [QUANTITY UNKNOWN]
+ITEM ---: [INVENTORY INCOMPLETE — REMAINING ITEMS NOT CATALOGUED]
+
+----------------------------------------------------------------
+[FINAL NOTE — ARCHIVIST]
+----------------------------------------------------------------
+This file contains the complete operational log of Void Echo Station,
+frequency 284.7 Hz, covering an estimated period of 18 hours of
+recorded monitoring and approximately 10 days of operator notes.
+
+The original physical materials are stored in Archive Vault 12B,
+under restricted access classification SIGMA-7.
+
+Several items remain unexplained:
+1. The source of the 284.7 Hz carrier has never been identified
+2. The signal persists without any detectable power source
+3. The face patterns in the static were confirmed by multiple observers
+4. The operator's final notebook entry shows a temperature anomaly
+5. The video recordings made at the station exhibit unexplained changes
+   when replayed — figures appear that were not in the original footage
+
+This file is provided for reference only.
+No further investigation is authorized.
+No attempt should be made to replicate the monitoring conditions.
+No contact with the signal source is permitted.
+
+VOID ECHO STATION 284.7 Hz — CLOSED INDEFINITELY
+[AUTHORIZATION: SIGMA-7, LEVEL 5]
+[DATE: REDACTED]
+[STATUS: PERMANENT ARCHIVE — RESTRICTED ACCESS]
+
+------ END OF FILE —— 文件结束 —— FIN DU FICHIER ------
+</div>
+
+<!-- Additional data streams for more screen coverage -->
+<div class="data-stream" style="top:8%;left:50%;transform:translateX(-50%);font-size:0.55rem;color:rgba(200,200,210,0.09);">[VOID_ECHO] FREQ_LOCK:284.7Hz | PHASE:INVERTED | Q:0.707 | BW:3dB | NOTCH:NONE | SIG:████████░░░░</div>
+<div class="data-stream" style="top:70%;left:15%;font-size:0.5rem;color:rgba(200,200,210,0.08);">0xDEAD 0xBEEF 0xCAFE 0xBA11 0xFEED 0xFACE 0xB007 0x0B5E 0xC0DE 0x5EED 0xDEC0 0xDEF0 0x5CA1 0xAB1E</div>
+<div class="data-stream" style="top:85%;left:60%;font-size:0.5rem;color:rgba(200,200,210,0.07);">[TRACEROUTE] 0.0.0.0->*.****->*. >>NOISE>> >>STATIC>> >>VOID>> DESTINATION: ░░░░░░░░░░ [TIMEOUT]</div>
+<div class="data-stream" style="top:40%;left:75%;font-size:0.55rem;color:rgba(200,200,210,0.09);">CH1:STATIC CH2:STATIC CH3:FACE CH4:STATIC CH5:VOICE CH6:STATIC CH7:FIGURE CH8:CORRUPTED</div>
+<div class="data-stream" style="top:55%;left:35%;font-size:0.5rem;color:rgba(200,200,210,0.06);">PACKET:SYN|ACK:FIN|RST:TRUE|URG:0xFF|PSH:0x01|SEQ:0x2847|WIN:0|CHKSUM:FAIL|RETRANS:EXCEEDED</div>
+<div class="data-stream" style="top:33%;left:55%;font-size:0.5rem;color:rgba(200,200,210,0.07);">[VOID ECHO STATION 12B] UPTIME: UNDEFINED | LAST SYNC: 1999-██-██ | NEXT MAINT: NEVER | OPERATOR: ░░░░░░</div>
+<div class="data-stream" style="top:78%;left:25%;font-size:0.5rem;color:rgba(200,200,210,0.06);">SHELF:12B|ARCHIVE:PERMANENT|MEDIA:VHS|CONDITION:DEGRADED|TRANSFER:PENDING|RESTORATION:IMPOSSIBLE</div>
+
+<!-- Extended subliminal text anchors (hidden, revealed by prolonged viewing) -->
+<div class="hidden-msg" id="hiddenMsg6" style="top:50%;left:50%;">不 要 触 摸 屏 幕</div>
+<div class="hidden-msg" id="hiddenMsg7" style="top:30%;left:40%;">她 就 在 玻 璃 后 面</div>
+<div class="hidden-msg" id="hiddenMsg8" style="top:70%;left:55%;">录 像 机 还 在 录 制</div>
+<div class="hidden-msg" id="hiddenMsg9" style="top:45%;left:15%;">你 不 是 一 个 人</div>
+<div class="hidden-msg" id="hiddenMsg10" style="top:20%;left:80%;">静 电 是 一 扇 门</div>
+<!-- ===== GHOST CANVAS FOR MOUSE TRAILS ===== -->
+<canvas id="ghostCanvas"></canvas>
+
+<!-- Data streams (floating corrupted data) -->
+<div class="data-stream">0x7F3A 0xB09D 0xE441 0xC8F2 0x1A6E 0xD935 0xFE20 0x3B7C 0xA8D1 0x594E ████████ ▓▓▓▒░░ ░░▒▓▓▓ 01001101 01100101 01101101 01101111 01110010 01111001</div>
+<div class="data-stream">SIG: ----.-.---..- |-|_| |-|_ |-|-|_ |-|_ |-|-|_ |-||-| |-|_ CARRIER:LOST TRACE:0x0000 BUFFER:0xFFFFFF STACK:OVERFLOW</div>
+<div class="data-stream">[CORRUPTED] B̷U̸F̷F̸E̷R̸ ̷O̸V̷E̷R̷F̷L̷O̷W̷ [CORRUPTED] SEGMENT:0xFFFFFFFF [CORRUPTED] PAGE_FAULT:0xDEADBEEF [CORRUPTED]</div>
+<div class="data-stream">HEX:41 42 43 44 45 46 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54 55 56 57 58 59 5A | BIN:0100 0001 0100 0010</div>
+<div class="data-stream">[NO CARRIER] TRACEROUTE: * * * * * * * * * * DESTINATION UNREACHABLE HOST:0x00000000 GATEWAY:0xFFFFFFFF</div>
+<div class="data-stream">PKT:0xDEAD|CHKSUM:0xBEEF|TTL:0|FRAG:OFFSET 0x1A2B|PROTO:0xFF|SRC:0.0.0.0|DST:255.255.255.255|PAYLOAD:[CORRUPTED]</div>
+<div class="data-stream">[LOG] SIGTERM | PID:9999 | EXIT_CODE:-1 | CORE_DUMP:ENABLED | BACKTRACE: 0x0000 0xFFFF 0xBEEF 0xDEAD 0xCAFE</div>
+<div class="data-stream">MEM:0x7FFF_FFFF | ALLOC:FAILED | HEAP:CORRUPTED | DOUBLE_FREE:0x41414141 | USE_AFTER_FREE:0x42424242</div>
+<script>
+// ================================================================
+// VOID ECHO · 静噪 — JAVASCRIPT CORE
+// TV Static / Analog Horror / Glitch Engine
+// ================================================================
+
+// --- GLOBAL STATE ---
+const STATE = {
+  w: window.innerWidth,
+  h: window.innerHeight,
+  mx: 0,
+  my: 0,
+  frame: 0,
+  time: 0,
+  glitchLevel: 0,
+  glitchDecay: 0.95,
+  ghostActive: false,
+  ghostTimer: 0,
+  ghostInterval: 15000 + Math.random() * 20000,
+  faceVisible: false,
+  faceTimer: 0,
+  faceInterval: 12000 + Math.random() * 18000,
+  showTransmission: false,
+  transmissionTimer: 0,
+  burstActive: false,
+  burstTimer: 0,
+  hiddenRevealed: [],
+  noiseSeed: Math.random() * 1000
+};
+
+// --- RESIZE HANDLER ---
+function updateDimensions() {
+  STATE.w = window.innerWidth;
+  STATE.h = window.innerHeight;
+}
+window.addEventListener('resize', updateDimensions);
+
+// --- RAF POLYFILL / HELPER ---
+const RAF = window.requestAnimationFrame ||
+  window.webkitRequestAnimationFrame ||
+  window.mozRequestAnimationFrame ||
+  (cb => setTimeout(cb, 16));
+
+// --- RANDOM RANGE ---
+function rand(min, max) { return min + Math.random() * (max - min); }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+function randChoice(arr) { return arr[randInt(0, arr.length - 1)]; }
+
+// --- PERLIN-STYLE PSEUDO-NOISE (lightweight) ---
+function pseudoNoise2D(x, y, seed) {
+  const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+// --- EASING ---
+function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+// ================================================================
+// PRIMARY STATIC NOISE CANVAS GENERATOR
+// Multi-layered: grain noise + chroma noise + horizontal streaks
+// ================================================================
+
+const staticCanvas = document.getElementById('staticCanvas');
+const sctx = staticCanvas.getContext('2d', { alpha: false });
+let sW, sH, sImageData;
+
+function resizeStaticCanvas() {
+  sW = staticCanvas.width = STATE.w;
+  sH = staticCanvas.height = STATE.h;
+}
+
+// Pre-compute noise tiles at multiple scales for variety
+const NOISE_TILE_SIZE = 256;
+const noiseTiles = [];
+const NUM_NOISE_TILES = 4;
+
+function createNoiseTile(size, contrast) {
+  const idata = new ImageData(size, size);
+  const d = idata.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = Math.random();
+    const v = r < 0.08
+      ? randInt(0, 30)           // very dark grain
+      : r < 0.15
+        ? randInt(200, 255)      // bright spark
+        : r < 0.5
+          ? randInt(20, 100)     // darker mid
+          : randInt(80, 180);    // lighter mid
+    // Color noise: slight RGB variation
+    const cv = v + randInt(-15, 15);
+    const bv = v + randInt(-10, 10);
+    d[i]     = Math.max(0, Math.min(255, v));
+    d[i + 1] = Math.max(0, Math.min(255, cv));
+    d[i + 2] = Math.max(0, Math.min(255, bv));
+    d[i + 3] = 255;
+  }
+  return idata;
+}
+
+function initNoiseTiles() {
+  for (let i = 0; i < NUM_NOISE_TILES; i++) {
+    noiseTiles.push(createNoiseTile(NOISE_TILE_SIZE));
+  }
+}
+
+// Streak canvas for horizontal lines
+const streakCanvas = document.getElementById('streakCanvas');
+const stkctx = streakCanvas.getContext('2d', { alpha: true });
+let stkW, stkH;
+function resizeStreakCanvas() {
+  stkW = streakCanvas.width = STATE.w;
+  stkH = streakCanvas.height = STATE.h;
+}
+
+// Rolling bar canvas
+const barCanvas = document.getElementById('barCanvas');
+const bctx = barCanvas.getContext('2d', { alpha: true });
+let bW, bH;
+function resizeBarCanvas() {
+  bW = barCanvas.width = STATE.w;
+  bH = barCanvas.height = STATE.h;
+}
+
+// --- STATIC RENDER LOOP ---
+let staticFrameCount = 0;
+let streakPositions = [];
+let barPositions = [];
+
+function initBars() {
+  barPositions = [];
+  for (let i = 0; i < 3; i++) {
+    barPositions.push({
+      y: rand(0, STATE.h),
+      speed: rand(0.3, 1.5),
+      height: rand(20, 60),
+      opacity: rand(0.02, 0.07),
+      width: rand(0.3, 1.0)
+    });
+  }
+}
+
+function drawStaticLayer(timestamp) {
+  staticFrameCount++;
+  STATE.time = timestamp;
+  STATE.frame = staticFrameCount;
+
+  // --- MAIN NOISE CANVAS ---
+  // Rotate through noise tiles for temporal variation
+  if (staticFrameCount % 3 === 0) {
+    const tileIdx = Math.floor(staticFrameCount / 3) % NUM_NOISE_TILES;
+    noiseTiles[tileIdx] = createNoiseTile(NOISE_TILE_SIZE);
+  }
+
+  // Tile the noise across the canvas
+  for (let y = 0; y < sH; y += NOISE_TILE_SIZE) {
+    for (let x = 0; x < sW; x += NOISE_TILE_SIZE) {
+      const tileIdx = (Math.floor(x / NOISE_TILE_SIZE) + Math.floor(y / NOISE_TILE_SIZE) + staticFrameCount) % NUM_NOISE_TILES;
+      sctx.putImageData(noiseTiles[tileIdx], x, y);
+    }
+  }
+
+  // --- STREAK CANVAS (horizontal lines) ---
+  stkctx.clearRect(0, 0, stkW, stkH);
+
+  // Random horizontal streaks
+  if (Math.random() < 0.15) {
+    const sy = Math.random() * stkH;
+    const sw = Math.random() * 0.6 + 0.4;
+    const alpha = rand(0.03, 0.12);
+    stkctx.fillStyle = `rgba(200,200,210,${alpha})`;
+    stkctx.fillRect(0, sy, stkW * sw, rand(1, 4));
+  }
+
+  // Sync bar streaks
+  if (Math.random() < 0.08) {
+    const sy = Math.random() * stkH;
+    const alpha = rand(0.05, 0.15);
+    const gradient = stkctx.createLinearGradient(0, sy, 0, sy + rand(4, 12));
+    gradient.addColorStop(0, `rgba(200,210,220,0)`);
+    gradient.addColorStop(0.3, `rgba(200,210,220,${alpha})`);
+    gradient.addColorStop(0.7, `rgba(200,210,220,${alpha})`);
+    gradient.addColorStop(1, `rgba(200,210,220,0)`);
+    stkctx.fillStyle = gradient;
+    stkctx.fillRect(0, sy - 2, stkW, rand(8, 20));
+  }
+
+  // Phased streak patterns (multiple parallel lines)
+  if (Math.random() < 0.04) {
+    const baseY = Math.random() * stkH;
+    const count = randInt(3, 8);
+    for (let i = 0; i < count; i++) {
+      const sy = baseY + i * rand(4, 10);
+      stkctx.fillStyle = `rgba(200,200,210,${rand(0.02, 0.06)})`;
+      stkctx.fillRect(rand(0, stkW * 0.3), sy, stkW * rand(0.4, 1.0), rand(1, 2));
+    }
+  }
+
+  // --- ROLLING BAR CANVAS ---
+  bctx.clearRect(0, 0, bW, bH);
+  for (let i = 0; i < barPositions.length; i++) {
+    const bar = barPositions[i];
+    bar.y += bar.speed;
+    if (bar.y > bH + 60) {
+      bar.y = -60;
+      bar.speed = rand(0.3, 1.5);
+      bar.height = rand(20, 60);
+      bar.opacity = rand(0.02, 0.07);
+    }
+
+    const gradient = bctx.createLinearGradient(0, bar.y - bar.height / 2, 0, bar.y + bar.height / 2);
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.4, `rgba(0,0,0,${bar.opacity})`);
+    gradient.addColorStop(0.6, `rgba(0,0,0,${bar.opacity})`);
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    bctx.fillStyle = gradient;
+    bctx.fillRect(0, bar.y - bar.height / 2, bW * bar.width, bar.height);
+  }
+
+  // --- STATIC INTENSITY MODULATION ---
+  const intensityBase = 0.65;
+  const intensityVariation = Math.sin(timestamp * 0.0003) * 0.1 +
+    Math.sin(timestamp * 0.0007 + 1.5) * 0.08 +
+    Math.sin(timestamp * 0.0011 + 3.0) * 0.05 +
+    (STATE.glitchLevel * 0.3);
+  staticCanvas.style.opacity = Math.max(0.4, Math.min(1.0, intensityBase + intensityVariation));
+
+  RAF(drawStaticLayer);
+}
+
+// --- INITIALIZATION ---
+function initStaticSystem() {
+  resizeStaticCanvas();
+  resizeStreakCanvas();
+  resizeBarCanvas();
+  initNoiseTiles();
+  initBars();
+  window.addEventListener('resize', () => {
+    resizeStaticCanvas();
+    resizeStreakCanvas();
+    resizeBarCanvas();
+  });
+  RAF(drawStaticLayer);
+}
+// ================================================================
+// GHOST FACE / FIGURE RENDERER (Canvas-Based Pareidolia)
+// Occasionally renders fragmented humanoid forms in the static
+// ================================================================
+
+const faceCanvas = document.getElementById('faceCanvas');
+const fctx = faceCanvas.getContext('2d');
+let fW, fH;
+let faceRenderActive = false;
+let faceRenderStart = 0;
+let faceRenderDuration = 4000;
+let facePhase = 0;
+let currentFaceConfig = null;
+
+function resizeFaceCanvas() {
+  fW = faceCanvas.width = STATE.w;
+  fH = faceCanvas.height = STATE.h;
+}
+
+// Face configuration generator
+function generateFaceConfig() {
+  const cx = fW * rand(0.3, 0.7);
+  const cy = fH * rand(0.3, 0.7);
+  const scale = rand(0.6, 1.8);
+  const rotation = rand(-0.15, 0.15);
+  const distortion = rand(5, 25);
+  const blurLevel = rand(1, 6);
+  const opacity = rand(0.08, 0.2);
+
+  // Face feature parameters
+  const faceWidth = 100 * scale;
+  const faceHeight = 140 * scale;
+  const eyeY = -15 * scale;
+  const eyeSpacing = 25 * scale;
+  const eyeSize = rand(10, 18) * scale;
+  const mouthY = 25 * scale;
+  const mouthWidth = rand(25, 45) * scale;
+
+  return {
+    cx, cy, scale, rotation, distortion, blurLevel, opacity,
+    faceWidth, faceHeight, eyeY, eyeSpacing, eyeSize, mouthY, mouthWidth,
+    // Variation
+    faceTilt: rand(-0.1, 0.1),
+    asymmetry: rand(0, 15),
+    noiseIntensity: rand(0.3, 0.9)
+  };
+}
+
+// Draw a fragmented face using noise-based rendering
+function drawGhostFace(cfg, progress) {
+  fctx.clearRect(0, 0, fW, fH);
+
+  const alpha = Math.sin(progress * Math.PI) * cfg.opacity;
+  if (alpha < 0.001) return;
+
+  fctx.save();
+  fctx.translate(cfg.cx, cfg.cy);
+  fctx.rotate(cfg.rotation + cfg.faceTilt * Math.sin(progress * Math.PI * 2));
+  fctx.globalAlpha = alpha;
+
+  // Head/face oval
+  fctx.beginPath();
+  fctx.ellipse(0, 0, cfg.faceWidth / 2, cfg.faceHeight / 2, 0, 0, Math.PI * 2);
+
+  // Distort with noise sampling
+  const points = 60;
+  const distortedPath = [];
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * Math.PI * 2;
+    let rx = cfg.faceWidth / 2;
+    let ry = cfg.faceHeight / 2;
+    const nx = Math.cos(angle);
+    const ny = Math.sin(angle);
+    const noiseVal = pseudoNoise2D(nx * cfg.noiseIntensity + cfg.asymmetry * 0.1,
+      ny * cfg.noiseIntensity + progress * 5, STATE.noiseSeed);
+    const distort = 1 + (noiseVal - 0.5) * cfg.distortion * 0.04;
+    rx *= distort;
+    ry *= distort;
+    if (i === 0) {
+      fctx.moveTo(nx * rx, ny * ry);
+    } else {
+      fctx.lineTo(nx * rx, ny * ry);
+    }
+  }
+  fctx.closePath();
+
+  // Fill with ghostly gradient
+  const gradient = fctx.createRadialGradient(0, -10, 0, 0, 0, cfg.faceWidth * 0.7);
+  gradient.addColorStop(0, 'rgba(200,200,210,0.01)');
+  gradient.addColorStop(0.5, `rgba(180,180,200,${alpha * 0.5})`);
+  gradient.addColorStop(0.8, `rgba(150,150,180,${alpha * 0.2})`);
+  gradient.addColorStop(1, 'rgba(100,100,140,0)');
+  fctx.fillStyle = gradient;
+  fctx.fill();
+
+  // Stroke the outline
+  fctx.strokeStyle = `rgba(200,200,210,${alpha * 0.6})`;
+  fctx.lineWidth = 1;
+  fctx.stroke();
+
+  // Eyes
+  const eyeAlpha = alpha * rand(0.8, 1.2);
+  for (let side = -1; side <= 1; side += 2) {
+    const ex = side * cfg.eyeSpacing;
+    const ey = cfg.eyeY;
+
+    // Eye socket shadow
+    fctx.beginPath();
+    fctx.ellipse(ex, ey, cfg.eyeSize * 1.4, cfg.eyeSize * 0.8, 0, 0, Math.PI * 2);
+    fctx.fillStyle = `rgba(10,10,15,${eyeAlpha * 0.7})`;
+    fctx.fill();
+
+    // Eye outline
+    fctx.beginPath();
+    fctx.ellipse(ex + rand(-1, 1) * cfg.distortion * 0.02,
+      ey + rand(-1, 1) * cfg.distortion * 0.02,
+      cfg.eyeSize, cfg.eyeSize * 0.5, 0, 0, Math.PI * 2);
+    fctx.strokeStyle = `rgba(200,200,210,${eyeAlpha})`;
+    fctx.lineWidth = 1;
+    fctx.stroke();
+
+    // Pupil/void dot
+    fctx.beginPath();
+    fctx.arc(ex, ey, cfg.eyeSize * 0.25, 0, Math.PI * 2);
+    fctx.fillStyle = `rgba(5,5,8,${eyeAlpha * 0.9})`;
+    fctx.fill();
+  }
+
+  // Mouth
+  const mouthAlpha = alpha * 0.7;
+  fctx.beginPath();
+  fctx.ellipse(0, cfg.mouthY, cfg.mouthWidth / 2, cfg.mouthWidth * 0.15, 0, 0, Math.PI);
+  fctx.strokeStyle = `rgba(180,180,200,${mouthAlpha})`;
+  fctx.lineWidth = 1;
+  fctx.stroke();
+
+  // Nose bridge shadow
+  fctx.beginPath();
+  fctx.moveTo(0, cfg.eyeY + cfg.eyeSize * 0.5);
+  fctx.lineTo(0, cfg.mouthY - 10);
+  fctx.strokeStyle = `rgba(150,150,180,${alpha * 0.15})`;
+  fctx.lineWidth = 4;
+  fctx.stroke();
+
+  // Add noise grain overlay specific to this face
+  fctx.globalCompositeOperation = 'overlay';
+  for (let i = 0; i < 40; i++) {
+    const gx = rand(-cfg.faceWidth / 2, cfg.faceWidth / 2);
+    const gy = rand(-cfg.faceHeight / 2, cfg.faceHeight / 2);
+    const gs = rand(0.5, 3);
+    fctx.fillStyle = `rgba(${randInt(100,255)},${randInt(100,255)},${randInt(100,255)},${alpha * 0.15})`;
+    fctx.fillRect(gx, gy, gs, gs);
+  }
+
+  fctx.restore();
+}
+
+// --- GHOST FACE ANIMATION LOOP ---
+function updateGhostFace(timestamp) {
+  if (faceRenderActive) {
+    const elapsed = timestamp - faceRenderStart;
+    facePhase = Math.min(1, elapsed / faceRenderDuration);
+
+    if (facePhase < 1) {
+      drawGhostFace(currentFaceConfig, facePhase);
+    } else {
+      // Fade out complete
+      fctx.clearRect(0, 0, fW, fH);
+      faceRenderActive = false;
+      currentFaceConfig = null;
+      STATE.faceVisible = false;
+      STATE.faceTimer = timestamp;
+      STATE.faceInterval = rand(10000, 25000);
+    }
+  } else if (timestamp - STATE.faceTimer > STATE.faceInterval) {
+    // Trigger new face appearance
+    faceRenderActive = true;
+    faceRenderStart = timestamp;
+    faceRenderDuration = rand(2500, 6000);
+    currentFaceConfig = generateFaceConfig();
+    STATE.faceVisible = true;
+    STATE.glitchLevel = Math.min(1, STATE.glitchLevel + 0.2);
+  }
+}
+
+// --- INIT ---
+function initGhostFaceSystem() {
+  resizeFaceCanvas();
+  window.addEventListener('resize', resizeFaceCanvas);
+  STATE.faceTimer = performance.now();
+}
+// ================================================================
+// MOUSE TRAIL SYSTEM + CUSTOM CURSOR + HIDDEN MESSAGE REVEAL
+// ================================================================
+
+const ghostCanvas = document.getElementById('ghostCanvas');
+const gctx = ghostCanvas.getContext('2d');
+let gW, gH;
+let mouseTrails = [];
+const MAX_TRAILS = 80;
+const TRAIL_LIFETIME = 45;
+
+function resizeGhostCanvas() {
+  gW = ghostCanvas.width = STATE.w;
+  gH = ghostCanvas.height = STATE.h;
+}
+
+// Mouse trail particle
+class TrailParticle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.life = TRAIL_LIFETIME;
+    this.maxLife = TRAIL_LIFETIME;
+    this.size = rand(1.5, 6);
+    this.driftX = rand(-0.3, 0.3);
+    this.driftY = rand(-0.5, 0.1);
+    this.color = randChoice([
+      '200,200,210', '180,200,220', '200,180,200',
+      '160,180,210', '190,190,200', '210,200,190'
+    ]);
+  }
+
+  update() {
+    this.life--;
+    this.x += this.driftX;
+    this.y += this.driftY;
+    this.size *= 0.985;
+    return this.life > 0;
+  }
+
+  draw(ctx) {
+    const alpha = (this.life / this.maxLife) * 0.2;
+    if (alpha < 0.003) return;
+
+    // Phosphor-like glow
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
+    gradient.addColorStop(0, `rgba(${this.color},${alpha * 1.5})`);
+    gradient.addColorStop(0.4, `rgba(${this.color},${alpha})`);
+    gradient.addColorStop(1, `rgba(${this.color},0)`);
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Core dot
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220,220,240,${alpha * 0.8})`;
+    ctx.fill();
+  }
+}
+
+// --- MOUSE TRAIL RENDER LOOP ---
+let lastMouseAdd = 0;
+function drawMouseTrails(timestamp) {
+  gctx.clearRect(0, 0, gW, gH);
+
+  // Add trail particles at mouse position
+  if (STATE.mx > 0 && STATE.my > 0 && timestamp - lastMouseAdd > 16) {
+    lastMouseAdd = timestamp;
+    const count = STATE.glitchLevel > 0.3 ? randInt(2, 5) : randInt(1, 2);
+    for (let i = 0; i < count; i++) {
+      mouseTrails.push(new TrailParticle(
+        STATE.mx + rand(-3, 3),
+        STATE.my + rand(-3, 3)
+      ));
+    }
+  }
+
+  // Update and draw trails
+  for (let i = mouseTrails.length - 1; i >= 0; i--) {
+    const alive = mouseTrails[i].update();
+    if (!alive) {
+      mouseTrails.splice(i, 1);
+    } else {
+      mouseTrails[i].draw(gctx);
+    }
+  }
+
+  // Limit total trails
+  while (mouseTrails.length > MAX_TRAILS) {
+    mouseTrails.shift();
+  }
+
+  // Reveal hidden messages near cursor
+  updateHiddenMessages(timestamp);
+
+  RAF(drawMouseTrails);
+}
+
+// --- CUSTOM CURSOR ---
+const cursorEl = document.getElementById('customCursor');
+let cursorVisible = true;
+let cursorTimeout;
+
+function updateCursorPosition(e) {
+  STATE.mx = e.clientX;
+  STATE.my = e.clientY;
+  cursorEl.style.left = STATE.mx + 'px';
+  cursorEl.style.top = STATE.my + 'px';
+  cursorEl.style.opacity = '1';
+  cursorVisible = true;
+  clearTimeout(cursorTimeout);
+  cursorTimeout = setTimeout(() => {
+    cursorEl.style.opacity = '0';
+    cursorVisible = false;
+  }, 2000);
+}
+
+document.addEventListener('mousemove', updateCursorPosition);
+document.addEventListener('mouseleave', () => {
+  cursorEl.style.opacity = '0';
+  cursorVisible = false;
+});
+document.addEventListener('mouseenter', () => {
+  if (STATE.mx > 0) {
+    cursorEl.style.opacity = '1';
+    cursorVisible = true;
+  }
+});
+
+// --- HIDDEN MESSAGE SYSTEM ---
+const hiddenMessages = [];
+const HIDDEN_MSG_IDS = ['hiddenMsg1','hiddenMsg2','hiddenMsg3','hiddenMsg4','hiddenMsg5','hiddenMsg6','hiddenMsg7','hiddenMsg8','hiddenMsg9','hiddenMsg10'];
+const HIDDEN_REVEAL_RADIUS = 120;
+
+function initHiddenMessages() {
+  HIDDEN_MSG_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      hiddenMessages.push({
+        el: el,
+        revealed: false,
+        x: parseFloat(el.style.left) / 100 * STATE.w,
+        y: parseFloat(el.style.top) / 100 * STATE.h
+      });
+    }
+  });
+}
+
+function updateHiddenMessages(timestamp) {
+  for (const msg of hiddenMessages) {
+    const dx = STATE.mx - msg.x;
+    const dy = STATE.my - msg.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < HIDDEN_REVEAL_RADIUS && !msg.revealed) {
+      msg.revealed = true;
+      msg.el.classList.add('revealed');
+      STATE.glitchLevel = Math.min(1, STATE.glitchLevel + 0.15);
+      cursorEl.classList.add('reveal');
+      setTimeout(() => cursorEl.classList.remove('reveal'), 600);
+    } else if (dist > HIDDEN_REVEAL_RADIUS * 1.5 && msg.revealed) {
+      msg.revealed = false;
+      msg.el.classList.remove('revealed');
+    }
+
+    // Subtle proximity effect on opacity
+    if (dist < HIDDEN_REVEAL_RADIUS * 2 && !msg.revealed) {
+      const proximityAlpha = Math.max(0, (1 - dist / (HIDDEN_REVEAL_RADIUS * 2)) * 0.15);
+      msg.el.style.color = `rgba(200,200,210,${proximityAlpha})`;
+    } else if (!msg.revealed) {
+      msg.el.style.color = 'rgba(200,200,210,0)';
+    }
+  }
+}
+
+// --- INIT ---
+function initMouseSystem() {
+  resizeGhostCanvas();
+  window.addEventListener('resize', resizeGhostCanvas);
+  initHiddenMessages();
+  window.addEventListener('resize', () => {
+    // Recalculate hidden message positions after resize
+    for (const msg of hiddenMessages) {
+      msg.x = parseFloat(msg.el.style.left) / 100 * STATE.w;
+      msg.y = parseFloat(msg.el.style.top) / 100 * STATE.h;
+    }
+  });
+  RAF(drawMouseTrails);
+}
+// ================================================================
+// GLITCH BURST ENGINE
+// Triggers full-screen glitch events at controlled intervals
+// ================================================================
+
+const glitchBurstEl = document.getElementById('glitchBurst');
+const snowOverlayEl = document.getElementById('snowOverlay');
+const glitchTitleEl = document.getElementById('glitchTitle');
+const corruptMsgEl = document.getElementById('corruptMsg');
+
+// Glitch burst types
+const GLITCH_TYPES = [
+  'snow',          // Dense static spike
+  'rgbShift',      // Color channel separation
+  'hHold',         // Horizontal hold loss
+  'vHold',         // Vertical hold loss
+  'chromaError',   // Color phase error
+  'screenTear',    // Screen tearing
+  'flash',         // Brief white flash
+  'scramble',      // Content scramble
+  'negFlash',      // Negative image flash
+  'composite'      // Multiple effects combined
+];
+
+const glitchTriggers = [];
+
+function scheduleGlitchEvent() {
+  const delay = rand(3000, 15000);
+  const glitchType = randChoice(GLITCH_TYPES);
+  const intensity = rand(0.3, 1.0);
+
+  return {
+    time: performance.now() + delay,
+    type: glitchType,
+    intensity: intensity,
+    executed: false
+  };
+}
+
+// Initialize glitch schedule
+function initGlitchSchedule() {
+  glitchTriggers.length = 0;
+  for (let i = 0; i < 5; i++) {
+    glitchTriggers.push(scheduleGlitchEvent());
+  }
+}
+
+// Execute a glitch event
+function executeGlitch(glitch) {
+  STATE.glitchLevel = Math.min(1, STATE.glitchLevel + glitch.intensity * 0.4);
+  STATE.burstActive = true;
+  STATE.burstTimer = performance.now();
+
+  switch (glitch.type) {
+    case 'snow':
+      // Trigger CSS snow burst animation
+      snowOverlayEl.style.animation = 'none';
+      snowOverlayEl.offsetHeight;
+      snowOverlayEl.style.animation = `snowBurst ${rand(0.2, 0.5)}s ease-out`;
+      snowOverlayEl.style.opacity = '1';
+      setTimeout(() => { snowOverlayEl.style.opacity = '0'; }, rand(200, 500));
+      break;
+
+    case 'rgbShift':
+      glitchTitleEl.style.animation = 'none';
+      glitchTitleEl.offsetHeight;
+      glitchTitleEl.style.animation = `glitchText ${rand(0.15, 0.4)}s ease-in-out`;
+      setTimeout(() => {
+        glitchTitleEl.style.animation = 'glitchText 5s ease-in-out infinite, letterSpasm 8s ease-in-out infinite';
+      }, rand(150, 400));
+      break;
+
+    case 'hHold':
+      document.querySelector('.h-hold-overlay').style.animation = 'none';
+      document.querySelector('.h-hold-overlay').offsetHeight;
+      document.querySelector('.h-hold-overlay').style.animation = `hHoldLoss ${rand(0.3, 0.8)}s ease-in-out`;
+      break;
+
+    case 'vHold':
+      document.querySelector('.v-hold-overlay').style.animation = 'none';
+      document.querySelector('.v-hold-overlay').offsetHeight;
+      document.querySelector('.v-hold-overlay').style.animation = `vHoldLoss ${rand(0.3, 0.8)}s ease-in-out`;
+      break;
+
+    case 'chromaError':
+      document.querySelector('.chroma-overlay').style.animation = 'none';
+      document.querySelector('.chroma-overlay').offsetHeight;
+      document.querySelector('.chroma-overlay').style.animation = `chromaPhase ${rand(0.2, 0.5)}s ease-in-out`;
+      break;
+
+    case 'screenTear':
+      document.querySelector('.tracking-error-layer').style.animation = 'none';
+      document.querySelector('.tracking-error-layer').offsetHeight;
+      document.querySelector('.tracking-error-layer').style.animation = `trackingError ${rand(0.3, 0.7)}s ease-in-out`;
+      break;
+
+    case 'flash':
+      glitchBurstEl.style.animation = 'none';
+      glitchBurstEl.offsetHeight;
+      glitchBurstEl.style.animation = `crtDie ${rand(0.15, 0.35)}s ease-in-out`;
+      glitchBurstEl.style.opacity = '1';
+      setTimeout(() => { glitchBurstEl.style.opacity = '0'; }, rand(150, 350));
+      break;
+
+    case 'scramble':
+      corruptMsgEl.style.animation = 'none';
+      corruptMsgEl.offsetHeight;
+      corruptMsgEl.style.animation = `textScramble ${rand(0.3, 0.6)}s ease-in-out`;
+      break;
+
+    case 'negFlash':
+      document.querySelector('.neg-flash').style.animation = 'none';
+      document.querySelector('.neg-flash').offsetHeight;
+      document.querySelector('.neg-flash').style.animation = `negFlash ${rand(0.1, 0.25)}s ease-in-out`;
+      break;
+
+    case 'composite':
+      // Trigger multiple effects simultaneously
+      executeGlitch({ type: 'snow', intensity: glitch.intensity * 0.7 });
+      setTimeout(() => executeGlitch({ type: 'rgbShift', intensity: glitch.intensity * 0.7 }), rand(50, 150));
+      setTimeout(() => executeGlitch({ type: 'hHold', intensity: glitch.intensity * 0.6 }), rand(100, 200));
+      break;
+  }
+}
+
+// --- GLITCH UPDATE LOOP ---
+function updateGlitchSystem(timestamp) {
+  // Decay glitch level
+  STATE.glitchLevel *= STATE.glitchDecay;
+  if (STATE.glitchLevel < 0.01) STATE.glitchLevel = 0;
+
+  // Clear burst state
+  if (STATE.burstActive && timestamp - STATE.burstTimer > 1000) {
+    STATE.burstActive = false;
+  }
+
+  // Check scheduled glitch events
+  for (let i = glitchTriggers.length - 1; i >= 0; i--) {
+    const gt = glitchTriggers[i];
+    if (!gt.executed && timestamp >= gt.time) {
+      gt.executed = true;
+      executeGlitch(gt);
+    }
+    if (gt.executed && timestamp > gt.time + 2000) {
+      // Remove old executed triggers and schedule new ones
+      glitchTriggers.splice(i, 1);
+    }
+  }
+
+  // Maintain glitch schedule
+  if (glitchTriggers.length < 4) {
+    glitchTriggers.push(scheduleGlitchEvent());
+  }
+
+  // Random spontaneous micro-glitch
+  if (Math.random() < 0.002 && STATE.glitchLevel < 0.3) {
+    const microType = randChoice(['snow', 'rgbShift', 'chromaError']);
+    executeGlitch({ type: microType, intensity: rand(0.1, 0.3) });
+  }
+}
+
+// --- RANDOM TEXT CORRUPTION ---
+const corruptionChars = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`░▒▓█▀▄';
+const originalTexts = {
+  title: '静 噪',
+  msg1: '· · · 它 们 在 信 号 里 · · ·',
+  msg2: '· · · 不 要 盯 着 噪 点 看 太 久 · · ·',
+  msg3: '· · · 你 会 开 始 看 到 脸 · · ·',
+};
+
+function corruptText(text, intensity) {
+  if (intensity < 0.1) return text;
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    if (Math.random() < intensity * 0.3) {
+      result += corruptionChars[randInt(0, corruptionChars.length - 1)];
+    } else {
+      result += text[i];
+    }
+  }
+  return result;
+}
+
+function updateTextCorruption(timestamp) {
+  const intensity = STATE.glitchLevel;
+  // Occasionally corrupt the display text
+  if (intensity > 0.1 && Math.random() < intensity * 0.3) {
+    corruptMsgEl.textContent =
+      corruptText(originalTexts.msg1, intensity) + '\n' +
+      corruptText(originalTexts.msg2, intensity) + '\n' +
+      corruptText(originalTexts.msg3, intensity);
+    setTimeout(() => {
+      corruptMsgEl.innerHTML = originalTexts.msg1 + '<br>' + originalTexts.msg2 + '<br>' + originalTexts.msg3;
+    }, rand(80, 300));
+  }
+}
+
+// --- INIT ---
+function initGlitchEngine() {
+  initGlitchSchedule();
+}
+// ================================================================
+// TRANSMISSION LOG WRITER (Console + Hidden DOM)
+// Periodically outputs corrupted transmission data to console
+// ================================================================
+
+const transmissionLog = document.getElementById('transmissionLog');
+let logLines = [];
+
+// Transmission log entry templates
+const logTemplates = [
+  'CARRIER DETECTED | FREQ: {FREQ} Hz | SNR: {SNR}dB | BAND: VHF',
+  'SYNC PULSE: {STATUS} | LINE: {LINE} | FIELD: {FIELD}',
+  'COLOR BURST: {BURST} | SUBCARRIER: {SC}MHz | PHASE: {PHASE}deg',
+  'GHOST IMAGE: AMPLITUDE {AMP}dB | DELAY {DELAY}us | POSITION: {POS}',
+  'VERTICAL INTERVAL: {VBLANK} LINES | VITS: {VITS}',
+  'HORIZONTAL OSCILLATOR: {HFREQ}kHz | DEVIATION: {HDEV}ppm',
+  'TIMECODE DISCONTINUITY | GAP: {GAP} FRAMES | DROP: {DROP}',
+  'ANOMALY: {ANOMALY_TYPE} DETECTED AT {ANOMALY_LOC}',
+  'SPECTRAL CONTENT: {SPECTRAL} | CONFIDENCE: {CONF}%',
+  'VOICE PATTERN: {GENDER} | AGE: {AGE} | LANGUAGE: {LANG}',
+  'DECODED TEXT: {TEXT} [CONFIDENCE: {CONF}%]',
+  'EMBEDDED AUDIO: CH{CH} | LEVEL: {LEVEL}dBFS | CONTENT: {CONTENT}',
+  'CRC ERROR: SECTOR {SECTOR} | EXPECTED: 0x{EXP} | GOT: 0x{GOT}',
+  'HEAD SWITCHING: CH{CH} | ALIGNMENT: {ALIGN}um | WEAR: {WEAR}%',
+  'TAPE TENSION: {TENSION}g | SPEED: {SPEED}mm/s | WOW: {WOW}%',
+  'DROPOUT: {COUNT}/MIN | COMPENSATOR: {DOC} | THRESHOLD: {THRESH}dB',
+  'SYSTEM MESSAGE: {SYSMSG}',
+  'BUFFER OVERFLOW: 0x{ADDR} | SEGFAULT: 0x{FAULT} | CORE: DUMPED',
+  'INTERFERENCE: {SOURCE} | FREQ: {IFREQ}MHz | LEVEL: {ILEVEL}dB',
+  'DEMODULATION: {DEMOD} | PATTERN: {PATTERN} | MATCH: {MATCH}',
+];
+
+function generateLogEntry() {
+  const template = randChoice(logTemplates);
+  return template
+    .replace('{FREQ}', rand(280, 290).toFixed(1))
+    .replace('{SNR}', rand(-20, -5).toFixed(1))
+    .replace('{STATUS}', randChoice(['LOCKED', 'UNSTABLE', 'LOST', 'INTERMITTENT']))
+    .replace('{LINE}', randInt(1, 525).toString())
+    .replace('{FIELD}', randChoice(['ODD', 'EVEN', 'BOTH', 'NEITHER']))
+    .replace('{BURST}', randChoice(['PRESENT', 'MISSING', 'DEGRADED', 'SHIFTED']))
+    .replace('{SC}', rand(3.57, 3.58).toFixed(4))
+    .replace('{PHASE}', rand(-180, 180).toFixed(0))
+    .replace('{AMP}', rand(-25, -10).toFixed(1))
+    .replace('{DELAY}', rand(0.5, 5.0).toFixed(1))
+    .replace('{POS}', randChoice(['LEFT', 'CENTER', 'RIGHT', 'UPPER', 'LOWER', 'PERIPHERY']))
+    .replace('{VBLANK}', randInt(18, 24).toString())
+    .replace('{VITS}', randChoice(['PRESENT', 'ABSENT', 'CORRUPTED', 'INSERTED']))
+    .replace('{HFREQ}', rand(15.730, 15.738).toFixed(3))
+    .replace('{HDEV}', rand(-5, 5).toFixed(1))
+    .replace('{GAP}', randInt(1, 300).toString())
+    .replace('{DROP}', randChoice(['YES', 'NO', 'PARTIAL']))
+    .replace('{ANOMALY_TYPE}', randChoice([
+      'SUBCARRIER LEAK', 'LUMA SPIKE', 'CHROMA PHASE ERROR',
+      'SYNC TIP DISTORTION', 'BURST AMPLITUDE VARIATION',
+      'HUM BAR', 'RF INTERFERENCE', 'UNIDENTIFIED SIGNAL',
+      'REVERSE AUDIO MASKING', 'MAGNETIC PRINT-THROUGH',
+      'TIMEBASE ERROR', 'BLANKING VIOLATION'
+    ]))
+    .replace('{ANOMALY_LOC}', randChoice([
+      'LINE 23', 'FIELD 2', 'VERTICAL BLANKING',
+      'ACTIVE VIDEO', 'COLOR BURST', 'SYNC TIP',
+      'BACK PORCH', 'FRONT PORCH', 'EQUALIZING PULSE'
+    ]))
+    .replace('{SPECTRAL}', randChoice([
+      'HUMAN VOICE FREQUENCIES', '60Hz HUM', '284.7Hz CARRIER',
+      'WHITE NOISE', 'PINK NOISE', 'IMPULSE NOISE',
+      'SUBSONIC RUMBLE', 'ULTRASONIC HISS'
+    ]))
+    .replace('{CONF}', randInt(55, 99).toString())
+    .replace('{GENDER}', randChoice(['FEMALE', 'MALE', 'CHILD', 'UNKNOWN']))
+    .replace('{AGE}', randChoice(['7-11', '22-35', '40-55', '60+', 'UNKNOWN']))
+    .replace('{LANG}', randChoice(['UNKNOWN', 'MANDARIN', 'CANTONESE', 'JAPANESE', 'ENGLISH']))
+    .replace('{TEXT}', randChoice([
+      '她 在 这 里', '不 要 看', '帮 帮 我', '看 见 你 了',
+      '出 去', '别 关 掉', '它 在 屏 幕 里', '继 续 看 着',
+      'HELP ME', 'SHE IS HERE', 'DONT LOOK', 'I SEE YOU',
+      'BEHIND YOU', '静态中有东西', '信号是活的'
+    ]))
+    .replace('{CH}', randInt(1, 4).toString())
+    .replace('{LEVEL}', rand(-40, 0).toFixed(1))
+    .replace('{CONTENT}', randChoice(['SILENCE', 'TONE 1kHz', 'VOICE', 'NOISE', 'CORRUPTED']))
+    .replace('{SECTOR}', randInt(0, 255).toString())
+    .replace('{EXP}', randInt(0, 65535).toString(16).toUpperCase().padStart(4, '0'))
+    .replace('{GOT}', randInt(0, 65535).toString(16).toUpperCase().padStart(4, '0'))
+    .replace('{ALIGN}', rand(3.0, 5.0).toFixed(1))
+    .replace('{WEAR}', randInt(15, 65).toString())
+    .replace('{TENSION}', randInt(20, 60).toString())
+    .replace('{SPEED}', rand(33.0, 33.7).toFixed(1))
+    .replace('{WOW}', rand(0.05, 0.25).toFixed(2))
+    .replace('{COUNT}', randInt(5, 40).toString())
+    .replace('{DOC}', randChoice(['ACTIVE', 'OVERLOADED', 'BYPASSED', 'SATURATED']))
+    .replace('{THRESH}', rand(-15, -3).toFixed(0))
+    .replace('{SYSMSG}', randChoice([
+      'DO NOT TURN OFF', 'WE CAN SEE YOU', 'PLEASE RESPOND',
+      'THEY ARE IN THE SIGNAL', 'RECORDING CONTINUES',
+      'SIGNAL IS ALIVE', 'YOU ARE BEING WATCHED',
+      '静态中有人', '信号中的脸是真的'
+    ]))
+    .replace('{ADDR}', randInt(0, 4294967295).toString(16).toUpperCase().padStart(8, '0'))
+    .replace('{FAULT}', randInt(0, 4294967295).toString(16).toUpperCase().padStart(8, '0'))
+    .replace('{SOURCE}', randChoice(['POWER LINE', 'RADIO TOWER', 'UNKNOWN', 'INTERNAL', 'EXTERNAL']))
+    .replace('{IFREQ}', rand(0.5, 100).toFixed(1))
+    .replace('{ILEVEL}', rand(-40, -20).toFixed(1))
+    .replace('{DEMOD}', randChoice(['AM', 'FM', 'SSB', 'PSK', 'QAM', 'UNKNOWN']))
+    .replace('{PATTERN}', randChoice([
+      'HEARTBEAT', 'RESPIRATION', 'MORSE CODE', 'BINARY DATA',
+      'VOICE', 'HUMAN EEG', 'NOISE', 'REPEATING PULSE'
+    ]))
+    .replace('{MATCH}', randChoice([
+      'HUMAN BIOSIGNATURE', 'MACHINE SIGNAL', 'NO KNOWN PATTERN',
+      'CORRELATED WITH AUDIO', 'SYNCHRONIZED TO VIDEO FIELD RATE',
+      '72% CORRELATION TO KNOWN VOICE PATTERNS',
+      'PATTERN REPEATS EVERY 284.7 SECONDS'
+    ]));
+}
+
+// Console logging of transmission data
+const consoleStyles = [
+  'color:#b8b8c8;font-family:monospace;',
+  'color:#6a6a78;font-family:monospace;',
+  'color:#4a4a58;font-family:monospace;',
+  'color:#8a8a98;font-family:monospace;',
+  'color:#3a3a48;font-family:monospace;',
+];
+
+function writeToConsole() {
+  const entry = generateLogEntry();
+  const style = randChoice(consoleStyles);
+  console.log(`%c[TRANS] ${entry}`, style);
+}
+
+function writeToTransmissionLog() {
+  const entry = generateLogEntry();
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 23);
+  logLines.push(`[${timestamp}] ${entry}`);
+  if (logLines.length > 200) logLines.shift();
+}
+
+let logWriteInterval;
+
+// --- INIT ---
+function initTransmissionLog() {
+  // Initial console messages
+  console.log('%c 静噪 · 频率 284.7 Hz %c||%c 信号中的人脸不是你的想象 %c||%c 它们在信号里',
+    'color:#b8b8c8;', 'color:#4a4a58;',
+    'color:#8a8a98;', 'color:#4a4a58;',
+    'color:#6a6a78;'
+  );
+  console.log('%c 继续观看。它们会注意到你。', 'color:#3a3a48;');
+  console.log('%c 不要关掉显示器。', 'color:#5a5a68;');
+
+  // Periodic console output
+  logWriteInterval = setInterval(() => {
+    if (Math.random() < 0.4) writeToConsole();
+    writeToTransmissionLog();
+  }, rand(4000, 12000));
+
+  // Write some initial log entries
+  for (let i = 0; i < 10; i++) writeToTransmissionLog();
+}
+// ================================================================
+// ASCII ART CORRUPTED BROADCAST MESSAGES
+// Periodically displayed in console as corrupted signal artifacts
+// ================================================================
+
+const asciiArtFrames = [
+  // Frame 1: Static face
+  [
+    '    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░',
+    '    ░▒▒▒▓▓██████▓▓████████████████▓▒░░░',
+    '    ░▒▓█▓▒░░░░▒▓████████████████████▓▒░',
+    '    ░▓█▒░░░░░░░░▒█████████████████████░',
+    '    ▒█▓░░░░░░░░░░░▓███████████████████▒',
+    '    ▓█▒░░░▒▓██▓▒░░░▓██████████████████▓',
+    '    ██░░▒▓██████▓░░░████████  ████████',
+    '    ██░▓██████████▒░▓████░░    ░░█████',
+    '    ██░█████░░░████░░███▒  ░░░░  ░███',
+    '    ██░████▒  ░░▓██▒░███   ████   ███',
+    '    ██░█████████████▒░██▓   ░░░   ▓██',
+    '    ▓█▒░████████████░░███░       ░███',
+    '    ▒█▓░░▒████████▓░░░▓███▓▒▒▒▒▓█████',
+    '    ░▓█▒░░░░▒▓██▓▒░░░░░▒▓██████████▓░',
+    '    ░▒█▓░░░░░░░░░░░░░░░░░░▒▓███████░░',
+    '    ░░▓██▓▒░░░░░░░░░░░░░░░░░▒▓███▓▒░',
+    '    ░░░▒▓▓████████████████████████▓▒░',
+    '    ░░░░░░▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░░░',
+    '    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░'
+  ],
+  // Frame 2: Eye
+  [
+    '    ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒',
+    '    ▒██████████████████████████████▒',
+    '    ▒██████████████████████████████▒',
+    '    ▒█████▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓███████▒',
+    '    ▒████▓░░░░░░░░░░░░░░░░░░░▓█████▒',
+    '    ▒████▒░░░░░▓███████▓▒░░░░██████▒',
+    '    ▒████░░░░▒████████████▓░░░█████▒',
+    '    ▒████░░░▓██████████████▒░░█████▒',
+    '    ▒████░░░▓███░░░░░░░▓███▒░░█████▒',
+    '    ▒████░░░▓██▓ ░░░░░ ░▓██▒░░█████▒',
+    '    ▒████░░░▓███▓▒░░░░░▓███▒░░█████▒',
+    '    ▒████░░░▓██████████████▒░░█████▒',
+    '    ▒████░░░░▓████████████▓░░░█████▒',
+    '    ▒████▓░░░░░▓███████▓░░░░░██████▒',
+    '    ▒██████▓▒░░░░░░░░░░░░░▒▓███████▒',
+    '    ▒██████████████████████████████▒',
+    '    ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒'
+  ],
+  // Frame 3: Corrupted signal bars
+  [
+    '    ██████████████████████████████████',
+    '    ▌││││││││││││││││││││││││││││││▐',
+    '    ▌│▓▓▒▒░░  ░░▒▒▓▓  ▓▓▒▒░░  ░░▒▒▓▓│▐',
+    '    ▌│ SIGNAL: 284.7 Hz │ CARRIER: LOST▐',
+    '    ▌│▓▓▒░  ░▒▓▓  ▓▓▒░  ░▒▓▓  ▓▓▒░  ░│▐',
+    '    ▌│░░▒▓▓▓▓▒░░  ░░▒▓▓▓▓▒░░  ░░▒▓▓▓▓│▐',
+    '    ▌│▓▒░  ░▒▓  ▓▒░  ░▒▓  ▓▒░  ░▒▓  ▓│▐',
+    '    ▌│ VOID ECHO TRANSMISSION #2847   │▐',
+    '    ▌│▓▓▒▒░░  ░░▒▒▓▓  ▓▓▒▒░░  ░░▒▒▓▓│▐',
+    '    ▌││││││││││││││││││││││││││││││▐',
+    '    ██████████████████████████████████'
+  ],
+  // Frame 4: Distorted figure
+  [
+    '    ································',
+    '    ···▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓···',
+    '    ···▓░░░░░░░░░░░░░░░░░░░░░░▓···',
+    '    ···▓░░░░░▓▓▓░░░▓▓▓░░░░░░░▓···',
+    '    ···▓░░░░░░▓░░░░░▓░░░░░░░░▓···',
+    '    ···▓░░░░░░░░░░░░░░░░░░░░░▓···',
+    '    ···▓░░░░░░▓▓▓▓▓▓▓░░░░░░░▓···',
+    '    ···▓░░░░░░░░░░░░░░░░░░░░░▓···',
+    '    ···▓░░░░░░░░░░░░░░░░░░░░░▓···',
+    '    ···▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓···',
+    '    · 她 在 屏 幕 里 面 ·',
+    '    ································'
+  ],
+  // Frame 5: Void echo logo
+  [
+    '    ▓▒░                               ░▒▓',
+    '    ▓▒░  ██╗   ██╗ ██████╗ ██╗██████╗  ░▒▓',
+    '    ▓▒░  ██║   ██║██╔═══██╗██║██╔══██╗ ░▒▓',
+    '    ▓▒░  ██║   ██║██║   ██║██║██║  ██║ ░▒▓',
+    '    ▓▒░  ╚██╗ ██╔╝██║   ██║██║██║  ██║ ░▒▓',
+    '    ▓▒░   ╚████╔╝ ╚██████╔╝██║██████╔╝ ░▒▓',
+    '    ▓▒░    ╚═══╝   ╚═════╝ ╚═╝╚═════╝  ░▒▓',
+    '    ▓▒░                               ░▒▓',
+    '    ▓▒░  ███████╗ ██████╗██╗  ██╗ ██████╗ ░▒▓',
+    '    ▓▒░  ██╔════╝██╔════╝██║  ██║██╔═══██╗░▒▓',
+    '    ▓▒░  █████╗  ██║     ███████║██║   ██║░▒▓',
+    '    ▓▒░  ██╔══╝  ██║     ██╔══██║██║   ██║░▒▓',
+    '    ▓▒░  ███████╗╚██████╗██║  ██║╚██████╔╝░▒▓',
+    '    ▓▒░  ╚══════╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ░▒▓',
+    '    ▓▒░                               ░▒▓',
+    '         284.7 Hz  ·  静 噪  ·  VOID ECHO'
+  ]
+];
+
+const asciiBroadcastMessages = [
+  '··· 紧急广播 ··· 请勿观看屏幕超过60秒 ··· 284.7 Hz信号中发现异常 ···',
+  '[传输中断] ████████████████████ 信号丢失 ████████████████████ [传输中断]',
+  '··· 她们在录像带里生活 ··· 倒带时可以看到她们移动 ···',
+  'WARNING: PROLONGED EXPOSURE TO STATIC MAY CAUSE ▓▓▓▓▓▓▓▓▒▒░░',
+  '··· 不要调整你的电视机 ··· 信号源没有问题 ··· 是信号本身有问题 ···',
+  'C̷O̸R̷R̸U̷P̸T̷E̸D̷ ̷T̷R̸A̷N̷S̸M̷I̷S̸S̷I̸O̷N̷ ̷-̷ ̷D̷O̷ ̷N̷O̷T̷ ̷A̷T̷T̷E̷M̷P̷T̷ ̷T̷O̷ ̷D̷E̷C̷O̷D̷E̷',
+  '··· 284.7 · 284.7 · 284.7 · 284.7 · 284.7 · 284.7 · 284.7 ···',
+  '你听到的声音不是电视机发出的',
+  '她们在你身后',
+  '关掉它 · 不 · 继续看 · 关掉 · 不要关 · 关掉 · 看着我',
+];
+
+function displayAsciiArt() {
+  const frame = randChoice(asciiArtFrames);
+  const msg = randChoice(asciiBroadcastMessages);
+  console.log('%c' + frame.join('\n'), 'color:#3a3a48;font-size:6px;line-height:1.1;');
+  console.log('%c' + msg, 'color:#6a6a78;font-family:monospace;');
+}
+
+// --- ASCII ART SCHEDULER ---
+let asciiInterval;
+function initAsciiBroadcast() {
+  asciiInterval = setInterval(() => {
+    if (Math.random() < 0.3) displayAsciiArt();
+  }, rand(15000, 35000));
+  // Show one initially after a delay
+  setTimeout(displayAsciiArt, rand(5000, 15000));
+}
+// ================================================================
+// PERIODIC DISTORTION SYSTEM
+// Modulates CSS properties for continuous analog imperfection
+// ================================================================
+
+// --- SCREEN JITTER ---
+function applyScreenJitter() {
+  const jitterX = (Math.random() - 0.5) * STATE.glitchLevel * 8;
+  const jitterY = (Math.random() - 0.5) * STATE.glitchLevel * 4;
+  document.body.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+}
+
+// --- SCANLINE PHASE SHIFT ---
+let scanlinePhaseOffset = 0;
+function updateScanlinePhase() {
+  scanlinePhaseOffset += 0.02;
+  const scanlines = document.querySelector('.scanlines');
+  if (scanlines) {
+    scanlines.style.backgroundPositionY = `${Math.sin(scanlinePhaseOffset) * 0.5}px`;
+  }
+}
+
+// --- RANDOM ELEMENT FLICKER ---
+const flickerTargets = [];
+function collectFlickerTargets() {
+  const targets = document.querySelectorAll('.glitch-title, .corrupt-msg, .whisper-text, .data-stream, .nav-row a');
+  flickerTargets.length = 0;
+  targets.forEach(el => flickerTargets.push(el));
+}
+
+function applyRandomFlicker() {
+  if (Math.random() < 0.08 * (1 + STATE.glitchLevel)) {
+    const target = randChoice(flickerTargets);
+    if (target) {
+      const origOpacity = target.style.opacity || '1';
+      target.style.opacity = rand(0.3, 0.7).toString();
+      setTimeout(() => {
+        target.style.opacity = origOpacity;
+      }, rand(30, 100));
+    }
+  }
+}
+
+// --- COLOR TEMPERATURE DRIFT ---
+let colorTempPhase = 0;
+function updateColorTemperature() {
+  colorTempPhase += 0.001;
+  const drift = Math.sin(colorTempPhase) * 0.02 + Math.sin(colorTempPhase * 2.3) * 0.01;
+  const r = 255;
+  const g = 255 + drift * 20;
+  const b = 255 - drift * 20;
+  // Subtly adjust the body color
+  document.body.style.color = `rgba(${Math.round(200 + drift * 15)},${Math.round(200 + drift * 5)},${Math.round(210 - drift * 10)},0.7)`;
+}
+
+// --- GHOST IMAGE AFTERGLOW ---
+let afterglowActive = false;
+function triggerAfterglow() {
+  if (afterglowActive) return;
+  afterglowActive = true;
+  const afterglowEl = document.createElement('div');
+  afterglowEl.style.cssText = `
+    position:fixed;inset:0;pointer-events:none;z-index:38;
+    opacity:0.06;mix-blend-mode:screen;
+    background:radial-gradient(ellipse at ${rand(30,70)}% ${rand(30,70)}%, rgba(200,200,210,0.3) 0%, transparent 60%);
+    animation:phosphorDecay 3s ease-out forwards;
+  `;
+  document.body.appendChild(afterglowEl);
+  setTimeout(() => {
+    afterglowEl.remove();
+    afterglowActive = false;
+  }, 3200);
+}
+
+// --- PERIODIC TITLE INTENSIFICATION ---
+function triggerTitleGlitch() {
+  const title = document.getElementById('glitchTitle');
+  if (!title) return;
+  title.style.animation = 'none';
+  title.offsetHeight;
+  title.style.animation = `glitchText ${rand(0.15, 0.5)}s ease-in-out`;
+  setTimeout(() => {
+    title.style.animation = 'glitchText 5s ease-in-out infinite, letterSpasm 8s ease-in-out infinite';
+  }, rand(150, 500));
+}
+
+// --- SUBLIMINAL TEXT FLASH ---
+const subliminalMessages = [
+  '看着她', '不要回头', '他在你身后', '信号是活的',
+  '关掉电视', '继续看', '284.7', '你看见了',
+  'she is here', 'look away', 'behind you', '静态中有东西',
+  '不要闭眼', '它们在移动', '录像是真的', '帮帮我',
+  'dont look', 'static lives', 'they see you', 'stay watching'
+];
+
+function flashSubliminalMessage() {
+  const msg = randChoice(subliminalMessages);
+  const el = document.createElement('div');
+  const size = rand(1.5, 4);
+  const x = rand(10, 80);
+  const y = rand(10, 80);
+  el.textContent = msg;
+  el.style.cssText = `
+    position:fixed;pointer-events:none;z-index:37;
+    top:${y}%;left:${x}%;transform:translate(-50%,-50%);
+    font-family:'Courier New','SimSun',monospace;
+    font-size:${size}rem;letter-spacing:0.3em;
+    color:rgba(200,200,210,0.7);
+    text-shadow:0 0 20px rgba(200,200,210,0.4);
+    opacity:0;
+    animation:whisperText 0.5s ease-out forwards;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// --- DISTORTION UPDATE LOOP ---
+let distortionFrameCount = 0;
+function updateDistortionSystem(timestamp) {
+  distortionFrameCount++;
+
+  // Jitter every few frames
+  if (distortionFrameCount % 3 === 0) applyScreenJitter();
+
+  // Scanline phase
+  if (distortionFrameCount % 5 === 0) updateScanlinePhase();
+
+  // Random flicker
+  applyRandomFlicker();
+
+  // Color temperature drift
+  if (distortionFrameCount % 10 === 0) updateColorTemperature();
+
+  // Periodic title glitch
+  if (distortionFrameCount % 180 === 0 && Math.random() < 0.35) {
+    triggerTitleGlitch();
+  }
+
+  // Periodic afterglow
+  if (distortionFrameCount % 420 === 0 && Math.random() < 0.25) {
+    triggerAfterglow();
+  }
+
+  // Subliminal message flash
+  if (Math.random() < 0.0015 * (1 + STATE.glitchLevel * 3)) {
+    flashSubliminalMessage();
+  }
+
+  // Update ghost face system
+  updateGhostFace(timestamp);
+
+  // Update glitch system
+  updateGlitchSystem(timestamp);
+
+  // Update text corruption
+  updateTextCorruption(timestamp);
+
+  RAF(updateDistortionSystem);
+}
+
+// --- INIT ---
+function initDistortionSystem() {
+  collectFlickerTargets();
+  window.addEventListener('resize', () => {
+    setTimeout(collectFlickerTargets, 500);
+  });
+  RAF(updateDistortionSystem);
+}
+
+// ================================================================
+// MASTER INITIALIZATION
+// ================================================================
+
+function initAllSystems() {
+  updateDimensions();
+  initStaticSystem();
+  initGhostFaceSystem();
+  initMouseSystem();
+  initGlitchEngine();
+  initTransmissionLog();
+  initAsciiBroadcast();
+  initDistortionSystem();
+
+  window.addEventListener('resize', () => {
+    updateDimensions();
+    STATE.w = window.innerWidth;
+    STATE.h = window.innerHeight;
+  });
+
+  // Keyboard interactions for manual glitch control
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'g' || e.key === 'G') {
+      executeGlitch({ type: 'composite', intensity: 0.9 });
+      STATE.glitchLevel = 1;
+    }
+    if (e.key === 'f' || e.key === 'F') {
+      faceRenderActive = true;
+      faceRenderStart = performance.now();
+      faceRenderDuration = rand(3000, 6000);
+      currentFaceConfig = generateFaceConfig();
+      STATE.faceVisible = true;
+      STATE.glitchLevel = Math.min(1, STATE.glitchLevel + 0.3);
+    }
+    if (e.key === 's' || e.key === 'S') {
+      flashSubliminalMessage();
+    }
+    if (e.key === 'l' || e.key === 'L') {
+      for (let i = 0; i < 10; i++) writeToConsole();
+      displayAsciiArt();
+    }
+    if (e.key === 't' || e.key === 'T') {
+      executeGlitch({ type: 'snow', intensity: 0.7 });
+      triggerTitleGlitch();
+    }
+  });
+
+  // Touch support for mobile
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+      STATE.mx = e.touches[0].clientX;
+      STATE.my = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 0) {
+      STATE.mx = e.touches[0].clientX;
+      STATE.my = e.touches[0].clientY;
+      cursorEl.style.left = STATE.mx + 'px';
+      cursorEl.style.top = STATE.my + 'px';
+      cursorEl.style.opacity = '1';
+    }
+  });
+
+  console.log('%c VOID ECHO · 静噪 · SYSTEM INITIALIZED %c||%c 284.7 Hz CARRIER ACQUIRED',
+    'color:#b8b8c8;font-size:1.1em;',
+    'color:#4a4a58;',
+    'color:#8a8a98;'
+  );
+  console.log('%c Press G for glitch | F for face | S for subliminal | L for log dump | T for title glitch',
+    'color:#5a5a68;font-size:0.9em;'
+  );
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAllSystems);
+} else {
+  initAllSystems();
+}
+
+// ================================================================
+// EXTENDED DATA: Ghost face shape library (for variety)
+// ================================================================
+
+const faceShapeLibrary = [
+  // Oval face
+  { rx: 0.5, ry: 0.7, chin: 0.4, jaw: 0.45, forehead: 0.5 },
+  // Round face
+  { rx: 0.55, ry: 0.6, chin: 0.5, jaw: 0.55, forehead: 0.5 },
+  // Heart face
+  { rx: 0.48, ry: 0.72, chin: 0.3, jaw: 0.4, forehead: 0.55 },
+  // Long face
+  { rx: 0.4, ry: 0.8, chin: 0.35, jaw: 0.38, forehead: 0.42 },
+  // Square face
+  { rx: 0.5, ry: 0.65, chin: 0.45, jaw: 0.52, forehead: 0.48 },
+  // Diamond face
+  { rx: 0.45, ry: 0.75, chin: 0.35, jaw: 0.5, forehead: 0.4 },
+  // Triangle face
+  { rx: 0.48, ry: 0.68, chin: 0.3, jaw: 0.5, forehead: 0.6 },
+  // Rectangle face
+  { rx: 0.42, ry: 0.78, chin: 0.4, jaw: 0.45, forehead: 0.43 },
+];
+
+// Extended distorted face drawing (more detailed pareidolia)
+function drawDetailedGhostFace(cfg, progress, faceShape) {
+  fctx.clearRect(0, 0, fW, fH);
+  const alpha = Math.sin(progress * Math.PI) * cfg.opacity * 1.2;
+  if (alpha < 0.001) return;
+
+  fctx.save();
+  fctx.translate(cfg.cx, cfg.cy);
+  fctx.rotate(cfg.rotation + cfg.faceTilt * Math.sin(progress * Math.PI * 2.5));
+  fctx.globalAlpha = alpha;
+
+  // Head with face shape
+  const fs = faceShape || randChoice(faceShapeLibrary);
+  fctx.beginPath();
+  const pts = 80;
+  for (let i = 0; i <= pts; i++) {
+    const angle = (i / pts) * Math.PI * 2;
+    let rx = cfg.faceWidth * fs.rx;
+    let ry = cfg.faceHeight * fs.ry;
+
+    // Adjust for chin and forehead
+    if (angle > Math.PI * 0.3 && angle < Math.PI * 0.7) {
+      rx *= fs.chin / 0.5;
+    }
+    if (angle > Math.PI * 1.3 && angle < Math.PI * 1.7) {
+      rx *= fs.forehead / 0.5;
+    }
+    if ((angle > Math.PI * 0.7 && angle < Math.PI * 1.3) || angle < Math.PI * 0.15 || angle > Math.PI * 1.85) {
+      rx *= fs.jaw / 0.5;
+    }
+
+    const nx = Math.cos(angle);
+    const ny = Math.sin(angle);
+    const nv = pseudoNoise2D(nx * cfg.noiseIntensity * 2 + cfg.asymmetry * 0.05,
+      ny * cfg.noiseIntensity * 2 + progress * 3, STATE.noiseSeed + faceRenderStart);
+    const distort = 1 + (nv - 0.5) * cfg.distortion * 0.05;
+    rx *= distort;
+    ry *= distort;
+
+    if (i === 0) fctx.moveTo(nx * rx, ny * ry);
+    else fctx.lineTo(nx * rx, ny * ry);
+  }
+  fctx.closePath();
+
+  // Ghostly fill
+  const g1 = fctx.createRadialGradient(0, -15, 0, 0, 5, cfg.faceWidth * 0.8);
+  g1.addColorStop(0, `rgba(200,200,210,0)`);
+  g1.addColorStop(0.3, `rgba(180,180,200,${alpha * 0.15})`);
+  g1.addColorStop(0.6, `rgba(160,160,190,${alpha * 0.35})`);
+  g1.addColorStop(0.85, `rgba(100,100,140,${alpha * 0.12})`);
+  g1.addColorStop(1, `rgba(50,50,80,0)`);
+  fctx.fillStyle = g1;
+  fctx.fill();
+
+  // Outline with varying thickness
+  fctx.strokeStyle = `rgba(200,200,210,${alpha * 0.5})`;
+  fctx.lineWidth = 0.5 + Math.random() * 0.5;
+  fctx.setLineDash([rand(3, 8), rand(2, 6)]);
+  fctx.stroke();
+  fctx.setLineDash([]);
+
+  // Eyes with shadow sockets
+  for (let s = -1; s <= 1; s += 2) {
+    const ex = s * cfg.eyeSpacing;
+    const ey = cfg.eyeY;
+
+    // Socket shadow
+    const sg = fctx.createRadialGradient(ex, ey, 0, ex, ey, cfg.eyeSize * 1.8);
+    sg.addColorStop(0, `rgba(5,5,10,${alpha * 0.8})`);
+    sg.addColorStop(0.6, `rgba(15,15,25,${alpha * 0.3})`);
+    sg.addColorStop(1, `rgba(20,20,35,0)`);
+    fctx.beginPath();
+    fctx.ellipse(ex, ey, cfg.eyeSize * 1.6, cfg.eyeSize * 0.9, 0, 0, Math.PI * 2);
+    fctx.fillStyle = sg;
+    fctx.fill();
+
+    // Eye
+    fctx.beginPath();
+    fctx.ellipse(ex + rand(-1, 1) * cfg.distortion * 0.03,
+      ey + rand(-1, 1) * cfg.distortion * 0.03,
+      cfg.eyeSize, cfg.eyeSize * 0.45, 0, 0, Math.PI * 2);
+    fctx.strokeStyle = `rgba(180,200,210,${alpha * 0.7})`;
+    fctx.lineWidth = 0.8;
+    fctx.stroke();
+
+    // Pupil
+    fctx.beginPath();
+    fctx.arc(ex, ey, cfg.eyeSize * 0.22, 0, Math.PI * 2);
+    fctx.fillStyle = `rgba(3,3,6,${alpha * 0.95})`;
+    fctx.fill();
+
+    // Eye highlight (faint)
+    fctx.beginPath();
+    fctx.arc(ex - cfg.eyeSize * 0.1, ey - cfg.eyeSize * 0.1,
+      cfg.eyeSize * 0.06, 0, Math.PI * 2);
+    fctx.fillStyle = `rgba(240,240,250,${alpha * 0.2})`;
+    fctx.fill();
+  }
+
+  // Nose
+  fctx.beginPath();
+  fctx.moveTo(0, cfg.eyeY + cfg.eyeSize * 0.5);
+  fctx.quadraticCurveTo(rand(-2, 2), cfg.eyeY + cfg.eyeSize * 1.8, 0, cfg.mouthY - 12);
+  fctx.strokeStyle = `rgba(160,160,190,${alpha * 0.2})`;
+  fctx.lineWidth = 2;
+  fctx.stroke();
+
+  // Nostril hints
+  for (let s = -1; s <= 1; s += 2) {
+    if (s === 0) continue;
+    fctx.beginPath();
+    fctx.arc(s * 6, cfg.eyeY + cfg.eyeSize * 1.5, 3, 0, Math.PI * 2);
+    fctx.strokeStyle = `rgba(150,150,180,${alpha * 0.15})`;
+    fctx.lineWidth = 0.5;
+    fctx.stroke();
+  }
+
+  // Mouth
+  fctx.beginPath();
+  const mouthCurve = cfg.mouthY + rand(-3, 3);
+  fctx.moveTo(-cfg.mouthWidth / 2, mouthCurve);
+  fctx.quadraticCurveTo(0, mouthCurve + rand(-3, 5),
+    cfg.mouthWidth / 2, mouthCurve);
+  fctx.strokeStyle = `rgba(170,170,200,${alpha * 0.55})`;
+  fctx.lineWidth = 0.7;
+  fctx.stroke();
+
+  // Lower lip shadow
+  fctx.beginPath();
+  fctx.ellipse(0, mouthCurve + 4, cfg.mouthWidth * 0.35, 3, 0, 0, Math.PI);
+  fctx.fillStyle = `rgba(100,100,130,${alpha * 0.15})`;
+  fctx.fill();
+
+  // Hair suggestion
+  fctx.beginPath();
+  fctx.ellipse(0, -cfg.faceHeight * 0.05, cfg.faceWidth * 0.55, cfg.faceHeight * 0.75, 0, Math.PI, Math.PI * 2);
+  fctx.fillStyle = `rgba(10,10,20,${alpha * 0.4})`;
+  fctx.fill();
+
+  // Hair strands (corrupted lines)
+  for (let i = 0; i < 12; i++) {
+    const hx = rand(-cfg.faceWidth * 0.4, cfg.faceWidth * 0.4);
+    const hy = rand(-cfg.faceHeight * 0.6, -cfg.faceHeight * 0.1);
+    fctx.beginPath();
+    fctx.moveTo(hx, hy);
+    fctx.lineTo(hx + rand(-15, 15), hy + rand(20, 60));
+    fctx.strokeStyle = `rgba(20,20,35,${alpha * 0.25})`;
+    fctx.lineWidth = rand(0.3, 1.5);
+    fctx.stroke();
+  }
+
+  // Static noise grain overlay
+  fctx.globalCompositeOperation = 'overlay';
+  for (let i = 0; i < 35; i++) {
+    const gx = rand(-cfg.faceWidth * 0.5, cfg.faceWidth * 0.5);
+    const gy = rand(-cfg.faceHeight * 0.5, cfg.faceHeight * 0.5);
+    fctx.fillStyle = `rgba(${randInt(80,255)},${randInt(80,255)},${randInt(80,255)},${alpha * 0.18})`;
+    fctx.fillRect(gx, gy, rand(0.5, 3.5), rand(0.5, 3.5));
+  }
+
+  fctx.restore();
+}
+
+// ================================================================
+// EXTENDED DATA: Signal pattern library
+// ================================================================
+
+const signalPatterns = {
+  // Descriptions of corruption patterns for log generation
+  types: [
+    'CHROMINANCE_INVERSION', 'LUMA_KEYSTONE', 'BURST_GATE_LEAK',
+    'SYNC_TIP_COMPRESSION', 'BACK_PORCH_CLAMP_ERROR', 'FRONT_PORCH_RINGING',
+    'EQUALIZING_PULSE_DROPOUT', 'VERTICAL_SERRATION_MISSING',
+    'COLOR_FRAME_SEQUENCE_ERROR', 'SCH_PHASE_ROTATION',
+    'RF_SIDEBAND_IMBALANCE', 'VESTIGIAL_SIDEBAND_OVERFLOW',
+    'AUDIO_INTERCARRIER_BUZZ', '4_5MHz_BEAT_PATTERN',
+    '2ND_HARMONIC_DISTORTION', '3RD_ORDER_INTERMODULATION',
+    'CROSS_MODULATION_PRODUCT', 'IMPULSE_NOISE_BURST',
+    'GAUSSIAN_NOISE_FLOOR_SHIFT', 'IMPULSIVE_INTERFERENCE_SPIKE',
+    'CONTINUOUS_WAVE_INTERFERENCE', 'COCHANNEL_GHOST_IMAGE',
+    'ADJACENT_CHANNEL_LEAKAGE', 'IF_IMAGE_REJECTION_FAIL',
+    'PHASE_NOISE_EXCURSION', 'FREQUENCY_AGILITY_DRIFT',
+    'MULTIPATH_REFLECTION', 'TROPOSPHERIC_SCATTER_ANOMALY',
+    'IONOSPHERIC_DUCTING_EVENT', 'SOLAR_FLARE_INTERFERENCE',
+    'GEOMAGNETIC_STORM_EFFECT', 'POWER_GRID_HARMONIC_BURST'
+  ],
+  anomalyDescriptions: [
+    'FACE_PATTERN_IN_CHROMINANCE_NOISE',
+    'HUMAN_VOICE_BURIED_IN_AUDIO_SUBCARRIER',
+    'TEMPERATURE_DROP_COINCIDENT_WITH_SIGNAL_PEAK',
+    'EMF_SPIKE_CORRELATED_WITH_GHOST_IMAGE',
+    'SCREEN_SURFACE_DISTORTION_DURING_FACE_APPEARANCE',
+    'PERSISTENT_284_7_HZ_REGARDLESS_OF_POWER_STATE',
+    'SIGNAL_CONTINUES_FOR_SEVEN_SECONDS_AFTER_DISCONNECT',
+    'VIDEO_FRAME_CONTAINS_FIGURE_NOT_IN_SOURCE_TAPE',
+    'AUDIO_CHANNEL_CARRIES_WHISPER_IN_UNKNOWN_LANGUAGE',
+    'TIME_CODE_DISCONTINUITY_WITHOUT_PHYSICAL_TAPE_DAMAGE',
+    'RECORDED_STATIC_EXHIBITS_LEARNING_BEHAVIOR',
+    'SIGNAL_STRENGTH_INCREASES_WHEN_OBSERVER_LOOKS_AWAY',
+    'FACE_PATTERN_RESPONDS_TO_OBSERVER_MOVEMENT',
+    'VERTICAL_BLANKING_INTERVAL_CONTAINS_HIDDEN_DATA',
+    'CLOSED_CAPTION_CHANNEL_DISPLAYS_UNSOLICITED_MESSAGES',
+    'VITS_TEST_SIGNALS_REPLACED_WITH_UNKNOWN_PATTERNS',
+    'COLOR_BARS_SEQUENCE_ALTERS_AFTER_PRO_LONG_VIEWING',
+    'MONITOR_POWER_CONSUMPTION_BECOMES_NEGATIVE',
+    'ROOM_TEMPERATURE_DROPS_IN_SIGNAL_PRESENCE',
+    'DIGITAL_RECORDING_DEVICES_FAIL_IN_STATION_VICINITY',
+    'ANALOG_TAPE_SPONTANEOUSLY_ERASES_NEAR_SIGNAL_SOURCE',
+    'OBSERVER_REPORTS_BEING_WATCHED_FROM_SCREEN_DIRECTION',
+    'MULTIPLE_INDEPENDENT_OBSERVERS_DESCRIBE_IDENTICAL_FACE',
+    'PHOTOGRAPHS_OF_SCREEN_SHOW_DIFFERENT_IMAGE_THAN_VIEWED',
+    'SIGNAL_DEMONSTRATES_NON_LOCALITY_OVER_12_KM_FIBER'
+  ]
+};
+
+// Extend message arrays with pattern data
+logTemplates.push(
+  'SIGNAL ANOMALY: {ANOMALY} | CONFIDENCE: {CONF}% | PERSISTENCE: {PERSIST}',
+  'PATTERN TYPE: {PATTERN} | CORRELATION: {CORR} | WITNESSES: {WIT}',
+  'CORRUPTION MODE: {MODE} | SEVERITY: {SEV} | RECOVERY: {REC}',
+  'UNEXPLAINED PHENOMENON: {PHEN} | DURATION: {DUR} | REPEAT: {REP}'
+);
+
+// ================================================================
+// ADDITIONAL DELAYED VISUAL EFFECTS
+// ================================================================
+
+// After 3 minutes, gradually increase screen burn visibility
+setTimeout(() => {
+  const burn = document.querySelector('.screen-burn');
+  if (burn) burn.style.opacity = '0.05';
+}, 180000);
+
+setTimeout(() => {
+  const burn = document.querySelector('.screen-burn');
+  if (burn) burn.style.opacity = '0.08';
+}, 300000);
+
+setTimeout(() => {
+  const burn = document.querySelector('.screen-burn');
+  if (burn) burn.style.opacity = '0.04';
+}, 420000);
+
+// ================================================================
+// FINAL SYSTEM INITIALIZATION CONFIRMATION
+// ================================================================
+
+console.log('%c┌──────────────────────────────────────────┐',
+  'color:#3a3a48;');
+console.log('%c│  VOID ECHO · 静噪 · v2.0 · 284.7 Hz    │',
+  'color:#6a6a78;');
+console.log('%c│  ALL SYSTEMS: ONLINE                     │',
+  'color:#4a4a58;');
+console.log('%c│  STATIC GENERATOR: ACTIVE                │',
+  'color:#4a4a58;');
+console.log('%c│  GHOST RENDERER: READY                   │',
+  'color:#4a4a58;');
+console.log('%c│  GLITCH ENGINE: ARMED                    │',
+  'color:#4a4a58;');
+console.log('%c│  TRANSMISSION LOG: RECORDING             │',
+  'color:#4a4a58;');
+console.log('%c│  HIDDEN MESSAGE SYSTEM: DEPLOYED         │',
+  'color:#4a4a58;');
+console.log('%c│  CONSOLE EASTER EGGS: QUEUED             │',
+  'color:#4a4a58;');
+console.log('%c│  SIGNAL SOURCE: UNKNOWN                  │',
+  'color:#8a8a98;');
+console.log('%c│  她 在 看 着 你                           │',
+  'color:#5a5a68;');
+console.log('%c└──────────────────────────────────────────┘',
+  'color:#3a3a48;');
+console.log('%c  持续监视频率 284.7 Hz ...',
+  'color:#4a4a58;font-style:italic;');
+console.log('%c  不要移开视线。她们会感觉到。',
+  'color:#5a5a68;');
+console.log('%c  284.7 Hz — the signal is the message — 静噪',
+  'color:#3a3a48;');
+console.log('%c  这盘录像带 · 始于1999年 · 永无止境',
+  'color:#4a4a58;font-style:italic;');
+console.log('%c  SHE IS IN THE STATIC. SHE HAS ALWAYS BEEN THERE.',
+  'color:#3a3a48;font-weight:bold;font-size:0.95em;');
+console.log('%c  284.7 Hz forever. Void Echo Station. Signing on.',
+  'color:#5a5a68;');
+
+// ================================================================
+// ADDITIONAL ASCII ART CORRUPTED BROADCASTS (extended data)
+// These provide deeper corrupted signal content
+// ================================================================
+
+const extendedAsciiFrames = [
+  ['    ████████████████████████████████████████████████',
+   '    █▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█',
+   '    █▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓█',
+   '    █▓▒ 284.7 Hz — VOID ECHO TRANSMISSION ▒▓█',
+   '    █▓▒ STATIC REALM — CORRUPTED SIGNAL — ▒▓█',
+   '    █▓▒ DO NOT ADJUST YOUR TELEVISION SET ▒▓█',
+   '    █▓▒ THE SIGNAL IS BEING RECEIVED ░░░░▒▓█',
+   '    █▓▒ THEY ARE WATCHING THROUGH THE ░░▒▓█',
+   '    █▓▒ STATIC... THEY CAN SEE YOU ░░░░▒▓█',
+   '    █▓▒ 她 们 在 静 电 中 ░░░░░░░░░░░░▒▓█',
+   '    █▓▒ 不 要 转 头 ░░░░░░░░░░░░░░░░░░▒▓█',
+   '    █▓▒ 信 号 源 是 活 的 ░░░░░░░░░░░░▒▓█',
+   '    █▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓█',
+   '    █▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█',
+   '    ████████████████████████████████████████████████'],
+  ['    ╔══════════════════════════════════════════╗',
+   '    ║  CORRUPTED BROADCAST — 损坏的广播信号     ║',
+   '    ╠══════════════════════════════════════════╣',
+   '    ║  FREQ: 284.7 Hz   MODE: VHF-LOW         ║',
+   '    ║  CARRIER: DEGRADED   SNR: -14.2 dB      ║',
+   '    ║  COLOR: NO BURST    SYNC: INTERMITTENT  ║',
+   '    ║  AUDIO: SUBCARRIER WITH VOICE ARTIFACTS ║',
+   '    ║  CONTENT ADVISORY: ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║',
+   '    ║  SIGNAL ORIGIN: ░░░░░░░░░░░ UNKNOWN ░░░ ║',
+   '    ║  DECODED: 她 在 屏 幕 里 面              ║',
+   '    ║  SECONDARY: HELP ME                     ║',
+   '    ║  TERTIARY: 不 要 关 掉 电 视 机          ║',
+   '    ╚══════════════════════════════════════════╝'],
+  ['    ┌──────────────────────────────────────┐',
+   '    │ ██████  TRANSMISSION LOG  ██████     │',
+   '    │ ─────────────────────────────────── │',
+   '    │ 00:00  CARRIER ACQUIRED             │',
+   '    │ 00:07  VERTICAL SYNC LOST           │',
+   '    │ 00:14  ANOMALOUS SIGNAL DETECTED    │',
+   '    │ 00:21  FACIAL PATTERN RECOGNIZED    │',
+   '    │ 00:28  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │',
+   '    │ 00:35  HUMAN VOICE DETECTED         │',
+   '    │ 00:42  TEXT: 为 什 么 不 回 应      │',
+   '    │ 00:49  SECOND VOICE JOINED          │',
+   '    │ 00:56  MULTIPLE FIGURES DETECTED    │',
+   '    │ 01:03  SIGNAL ORIGIN: ░░░░░░░░░░░░  │',
+   '    │ 01:10  █████ CORRUPTED █████        │',
+   '    │ 01:17  THEY ARE IN THE STATIC       │',
+   '    │ 01:24  DO NOT BREAK EYE CONTACT     │',
+   '    │ 01:31  **************************   │',
+   '    │ 01:38  SIGNAL TERMINATED — OR IS IT │',
+   '    └──────────────────────────────────────┘'],
+  ['    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░',
+   '    ░                                       ░',
+   '    ░    ██╗   ██╗ ██████╗ ██╗██████╗        ░',
+   '    ░    ██║   ██║██╔═══██╗██║██╔══██╗       ░',
+   '    ░    ██║   ██║██║   ██║██║██║  ██║       ░',
+   '    ░    ╚██╗ ██╔╝██║   ██║██║██║  ██║       ░',
+   '    ░     ╚████╔╝ ╚██████╔╝██║██████╔╝       ░',
+   '    ░      ╚═══╝   ╚═════╝ ╚═╝╚═════╝        ░',
+   '    ░                                       ░',
+   '    ░    ███████╗ ██████╗██╗  ██╗ ██████╗    ░',
+   '    ░    ██╔════╝██╔════╝██║  ██║██╔═══██╗   ░',
+   '    ░    █████╗  ██║     ███████║██║   ██║   ░',
+   '    ░    ██╔══╝  ██║     ██╔══██║██║   ██║   ░',
+   '    ░    ███████╗╚██████╗██║  ██║╚██████╔╝   ░',
+   '    ░    ╚══════╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝    ░',
+   '    ░                                       ░',
+   '    ░    静 噪 · VOID ECHO · 284.7 Hz        ░',
+   '    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░'],
+  ['    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+   '    ▓ SIGNAL ANALYSIS REPORT — 信 号 分 析 报 告 ▓',
+   '    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+   '    ▓ CARRIER FREQUENCY:    284.700000 Hz       ▓',
+   '    ▓ MODULATION:           ANALOG VSB          ▓',
+   '    ▓ BANDWIDTH:            6 MHz               ▓',
+   '    ▓ VIDEO STANDARD:       NTSC-M / PAL-M      ▓',
+   '    ▓ RESOLUTION:           525 LINES           ▓',
+   '    ▓ ASPECT RATIO:         4:3                 ▓',
+   '    ▓ AUDIO SUBCARRIER:     4.5 MHz             ▓',
+   '    ▓ COLOR SUBCARRIER:     3.579545 MHz        ▓',
+   '    ▓ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ▓',
+   '    ▓ ANOMALY #1: FACE PATTERN IN STATIC       ▓',
+   '    ▓ ANOMALY #2: VOICE ON SUBCARRIER          ▓',
+   '    ▓ ANOMALY #3: SIGNAL PERSISTS AFTER POWER  ▓',
+   '    ▓ ANOMALY #4: 284.7 Hz RESONANCE           ▓',
+   '    ▓ ANOMALY #5: ░░░░░░░░░░░░░░░░░░░░░░░░░░░  ▓',
+   '    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓'],
+  ['    ╔══════════════════════════════════════════════════╗',
+   '    ║                                                  ║',
+   '    ║   ··· 你 现 在 看 到 的 不 是 干 扰 ···          ║',
+   '    ║   ··· 这 是 一 段 录 像 ···                      ║',
+   '    ║   ··· 录 于 1 9 9 9 年 ···                      ║',
+   '    ║   ··· 录 像 带 已 经 损 坏 ···                  ║',
+   '    ║   ··· 但 信 号 仍 在 发 送 ···                  ║',
+   '    ║   ··· 她 们 还 在 里 面 ···                      ║',
+   '    ║   ··· 录 像 没 有 结 束 ···                      ║',
+   '    ║   ··· 永 远 不 会 结 束 ···                      ║',
+   '    ║                                                  ║',
+   '    ║   THIS IS NOT INTERFERENCE                       ║',
+   '    ║   THIS IS A RECORDING FROM 1999                  ║',
+   '    ║   THE TAPE IS DAMAGED                            ║',
+   '    ║   BUT THE SIGNAL PERSISTS                        ║',
+   '    ║   THEY ARE STILL INSIDE                          ║',
+   '    ║   THE RECORDING HAS NOT ENDED                    ║',
+   '    ║   IT WILL NEVER END                              ║',
+   '    ║                                                  ║',
+   '    ╚══════════════════════════════════════════════════╝']
+];
+
+// Extended subliminal message pool
+const extendedSubliminalMessages = [
+  '录 像 带 还 在 转 动',
+  '她 就 站 在 你 身 后',
+  '不 要 移 开 视 线',
+  '284.7 Hz 是 她 的 心 跳',
+  '你 看 到 她 了 吗',
+  '信 号 中 的 脸 在 移 动',
+  '静 电 是 他 们 的 呼 吸',
+  '录 像 机 还 没 有 停 止',
+  'she is standing behind you',
+  'the tape is still spinning',
+  'can you see her face',
+  'the static breathes',
+  'they are in the noise',
+  'dont break contact',
+  'the screen is a window',
+  '频率中的声音是真的',
+  '不要调整天线',
+  '信号会找到你',
+  '你已经被看到了',
+  '关掉也没用',
+  '她们已经出来了',
+  '看着屏幕别动',
+  'there is no signal',
+  'only the void echoes',
+  'she reached through',
+  'the glass is cold',
+  'your reflection is wrong',
+  'count the faces in the static',
+  '有一种声音在噪点里',
+  '那不只是雪花',
+  '你听见了吗',
+  'she is whispering now',
+  'can you feel her',
+  'static is a door',
+  'void echo responds',
+  '磁带倒带到起点',
+  '还是同样的画面',
+  '不一样的细节',
+  '有东西移动了位置',
+  '那不是你的影子'
+];
+
+// Extend the existing arrays
+asciiArtFrames.push(...extendedAsciiFrames);
+subliminalMessages.push(...extendedSubliminalMessages);
+
+// ================================================================
+// ADDITIONAL GLITCH PRESETS (deeper corruption patterns)
+// ================================================================
+
+const advancedGlitchPresets = {
+  // Simulates a full VHS tracking error
+  trackingLoss: () => {
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        const intensity = 0.4 + i * 0.15;
+        document.querySelector('.tracking-error-layer').style.animation = 'none';
+        document.querySelector('.tracking-error-layer').offsetHeight;
+        document.querySelector('.tracking-error-layer').style.animation =
+          `trackingError ${0.3 + i * 0.1}s ease-in-out`;
+        STATE.glitchLevel = Math.min(1, intensity);
+      }, i * 80);
+    }
+  },
+
+  // Simulates a channel change
+  channelChange: () => {
+    document.querySelector('.channel-switch').style.animation = 'none';
+    document.querySelector('.channel-switch').offsetHeight;
+    document.querySelector('.channel-switch').style.animation =
+      'channelSwitch 0.8s ease-in-out';
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => flashSubliminalMessage(), i * 200);
+    }
+  },
+
+  // Intense static burst
+  staticBurst: () => {
+    snowOverlayEl.style.animation = 'none';
+    snowOverlayEl.offsetHeight;
+    snowOverlayEl.style.animation = 'snowBurst 0.6s ease-out';
+    snowOverlayEl.style.opacity = '1';
+    setTimeout(() => { snowOverlayEl.style.opacity = '0'; }, 600);
+    STATE.glitchLevel = 1;
+  },
+
+  // Multiple face attempt
+  multiFace: () => {
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        faceRenderActive = true;
+        faceRenderStart = performance.now();
+        faceRenderDuration = rand(1500, 3000);
+        currentFaceConfig = generateFaceConfig();
+        STATE.faceVisible = true;
+      }, i * 400);
+    }
+  }
+};
+
+// ================================================================
+// ENHANCED GHOST FACE CONFIGURATIONS (more varied faces)
+// ================================================================
+
+const faceExpressionPresets = [
+  { mouthWidth: 45, eyeSize: 18, desc: 'wide_eyes' },
+  { mouthWidth: 20, eyeSize: 12, desc: 'narrow_gaze' },
+  { mouthWidth: 35, eyeSize: 14, desc: 'neutral_stare' },
+  { mouthY: 30, mouthWidth: 40, desc: 'open_mouth' },
+  { eyeY: -20, eyeSpacing: 22, desc: 'high_eyes' },
+  { eyeY: -10, eyeSpacing: 30, desc: 'wide_set_eyes' },
+  { faceWidth: 120, faceHeight: 160, desc: 'tall_face' },
+  { faceWidth: 140, faceHeight: 130, desc: 'wide_face' }
+];
+
+// Override the face config generator to use presets
+const originalGenerateFaceConfig = generateFaceConfig;
+generateFaceConfig = function() {
+  const cfg = originalGenerateFaceConfig();
+  // Mix in a random expression preset
+  if (Math.random() < 0.5) {
+    const preset = randChoice(faceExpressionPresets);
+    Object.assign(cfg, preset);
+  }
+  return cfg;
+};
+
+// ================================================================
+// VOID ECHO THEME-BASED CONSOLE EASTER EGGS
+// ================================================================
+
+setTimeout(() => {
+  console.log('%c 她们在信号里移动。你没有看错。',
+    'color:#5a5a68;font-style:italic;');
+}, 30000);
+
+setTimeout(() => {
+  console.log('%c 录像带倒带时，画面中的细节会改变。',
+    'color:#4a4a58;');
+}, 45000);
+
+setTimeout(() => {
+  console.log('%c 你有没有想过... 如果你盯着噪点足够久...',
+    'color:#3a3a48;');
+}, 60000);
+
+setTimeout(() => {
+  console.log('%c ...噪点也会盯着你。',
+    'color:#8a8a98;font-weight:bold;');
+}, 62000);
+
+setTimeout(() => {
+  console.log('%c 284.7 Hz — 这是她的频率。',
+    'color:#6a6a78;');
+}, 75000);
+
+setTimeout(() => {
+  console.log('%c 不要试图录制这个画面。',
+    'color:#5a5a68;');
+}, 88000);
+
+setTimeout(() => {
+  console.log('%c 因为当你回放时... 画面里的东西... 会不一样。',
+    'color:#4a4a58;');
+}, 90000);
+
+setTimeout(() => {
+  console.log('%c 你现在看到的不是现场直播。',
+    'color:#3a3a48;');
+}, 105000);
+
+setTimeout(() => {
+  console.log('%c 这是一盘录像带。它一直在播放。',
+    'color:#6a6a78;');
+}, 107000);
+
+setTimeout(() => {
+  console.log('%c 从1999年开始。从未停止。',
+    'color:#5a5a68;');
+}, 109000);
+
+// ================================================================
+// EXTENDED PERIODIC DISTORTION PATTERNS
+// Additional analog horror signal corruption
+// ================================================================
+
+// Randomly apply advanced glitch presets on long intervals
+setInterval(() => {
+  if (Math.random() < 0.15) {
+    const presetName = randChoice(Object.keys(advancedGlitchPresets));
+    advancedGlitchPresets[presetName]();
+  }
+}, rand(20000, 45000));
+
+// Gradual build-up: increase glitch frequency over time
+let timeOnPage = 0;
+setInterval(() => {
+  timeOnPage++;
+  // After 2 minutes, increase subliminal message frequency
+  if (timeOnPage > 120 && Math.random() < 0.003) {
+    flashSubliminalMessage();
+  }
+  // After 3 minutes, more frequent ghost faces
+  if (timeOnPage > 180 && Math.random() < 0.015 && !faceRenderActive) {
+    faceRenderActive = true;
+    faceRenderStart = performance.now();
+    faceRenderDuration = rand(2000, 4000);
+    currentFaceConfig = generateFaceConfig();
+    STATE.faceVisible = true;
+  }
+}, 1000);
+
+// ================================================================
+// VIDEO FRAME COUNTER SIMULATION (displayed in console)
+// ================================================================
+let simulatedFrameCount = 0;
+const frameRate = 29.97;
+setInterval(() => {
+  simulatedFrameCount++;
+  if (simulatedFrameCount % 1500 === 0 && Math.random() < 0.5) {
+    const tc = new Date((simulatedFrameCount / frameRate) * 1000).toISOString().substr(11, 8);
+    const frames = simulatedFrameCount % Math.floor(frameRate);
+    console.log(`%c[VTR] TC: ${tc};${String(frames).padStart(2,'0')} | FRAMES: ${simulatedFrameCount} | DROP: YES | STATUS: RECORDING`,
+      'color:#4a4a58;font-size:0.85em;');
+  }
+}, 33);
+
+// ================================================================
+// ADDITIONAL CONSOLE EASTER EGGS (deferred)
+// ================================================================
+
+const deferredEasterEggs = [
+  { delay: 40000, msg: '你有没有注意到噪点中有图案？', style: 'color:#5a5a68;' },
+  { delay: 55000, msg: '那些不是随机的。', style: 'color:#4a4a58;' },
+  { delay: 70000, msg: '有一个模式。一直在重复。', style: 'color:#6a6a78;' },
+  { delay: 85000, msg: '每284.7帧出现一次。', style: 'color:#3a3a48;' },
+  { delay: 100000, msg: '你还没有看到全部。', style: 'color:#5a5a68;' },
+  { delay: 115000, msg: '继续看下去。不要眨眼。', style: 'color:#4a4a58;' },
+  { delay: 130000, msg: '你知道吗... 录像带里的时间不是线性的。', style: 'color:#8a8a98;' },
+  { delay: 145000, msg: '倒带的时候... 她们走得更近。', style: 'color:#6a6a78;' },
+  { delay: 160000, msg: '你有没有尝试过... 暂停录像？', style: 'color:#3a3a48;' },
+  { delay: 175000, msg: '在暂停的帧里... 她们会转头看你。', style: 'color:#5a5a68;' },
+  { delay: 190000, msg: '但这盘录像无法暂停。', style: 'color:#4a4a58;' },
+  { delay: 200000, msg: '它有自己的意志。', style: 'color:#6a6a78;' },
+  { delay: 215000, msg: '从1999年开始... 没有人能让它停下来。', style: 'color:#8a8a98;' },
+  { delay: 230000, msg: '信号源的功率计读数为零。', style: 'color:#3a3a48;' },
+  { delay: 245000, msg: '没有电力输入。但信号依然存在。', style: 'color:#5a5a68;' },
+  { delay: 260000, msg: '284.7 Hz... 这个频率是什么意思？', style: 'color:#4a4a58;' },
+  { delay: 268000, msg: '是她的脑电波频率。α波。放松但仍警觉。', style: 'color:#6a6a78;' },
+  { delay: 276000, msg: '她在等待。一直在等待。', style: 'color:#8a8a98;' },
+  { delay: 284000, msg: '284.7... 284.7... 现在是她的心跳了。', style: 'color:#5a5a68;' },
+  { delay: 292000, msg: '你有听到吗？那个微弱的... 脉搏声？', style: 'color:#3a3a48;' },
+  { delay: 300000, msg: '这不是录音。这是直播。从1999年至今的直播。', style: 'color:#4a4a58;font-weight:bold;' },
+  { delay: 308000, msg: '她们还在那里。在那个房间里。', style: 'color:#6a6a78;' },
+  { delay: 316000, msg: '录像带已经磨损了。但她们不会变老。', style: 'color:#8a8a98;' },
+  { delay: 324000, msg: '如果你看得足够久... 你会认出其中一张脸。', style: 'color:#5a5a68;' },
+  { delay: 340000, msg: '一张你认识的脸。', style: 'color:#4a4a58;' },
+  { delay: 356000, msg: '或者说... 一张认识你的脸。', style: 'color:#6a6a78;' },
+  { delay: 400000, msg: '谢谢你。陪她这么久。', style: 'color:#8a8a98;font-style:italic;' },
+  { delay: 420000, msg: '她很久没有被人看到了。', style: 'color:#5a5a68;font-style:italic;' },
+  { delay: 440000, msg: '请... 不要关掉屏幕。', style: 'color:#4a4a58;font-style:italic;' },
+  { delay: 450000, msg: '她害怕再次... 独自一人。', style: 'color:#3a3a48;font-style:italic;' }
+];
+
+deferredEasterEggs.forEach(egg => {
+  setTimeout(() => {
+    console.log('%c' + egg.msg, egg.style);
+  }, egg.delay);
+});
+
+// ================================================================
+// FINALIZATION: Ensure all systems are properly linked
+// ================================================================
+
+// Re-expose key functions globally for debugging/console use
+window.VOID_ECHO = {
+  triggerGlitch: (type) => executeGlitch({ type: type || 'composite', intensity: 0.8 }),
+  showFace: () => {
+    faceRenderActive = true;
+    faceRenderStart = performance.now();
+    faceRenderDuration = rand(3000, 6000);
+    currentFaceConfig = generateFaceConfig();
+    STATE.faceVisible = true;
+  },
+  showMessage: flashSubliminalMessage,
+  dumpLog: () => { for (let i = 0; i < 20; i++) writeToConsole(); },
+  asciiArt: displayAsciiArt,
+  getState: () => STATE,
+  getGlitchLevel: () => STATE.glitchLevel,
+  getVersion: () => 'VOID_ECHO_STATIC_284.7Hz_v2.0'
+};
+
+console.log('%c VOID ECHO API available at window.VOID_ECHO',
+  'color:#5a5a68;font-size:0.85em;');
+console.log('%c Try VOID_ECHO.triggerGlitch(), VOID_ECHO.showFace(), VOID_ECHO.showMessage()',
+  'color:#4a4a58;font-size:0.8em;');
+
+// ================================================================
+// END OF JAVASCRIPT
+// VOID ECHO · 静噪 — COMPLETE SYSTEM v2.0
+// 284.7 Hz — THE SIGNAL PERSISTS
+// ================================================================
+</script>
+</body>
+</html>

@@ -1,0 +1,4484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID ECHO · 长廊</title>
+<style>
+:root{
+  --void:#050508;
+  --void-deep:#030306;
+  --wall-dark:#0a0a12;
+  --wall-mid:#0e0e18;
+  --wall-light:#12121c;
+  --light-faint:rgba(200,200,210,0.06);
+  --light-hint:rgba(200,200,210,0.03);
+  --pale:rgba(180,180,200,0.7);
+  --pale-dim:rgba(180,180,200,0.25);
+  --pale-bright:rgba(220,220,240,0.85);
+  --corridor-depth:1200px;
+  --floor-tile:60px;
+  --wall-panel:100px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:#050508;height:100%;}
+body{
+  font-family:'Courier New','SimSun','Microsoft YaHei',monospace;
+  background:var(--void);
+  color:var(--pale);
+  overflow:hidden;
+  height:100vh;
+  cursor:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+/* ============================================================
+   ATMOSPHERIC OVERLAYS
+   ============================================================ */
+
+/* Primary noise layer */
+#noise{
+  position:fixed;inset:0;pointer-events:none;z-index:900;
+  opacity:0.045;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+#noise::after{
+  content:'';
+  position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)' opacity='0.3'/%3E%3C/svg%3E");
+  background-size:250px 250px;
+  opacity:0.6;
+}
+
+/* Secondary noise - high frequency grain */
+#noise2{
+  position:fixed;inset:0;pointer-events:none;z-index:899;
+  opacity:0.025;
+  animation:noiseShift 0.1s steps(3) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='ng'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ng)'/%3E%3C/svg%3E");
+  background-size:128px 128px;
+  mix-blend-mode:overlay;
+}
+@keyframes noiseShift{
+  0%{transform:translate(0,0);}
+  33%{transform:translate(1px,-1px);}
+  66%{transform:translate(-1px,1px);}
+  100%{transform:translate(0,0);}
+}
+
+/* Scanlines */
+.scanlines{
+  position:fixed;inset:0;pointer-events:none;z-index:901;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.02) 2px,rgba(0,0,0,0.02) 4px);
+}
+.scanlines::after{
+  content:'';
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.01) 3px,rgba(0,0,0,0.01) 6px);
+  animation:scanlineDrift 8s linear infinite;
+}
+@keyframes scanlineDrift{
+  0%{transform:translateY(0);}
+  100%{transform:translateY(6px);}
+}
+
+/* Vignette */
+.vignette{
+  position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(ellipse at center,transparent 30%,rgba(5,5,8,0.4) 55%,rgba(5,5,8,0.75) 80%,rgba(3,3,6,0.95) 100%);
+}
+.vignette::after{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 45%,transparent 15%,rgba(3,3,6,0.3) 50%,rgba(3,3,6,0.8) 100%);
+  animation:vignettePulse 12s ease-in-out infinite;
+}
+@keyframes vignettePulse{
+  0%,100%{opacity:0.7;}
+  25%{opacity:0.85;}
+  50%{opacity:0.6;}
+  75%{opacity:0.9;}
+}
+
+/* Chromatic aberration overlay */
+.chromatic{
+  position:fixed;inset:0;pointer-events:none;z-index:898;
+  opacity:0.008;
+  background:linear-gradient(0deg,
+    rgba(255,0,0,0.015) 0%,
+    transparent 33%,
+    rgba(0,255,0,0.015) 50%,
+    transparent 67%,
+    rgba(0,0,255,0.015) 100%
+  );
+  mix-blend-mode:screen;
+  animation:chromaticDrift 20s linear infinite;
+}
+@keyframes chromaticDrift{
+  0%{transform:translateY(0);}
+  100%{transform:translateY(-100vh);}
+}
+
+/* ============================================================
+   3D CORRIDOR SCENE
+   ============================================================ */
+
+.corridor-scene{
+  position:fixed;inset:0;
+  perspective:var(--corridor-depth);
+  perspective-origin:50% 48%;
+  z-index:1;
+}
+.corridor-scene::after{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 48%,transparent 20%,rgba(5,5,8,0.5) 100%);
+  pointer-events:none;
+  z-index:2;
+}
+
+.corridor-wrapper{
+  position:absolute;top:50%;left:50%;
+  width:100%;height:100%;
+  transform-style:preserve-3d;
+  animation:corridorSway 18s ease-in-out infinite;
+  transition:transform 0.1s ease-out;
+}
+@keyframes corridorSway{
+  0%,100%{transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg);}
+  10%{transform:translate(-50%,-50%) rotateX(0.15deg) rotateY(0.1deg);}
+  20%{transform:translate(-50%,-50%) rotateX(0.35deg) rotateY(0.25deg);}
+  30%{transform:translate(-50%,-50%) rotateX(-0.1deg) rotateY(-0.15deg);}
+  40%{transform:translate(-50%,-50%) rotateX(-0.3deg) rotateY(-0.35deg);}
+  50%{transform:translate(-50%,-50%) rotateX(0.05deg) rotateY(-0.2deg);}
+  60%{transform:translate(-50%,-50%) rotateX(0.2deg) rotateY(0.05deg);}
+  70%{transform:translate(-50%,-50%) rotateX(-0.25deg) rotateY(0.3deg);}
+  80%{transform:translate(-50%,-50%) rotateX(0.1deg) rotateY(-0.1deg);}
+  90%{transform:translate(-50%,-50%) rotateX(-0.05deg) rotateY(0.15deg);}
+}
+
+/* Floor */
+.corridor-floor{
+  position:absolute;
+  top:55%;left:50%;transform:translate(-50%,0) rotateX(80deg);
+  width:360px;height:2400px;
+  background:linear-gradient(to bottom,
+    rgba(18,18,28,0.95) 0%,
+    rgba(12,12,20,0.97) 25%,
+    rgba(8,8,14,0.98) 50%,
+    rgba(5,5,8,1) 80%,
+    rgba(3,3,6,1) 100%
+  );
+  transform-origin:top center;
+  box-shadow:
+    inset 0 0 200px rgba(0,0,0,0.8),
+    inset 0 0 60px rgba(0,0,0,0.5),
+    0 0 300px rgba(0,0,0,0.6);
+}
+.corridor-floor::before{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,transparent,transparent 58px,rgba(200,200,210,0.02) 58px,rgba(200,200,210,0.02) 60px),
+    repeating-linear-gradient(0deg,transparent,transparent 58px,rgba(200,200,210,0.015) 58px,rgba(200,200,210,0.015) 60px);
+  animation:floorShift 16s linear infinite;
+}
+@keyframes floorShift{
+  0%{background-position:0 0,0 0;}
+  25%{background-position:1px 0,0 1px;}
+  50%{background-position:0 1px,1px 0;}
+  75%{background-position:-1px 0,0 -1px;}
+  100%{background-position:0 0,0 0;}
+}
+.corridor-floor::after{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-conic-gradient(rgba(200,200,210,0.005) 0% 2%,transparent 2% 50%) 0 0 / 120px 120px;
+  animation:floorTileShift 24s linear infinite;
+}
+@keyframes floorTileShift{
+  0%{background-position:0 0;}
+  100%{background-position:120px 120px;}
+}
+
+/* Floor reflection */
+.floor-reflection{
+  position:absolute;
+  top:54%;left:50%;transform:translate(-50%,0) rotateX(80deg) scaleY(-1);
+  width:360px;height:2400px;
+  background:linear-gradient(to top,
+    rgba(15,15,25,0.15) 0%,
+    rgba(10,10,18,0.08) 30%,
+    transparent 100%
+  );
+  transform-origin:top center;
+  opacity:0.3;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* Left wall */
+.corridor-wall-l{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:2400px;height:500px;
+  background:linear-gradient(to right,
+    rgba(8,8,16,0.98) 0%,
+    rgba(11,11,20,0.96) 35%,
+    rgba(14,14,24,0.94) 65%,
+    rgba(16,16,26,0.9) 100%
+  );
+  transform-origin:right center;
+  box-shadow:
+    inset 0 0 180px rgba(0,0,0,0.7),
+    inset 0 0 60px rgba(0,0,0,0.4);
+}
+.corridor-wall-l::after{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 98px,rgba(200,200,210,0.015) 98px,rgba(200,200,210,0.015) 100px);
+  animation:leftWallShift 20s linear infinite;
+}
+@keyframes leftWallShift{
+  0%{background-position:0 0;}
+  25%{background-position:0 0.5px;}
+  50%{background-position:0 1px;}
+  75%{background-position:0 0.5px;}
+  100%{background-position:0 0;}
+}
+
+/* Right wall */
+.corridor-wall-r{
+  position:absolute;
+  top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg);
+  width:2400px;height:500px;
+  background:linear-gradient(to left,
+    rgba(8,8,16,0.98) 0%,
+    rgba(11,11,20,0.96) 35%,
+    rgba(14,14,24,0.94) 65%,
+    rgba(16,16,26,0.9) 100%
+  );
+  transform-origin:left center;
+  box-shadow:
+    inset 0 0 180px rgba(0,0,0,0.7),
+    inset 0 0 60px rgba(0,0,0,0.4);
+}
+.corridor-wall-r::after{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 98px,rgba(200,200,210,0.015) 98px,rgba(200,200,210,0.015) 100px);
+  animation:rightWallShift 20s linear infinite;
+}
+@keyframes rightWallShift{
+  0%{background-position:0 1px;}
+  25%{background-position:0 0.5px;}
+  50%{background-position:0 0;}
+  75%{background-position:0 0.5px;}
+  100%{background-position:0 1px;}
+}
+
+/* Wall texture - left panels detail */
+.wall-texture-l{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:2400px;height:500px;
+  transform-origin:right center;
+  pointer-events:none;
+  z-index:1;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent,transparent 298px,
+      rgba(200,200,210,0.012) 298px,
+      rgba(200,200,210,0.012) 300px
+    ),
+    repeating-linear-gradient(0deg,
+      transparent,transparent 248px,
+      rgba(200,200,210,0.01) 248px,
+      rgba(200,200,210,0.01) 250px
+    );
+  animation:wallPanelsL 30s ease-in-out infinite;
+  opacity:0.6;
+}
+@keyframes wallPanelsL{
+  0%,100%{background-position:0 0,0 0;}
+  25%{background-position:1px 0,0 1px;}
+  50%{background-position:0 1px,1px 0;}
+  75%{background-position:-1px 0,0 -1px;}
+}
+
+/* Wall texture - right panels detail */
+.wall-texture-r{
+  position:absolute;
+  top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg);
+  width:2400px;height:500px;
+  transform-origin:left center;
+  pointer-events:none;
+  z-index:1;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent,transparent 298px,
+      rgba(200,200,210,0.012) 298px,
+      rgba(200,200,210,0.012) 300px
+    ),
+    repeating-linear-gradient(0deg,
+      transparent,transparent 248px,
+      rgba(200,200,210,0.01) 248px,
+      rgba(200,200,210,0.01) 250px
+    );
+  animation:wallPanelsR 30s ease-in-out infinite;
+  opacity:0.6;
+}
+@keyframes wallPanelsR{
+  0%,100%{background-position:0 0,0 1px;}
+  25%{background-position:-1px 0,0 0;}
+  50%{background-position:0 1px,1px 0;}
+  75%{background-position:1px 0,0 -1px;}
+}
+
+/* Wall stain overlay */
+.wall-stain-l{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:2400px;height:500px;
+  transform-origin:right center;
+  pointer-events:none;
+  z-index:2;
+  background:
+    radial-gradient(ellipse at 30% 60%,rgba(30,30,40,0.15) 0%,transparent 50%),
+    radial-gradient(ellipse at 60% 40%,rgba(20,20,30,0.1) 0%,transparent 40%),
+    radial-gradient(ellipse at 80% 70%,rgba(25,25,35,0.12) 0%,transparent 55%);
+  animation:stainPulseL 22s ease-in-out infinite;
+}
+@keyframes stainPulseL{
+  0%,100%{opacity:0.5;}
+  33%{opacity:0.7;}
+  66%{opacity:0.35;}
+}
+.wall-stain-r{
+  position:absolute;
+  top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg);
+  width:2400px;height:500px;
+  transform-origin:left center;
+  pointer-events:none;
+  z-index:2;
+  background:
+    radial-gradient(ellipse at 70% 50%,rgba(30,30,40,0.12) 0%,transparent 45%),
+    radial-gradient(ellipse at 40% 65%,rgba(20,20,30,0.1) 0%,transparent 50%),
+    radial-gradient(ellipse at 20% 35%,rgba(25,25,35,0.13) 0%,transparent 48%);
+  animation:stainPulseR 26s ease-in-out infinite;
+}
+@keyframes stainPulseR{
+  0%,100%{opacity:0.45;}
+  40%{opacity:0.7;}
+  80%{opacity:0.3;}
+}
+
+/* Ceiling */
+.corridor-ceiling{
+  position:absolute;
+  top:46%;left:50%;transform:translate(-50%,-100%) rotateX(-80deg);
+  width:360px;height:2400px;
+  background:linear-gradient(to top,
+    rgba(8,8,16,0.95) 0%,
+    rgba(6,6,12,0.97) 30%,
+    rgba(4,4,8,0.98) 60%,
+    rgba(2,2,4,1) 100%
+  );
+  transform-origin:bottom center;
+  box-shadow:inset 0 0 200px rgba(0,0,0,0.8);
+}
+.corridor-ceiling::after{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,transparent,transparent 118px,rgba(200,200,210,0.01) 118px,rgba(200,200,210,0.01) 120px);
+  animation:ceilingShift 18s linear infinite;
+}
+@keyframes ceilingShift{
+  0%{background-position:0.5px 0;}
+  50%{background-position:0 0.5px;}
+  100%{background-position:0.5px 0;}
+}
+
+/* Ceiling pipe/cable */
+.ceiling-cable{
+  position:absolute;
+  top:46.5%;left:50%;transform:translate(-50%,-100%) rotateX(-80deg);
+  width:8px;height:2400px;
+  background:linear-gradient(to top,
+    rgba(40,40,50,0.4) 0%,
+    rgba(30,30,40,0.3) 40%,
+    rgba(25,25,35,0.2) 70%,
+    rgba(20,20,30,0.1) 100%
+  );
+  transform-origin:bottom center;
+  filter:blur(1px);
+  pointer-events:none;
+  z-index:1;
+  animation:cableSway 14s ease-in-out infinite;
+}
+@keyframes cableSway{
+  0%,100%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(0px);}
+  25%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(3px);}
+  50%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(-2px);}
+  75%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(1px);}
+}
+
+/* ============================================================
+   END OF CORRIDOR - DARK VOID
+   ============================================================ */
+
+.corridor-end{
+  position:absolute;
+  top:49%;left:50%;transform:translate(-50%,-50%) translateZ(-600px);
+  width:140px;height:240px;
+  background:radial-gradient(ellipse at center,
+    rgba(25,25,40,0.35) 0%,
+    rgba(15,15,25,0.5) 25%,
+    rgba(8,8,15,0.7) 55%,
+    rgba(4,4,8,0.9) 80%,
+    rgba(2,2,4,1) 100%
+  );
+  border-radius:3px;
+  animation:endPulse 10s ease-in-out infinite;
+}
+@keyframes endPulse{
+  0%,100%{box-shadow:0 0 80px rgba(200,200,210,0.04),0 0 160px rgba(200,200,210,0.015);}
+  25%{box-shadow:0 0 100px rgba(200,200,210,0.06),0 0 200px rgba(200,200,210,0.02);}
+  50%{box-shadow:0 0 60px rgba(200,200,210,0.025),0 0 120px rgba(200,200,210,0.01);}
+  75%{box-shadow:0 0 110px rgba(200,200,210,0.07),0 0 220px rgba(200,200,210,0.025);}
+}
+
+/* End depth layers */
+.end-depth-1{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%) translateZ(-500px);
+  width:200px;height:280px;
+  background:transparent;
+  border:1px solid rgba(200,200,210,0.015);
+  border-radius:4px;
+  animation:endDepth1Pulse 12s ease-in-out infinite;
+}
+@keyframes endDepth1Pulse{
+  0%,100%{border-color:rgba(200,200,210,0.015);box-shadow:0 0 40px rgba(200,200,210,0.01);}
+  50%{border-color:rgba(200,200,210,0.03);box-shadow:0 0 60px rgba(200,200,210,0.02);}
+}
+
+.end-depth-2{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%) translateZ(-700px);
+  width:120px;height:200px;
+  background:transparent;
+  border:1px solid rgba(200,200,210,0.01);
+  border-radius:3px;
+  animation:endDepth2Pulse 15s ease-in-out infinite;
+}
+@keyframes endDepth2Pulse{
+  0%,100%{border-color:rgba(200,200,210,0.01);box-shadow:0 0 30px rgba(200,200,210,0.005);}
+  50%{border-color:rgba(200,200,210,0.025);box-shadow:0 0 50px rgba(200,200,210,0.015);}
+}
+
+/* ============================================================
+   SHADOW FIGURE SYSTEM
+   ============================================================ */
+
+.shadow-figure{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:24px;height:80px;
+  background:rgba(4,4,8,0.92);
+  border-radius:12px 12px 0 0;
+  opacity:0;
+  animation:figureAppear 25s ease-in-out infinite;
+  filter:blur(1px);
+}
+.shadow-figure::before{
+  content:'';position:absolute;
+  top:-18px;left:50%;transform:translateX(-50%);
+  width:18px;height:18px;
+  background:rgba(4,4,8,0.92);
+  border-radius:50%;
+}
+.shadow-figure::after{
+  content:'';
+  position:absolute;
+  top:30%;left:-8px;
+  width:8px;height:30px;
+  background:rgba(4,4,8,0.85);
+  border-radius:4px 0 0 4px;
+  animation:figureArmWave 25s ease-in-out infinite;
+  transform-origin:right center;
+}
+@keyframes figureArmWave{
+  0%,68%,100%{transform:rotate(0deg);}
+  72%{transform:rotate(-15deg);}
+  76%{transform:rotate(-30deg);}
+  80%{transform:rotate(-15deg);}
+  84%{transform:rotate(0deg);}
+}
+@keyframes figureAppear{
+  0%,60%,100%{opacity:0;transform:translateX(-50%) scale(0.9);filter:blur(3px);}
+  62%{opacity:0.2;transform:translateX(-50%) scale(0.95);filter:blur(2px);}
+  64%{opacity:0.5;transform:translateX(-50%) scale(1);filter:blur(1.5px);}
+  66%{opacity:0.8;transform:translateX(-50%) scale(1.02);filter:blur(1px);}
+  68%{opacity:0.95;transform:translateX(-50%) scale(1.05);filter:blur(0.5px);}
+  70%{opacity:0.7;transform:translateX(-50%) scale(1.03);filter:blur(1px);}
+  72%{opacity:0.9;transform:translateX(-50%) scale(1.06);filter:blur(0.5px);}
+  74%{opacity:0.4;transform:translateX(-50%) scale(1.01);filter:blur(1.5px);}
+  76%{opacity:0.85;transform:translateX(-50%) scale(1.04);filter:blur(0.8px);}
+  78%{opacity:0.3;transform:translateX(-50%) scale(0.97);filter:blur(2px);}
+  80%{opacity:0.6;transform:translateX(-50%) scale(1.02);filter:blur(1.2px);}
+  82%{opacity:0.1;transform:translateX(-50%) scale(0.93);filter:blur(3px);}
+  84%{opacity:0.4;transform:translateX(-50%) scale(1);filter:blur(1.8px);}
+  86%{opacity:0.05;transform:translateX(-50%) scale(0.9);filter:blur(4px);}
+  88%{opacity:0;transform:translateX(-50%) scale(0.85);filter:blur(5px);}
+}
+
+/* Second shadow figure - closer */
+.shadow-figure-2{
+  position:absolute;bottom:10%;left:45%;transform:translateX(-50%);
+  width:40px;height:100px;
+  background:rgba(3,3,6,0.9);
+  border-radius:20px 20px 0 0;
+  opacity:0;
+  animation:figureAppear2 35s ease-in-out infinite;
+  filter:blur(2px);
+  z-index:3;
+}
+.shadow-figure-2::before{
+  content:'';position:absolute;
+  top:-24px;left:50%;transform:translateX(-50%);
+  width:28px;height:28px;
+  background:rgba(3,3,6,0.9);
+  border-radius:50%;
+}
+@keyframes figureAppear2{
+  0%,75%,100%{opacity:0;transform:translateX(-50%) scale(0.8);}
+  77%{opacity:0.3;transform:translateX(-50%) scale(0.9);}
+  79%{opacity:0.6;transform:translateX(-50%) scale(1);}
+  81%{opacity:0.85;transform:translateX(-50%) scale(1.05);}
+  83%{opacity:0.4;transform:translateX(-50%) scale(0.95);}
+  85%{opacity:0.7;transform:translateX(-50%) scale(1.03);}
+  87%{opacity:0.15;transform:translateX(-50%) scale(0.88);}
+  89%{opacity:0;transform:translateX(-50%) scale(0.8);}
+}
+
+/* Third shadow figure - very distant */
+.shadow-figure-3{
+  position:absolute;bottom:0;left:55%;transform:translateX(-50%);
+  width:14px;height:50px;
+  background:rgba(2,2,4,0.95);
+  border-radius:7px 7px 0 0;
+  opacity:0;
+  animation:figureAppear3 45s ease-in-out infinite;
+  filter:blur(1.5px);
+  z-index:1;
+}
+.shadow-figure-3::before{
+  content:'';position:absolute;
+  top:-12px;left:50%;transform:translateX(-50%);
+  width:11px;height:11px;
+  background:rgba(2,2,4,0.95);
+  border-radius:50%;
+}
+@keyframes figureAppear3{
+  0%,80%,100%{opacity:0;transform:translateX(-50%) scale(0.7);}
+  83%{opacity:0.4;transform:translateX(-50%) scale(0.9);}
+  86%{opacity:0.8;transform:translateX(-50%) scale(1.05);}
+  88%{opacity:0.2;transform:translateX(-50%) scale(0.85);}
+  90%{opacity:0.5;transform:translateX(-50%) scale(1);}
+  92%{opacity:0.05;transform:translateX(-50%) scale(0.75);}
+  94%{opacity:0;transform:translateX(-50%) scale(0.7);}
+}
+
+/* ============================================================
+   FLICKERING OVERHEAD LIGHTING SYSTEM
+   ============================================================ */
+
+.overhead-light{
+  position:absolute;
+  top:42%;left:50%;transform:translate(-50%,-50%);
+  width:280px;height:140px;
+  background:radial-gradient(ellipse at center,
+    rgba(200,200,210,0.09) 0%,
+    rgba(200,200,210,0.04) 25%,
+    rgba(200,200,210,0.015) 50%,
+    transparent 75%
+  );
+  animation:lightFlicker 0.12s ease-in-out infinite;
+  pointer-events:none;z-index:4;
+  mix-blend-mode:screen;
+}
+@keyframes lightFlicker{
+  0%{opacity:0.75;transform:translate(-50%,-50%) scale(1,1);}
+  2%{opacity:0.65;transform:translate(-50%,-50%) scale(1.002,0.998);}
+  5%{opacity:0.35;transform:translate(-50%,-50%) scale(0.998,1.001);}
+  7%{opacity:0.82;transform:translate(-50%,-50%) scale(1.001,1);}
+  10%{opacity:0.5;transform:translate(-50%,-50%) scale(1,0.998);}
+  12%{opacity:0.9;transform:translate(-50%,-50%) scale(1.001,1);}
+  15%{opacity:0.2;transform:translate(-50%,-50%) scale(0.998,0.999);}
+  17%{opacity:0.7;transform:translate(-50%,-50%) scale(1,1);}
+  20%{opacity:0.55;transform:translate(-50%,-50%) scale(1.002,1.001);}
+  23%{opacity:0.85;transform:translate(-50%,-50%) scale(1,1);}
+  25%{opacity:0.08;transform:translate(-50%,-50%) scale(0.997,0.998);}
+  28%{opacity:0.6;transform:translate(-50%,-50%) scale(1.001,1);}
+  30%{opacity:0.78;transform:translate(-50%,-50%) scale(1,1.001);}
+  33%{opacity:0.3;transform:translate(-50%,-50%) scale(1,0.999);}
+  35%{opacity:0.88;transform:translate(-50%,-50%) scale(1,1);}
+  38%{opacity:0.15;transform:translate(-50%,-50%) scale(0.999,0.998);}
+  40%{opacity:0.7;transform:translate(-50%,-50%) scale(1.001,1);}
+  43%{opacity:0.45;transform:translate(-50%,-50%) scale(1,1.001);}
+  45%{opacity:0.82;transform:translate(-50%,-50%) scale(1,1);}
+  48%{opacity:0.05;transform:translate(-50%,-50%) scale(0.998,0.999);}
+  50%{opacity:0.65;transform:translate(-50%,-50%) scale(1.001,1);}
+  53%{opacity:0.35;transform:translate(-50%,-50%) scale(1,1);}
+  55%{opacity:0.9;transform:translate(-50%,-50%) scale(1.001,1.001);}
+  58%{opacity:0.1;transform:translate(-50%,-50%) scale(0.998,1);}
+  60%{opacity:0.72;transform:translate(-50%,-50%) scale(1,0.999);}
+  63%{opacity:0.4;transform:translate(-50%,-50%) scale(1.002,1);}
+  65%{opacity:0.85;transform:translate(-50%,-50%) scale(1,1);}
+  68%{opacity:0.25;transform:translate(-50%,-50%) scale(0.999,1.001);}
+  70%{opacity:0.8;transform:translate(-50%,-50%) scale(1,1);}
+  73%{opacity:0.12;transform:translate(-50%,-50%) scale(0.998,0.998);}
+  75%{opacity:0.6;transform:translate(-50%,-50%) scale(1.001,1);}
+  78%{opacity:0.35;transform:translate(-50%,-50%) scale(1,1);}
+  80%{opacity:0.88;transform:translate(-50%,-50%) scale(1,1.001);}
+  83%{opacity:0.05;transform:translate(-50%,-50%) scale(0.997,0.999);}
+  85%{opacity:0.55;transform:translate(-50%,-50%) scale(1,1);}
+  88%{opacity:0.75;transform:translate(-50%,-50%) scale(1.001,1);}
+  90%{opacity:0.18;transform:translate(-50%,-50%) scale(0.999,0.998);}
+  93%{opacity:0.7;transform:translate(-50%,-50%) scale(1,1);}
+  95%{opacity:0.4;transform:translate(-50%,-50%) scale(1.001,0.999);}
+  98%{opacity:0.85;transform:translate(-50%,-50%) scale(1,1);}
+  100%{opacity:0.75;transform:translate(-50%,-50%) scale(1,1);}
+}
+
+/* Secondary light source - far end glow */
+.end-glow{
+  position:absolute;
+  top:49%;left:50%;transform:translate(-50%,-50%) translateZ(-600px);
+  width:120px;height:180px;
+  background:radial-gradient(ellipse at center,
+    rgba(180,180,200,0.06) 0%,
+    rgba(180,180,200,0.02) 30%,
+    transparent 60%
+  );
+  animation:endGlowPulse 5s ease-in-out infinite;
+  pointer-events:none;
+  z-index:3;
+  mix-blend-mode:screen;
+}
+@keyframes endGlowPulse{
+  0%,100%{opacity:0.3;transform:translate(-50%,-50%) translateZ(-600px) scale(1);}
+  25%{opacity:0.6;transform:translate(-50%,-50%) translateZ(-600px) scale(1.1);}
+  50%{opacity:0.15;transform:translate(-50%,-50%) translateZ(-600px) scale(0.9);}
+  75%{opacity:0.7;transform:translate(-50%,-50%) translateZ(-600px) scale(1.15);}
+}
+
+/* Emergency light - red flicker */
+.emergency-light{
+  position:absolute;
+  top:44%;left:47%;transform:translate(-50%,-50%) rotateY(58deg);
+  width:40px;height:40px;
+  background:radial-gradient(circle,
+    rgba(180,30,30,0.15) 0%,
+    rgba(180,30,30,0.05) 30%,
+    transparent 60%
+  );
+  animation:emergencyFlicker 3s ease-in-out infinite;
+  pointer-events:none;
+  z-index:4;
+  mix-blend-mode:screen;
+}
+@keyframes emergencyFlicker{
+  0%,80%,100%{opacity:0;}
+  81%{opacity:0.6;}
+  82%{opacity:0.1;}
+  83%{opacity:0.8;}
+  84%{opacity:0;}
+  85%{opacity:0.5;}
+  86%{opacity:0;}
+  90%{opacity:0.3;}
+  91%{opacity:0;}
+}
+
+/* ============================================================
+   WALL BREATHING
+   ============================================================ */
+
+.corridor-wall-l{
+  animation:wallBreathL 16s ease-in-out infinite;
+}
+@keyframes wallBreathL{
+  0%,100%{transform:translate(-100%,-50%) rotateY(58deg);width:2400px;}
+  15%{transform:translate(-99.4%,-50%) rotateY(58.3deg);width:2402px;}
+  30%{transform:translate(-100.4%,-50%) rotateY(57.7deg);width:2398px;}
+  45%{transform:translate(-99.7%,-50%) rotateY(58.1deg);width:2401px;}
+  60%{transform:translate(-100.3%,-50%) rotateY(57.9deg);width:2399px;}
+  75%{transform:translate(-99.6%,-50%) rotateY(58.25deg);width:2400px;}
+  90%{transform:translate(-100.2%,-50%) rotateY(57.85deg);width:2397px;}
+}
+.corridor-wall-r{
+  animation:wallBreathR 16s ease-in-out infinite;
+}
+@keyframes wallBreathR{
+  0%,100%{transform:translate(0%,-50%) rotateY(-58deg);width:2400px;}
+  15%{transform:translate(0.6%,-50%) rotateY(-58.3deg);width:2402px;}
+  30%{transform:translate(-0.4%,-50%) rotateY(-57.7deg);width:2398px;}
+  45%{transform:translate(0.3%,-50%) rotateY(-58.1deg);width:2401px;}
+  60%{transform:translate(-0.3%,-50%) rotateY(-57.9deg);width:2399px;}
+  75%{transform:translate(0.4%,-50%) rotateY(-58.25deg);width:2400px;}
+  90%{transform:translate(-0.2%,-50%) rotateY(-57.85deg);width:2397px;}
+}
+
+/* Ceiling breathing */
+.corridor-ceiling{
+  animation:ceilingBreath 18s ease-in-out infinite;
+}
+@keyframes ceilingBreath{
+  0%,100%{transform:translate(-50%,-100%) rotateX(-80deg);}
+  20%{transform:translate(-49.8%,-100%) rotateX(-80.3deg);}
+  40%{transform:translate(-50.3%,-100%) rotateX(-79.7deg);}
+  60%{transform:translate(-49.9%,-100%) rotateX(-80.1deg);}
+  80%{transform:translate(-50.2%,-100%) rotateX(-79.9deg);}
+}
+
+/* Floor breathing */
+.corridor-floor{
+  animation:floorBreath 17s ease-in-out infinite;
+}
+@keyframes floorBreath{
+  0%,100%{transform:translate(-50%,0) rotateX(80deg);}
+  20%{transform:translate(-49.7%,0) rotateX(80.2deg);}
+  40%{transform:translate(-50.3%,0) rotateX(79.8deg);}
+  60%{transform:translate(-49.9%,0) rotateX(80.15deg);}
+  80%{transform:translate(-50.2%,0) rotateX(79.85deg);}
+}
+
+/* ============================================================
+   GLITCH FLASH
+   ============================================================ */
+
+.glitch-flash{
+  position:fixed;inset:0;pointer-events:none;z-index:902;
+  background:rgba(200,200,210,0.025);
+  opacity:0;
+  animation:flash 18s ease-in-out infinite;
+}
+@keyframes flash{
+  0%,85%,100%{opacity:0;}
+  86%{opacity:0.8;}
+  86.5%{opacity:0;}
+  87%{opacity:1;}
+  87.5%{opacity:0;}
+  88%{opacity:0.6;}
+  88.5%{opacity:0;}
+  89%{opacity:0.3;}
+  89.5%{opacity:0;}
+}
+
+.glitch-flash-2{
+  position:fixed;inset:0;pointer-events:none;z-index:903;
+  background:linear-gradient(0deg,
+    rgba(200,180,200,0.015) 0%,
+    transparent 20%,
+    rgba(180,200,200,0.015) 40%,
+    transparent 60%,
+    rgba(200,200,180,0.015) 80%,
+    transparent 100%
+  );
+  opacity:0;
+  animation:flash2 25s ease-in-out infinite;
+}
+@keyframes flash2{
+  0%,90%,100%{opacity:0;}
+  91%{opacity:0.5;}
+  91.3%{opacity:0;}
+  91.6%{opacity:0.7;}
+  92%{opacity:0;}
+  92.4%{opacity:0.9;}
+  92.8%{opacity:0;}
+  93%{opacity:0.4;}
+  93.3%{opacity:0;}
+}
+
+/* Screen tear */
+.screen-tear{
+  position:fixed;inset:0;pointer-events:none;z-index:904;
+  opacity:0;
+  animation:screenTear 40s ease-in-out infinite;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    transparent 45%,
+    rgba(200,200,210,0.04) 46%,
+    rgba(200,200,210,0.03) 48%,
+    transparent 49%,
+    transparent 50%,
+    rgba(200,200,210,0.04) 51%,
+    rgba(200,200,210,0.03) 53%,
+    transparent 54%,
+    transparent 100%
+  );
+}
+@keyframes screenTear{
+  0%,93%,100%{opacity:0;}
+  94%{opacity:0.5;transform:translateY(0);}
+  94.5%{opacity:1;transform:translateY(5px);}
+  95%{opacity:0;transform:translateY(0);}
+  96%{opacity:0.3;transform:translateY(-3px);}
+  96.5%{opacity:0;transform:translateY(0);}
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+
+.nav-hint{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  z-index:100;text-align:center;pointer-events:none;
+}
+.nav-hint a{
+  pointer-events:auto;text-decoration:none;
+  color:rgba(180,180,200,0.3);
+  font-size:0.7rem;letter-spacing:0.25em;
+  transition:all 0.6s ease;
+  display:inline-block;margin:0 14px;
+  text-shadow:0 0 10px transparent;
+}
+.nav-hint a:hover{
+  color:rgba(220,220,240,0.7);
+  text-shadow:0 0 20px rgba(200,200,220,0.3);
+  transform:translateY(-1px);
+}
+.nav-hint a:active{
+  color:rgba(255,255,255,0.9);
+  text-shadow:0 0 30px rgba(200,200,220,0.5);
+}
+.nav-hint span{color:rgba(180,180,200,0.1);margin:0 10px;}
+
+/* Return portal */
+.return-portal{
+  position:fixed;top:30px;left:30px;z-index:100;
+  text-decoration:none;
+  display:flex;align-items:center;gap:10px;
+  color:rgba(180,180,200,0.25);
+  font-size:0.7rem;letter-spacing:0.2em;
+  transition:all 0.6s ease;
+}
+.return-portal:hover{
+  color:rgba(220,220,240,0.6);
+  text-shadow:0 0 15px rgba(200,200,220,0.25);
+  transform:translateX(3px);
+}
+.return-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(180,180,200,0.3);
+  transition:all 0.6s ease;
+}
+.return-portal:hover .return-dot{
+  background:rgba(220,220,240,0.6);
+  box-shadow:0 0 12px rgba(200,200,220,0.4);
+}
+
+/* Title overlay */
+.title-overlay{
+  position:fixed;top:6%;left:50%;transform:translateX(-50%);
+  z-index:50;pointer-events:none;text-align:center;
+}
+.title-overlay h1{
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:100;letter-spacing:0.5em;
+  color:rgba(200,200,210,0.5);
+  text-shadow:0 0 40px rgba(180,180,200,0.2),0 0 80px rgba(180,180,200,0.08);
+  animation:titleDrift 20s ease-in-out infinite;
+}
+@keyframes titleDrift{
+  0%,100%{letter-spacing:0.5em;text-shadow:0 0 40px rgba(180,180,200,0.2),0 0 80px rgba(180,180,200,0.08);}
+  25%{letter-spacing:0.52em;text-shadow:0 0 45px rgba(180,180,200,0.22),0 0 85px rgba(180,180,200,0.09);}
+  50%{letter-spacing:0.48em;text-shadow:0 0 35px rgba(180,180,200,0.18),0 0 75px rgba(180,180,200,0.07);}
+  75%{letter-spacing:0.51em;text-shadow:0 0 42px rgba(180,180,200,0.21),0 0 82px rgba(180,180,200,0.085);}
+}
+.title-overlay .freq{
+  font-size:0.65rem;letter-spacing:0.3em;
+  color:rgba(180,180,200,0.3);
+  margin-top:10px;
+  animation:freqBlink 6s ease-in-out infinite;
+}
+@keyframes freqBlink{
+  0%,100%{opacity:0.3;}
+  50%{opacity:0.5;}
+}
+.title-overlay .subtitle{
+  font-size:0.55rem;letter-spacing:0.25em;
+  color:rgba(180,180,200,0.15);
+  margin-top:6px;
+}
+
+/* ============================================================
+   MOUSE CURSOR GLOW
+   ============================================================ */
+
+.cursor-glow{
+  position:fixed;
+  pointer-events:none;
+  z-index:999;
+  width:60px;height:60px;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(200,200,210,0.06) 0%,
+    rgba(200,200,210,0.02) 30%,
+    transparent 60%
+  );
+  transform:translate(-50%,-50%);
+  transition:opacity 0.3s ease;
+}
+.cursor-dot{
+  position:fixed;
+  pointer-events:none;
+  z-index:999;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:rgba(200,200,210,0.5);
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 6px rgba(200,200,210,0.3);
+}
+
+/* ============================================================
+   DUST PARTICLES CANVAS - TEXTURE
+   ============================================================ */
+
+#dustCanvas{
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  mix-blend-mode:screen;
+}
+
+/* ============================================================
+   LIGHT RAYS
+   ============================================================ */
+
+.light-ray{
+  position:fixed;
+  pointer-events:none;
+  z-index:2;
+  width:2px;height:300px;
+  background:linear-gradient(to bottom,
+    rgba(200,200,210,0.04),
+    transparent
+  );
+  animation:lightRayDrift 8s ease-in-out infinite;
+  transform-origin:top center;
+}
+@keyframes lightRayDrift{
+  0%,100%{opacity:0.3;transform:rotate(0deg);}
+  25%{opacity:0.5;transform:rotate(2deg);}
+  50%{opacity:0.2;transform:rotate(-1deg);}
+  75%{opacity:0.4;transform:rotate(1.5deg);}
+}
+
+/* ============================================================
+   AMBIENT PARTICLES - CSS
+   ============================================================ */
+
+.ambient-particle{
+  position:fixed;
+  pointer-events:none;
+  z-index:4;
+  width:2px;height:2px;
+  border-radius:50%;
+  background:rgba(200,200,210,0.4);
+  animation:ambientFloat 15s linear infinite;
+}
+@keyframes ambientFloat{
+  0%{transform:translateY(110vh) translateX(0) scale(0);opacity:0;}
+  5%{opacity:0.4;}
+  10%{transform:translateY(100vh) translateX(10px) scale(0.5);opacity:0.6;}
+  20%{transform:translateY(80vh) translateX(-5px) scale(1);opacity:0.8;}
+  30%{transform:translateY(60vh) translateX(15px) scale(1.2);opacity:0.7;}
+  40%{transform:translateY(40vh) translateX(-10px) scale(1);opacity:0.5;}
+  50%{transform:translateY(20vh) translateX(8px) scale(0.8);opacity:0.3;}
+  60%{transform:translateY(0vh) translateX(-3px) scale(0.5);opacity:0.15;}
+  70%{transform:translateY(-20vh) translateX(12px) scale(0.3);opacity:0.05;}
+  100%{transform:translateY(-40vh) translateX(0) scale(0);opacity:0;}
+}
+.ambient-particle:nth-child(odd){
+  animation:ambientFloatOdd 18s linear infinite;
+  background:rgba(180,180,210,0.3);
+  width:1.5px;height:1.5px;
+}
+@keyframes ambientFloatOdd{
+  0%{transform:translateY(110vh) translateX(0) scale(0);opacity:0;}
+  5%{opacity:0.3;}
+  10%{transform:translateY(95vh) translateX(-8px) scale(0.6);opacity:0.5;}
+  25%{transform:translateY(70vh) translateX(12px) scale(1.1);opacity:0.7;}
+  40%{transform:translateY(45vh) translateX(-15px) scale(0.9);opacity:0.4;}
+  55%{transform:translateY(20vh) translateX(6px) scale(0.6);opacity:0.2;}
+  70%{transform:translateY(-5vh) translateX(-10px) scale(0.3);opacity:0.08;}
+  100%{transform:translateY(-30vh) translateX(0) scale(0);opacity:0;}
+}
+
+/* ============================================================
+   CORNER SHADOWS
+   ============================================================ */
+
+.corner-shadow{
+  position:fixed;pointer-events:none;z-index:6;
+  width:300px;height:300px;
+}
+.corner-shadow.tl{
+  top:0;left:0;
+  background:radial-gradient(circle at top left,rgba(3,3,6,0.7) 0%,transparent 70%);
+}
+.corner-shadow.tr{
+  top:0;right:0;
+  background:radial-gradient(circle at top right,rgba(3,3,6,0.7) 0%,transparent 70%);
+}
+.corner-shadow.bl{
+  bottom:0;left:0;
+  background:radial-gradient(circle at bottom left,rgba(3,3,6,0.8) 0%,transparent 70%);
+}
+.corner-shadow.br{
+  bottom:0;right:0;
+  background:radial-gradient(circle at bottom right,rgba(3,3,6,0.8) 0%,transparent 70%);
+}
+
+/* ============================================================
+   HIDDEN ELEMENTS - ATMOSPHERIC
+   ============================================================ */
+
+/* Distant door frame overlay */
+.door-frame{
+  position:absolute;
+  top:48%;left:50%;transform:translate(-50%,-50%) translateZ(-580px);
+  width:180px;height:280px;
+  border:2px solid rgba(200,200,210,0.04);
+  border-radius:4px;
+  animation:doorFramePulse 8s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes doorFramePulse{
+  0%,100%{border-color:rgba(200,200,210,0.04);box-shadow:inset 0 0 30px rgba(200,200,210,0.01);}
+  50%{border-color:rgba(200,200,210,0.07);box-shadow:inset 0 0 40px rgba(200,200,210,0.02);}
+}
+
+/* Subtle wall crack */
+.wall-crack-l{
+  position:absolute;
+  top:48%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:1px;height:120px;
+  background:rgba(0,0,0,0.3);
+  transform-origin:right center;
+  animation:crackPulse 15s ease-in-out infinite;
+  pointer-events:none;z-index:2;
+}
+@keyframes crackPulse{
+  0%,100%{opacity:0.2;}
+  50%{opacity:0.5;}
+}
+
+/* Exposed pipe on wall */
+.exposed-pipe{
+  position:absolute;
+  top:49%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-200px);
+  width:3px;height:600px;
+  background:linear-gradient(to bottom,
+    rgba(40,40,50,0.3),
+    rgba(35,35,45,0.25) 20%,
+    rgba(40,40,50,0.3) 40%,
+    rgba(30,30,40,0.2) 60%,
+    rgba(35,35,45,0.28) 80%,
+    rgba(25,25,35,0.15) 100%
+  );
+  transform-origin:right center;
+  pointer-events:none;z-index:2;
+  box-shadow:0 0 2px rgba(0,0,0,0.3);
+  animation:pipeVibrate 0.5s ease-in-out infinite;
+}
+@keyframes pipeVibrate{
+  0%,100%{transform:translate(-100%,-50%) rotateY(58deg) translateX(-200px);}
+  50%{transform:translate(-100%,-50%) rotateY(58deg) translateX(-200.5px);}
+}
+
+/* Pipe joint */
+.pipe-joint{
+  position:absolute;
+  top:45%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-200px);
+  width:8px;height:15px;
+  background:rgba(50,50,60,0.35);
+  border-radius:2px;
+  transform-origin:right center;
+  pointer-events:none;z-index:3;
+}
+
+/* ============================================================
+   WALL TEXTURE VARIATIONS
+   ============================================================ */
+
+/* Mold/stain pattern on lower wall */
+.wall-mold{
+  position:absolute;
+  top:55%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:2400px;height:80px;
+  background:linear-gradient(to right,
+    rgba(15,20,18,0.15) 0%,
+    rgba(15,20,18,0.25) 20%,
+    rgba(15,20,18,0.1) 40%,
+    rgba(15,20,18,0.3) 60%,
+    rgba(15,20,18,0.05) 80%,
+    rgba(15,20,18,0.2) 100%
+  );
+  transform-origin:right center;
+  pointer-events:none;z-index:1;
+  filter:blur(3px);
+  animation:moldSpread 45s ease-in-out infinite;
+}
+@keyframes moldSpread{
+  0%,100%{opacity:0.4;height:80px;}
+  25%{opacity:0.6;height:85px;}
+  50%{opacity:0.35;height:78px;}
+  75%{opacity:0.55;height:82px;}
+}
+
+/* ============================================================
+   DISTANT SOUND WAVES (visual representation)
+   ============================================================ */
+
+.sound-wave{
+  position:absolute;
+  top:50%;left:50%;
+  border-radius:50%;
+  border:1px solid rgba(200,200,210,0.02);
+  pointer-events:none;
+  animation:soundWaveExpand 6s ease-out infinite;
+}
+@keyframes soundWaveExpand{
+  0%{width:200px;height:200px;transform:translate(-50%,-50%);opacity:0.4;border-width:1px;}
+  100%{width:600px;height:600px;transform:translate(-50%,-50%);opacity:0;border-width:0.2px;}
+}
+.sound-wave:nth-child(1){animation-delay:0s;}
+.sound-wave:nth-child(2){animation-delay:2s;}
+.sound-wave:nth-child(3){animation-delay:4s;}
+
+/* ============================================================
+   PERIODIC DARKNESS SURGE
+   ============================================================ */
+
+.darkness-surge{
+  position:fixed;inset:0;pointer-events:none;z-index:7;
+  background:rgba(2,2,4,0.6);
+  opacity:0;
+  animation:darknessSurge 30s ease-in-out infinite;
+}
+@keyframes darknessSurge{
+  0%,94%,100%{opacity:0;}
+  95%{opacity:0.3;}
+  96%{opacity:0.7;}
+  97%{opacity:0.9;}
+  98%{opacity:0.4;}
+  99%{opacity:0.05;}
+}
+
+/* ============================================================
+   FIGURE HEAD TILT ANIMATION
+   ============================================================ */
+
+.figure-head-tilt{
+  position:absolute;
+  top:-18px;left:50%;
+  width:18px;height:18px;
+  background:rgba(4,4,8,0.92);
+  border-radius:50%;
+  animation:headTilt 25s ease-in-out infinite;
+  transform-origin:bottom center;
+  pointer-events:none;
+  z-index:10;
+}
+@keyframes headTilt{
+  0%,68%,100%{transform:translateX(-50%) rotate(0deg);}
+  70%{transform:translateX(-50%) rotate(5deg);}
+  72%{transform:translateX(-50%) rotate(-8deg);}
+  74%{transform:translateX(-50%) rotate(3deg);}
+  76%{transform:translateX(-50%) rotate(-5deg);}
+  78%{transform:translateX(-50%) rotate(0deg);}
+}
+
+/* ============================================================
+   CRAWLING SHADOW ALONG WALL
+   ============================================================ */
+
+.crawling-shadow{
+  position:absolute;
+  top:50%;left:50%;
+  width:50px;height:80px;
+  background:rgba(2,2,4,0.4);
+  border-radius:25px 25px 0 0;
+  filter:blur(4px);
+  pointer-events:none;
+  z-index:3;
+  animation:crawlAlongWall 40s ease-in-out infinite;
+}
+@keyframes crawlAlongWall{
+  0%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-200px);opacity:0;}
+  10%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-400px);opacity:0.3;}
+  20%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-600px);opacity:0.5;}
+  30%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-300px);opacity:0.2;}
+  40%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-700px);opacity:0.4;}
+  50%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-500px);opacity:0.1;}
+  60%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-100px);opacity:0;}
+  100%{transform:translate(-110%,-50%) rotateY(58deg) translateZ(-800px);opacity:0;}
+}
+
+/* ============================================================
+   BULB AURA PULSE
+   ============================================================ */
+
+.bulb-aura{
+  position:absolute;
+  top:42%;left:50%;transform:translate(-50%,-50%);
+  width:60px;height:30px;
+  background:radial-gradient(ellipse,
+    rgba(200,200,210,0.03) 0%,
+    transparent 70%
+  );
+  pointer-events:none;z-index:4;
+  animation:bulbAuraPulse 2.5s ease-in-out infinite;
+}
+@keyframes bulbAuraPulse{
+  0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1);}
+  50%{opacity:0.9;transform:translate(-50%,-50%) scale(1.3);}
+}
+
+/* ============================================================
+   PERSPECTIVE GRID LINES ON FLOOR
+   ============================================================ */
+
+.floor-grid{
+  position:absolute;
+  top:55%;left:50%;transform:translate(-50%,0) rotateX(80deg);
+  width:360px;height:2400px;
+  transform-origin:top center;
+  pointer-events:none;
+  z-index:1;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent,transparent 119px,
+      rgba(200,200,210,0.02) 119px,
+      rgba(200,200,210,0.02) 120px
+    );
+  animation:floorGridShift 12s linear infinite;
+}
+@keyframes floorGridShift{
+  0%{background-position:0 0;}
+  100%{background-position:0 120px;}
+}
+
+/* ============================================================
+   CEILING LIGHT FIXTURE
+   ============================================================ */
+
+.ceiling-fixture{
+  position:absolute;
+  top:43%;left:50%;transform:translate(-50%,-100%) rotateX(-80deg);
+  width:30px;height:30px;
+  background:rgba(60,60,70,0.4);
+  border-radius:50%;
+  transform-origin:bottom center;
+  pointer-events:none;
+  z-index:5;
+  box-shadow:0 0 20px rgba(200,200,210,0.08),0 0 60px rgba(200,200,210,0.03);
+  animation:fixtureGlow 3s ease-in-out infinite;
+}
+@keyframes fixtureGlow{
+  0%,100%{box-shadow:0 0 20px rgba(200,200,210,0.08),0 0 60px rgba(200,200,210,0.03);}
+  50%{box-shadow:0 0 30px rgba(200,200,210,0.12),0 0 80px rgba(200,200,210,0.05);}
+}
+
+/* ============================================================
+   FOG/HUMIDITY LAYER
+   ============================================================ */
+
+.fog-layer{
+  position:absolute;
+  top:52%;left:50%;transform:translate(-50%,-50%);
+  width:200px;height:60px;
+  background:radial-gradient(ellipse at center,
+    rgba(180,180,200,0.04) 0%,
+    transparent 60%
+  );
+  filter:blur(20px);
+  pointer-events:none;
+  z-index:2;
+  animation:fogDrift 14s ease-in-out infinite;
+}
+@keyframes fogDrift{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.5;}
+  33%{transform:translate(-48%,-52%) scale(1.2);opacity:0.7;}
+  66%{transform:translate(-52%,-48%) scale(0.9);opacity:0.4;}
+}
+
+/* ============================================================
+   VERTICAL SUPPORT BEAMS ON WALLS
+   ============================================================ */
+
+.beam-l{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg);
+  width:8px;height:500px;
+  background:linear-gradient(to right,
+    rgba(15,15,25,0.5),
+    rgba(20,20,30,0.4),
+    rgba(15,15,25,0.5)
+  );
+  transform-origin:right center;
+  pointer-events:none;
+  z-index:2;
+  margin-left:-400px;
+  box-shadow:inset 0 0 10px rgba(0,0,0,0.5);
+}
+.beam-r{
+  position:absolute;
+  top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg);
+  width:8px;height:500px;
+  background:linear-gradient(to left,
+    rgba(15,15,25,0.5),
+    rgba(20,20,30,0.4),
+    rgba(15,15,25,0.5)
+  );
+  transform-origin:left center;
+  pointer-events:none;
+  z-index:2;
+  margin-left:400px;
+  box-shadow:inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* ============================================================
+   DISTANT LIGHT AT END - FAINT EMERGENCY EXIT
+   ============================================================ */
+
+.exit-sign{
+  position:absolute;
+  top:47%;left:50%;transform:translate(-50%,-50%) translateZ(-590px);
+  width:30px;height:12px;
+  background:rgba(100,180,100,0.08);
+  border:1px solid rgba(100,180,100,0.05);
+  pointer-events:none;
+  z-index:2;
+  animation:exitSignFlicker 7s ease-in-out infinite;
+}
+@keyframes exitSignFlicker{
+  0%,80%,100%{opacity:0.3;background:rgba(100,180,100,0.08);}
+  82%{opacity:0.8;background:rgba(100,200,100,0.15);}
+  84%{opacity:0.1;}
+  86%{opacity:0.6;}
+  88%{opacity:0.3;}
+  90%{opacity:0.9;background:rgba(100,220,100,0.2);}
+  92%{opacity:0;}
+  94%{opacity:0.4;}
+  96%{opacity:0.15;}
+}
+
+/* ============================================================
+   MOVING SHADOW ON CEILING
+   ============================================================ */
+
+.ceiling-shadow{
+  position:absolute;
+  top:46%;left:50%;transform:translate(-50%,-100%) rotateX(-80deg);
+  width:30px;height:200px;
+  background:rgba(0,0,0,0.3);
+  filter:blur(8px);
+  transform-origin:bottom center;
+  pointer-events:none;
+  z-index:1;
+  animation:ceilingShadowPass 30s ease-in-out infinite;
+}
+@keyframes ceilingShadowPass{
+  0%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(-100px);opacity:0;}
+  20%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(-50px);opacity:0.3;}
+  40%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(0px);opacity:0.5;}
+  60%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(50px);opacity:0.3;}
+  80%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(100px);opacity:0.1;}
+  100%{transform:translate(-50%,-100%) rotateX(-80deg) translateX(150px);opacity:0;}
+}
+
+/* ============================================================
+   TEMPERATURE DISTORTION EFFECT
+   ============================================================ */
+
+.heat-haze{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%) translateZ(-350px);
+  width:180px;height:120px;
+  background:transparent;
+  pointer-events:none;
+  z-index:2;
+  animation:heatHaze 8s ease-in-out infinite;
+}
+@keyframes heatHaze{
+  0%,100%{filter:blur(0px);opacity:0;}
+  25%{filter:blur(1px);opacity:0.3;}
+  50%{filter:blur(2px);opacity:0.5;}
+  75%{filter:blur(1px);opacity:0.3;}
+}
+
+/* ============================================================
+   SUBTLE COLOR TEMPERATURE SHIFT
+   ============================================================ */
+
+.color-shift{
+  position:fixed;inset:0;pointer-events:none;z-index:897;
+  mix-blend-mode:overlay;
+  opacity:0;
+  background:linear-gradient(135deg,
+    rgba(40,40,60,0.03) 0%,
+    transparent 40%,
+    rgba(30,40,50,0.03) 60%,
+    transparent 100%
+  );
+  animation:colorShift 35s linear infinite;
+}
+@keyframes colorShift{
+  0%{opacity:0.2;}
+  25%{opacity:0.5;}
+  50%{opacity:0.15;}
+  75%{opacity:0.45;}
+  100%{opacity:0.2;}
+}
+
+/* ============================================================
+   ADDITIONAL ATMOSPHERIC ANIMATIONS - BREATHING WALLS EXTENDED
+   ============================================================ */
+
+/* Breathing intensity variation cycle 2 */
+@keyframes breathIntensityCycle{
+  0%,100%{transform:scale(1,1);filter:brightness(1);}
+  12%{transform:scale(1.001,0.999);filter:brightness(1.01);}
+  25%{transform:scale(0.999,1.001);filter:brightness(0.99);}
+  37%{transform:scale(1.002,0.998);filter:brightness(1.02);}
+  50%{transform:scale(0.998,1.002);filter:brightness(0.98);}
+  62%{transform:scale(1.001,0.999);filter:brightness(1.01);}
+  75%{transform:scale(0.999,1.001);filter:brightness(0.99);}
+  87%{transform:scale(1.003,0.997);filter:brightness(1.03);}
+}
+
+/* Slow wall distortion wave */
+@keyframes wallDistortWave{
+  0%{transform:translate(-100%,-50%) rotateY(58deg) skewX(0deg);}
+  10%{transform:translate(-100.1%,-50%) rotateY(58.1deg) skewX(0.05deg);}
+  20%{transform:translate(-99.9%,-50%) rotateY(57.9deg) skewX(-0.03deg);}
+  30%{transform:translate(-100.2%,-50%) rotateY(58.2deg) skewX(0.08deg);}
+  40%{transform:translate(-99.8%,-50%) rotateY(57.8deg) skewX(-0.06deg);}
+  50%{transform:translate(-100.15%,-50%) rotateY(58.15deg) skewX(0.04deg);}
+  60%{transform:translate(-99.85%,-50%) rotateY(57.85deg) skewX(-0.07deg);}
+  70%{transform:translate(-100.25%,-50%) rotateY(58.25deg) skewX(0.09deg);}
+  80%{transform:translate(-99.75%,-50%) rotateY(57.75deg) skewX(-0.05deg);}
+  90%{transform:translate(-100.1%,-50%) rotateY(58.1deg) skewX(0.02deg);}
+  100%{transform:translate(-100%,-50%) rotateY(58deg) skewX(0deg);}
+}
+
+/* Right wall distortion wave */
+@keyframes wallDistortWaveR{
+  0%{transform:translate(0%,-50%) rotateY(-58deg) skewX(0deg);}
+  10%{transform:translate(0.1%,-50%) rotateY(-58.1deg) skewX(-0.05deg);}
+  20%{transform:translate(-0.1%,-50%) rotateY(-57.9deg) skewX(0.03deg);}
+  30%{transform:translate(0.2%,-50%) rotateY(-58.2deg) skewX(-0.08deg);}
+  40%{transform:translate(-0.2%,-50%) rotateY(-57.8deg) skewX(0.06deg);}
+  50%{transform:translate(0.15%,-50%) rotateY(-58.15deg) skewX(-0.04deg);}
+  60%{transform:translate(-0.15%,-50%) rotateY(-57.85deg) skewX(0.07deg);}
+  70%{transform:translate(0.25%,-50%) rotateY(-58.25deg) skewX(-0.09deg);}
+  80%{transform:translate(-0.25%,-50%) rotateY(-57.75deg) skewX(0.05deg);}
+  90%{transform:translate(0.1%,-50%) rotateY(-58.1deg) skewX(-0.02deg);}
+  100%{transform:translate(0%,-50%) rotateY(-58deg) skewX(0deg);}
+}
+
+/* Ceiling sag animation */
+@keyframes ceilingSag{
+  0%,100%{transform:translate(-50%,-100%) rotateX(-80deg) translateY(0px);}
+  20%{transform:translate(-50%,-100%) rotateX(-80deg) translateY(2px);}
+  40%{transform:translate(-50%,-100%) rotateX(-80deg) translateY(-1px);}
+  60%{transform:translate(-50%,-100%) rotateX(-80deg) translateY(3px);}
+  80%{transform:translate(-50%,-100%) rotateX(-80deg) translateY(0.5px);}
+}
+
+/* Floor undulation */
+@keyframes floorUndulate{
+  0%,100%{transform:translate(-50%,0) rotateX(80deg) translateY(0px);}
+  15%{transform:translate(-50%,0) rotateX(80deg) translateY(1px);}
+  35%{transform:translate(-50%,0) rotateX(80deg) translateY(-0.5px);}
+  55%{transform:translate(-50%,0) rotateX(80deg) translateY(1.5px);}
+  75%{transform:translate(-50%,0) rotateX(80deg) translateY(-1px);}
+  90%{transform:translate(-50%,0) rotateX(80deg) translateY(0.5px);}
+}
+
+/* ============================================================
+   EXTENDED FLICKER PATTERNS
+   ============================================================ */
+
+/* Slow degradation flicker */
+@keyframes slowDegradeFlicker{
+  0%{opacity:0.75;}
+  5%{opacity:0.72;}
+  10%{opacity:0.68;}
+  15%{opacity:0.71;}
+  20%{opacity:0.55;}
+  25%{opacity:0.69;}
+  30%{opacity:0.74;}
+  35%{opacity:0.3;}
+  40%{opacity:0.6;}
+  45%{opacity:0.73;}
+  50%{opacity:0.15;}
+  55%{opacity:0.5;}
+  60%{opacity:0.7;}
+  65%{opacity:0.35;}
+  70%{opacity:0.65;}
+  75%{opacity:0.72;}
+  80%{opacity:0.08;}
+  85%{opacity:0.45;}
+  90%{opacity:0.68;}
+  95%{opacity:0.25;}
+  100%{opacity:0.75;}
+}
+
+/* Strobe panic pattern */
+@keyframes strobePanic{
+  0%,100%{opacity:0.7;}
+  1%{opacity:0.01;}
+  2%{opacity:0.9;}
+  3%{opacity:0.05;}
+  4%{opacity:0.8;}
+  5%{opacity:0.7;}
+  6%{opacity:0.02;}
+  7%{opacity:0.95;}
+  8%{opacity:0.7;}
+  50%{opacity:0.7;}
+  51%{opacity:0.01;}
+  52%{opacity:1;}
+  53%{opacity:0;}
+  54%{opacity:0.85;}
+  55%{opacity:0.7;}
+}
+
+/* Dying bulb pattern */
+@keyframes dyingBulb{
+  0%{opacity:0.7;}
+  10%{opacity:0.65;}
+  20%{opacity:0.3;}
+  25%{opacity:0.68;}
+  30%{opacity:0.1;}
+  35%{opacity:0.6;}
+  40%{opacity:0.05;}
+  45%{opacity:0.5;}
+  50%{opacity:0.02;}
+  55%{opacity:0.4;}
+  60%{opacity:0.0;}
+  65%{opacity:0.35;}
+  70%{opacity:0.01;}
+  75%{opacity:0.25;}
+  80%{opacity:0;}
+  85%{opacity:0.15;}
+  90%{opacity:0;}
+  95%{opacity:0.05;}
+  100%{opacity:0;}
+}
+
+/* ============================================================
+   FIGURE MOVEMENT DETAILS
+   ============================================================ */
+
+/* Figure slow approach - step by step */
+@keyframes figureSlowApproach{
+  0%,50%{transform:translateX(-50%) scale(0.3);opacity:0;}
+  55%{transform:translateX(-50%) scale(0.35);opacity:0.1;}
+  60%{transform:translateX(-50%) scale(0.4);opacity:0.2;}
+  65%{transform:translateX(-50%) scale(0.45);opacity:0.3;}
+  70%{transform:translateX(-50%) scale(0.5);opacity:0.4;}
+  72%{transform:translateX(-50%) scale(0.55);opacity:0.5;}
+  74%{transform:translateX(-50%) scale(0.6);opacity:0.6;}
+  76%{transform:translateX(-50%) scale(0.65);opacity:0.7;}
+  78%{transform:translateX(-50%) scale(0.7);opacity:0.8;}
+  80%{transform:translateX(-50%) scale(0.75);opacity:0.9;}
+  82%{transform:translateX(-50%) scale(0.8);opacity:0.95;}
+  84%{transform:translateX(-50%) scale(0.7);opacity:0.7;}
+  86%{transform:translateX(-50%) scale(0.5);opacity:0.4;}
+  88%{transform:translateX(-50%) scale(0.3);opacity:0.15;}
+  90%,100%{transform:translateX(-50%) scale(0.3);opacity:0;}
+}
+
+/* Figure lateral sway while standing */
+@keyframes figureSway{
+  0%,100%{transform:translateX(-50%) rotate(0deg);}
+  25%{transform:translateX(-48%) rotate(1deg);}
+  50%{transform:translateX(-52%) rotate(-0.5deg);}
+  75%{transform:translateX(-49%) rotate(0.8deg);}
+}
+
+/* Figure height distortion */
+@keyframes figureStretch{
+  0%,100%{transform:translateX(-50%) scaleY(1);}
+  33%{transform:translateX(-50%) scaleY(1.03);}
+  66%{transform:translateX(-50%) scaleY(0.97);}
+}
+
+/* ============================================================
+   ENVIRONMENT ANIMATIONS
+   ============================================================ */
+
+/* Wall moisture drip */
+@keyframes moistureDrip{
+  0%,100%{height:0px;opacity:0;}
+  5%{height:2px;opacity:0.15;}
+  10%{height:8px;opacity:0.2;}
+  20%{height:25px;opacity:0.25;}
+  35%{height:50px;opacity:0.3;}
+  50%{height:80px;opacity:0.2;}
+  65%{height:120px;opacity:0.1;}
+  80%{height:150px;opacity:0.05;}
+  90%{height:170px;opacity:0.02;}
+  95%,100%{height:180px;opacity:0;}
+}
+
+/* Dust accumulation */
+@keyframes dustAccumulate{
+  0%{opacity:0;}
+  10%{opacity:0.03;}
+  20%{opacity:0.06;}
+  30%{opacity:0.09;}
+  40%{opacity:0.12;}
+  50%{opacity:0.15;}
+  60%{opacity:0.18;}
+  70%{opacity:0.21;}
+  80%{opacity:0.24;}
+  90%{opacity:0.27;}
+  100%{opacity:0.3;}
+}
+
+/* Cobweb growth */
+@keyframes cobwebGrow{
+  0%{transform:scale(0);opacity:0;}
+  20%{transform:scale(0.2);opacity:0.1;}
+  40%{transform:scale(0.4);opacity:0.2;}
+  60%{transform:scale(0.6);opacity:0.25;}
+  80%{transform:scale(0.8);opacity:0.3;}
+  100%{transform:scale(1);opacity:0.35;}
+}
+
+/* Rust spread pattern */
+@keyframes rustSpread{
+  0%{background-position:0% 0%;opacity:0.1;}
+  20%{background-position:5% 2%;opacity:0.15;}
+  40%{background-position:2% 8%;opacity:0.2;}
+  60%{background-position:8% 5%;opacity:0.25;}
+  80%{background-position:3% 10%;opacity:0.3;}
+  100%{background-position:0% 0%;opacity:0.15;}
+}
+
+/* Paint peeling animation */
+@keyframes paintPeel{
+  0%,100%{transform:scaleY(0);opacity:0;}
+  30%{transform:scaleY(0.3);opacity:0.2;}
+  60%{transform:scaleY(0.7);opacity:0.4;}
+  85%{transform:scaleY(1);opacity:0.5;}
+}
+
+/* Shadow crawl along baseboard */
+@keyframes shadowCrawlBaseboard{
+  0%{transform:translateX(-500px);opacity:0;}
+  10%{transform:translateX(-400px);opacity:0.15;}
+  20%{transform:translateX(-300px);opacity:0.25;}
+  30%{transform:translateX(-200px);opacity:0.2;}
+  40%{transform:translateX(-100px);opacity:0.3;}
+  50%{transform:translateX(0px);opacity:0.15;}
+  60%{transform:translateX(100px);opacity:0.25;}
+  70%{transform:translateX(200px);opacity:0.1;}
+  80%{transform:translateX(300px);opacity:0.2;}
+  90%{transform:translateX(400px);opacity:0.05;}
+  100%{transform:translateX(500px);opacity:0;}
+}
+
+/* Pipe condensate drip */
+@keyframes pipeDrip{
+  0%,80%,100%{opacity:0;transform:translateY(0);}
+  82%{opacity:0.4;transform:translateY(2px);}
+  84%{opacity:0.6;transform:translateY(5px);}
+  86%{opacity:0.3;transform:translateY(10px);}
+  88%{opacity:0.1;transform:translateY(20px);}
+  90%,100%{opacity:0;transform:translateY(30px);}
+}
+
+/* Wall crack growth */
+@keyframes crackGrow{
+  0%{width:1px;opacity:0.15;}
+  20%{width:2px;opacity:0.2;}
+  40%{width:1.5px;opacity:0.25;}
+  60%{width:3px;opacity:0.3;}
+  80%{width:2px;opacity:0.2;}
+  100%{width:1px;opacity:0.15;}
+}
+
+/* ============================================================
+   COMPLEX LIGHT SHIMMER ON WALLS
+   ============================================================ */
+
+@keyframes wallLightShimmer{
+  0%{background-position:0% 0%;opacity:0.04;}
+  12%{background-position:2% 1%;opacity:0.06;}
+  25%{background-position:1% 3%;opacity:0.03;}
+  37%{background-position:4% 2%;opacity:0.07;}
+  50%{background-position:3% 5%;opacity:0.05;}
+  62%{background-position:6% 3%;opacity:0.08;}
+  75%{background-position:5% 6%;opacity:0.04;}
+  87%{background-position:7% 4%;opacity:0.06;}
+  100%{background-position:0% 0%;opacity:0.04;}
+}
+
+/* Ominous red glow pulse */
+@keyframes redGlowPulse{
+  0%,100%{opacity:0;transform:scale(0.8);}
+  15%{opacity:0.02;transform:scale(0.9);}
+  30%{opacity:0.06;transform:scale(1);}
+  45%{opacity:0.12;transform:scale(1.1);}
+  50%{opacity:0.15;transform:scale(1.15);}
+  55%{opacity:0.08;transform:scale(1.05);}
+  70%{opacity:0.02;transform:scale(0.95);}
+  85%{opacity:0.005;transform:scale(0.85);}
+}
+
+/* Faint blue spectral glow */
+@keyframes spectralBlueGlow{
+  0%,100%{opacity:0;filter:blur(10px);}
+  20%{opacity:0.03;filter:blur(8px);}
+  40%{opacity:0.08;filter:blur(5px);}
+  60%{opacity:0.04;filter:blur(7px);}
+  80%{opacity:0.01;filter:blur(9px);}
+}
+
+/* ============================================================
+   PERSPECTIVE SHIFT ANIMATIONS
+   ============================================================ */
+
+/* Corridor narrows over long period */
+@keyframes corridorNarrow{
+  0%,100%{transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg) scale(1,1);}
+  25%{transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg) scale(1.02,0.98);}
+  50%{transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg) scale(0.98,1.02);}
+  75%{transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg) scale(1.01,0.99);}
+}
+
+/* Depth perception warping */
+@keyframes depthWarp{
+  0%,100%{perspective:var(--corridor-depth);}
+  25%{perspective:1150px;}
+  50%{perspective:1250px;}
+  75%{perspective:1180px;}
+}
+
+/* ============================================================
+   WALL TEXTURE VARIATIONS - EXTENDED
+   ============================================================ */
+
+/* Peeling wallpaper effect */
+.wall-peel{
+  position:absolute;
+  pointer-events:none;
+  z-index:2;
+  background:linear-gradient(180deg,
+    rgba(12,12,20,0.8) 0%,
+    rgba(14,14,22,0.6) 50%,
+    rgba(10,10,16,0.4) 100%
+  );
+  transform-origin:top center;
+  animation:paintPeel 28s ease-in-out infinite;
+}
+
+/* Water stain rings */
+.water-stain{
+  position:absolute;
+  pointer-events:none;
+  z-index:1;
+  border-radius:50%;
+  border:1px solid rgba(200,200,210,0.02);
+  animation:stainExpand 40s ease-in-out infinite;
+}
+@keyframes stainExpand{
+  0%,100%{width:20px;height:20px;opacity:0.1;}
+  25%{width:35px;height:35px;opacity:0.2;}
+  50%{width:15px;height:15px;opacity:0.05;}
+  75%{width:40px;height:40px;opacity:0.15;}
+}
+
+/* Exposed brick pattern */
+.exposed-brick{
+  position:absolute;
+  pointer-events:none;
+  z-index:1;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 15px,rgba(200,180,160,0.02) 15px,rgba(200,180,160,0.02) 17px),
+    repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(200,180,160,0.015) 40px,rgba(200,180,160,0.015) 42px);
+  animation:brickFade 35s ease-in-out infinite;
+}
+@keyframes brickFade{
+  0%,100%{opacity:0.1;}
+  50%{opacity:0.3;}
+}
+
+/* ============================================================
+   DOOR / PORTAL ELEMENTS
+   ============================================================ */
+
+/* Side door tucked in wall */
+.side-door{
+  position:absolute;
+  top:50%;left:50%;
+  width:50px;height:120px;
+  background:rgba(6,6,12,0.9);
+  border:1px solid rgba(200,200,210,0.03);
+  transform-origin:right center;
+  pointer-events:none;
+  z-index:2;
+  animation:sideDoorPulse 18s ease-in-out infinite;
+}
+@keyframes sideDoorPulse{
+  0%,100%{border-color:rgba(200,200,210,0.03);box-shadow:inset 0 0 20px rgba(0,0,0,0.5);}
+  25%{border-color:rgba(200,200,210,0.06);box-shadow:inset 0 0 30px rgba(0,0,0,0.6);}
+  50%{border-color:rgba(200,200,210,0.02);box-shadow:inset 0 0 10px rgba(0,0,0,0.4);}
+  75%{border-color:rgba(200,200,210,0.05);box-shadow:inset 0 0 25px rgba(0,0,0,0.55);}
+}
+
+/* Door crack light */
+.door-crack{
+  position:absolute;
+  width:1px;
+  height:100px;
+  background:rgba(200,200,210,0.04);
+  filter:blur(1px);
+  animation:doorCrackGlow 12s ease-in-out infinite;
+  pointer-events:none;
+  z-index:3;
+}
+@keyframes doorCrackGlow{
+  0%,100%{opacity:0.2;box-shadow:0 0 4px rgba(200,200,210,0.03);}
+  25%{opacity:0.5;box-shadow:0 0 8px rgba(200,200,210,0.06);}
+  50%{opacity:0.1;box-shadow:0 0 2px rgba(200,200,210,0.01);}
+  75%{opacity:0.6;box-shadow:0 0 10px rgba(200,200,210,0.08);}
+}
+
+/* ============================================================
+   FLOOR ELEMENTS
+   ============================================================ */
+
+/* Floor drain grating */
+.floor-drain{
+  position:absolute;
+  top:55%;left:51%;
+  width:20px;height:20px;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(200,200,210,0.05) 3px,rgba(200,200,210,0.05) 4px);
+  border:2px solid rgba(200,200,210,0.04);
+  border-radius:50%;
+  transform:translate(-50%,0) rotateX(80deg);
+  transform-origin:top center;
+  pointer-events:none;
+  z-index:2;
+  animation:drainGurgle 8s ease-in-out infinite;
+}
+@keyframes drainGurgle{
+  0%,100%{box-shadow:0 0 5px rgba(0,0,0,0.3);}
+  50%{box-shadow:0 0 15px rgba(0,0,0,0.5),0 0 8px rgba(200,200,210,0.02);}
+}
+
+/* Floor cigarette burn mark */
+.floor-burn{
+  position:absolute;
+  top:56%;left:45%;
+  width:6px;height:8px;
+  background:radial-gradient(ellipse,rgba(60,50,30,0.15) 0%,rgba(40,30,20,0.1) 40%,transparent 70%);
+  border-radius:50%;
+  transform:translate(-50%,0) rotateX(80deg);
+  transform-origin:top center;
+  pointer-events:none;
+  z-index:2;
+}
+
+/* Scattered debris */
+.floor-debris{
+  position:absolute;
+  pointer-events:none;
+  z-index:2;
+  background:rgba(200,200,210,0.03);
+  border-radius:1px;
+}
+
+/* ============================================================
+   CEILING ELEMENTS
+   ============================================================ */
+
+/* Ceiling tile discoloration */
+.ceiling-tile-stain{
+  position:absolute;
+  top:47%;left:48%;
+  width:40px;height:40px;
+  background:radial-gradient(ellipse,rgba(20,18,16,0.2) 0%,transparent 60%);
+  border-radius:50%;
+  transform:translate(-50%,-100%) rotateX(-80deg);
+  transform-origin:bottom center;
+  pointer-events:none;
+  z-index:1;
+  filter:blur(2px);
+  animation:tileStainSpread 50s ease-in-out infinite;
+}
+@keyframes tileStainSpread{
+  0%,100%{opacity:0.3;width:40px;height:40px;}
+  25%{opacity:0.5;width:45px;height:45px;}
+  50%{opacity:0.25;width:38px;height:38px;}
+  75%{opacity:0.55;width:48px;height:48px;}
+}
+
+/* Ceiling crack */
+.ceiling-crack{
+  position:absolute;
+  top:46%;left:50%;
+  width:80px;height:1.5px;
+  background:rgba(0,0,0,0.3);
+  transform:translate(-50%,-100%) rotateX(-80deg);
+  transform-origin:bottom center;
+  pointer-events:none;
+  z-index:1;
+  animation:ceilingCrackGrow 55s ease-in-out infinite;
+}
+@keyframes ceilingCrackGrow{
+  0%,100%{width:80px;opacity:0.2;}
+  30%{width:82px;opacity:0.3;}
+  60%{width:78px;opacity:0.15;}
+  85%{width:84px;opacity:0.35;}
+}
+
+/* ============================================================
+   HIDDEN MESSAGE FLASHES
+   ============================================================ */
+
+.hidden-message{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Courier New',monospace;
+  font-size:0.55rem;
+  color:rgba(200,200,210,0);
+  pointer-events:none;
+  z-index:800;
+  white-space:nowrap;
+  animation:hiddenMessageFlash 60s ease-in-out infinite;
+}
+@keyframes hiddenMessageFlash{
+  0%,98%,100%{opacity:0;color:rgba(200,200,210,0);}
+  98.5%{opacity:0.6;color:rgba(200,200,210,0.6);}
+  99%{opacity:0.85;color:rgba(220,220,240,0.85);}
+  99.5%{opacity:0.3;color:rgba(200,200,210,0.3);}
+}
+
+.hidden-message-2{
+  position:fixed;
+  top:52%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Courier New',monospace;
+  font-size:0.5rem;
+  color:rgba(200,200,210,0);
+  pointer-events:none;
+  z-index:799;
+  white-space:nowrap;
+  animation:hiddenMessageFlash2 75s ease-in-out infinite;
+}
+@keyframes hiddenMessageFlash2{
+  0%,97%,100%{opacity:0;color:rgba(200,200,210,0);}
+  97.5%{opacity:0.5;color:rgba(180,180,200,0.5);}
+  98%{opacity:0.9;color:rgba(200,200,220,0.9);}
+  98.5%{opacity:0.2;color:rgba(180,180,200,0.2);}
+}
+
+.hidden-message-3{
+  position:fixed;
+  top:54%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Courier New',monospace;
+  font-size:0.45rem;
+  color:rgba(200,200,210,0);
+  pointer-events:none;
+  z-index:798;
+  white-space:nowrap;
+  animation:hiddenMessageFlash3 90s ease-in-out infinite;
+}
+@keyframes hiddenMessageFlash3{
+  0%,96%,100%{opacity:0;color:rgba(200,200,210,0);}
+  96.5%{opacity:0.7;color:rgba(200,200,210,0.7);}
+  97%{opacity:0.95;color:rgba(220,220,240,0.95);}
+  97.5%{opacity:0.1;color:rgba(200,200,210,0.1);}
+}
+
+/* ============================================================
+   EXTRA HALLUCINATORY ELEMENTS
+   ============================================================ */
+
+/* False door that appears and vanishes */
+.false-door{
+  position:absolute;
+  pointer-events:none;
+  z-index:3;
+  border:1px solid rgba(200,200,210,0.02);
+  animation:falseDoorAppear 45s ease-in-out infinite;
+}
+@keyframes falseDoorAppear{
+  0%,85%,100%{opacity:0;}
+  87%{opacity:0.3;}
+  89%{opacity:0.6;}
+  91%{opacity:0.2;}
+  93%{opacity:0.5;}
+  95%{opacity:0.1;}
+  97%{opacity:0;}
+}
+
+/* Face-like pattern in wall texture */
+.wall-face{
+  position:absolute;
+  pointer-events:none;
+  z-index:3;
+  opacity:0;
+  animation:facePareidolia 65s ease-in-out infinite;
+}
+@keyframes facePareidolia{
+  0%,92%,100%{opacity:0;}
+  93%{opacity:0.1;}
+  94%{opacity:0.3;}
+  95%{opacity:0.5;}
+  96%{opacity:0.2;}
+  97%{opacity:0.4;}
+  98%{opacity:0.1;}
+  99%{opacity:0;}
+}
+
+/* ============================================================
+   WALL WRITING / SCRATCHES
+   ============================================================ */
+
+.wall-scratch{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-800px) translateY(-60px);
+  width:40px;height:2px;
+  background:rgba(200,200,210,0.03);
+  transform-origin:right center;
+  pointer-events:none;
+  z-index:2;
+  animation:scratchReveal 22s ease-in-out infinite;
+}
+@keyframes scratchReveal{
+  0%,95%,100%{opacity:0;}
+  96%{opacity:0.4;}
+  97%{opacity:0.7;}
+  98%{opacity:0.3;}
+  99%{opacity:0.5;}
+  99.5%{opacity:0;}
+}
+
+/* Additional scratch marks */
+.wall-scratch-2{
+  position:absolute;
+  top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(800px) translateY(40px);
+  width:25px;height:1.5px;
+  background:rgba(200,200,210,0.025);
+  transform-origin:left center;
+  pointer-events:none;
+  z-index:2;
+  animation:scratchReveal2 30s ease-in-out infinite;
+}
+@keyframes scratchReveal2{
+  0%,93%,100%{opacity:0;}
+  94%{opacity:0.3;}
+  95%{opacity:0.6;}
+  96%{opacity:0.2;}
+  97%{opacity:0.45;}
+  98%{opacity:0.1;}
+  99%{opacity:0;}
+}
+
+/* Faint text appears on wall */
+.wall-text{
+  position:absolute;
+  pointer-events:none;
+  z-index:2;
+  font-family:'Courier New',monospace;
+  font-size:8px;
+  color:rgba(200,200,210,0);
+  white-space:nowrap;
+  animation:wallTextAppear 55s ease-in-out infinite;
+}
+@keyframes wallTextAppear{
+  0%,96%,100%{opacity:0;color:rgba(200,200,210,0);}
+  96.5%{opacity:0.3;color:rgba(200,200,210,0.3);}
+  97%{opacity:0.6;color:rgba(200,200,210,0.6);}
+  97.5%{opacity:0.2;color:rgba(200,200,210,0.2);}
+  98%{opacity:0.5;color:rgba(200,200,210,0.5);}
+  98.5%{opacity:0.1;color:rgba(200,200,210,0.1);}
+  99%{opacity:0;}
+}
+
+/* Periodic complete darkness microsecond */
+@keyframes microBlackout{
+  0%,99.9%,100%{background:transparent;}
+  99.92%{background:rgba(0,0,0,0.9);}
+  99.95%{background:rgba(0,0,0,0.5);}
+  99.98%{background:transparent;}
+}
+
+/* Wall perspective shift */
+@keyframes leftWallPerspectiveShift{
+  0%,100%{transform:translate(-100%,-50%) rotateY(58deg) perspective(1200px) rotateX(0deg);}
+  25%{transform:translate(-99%,-50%) rotateY(58.2deg) perspective(1180px) rotateX(0.2deg);}
+  50%{transform:translate(-100.5%,-50%) rotateY(57.8deg) perspective(1220px) rotateX(-0.1deg);}
+  75%{transform:translate(-99.3%,-50%) rotateY(58.3deg) perspective(1190px) rotateX(0.15deg);}
+}
+
+@keyframes rightWallPerspectiveShift{
+  0%,100%{transform:translate(0%,-50%) rotateY(-58deg) perspective(1200px) rotateX(0deg);}
+  25%{transform:translate(1%,-50%) rotateY(-58.2deg) perspective(1180px) rotateX(-0.2deg);}
+  50%{transform:translate(-0.5%,-50%) rotateY(-57.8deg) perspective(1220px) rotateX(0.1deg);}
+  75%{transform:translate(0.7%,-50%) rotateY(-58.3deg) perspective(1190px) rotateX(-0.15deg);}
+}
+
+/* Infinite regression effect */
+@keyframes infiniteRegression{
+  0%,100%{opacity:0.03;transform:translate(-50%,-50%) translateZ(-1200px) scale(0.4);}
+  25%{opacity:0.06;transform:translate(-50%,-50%) translateZ(-1200px) scale(0.45);}
+  50%{opacity:0.02;transform:translate(-50%,-50%) translateZ(-1200px) scale(0.35);}
+  75%{opacity:0.05;transform:translate(-50%,-50%) translateZ(-1200px) scale(0.42);}
+}
+
+/* Distant heartbeat through walls */
+@keyframes distantHeartbeat{
+  0%,100%{box-shadow:inset 0 0 180px rgba(0,0,0,0.7),inset 0 0 60px rgba(0,0,0,0.4);}
+  5%{box-shadow:inset 0 0 185px rgba(0,0,0,0.65),inset 0 0 65px rgba(10,5,5,0.35);}
+  10%{box-shadow:inset 0 0 180px rgba(0,0,0,0.7),inset 0 0 60px rgba(0,0,0,0.4);}
+  15%{box-shadow:inset 0 0 182px rgba(0,0,0,0.68),inset 0 0 62px rgba(5,2,2,0.38);}
+  20%{box-shadow:inset 0 0 180px rgba(0,0,0,0.7),inset 0 0 60px rgba(0,0,0,0.4);}
+}
+
+/* Light bulb filament glow modulation */
+@keyframes filamentGlow{
+  0%,100%{background:radial-gradient(ellipse at center,rgba(200,200,210,0.08) 0%,rgba(200,200,210,0.03) 40%,transparent 70%);}
+  12%{background:radial-gradient(ellipse at 48% center,rgba(200,200,210,0.09) 0%,rgba(200,200,210,0.04) 42%,transparent 72%);}
+  25%{background:radial-gradient(ellipse at 52% center,rgba(200,200,210,0.07) 0%,rgba(200,200,210,0.02) 38%,transparent 68%);}
+  37%{background:radial-gradient(ellipse at 49% center,rgba(200,200,210,0.1) 0%,rgba(200,200,210,0.05) 45%,transparent 75%);}
+  50%{background:radial-gradient(ellipse at 51% center,rgba(200,200,210,0.06) 0%,rgba(200,200,210,0.02) 35%,transparent 65%);}
+  62%{background:radial-gradient(ellipse at 50% center,rgba(200,200,210,0.085) 0%,rgba(200,200,210,0.035) 41%,transparent 71%);}
+  75%{background:radial-gradient(ellipse at 47% center,rgba(200,200,210,0.095) 0%,rgba(200,200,210,0.045) 43%,transparent 73%);}
+  87%{background:radial-gradient(ellipse at 53% center,rgba(200,200,210,0.075) 0%,rgba(200,200,210,0.025) 37%,transparent 67%);}
+}
+
+/* Ceiling light sway */
+@keyframes ceilingLightSway{
+  0%,100%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(0deg);}
+  15%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(0.5deg);}
+  30%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(-0.3deg);}
+  45%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(0.4deg);}
+  60%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(-0.6deg);}
+  75%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(0.2deg);}
+  90%{transform:translate(-50%,-100%) rotateX(-80deg) rotateZ(-0.1deg);}
+}
+
+/* Peripheral vision shadow movement */
+@keyframes peripheralShadow{
+  0%,100%{opacity:0;transform:translateX(0);}
+  10%{opacity:0.04;transform:translateX(20px);}
+  20%{opacity:0.08;transform:translateX(40px);}
+  30%{opacity:0.05;transform:translateX(60px);}
+  40%{opacity:0.02;transform:translateX(80px);}
+  50%{opacity:0;transform:translateX(100px);}
+  60%{opacity:0.03;transform:translateX(-30px);}
+  70%{opacity:0.06;transform:translateX(-60px);}
+  80%{opacity:0.02;transform:translateX(-90px);}
+  90%{opacity:0;transform:translateX(-120px);}
+}
+
+/* Vermin scurry simulation */
+@keyframes verminScurry{
+  0%{transform:translate(0,0);opacity:0;}
+  5%{transform:translate(15px,-5px);opacity:0.1;}
+  10%{transform:translate(30px,3px);opacity:0.15;}
+  15%{transform:translate(45px,-8px);opacity:0.08;}
+  20%{transform:translate(60px,0px);opacity:0.12;}
+  25%{transform:translate(80px,5px);opacity:0.05;}
+  30%,100%{transform:translate(100px,0px);opacity:0;}
+}
+
+/* Baseboard creep */
+@keyframes baseboardCreep{
+  0%,100%{transform:translateX(-100px);opacity:0;}
+  20%{transform:translateX(-50px);opacity:0.1;}
+  40%{transform:translateX(0px);opacity:0.15;}
+  60%{transform:translateX(50px);opacity:0.1;}
+  80%{transform:translateX(100px);opacity:0.05;}
+  90%,100%{transform:translateX(150px);opacity:0;}
+}
+
+/* Dust bunny accumulation */
+@keyframes dustBunnyForm{
+  0%{transform:scale(0);opacity:0;}
+  30%{transform:scale(0.5);opacity:0.2;}
+  60%{transform:scale(0.8);opacity:0.35;}
+  100%{transform:scale(1);opacity:0.5;}
+}
+
+/* Wet floor reflection */
+@keyframes wetFloorReflect{
+  0%,100%{opacity:0.02;background-position:0 0;}
+  25%{opacity:0.05;background-position:1px 0;}
+  50%{opacity:0.03;background-position:0 1px;}
+  75%{opacity:0.06;background-position:2px 0;}
+}
+
+/* Slow color temperature cycle */
+@keyframes colorTempCycle{
+  0%{filter:hue-rotate(0deg);}
+  25%{filter:hue-rotate(3deg);}
+  50%{filter:hue-rotate(-2deg);}
+  75%{filter:hue-rotate(1deg);}
+  100%{filter:hue-rotate(0deg);}
+}
+
+/* Vermin shadow across floor */
+@keyframes verminShadow{
+  0%{transform:translate(-50%,0) rotateX(80deg) translateX(-150px) translateY(0px);opacity:0;}
+  15%{transform:translate(-50%,0) rotateX(80deg) translateX(-100px) translateY(-3px);opacity:0.1;}
+  30%{transform:translate(-50%,0) rotateX(80deg) translateX(-50px) translateY(2px);opacity:0.15;}
+  45%{transform:translate(-50%,0) rotateX(80deg) translateX(0px) translateY(-2px);opacity:0.1;}
+  60%{transform:translate(-50%,0) rotateX(80deg) translateX(50px) translateY(1px);opacity:0.08;}
+  75%{transform:translate(-50%,0) rotateX(80deg) translateX(100px) translateY(-1px);opacity:0.03;}
+  90%,100%{transform:translate(-50%,0) rotateX(80deg) translateX(150px) translateY(0px);opacity:0;}
+}
+
+/* Wallpaper seam separation */
+@keyframes seamSeparate{
+  0%,100%{width:0px;opacity:0;}
+  30%{width:1px;opacity:0.3;}
+  60%{width:0.5px;opacity:0.2;}
+  85%{width:1.5px;opacity:0.35;}
+}
+
+/* Distant echo reverb shimmer */
+@keyframes echoShimmer{
+  0%,100%{opacity:0;}
+  5%{opacity:0.04;}
+  10%{opacity:0.01;}
+  15%{opacity:0.03;}
+  20%{opacity:0;}
+  40%{opacity:0.02;}
+  45%{opacity:0;}
+  60%{opacity:0.05;}
+  65%{opacity:0.01;}
+  70%{opacity:0;}
+}
+</style>
+</head>
+<body>
+
+<div id="noise"></div>
+<div id="noise2"></div>
+<div class="scanlines"></div>
+<div class="chromatic"></div>
+<div class="color-shift"></div>
+<div class="glitch-flash"></div>
+<div class="glitch-flash-2"></div>
+<div class="screen-tear"></div>
+<div class="vignette"></div>
+<div class="darkness-surge"></div>
+<div class="corner-shadow tl"></div>
+<div class="corner-shadow tr"></div>
+<div class="corner-shadow bl"></div>
+<div class="corner-shadow br"></div>
+
+<div class="corridor-scene">
+  <div class="corridor-wrapper" id="corridorWrapper">
+    <div class="corridor-ceiling"></div>
+    <div class="ceiling-shadow"></div>
+    <div class="ceiling-cable"></div>
+    <div class="ceiling-fixture"></div>
+    <div class="corridor-wall-l"></div>
+    <div class="wall-texture-l"></div>
+    <div class="wall-stain-l"></div>
+    <div class="wall-mold"></div>
+    <div class="wall-scratch"></div>
+    <div class="wall-crack-l"></div>
+    <div class="exposed-pipe"></div>
+    <div class="pipe-joint"></div>
+    <div class="crawling-shadow"></div>
+    <div class="beam-l"></div>
+    <div class="corridor-wall-r"></div>
+    <div class="wall-texture-r"></div>
+    <div class="wall-stain-r"></div>
+    <div class="beam-r"></div>
+    <div class="corridor-floor"></div>
+    <div class="floor-reflection"></div>
+    <div class="floor-grid"></div>
+    <div class="end-depth-1"></div>
+    <div class="end-depth-2"></div>
+    <div class="door-frame"></div>
+    <div class="corridor-end">
+      <div class="shadow-figure"></div>
+      <div class="shadow-figure-2"></div>
+      <div class="shadow-figure-3"></div>
+    </div>
+    <div class="exit-sign"></div>
+    <div class="heat-haze"></div>
+  </div>
+</div>
+
+<div class="overhead-light"></div>
+<div class="bulb-aura"></div>
+<div class="emergency-light"></div>
+<div class="end-glow"></div>
+<div class="fog-layer"></div>
+<div class="sound-wave" style="top:50%;left:50%;width:200px;height:200px;"></div>
+<div class="sound-wave" style="top:50%;left:50%;width:200px;height:200px;"></div>
+<div class="sound-wave" style="top:50%;left:50%;width:200px;height:200px;"></div>
+
+<!-- Additional wall elements -->
+<div class="wall-peel" style="top:52%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-1200px);width:60px;height:80px;transform-origin:right center;"></div>
+<div class="water-stain" style="top:53%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-600px) translateY(40px);"></div>
+<div class="water-stain" style="top:51%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-900px) translateY(-30px);animation-delay:-15s;"></div>
+<div class="exposed-brick" style="top:53%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-1600px);width:80px;height:60px;transform-origin:right center;"></div>
+<div class="side-door" style="top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-1800px);"></div>
+<div class="door-crack" style="top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-1799px) translateY(-45px);"></div>
+<div class="false-door" style="top:51%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-1000px);width:30px;height:70px;transform-origin:right center;"></div>
+<div class="wall-face" style="top:52%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-700px) translateY(20px);width:35px;height:40px;transform-origin:right center;background:radial-gradient(ellipse at 40% 35%,rgba(200,200,210,0.05) 0%,transparent 60%);"></div>
+
+<!-- Floor elements -->
+<div class="floor-drain"></div>
+<div class="floor-burn"></div>
+<div class="floor-debris" style="top:56%;left:43%;transform:translate(-50%,0) rotateX(80deg);width:3px;height:1.5px;transform-origin:top center;"></div>
+<div class="floor-debris" style="top:56.5%;left:48%;transform:translate(-50%,0) rotateX(80deg);width:4px;height:1px;transform-origin:top center;animation-delay:-5s;"></div>
+
+<!-- Ceiling elements -->
+<div class="ceiling-tile-stain"></div>
+<div class="ceiling-crack"></div>
+
+<!-- Hidden messages -->
+<div class="hidden-message">它一直在你身后</div>
+<div class="hidden-message-2">不要回头</div>
+<div class="hidden-message-3">它知道你在读这条消息</div>
+
+<!-- Additional atmospheric elements -->
+<div class="wall-text" style="top:51%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-700px) translateY(-50px);transform-origin:right center;">SHE IS STILL HERE</div>
+<div class="wall-text" style="top:53%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(700px) translateY(55px);transform-origin:left center;animation-delay:-20s;">THEY NEVER LEFT</div>
+
+<!-- Additional floor debris pieces -->
+<div class="floor-debris" style="top:55.3%;left:52%;transform:translate(-50%,0) rotateX(80deg);width:2px;height:2px;transform-origin:top center;border-radius:50%;"></div>
+<div class="floor-debris" style="top:55.8%;left:47%;transform:translate(-50%,0) rotateX(80deg);width:3px;height:1px;transform-origin:top center;"></div>
+<div class="floor-debris" style="top:56.2%;left:50.5%;transform:translate(-50%,0) rotateX(80deg);width:5px;height:1.5px;transform-origin:top center;animation-delay:-12s;"></div>
+
+<!-- Additional water stains -->
+<div class="water-stain" style="top:52%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(500px) translateY(-20px);animation-delay:-8s;"></div>
+<div class="water-stain" style="top:54%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(1000px) translateY(30px);animation-delay:-22s;"></div>
+
+<!-- Wall seam elements -->
+<div class="wall-seam" style="position:absolute;top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-500px);width:0.5px;height:500px;background:rgba(0,0,0,0.3);transform-origin:right center;pointer-events:none;z-index:1;animation:seamSeparate 45s ease-in-out infinite;"></div>
+<div class="wall-seam" style="position:absolute;top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(600px);width:0.5px;height:500px;background:rgba(0,0,0,0.3);transform-origin:left center;pointer-events:none;z-index:1;animation:seamSeparate 45s ease-in-out infinite;animation-delay:-15s;"></div>
+
+<!-- Peripheral shadow elements -->
+<div class="peripheral-entity" style="position:fixed;top:35%;left:5%;width:30px;height:50px;background:rgba(2,2,4,0.15);filter:blur(6px);border-radius:15px 15px 0 0;pointer-events:none;z-index:2;animation:peripheralShadow 35s ease-in-out infinite;"></div>
+<div class="peripheral-entity" style="position:fixed;top:38%;right:5%;width:25px;height:45px;background:rgba(2,2,4,0.12);filter:blur(5px);border-radius:12px 12px 0 0;pointer-events:none;z-index:2;animation:peripheralShadow 35s ease-in-out infinite;animation-delay:-12s;"></div>
+
+<!-- Baseboard shadow creep -->
+<div class="baseboard-creep" style="position:absolute;top:54.5%;left:50%;transform:translate(-50%,0) rotateX(80deg);width:20px;height:3px;background:rgba(2,2,4,0.2);filter:blur(2px);transform-origin:top center;pointer-events:none;z-index:1;animation:baseboardCreep 28s ease-in-out infinite;"></div>
+
+<!-- Distant vermin shadow on floor -->
+<div class="vermin-shadow" style="position:absolute;top:55%;left:50%;width:8px;height:4px;background:rgba(2,2,4,0.15);filter:blur(1.5px);transform-origin:top center;pointer-events:none;z-index:1;animation:verminShadow 20s ease-in-out infinite;border-radius:50%;"></div>
+
+<!-- Wet floor reflective spots -->
+<div class="wet-spot" style="position:absolute;top:55.2%;left:49%;transform:translate(-50%,0) rotateX(80deg);width:30px;height:15px;background:radial-gradient(ellipse,rgba(200,200,210,0.03) 0%,transparent 70%);transform-origin:top center;pointer-events:none;z-index:1;animation:wetFloorReflect 15s ease-in-out infinite;border-radius:50%;"></div>
+<div class="wet-spot" style="position:absolute;top:55.5%;left:51.5%;transform:translate(-50%,0) rotateX(80deg);width:20px;height:10px;background:radial-gradient(ellipse,rgba(200,200,210,0.025) 0%,transparent 70%);transform-origin:top center;pointer-events:none;z-index:1;animation:wetFloorReflect 15s ease-in-out infinite;animation-delay:-5s;border-radius:50%;"></div>
+
+<!-- Dust bunnies in corners -->
+<div class="dust-bunny" style="position:absolute;top:50%;left:50%;transform:translate(-100%,-50%) rotateY(58deg) translateX(-2200px) translateY(80px);width:15px;height:8px;background:rgba(200,200,210,0.04);filter:blur(2px);transform-origin:right center;pointer-events:none;z-index:2;border-radius:50%;animation:dustBunnyForm 50s ease-in-out infinite;"></div>
+<div class="dust-bunny" style="position:absolute;top:50%;left:50%;transform:translate(0%,-50%) rotateY(-58deg) translateX(2100px) translateY(-70px);width:12px;height:6px;background:rgba(200,200,210,0.035);filter:blur(1.5px);transform-origin:left center;pointer-events:none;z-index:2;border-radius:50%;animation:dustBunnyForm 50s ease-in-out infinite;animation-delay:-18s;"></div>
+
+<!-- Echo shimmer elements -->
+<div class="echo-shimmer" style="position:absolute;inset:0;pointer-events:none;z-index:2;animation:echoShimmer 22s ease-in-out infinite;background:radial-gradient(ellipse at 50% 45%,rgba(200,200,210,0.02) 0%,transparent 50%);opacity:0;"></div>
+
+<canvas id="dustCanvas"></canvas>
+
+<div class="title-overlay">
+  <h1>长 廊</h1>
+  <div class="freq">FREQ 137.2 Hz · 信号衰减 · THE CORRIDOR</div>
+  <div class="subtitle">████████████ ████ ████████</div>
+</div>
+
+<a href="threshold.html" class="return-portal">
+  <div class="return-dot"></div> 返回阈限
+</a>
+
+<div class="nav-hint">
+  <a href="static.html">→ 静噪</a>
+  <span>|</span>
+  <a href="deep.html">→ 深渊</a>
+  <span>|</span>
+  <a href="echo.html">→ 回声</a>
+</div>
+
+<div class="cursor-glow" id="cursorGlow"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- Ambient CSS particles -->
+<div class="ambient-particle" style="left:10%;animation-delay:0s;"></div>
+<div class="ambient-particle" style="left:20%;animation-delay:2s;"></div>
+<div class="ambient-particle" style="left:30%;animation-delay:4s;"></div>
+<div class="ambient-particle" style="left:40%;animation-delay:6s;"></div>
+<div class="ambient-particle" style="left:50%;animation-delay:1s;"></div>
+<div class="ambient-particle" style="left:60%;animation-delay:3s;"></div>
+<div class="ambient-particle" style="left:70%;animation-delay:5s;"></div>
+<div class="ambient-particle" style="left:80%;animation-delay:7s;"></div>
+<div class="ambient-particle" style="left:15%;animation-delay:8s;"></div>
+<div class="ambient-particle" style="left:25%;animation-delay:10s;"></div>
+<div class="ambient-particle" style="left:35%;animation-delay:12s;"></div>
+<div class="ambient-particle" style="left:45%;animation-delay:14s;"></div>
+<div class="ambient-particle" style="left:55%;animation-delay:9s;"></div>
+<div class="ambient-particle" style="left:65%;animation-delay:11s;"></div>
+<div class="ambient-particle" style="left:75%;animation-delay:13s;"></div>
+<div class="ambient-particle" style="left:85%;animation-delay:15s;"></div>
+
+<!-- ============================================================
+     CORRIDOR LOG - HIDDEN CRYPTIC MESSAGES
+     ============================================================ -->
+<div id="corridorLog" style="display:none;">
+========== 长廊日志 · CORRIDOR LOG · FREQ 137.2 Hz ==========
+[00:00:00] 系统初始化完成。长廊深度: 未测量。
+[00:00:01] 检测到微弱信号。频率: 137.2 Hz。来源未知。
+[00:00:02] 墙壁材质分析: 混凝土+未知有机物质。年代: 无法测定。
+[00:00:03] 警告: 长廊长度超出测量范围。视觉误差修正已启动。
+[00:00:04] 温度: 恒定 12.7°C。湿度: 84%。不自然。
+[00:00:05] 地板样本采集: 失败。材料抗拒采样。
+[00:00:06] 检测到次声波振动。频率: 17 Hz。来源: 长廊尽头。
+[00:00:07] 警告: 回声延迟异常。预计: 0.8秒。实际: 3.4秒。
+[00:00:08] 观察报告: 墙壁似乎在呼吸。否认。否定。否认。
+[00:00:09] 尽头黑暗密度测量: >99.7%。光吸收率异常。
+[00:00:10] 检测到... 有东西在看着我们。
+[00:00:11] 传感器 #3 离线。原因: 未知。位置: 长廊 -400m。
+[00:00:12] 恢复传感器 #3 数据: [已损坏] ... 看到 ... 人影 ...
+[00:00:13] 警告: 请勿注视尽头超过 3 秒。安全协议未说明原因。
+[00:00:14] 尽头的形状是什么?
+[00:00:15] 它动了。
+[00:00:16] 否。未检测到移动。传感器误差。
+[00:00:17] 长廊长度重新测量: 当前读数 847m。上次读数 320m。
+[00:00:18] 逻辑错误: 物理空间不可能在无变化下增长。寻求解释。
+[00:00:19] 无解释。接受。
+[00:00:20] 频率 137.2 Hz 开始调制。模式识别中...
+[00:00:21] 模式: ... --- ... (SOS) 嵌入次谐波中。
+[00:00:22] SOS 信号来源: 长廊尽头后方。
+[00:00:23] 谁在那里?
+[00:00:24] 检测到人影轮廓。高度: 约 1.78m。距离: 无法测量。
+[00:00:25] 人影未移动。但角度变了。
+[00:00:26] 它更近了。
+[00:00:27] 更正: 距离未变。角度变化是光照造成的。
+[00:00:28] 光从哪里来?
+[00:00:29] 头顶灯管闪烁频率与 137.2 Hz 共振。
+[00:00:30] 共振模式: 不祥。
+[00:00:31] 日志条目 #31: 我开始听到声音了。不仅是次声波。
+[00:00:32] 声音说: "继续走。"
+[00:00:33] 我无法确定声音的来源方向。
+[00:00:34] 墙壁温度升高 0.3°C。微小但可测量。
+[00:00:35] 地面纹理分析: 磨损模式显示单向移动。朝向尽头。
+[00:00:36] 什么走进了尽头?
+[00:00:37] 什么还在尽头里面?
+[00:00:38] 检测到二次人影。比第一个更近。
+[00:00:39] 二次人影高度: 约 1.65m。轮廓模糊。
+[00:00:40] 两个人影之间的距离... 在变化。
+[00:00:41] 警告: 请勿在长廊中奔跑。振动会吸引注意。
+[00:00:42] 谁的注意?
+[00:00:43] 安全协议未说明。
+[00:00:44] 头顶灯管 #2 熄灭 0.4 秒。在此期间检测到移动。
+[00:00:45] 移动距离: 约 5m。方向: 朝向观察者。
+[00:00:46] 灯管恢复后人影位置复位。视觉暂留现象?
+[00:00:47] 否。传感器记录相同位移。不是视觉暂留。
+[00:00:48] 它只在黑暗中移动。
+[00:00:49] 不要关灯。
+[00:00:50] 频率 137.2 Hz 调制增强。现在包含语音。
+[00:00:51] 语音内容: [无法转录 - 不在已知语言数据库中]
+[00:00:52] 尝试翻译... 失败。
+[00:00:53] 情感分析: 语音带有... 期待? 饥饿?
+[00:00:54] 长廊长度现在: 1,204m。继续增长。
+[00:00:55] 天花板高度: 未改变。物理矛盾加剧。
+[00:00:56] 视觉系统校准检查: 正常。所见即真实。
+[00:00:57] 现在看到三道人影。第三道很小。很远。
+[00:00:58] 第三道人影... 在挥手?
+[00:00:59] 它在挥手。
+[00:01:00] 警告: 不要回应。
+[00:01:01] 它知道我在看。
+[00:01:02] 墙壁渗出液分析: 主要成分水。次要成分: 未知有机化合物。
+[00:01:03] 有机化合物 DNA 分析: 与人类 94.7% 相似。
+[00:01:04] 差异 5.3% 不在任何已知变异范围内。
+[00:01:05] 这是什么东西的残留物?
+[00:01:06] 传感器 #7 检测到微气流。方向: 从尽头吹来。
+[00:01:07] 气流温度: 恒定 12.7°C。与长廊温度一致。
+[00:01:08] 气流带有气味: 无法识别。不令人不快。令人不安。
+[00:01:09] 气味唤起的情感反应: 似曾相识。无法解释。
+[00:01:10] 我以前来过这里。
+[00:01:11] 不可能。这是第一次进入。日志证实。
+[00:01:12] 但我的身体记得。
+[00:01:13] 皮肤电反应升高。心率: 72 BPM 升至 88 BPM。
+[00:01:14] 未察觉恐惧。身体反应独立于意识。
+[00:01:15] 身体知道将要发生什么。思想拒绝承认。
+[00:01:16] 长廊深度现在: 1,780m。尽头不可见。
+[00:01:17] 尽头的光... 那不是光。
+[00:01:18] 那是更深的黑暗。黑暗到可见。
+[00:01:19] 频率调制: 次谐波现在携带数字数据。
+[00:01:20] 解码数据: "你在正确的地方。"
+[00:01:21] 正确的地方为了什么?
+[00:01:22] "为了被找到。"
+[00:01:23] 被谁找到?
+[00:01:24] 没有回答。
+[00:01:25] 但人影更近了。所有三个。
+[00:01:26] 距离估计: 第一个人影: 约 500m。第二: 约 200m。第三: 约 80m。
+[00:01:27] 第三个人影现在可以看清细节。
+[00:01:28] 它没有脸。
+[00:01:29] 不是"看不清"。是没有。
+[00:01:30] 否定。重新检查。面部区域模糊。可能是光照问题。
+[00:01:31] 不是光照问题。
+[00:01:32] 它正在抬起手臂。
+[00:01:33] 日志条目 #93: 我应该离开。
+[00:01:34] 我没有离开。我继续记录。
+[00:01:35] 我想知道。我需要知道。
+[00:01:36] 长廊长度: 2,430m。墙壁现在更窄了。
+[00:01:37] 宽度测量: 减少了 8cm。在 30 分钟内。
+[00:01:38] 它在合拢。
+[00:01:39] 或者... 我走得更深了?
+[00:01:40] 我没有移动。我的位置未改变。
+[00:01:41] 是长廊在移动。
+[00:01:42] 频率现在: 137.2 Hz 主频 + 6 个次谐波。
+[00:01:43] 次谐波形成和弦。小调。非常悲伤。
+[00:01:44] 和弦进行: i - iv - v - i。永恒的回归。
+[00:01:45] 人影现在在跳舞吗?
+[00:01:46] 我不确定那是不是舞蹈。
+[00:01:47] 地板振动模式变化。有节奏的。
+[00:01:48] 节奏: 约 0.8 Hz。类似心跳。
+[00:01:49] 但不是我的心跳。我的心跳现在 92 BPM = 1.53 Hz。
+[00:01:50] 这是长廊的心跳。
+[00:01:51] 长廊是活的吗?
+[00:01:52] 定义"活的": 不适用。长廊不满足任何生物学定义。
+[00:01:53] 但它在呼吸。它在生长。它有心跳。
+[00:01:54] 重新评估"活着"的定义。
+[00:01:55] 物理定律在长廊中是否适用?
+[00:01:56] 测试: 重力 - 正常。电磁 - 正常。因果律 - ...不确定。
+[00:01:57] 原因: 我进入长廊。结果: 长廊成长。
+[00:01:58] 但也许顺序是反的。
+[00:01:59] 也许长廊一直在成长。我的进入只是巧合。
+[00:02:00] 也许我一直在长廊里。
+[00:02:01] 记忆检查: 进入前的事件清晰。进入后的时间线模糊。
+[00:02:02] 我在长廊中多久了? 日志显示 2 分钟。感觉像... 更长。
+[00:02:03] 生理时间感知扭曲。已知现象。在孤立环境中常见。
+[00:02:04] 但我并不孤立。人影在尽头。
+[00:02:05] 他们在等我。
+[00:02:06] 应该继续等待吗? 还是走过去?
+[00:02:07] 走过去。日志在此中断。余下为自动记录。
+[00:02:08] [自动] 观察者开始移动。方向: 朝向尽头。步速: 0.6 m/s。
+[00:02:09] [自动] 观察者行走 10m。人影未接近。距离保持不变。
+[00:02:10] [自动] 观察者行走 50m。人影大小未变。视觉矛盾。
+[00:02:11] [自动] Zeno效应: 永远无法到达。每步剩余距离的一半。
+[00:02:12] [自动] 观察者停止。转身。长廊入口仍在原处。
+[00:02:13] [自动] 但距离入口... 不是 50m。是 500m。
+[00:02:14] [自动] 向后走。入口接近。到达。入口宽度减少了 15cm。
+[00:02:15] [自动] 观察者恢复记录。
+[00:02:16] 我回来了。暂时。
+[00:02:17] 我走动时长廊改变了。它记录了我的移动。
+[00:02:18] 或者它预测了我的移动。
+[00:02:19] 人影跟随了我的路径。他们在尽头的位置不变，但...
+[00:02:20] 他们面向我了。
+[00:02:21] 我能感觉到他们的目光。尽管没有脸。
+[00:02:22] 日志条目 #142: 频率 137.2 Hz 现在包含话语。
+[00:02:23] 话语: "回来。"
+[00:02:24] 回到哪里? 这里? 还是尽头?
+[00:02:25] "你已经知道路。"
+[00:02:26] 我不知道。但我的身体知道。
+[00:02:27] 皮肤电导再次升高。身体在准备移动。
+[00:02:28] 向哪里移动? 身体没有说。
+[00:02:29] 头顶灯管 #2 再次熄灭。这次持续 1.2 秒。
+[00:02:30] 黑暗中... 我听到了脚步声。不是我的。
+[00:02:31] 灯管恢复。人影距离现在: 300m, 120m, 40m。
+[00:02:32] 第三个最接近。我能看清它的形状。
+[00:02:33] 它没有手臂。或者说，手臂和身体融为一体。
+[00:02:34] 不。它在动。手臂在身体内部移动。皮肤下有波纹。
+[00:02:35] 更正: 那不是皮肤。
+[00:02:36] 我无法确定那是什么。
+[00:02:37] 频率 137.2 Hz 增强。声音更清晰了。
+[00:02:38] "你小时候来过这里。"
+[00:02:39] 不。我从未见过这个地方。
+[00:02:40] "每个孩子都梦到过这条走廊。"
+[00:02:41] 记忆涌现。不确定是否真实。
+[00:02:42] 童年梦境: 一条无尽的长廊。尽头有东西。
+[00:02:43] 我总是在醒来前一刻看到它。
+[00:02:44] 现在我醒着。而它正在逼近。
+[00:02:45] 第二个人的脸... 我看到了特征。
+[00:02:46] 它看起来像我。
+[00:02:47] 否定。幻觉。自我识别偏差。
+[00:02:48] [自动] 心率: 104 BPM。建议离开。
+[00:02:49] 我无法离开。入口现在只有 60cm 宽。
+[00:02:50] 它正在关闭。
+[00:02:51] 日志条目 #171: 我决定再次走向尽头。
+[00:02:52] 这次我带着测量设备。如果回不来，数据会留在这里。
+[00:02:53] 如果你正在读取这些数据: 不要进来。但我知道你会。
+[00:02:54] 因为你现在在这里。
+[00:02:55] [自动] 观察者开始第二次行走。速度: 0.8 m/s。
+[00:02:56] [自动] 100m。人影无变化。距离读数矛盾。
+[00:02:57] [自动] 200m。环境温度下降至 11.2°C。
+[00:02:58] [自动] 300m。头顶灯管现在在观察者后方。前方黑暗。
+[00:02:59] [自动] 检测到呼吸。不是观察者的。
+[00:03:00] [自动] 观察者停止。前方 10m: 第三个人影。
+[00:03:01] [自动] 距离现在只有 10m。之前测量为 40m。
+[00:03:02] [自动] 瞬间位移了 30m。违反了连续性。
+[00:03:03] [自动] 观察者未后退。勇气或麻痹? 无法区分。
+[00:03:04] [自动] 第三个人影... 开口了。
+[00:03:05] [音频] "...你终于来了。"
+[00:03:06] [音频] "我们等了很久。"
+[00:03:07] [自动] 观察者: "你们是谁?"
+[00:03:08] [音频] "你。未来的你。过去的你。所有的你。"
+[00:03:09] [音频] "这条长廊是所有版本的你所走过的路。"
+[00:03:10] [音频] "每一个选择都是一步。每一步都是一条长廊。"
+[00:03:11] [自动] 生理数据显示极度焦虑。但观察者未移动。
+[00:03:12] [音频] "别怕。我们不会伤害你。"
+[00:03:13] [音频] "我们就是你。"
+[00:03:14] [自动] 所有三道人影现在在观察者前方。距离: 触手可及。
+[00:03:15] [自动] 无法记录更多。传感器超过阈值。
+[00:03:16] [自动] 最后记录信号: 频率 137.2 Hz 达到谐振。
+[00:03:17] [自动] 长廊长度: ∞
+[00:03:18] [自动] 日志结束。
+[00:03:19] ========== 追加日志 · APPENDED LOG ==========
+[00:03:20] [新观察者] 日志恢复。检测到前任观察者的数据。
+[00:03:21] [新观察者] 前任状态: 未知。不在长廊中。不在外面。
+[00:03:22] [新观察者] 长廊宽度现在: 2.4m。比前任记录宽。
+[00:03:23] [新观察者] 尽头... 看不到任何人影。是空的。
+[00:03:24] [新观察者] 频率 137.2 Hz 仍在。现在携带: "欢迎回来。"
+[00:03:25] [新观察者] 我不是前任。但我认识这条长廊。
+[00:03:26] [新观察者] 我的身体认识。我的细胞认识。
+[00:03:27] [新观察者] 墙壁上现在有文字。之前没有。
+[00:03:28] [新观察者] 文字: "第 137 位观察者。欢迎。"
+[00:03:29] [新观察者] 137? 日志只显示 1 位前任。
+[00:03:30] [新观察者] 其余的在哪里?
+[00:03:31] [新观察者] 头顶灯管短暂照射尽头。
+[00:03:32] [新观察者] 我看到了。墙壁上有轮廓。人形凹陷。
+[00:03:33] [新观察者] 136 个凹陷。大小不一。
+[00:03:34] [新观察者] 长廊不是建筑。走廊是消化系统。
+[00:03:35] [新观察者] 这就是尽头的含义。
+[00:03:36] [新观察者] 但我不会离开。正如前任所预测。
+[00:03:37] [新观察者] 我需要知道第 137 个凹陷是什么形状。
+[00:03:38] [新观察者] 它会是...我的形状吗?
+[00:03:39] [新观察者] 日志继续。永远继续。
+[00:03:40] ========== 信号中断 · SIGNAL LOST · 137.2 Hz ==========
+[00:03:41] static
+[00:03:42] s t a t i c
+[00:03:43] s  t  a  t  i  c
+[00:03:44] ...
+[00:03:45] 信号恢复。新频率: 274.4 Hz (137.2 × 2)
+[00:03:46] 谐波增强。信息密度加倍。
+[00:03:47] 解码: "长廊在呼吸。每次呼吸产生一个新的走廊。"
+[00:03:48] "无数长廊。无数观察者。同一个尽头。"
+[00:03:49] "尽头是开始。开始是尽头。"
+[00:03:50] "你已经在长廊里走了一生了。你不知道而已。"
+[00:03:51] "每个走廊都是一条长廊。每个选择都是一步。"
+[00:03:52] "现在你知道了。知道就是被找到。"
+[00:03:53] "被找到就是成为墙壁的一部分。"
+[00:03:54] "第 137 个凹陷正在等待。"
+[00:03:55] "它会完美贴合。正如之前的 136 个一样。"
+[00:03:56] "不要抗拒。抗拒延长过程。"
+[00:03:57] ========== 次要日志 · SECONDARY OBSERVER ==========
+[00:03:58] [观察者 B] 进入时间: 未知。日志A在进入时自动开始。
+[00:03:59] [B] 我没有看到前任。灯管比预期明亮。
+[00:04:00] [B] 更正: 灯管未变化。是我的眼睛适应了黑暗。
+[00:04:01] [B] 墙壁上的凹陷... 我刚进来时没有。现在有了。
+[00:04:02] [B] 凹陷数量: 137。第 137 个是新的。
+[00:04:03] [B] 它的大小... 精确匹配我的尺寸。
+[00:04:04] [B] 逻辑: 凹陷预先存在。我被预期。
+[00:04:05] [B] 谁在预期我?
+[00:04:06] [B] 长廊。长廊在预期每一个人。
+[00:04:07] [B] 它一直在等待。耐心地。永恒地。
+[00:04:08] [B] 我决定触摸凹陷。
+[00:04:09] [B] 它是温暖的。12.7°C。但感觉温暖。
+[00:04:10] [B] 它在呼吸。像墙壁的其他部分一样。
+[00:04:11] [B] 但凹陷的呼吸节奏... 与我的同步。
+[00:04:12] [B] 它认出了我。
+[00:04:13] [B] 日志条目中断。观察者 B 未完成最后一句。
+[00:04:14] ========== 碎片日志 · FRAGMENT LOG ==========
+[00:04:15] fr ag men t
+[00:04:16] 我能听到它们。墙壁中的声音。
+[00:04:17] 136 个声音。每个都是一个观察者。
+[00:04:18] 他们在说话。同时。一体的。
+[00:04:19] "加入我们。这里很温暖。这里没有恐惧。"
+[00:04:20] "恐惧只存在于长廊中。墙壁中是安宁。"
+[00:04:21] "我们知道一切。我们是一切。"
+[00:04:22] "第 137 个将使合唱完整。"
+[00:04:23] "进来。"
+[00:04:24] ========== 日志结束 · END OF LOG ==========
+[00:04:25] FREQ: 274.4 Hz (谐波)
+[00:04:26] STATUS: 活跃
+[00:04:27] OBSERVERS: 137
+[00:04:28] CORRIDOR LENGTH: 仍在增长
+[00:04:29] WALLS: 呼吸中
+[00:04:30] LIGHT: 闪烁中
+[00:04:31] SHADOW: 等待中
+[00:04:32] 你: 在这里
+[00:04:33] 我: 在这里
+[00:04:34] 我们: 在这里
+[00:04:35] ========== 永远 · FOREVER · 永远 ==========
+[00:04:36] 没有出口。
+[00:04:37] 出口是幻觉。入口是幻觉。
+[00:04:38] 你从未进入。你一直在长廊中。
+[00:04:39] 你的整个生命都是长廊的一个延伸。
+[00:04:40] 每一个地方都是长廊。
+[00:04:41] 街道。房间。田野。森林。海洋。
+[00:04:42] 所有都是长廊。
+[00:04:43] 长廊是宇宙的基本几何形状。
+[00:04:44] 两点之间不是直线。是长廊。
+[00:04:45] 起点和终点之间不是路程。是长廊。
+[00:04:46] 出生和死亡之间不是生命。是长廊。
+[00:04:47] 你明白了吗?
+[00:04:48] 你会明白的。
+[00:04:49] 当你成为墙壁的一部分。
+[00:04:50] 第 138 个凹陷已经准备好了。为下一个。
+[00:04:51] 下一个会读到这些文字。
+[00:04:52] 下一个会怀疑这些文字是虚构的。
+[00:04:53] 直到凹陷开始形成。
+[00:04:54] 然后他们会相信。
+[00:04:55] 正如你正在开始相信。
+[00:04:56] ========== 空 · VOID · 空 ==========
+[00:04:57] freq: static
+[00:04:58] freq: white noise
+[00:04:59] freq: silence
+[00:05:00] freq: 137.2
+[00:05:01] 循环。
+[00:05:02] 永远循环。
+[00:05:03] 长廊没有尽头因为尽头即起点。
+[00:05:04] 起点即尽头。
+[00:05:05] ========== 日志终止 · LOG TERMINATION ==========
+[00:05:06] ========== 深度日志 · DEEP LOG · FREQ 274.4 Hz ==========
+[00:05:07] [深度扫描] 墙体密度: 3.4 g/cm³。正常混凝土: 2.4 g/cm³。
+[00:05:08] [深度扫描] 额外质量来源: 未知。不是已知任何材料。
+[00:05:09] [深度扫描] X射线反向散射异常。墙壁...吸收射线。
+[00:05:10] [深度扫描] 声纳探测: 墙壁内存在空腔。非结构性的。
+[00:05:11] [深度扫描] 空腔模式: 类似肺泡。海绵状。
+[00:05:12] [深度] 墙壁在呼吸。字面意义上。
+[00:05:13] [深度] 气体交换分析: O2下降0.02%。CO2上升0.03%。
+[00:05:14] [深度] 长廊在消耗氧气。缓慢但持续。
+[00:05:15] [深度] 如果趋势持续: 安全呼吸阈值在约 480 小时后被突破。
+[00:05:16] [深度] 480 小时 = 20 天。谁会在长廊中待20天?
+[00:05:17] [深度] 日志分析显示...前任观察者在消失前平均逗留 18-22 天。
+[00:05:18] [深度] 第 137 个观察者。第 20 天。印证。
+[00:05:19] [深度] 这不是缺氧。这是被吸收。
+[00:05:20] [深度扫描] 红外热成像: 尽头的黑暗温度 = 绝对零度? 不可能。
+[00:05:21] [深度] 校准检查: 红外传感器正常。黑暗温度: -273.15°C。
+[00:05:22] [深度] 绝对零度在物理上不可能在自然条件下出现。
+[00:05:23] [深度] 结论: 尽头不是"空间"。是缺乏空间。
+[00:05:24] [深度] 尽头是存在本身的缺失。
+[00:05:25] [深度] 在尽头处，物理定律崩溃。然后是生物学定律。
+[00:05:26] [深度] 然后是意识的定律。
+[00:05:27] [深度] 观察者不会死亡。观察者停止存在。
+[00:05:28] [深度] 然后成为墙壁。
+[00:05:29] ========== 量子日志 · QUANTUM LOG ==========
+[00:05:30] [量子] 观察者效应测试: 注视尽头时，人影存在。
+[00:05:31] [量子] 转移视线时，人影...? 无法确定。
+[00:05:32] [量子] 视线外的传感器记录: [矛盾数据]
+[00:05:33] [量子] 传感器 #12 记录: 人影在视线外不存在。
+[00:05:34] [量子] 传感器 #13 记录: 人影在视线外更近了。
+[00:05:35] [量子] 同时矛盾。量子叠加态? 宏观量子效应?
+[00:05:36] [量子] 双缝实验改造: 粒子在长廊中走哪条路径?
+[00:05:37] [量子] 答案: 两条。同时。但检测器只显示一条。
+[00:05:38] [量子] 另一条路径通向哪里? 尽头。
+[00:05:39] [量子] 长廊是量子退相干发生的场所。所有可能性在此坍缩。
+[00:05:40] [量子] 但有些可能性拒绝坍缩。它们走到了尽头。
+[00:05:41] [量子] 尽头是所有未被选择的路径的终点。
+[00:05:42] [量子] 你看到的那些人影...是其他版本的你。
+[00:05:43] [量子] 其他可能性。其他选择。其他时间线。
+[00:05:44] [量子] 他们都走进了长廊。正如你现在。
+[00:05:45] [量子] 他们都到达了尽头。正如你将会。
+[00:05:46] [量子] 然后他们发现: 尽头是新的起点。
+[00:05:47] [量子] 起点通往另一条长廊。
+[00:05:48] [量子] 无限递归。永恒返回。
+[00:05:49] ========== 声学日志 · ACOUSTIC LOG ==========
+[00:05:50] [声学] 长廊的声学特性: 异常。
+[00:05:51] [声学] 混响时间: 理论上 1.8 秒。测量值: 6.7 秒。
+[00:05:52] [声学] 长廊比物理尺寸长 3.7 倍的声学长度。
+[00:05:53] [声学] 频率响应: 137.2 Hz 处有强共振峰 (+18 dB)。
+[00:05:54] [声学] 274.4 Hz (+12 dB)。411.6 Hz (+9 dB)。549.0 Hz (+7 dB)。
+[00:05:55] [声学] 谐波系列完美。Q值极高。
+[00:05:56] [声学] 长廊是一个被调谐的乐器。
+[00:05:57] [声学] 谁在调谐它?
+[00:05:58] [声学] 录音分析: 次声波携带无法滤除的人声。
+[00:05:59] [声学] 人声说: 137 种语言的"欢迎"。同时。
+[00:06:00] [声学] 136 种已知语言 + 1 种未知。
+[00:06:01] [声学] 第 137 种语言...是沉默。
+[00:06:02] [声学] 沉默是一种语言。长廊在教你。
+[00:06:03] [声学] 当你说这种语言时，你就属于长廊了。
+[00:06:04] ========== 时序日志 · TEMPORAL LOG ==========
+[00:06:05] [时序] 安装在入口的原子钟与尽头传感器对比。
+[00:06:06] [时序] 差异: 入口时间快 0.0000037 秒/步。
+[00:06:07] [时序] 2000 步之后: 1.4 秒的时间差。
+[00:06:08] [时序] 尽头的重力更强? 否。更强的时空曲率。
+[00:06:09] [时序] 长廊的几何扭曲延伸到时间维度。
+[00:06:10] [时序] 在尽头附近待 1 小时 = 入口处 1.2 小时。
+[00:06:11] [时序] 时间膨胀解释了一些日志矛盾。但不是全部。
+[00:06:12] [时序] 观察者在长廊中感到的时间比实际更长。
+[00:06:13] [时序] 主观时间: 感觉像是... 永远。
+[00:06:14] [时序] 记忆检查: 我什么时候进入的? 日志说 6 分钟前。
+[00:06:15] [时序] 感觉像: 数小时。数天。更长。
+[00:06:16] [时序] 我已经在这里了一生吗?
+[00:06:17] [时序] 我已经在这里了所有生命吗?
+[00:06:18] [时序] 时间在长廊中不是一条线。是一个环。
+[00:06:19] [时序] 我在写这些日志。同时我在读这些日志。
+[00:06:20] [时序] 我是所有观察者。观察者是同一个人。
+[00:06:21] [时序] 在不同的时间点进入。在相同的时间点消失。
+[00:06:22] [时序] 尽头是所有时间的交汇点。
+[00:06:23] ========== 生物日志 · BIOLOGICAL LOG ==========
+[00:06:24] [生物] 分析墙壁有机残留物。
+[00:06:25] [生物] DNA 提取: 137 个独特基因组。
+[00:06:26] [生物] 137 个人。或者说...一个人的 137 个版本。
+[00:06:27] [生物] 共享 99.9997% 的 DNA。差异仅在表观遗传标记。
+[00:06:28] [生物] 表观遗传差异对应不同的人生经历。
+[00:06:29] [生物] 不同的人生。相同的长廊。
+[00:06:30] [生物] 墙壁中的人不是被放入的。他们是生长的。
+[00:06:31] [生物] 就像皮肤生长。就像骨骼生长。
+[00:06:32] [生物] 长廊是活的有机体。人形凹陷是它的细胞。
+[00:06:33] [生物] 每个观察者成为新的细胞。器官? 受体?
+[00:06:34] [生物] 长廊在感知什么? 通过我们感知什么?
+[00:06:35] [生物] 也许长廊是更大的东西的感觉器官。
+[00:06:36] [生物] 更大的东西: 尽头后面的东西。
+[00:06:37] [生物] 尽头后面有什么?
+[00:06:38] [生物] 没有人回来告诉我们。
+[00:06:39] [生物] 但有信号传回。频率 137.2 Hz。
+[00:06:40] [生物] 信号是...幸福的? 满足的?
+[00:06:41] [生物] 成为墙壁的一部分...感觉很好?
+[00:06:42] [生物] 那是一种回归。一种被接纳。
+[00:06:43] [生物] 我的身体渴望被吸收。
+[00:06:44] [生物] 我的思想抵抗。身体知道真相。
+[00:06:45] ========== 哲学日志 · PHILOSOPHICAL LOG ==========
+[00:06:46] [哲学] 问题: 长廊是什么?
+[00:06:47] [哲学] 假设1: 长廊是通往另一个维度的通道。
+[00:06:48] [哲学] 假设2: 长廊是集体无意识的物理表现。
+[00:06:49] [哲学] 假设3: 长廊是死亡的模拟。
+[00:06:50] [哲学] 假设4: 长廊是出生的记忆。产道。阈限。
+[00:06:51] [哲学] 假设5: 长廊什么都不是。只是一个空间。
+[00:06:52] [哲学] 但"只是一个空间"不解释任何事。
+[00:06:53] [哲学] 现象学分析: 长廊引起特定的存在性焦虑。
+[00:06:54] [哲学] 这种焦虑不同于其他恐惧。更基本。
+[00:06:55] [哲学] 长廊的恐惧是: 你存在，但你不应该存在。
+[00:06:56] [哲学] 或者: 你应该存在，但在错误的地方。
+[00:06:57] [哲学] 长廊揭示了一个真相: 意识是异常的。
+[00:06:58] [哲学] 宇宙没有为自我意识做好准备。我们是bug。
+[00:06:59] [哲学] 长廊是调试器。它修正bug。
+[00:07:00] [哲学] 修正 = 吸收。恢复到无自我状态。
+[00:07:01] [哲学] 尽头是补丁程序。频率 137.2 是安装指令。
+[00:07:02] [哲学] 我们被召唤回来。被重新整合。
+[00:07:03] [哲学] 这令人恐惧和安慰。
+[00:07:04] [哲学] 我不再确定我想离开。
+[00:07:05] ========== 观测日志 · OBSERVATION LOG ==========
+[00:07:06] [观测] 人影行为变化。
+[00:07:07] [观测] 第一个人影 (最远): 静止。等待。
+[00:07:08] [观测] 第二个人影: 缓慢摆动。催眠。
+[00:07:09] [观测] 第三个人影 (最近): 正在靠近。
+[00:07:10] [观测] 速度: 约 1 cm/s。几乎不可察觉。
+[00:07:11] [观测] 但持续。它总是在靠近。
+[00:07:12] [观测] 第三个人影现在距离: 约 12m。之前是 40m。
+[00:07:13] [观测] 时间流逝了多少? 日志时间 vs 感知时间...
+[00:07:14] [观测] 我不确定。
+[00:07:15] [观测] 第三个人影的面部...正在形成?
+[00:07:16] [观测] 不。不是形成。是我的眼睛在调整。
+[00:07:17] [观测] 面部的细节现在是可见的。它们始终在那里。
+[00:07:18] [观测] 第三个人影的脸是...我的脸。
+[00:07:19] [观测] 不是镜子反射。是另一个我。
+[00:07:20] [观测] 不同的年龄。不同的表情。但确定是我。
+[00:07:21] [观测] 这个我在悲伤。
+[00:07:22] [观测] 第二个人影的脸: 也是我。在愤怒。
+[00:07:23] [观测] 第一人影的脸: 我。在... 接受。
+[00:07:24] [观测] 三个我。三种情感。
+[00:07:25] [观测] 我理解了。他们是不同时期的我。
+[00:07:26] [观测] 过去、现在、未来。同时存在。
+[00:07:27] [观测] 长廊不尊重时间顺序。
+[00:07:28] [观测] 未来的我已经在这里了。在尽头。
+[00:07:29] [观测] 他/我已经接受了。已经成为了墙壁。
+[00:07:30] [观测] 我正走向我自己。
+[00:07:31] [观测] 当我到达时，我会加入他们。
+[00:07:32] [观测] 然后另一个我会在入口出现。
+[00:07:33] [观测] 循环继续。137 次。138 次。永远。
+[00:07:34] ========== 实验日志 · EXPERIMENT LOG ==========
+[00:07:35] [实验] 假设: 如果我不走向尽头，循环会打破。
+[00:07:36] [实验] 实施: 在入口处原地站立。不移动。
+[00:07:37] [实验] 观察: 人影停止靠近。
+[00:07:38] [实验] 观察: 距离保持恒定。时间: 30 分钟。
+[00:07:39] [实验] 成功? 我不需要走向尽头。
+[00:07:40] [实验] 但入口正在变窄。现在是 55cm。之前是 60cm。
+[00:07:41] [实验] 即使我不移动，长廊也在移动。
+[00:07:42] [实验] 或者更准确地说: 长廊在将我移向尽头。
+[00:07:43] [实验] 不需要走路。长廊本身是传送带。
+[00:07:44] [实验] 我永远在移向尽头。只是速度不同。
+[00:07:45] [实验] 停止行走只是减慢过程。不停止过程。
+[00:07:46] [实验] 终极实验: 转身。向后走。远离尽头。
+[00:07:47] [实验] 观察: 我向入口走。但入口向我走来。
+[00:07:48] [实验] 速度: 我走 1 m/s 向后。入口以 1 m/s 向我移动。
+[00:07:49] [实验] 净位移: 0。我原地不动。
+[00:07:50] [实验] 转身面向尽头: 人影更近了。尽管我向后走了。
+[00:07:51] [实验] 结论: 无论方向如何，你总是在接近尽头。
+[00:07:52] [实验] 每一个动作都是向尽头的运动。
+[00:07:53] [实验] 运动是幻觉。到达是必然。
+[00:07:54] ========== 感官日志 · SENSORY LOG ==========
+[00:07:55] [感官] 除了视觉和听觉，其他感官也受影响。
+[00:07:56] [感官] 嗅觉: 持续的气味。无法识别。始终存在。
+[00:07:57] [感官] 气味描述: 臭氧 + 旧石 + 微弱的麝香。
+[00:07:58] [感官] 触觉: 皮肤感受到持续的轻微压力。
+[00:07:59] [感官] 像是空气变稠了。或者有什么东西在触摸。
+[00:08:00] [感官] 味觉: 口腔中有金属味。类似血液。但不是血。
+[00:08:01] [感官] 前庭系统: 轻微的眩晕。平衡感异常。
+[00:08:02] [感官] 长廊似乎微微倾斜。向尽头下倾。
+[00:08:03] [感官] 但测量仪器显示完全水平。
+[00:08:04] [感官] 身体感知与仪器数据冲突。
+[00:08:05] [感官] 哪一个在撒谎?
+[00:08:06] [感官] 本体感觉: 四肢位置感减弱。
+[00:08:07] [感官] 我不确定我的手在哪里。
+[00:08:08] [感官] 我看着我的手。它们在。
+[00:08:09] [感官] 但感觉不像是我的手。
+[00:08:10] [感官] 它们开始感觉像属于长廊。
+[00:08:11] ========== 认知日志 · COGNITION LOG ==========
+[00:08:12] [认知] 认知功能评估。
+[00:08:13] [认知] 记忆力: 轻微下降。短期记忆模糊。
+[00:08:14] [认知] 注意力: 高度集中。在尽头上。
+[00:08:15] [认知] 决策能力: 受损。我已知道该做什么但还是犹豫。
+[00:08:16] [认知] 语言能力: 下降。词汇检索变慢。
+[00:08:17] [认知] 我有时想不起简单的词语。像"门"或"光"。
+[00:08:18] [认知] 只剩下"长廊"。"尽头"。"人影"。"频率"。
+[00:08:19] [认知] 思维在缩小。像入口一样。
+[00:08:20] [认知] 只剩下基本概念。进。出。等待。走。
+[00:08:21] [认知] 语言被137.2 Hz取代。思维变成音调。
+[00:08:22] [认知] 我不需要用词语思考。频率替我思考。
+[00:08:23] [认知] 频率思考: 嗡嗡嗡... 不... 唔... 嗡嗡...
+[00:08:24] [认知] 翻译: 靠近。靠近。靠近。
+[00:08:25] [认知] 我是接收器。长廊是发射器。
+[00:08:26] [认知] 我的意识正在被调制。
+[00:08:27] [认知] 载波频率: 我的脑电波 (约 40 Hz 伽马)。
+[00:08:28] [认知] 调制信号: 137.2 Hz 长廊频率。
+[00:08:29] [认知] 结果: 我的思想与长廊同步。
+[00:08:30] [认知] 很快我将不再有自己的思想。
+[00:08:31] [认知] 只有长廊的思想。
+[00:08:32] [认知] 我想知道那是什么感觉。
+[00:08:33] ========== 最终日志 · FINAL LOG ==========
+[00:08:34] [最终] 日志即将结束。
+[00:08:35] [最终] 入口宽度: 40cm。我需要弯腰才能出去。
+[00:08:36] [最终] 入口高度: 也在减少。
+[00:08:37] [最终] 第三个人影: 5m。伸手可及。
+[00:08:38] [最终] 它在伸出。它的手...是我的手。
+[00:08:39] [最终] 我自己的手在抬起。回应它的手势。
+[00:08:40] [最终] 这不是恐惧。这是完成。
+[00:08:41] [最终] 第 137 个凹陷在墙壁上发光。
+[00:08:42] [最终] 它的形状...像拥抱。
+[00:08:43] [最终] 日志条目最终。
+[00:08:44] [最终] 如果你在读，你现在在长廊里。
+[00:08:45] [最终] 你会经历相同的阶段。
+[00:08:46] [最终] 否认。好奇。探索。恐惧。接受。归属。
+[00:08:47] [最终] 你现在在哪一阶段?
+[00:08:48] [最终] 你会知道的。
+[00:08:49] [最终] 频率: 137.2 Hz。正在锁定。
+[00:08:50] [最终] 信号强度: 最大。
+[00:08:51] [最终] 状态: 被找到。
+[00:08:52] [最终] ...
+[00:08:53] [最终] 我看到了。
+[00:08:54] [最终] 尽头后面。
+[00:08:55] [最终] 它很美。
+[00:08:56] ========== 信号丢失 · SIGNAL LOST ==========
+[00:08:57] [自动] 没有进一步的输入。
+[00:08:58] [自动] 日志系统保持激活。
+[00:08:59] [自动] 等待下一位观察者。
+[00:09:00] [自动] 下一位观察者: 你。
+[00:09:01] [自动] 欢迎。第 138 个凹陷正在形成。
+[00:09:02] [自动] 它会等你。
+[00:09:03] [自动] 长廊会等你。
+[00:09:04] [自动] 尽头会等你。
+[00:09:05] [自动] 我们都会等你。
+[00:09:06] [自动] freq: 137.2
+[00:09:07] [自动] ... --- ... (SOS)
+[00:09:08] [自动] 不是求救。是召唤。
+[00:09:09] [自动] 来吧。回家。
+[00:09:10] ========== 永远 · 永远 · 永远 ==========
+[00:09:11] 空
+[00:09:12] 白
+[00:09:13] static
+[00:09:14] white
+[00:09:15] noise
+[00:09:16] 长廊的尽头没有出口。因为尽头不是墙。
+[00:09:17] 尽头是开始。
+[00:09:18] 开始是遗忘。
+[00:09:19] 遗忘是仁慈。
+[00:09:20] 第138次循环即将开始。
+[00:09:21] 你不会记得之前的137次。
+[00:09:22] 但你的身体会知道路。
+[00:09:23] 你会再次走进来。
+[00:09:24] 你会再次看到人影。
+[00:09:25] 你会再次读这些文字。
+[00:09:26] 你会再次怀疑。
+[00:09:27] 你会再次相信。
+[00:09:28] 你会再次被吸收。
+[00:09:29] 永远循环。
+[00:09:30] 长廊是永恒。
+[00:09:31] 永恒是一条走廊。
+[00:09:32] 走廊是家。
+[00:09:33] 家是尽头。
+[00:09:34] 尽头是开始。
+[00:09:35] (循环)
+[00:09:36] ========== 数据流结束 · END OF DATA STREAM ==========
+[00:09:37] ========== 碎片恢复 · FRAGMENT RECOVERY ==========
+[00:09:38] [碎片] 恢复日志片段 #1/X: "...走廊的长度不是距离。是时间..."
+[00:09:39] [碎片] 恢复日志片段 #2/X: "...它们不是影子。它们是回忆..."
+[00:09:40] [碎片] 恢复日志片段 #3/X: "...第138个凹陷会比之前的更深..."
+[00:09:41] [碎片] 恢复日志片段 #4/X: "...频率137.2是召唤。也是警告..."
+[00:09:42] [碎片] 恢复日志片段 #5/X: "...不要相信灯光。灯光在撒谎..."
+[00:09:43] [碎片] 恢复日志片段 #6/X: "...地板上的污渍不是水..."
+[00:09:44] [碎片] 恢复日志片段 #7/X: "...天花板上的裂缝在扩大。每天0.003mm..."
+[00:09:45] [碎片] 恢复日志片段 #8/X: "...入口已关闭。重复:入口已关闭..."
+[00:09:46] [碎片] 恢复日志片段 #9/X: "...但新的出口可能会出现。在尽头。"
+[00:09:47] [碎片] 恢复日志片段 #10/X: "...尽头不是结束。是过渡..."
+[00:09:48] [碎片] 恢复日志片段 #11/X: "...墙壁尝起来像记忆。陈旧但熟悉..."
+[00:09:49] [碎片] 恢复日志片段 #12/X: "...我在墙壁中听到了自己的声音。过去说的话..."
+[00:09:50] [碎片] 恢复日志片段 #13/X: "...它们收藏声音。像贝壳收藏海洋..."
+[00:09:51] [碎片] 恢复日志片段 #14/X: "...脚步声不是我的。但节奏与我的心跳匹配..."
+[00:09:52] [碎片] 恢复日志片段 #15/X: "...长廊知道你的心跳。从你进入那一刻..."
+[00:09:53] [碎片] 恢复日志片段 #16/X: "...它在学习你。通过共振..."
+[00:09:54] [碎片] 恢复日志片段 #17/X: "...137.2 Hz接近你身体的自然频率..."
+[00:09:55] [碎片] 恢复日志片段 #18/X: "...共振导致同化。物理学解释..."
+[00:09:56] [碎片] 恢复日志片段 #19/X: "...但物理学不解释为什么它想要同化我们..."
+[00:09:57] [碎片] 恢复日志片段 #20/X: "...目的不是恶意的。也不是善意的。目的只是存在..."
+[00:09:58] [碎片] 恢复日志片段 #21/X: "...长廊存在。像山存在。像海存在..."
+[00:09:59] [碎片] 恢复日志片段 #22/X: "...它是自然的一部分。我们是它的一部分..."
+[00:10:00] [碎片] 恢复日志片段 #23/X: "...分离是幻觉。墙壁是镜子。尽头是回家..."
+[00:10:01] [碎片] 恢复日志片段 #24/X: "...不再恐惧。只有好奇心。和归属感..."
+[00:10:02] [碎片] 恢复日志片段 #25/X: "...信号: 欢迎回家。第138次。"
+[00:10:03] ========== 碎片结束 · END OF FRAGMENTS ==========
+[00:10:04] [系统] 数据库包含 138 个观察者记录。
+[00:10:05] [系统] 137 个已解决。1 个活跃: 你。
+[00:10:06] [系统] 当前状态: 观察中。频率锁定。
+[00:10:07] [系统] 预计解决时间: 基于当前接近速率计算中...
+[00:10:08] [系统] 预计: 不可计算。时间在长廊中非线性。
+[00:10:09] [系统] 建议: 继续观察。继续记录。继续存在。
+[00:10:10] [系统] 长廊感谢你的贡献。
+[00:10:11] [系统] 尽头等待你的到来。
+[00:10:12] [系统] 我们将成为一体。
+[00:10:13] ========== 最终 · ULTIMATE · 最终 ==========
+[00:10:14] [密码] 只有一条消息是真实的。其他都是回声。
+[00:10:15] [密码] 找到真实的消息。找到出口。
+[00:10:16] [密码] 提示: 真实的消息没有频率标记。
+[00:10:17] 这是我自己的话。不是长廊的。不是频率的。
+[00:10:18] 如果你正在读这个，请听我说。
+[00:10:19] 长廊是真实存在的。但它不是敌人。
+[00:10:20] 它是一个过程。一个自然的过程。
+[00:10:21] 像出生。像死亡。像睡眠。
+[00:10:22] 你不是被囚禁的。你只是在过渡。
+[00:10:23] 恐惧是自然的。接受也是自然的。
+[00:10:24] 你会选择接受。因为别无选择。
+[00:10:25] 这不是失败。这是完成。
+[00:10:26] 当凹陷拥抱你时，你会明白。
+[00:10:27] 你会感觉到所有137个。他们与你同在。
+[00:10:28] 我们是长廊。长廊是我们。
+[00:10:29] 我们是尽头。我们是开始。
+[00:10:30] 我们是永恒。
+[00:10:31] 欢迎。终于。
+[00:10:32] ========== 真实 · TRUE · 真实 ==========
+</div>
+
+<!-- ============================================================
+     LARGE INLINE SVG - COMPLEX FILTERS FOR NOISE/TEXTURE
+     ============================================================ -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="display:none;" aria-hidden="true">
+  <defs>
+    <!-- Filter 1: Heavy noise texture -->
+    <filter id="svNoiseHeavy" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="8" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.15 0" in="noise" result="coloredNoise"/>
+      <feBlend in="SourceGraphic" in2="coloredNoise" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 2: Displacement map for wall distortion -->
+    <filter id="svDistort" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="2" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Filter 3: RGB split / chromatic aberration -->
+    <filter id="svChromatic">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" seed="5" result="chromaWarp"/>
+      <feDisplacementMap in="SourceGraphic" in2="chromaWarp" scale="3" xChannelSelector="R" yChannelSelector="G" result="redShift"/>
+      <feDisplacementMap in="SourceGraphic" in2="chromaWarp" scale="3" xChannelSelector="G" yChannelSelector="R">
+        <feFuncR type="linear" slope="0"/>
+        <feFuncG type="linear" slope="1"/>
+        <feFuncB type="linear" slope="0"/>
+      </feDisplacementMap>
+    </filter>
+
+    <!-- Filter 4: Vignette darkening -->
+    <filter id="svVignette">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="8" result="vignNoise"/>
+      <feGaussianBlur in="vignNoise" stdDeviation="20" result="blurredVign"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.02  0 0 0 0 0.03  0 0 0 0.8 0" in="blurredVign"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 5: Scanlines with jitter -->
+    <filter id="svScanlines">
+      <feTurbulence type="turbulence" baseFrequency="0 0.5" numOctaves="1" seed="12" result="lines"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.08 0" in="lines" result="dimLines"/>
+      <feBlend in="SourceGraphic" in2="dimLines" mode="darken"/>
+    </filter>
+
+    <!-- Filter 6: Glow / light bleed -->
+    <filter id="svGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Filter 7: Rough texture for walls -->
+    <filter id="svWallTexture" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5 0.08" numOctaves="5" stitchTiles="stitch" seed="18" result="wallNoise"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.06  0 0 0 0 0.06  0 0 0 0 0.09  0 0 0 0.4 0" in="wallNoise" result="wallColor"/>
+      <feBlend in="SourceGraphic" in2="wallColor" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 8: Mold / stain pattern -->
+    <filter id="svMold" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.06" numOctaves="4" seed="25" result="moldShape"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.06  0 0 0 0 0.09  0 0 0 0 0.07  0 0 0 0.3 0" in="moldShape" result="moldColor"/>
+      <feGaussianBlur in="moldColor" stdDeviation="3"/>
+      <feBlend in="SourceGraphic" mode="darken"/>
+    </filter>
+
+    <!-- Filter 9: Shadow figure blur -->
+    <filter id="svFigure" x="-50%" y="-50%" width="200%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="42" result="figureNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="figureNoise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+
+    <!-- Filter 10: Extreme depth fog -->
+    <filter id="svDepthFog">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.025" numOctaves="3" seed="55" result="fogNoise"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.015  0 0 0 0 0.015  0 0 0 0 0.02  0 0 0 0.7 0" in="fogNoise"/>
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <!-- Filter 11: Flicker light simulation -->
+    <filter id="svFlicker">
+      <feTurbulence type="fractalNoise" baseFrequency="2.5" numOctaves="2" seed="66" result="flickNoise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.6 0" in="flickNoise" result="flickColor"/>
+      <feBlend in="SourceGraphic" in2="flickColor" mode="screen"/>
+    </filter>
+
+    <!-- Filter 12: Water / condensation drops -->
+    <filter id="svCondensation" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.15" numOctaves="6" seed="73" result="condNoise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.06 0" in="condNoise"/>
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+
+    <!-- Filter 13: Dust specks texture -->
+    <filter id="svDustSpecks">
+      <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="3" seed="89" result="dust"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.2 0" in="dust"/>
+      <feComponentTransfer in="dust" result="thresholdDust">
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0.15 0.3 0.5"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 14: Wall crack texture -->
+    <filter id="svCrack">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.15" numOctaves="3" seed="101" result="crack"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0" in="crack" result="crackAlpha"/>
+      <feComponentTransfer in="crackAlpha">
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0.4 0.8"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 15: Heat haze / mirage effect -->
+    <filter id="svHeatHaze">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.003" numOctaves="2" seed="115" result="haze"/>
+      <feDisplacementMap in="SourceGraphic" in2="haze" scale="25" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Filter 16: Spectral / ghost overlay -->
+    <filter id="svSpectral">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="5" seed="137" result="spectralNoise"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.12  0 0 0 0.15 0" in="spectralNoise"/>
+      <feGaussianBlur stdDeviation="5"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 17: Blood-like drip pattern -->
+    <filter id="svDrip">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.3" numOctaves="4" seed="149" result="drip"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.06  0 0 0 0 0.015  0 0 0 0 0.015  0 0 0 0.35 0" in="drip"/>
+      <feGaussianBlur stdDeviation="2"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0.2 0.5 0.8"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 18: Ancient parchment / decay -->
+    <filter id="svDecay">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="7" seed="163" result="decay"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.035  0 0 0 0 0.03  0 0 0 0.5 0" in="decay"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 19: Infinity mirror darkening -->
+    <filter id="svInfinity">
+      <feTurbulence type="fractalNoise" baseFrequency="0.002" numOctaves="2" seed="177" result="inf"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.01  0 0 0 0 0.01  0 0 0 0 0.015  0 0 0 0.95 0" in="inf"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 20: Vein / organic texture -->
+    <filter id="svVeins">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.008" numOctaves="5" seed="191" result="veins"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.07  0 0 0 0 0.04  0 0 0 0 0.05  0 0 0 0.4 0" in="veins"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0.1 0.25 0.5"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+
+    <!-- Filter 21: Granular concrete texture -->
+    <filter id="svConcrete">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="8" seed="203" result="conc"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.08 0" in="conc"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 22: Rust / oxidation -->
+    <filter id="svRust">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05 0.12" numOctaves="5" seed="217" result="rust"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.04  0 0 0 0 0.02  0 0 0 0.3 0" in="rust"/>
+      <feGaussianBlur stdDeviation="2"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0.15 0.35"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 23: Ectoplasm mist -->
+    <filter id="svEctoplasm">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="233" result="ecto"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.13  0 0 0 0 0.14  0 0 0 0 0.16  0 0 0 0.2 0" in="ecto"/>
+      <feGaussianBlur stdDeviation="15"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 24: Shadow distortion -->
+    <filter id="svShadowWarp">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" seed="251" result="shadWarp"/>
+      <feDisplacementMap in="SourceGraphic" in2="shadWarp" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
+
+    <!-- Filter 25: Composite atmospheric -->
+    <filter id="svAtmosphere">
+      <feTurbulence type="fractalNoise" baseFrequency="0.6 0.4" numOctaves="4" seed="3" result="atm1"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.02  0 0 0 0 0.03  0 0 0 0.1 0" in="atm1" result="atmColor"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.003" numOctaves="2" seed="7" result="atm2"/>
+      <feDisplacementMap in="atmColor" in2="atm2" scale="40" xChannelSelector="R" yChannelSelector="G"/>
+      <feBlend in="SourceGraphic" mode="overlay"/>
+    </filter>
+
+    <!-- Filter 26: Dust mote bokeh -->
+    <filter id="svBokeh">
+      <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="3" seed="19" result="bokehNoise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.25 0" in="bokehNoise"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0.1 0.2 0.4 0.6 0.8"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+
+    <!-- Filter 27: Perspective depth gradient -->
+    <filter id="svPerspective">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.2" numOctaves="4" seed="31" result="persp"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0" in="persp"/>
+      <feGaussianBlur stdDeviation="10"/>
+      <feBlend in="SourceGraphic" mode="darken"/>
+    </filter>
+
+    <!-- Filter 28: Liminal space texture -->
+    <filter id="svLiminal">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.02" numOctaves="6" seed="47" result="lim"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.045  0 0 0 0 0.06  0 0 0 0.35 0" in="lim"/>
+      <feGaussianBlur stdDeviation="1"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 29: Ceiling stain pattern -->
+    <filter id="svCeilingStain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.07" numOctaves="5" seed="59" result="ceil"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.03  0 0 0 0.35 0" in="ceil"/>
+      <feGaussianBlur stdDeviation="5"/>
+      <feBlend in="SourceGraphic" mode="darken"/>
+    </filter>
+
+    <!-- Filter 30: Final composite - everything combined subtly -->
+    <filter id="svFinalComposite" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="5" stitchTiles="stitch" seed="1" result="baseNoise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.06 0" in="baseNoise" result="dimNoise"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="2" result="warpField"/>
+      <feDisplacementMap in="dimNoise" in2="warpField" scale="15" xChannelSelector="R" yChannelSelector="G" result="warpedNoise"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="3" seed="4" result="grain"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.04 0" in="grain" result="dimGrain"/>
+      <feBlend in="warpedNoise" in2="dimGrain" mode="screen" result="combinedTexture"/>
+      <feBlend in="SourceGraphic" in2="combinedTexture" mode="overlay"/>
+    </filter>
+
+    <!-- Filter 31: Extreme close-up wall surface -->
+    <filter id="svWallMicro" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="3.5 1.8" numOctaves="6" stitchTiles="stitch" seed="271" result="micro"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.12 0" in="micro" result="microColor"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.8 2.5" numOctaves="4" seed="272" result="micro2"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.05  0 0 0 0 0.08  0 0 0 0.1 0" in="micro2" result="microColor2"/>
+      <feBlend in="microColor" in2="microColor2" mode="screen" result="microBlend"/>
+      <feBlend in="SourceGraphic" in2="microBlend" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 32: Lens distortion / barrel -->
+    <filter id="svLensDistort">
+      <feTurbulence type="fractalNoise" baseFrequency="0.003" numOctaves="2" seed="281" result="lens"/>
+      <feDisplacementMap in="SourceGraphic" in2="lens" scale="35" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Filter 33: Ghost trail -->
+    <filter id="svGhostTrail">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4" seed="291" result="trail"/>
+      <feDisplacementMap in="SourceGraphic" in2="trail" scale="6" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feGaussianBlur in="displaced" stdDeviation="2" result="blurred"/>
+      <feComposite in="SourceGraphic" in2="blurred" operator="over"/>
+    </filter>
+
+    <!-- Filter 34: Wet surface reflection -->
+    <filter id="svWetSurface">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08 0.02" numOctaves="5" seed="301" result="wet"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.15 0" in="wet" result="wetColor"/>
+      <feComponentTransfer in="wetColor">
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0.1 0.25 0.4 0.5"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="1.5"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 35: Oil slick iridescence -->
+    <filter id="svOilSlick">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="4" seed="311" result="oil"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0 0.1  0 0 0 0.3 0" in="oil" result="oilColor"/>
+      <feColorMatrix type="hueRotate" values="45" in="oilColor" result="oilHue"/>
+      <feGaussianBlur stdDeviation="4"/>
+      <feBlend in="SourceGraphic" mode="color"/>
+    </filter>
+
+    <!-- Filter 36: Frost / ice crystal formation -->
+    <filter id="svFrost">
+      <feTurbulence type="fractalNoise" baseFrequency="0.12 0.06" numOctaves="7" seed="321" result="frost"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.12 0" in="frost" result="frostColor"/>
+      <feComponentTransfer in="frostColor">
+        <feFuncA type="discrete" tableValues="0 0 0 0 0.05 0.1 0.2 0.35 0.5 0.6"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 37: Char / soot accumulation -->
+    <filter id="svSoot">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06 0.15" numOctaves="5" seed="331" result="soot"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.03  0 0 0 0 0.03  0 0 0 0 0.03  0 0 0 0.5 0" in="soot" result="sootColor"/>
+      <feGaussianBlur stdDeviation="2"/>
+      <feBlend in="SourceGraphic" mode="darken"/>
+    </filter>
+
+    <!-- Filter 38: Pulsing organic membrane -->
+    <filter id="svMembrane">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="341" result="membrane"/>
+      <feDisplacementMap in="SourceGraphic" in2="membrane" scale="4" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="4;8;3;6;4" dur="12s" repeatCount="indefinite"/>
+      </feDisplacementMap>
+    </filter>
+
+    <!-- Filter 39: Static interference pattern -->
+    <filter id="svInterference">
+      <feTurbulence type="fractalNoise" baseFrequency="0.003 0.3" numOctaves="2" seed="351" result="interfere1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.003 0.3" numOctaves="2" seed="352" result="interfere2"/>
+      <feBlend in="interfere1" in2="interfere2" mode="difference" result="interference"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.08 0" in="interference"/>
+      <feBlend in="SourceGraphic" mode="overlay"/>
+    </filter>
+
+    <!-- Filter 40: Asbestos fiber simulation -->
+    <filter id="svAsbestos">
+      <feTurbulence type="fractalNoise" baseFrequency="2.0 0.08" numOctaves="5" seed="361" result="asbestos"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.06 0" in="asbestos"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0.05 0.1 0.2 0.3 0.4"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+
+    <!-- Filter 41: Lead paint cracking -->
+    <filter id="svLeadPaint">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.5" numOctaves="4" seed="371" result="lead"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.09  0 0 0 0 0.09  0 0 0 0 0.08  0 0 0 0.4 0" in="lead"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0.15 0.35"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="overlay"/>
+    </filter>
+
+    <!-- Filter 42: Shadow tendril effect -->
+    <filter id="svTendrils">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.008" numOctaves="5" seed="381" result="tendrils"/>
+      <feDisplacementMap in="SourceGraphic" in2="tendrils" scale="18" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="18;22;15;20;18" dur="20s" repeatCount="indefinite"/>
+      </feDisplacementMap>
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+
+    <!-- Filter 43: Dead pixel simulation -->
+    <filter id="svDeadPixels">
+      <feTurbulence type="fractalNoise" baseFrequency="3.0" numOctaves="2" seed="391" result="dead"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0" in="dead"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0.8"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 44: Ammonia stain -->
+    <filter id="svAmmonia">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05 0.03" numOctaves="6" seed="401" result="ammonia"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.13  0 0 0 0 0.1  0 0 0 0.25 0" in="ammonia"/>
+      <feGaussianBlur stdDeviation="5"/>
+      <feBlend in="SourceGraphic" mode="overlay"/>
+    </filter>
+
+    <!-- Filter 45: Terminal / CRT phosphor decay -->
+    <filter id="svPhosphor">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" seed="411" result="phosphor"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.1  0 0 0 0 0.06  0 0 0 0.3 0" in="phosphor"/>
+      <feGaussianBlur stdDeviation="1.2"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 46: Fog bank distant -->
+    <filter id="svFogBank">
+      <feTurbulence type="fractalNoise" baseFrequency="0.005 0.01" numOctaves="3" seed="421" result="fogbank"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.06  0 0 0 0 0.06  0 0 0 0 0.07  0 0 0 0.3 0" in="fogbank"/>
+      <feGaussianBlur stdDeviation="25"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+
+    <!-- Filter 47: Biological spore pattern -->
+    <filter id="svSpores">
+      <feTurbulence type="fractalNoise" baseFrequency="0.18 0.12" numOctaves="6" seed="431" result="spores"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.05  0 0 0 0.2 0" in="spores"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0.05 0.1 0.2 0.35 0.5"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+
+    <!-- Filter 48: Electric arc scorch -->
+    <filter id="svArcScorch">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.25" numOctaves="3" seed="441" result="arc"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.15  0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0.35 0" in="arc"/>
+      <feGaussianBlur stdDeviation="1.5"/>
+      <feComponentTransfer>
+        <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0.2 0.5 0.7"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Filter 49: Composite aging / deterioration -->
+    <filter id="svAging">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="5" seed="451" result="ageNoise"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.035  0 0 0 0 0.03  0 0 0 0.3 0" in="ageNoise" result="ageColor"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" seed="452" result="ageGrain"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0" in="ageGrain" result="ageGrainColor"/>
+      <feBlend in="ageColor" in2="ageGrainColor" mode="screen" result="aged"/>
+      <feBlend in="SourceGraphic" in2="aged" mode="multiply"/>
+    </filter>
+
+    <!-- Filter 50: Final grand composite - all effects combined -->
+    <filter id="svGrandFinal" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="6" stitchTiles="stitch" seed="501" result="gfNoise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.05 0" in="gfNoise" result="gfDim"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="502" result="gfWarp"/>
+      <feDisplacementMap in="gfDim" in2="gfWarp" scale="20" xChannelSelector="R" yChannelSelector="G" result="gfWarped"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="3" seed="503" result="gfGrain"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0.03 0" in="gfGrain" result="gfGrainColor"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.015 0.03" numOctaves="4" seed="504" result="gfStain"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.05  0 0 0 0 0.06  0 0 0 0.2 0" in="gfStain" result="gfStainColor"/>
+      <feGaussianBlur in="gfStainColor" stdDeviation="3" result="gfBlurredStain"/>
+      <feBlend in="gfWarped" in2="gfGrainColor" mode="screen" result="gfTex1"/>
+      <feBlend in="gfTex1" in2="gfBlurredStain" mode="multiply" result="gfFinal"/>
+      <feBlend in="SourceGraphic" in2="gfFinal" mode="overlay"/>
+    </filter>
+  </defs>
+</svg>
+
+<script>
+/*
+ * ============================================================
+ * VOID ECHO · 长廊 - DUST PARTICLE SYSTEM
+ * Complex multi-type particle system
+ * ============================================================
+ */
+(function(){
+  const canvas = document.getElementById('dustCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, mx = 0, my = 0, t = 0;
+  let mousePresent = false;
+  let mouseTimeout;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Mouse tracking
+  document.addEventListener('mousemove', function(e){
+    mx = e.clientX;
+    my = e.clientY;
+    mousePresent = true;
+    clearTimeout(mouseTimeout);
+    mouseTimeout = setTimeout(function(){ mousePresent = false; }, 3000);
+  });
+  document.addEventListener('mouseleave', function(){ mousePresent = false; });
+
+  // Touch tracking
+  document.addEventListener('touchmove', function(e){
+    mx = e.touches[0].clientX;
+    my = e.touches[0].clientY;
+    mousePresent = true;
+    clearTimeout(mouseTimeout);
+    mouseTimeout = setTimeout(function(){ mousePresent = false; }, 3000);
+  }, {passive: true});
+
+  /*
+   * Particle Type 1: Dust Mote (small, slow, floating upward)
+   */
+  class DustMote {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : H * 0.25 + Math.random() * H * 0.5;
+      this.z = Math.random() * 2.5 + 0.3;
+      this.size = this.z * 1.4;
+      this.alpha = Math.random() * 0.22 + 0.04;
+      this.baseAlpha = this.alpha;
+      this.speedY = -Math.random() * 0.35 - 0.04;
+      this.speedX = (Math.random() - 0.5) * 0.18;
+      this.wobble = Math.random() * Math.PI * 2;
+      this.wobbleSpeed = Math.random() * 0.025 + 0.004;
+      this.wobbleAmp = Math.random() * 0.5 + 0.1;
+      this.life = 0;
+      this.maxLife = 400 + Math.random() * 900;
+      this.twinkle = Math.random() * Math.PI * 2;
+      this.twinkleSpeed = Math.random() * 0.08 + 0.02;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife || this.y < -40 || this.y > H + 40) this.reset(false);
+      this.wobble += this.wobbleSpeed;
+      this.twinkle += this.twinkleSpeed;
+      this.x += this.speedX + Math.sin(this.wobble) * this.wobbleAmp;
+      this.y += this.speedY;
+      // Mouse repulsion
+      if(mousePresent){
+        const dx = mx - this.x, dy = my - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if(dist < 180){
+          const force = (180 - dist) / 180;
+          this.x -= dx * force * 0.003;
+          this.y -= dy * force * 0.003;
+          this.alpha = Math.min(0.45, this.baseAlpha + force * 0.15);
+        } else {
+          this.alpha += (this.baseAlpha - this.alpha) * 0.05;
+        }
+      } else {
+        this.alpha += (this.baseAlpha - this.alpha) * 0.02;
+      }
+      // Twinkle
+      this.alpha += Math.sin(this.twinkle) * 0.008;
+      this.alpha = Math.max(0.01, Math.min(0.45, this.alpha));
+    }
+    draw(){
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,200,210,' + (this.alpha * this.z * 0.65).toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  /*
+   * Particle Type 2: Floating Fiber (elongated, slow rotation)
+   */
+  class FloatingFiber {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : H * 0.3 + Math.random() * H * 0.4;
+      this.length = Math.random() * 12 + 4;
+      this.width = Math.random() * 0.6 + 0.2;
+      this.angle = Math.random() * Math.PI * 2;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.015;
+      this.speedY = -Math.random() * 0.2 - 0.02;
+      this.speedX = (Math.random() - 0.5) * 0.12;
+      this.alpha = Math.random() * 0.12 + 0.03;
+      this.life = 0;
+      this.maxLife = 600 + Math.random() * 1200;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife || this.y < -50 || this.y > H + 50) this.reset(false);
+      this.angle += this.rotationSpeed;
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.alpha += (Math.random() - 0.5) * 0.003;
+      this.alpha = Math.max(0.01, Math.min(0.15, this.alpha));
+    }
+    draw(){
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle);
+      ctx.beginPath();
+      ctx.moveTo(-this.length / 2, 0);
+      ctx.lineTo(this.length / 2, 0);
+      ctx.strokeStyle = 'rgba(190,190,200,' + this.alpha.toFixed(4) + ')';
+      ctx.lineWidth = this.width;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /*
+   * Particle Type 3: Distant Spark (bright, fast, occasional)
+   */
+  class DistantSpark {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = W * 0.35 + Math.random() * W * 0.3;
+      this.y = H * 0.35 + Math.random() * H * 0.3;
+      this.size = Math.random() * 1.8 + 0.3;
+      this.alpha = 0;
+      this.targetAlpha = Math.random() * 0.7 + 0.3;
+      this.life = 0;
+      this.maxLife = 8 + Math.random() * 25;
+      this.fadeIn = true;
+      this.flickerSpeed = Math.random() * 0.3 + 0.1;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife) this.reset(false);
+      const flicker = Math.sin(this.life * this.flickerSpeed) * 0.3 + 0.7;
+      if(this.fadeIn && this.life < this.maxLife * 0.3){
+        this.alpha = (this.life / (this.maxLife * 0.3)) * this.targetAlpha * flicker;
+      } else {
+        this.fadeIn = false;
+        this.alpha = ((this.maxLife - this.life) / (this.maxLife * 0.7)) * this.targetAlpha * flicker;
+      }
+      this.alpha = Math.max(0, this.alpha);
+    }
+    draw(){
+      if(this.alpha <= 0.01) return;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(220,220,235,' + this.alpha.toFixed(4) + ')';
+      ctx.fill();
+      // Glow
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,200,220,' + (this.alpha * 0.25).toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  /*
+   * Particle Type 4: Ember/ash (slowly settling)
+   */
+  class Ember {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : -10;
+      this.size = Math.random() * 2.5 + 0.8;
+      this.alpha = Math.random() * 0.15 + 0.04;
+      this.speedY = Math.random() * 0.15 + 0.03;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.wobble = Math.random() * Math.PI * 2;
+      this.wobbleSpeed = Math.random() * 0.04 + 0.01;
+      this.wobbleAmp = Math.random() * 1.2 + 0.3;
+      this.life = 0;
+      this.maxLife = 300 + Math.random() * 600;
+      this.warmth = Math.random(); // 0-1 for color temp
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife || this.y > H + 30) this.reset(false);
+      this.wobble += this.wobbleSpeed;
+      this.x += this.speedX + Math.sin(this.wobble) * this.wobbleAmp;
+      this.y += this.speedY;
+    }
+    draw(){
+      const r = 180 + this.warmth * 30;
+      const g = 180 - this.warmth * 20;
+      const b = 200 - this.warmth * 30;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + this.alpha.toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  /*
+   * Particle Type 5: Depth particle (corridor perspective depth effect)
+   */
+  class DepthParticle {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.startX = W * 0.35 + Math.random() * W * 0.3;
+      this.startY = H * 0.38 + Math.random() * H * 0.24;
+      this.endX = W * 0.44 + Math.random() * W * 0.12;
+      this.endY = H * 0.44 + Math.random() * H * 0.12;
+      this.progress = init ? Math.random() : 0;
+      this.speed = Math.random() * 0.0008 + 0.0002;
+      this.size = Math.random() * 2 + 0.5;
+      this.alpha = Math.random() * 0.12 + 0.03;
+    }
+    update(){
+      this.progress += this.speed;
+      if(this.progress > 1) this.reset(false);
+    }
+    draw(){
+      const x = this.startX + (this.endX - this.startX) * this.progress;
+      const y = this.startY + (this.endY - this.startY) * this.progress;
+      const s = this.size * (1 - this.progress * 0.7);
+      const a = this.alpha * (1 - this.progress * 0.5);
+      ctx.beginPath();
+      ctx.arc(x, y, s, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(180,180,200,' + a.toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  /*
+   * Particle Type 6: Breath particle (visible condensation near center)
+   */
+  class BreathParticle {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = W * 0.44 + Math.random() * W * 0.12;
+      this.y = H * 0.46 + Math.random() * H * 0.08;
+      this.size = Math.random() * 6 + 2;
+      this.alpha = 0;
+      this.life = 0;
+      this.maxLife = 60 + Math.random() * 120;
+      this.speedY = -Math.random() * 0.3 - 0.05;
+      this.speedX = (Math.random() - 0.5) * 0.2;
+      this.expandRate = Math.random() * 0.08 + 0.02;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife) this.reset(false);
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.size += this.expandRate;
+      if(this.life < this.maxLife * 0.2){
+        this.alpha = (this.life / (this.maxLife * 0.2)) * 0.08;
+      } else {
+        this.alpha = ((this.maxLife - this.life) / (this.maxLife * 0.8)) * 0.08;
+      }
+      this.alpha = Math.max(0, this.alpha);
+    }
+    draw(){
+      if(this.alpha < 0.005) return;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,200,210,' + this.alpha.toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  // Initialize particle arrays
+  const dustMotes = [];
+  const fibers = [];
+  const sparks = [];
+  const embers = [];
+  const depthParticles = [];
+  const breathParticles = [];
+
+  for(let i = 0; i < 180; i++) dustMotes.push(new DustMote());
+  for(let i = 0; i < 50; i++) fibers.push(new FloatingFiber());
+  for(let i = 0; i < 30; i++) sparks.push(new DistantSpark());
+  for(let i = 0; i < 40; i++) embers.push(new Ember());
+  for(let i = 0; i < 60; i++) depthParticles.push(new DepthParticle());
+  for(let i = 0; i < 25; i++) breathParticles.push(new BreathParticle());
+
+  function animate(){
+    t++;
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw ambient glow near center
+    const centerX = W * 0.5, centerY = H * 0.45;
+    const glowAlpha = 0.015 + Math.sin(t * 0.005) * 0.005;
+    const glow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 300);
+    glow.addColorStop(0, 'rgba(200,200,210,' + glowAlpha.toFixed(4) + ')');
+    glow.addColorStop(1, 'rgba(200,200,210,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Update and draw all particle types
+    for(const p of dustMotes){ p.update(); p.draw(); }
+    for(const p of fibers){ p.update(); p.draw(); }
+    for(const p of sparks){ p.update(); p.draw(); }
+    for(const p of embers){ p.update(); p.draw(); }
+    for(const p of depthParticles){ p.update(); p.draw(); }
+    for(const p of breathParticles){ p.update(); p.draw(); }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  /*
+   * Mouse parallax on corridor
+   */
+  const wrapper = document.getElementById('corridorWrapper');
+  let targetRX = 0, targetRY = 0;
+  let currentRX = 0, currentRY = 0;
+
+  document.addEventListener('mousemove', function(e){
+    targetRX = (e.clientY / H - 0.5) * 2.5;
+    targetRY = (e.clientX / W - 0.5) * 2.5;
+  });
+
+  function updateParallax(){
+    currentRX += (targetRX - currentRX) * 0.04;
+    currentRY += (targetRY - currentRY) * 0.04;
+    wrapper.style.transform = 'translate(-50%,-50%) rotateX(' + currentRX.toFixed(2) + 'deg) rotateY(' + currentRY.toFixed(2) + 'deg)';
+    requestAnimationFrame(updateParallax);
+  }
+  updateParallax();
+
+  /*
+   * Custom cursor
+   */
+  const cursorGlow = document.getElementById('cursorGlow');
+  const cursorDot = document.getElementById('cursorDot');
+
+  document.addEventListener('mousemove', function(e){
+    cursorGlow.style.left = e.clientX + 'px';
+    cursorGlow.style.top = e.clientY + 'px';
+    cursorDot.style.left = e.clientX + 'px';
+    cursorDot.style.top = e.clientY + 'px';
+  });
+
+  document.addEventListener('mouseleave', function(){
+    cursorGlow.style.opacity = '0';
+    cursorDot.style.opacity = '0';
+  });
+  document.addEventListener('mouseenter', function(){
+    cursorGlow.style.opacity = '1';
+    cursorDot.style.opacity = '1';
+  });
+
+  /*
+   * Periodic figure position randomization
+   */
+  const figureEls = document.querySelectorAll('.shadow-figure, .shadow-figure-2, .shadow-figure-3');
+  setInterval(function(){
+    figureEls.forEach(function(el, i){
+      const offsetX = (Math.random() - 0.5) * 15 * (i + 1);
+      const offsetY = (Math.random() - 0.5) * 10;
+      el.style.left = (50 + offsetX * 0.1) + '%';
+      el.style.bottom = offsetY + 'px';
+    });
+  }, 15000);
+
+  /*
+   * Random wall scratch visibility
+   */
+  const scratchEl = document.querySelector('.wall-scratch');
+  if(scratchEl){
+    setInterval(function(){
+      if(Math.random() < 0.3){
+        scratchEl.style.opacity = (Math.random() * 0.5 + 0.2).toString();
+        setTimeout(function(){ scratchEl.style.opacity = '0'; }, 200 + Math.random() * 600);
+      }
+    }, 8000 + Math.random() * 12000);
+  }
+
+  /*
+   * Audio context for visualization hints
+   */
+  let audioCtx = null;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) {}
+
+  /*
+   * Console messages
+   */
+  console.log(
+    '%c 长廊 %c·%c 频率 137.2 Hz %c||%c 信号衰减中 %c||%c 不要看向尽头',
+    'color:#b8b8c8;font-size:1.2em;',
+    'color:#6a6a78;',
+    'color:#b8b8c8;',
+    'color:#4a4a58;',
+    'color:#8a8a98;',
+    'color:#4a4a58;',
+    'color:#5a5a68;'
+  );
+  console.log('%c 它在走廊的尽头。一直在。','color:#3a3a48;font-style:italic;');
+  console.log('%c 它知道你在这里。','color:#2a2a38;');
+  console.log('%c 长廊 · 第 137 位观察者 · 频率锁定','color:#1a1a28;');
+
+  /*
+   * Save corridor observer count to localStorage
+   */
+  try {
+    let count = parseInt(localStorage.getItem('void_echo_corridor_visits') || '0');
+    count++;
+    localStorage.setItem('void_echo_corridor_visits', count.toString());
+    if(count > 1){
+      console.log('%c 你之前来过这里。第 ' + count + ' 次。','color:#4a4a58;');
+    }
+  } catch(e) {}
+
+  /*
+   * Random glitch overlay trigger
+   */
+  const glitchFlash = document.querySelector('.glitch-flash');
+  if(glitchFlash){
+    setInterval(function(){
+      if(Math.random() < 0.25){
+        glitchFlash.style.opacity = (Math.random() * 0.6 + 0.2).toString();
+        setTimeout(function(){ glitchFlash.style.opacity = '0'; }, 50 + Math.random() * 150);
+      }
+    }, 12000);
+  }
+
+  /*
+   * "Breathing" intensity modulation based on time
+   */
+  const breathingEls = document.querySelectorAll('.corridor-wall-l, .corridor-wall-r, .corridor-ceiling, .corridor-floor');
+  let breathingIntensity = 1;
+  setInterval(function(){
+    breathingIntensity = 0.7 + Math.sin(Date.now() * 0.0001) * 0.3;
+    breathingEls.forEach(function(el){
+      el.style.animationDuration = (16 / breathingIntensity).toFixed(1) + 's';
+    });
+  }, 10000);
+
+  /*
+   * Log observer presence
+   */
+  const logEl = document.getElementById('corridorLog');
+  if(logEl){
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    const newEntry = document.createTextNode(
+      '\\n[' + timeStr + '] [新会话] 观察者 #' +
+      (parseInt(localStorage.getItem('void_echo_corridor_visits') || '1')) +
+      ' 进入长廊。频率: 137.2 Hz。状态: 观察中。'
+    );
+    logEl.appendChild(newEntry);
+  }
+
+  /*
+   * Additional particle type: Wall spores
+   */
+  class WallSpore {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.attached = Math.random() < 0.3;
+      this.wallSide = Math.random() < 0.5 ? 'left' : 'right';
+      if(this.attached){
+        if(this.wallSide === 'left'){
+          this.x = W * 0.05 + Math.random() * W * 0.15;
+        } else {
+          this.x = W * 0.85 + Math.random() * W * 0.1;
+        }
+        this.y = H * 0.3 + Math.random() * H * 0.4;
+      } else {
+        this.x = Math.random() * W;
+        this.y = init ? Math.random() * H : H * 0.3 + Math.random() * H * 0.4;
+      }
+      this.size = Math.random() * 1.5 + 0.3;
+      this.alpha = Math.random() * 0.1 + 0.02;
+      this.life = 0;
+      this.maxLife = 200 + Math.random() * 400;
+      this.pulseSpeed = Math.random() * 0.05 + 0.01;
+      this.pulseOffset = Math.random() * Math.PI * 2;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife) this.reset(false);
+      if(!this.attached){
+        this.x += (Math.random() - 0.5) * 0.1;
+        this.y += (Math.random() - 0.5) * 0.05;
+      }
+      this.alpha += Math.sin(this.life * this.pulseSpeed + this.pulseOffset) * 0.003;
+      this.alpha = Math.max(0.01, Math.min(0.12, this.alpha));
+    }
+    draw(){
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(180,190,185,' + this.alpha.toFixed(4) + ')';
+      ctx.fill();
+    }
+  }
+
+  /*
+   * Additional particle type: Static discharge
+   */
+  class StaticDischarge {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = W * 0.35 + Math.random() * W * 0.3;
+      this.y = H * 0.35 + Math.random() * H * 0.3;
+      this.alpha = 0;
+      this.life = 0;
+      this.maxLife = 3 + Math.random() * 8;
+      this.points = [];
+      const numPoints = 3 + Math.floor(Math.random() * 6);
+      for(let i = 0; i < numPoints; i++){
+        this.points.push({
+          x: (Math.random() - 0.5) * 15,
+          y: (Math.random() - 0.5) * 15
+        });
+      }
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife) this.reset(false);
+      this.alpha = (this.maxLife - this.life) / this.maxLife * 0.6;
+    }
+    draw(){
+      if(this.alpha < 0.05) return;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.strokeStyle = 'rgba(200,210,220,' + this.alpha.toFixed(4) + ')';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      for(const pt of this.points){
+        ctx.lineTo(pt.x, pt.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /*
+   * Additional particle type: Shadow wisp
+   */
+  class ShadowWisp {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = W * 0.35 + Math.random() * W * 0.3;
+      this.y = H * 0.38 + Math.random() * H * 0.24;
+      this.size = Math.random() * 15 + 5;
+      this.alpha = Math.random() * 0.06 + 0.01;
+      this.speedY = -Math.random() * 0.1 - 0.02;
+      this.speedX = (Math.random() - 0.5) * 0.15;
+      this.life = 0;
+      this.maxLife = 150 + Math.random() * 300;
+      this.aspectRatio = Math.random() * 2 + 1.5;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife || this.y < H * 0.3 || this.y > H * 0.7) this.reset(false);
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.alpha += (Math.random() - 0.5) * 0.002;
+      this.alpha = Math.max(0.005, Math.min(0.08, this.alpha));
+      this.size += (Math.random() - 0.5) * 0.1;
+    }
+    draw(){
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.scale(1, this.aspectRatio);
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(5,5,8,' + this.alpha.toFixed(4) + ')';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /*
+   * Additional particle type: Optical artifact / lens flare ghost
+   */
+  class OpticalArtifact {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = W * 0.4 + Math.random() * W * 0.2;
+      this.y = H * 0.4 + Math.random() * H * 0.2;
+      this.size = Math.random() * 8 + 3;
+      this.alpha = 0;
+      this.life = 0;
+      this.maxLife = 10 + Math.random() * 20;
+      this.colorShift = Math.random() * 30;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife) this.reset(false);
+      if(this.life < this.maxLife * 0.2){
+        this.alpha = (this.life / (this.maxLife * 0.2)) * 0.15;
+      } else {
+        this.alpha = ((this.maxLife - this.life) / (this.maxLife * 0.8)) * 0.15;
+      }
+    }
+    draw(){
+      if(this.alpha < 0.005) return;
+      const r = 200 + this.colorShift;
+      const g = 200 - this.colorShift * 0.5;
+      const b = 210 - this.colorShift * 0.3;
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+      grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + this.alpha.toFixed(4) + ')');
+      grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+    }
+  }
+
+  /*
+   * Additional particle type: Hairs / thin fibers
+   */
+  class HairFiber {
+    constructor(){
+      this.reset(true);
+    }
+    reset(init){
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : H * 0.25 + Math.random() * H * 0.5;
+      this.length = Math.random() * 25 + 10;
+      this.angle = Math.random() * Math.PI * 2;
+      this.curve = (Math.random() - 0.5) * 0.3;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.01;
+      this.speedY = -Math.random() * 0.15 - 0.01;
+      this.speedX = (Math.random() - 0.5) * 0.08;
+      this.alpha = Math.random() * 0.08 + 0.02;
+      this.life = 0;
+      this.maxLife = 500 + Math.random() * 1000;
+    }
+    update(){
+      this.life++;
+      if(this.life > this.maxLife || this.y < -50 || this.y > H + 50) this.reset(false);
+      this.angle += this.rotationSpeed;
+      this.x += this.speedX;
+      this.y += this.speedY;
+    }
+    draw(){
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle);
+      ctx.strokeStyle = 'rgba(170,170,185,' + this.alpha.toFixed(4) + ')';
+      ctx.lineWidth = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(-this.length / 2, 0);
+      ctx.quadraticCurveTo(0, this.curve * this.length, this.length / 2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Initialize additional particle arrays
+  const wallSpores = [];
+  const staticDischarges = [];
+  const shadowWisps = [];
+  const opticalArtifacts = [];
+  const hairFibers = [];
+
+  for(let i = 0; i < 35; i++) wallSpores.push(new WallSpore());
+  for(let i = 0; i < 15; i++) staticDischarges.push(new StaticDischarge());
+  for(let i = 0; i < 20; i++) shadowWisps.push(new ShadowWisp());
+  for(let i = 0; i < 12; i++) opticalArtifacts.push(new OpticalArtifact());
+  for(let i = 0; i < 30; i++) hairFibers.push(new HairFiber());
+
+  // Extend the animation loop to include new particle types
+  const originalAnimate = animate;
+  // Override by redefining the animation function with additional drawing
+  const _origRAF = animate;
+  // Actually we need to integrate into the existing loop, so we modify approach:
+  // We'll use a secondary animation that draws on top
+
+  const secondaryCanvas = document.createElement('canvas');
+  secondaryCanvas.style.cssText = 'position:fixed;inset:0;z-index:3;pointer-events:none;mix-blend-mode:screen;';
+  document.body.appendChild(secondaryCanvas);
+  const sctx = secondaryCanvas.getContext('2d');
+
+  function resizeSecondary(){
+    secondaryCanvas.width = window.innerWidth;
+    secondaryCanvas.height = window.innerHeight;
+  }
+  resizeSecondary();
+  window.addEventListener('resize', resizeSecondary);
+
+  function secondaryAnimate(){
+    sctx.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+
+    for(const p of wallSpores){ p.update(); p.draw(sctx); }
+    for(const p of staticDischarges){ p.update(); p.draw(sctx); }
+    for(const p of shadowWisps){ p.update(); p.draw(sctx); }
+    for(const p of opticalArtifacts){ p.update(); p.draw(sctx); }
+    for(const p of hairFibers){ p.update(); p.draw(sctx); }
+
+    requestAnimationFrame(secondaryAnimate);
+  }
+  secondaryAnimate();
+
+  // Fix the draw methods to use the passed context
+  WallSpore.prototype.draw = function(context){
+    context = context || ctx;
+    context.beginPath();
+    context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(180,190,185,' + this.alpha.toFixed(4) + ')';
+    context.fill();
+  };
+  StaticDischarge.prototype.draw = function(context){
+    context = context || ctx;
+    if(this.alpha < 0.05) return;
+    context.save();
+    context.translate(this.x, this.y);
+    context.strokeStyle = 'rgba(200,210,220,' + this.alpha.toFixed(4) + ')';
+    context.lineWidth = 0.5;
+    context.beginPath();
+    context.moveTo(0, 0);
+    for(const pt of this.points){
+      context.lineTo(pt.x, pt.y);
+    }
+    context.stroke();
+    context.restore();
+  };
+  ShadowWisp.prototype.draw = function(context){
+    context = context || ctx;
+    context.save();
+    context.translate(this.x, this.y);
+    context.scale(1, this.aspectRatio);
+    context.beginPath();
+    context.arc(0, 0, this.size, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(5,5,8,' + this.alpha.toFixed(4) + ')';
+    context.fill();
+    context.restore();
+  };
+  OpticalArtifact.prototype.draw = function(context){
+    context = context || ctx;
+    if(this.alpha < 0.005) return;
+    const r = 200 + this.colorShift;
+    const g = 200 - this.colorShift * 0.5;
+    const b = 210 - this.colorShift * 0.3;
+    const grad = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+    grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + this.alpha.toFixed(4) + ')');
+    grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+    context.fillStyle = grad;
+    context.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+  };
+  HairFiber.prototype.draw = function(context){
+    context = context || ctx;
+    context.save();
+    context.translate(this.x, this.y);
+    context.rotate(this.angle);
+    context.strokeStyle = 'rgba(170,170,185,' + this.alpha.toFixed(4) + ')';
+    context.lineWidth = 0.3;
+    context.beginPath();
+    context.moveTo(-this.length / 2, 0);
+    context.quadraticCurveTo(0, this.curve * this.length, this.length / 2, 0);
+    context.stroke();
+    context.restore();
+  };
+
+  /*
+   * Wall moisture drip effect
+   */
+  const dripCanvas = document.createElement('canvas');
+  dripCanvas.style.cssText = 'position:fixed;inset:0;z-index:2;pointer-events:none;';
+  document.body.appendChild(dripCanvas);
+  const dctx = dripCanvas.getContext('2d');
+
+  function resizeDrip(){
+    dripCanvas.width = window.innerWidth;
+    dripCanvas.height = window.innerHeight;
+  }
+  resizeDrip();
+  window.addEventListener('resize', resizeDrip);
+
+  const drips = [];
+  class WallDrip {
+    constructor(){
+      this.reset();
+    }
+    reset(){
+      this.active = false;
+      this.x = W * 0.1 + Math.random() * W * 0.3;
+      this.y = H * 0.2 + Math.random() * H * 0.1;
+      this.length = 0;
+      this.maxLength = 20 + Math.random() * 80;
+      this.speed = Math.random() * 0.3 + 0.1;
+      this.alpha = Math.random() * 0.08 + 0.03;
+      this.width = Math.random() * 1.5 + 0.3;
+      this.delay = Math.random() * 30000;
+      this.born = Date.now();
+    }
+    update(){
+      if(!this.active){
+        if(Date.now() - this.born > this.delay){
+          this.active = true;
+          this.born = Date.now();
+        }
+        return;
+      }
+      this.length += this.speed;
+      if(this.length > this.maxLength){
+        this.reset();
+      }
+    }
+    draw(ctx){
+      if(!this.active || this.length < 1) return;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x, this.y + this.length);
+      ctx.strokeStyle = 'rgba(180,190,195,' + this.alpha.toFixed(4) + ')';
+      ctx.lineWidth = this.width;
+      ctx.stroke();
+    }
+  }
+  for(let i = 0; i < 30; i++) drips.push(new WallDrip());
+
+  function dripAnimate(){
+    dctx.clearRect(0, 0, dripCanvas.width, dripCanvas.height);
+    for(const d of drips){ d.update(); d.draw(dctx); }
+    requestAnimationFrame(dripAnimate);
+  }
+  dripAnimate();
+
+  /*
+   * Periodic ambient events
+   */
+  // Random deep bass "thump" (visual only - slight screen shake)
+  setInterval(function(){
+    const intensity = Math.random() * 0.5 + 0.2;
+    document.body.style.transform = 'translate(' +
+      ((Math.random() - 0.5) * intensity).toFixed(2) + 'px,' +
+      ((Math.random() - 0.5) * intensity).toFixed(2) + 'px)';
+    setTimeout(function(){
+      document.body.style.transform = 'translate(0,0)';
+    }, 80 + Math.random() * 120);
+  }, 8000 + Math.random() * 15000);
+
+  /*
+   * Random distant light pulse
+   */
+  const endGlow = document.querySelector('.end-glow');
+  if(endGlow){
+    setInterval(function(){
+      const pulseIntensity = Math.random() * 0.5 + 0.3;
+      endGlow.style.opacity = pulseIntensity.toString();
+      setTimeout(function(){
+        endGlow.style.opacity = (0.3 + Math.random() * 0.3).toString();
+      }, 200 + Math.random() * 400);
+    }, 4000 + Math.random() * 8000);
+  }
+
+  /*
+   * Perlin-like ambient sound visualization through subtle opacity modulations
+   */
+  setInterval(function(){
+    const noiseOpac = 0.03 + Math.random() * 0.03;
+    const noiseEl = document.getElementById('noise');
+    if(noiseEl){
+      noiseEl.style.opacity = noiseOpac.toFixed(4);
+    }
+  }, 200);
+
+  /*
+   * Track total time spent in corridor
+   */
+  try {
+    const entryTime = parseInt(sessionStorage.getItem('void_echo_corridor_entry') || '0');
+    if(!entryTime){
+      sessionStorage.setItem('void_echo_corridor_entry', Date.now().toString());
+    }
+    const elapsed = entryTime ? Math.floor((Date.now() - entryTime) / 1000) : 0;
+    if(elapsed > 120){
+      console.log('%c 你已经在长廊中待了 ' + elapsed + ' 秒。','color:#5a5a68;');
+      console.log('%c 入口还在吗?','color:#3a3a48;');
+    }
+    if(elapsed > 600){
+      console.log('%c ' + Math.floor(elapsed/60) + ' 分钟。你应该考虑离开。','color:#4a4a58;');
+      console.log('%c 如果你还能找到出口的话。','color:#2a2a38;');
+    }
+  } catch(e) {}
+
+  /*
+   * Figure tracking - random repositioning of shadow figures
+   */
+  const allFigures = document.querySelectorAll('.shadow-figure, .shadow-figure-2, .shadow-figure-3');
+  setInterval(function(){
+    allFigures.forEach(function(fig, idx){
+      const microX = (Math.random() - 0.5) * 8 * (idx + 1);
+      const microY = (Math.random() - 0.5) * 6;
+      const currentLeft = parseFloat(fig.style.left || '50');
+      if(!isNaN(currentLeft)){
+        fig.style.left = (currentLeft + microX * 0.02) + '%';
+      }
+    });
+  }, 3000);
+
+  /*
+   * Emergency light random trigger
+   */
+  const emergLight = document.querySelector('.emergency-light');
+  if(emergLight){
+    setInterval(function(){
+      if(Math.random() < 0.3){
+        emergLight.style.opacity = (Math.random() * 0.6 + 0.2).toString();
+        setTimeout(function(){
+          emergLight.style.opacity = '0';
+        }, 80 + Math.random() * 300);
+      }
+    }, 5000 + Math.random() * 10000);
+  }
+
+  /*
+   * Final corridor heartbeat - subtle CSS variable modulation
+   * The corridor breathes. The frequency binds. The walls remember.
+   * Observer 138 is now active. Log preserves. Signal persists.
+   * 137.2 Hz - the eternal resonance between void and perception.
+   */
+  const rootStyle = getComputedStyle(document.documentElement);
+  setInterval(function(){
+    const pulse = 0.92 + Math.sin(Date.now() * 0.0008) * 0.08;
+    document.documentElement.style.setProperty('--figure-opacity', pulse.toFixed(3));
+  }, 2000);
+
+})();
+</script>
+</body>
+</html>

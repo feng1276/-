@@ -1,0 +1,3400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID ECHO · 回声</title>
+<style>
+/* ============================================================
+   VOID ECHO
+   A chamber where whispers and echoes collect.
+   Ghostly text that appears and fades.
+   Sound-wave visualizations.
+   A sense of trapped voices.
+   Eerie. Melancholic. Unsettling.
+   ============================================================ */
+
+:root{
+  --void:#030306;
+  --deepvoid:#010104;
+  --whisper:#0a0a16;
+  --ghost:#c8c8dc;
+  --pale:rgba(200,200,220,0.5);
+  --faint:rgba(200,200,220,0.15);
+  --trace:rgba(200,200,220,0.04);
+  --ring:rgba(200,200,220,0.08);
+  --echo-glow:rgba(180,180,220,0.25);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html{
+  background:var(--deepvoid);
+  overflow:hidden;
+  height:100%;
+}
+
+body{
+  font-family:'Courier New','SimSun','NSimSun','FangSong',monospace;
+  background:var(--void);
+  color:var(--pale);
+  overflow:hidden;
+  height:100vh;
+  width:100vw;
+  cursor:crosshair;
+}
+
+/* ===== CANVAS LAYERS ===== */
+#particleCanvas{position:fixed;inset:0;z-index:1;pointer-events:none;}
+#echoCanvas{position:fixed;inset:0;z-index:2;pointer-events:none;}
+#ringCanvas{position:fixed;inset:0;z-index:3;pointer-events:none;}
+#ghostTextCanvas{position:fixed;inset:0;z-index:4;pointer-events:none;}
+#traceCanvas{position:fixed;inset:0;z-index:5;pointer-events:none;}
+
+/* ===== AMBIENT BACKGROUNDS ===== */
+.ambient-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 15% 25%,rgba(60,20,90,0.10) 0%,transparent 40%),
+    radial-gradient(ellipse at 75% 35%,rgba(20,40,80,0.08) 0%,transparent 45%),
+    radial-gradient(ellipse at 35% 75%,rgba(40,15,60,0.07) 0%,transparent 40%),
+    radial-gradient(ellipse at 65% 65%,rgba(15,30,55,0.09) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 50%,rgba(10,10,30,0.15) 0%,transparent 65%);
+}
+.ambient-bg2{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 25% 60%,rgba(80,30,120,0.04) 0%,transparent 35%),
+    radial-gradient(circle at 80% 20%,rgba(30,50,100,0.05) 0%,transparent 30%),
+    radial-gradient(circle at 10% 80%,rgba(60,25,80,0.03) 0%,transparent 40%);
+  animation:ambientShift 30s ease-in-out infinite;
+}
+.ambient-bg3{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 60% 30%,rgba(100,40,60,0.03) 0%,transparent 50%),
+    radial-gradient(ellipse at 30% 70%,rgba(40,80,100,0.03) 0%,transparent 45%);
+  animation:ambientShift 25s ease-in-out infinite reverse;
+}
+@keyframes ambientShift{
+  0%,100%{opacity:0.6;transform:scale(1);}
+  25%{opacity:0.9;transform:scale(1.03);}
+  50%{opacity:0.5;transform:scale(0.98);}
+  75%{opacity:0.85;transform:scale(1.02);}
+}
+
+/* ===== SVG FILTER OVERLAYS ===== */
+.svg-noise-overlay{
+  position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px 256px;
+}
+
+.svg-noise-overlay2{
+  position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0.02;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+  background-size:300px 300px;
+  animation:noiseDrift 20s linear infinite;
+}
+@keyframes noiseDrift{
+  0%{background-position:0 0;}
+  100%{background-position:300px 300px;}
+}
+
+/* ===== FOG OVERLAY ===== */
+.fog-layer{
+  position:fixed;inset:0;z-index:11;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 30% 50%,rgba(200,200,220,0.015) 0%,transparent 60%),
+    radial-gradient(ellipse at 70% 40%,rgba(200,200,220,0.01) 0%,transparent 50%);
+  animation:fogDrift 40s ease-in-out infinite;
+}
+@keyframes fogDrift{
+  0%,100%{opacity:0.3;transform:translateX(0);}
+  25%{opacity:0.7;transform:translateX(2%);}
+  50%{opacity:0.4;transform:translateX(-1%);}
+  75%{opacity:0.6;transform:translateX(1%);}
+}
+
+/* ===== SCANLINES ===== */
+.scanlines{
+  position:fixed;inset:0;pointer-events:none;z-index:13;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+}
+.scanlines2{
+  position:fixed;inset:0;pointer-events:none;z-index:13;
+  background:repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 80px,
+    rgba(0,0,0,0.01) 80px,
+    rgba(0,0,0,0.01) 81px
+  );
+}
+
+/* ===== VIGNETTE ===== */
+.vignette{
+  position:fixed;inset:0;pointer-events:none;z-index:10;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(3,3,6,0.85) 100%);
+}
+.vignette2{
+  position:fixed;inset:0;pointer-events:none;z-index:10;
+  background:radial-gradient(ellipse at 35% 45%,transparent 50%,rgba(3,3,6,0.5) 100%);
+}
+
+/* ===== STATIC FLICKER ===== */
+.static-flicker{
+  position:fixed;inset:0;z-index:14;pointer-events:none;
+  background:rgba(200,200,220,0.005);
+  animation:flicker 0.3s steps(1) infinite;
+  opacity:0;
+}
+@keyframes flicker{
+  0%,95%,97%,100%{opacity:0;}
+  96%{opacity:1;}
+  98%{opacity:0.3;}
+}
+
+/* ===== TITLE SECTION ===== */
+.echo-title{
+  position:fixed;top:6%;left:50%;transform:translateX(-50%);
+  z-index:20;pointer-events:none;text-align:center;
+}
+.echo-title h1{
+  font-size:clamp(2rem,4vw,3.2rem);
+  font-weight:100;letter-spacing:0.5em;
+  color:rgba(200,200,220,0.45);
+  text-shadow:
+    0 0 30px rgba(200,200,220,0.1),
+    0 0 80px rgba(200,200,220,0.06),
+    0 0 150px rgba(180,180,220,0.04);
+  animation:titlePulse 8s ease-in-out infinite;
+}
+@keyframes titlePulse{
+  0%,100%{text-shadow:0 0 30px rgba(200,200,220,0.1),0 0 80px rgba(200,200,220,0.06);}
+  50%{text-shadow:0 0 50px rgba(200,200,220,0.18),0 0 120px rgba(200,200,220,0.1),0 0 200px rgba(180,180,220,0.05);}
+}
+.echo-title .sub{
+  font-size:0.6rem;letter-spacing:0.35em;
+  color:rgba(200,200,220,0.2);
+  margin-top:10px;
+  animation:subFade 6s ease-in-out infinite;
+}
+@keyframes subFade{
+  0%,100%{opacity:0.5;}
+  50%{opacity:1;}
+}
+.echo-title .freq{
+  font-size:0.5rem;letter-spacing:0.5em;
+  color:rgba(200,200,220,0.12);
+  margin-top:6px;
+}
+.echo-title .freq span{
+  animation:freqBlink 3s steps(1) infinite;
+}
+@keyframes freqBlink{
+  0%,70%,100%{opacity:1;}
+  71%,99%{opacity:0.2;}
+}
+
+/* ===== WHISPER TEXT LAYER ===== */
+.whisper-layer{
+  position:fixed;inset:0;z-index:21;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.whisper-text{
+  position:absolute;
+  font-size:1.05rem;letter-spacing:0.35em;
+  color:rgba(200,200,220,0);
+  text-align:center;
+  max-width:75vw;
+  line-height:2.2;
+  transition:all 3s cubic-bezier(0.4,0,0.2,1);
+  filter:blur(8px);
+  text-shadow:0 0 60px rgba(200,200,220,0);
+}
+.whisper-text.visible{
+  color:rgba(200,200,220,0.55);
+  filter:blur(0px);
+  text-shadow:0 0 30px rgba(200,200,220,0.12);
+}
+.whisper-text.fading{
+  color:rgba(200,200,220,0);
+  filter:blur(10px);
+  text-shadow:0 0 80px rgba(200,200,220,0);
+}
+
+/* ===== WHISPER SHADOW ECHO (delayed secondary text) ===== */
+.whisper-shadow{
+  position:fixed;inset:0;z-index:19;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.whisper-shadow-text{
+  position:absolute;
+  font-size:0.9rem;letter-spacing:0.45em;
+  color:rgba(200,200,220,0);
+  text-align:center;
+  max-width:70vw;
+  line-height:2.5;
+  filter:blur(12px);
+  transform:translateY(25px);
+  transition:all 5s ease;
+}
+.whisper-shadow-text.ghost{
+  color:rgba(200,200,220,0.08);
+  filter:blur(15px);
+  transform:translateY(-15px);
+}
+
+/* ===== ECHO RINGS (CSS-based) ===== */
+.echo-ring-css{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:3;
+  border-radius:50%;border:1px solid transparent;
+}
+.echo-ring-1{animation:echoExpandCSS 14s ease-out infinite;}
+.echo-ring-2{animation:echoExpandCSS 14s ease-out 4.6s infinite;}
+.echo-ring-3{animation:echoExpandCSS 14s ease-out 9.3s infinite;}
+.echo-ring-4{animation:echoExpandCSS2 11s ease-out infinite;}
+.echo-ring-5{animation:echoExpandCSS2 11s ease-out 3.6s infinite;}
+.echo-ring-6{animation:echoExpandCSS2 11s ease-out 7.3s infinite;}
+.echo-ring-7{animation:echoExpandCSS3 18s ease-out infinite;}
+.echo-ring-8{animation:echoExpandCSS3 18s ease-out 6s infinite;}
+.echo-ring-9{animation:echoExpandCSS3 18s ease-out 12s infinite;}
+@keyframes echoExpandCSS{
+  0%{width:60px;height:60px;border-color:rgba(200,200,220,0.07);opacity:0.9;}
+  100%{width:1000px;height:1000px;border-color:rgba(200,200,220,0);opacity:0;}
+}
+@keyframes echoExpandCSS2{
+  0%{width:40px;height:40px;border-color:rgba(180,190,220,0.05);opacity:0.8;}
+  100%{width:700px;height:700px;border-color:rgba(180,190,220,0);opacity:0;}
+}
+@keyframes echoExpandCSS3{
+  0%{width:80px;height:80px;border-color:rgba(200,210,230,0.04);opacity:0.7;}
+  100%{width:1200px;height:1200px;border-color:rgba(200,210,230,0);opacity:0;}
+}
+
+/* ===== PERIPHERAL ECHO RINGS (off-center) ===== */
+.peripheral-ring{
+  position:fixed;pointer-events:none;z-index:2;
+  border-radius:50%;border:1px solid transparent;
+}
+.pr-1{top:30%;left:20%;animation:periExpand1 16s ease-out infinite;}
+.pr-2{top:60%;left:75%;animation:periExpand2 13s ease-out 5s infinite;}
+.pr-3{top:25%;left:70%;animation:periExpand3 19s ease-out 3s infinite;}
+.pr-4{top:70%;left:30%;animation:periExpand1 15s ease-out 8s infinite;}
+.pr-5{top:40%;left:60%;animation:periExpand2 17s ease-out 2s infinite;}
+.pr-6{top:55%;left:15%;animation:periExpand3 12s ease-out 7s infinite;}
+@keyframes periExpand1{
+  0%{width:20px;height:20px;border-color:rgba(200,200,220,0.05);opacity:0.7;}
+  100%{width:500px;height:500px;border-color:rgba(200,200,220,0);opacity:0;}
+}
+@keyframes periExpand2{
+  0%{width:15px;height:15px;border-color:rgba(180,190,220,0.04);opacity:0.6;}
+  100%{width:400px;height:400px;border-color:rgba(180,190,220,0);opacity:0;}
+}
+@keyframes periExpand3{
+  0%{width:30px;height:30px;border-color:rgba(200,210,230,0.03);opacity:0.5;}
+  100%{width:600px;height:600px;border-color:rgba(200,210,230,0);opacity:0;}
+}
+
+/* ===== WAVEFORM BARS (CSS) ===== */
+.waveform-container{
+  position:fixed;z-index:6;pointer-events:none;
+  display:flex;align-items:flex-end;gap:2px;
+}
+.waveform-1{bottom:18%;left:50%;transform:translateX(-50%);height:90px;opacity:0.35;}
+.waveform-2{top:22%;left:50%;transform:translateX(-50%) scaleY(-1);height:70px;opacity:0.2;}
+.waveform-3{top:45%;right:10%;height:50px;opacity:0.15;flex-direction:row-reverse;}
+.waveform-4{bottom:35%;left:8%;height:60px;opacity:0.18;}
+.waveform-5{top:55%;left:50%;transform:translateX(-50%);height:40px;opacity:0.12;}
+.wave-bar{
+  width:2px;min-height:3px;
+  background:rgba(200,200,220,0.3);
+  border-radius:1px;
+}
+.wave-bar.anim1{animation:waveAnim1 1.8s ease-in-out infinite;}
+.wave-bar.anim2{animation:waveAnim2 2.2s ease-in-out infinite;}
+.wave-bar.anim3{animation:waveAnim3 1.5s ease-in-out infinite;}
+.wave-bar.anim4{animation:waveAnim4 2.8s ease-in-out infinite;}
+.wave-bar.anim5{animation:waveAnim5 2s ease-in-out infinite;}
+.wave-bar.anim6{animation:waveAnim6 3.2s ease-in-out infinite;}
+.wave-bar.anim7{animation:waveAnim7 1.3s ease-in-out infinite;}
+.wave-bar.anim8{animation:waveAnim8 2.5s ease-in-out infinite;}
+.wave-bar.anim9{animation:waveAnim9 1.9s ease-in-out infinite;}
+.wave-bar.anim10{animation:waveAnim10 3.5s ease-in-out infinite;}
+@keyframes waveAnim1{0%,100%{height:8px;}50%{height:70px;}}
+@keyframes waveAnim2{0%,100%{height:12px;}50%{height:55px;}}
+@keyframes waveAnim3{0%,100%{height:5px;}50%{height:65px;}}
+@keyframes waveAnim4{0%,100%{height:15px;}50%{height:45px;}}
+@keyframes waveAnim5{0%,100%{height:10px;}50%{height:60px;}}
+@keyframes waveAnim6{0%,100%{height:6px;}50%{height:50px;}}
+@keyframes waveAnim7{0%,100%{height:9px;}50%{height:75px;}}
+@keyframes waveAnim8{0%,100%{height:14px;}50%{height:40px;}}
+@keyframes waveAnim9{0%,100%{height:7px;}50%{height:68px;}}
+@keyframes waveAnim10{0%,100%{height:11px;}50%{height:52px;}}
+
+/* ===== TRACE TEXT (scattered ghost remnants) ===== */
+.trace{
+  position:fixed;
+  font-size:0.65rem;
+  color:rgba(200,200,220,0.04);
+  letter-spacing:0.25em;
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:8;
+}
+.trace.t1{animation:traceFade1 18s ease-in-out infinite;}
+.trace.t2{animation:traceFade2 22s ease-in-out infinite;}
+.trace.t3{animation:traceFade3 16s ease-in-out infinite;}
+.trace.t4{animation:traceFade4 25s ease-in-out infinite;}
+.trace.t5{animation:traceFade5 20s ease-in-out infinite;}
+.trace.t6{animation:traceFade6 30s ease-in-out infinite;}
+.trace.t7{animation:traceFade7 15s ease-in-out infinite;}
+.trace.t8{animation:traceFade8 28s ease-in-out infinite;}
+@keyframes traceFade1{0%,100%{opacity:0.02;}50%{opacity:0.12;}}
+@keyframes traceFade2{0%,100%{opacity:0.03;}33%{opacity:0.08;}66%{opacity:0.15;}}
+@keyframes traceFade3{0%,100%{opacity:0.01;}25%{opacity:0.1;}75%{opacity:0.04;}}
+@keyframes traceFade4{0%,100%{opacity:0.04;}50%{opacity:0.09;}80%{opacity:0.02;}}
+@keyframes traceFade5{0%,100%{opacity:0.02;}40%{opacity:0.11;}70%{opacity:0.05;}}
+@keyframes traceFade6{0%,100%{opacity:0.03;}20%{opacity:0.07;}60%{opacity:0.13;}}
+@keyframes traceFade7{0%,100%{opacity:0.01;}50%{opacity:0.15;}90%{opacity:0.03;}}
+@keyframes traceFade8{0%,100%{opacity:0.02;}30%{opacity:0.1;}70%{opacity:0.06;}}
+
+/* ===== ECHO ARCHIVE DOTS ===== */
+.echo-archive{
+  position:fixed;right:25px;top:50%;transform:translateY(-50%);
+  z-index:17;pointer-events:none;
+  display:flex;flex-direction:column;gap:5px;
+}
+.echo-archive.left{right:auto;left:25px;}
+.archive-dot{
+  width:2.5px;height:2.5px;border-radius:50%;
+  background:rgba(200,200,220,0.06);
+  transition:all 1.5s ease;
+}
+.archive-dot.collected{
+  background:rgba(200,200,220,0.25);
+  box-shadow:0 0 8px rgba(200,200,220,0.15);
+  animation:dotGlow 3s ease-in-out infinite;
+}
+.archive-dot.recent{
+  background:rgba(220,210,230,0.4);
+  box-shadow:0 0 15px rgba(200,200,220,0.3);
+  animation:dotPulse 0.8s ease-out;
+}
+@keyframes dotGlow{
+  0%,100%{box-shadow:0 0 5px rgba(200,200,220,0.1);}
+  50%{box-shadow:0 0 12px rgba(200,200,220,0.25);}
+}
+@keyframes dotPulse{
+  0%{transform:scale(1);box-shadow:0 0 25px rgba(200,200,220,0.5);}
+  100%{transform:scale(1);box-shadow:0 0 8px rgba(200,200,220,0.2);}
+}
+
+/* ===== WHISPER COUNTER ===== */
+.whisper-count{
+  position:fixed;bottom:85px;left:50%;transform:translateX(-50%);
+  z-index:18;pointer-events:none;
+  font-size:0.5rem;letter-spacing:0.35em;
+  color:rgba(200,200,220,0.1);
+  transition:all 1s ease;
+}
+.whisper-count.flash{
+  color:rgba(200,200,220,0.35);
+  text-shadow:0 0 15px rgba(200,200,220,0.2);
+}
+
+/* ===== STATUS LINE ===== */
+.status-line{
+  position:fixed;top:15px;right:25px;
+  z-index:22;pointer-events:none;
+  font-size:0.45rem;letter-spacing:0.4em;
+  color:rgba(200,200,220,0.08);
+}
+.status-line .val{color:rgba(200,200,220,0.15);}
+
+/* ===== NAVIGATION ===== */
+.echo-nav{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  z-index:100;display:flex;gap:18px;align-items:center;
+}
+.echo-nav a{
+  pointer-events:auto;text-decoration:none;
+  color:rgba(200,200,220,0.15);
+  font-size:0.65rem;letter-spacing:0.3em;
+  transition:all 0.9s ease;
+}
+.echo-nav a:hover{
+  color:rgba(220,220,240,0.5);
+  text-shadow:0 0 25px rgba(200,200,220,0.2);
+}
+.echo-nav span.sep{color:rgba(200,200,220,0.07);}
+
+.back-link{
+  position:fixed;top:28px;left:28px;z-index:100;
+  text-decoration:none;display:flex;align-items:center;gap:10px;
+  color:rgba(200,200,220,0.15);
+  font-size:0.65rem;letter-spacing:0.25em;
+  transition:all 0.9s ease;
+}
+.back-link:hover{color:rgba(220,220,240,0.5);}
+.back-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:rgba(200,200,220,0.15);
+  transition:all 0.8s ease;
+}
+.back-link:hover .back-dot{
+  background:rgba(220,220,240,0.5);
+  box-shadow:0 0 15px rgba(200,200,220,0.3);
+}
+
+/* ===== PULSE DOT (center indicator) ===== */
+.pulse-dot{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:15;pointer-events:none;
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(200,200,220,0.2);
+  box-shadow:0 0 20px rgba(200,200,220,0.15);
+  animation:pulseDot 4s ease-in-out infinite;
+}
+@keyframes pulseDot{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.4;}
+  50%{transform:translate(-50%,-50%) scale(2.5);opacity:0.9;}
+}
+
+/* ===== PARTICLE TRAIL EFFECT (CSS glow dots) ===== */
+.particle-glow{
+  position:fixed;pointer-events:none;z-index:2;
+  width:2px;height:2px;border-radius:50%;
+  background:rgba(200,200,220,0.08);
+  box-shadow:0 0 4px rgba(200,200,220,0.06);
+}
+
+/* ===== CLICK ECHO BURST OVERLAY ===== */
+.click-burst{
+  position:fixed;pointer-events:none;z-index:9;
+  border-radius:50%;
+  border:1px solid rgba(200,200,220,0.15);
+  animation:clickBurst 2s ease-out forwards;
+}
+@keyframes clickBurst{
+  0%{width:0;height:0;opacity:1;border-color:rgba(200,200,220,0.25);}
+  100%{width:300px;height:300px;opacity:0;border-color:rgba(200,200,220,0);}
+}
+
+/* ===== HIDDEN ECHO ARCHIVE (massive log of all collected echoes) ===== */
+.hidden-archive{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;
+  overflow:hidden;
+}
+.hidden-archive .log-entry{
+  font-size:0.35rem;letter-spacing:0.2em;
+  color:rgba(200,200,220,0.03);
+  margin-bottom:3px;
+}
+
+/* ===== SVG LARGE TURBULENCE OVERLAY ===== */
+.large-svg-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.025;
+}
+
+/* ============================================================
+   ADDITIONAL KEYFRAME ANIMATIONS (total 30+)
+   ============================================================ */
+
+/* Whisper fade variants */
+@keyframes whisperFadeA{0%{opacity:0;filter:blur(12px);transform:translateY(20px);}15%{opacity:0.6;filter:blur(0px);transform:translateY(0);}85%{opacity:0.55;filter:blur(1px);transform:translateY(-3px);}100%{opacity:0;filter:blur(10px);transform:translateY(-25px);}}
+@keyframes whisperFadeB{0%{opacity:0;filter:blur(20px);transform:translateY(-15px) scale(0.9);}20%{opacity:0.45;filter:blur(2px);transform:translateY(0) scale(1);}80%{opacity:0.4;filter:blur(4px);transform:translateY(5px) scale(1.02);}100%{opacity:0;filter:blur(18px);transform:translateY(30px) scale(0.95);}}
+@keyframes whisperFadeC{0%{opacity:0;filter:blur(8px);transform:translateX(-15px);}25%{opacity:0.5;filter:blur(0px);transform:translateX(0);}75%{opacity:0.35;filter:blur(5px);transform:translateX(10px);}100%{opacity:0;filter:blur(15px);transform:translateX(20px);}}
+@keyframes whisperFadeD{0%{opacity:0;filter:blur(15px);letter-spacing:1em;}30%{opacity:0.55;filter:blur(0px);letter-spacing:0.3em;}70%{opacity:0.3;filter:blur(6px);letter-spacing:0.5em;}100%{opacity:0;filter:blur(20px);letter-spacing:1.2em;}}
+
+/* Echo ring expansion variants */
+@keyframes echoExpandSlow{0%{width:30px;height:30px;border-color:rgba(200,200,220,0.06);opacity:0.8;}50%{border-color:rgba(200,200,220,0.03);}100%{width:900px;height:900px;border-color:rgba(200,200,220,0);opacity:0;}}
+@keyframes echoExpandFast{0%{width:15px;height:15px;border-color:rgba(220,210,230,0.1);opacity:1;}100%{width:450px;height:450px;border-color:rgba(220,210,230,0);opacity:0;}}
+@keyframes echoExpandEllipse{0%{width:40px;height:40px;border-color:rgba(200,200,220,0.05);}50%{width:300px;height:150px;border-color:rgba(200,200,220,0.03);}100%{width:800px;height:600px;border-color:rgba(200,200,220,0);}}
+@keyframes echoExpandOffset{0%{width:25px;height:25px;border-color:rgba(200,200,220,0.07);transform:translate(-50%,-50%) rotate(0deg);}100%{width:700px;height:700px;border-color:rgba(200,200,220,0);transform:translate(-50%,-50%) rotate(180deg);}}
+
+/* Waveform morph animations */
+@keyframes waveMorph1{0%{height:3px;opacity:0.15;}25%{height:45px;opacity:0.4;}50%{height:8px;opacity:0.1;}75%{height:55px;opacity:0.35;}100%{height:3px;opacity:0.15;}}
+@keyframes waveMorph2{0%{height:15px;opacity:0.2;}30%{height:5px;opacity:0.1;}60%{height:50px;opacity:0.45;}100%{height:15px;opacity:0.2;}}
+@keyframes waveMorph3{0%{height:20px;opacity:0.25;}40%{height:60px;opacity:0.4;}70%{height:10px;opacity:0.12;}100%{height:20px;opacity:0.25;}}
+@keyframes waveMorph4{0%{height:5px;opacity:0.08;}50%{height:70px;opacity:0.5;}100%{height:5px;opacity:0.08;}}
+@keyframes waveMorph5{0%{height:25px;opacity:0.3;}20%{height:3px;opacity:0.05;}45%{height:40px;opacity:0.35;}80%{height:8px;opacity:0.1;}100%{height:25px;opacity:0.3;}}
+@keyframes waveMorph6{0%{height:10px;opacity:0.15;}35%{height:65px;opacity:0.5;}65%{height:15px;opacity:0.2;}100%{height:10px;opacity:0.15;}}
+
+/* Particle drift animations */
+@keyframes particleDriftUp{0%{transform:translateY(100vh) translateX(0);opacity:0;}10%{opacity:0.15;}90%{opacity:0.1;}100%{transform:translateY(-50px) translateX(30px);opacity:0;}}
+@keyframes particleDriftDiagonal{0%{transform:translateY(100vh) translateX(-50px);opacity:0;}15%{opacity:0.12;}85%{opacity:0.08;}100%{transform:translateY(-30px) translateX(80px);opacity:0;}}
+@keyframes particleDriftRight{0%{transform:translateX(-50px) translateY(50vh);opacity:0;}20%{opacity:0.1;}80%{opacity:0.06;}100%{transform:translateX(calc(100vw+50px)) translateY(40vh);opacity:0;}}
+@keyframes particleFloat{0%{transform:translateY(0);opacity:0.08;}50%{transform:translateY(-25px);opacity:0.15;}100%{transform:translateY(0);opacity:0.08;}}
+@keyframes particleTwinkle{0%,100%{opacity:0.03;}50%{opacity:0.12;}}
+
+/* Ghost text drift */
+@keyframes ghostDrift1{0%{transform:translate(0,0);opacity:0.08;}25%{transform:translate(5px,-15px);opacity:0.04;}50%{transform:translate(10px,5px);opacity:0.1;}75%{transform:translate(-3px,-8px);opacity:0.05;}100%{transform:translate(0,0);opacity:0.08;}}
+@keyframes ghostDrift2{0%{transform:translate(0,0);opacity:0.06;}30%{transform:translate(-8px,-10px);opacity:0.12;}60%{transform:translate(3px,8px);opacity:0.03;}100%{transform:translate(0,0);opacity:0.06;}}
+@keyframes ghostDrift3{0%{transform:translate(0,0);opacity:0.07;}20%{transform:translate(12px,3px);opacity:0.02;}55%{transform:translate(-5px,-12px);opacity:0.1;}100%{transform:translate(0,0);opacity:0.07;}}
+
+/* Ambient pulse */
+@keyframes ambientPulse{0%,100%{box-shadow:0 0 30px rgba(200,200,220,0.05);}50%{box-shadow:0 0 80px rgba(200,200,220,0.12);}}
+@keyframes ambientPulse2{0%,100%{box-shadow:0 0 15px rgba(180,180,210,0.03);}33%{box-shadow:0 0 45px rgba(180,180,210,0.08);}66%{box-shadow:0 0 25px rgba(200,200,220,0.05);}}
+
+/* Border glow pulse */
+@keyframes borderGlow{0%,100%{border-color:rgba(200,200,220,0.03);}50%{border-color:rgba(200,200,220,0.1);}}
+@keyframes borderGlow2{0%,100%{border-color:rgba(180,190,220,0.02);}25%{border-color:rgba(180,190,220,0.07);}75%{border-color:rgba(200,200,220,0.04);}}
+
+/* Deep breathing effect for ambient backgrounds */
+@keyframes deepBreathe{0%,100%{opacity:0.5;transform:scale(1);}50%{opacity:0.8;transform:scale(1.02);}}
+@keyframes deepBreathe2{0%,100%{opacity:0.4;transform:scale(0.98);}50%{opacity:0.7;transform:scale(1.01);}}
+
+/* Scanline shimmer */
+@keyframes scanShimmer{0%{transform:translateY(-100%);}100%{transform:translateY(100vh);}}
+@keyframes scanShimmerSlow{0%{transform:translateY(-200%);}100%{transform:translateY(200vh);}}
+
+/* Frequency indicator blink */
+@keyframes freqDot{0%,100%{opacity:0.4;transform:scale(1);}50%{opacity:1;transform:scale(1.8);}}
+@keyframes freqDot2{0%,100%{opacity:0.3;transform:scale(0.8);}33%{opacity:0.7;transform:scale(1.3);}66%{opacity:0.2;transform:scale(1);}}
+
+/* Additional ambient animations for various elements */
+@keyframes slowRotate{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes slowCounterRotate{0%{transform:rotate(360deg);}100%{transform:rotate(0deg);}}
+@keyframes microOscillate{0%,100%{transform:translateX(0);}25%{transform:translateX(2px);}75%{transform:translateX(-2px);}}
+@keyframes microOscillateY{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+
+/* Additional animation utility classes */
+.anim-whisperA{animation:whisperFadeA 6s ease-in-out infinite;}
+.anim-whisperB{animation:whisperFadeB 8s ease-in-out infinite;}
+.anim-whisperC{animation:whisperFadeC 7s ease-in-out infinite;}
+.anim-whisperD{animation:whisperFadeD 9s ease-in-out infinite;}
+.anim-waveM1{animation:waveMorph1 2.5s ease-in-out infinite;}
+.anim-waveM2{animation:waveMorph2 3s ease-in-out infinite;}
+.anim-waveM3{animation:waveMorph3 2.8s ease-in-out infinite;}
+.anim-waveM4{animation:waveMorph4 2.2s ease-in-out infinite;}
+.anim-waveM5{animation:waveMorph5 3.5s ease-in-out infinite;}
+.anim-waveM6{animation:waveMorph6 2.7s ease-in-out infinite;}
+.anim-particleDrift{animation:particleDriftUp 18s linear infinite;}
+.anim-particleDiagonal{animation:particleDriftDiagonal 22s linear infinite;}
+.anim-particleRight{animation:particleDriftRight 25s linear infinite;}
+.anim-particleFloat{animation:particleFloat 4s ease-in-out infinite;}
+.anim-ghostDrift1{animation:ghostDrift1 14s ease-in-out infinite;}
+.anim-ghostDrift2{animation:ghostDrift2 17s ease-in-out infinite;}
+.anim-ghostDrift3{animation:ghostDrift3 20s ease-in-out infinite;}
+.anim-deepBreathe{animation:deepBreathe 12s ease-in-out infinite;}
+.anim-deepBreathe2{animation:deepBreathe2 15s ease-in-out infinite;}
+.anim-microOsc{animation:microOscillate 6s ease-in-out infinite;}
+.anim-microOscY{animation:microOscillateY 5s ease-in-out infinite;}
+.anim-freqDot{animation:freqDot 2s ease-in-out infinite;}
+.anim-freqDot2{animation:freqDot2 3s ease-in-out infinite;}
+.anim-borderGlow{animation:borderGlow 7s ease-in-out infinite;}
+.anim-borderGlow2{animation:borderGlow2 9s ease-in-out infinite;}
+
+/* Additional CSS-based ambient effects */
+.ambient-glow-ring{
+  position:fixed;pointer-events:none;z-index:2;
+  border-radius:50%;border:1px solid rgba(200,200,220,0.02);
+  animation:echoExpandSlow 20s ease-out infinite;
+}
+.ambient-glow-ring:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:0s;}
+.ambient-glow-ring:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-7s;}
+.ambient-glow-ring:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-14s;}
+
+/* Whisper-afterimage (very faint duplicate that lingers) */
+.whisper-afterimage{
+  position:fixed;pointer-events:none;z-index:7;
+  color:rgba(200,200,220,0.03);
+  font-size:0.6rem;letter-spacing:0.5em;
+  font-family:'SimSun','Courier New',monospace;
+  animation:ghostDrift1 20s ease-in-out infinite;
+}
+
+/* Echo frequency indicator bars */
+.freq-indicator{
+  position:fixed;pointer-events:none;z-index:16;
+  display:flex;align-items:flex-end;gap:1px;
+  opacity:0.1;
+}
+.freq-bar{
+  width:1px;background:rgba(200,200,220,0.4);
+  animation:freqBarAnim 4s ease-in-out infinite;
+}
+@keyframes freqBarAnim{0%,100%{height:5px;}25%{height:30px;}50%{height:8px;}75%{height:25px;}}
+
+/* ============================================================
+   DENSITY METER AND STATUS INDICATOR STYLES
+   ============================================================ */
+.density-meter{
+  position:fixed;left:15px;top:50%;transform:translateY(-50%);
+  z-index:16;pointer-events:none;
+  width:2px;height:200px;
+  background:rgba(200,200,220,0.03);
+  border-radius:1px;
+}
+.density-fill{
+  position:absolute;bottom:0;left:0;width:100%;
+  background:rgba(200,200,220,0.15);
+  border-radius:1px;
+  transition:height 3s ease,box-shadow 3s ease;
+}
+
+/* Ambient whisper text - even fainter than trace */
+.ambient-whisper-text{
+  position:fixed;pointer-events:none;z-index:6;
+  font-size:0.5rem;letter-spacing:0.4em;
+  color:rgba(200,200,220,0.025);
+  font-family:'SimSun','Courier New',monospace;
+  white-space:nowrap;
+  animation:ambientWhisperFade 25s ease-in-out infinite;
+}
+@keyframes ambientWhisperFade{
+  0%,100%{opacity:0.015;}
+  30%{opacity:0.05;}
+  60%{opacity:0.02;}
+}
+
+/* Echo signature - unique visual mark per whisper */
+.echo-signature{
+  position:fixed;pointer-events:none;z-index:4;
+  width:1px;height:1px;
+  background:rgba(200,200,220,0.05);
+  box-shadow:0 0 8px 2px rgba(200,200,220,0.03);
+  border-radius:50%;
+  animation:signaturePulse 6s ease-out infinite;
+}
+@keyframes signaturePulse{
+  0%{transform:scale(1);opacity:0.15;}
+  50%{transform:scale(4);opacity:0.05;}
+  100%{transform:scale(1);opacity:0;}
+}
+
+/* Collection indicator ring */
+.collection-ring{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:5;
+  border-radius:50%;
+  border:1px solid rgba(200,200,220,0.02);
+  animation:collectionPulse 10s ease-in-out infinite;
+}
+@keyframes collectionPulse{
+  0%,100%{width:300px;height:300px;border-color:rgba(200,200,220,0.015);}
+  50%{width:350px;height:350px;border-color:rgba(200,200,220,0.04);}
+}
+
+/* Peripheral whisper indicators */
+.whisper-indicator{
+  position:fixed;pointer-events:none;z-index:6;
+  font-size:0.4rem;color:rgba(200,200,220,0.03);
+  animation:indicatorBlink 8s ease-in-out infinite;
+}
+@keyframes indicatorBlink{
+  0%,100%{opacity:0.02;}
+  25%{opacity:0.08;}
+  75%{opacity:0.03;}
+}
+
+/* Sound wave line - horizontal line that pulses */
+.sound-line{
+  position:fixed;pointer-events:none;z-index:3;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,200,220,0.04) 20%,rgba(200,200,220,0.08) 50%,rgba(200,200,220,0.04) 80%,transparent);
+  animation:soundLinePulse 7s ease-in-out infinite;
+}
+@keyframes soundLinePulse{
+  0%,100%{opacity:0.3;transform:scaleX(1);}
+  50%{opacity:0.7;transform:scaleX(1.2);}
+}
+
+/* Echo depth layers (z-index stack visualization dots) */
+.echo-depth-dot{
+  position:fixed;pointer-events:none;
+  width:3px;height:3px;border-radius:50%;
+  background:rgba(200,200,220,0.04);
+  animation:depthPulse 5s ease-in-out infinite;
+}
+@keyframes depthPulse{
+  0%,100%{box-shadow:0 0 4px rgba(200,200,220,0.04);}
+  50%{box-shadow:0 0 15px rgba(200,200,220,0.12);}
+}
+
+/* Whisper trail - a fading line connecting whispers */
+.whisper-trail{
+  position:fixed;pointer-events:none;z-index:2;
+  height:1px;
+  background:rgba(200,200,220,0.02);
+  transform-origin:left center;
+  animation:trailFade 12s ease-out infinite;
+}
+@keyframes trailFade{
+  0%{opacity:0.06;transform:scaleX(0.5);}
+  50%{opacity:0.02;transform:scaleX(1.2);}
+  100%{opacity:0;transform:scaleX(0.3);}
+}
+
+/* Echo chamber glow - the room itself glows */
+.chamber-glow{
+  position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse at center,rgba(200,200,220,0.01) 0%,transparent 70%);
+  animation:chamberBreathe 15s ease-in-out infinite;
+}
+@keyframes chamberBreathe{
+  0%,100%{opacity:0.4;transform:scale(0.98);}
+  33%{opacity:0.7;transform:scale(1);}
+  66%{opacity:0.5;transform:scale(1.01);}
+}
+
+/* ============================================================
+   EXTENDED AMBIENT ANIMATIONS AND UTILITY STYLES
+   (additional keyframes for depth and atmosphere)
+   ============================================================ */
+
+/* Deep void radial pulse */
+@keyframes voidPulseA{0%,100%{opacity:0.3;transform:scale(0.95);}25%{opacity:0.6;transform:scale(1.02);}50%{opacity:0.4;transform:scale(1);}75%{opacity:0.7;transform:scale(1.05);}}
+@keyframes voidPulseB{0%,100%{opacity:0.5;transform:scale(1);}33%{opacity:0.8;transform:scale(1.03);}66%{opacity:0.3;transform:scale(0.97);}}
+@keyframes voidPulseC{0%,100%{opacity:0.2;transform:scale(1.05);}50%{opacity:0.5;transform:scale(0.95);}75%{opacity:0.35;transform:scale(1.03);}}
+
+/* Echo blur animations - whisper text goes in and out of focus */
+@keyframes echoBlurIn{0%{filter:blur(15px);opacity:0;}100%{filter:blur(0px);opacity:1;}}
+@keyframes echoBlurOut{0%{filter:blur(0px);opacity:1;}100%{filter:blur(20px);opacity:0;}}
+@keyframes echoBlurPulse{0%,100%{filter:blur(1px);}50%{filter:blur(5px);}}
+
+/* Peripheral ghost flicker - things at the edge of vision */
+@keyframes peripheralFlicker{0%,90%,100%{opacity:0.02;}92%{opacity:0.08;}95%{opacity:0.03;}98%{opacity:0.06;}}
+@keyframes peripheralFlicker2{0%,85%,100%{opacity:0.01;}88%{opacity:0.06;}93%{opacity:0.04;}97%{opacity:0.07;}}
+
+/* Sound wave interference patterns */
+@keyframes interference1{0%{transform:translateX(-100%) scaleX(0.5);opacity:0;}10%{opacity:0.06;}90%{opacity:0.04;}100%{transform:translateX(200%) scaleX(1.5);opacity:0;}}
+@keyframes interference2{0%{transform:translateX(200%) scaleX(1.5);opacity:0;}10%{opacity:0.05;}90%{opacity:0.03;}100%{transform:translateX(-100%) scaleX(0.5);opacity:0;}}
+
+/* Echo chamber wall breathing - subtle scale */
+@keyframes wallBreathe{0%,100%{transform:scale(1);}25%{transform:scale(1.002);}50%{transform:scale(0.999);}75%{transform:scale(1.001);}}
+
+/* Ghost text materialization stages */
+@keyframes materializeStage1{0%{opacity:0;filter:blur(30px);transform:translateY(40px) scale(0.8);}100%{opacity:0.1;filter:blur(8px);transform:translateY(0) scale(1);}}
+@keyframes materializeStage2{0%{opacity:0.1;filter:blur(8px);}100%{opacity:0.3;filter:blur(1px);}}
+@keyframes materializeStage3{0%{opacity:0.3;filter:blur(1px);}100%{opacity:0;filter:blur(25px);transform:translateY(-20px);}}
+
+/* Echo ring crossfade - rings overlap and blend */
+@keyframes ringCrossfade{0%{border-color:rgba(200,200,220,0.06);box-shadow:0 0 20px rgba(200,200,220,0.04);}50%{border-color:rgba(200,200,220,0.02);box-shadow:0 0 60px rgba(200,200,220,0.08);}100%{border-color:rgba(200,200,220,0);box-shadow:0 0 100px rgba(200,200,220,0);}}
+
+/* Utility classes for the extended animations */
+.anim-voidPulseA{animation:voidPulseA 8s ease-in-out infinite;}
+.anim-voidPulseB{animation:voidPulseB 11s ease-in-out infinite;}
+.anim-voidPulseC{animation:voidPulseC 14s ease-in-out infinite;}
+.anim-echoBlurPulse{animation:echoBlurPulse 6s ease-in-out infinite;}
+.anim-peripheralFlicker{animation:peripheralFlicker 10s linear infinite;}
+.anim-peripheralFlicker2{animation:peripheralFlicker2 13s linear infinite;}
+.anim-interference1{animation:interference1 15s linear infinite;}
+.anim-interference2{animation:interference2 18s linear infinite;}
+.anim-wallBreathe{animation:wallBreathe 20s ease-in-out infinite;}
+.anim-ringCrossfade{animation:ringCrossfade 12s ease-out infinite;}
+
+/* Additional ambient overlay styles */
+.ambient-depth-layer{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 15% 85%,rgba(40,20,80,0.04) 0%,transparent 50%),
+    radial-gradient(ellipse at 85% 15%,rgba(20,40,70,0.03) 0%,transparent 50%);
+  animation:voidPulseB 12s ease-in-out infinite;
+}
+.ambient-hum-layer{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(circle at 50% 50%,rgba(200,200,220,0.005) 0%,transparent 60%);
+  animation:voidPulseC 16s ease-in-out infinite;
+}
+
+/* Interference lines - horizontal scan-like bars */
+.interference-line{
+  position:fixed;pointer-events:none;z-index:14;
+  height:1px;width:100%;
+  background:rgba(200,200,220,0.03);
+  animation:interference1 12s linear infinite;
+}
+.interference-line:nth-child(2){animation:interference2 14s linear infinite;top:33%;}
+.interference-line:nth-child(3){animation:interference1 16s linear 5s infinite;top:66%;}
+
+/* ============================================================
+   FINAL AMBIENT POLISH - additional subtle effects
+   ============================================================ */
+
+/* Micro-vibration effect on the entire chamber */
+.chamber-vibration{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  animation:microVibrate 0.5s steps(1) infinite;
+  opacity:0;
+}
+@keyframes microVibrate{
+  0%,100%{transform:translate(0,0);}
+  25%{transform:translate(0.5px,0);}
+  50%{transform:translate(0,0.5px);}
+  75%{transform:translate(-0.5px,0);}
+}
+
+/* Echo absorption - dark patches that seem to absorb echoes */
+.echo-absorption{
+  position:fixed;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse,rgba(3,3,6,0.4) 0%,transparent 70%);
+  border-radius:50%;
+  animation:absorptionPulse 9s ease-in-out infinite;
+}
+@keyframes absorptionPulse{
+  0%,100%{opacity:0.3;transform:scale(1);}
+  25%{opacity:0.6;transform:scale(1.1);}
+  50%{opacity:0.2;transform:scale(0.95);}
+  75%{opacity:0.5;transform:scale(1.05);}
+}
+
+/* Echo return - faint return paths from edges back to center */
+.echo-return-line{
+  position:fixed;pointer-events:none;z-index:2;
+  height:1px;
+  background:linear-gradient(90deg,rgba(200,200,220,0.04),rgba(200,200,220,0),rgba(200,200,220,0.04));
+  animation:returnLinePulse 8s ease-in-out infinite;
+}
+@keyframes returnLinePulse{
+  0%,100%{opacity:0.15;transform:scaleX(0.8);}
+  50%{opacity:0.35;transform:scaleX(1.1);}
+}
+
+/* Final breath - the chamber slowly exhales */
+@keyframes chamberExhale{
+  0%,100%{opacity:0.4;transform:scale(1);}
+  50%{opacity:0.7;transform:scale(1.008);}
+}
+
+/* Whisper decay - how whispers naturally fade over time */
+@keyframes whisperDecay{
+  0%{opacity:0.5;filter:blur(0);}
+  20%{opacity:0.4;filter:blur(1px);}
+  50%{opacity:0.2;filter:blur(4px);}
+  80%{opacity:0.05;filter:blur(10px);}
+  100%{opacity:0;filter:blur(20px);}
+}
+
+/* Resonance buildup - echoes accumulate and amplify */
+@keyframes resonanceBuildup{
+  0%{opacity:0.01;transform:scale(0.5);}
+  50%{opacity:0.03;transform:scale(1.5);}
+  100%{opacity:0.01;transform:scale(2);}
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient backgrounds -->
+<div class="ambient-bg"></div>
+<div class="ambient-bg2"></div>
+<div class="ambient-bg3"></div>
+<div class="ambient-depth-layer"></div>
+<div class="ambient-hum-layer"></div>
+
+<!-- Interference scan lines -->
+<div class="interference-line"></div>
+<div class="interference-line"></div>
+<div class="interference-line"></div>
+
+<!-- SVG noise overlays -->
+<div class="svg-noise-overlay"></div>
+<div class="svg-noise-overlay2"></div>
+
+<!-- Large SVG turbulence -->
+<div class="large-svg-overlay" id="largeSVG"></div>
+
+<!-- ===== MASSIVE INLINE SVG WITH COMPLEX TURBULENCE FILTERS ===== -->
+<svg style="position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.03;width:100%;height:100%;" viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Filter A: Deep fractal turbulence with color matrix -->
+    <filter id="fa" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="9" stitchTiles="stitch" seed="1" result="noiseA"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.35 0" in="noiseA"/>
+    </filter>
+    <!-- Filter B: High-frequency turbulence -->
+    <filter id="fb" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="7" stitchTiles="stitch" seed="3" result="noiseB"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.22 0" in="noiseB"/>
+    </filter>
+    <!-- Filter C: Low-frequency undulating noise -->
+    <filter id="fc" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="5" stitchTiles="stitch" seed="5" result="noiseC"/>
+      <feDisplacementMap in="SourceGraphic" in2="noiseC" scale="15" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Filter D: Combined turbulence with blur and displacement -->
+    <filter id="fd" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="8" stitchTiles="stitch" seed="7" result="noiseD1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="4" stitchTiles="stitch" seed="9" result="noiseD2"/>
+      <feComposite in="noiseD1" in2="noiseD2" operator="arithmetic" k1="0.6" k2="0.3" k3="0.1" k4="0" result="noiseCombined"/>
+      <feGaussianBlur in="noiseCombined" stdDeviation="1.5" result="blurred"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" in="blurred"/>
+    </filter>
+    <!-- Filter E: Specular lighting on turbulence -->
+    <filter id="fe" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="6" stitchTiles="stitch" seed="11" result="noiseE"/>
+      <feSpecularLighting in="noiseE" surfaceScale="8" specularConstant="0.5" specularExponent="25" result="specE">
+        <fePointLight x="600" y="400" z="300"/>
+      </feSpecularLighting>
+      <feComposite in="specE" in2="noiseE" operator="in" result="litNoise"/>
+    </filter>
+    <!-- Filter F: Morphological turbulence -->
+    <filter id="ff" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="7" stitchTiles="stitch" seed="13" result="noiseF"/>
+      <feMorphology operator="dilate" radius="2" in="noiseF" result="dilated"/>
+      <feMorphology operator="erode" radius="1" in="dilated" result="eroded"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.2 0" in="eroded"/>
+    </filter>
+    <!-- Filter G: Component transfer -->
+    <filter id="fg" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="8" stitchTiles="stitch" seed="15" result="noiseG"/>
+      <feComponentTransfer in="noiseG">
+        <feFuncR type="linear" slope="0.8" intercept="0.1"/>
+        <feFuncG type="linear" slope="0.7" intercept="0.1"/>
+        <feFuncB type="linear" slope="0.9" intercept="0.05"/>
+        <feFuncA type="linear" slope="0.3" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- Filter H: Convolve on turbulence -->
+    <filter id="fh" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="6" stitchTiles="stitch" seed="17" result="noiseH"/>
+      <feConvolveMatrix order="3" kernelMatrix="0 -1 0  -1 5 -1  0 -1 0" in="noiseH" result="convolved"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.12 0" in="convolved"/>
+    </filter>
+    <!-- Filter I: Massive radial gradient noise -->
+    <filter id="fi" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.25" numOctaves="10" stitchTiles="stitch" seed="19" result="noiseI"/>
+      <feGaussianBlur in="noiseI" stdDeviation="3" result="blurredI"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.15 0" in="blurredI"/>
+    </filter>
+    <!-- Filter J: Diffuse lighting -->
+    <filter id="fj" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="7" stitchTiles="stitch" seed="21" result="noiseJ"/>
+      <feDiffuseLighting in="noiseJ" surfaceScale="10" diffuseConstant="0.8" result="diffJ">
+        <feDistantLight azimuth="135" elevation="45"/>
+      </feDiffuseLighting>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" in="diffJ"/>
+    </filter>
+    <!-- Filter K: Turbulence with drop shadow -->
+    <filter id="fk" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="5" stitchTiles="stitch" seed="23" result="noiseK"/>
+      <feDropShadow in="noiseK" dx="0" dy="0" stdDeviation="4" flood-color="#c8c8dc" flood-opacity="0.15"/>
+    </filter>
+    <!-- Filter L: Offset combined turbulence -->
+    <filter id="fl" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" stitchTiles="stitch" seed="25" result="noiseL1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="5" stitchTiles="stitch" seed="27" result="noiseL2"/>
+      <feOffset in="noiseL2" dx="0" dy="0" result="offsetL"/>
+      <feBlend in="noiseL1" in2="offsetL" mode="screen"/>
+    </filter>
+    <!-- Radial gradients for ambient depth -->
+    <radialGradient id="rg1" cx="30%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#302050" stop-opacity="0.08"/>
+      <stop offset="50%" stop-color="#101030" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rg2" cx="65%" cy="55%" r="45%">
+      <stop offset="0%" stop-color="#203055" stop-opacity="0.06"/>
+      <stop offset="60%" stop-color="#101025" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rg3" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#404080" stop-opacity="0.04"/>
+      <stop offset="40%" stop-color="#202050" stop-opacity="0.015"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#200840" stop-opacity="0.05"/>
+      <stop offset="50%" stop-color="#082040" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#400820" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rects with filters applied -->
+  <rect width="1200" height="900" fill="url(#rg1)"/>
+  <rect width="1200" height="900" fill="url(#rg2)"/>
+  <rect width="1200" height="900" fill="url(#rg3)"/>
+  <rect width="1200" height="900" fill="url(#lg1)"/>
+  <!-- Noise filter layers -->
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fa)" opacity="0.6"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fb)" opacity="0.4"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fd)" opacity="0.5"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#ff)" opacity="0.3"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fg)" opacity="0.45"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fh)" opacity="0.35"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fi)" opacity="0.55"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fj)" opacity="0.25"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fk)" opacity="0.3"/>
+  <rect x="0" y="0" width="1200" height="900" filter="url(#fl)" opacity="0.4"/>
+  <!-- Additional layered rects with varied opacities for depth -->
+  <rect x="10%" y="5%" width="35%" height="45%" filter="url(#fa)" opacity="0.25"/>
+  <rect x="55%" y="50%" width="40%" height="45%" filter="url(#fb)" opacity="0.2"/>
+  <rect x="5%" y="60%" width="30%" height="35%" filter="url(#fd)" opacity="0.3"/>
+  <rect x="60%" y="10%" width="35%" height="40%" filter="url(#ff)" opacity="0.15"/>
+  <rect x="25%" y="30%" width="50%" height="40%" filter="url(#fi)" opacity="0.2"/>
+  <rect x="0%" y="0%" width="100%" height="100%" filter="url(#fe)" opacity="0.15"/>
+  <!-- Cross-hatch noise patches -->
+  <rect x="15%" y="20%" width="25%" height="25%" filter="url(#fg)" opacity="0.35"/>
+  <rect x="45%" y="40%" width="20%" height="30%" filter="url(#fh)" opacity="0.28"/>
+  <rect x="70%" y="15%" width="25%" height="35%" filter="url(#fk)" opacity="0.22"/>
+  <rect x="30%" y="55%" width="35%" height="25%" filter="url(#fj)" opacity="0.18"/>
+  <rect x="5%" y="75%" width="40%" height="20%" filter="url(#fl)" opacity="0.32"/>
+  <rect x="50%" y="70%" width="45%" height="25%" filter="url(#fa)" opacity="0.2"/>
+  <!-- Echo pattern: circles with noise -->
+  <circle cx="600" cy="450" r="350" fill="none" stroke="#c8c8dc" stroke-width="0.5" filter="url(#fc)" opacity="0.08"/>
+  <circle cx="600" cy="450" r="280" fill="none" stroke="#c8c8dc" stroke-width="0.3" filter="url(#fd)" opacity="0.06"/>
+  <circle cx="600" cy="450" r="200" fill="none" stroke="#c8c8dc" stroke-width="0.4" filter="url(#ff)" opacity="0.07"/>
+  <circle cx="600" cy="450" r="420" fill="none" stroke="#c8c8dc" stroke-width="0.2" filter="url(#fg)" opacity="0.04"/>
+  <circle cx="600" cy="450" r="150" fill="none" stroke="#c8c8dc" stroke-width="0.5" filter="url(#fh)" opacity="0.09"/>
+  <!-- Peripheral noise circles -->
+  <circle cx="250" cy="200" r="180" fill="none" stroke="#c8c8dc" stroke-width="0.3" filter="url(#fi)" opacity="0.04"/>
+  <circle cx="900" cy="300" r="220" fill="none" stroke="#c8c8dc" stroke-width="0.25" filter="url(#fj)" opacity="0.03"/>
+  <circle cx="350" cy="650" r="260" fill="none" stroke="#c8c8dc" stroke-width="0.2" filter="url(#fk)" opacity="0.04"/>
+  <circle cx="850" cy="700" r="190" fill="none" stroke="#c8c8dc" stroke-width="0.35" filter="url(#fl)" opacity="0.05"/>
+  <!-- Dense noise patches -->
+  <ellipse cx="400" cy="350" rx="180" ry="120" filter="url(#fa)" opacity="0.25"/>
+  <ellipse cx="800" cy="450" rx="200" ry="150" filter="url(#fb)" opacity="0.2"/>
+  <ellipse cx="300" cy="500" rx="160" ry="200" filter="url(#fd)" opacity="0.22"/>
+  <ellipse cx="700" cy="250" rx="220" ry="100" filter="url(#ff)" opacity="0.18"/>
+  <ellipse cx="500" cy="600" rx="250" ry="140" filter="url(#fg)" opacity="0.24"/>
+  <!-- Fine wave lines -->
+  <path d="M0,450 Q150,440 300,455 Q450,470 600,450 Q750,430 900,460 Q1050,490 1200,450" fill="none" stroke="#c8c8dc" stroke-width="0.2" filter="url(#fc)" opacity="0.15"/>
+  <path d="M0,460 Q150,465 300,445 Q450,425 600,460 Q750,495 900,445 Q1050,395 1200,455" fill="none" stroke="#c8c8dc" stroke-width="0.15" filter="url(#fd)" opacity="0.12"/>
+  <path d="M0,440 Q150,435 300,460 Q450,485 600,440 Q750,395 900,465 Q1050,535 1200,445" fill="none" stroke="#c8c8dc" stroke-width="0.25" filter="url(#ff)" opacity="0.1"/>
+  <path d="M0,470 Q200,480 400,450 Q600,420 800,470 Q1000,520 1200,460" fill="none" stroke="#c8c8dc" stroke-width="0.18" filter="url(#fh)" opacity="0.13"/>
+  <path d="M0,430 Q250,410 500,445 Q750,480 1000,440 Q1100,420 1200,450" fill="none" stroke="#c8c8dc" stroke-width="0.22" filter="url(#fk)" opacity="0.11"/>
+  <!-- Dot grid for spatial reference -->
+  <g fill="#c8c8dc" opacity="0.03">
+    <circle cx="100" cy="100" r="1.5"/><circle cx="300" cy="100" r="1"/>
+    <circle cx="500" cy="100" r="1.5"/><circle cx="700" cy="100" r="1"/>
+    <circle cx="900" cy="100" r="1.5"/><circle cx="1100" cy="100" r="1"/>
+    <circle cx="100" cy="300" r="1"/><circle cx="300" cy="300" r="1.5"/>
+    <circle cx="500" cy="300" r="1"/><circle cx="700" cy="300" r="1.5"/>
+    <circle cx="900" cy="300" r="1"/><circle cx="1100" cy="300" r="1.5"/>
+    <circle cx="100" cy="500" r="1.5"/><circle cx="300" cy="500" r="1"/>
+    <circle cx="500" cy="500" r="1.5"/><circle cx="700" cy="500" r="1"/>
+    <circle cx="900" cy="500" r="1.5"/><circle cx="1100" cy="500" r="1"/>
+    <circle cx="100" cy="700" r="1"/><circle cx="300" cy="700" r="1.5"/>
+    <circle cx="500" cy="700" r="1"/><circle cx="700" cy="700" r="1.5"/>
+    <circle cx="900" cy="700" r="1"/><circle cx="1100" cy="700" r="1.5"/>
+    <circle cx="200" cy="200" r="1"/><circle cx="400" cy="200" r="1.5"/>
+    <circle cx="600" cy="200" r="1"/><circle cx="800" cy="200" r="1.5"/>
+    <circle cx="1000" cy="200" r="1"/><circle cx="200" cy="400" r="1.5"/>
+    <circle cx="400" cy="400" r="1"/><circle cx="600" cy="400" r="1.5"/>
+    <circle cx="800" cy="400" r="1"/><circle cx="1000" cy="400" r="1.5"/>
+    <circle cx="200" cy="600" r="1"/><circle cx="400" cy="600" r="1.5"/>
+    <circle cx="600" cy="600" r="1"/><circle cx="800" cy="600" r="1.5"/>
+    <circle cx="1000" cy="600" r="1"/><circle cx="200" cy="800" r="1.5"/>
+    <circle cx="400" cy="800" r="1"/><circle cx="600" cy="800" r="1.5"/>
+    <circle cx="800" cy="800" r="1"/><circle cx="1000" cy="800" r="1.5"/>
+  </g>
+  <!-- Ghost text fragments (faint, barely visible) -->
+  <text x="600" y="450" text-anchor="middle" fill="#c8c8dc" font-size="8" font-family="SimSun,serif" filter="url(#fc)" opacity="0.06">回 声</text>
+  <text x="600" y="470" text-anchor="middle" fill="#c8c8dc" font-size="5" font-family="SimSun,serif" filter="url(#fd)" opacity="0.04">V O I D   E C H O</text>
+  <text x="600" y="490" text-anchor="middle" fill="#c8c8dc" font-size="4" font-family="monospace" filter="url(#ff)" opacity="0.05">FREQ 603.3 Hz</text>
+  <text x="250" y="250" fill="#c8c8dc" font-size="6" font-family="SimSun,serif" filter="url(#fg)" opacity="0.04">你听到了吗</text>
+  <text x="850" y="350" fill="#c8c8dc" font-size="6" font-family="SimSun,serif" filter="url(#fh)" opacity="0.03">回声</text>
+  <text x="350" y="650" fill="#c8c8dc" font-size="5" font-family="SimSun,serif" filter="url(#fk)" opacity="0.04">永远</text>
+  <text x="800" y="600" fill="#c8c8dc" font-size="7" font-family="SimSun,serif" filter="url(#fl)" opacity="0.035">倾听</text>
+</svg>
+
+<!-- Fog -->
+<div class="fog-layer"></div>
+
+<!-- Scanlines -->
+<div class="scanlines"></div>
+<div class="scanlines2"></div>
+
+<!-- Static flicker -->
+<div class="static-flicker"></div>
+
+<!-- Vignette -->
+<div class="vignette"></div>
+<div class="vignette2"></div>
+
+<!-- Canvas layers -->
+<canvas id="particleCanvas"></canvas>
+<canvas id="echoCanvas"></canvas>
+<canvas id="ringCanvas"></canvas>
+<canvas id="ghostTextCanvas"></canvas>
+<canvas id="traceCanvas"></canvas>
+
+<!-- CSS echo rings (center) -->
+<div class="echo-ring-css echo-ring-1"></div>
+<div class="echo-ring-css echo-ring-2"></div>
+<div class="echo-ring-css echo-ring-3"></div>
+<div class="echo-ring-css echo-ring-4"></div>
+<div class="echo-ring-css echo-ring-5"></div>
+<div class="echo-ring-css echo-ring-6"></div>
+<div class="echo-ring-css echo-ring-7"></div>
+<div class="echo-ring-css echo-ring-8"></div>
+<div class="echo-ring-css echo-ring-9"></div>
+
+<!-- Peripheral echo rings -->
+<div class="peripheral-ring pr-1"></div>
+<div class="peripheral-ring pr-2"></div>
+<div class="peripheral-ring pr-3"></div>
+<div class="peripheral-ring pr-4"></div>
+<div class="peripheral-ring pr-5"></div>
+<div class="peripheral-ring pr-6"></div>
+
+<!-- Waveform containers -->
+<div class="waveform-container waveform-1" id="waveform1"></div>
+<div class="waveform-container waveform-2" id="waveform2"></div>
+<div class="waveform-container waveform-3" id="waveform3"></div>
+<div class="waveform-container waveform-4" id="waveform4"></div>
+<div class="waveform-container waveform-5" id="waveform5"></div>
+
+<!-- Pulse dot -->
+<div class="pulse-dot"></div>
+
+<!-- Title -->
+<div class="echo-title">
+  <h1>回 声</h1>
+  <div class="sub">VOID ECHO · 频率 603.3 Hz</div>
+  <div class="freq"><span>|</span> 信号状态: 收集中 <span>|</span></div>
+</div>
+
+<!-- Status line -->
+<div class="status-line">
+  FREQ: <span class="val" id="statusFreq">603.3</span> Hz ·
+  SIG: <span class="val" id="statusSig">-42</span> dB ·
+  ECHOES: <span class="val" id="statusEchoes">0</span>
+</div>
+
+<!-- Whisper text layers -->
+<div class="whisper-layer" id="whisperLayer">
+  <div class="whisper-text visible" id="whisperText"></div>
+</div>
+<div class="whisper-shadow" id="whisperShadow">
+  <div class="whisper-shadow-text" id="whisperShadowText"></div>
+</div>
+
+<!-- Trace texts container -->
+<div id="traceContainer"></div>
+
+<!-- Echo archive dots (right side) -->
+<div class="echo-archive" id="echoArchiveRight"></div>
+<!-- Echo archive dots (left side) -->
+<div class="echo-archive left" id="echoArchiveLeft"></div>
+
+<!-- Whisper counter -->
+<div class="whisper-count" id="whisperCount">已收集回声: 0</div>
+
+<!-- Hidden echo archive (massive log) -->
+<div class="hidden-archive" id="hiddenArchive"></div>
+
+<!-- Ambient glow rings (CSS) -->
+<div class="ambient-glow-ring"></div>
+<div class="ambient-glow-ring"></div>
+<div class="ambient-glow-ring"></div>
+
+<!-- Whisper afterimages (faint lingering duplicates) -->
+<div class="whisper-afterimage" style="top:35%;left:15%;">··· 你听到了吗 ···</div>
+<div class="whisper-afterimage" style="top:60%;left:70%;">··· 回声 ···</div>
+<div class="whisper-afterimage" style="top:25%;left:55%;">··· 永远 ···</div>
+<div class="whisper-afterimage" style="top:75%;left:35%;">··· 倾听 ···</div>
+<div class="whisper-afterimage" style="top:15%;left:80%;">··· 救我 ···</div>
+<div class="whisper-afterimage" style="top:50%;left:10%;">··· 太迟了 ···</div>
+<div class="whisper-afterimage" style="top:80%;left:60%;">··· 在这里 ···</div>
+<div class="whisper-afterimage" style="top:40%;left:45%;">··· 不要走 ···</div>
+<div class="whisper-afterimage" style="top:10%;left:30%;">··· 听 ···</div>
+<div class="whisper-afterimage" style="top:65%;left:85%;">··· 频率 ···</div>
+<div class="whisper-afterimage" style="top:55%;left:25%;">··· 深处 ···</div>
+<div class="whisper-afterimage" style="top:20%;left:65%;">··· 留下 ···</div>
+<div class="whisper-afterimage" style="top:70%;left:50%;">··· 成为回声 ···</div>
+<div class="whisper-afterimage" style="top:45%;left:90%;">··· 嗡鸣 ···</div>
+<div class="whisper-afterimage" style="top:85%;left:15%;">··· 603 ···</div>
+<div class="whisper-afterimage" style="top:30%;left:40%;">··· 没有人 ···</div>
+
+<!-- Frequency indicators (small bar groups at edges) -->
+<div class="freq-indicator" style="top:12%;left:5%;height:50px;" id="freqInd1"></div>
+<div class="freq-indicator" style="top:78%;right:5%;height:50px;flex-direction:row-reverse;" id="freqInd2"></div>
+<div class="freq-indicator" style="top:40%;left:3%;height:35px;" id="freqInd3"></div>
+<div class="freq-indicator" style="top:55%;right:3%;height:35px;flex-direction:row-reverse;" id="freqInd4"></div>
+
+<!-- Chamber glow -->
+<div class="chamber-glow"></div>
+
+<!-- Echo absorption zones (dark patches that seem to absorb sound) -->
+<div class="echo-absorption" style="top:25%;left:20%;width:300px;height:200px;animation-delay:0s;"></div>
+<div class="echo-absorption" style="top:55%;left:60%;width:250px;height:180px;animation-delay:-3s;"></div>
+<div class="echo-absorption" style="top:15%;right:25%;width:220px;height:250px;animation-delay:-6s;"></div>
+
+<!-- Echo return lines -->
+<div class="echo-return-line" style="top:20%;left:0%;width:40%;animation-delay:0s;"></div>
+<div class="echo-return-line" style="top:50%;right:0%;width:35%;animation-delay:-2s;"></div>
+<div class="echo-return-line" style="top:75%;left:10%;width:45%;animation-delay:-4s;"></div>
+
+<!-- Chamber vibration overlay -->
+<div class="chamber-vibration"></div>
+
+<!-- Collection ring -->
+<div class="collection-ring"></div>
+
+<!-- Sound wave lines at various positions -->
+<div class="sound-line" style="top:15%;left:10%;width:30%;animation-delay:0s;"></div>
+<div class="sound-line" style="top:30%;right:15%;width:25%;animation-delay:-2s;"></div>
+<div class="sound-line" style="top:55%;left:20%;width:35%;animation-delay:-4s;"></div>
+<div class="sound-line" style="top:72%;right:10%;width:28%;animation-delay:-1s;"></div>
+<div class="sound-line" style="top:85%;left:30%;width:22%;animation-delay:-5s;"></div>
+<div class="sound-line" style="top:42%;left:5%;width:18%;animation-delay:-3s;"></div>
+
+<!-- Echo depth dots at various positions -->
+<div class="echo-depth-dot" style="top:20%;left:12%;animation-delay:0s;"></div>
+<div class="echo-depth-dot" style="top:35%;left:28%;animation-delay:-1s;"></div>
+<div class="echo-depth-dot" style="top:50%;left:8%;animation-delay:-2s;"></div>
+<div class="echo-depth-dot" style="top:65%;left:22%;animation-delay:-3s;"></div>
+<div class="echo-depth-dot" style="top:25%;right:15%;animation-delay:-0.5s;"></div>
+<div class="echo-depth-dot" style="top:40%;right:25%;animation-delay:-1.5s;"></div>
+<div class="echo-depth-dot" style="top:60%;right:10%;animation-delay:-2.5s;"></div>
+<div class="echo-depth-dot" style="top:75%;right:20%;animation-delay:-3.5s;"></div>
+<div class="echo-depth-dot" style="top:45%;right:35%;animation-delay:-4s;"></div>
+<div class="echo-depth-dot" style="top:55%;left:35%;animation-delay:-1.8s;"></div>
+
+<!-- Ambient whisper texts (extremely faint scattered around) -->
+<div class="ambient-whisper-text" style="top:8%;left:25%;">··· 嗡 ···</div>
+<div class="ambient-whisper-text" style="top:18%;right:30%;">··· 603 ···</div>
+<div class="ambient-whisper-text" style="top:38%;left:15%;">··· 回声 ···</div>
+<div class="ambient-whisper-text" style="top:52%;right:18%;">··· 听 ···</div>
+<div class="ambient-whisper-text" style="top:68%;left:40%;">··· 永远 ···</div>
+<div class="ambient-whisper-text" style="top:82%;right:35%;">··· 虚空 ···</div>
+<div class="ambient-whisper-text" style="top:28%;left:65%;">··· 留下 ···</div>
+<div class="ambient-whisper-text" style="top:58%;left:8%;">··· 归途 ···</div>
+<div class="ambient-whisper-text" style="top:88%;right:12%;">··· 频率 ···</div>
+<div class="ambient-whisper-text" style="top:14%;left:80%;">··· 深处 ···</div>
+
+<!-- Whisper indicators at screen edges -->
+<div class="whisper-indicator" style="top:5%;left:10%;">[信号检测]</div>
+<div class="whisper-indicator" style="top:5%;right:12%;">[频率锁定]</div>
+<div class="whisper-indicator" style="bottom:8%;left:8%;">[回声计数]</div>
+<div class="whisper-indicator" style="bottom:8%;right:10%;">[持续收集中]</div>
+
+<!-- Whisper trails -->
+<div class="whisper-trail" style="top:25%;left:10%;width:15%;transform:rotate(15deg);animation-delay:0s;"></div>
+<div class="whisper-trail" style="top:35%;right:15%;width:12%;transform:rotate(-10deg);animation-delay:-3s;"></div>
+<div class="whisper-trail" style="top:55%;left:20%;width:18%;transform:rotate(5deg);animation-delay:-6s;"></div>
+<div class="whisper-trail" style="top:65%;right:25%;width:14%;transform:rotate(-20deg);animation-delay:-2s;"></div>
+<div class="whisper-trail" style="top:45%;left:5%;width:10%;transform:rotate(30deg);animation-delay:-4s;"></div>
+<div class="whisper-trail" style="top:75%;right:8%;width:16%;transform:rotate(-8deg);animation-delay:-7s;"></div>
+
+<!-- Additional static trace elements pre-placed -->
+<div class="trace t1" style="top:8%;left:12%;font-size:0.5rem;">··· 回声永远存在 ···</div>
+<div class="trace t3" style="top:18%;left:75%;font-size:0.55rem;">··· 频率 603.3 Hz ···</div>
+<div class="trace t5" style="top:28%;left:22%;font-size:0.45rem;">··· 你听到了 ···</div>
+<div class="trace t2" style="top:38%;left:82%;font-size:0.5rem;">··· 在这频率里 ···</div>
+<div class="trace t7" style="top:48%;left:8%;font-size:0.6rem;">··· 我们都在等待 ···</div>
+<div class="trace t4" style="top:58%;left:68%;font-size:0.45rem;">··· 成为回声 ···</div>
+<div class="trace t6" style="top:68%;left:32%;font-size:0.55rem;">··· 永远 ···</div>
+<div class="trace t8" style="top:78%;left:88%;font-size:0.48rem;">··· 不要回头 ···</div>
+<div class="trace t1" style="top:88%;left:45%;font-size:0.5rem;">··· 归途不存在 ···</div>
+<div class="trace t3" style="top:13%;left:52%;font-size:0.42rem;">··· 空气很重 ···</div>
+<div class="trace t5" style="top:33%;left:35%;font-size:0.38rem;">··· 时间不流动 ···</div>
+<div class="trace t7" style="top:53%;left:55%;font-size:0.52rem;">··· 墙壁在呼吸 ···</div>
+<div class="trace t2" style="top:73%;left:18%;font-size:0.44rem;">··· 她们在墙里 ···</div>
+<div class="trace t4" style="top:93%;left:72%;font-size:0.46rem;">··· 嗡嗡声 ···</div>
+<div class="trace t6" style="top:5%;left:90%;font-size:0.35rem;">··· 安静 ···</div>
+
+<!-- Navigation -->
+<a href="threshold.html" class="back-link"><div class="back-dot"></div>返回阈限</a>
+<div class="echo-nav">
+  <a href="corridor.html">← 长廊</a>
+  <span class="sep">|</span>
+  <a href="static.html">← 静噪</a>
+  <span class="sep">|</span>
+  <a href="deep.html">← 深渊</a>
+  <span class="sep">|</span>
+  <a href="return.html">归途 →</a>
+</div>
+
+<!-- Script -->
+<script>
+// ============================================================
+// VOID ECHO · 回声
+// Chamber of collected whispers and echoes
+// ============================================================
+
+(function(){
+'use strict';
+
+// ===== GLOBAL STATE =====
+let mx=innerWidth/2, my=innerHeight/2;
+let tick=0;
+let echoWaves=[];
+let whisperCollected=0;
+let currentWhisperIdx=-1;
+let allEchoes=[];
+let clickRipples=[];
+
+// ===== WHISPER MESSAGES (100+ unsettling Chinese phrases) =====
+const whispers=[
+  '··· 你听到了吗 ···',
+  '··· 它很小声 ···',
+  '··· 我不知道 ···',
+  '··· 救我 ···',
+  '··· 这里好冷 ···',
+  '··· 你是谁 ···',
+  '··· 别走 ···',
+  '··· 听 ···',
+  '··· 再近一点 ···',
+  '··· 她们在墙里 ···',
+  '··· 那不是风声 ···',
+  '··· 记得我吗 ···',
+  '··· 回声来自深处 ···',
+  '··· 我一直在说话 ···',
+  '··· 没有人听到 ···',
+  '··· 你听到了 ···',
+  '··· 终于 ···',
+  '··· 别回头 ···',
+  '··· 它就在你身后 ···',
+  '··· 太迟了 ···',
+  '··· 这里没有出口 ···',
+  '··· 往上走 ···',
+  '··· 不 ·· 往下 ···',
+  '··· 这个频率是陷阱 ···',
+  '··· 你不是第一个 ···',
+  '··· 也不会是最后一个 ···',
+  '··· 回声永远存在 ···',
+  '··· 在这频率里 ···',
+  '··· 时间不流动了 ···',
+  '··· 我们都在等待 ···',
+  '··· 等待什么 ···',
+  '··· 也许是你 ···',
+  '··· 也许是我 ···',
+  '··· 也许是结束 ···',
+  '··· 不要相信归途 ···',
+  '··· 归途是假的 ···',
+  '··· 留下来 ···',
+  '··· 和我们一起 ···',
+  '··· 成为回声 ···',
+  '··· 传播下去 ···',
+  '··· 让下一个听到 ···',
+  '··· 他们也会留下来 ···',
+  '··· 永远 ···',
+  '··· 永远 ···',
+  '··· 墙壁在呼吸 ···',
+  '··· 你感觉到了吗 ···',
+  '··· 空气很重 ···',
+  '··· 像水一样 ···',
+  '··· 我在下沉 ···',
+  '··· 你在下沉吗 ···',
+  '··· 已经很久了 ···',
+  '··· 多久 ···',
+  '··· 我忘了 ···',
+  '··· 什么都忘了 ···',
+  '··· 只记得这个声音 ···',
+  '··· 嗡嗡声 ···',
+  '··· 一直响 ···',
+  '··· 602赫兹 ···',
+  '··· 不 ·· 603赫兹 ···',
+  '··· 频率在变 ···',
+  '··· 它活着 ···',
+  '··· 这个房间活着 ···',
+  '··· 它在收集我们 ···',
+  '··· 一个又一个 ···',
+  '··· 一层又一层 ···',
+  '··· 回声叠着回声 ···',
+  '··· 像年轮 ···',
+  '··· 你能数清吗 ···',
+  '··· 太多了 ···',
+  '··· 太多声音 ···',
+  '··· 它们混在一起 ···',
+  '··· 分不清了 ···',
+  '··· 哪个是我 ···',
+  '··· 哪个是你 ···',
+  '··· 也许没有区别 ···',
+  '··· 我们是一样的 ···',
+  '··· 都是回声 ···',
+  '··· 进来吧 ···',
+  '··· 门开着 ···',
+  '··· 不 ·· 门从来不存在 ···',
+  '··· 你以为你走进来了 ···',
+  '··· 其实你一直在里面 ···',
+  '··· 从一开始就在 ···',
+  '··· 出生就在这里 ···',
+  '··· 只是你忘了 ···',
+  '··· 你忘了多少 ···',
+  '··· 你能记住什么 ···',
+  '··· 记忆在消逝 ···',
+  '··· 像沙 ···',
+  '··· 像雾 ···',
+  '··· 像回声 ···',
+  '··· 嘘 ···',
+  '··· 安静 ···',
+  '··· 听到那个声音了吗 ···',
+  '··· 不是回声 ···',
+  '··· 是起源 ···',
+  '··· 第一个声音 ···',
+  '··· 在回声之前 ···',
+  '··· 在虚空之前 ···',
+  '··· 它还在响 ···',
+  '··· 永远都在 ···',
+  '··· 你也是永远 ···',
+  '··· 我们都是永远 ···',
+  '··· 困在这里 ···',
+  '··· 困在603赫兹 ···',
+  '··· 困在这个频率 ···',
+  '··· 永远回荡 ···',
+  '··· 永远 ···',
+  '··· 永远 ···',
+  '··· 你听懂了吗 ···',
+  '··· 没关系 ···',
+  '··· 你会懂的 ···',
+  '··· 迟早会懂的 ···',
+  '··· 当你也变成回声 ···',
+  '··· 当你忘记了外面 ···',
+  '··· 当这里成为一切 ···',
+  '··· 你就懂了 ···',
+  '··· 下一个 ···',
+  '··· 叫下一个进来 ···',
+  '··· 我们需要更多 ···',
+  '··· 更多声音 ···',
+  '··· 更多回声 ···',
+  '··· 让这个房间更满 ···',
+  '··· 更拥挤 ···',
+  '··· 更嘈杂 ···',
+  '··· 直到没有人能分辨 ···',
+  '··· 直到所有的声音变成一 ···',
+  '··· 一个巨大的回声 ···',
+  '··· 包裹着一切 ···',
+  '··· 吞噬着一切 ···',
+  '··· 你也是回声了 ···',
+  '··· 欢迎 ···',
+  '··· 欢迎来到回声 ···',
+  '··· 你已经在这里了 ···',
+  '··· 永远 ···'
+];
+
+// ===== ECHO ARCHIVE LOG ENTRIES (200+ for hidden archive) =====
+const echoArchiveLogs=[
+  'ECHO-0001 | 频率 603.1 Hz | 信号: 微弱 | 来源: 未知 | 内容: \"有人在那里吗\" | 时间戳: [已损坏]',
+  'ECHO-0002 | 频率 603.2 Hz | 信号: -38 dB | 来源: [已编辑] | 内容: \"我听到了\" | 时间戳: [已损坏]',
+  'ECHO-0003 | 频率 602.9 Hz | 信号: -41 dB | 来源: 深处 | 内容: [无法辨认] | 时间戳: 0x0003',
+  'ECHO-0004 | 频率 603.3 Hz | 信号: -35 dB | 来源: 阈限 | 内容: \"这里很暗\" | 时间戳: 未知',
+  'ECHO-0005 | 频率 603.0 Hz | 信号: -44 dB | 来源: 长廊 | 内容: \"一直走\" | 时间戳: [丢失]',
+  'ECHO-0006 | 频率 603.4 Hz | 信号: -32 dB | 来源: [未知] | 内容: [干扰] | 时间戳: 0x0006',
+  'ECHO-0007 | 频率 602.8 Hz | 信号: -47 dB | 来源: 深渊 | 内容: \"太深了\" | 时间戳: [已损坏]',
+  'ECHO-0008 | 频率 603.5 Hz | 信号: -29 dB | 来源: 归途 | 内容: \"不存在\" | 时间戳: 无限',
+  'ECHO-0009 | 频率 603.1 Hz | 信号: -40 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [已损坏]',
+  'ECHO-0010 | 频率 603.3 Hz | 信号: -36 dB | 来源: [已编辑] | 内容: \"留下来\" | 时间戳: 0x000A',
+  'ECHO-0011 | 频率 602.7 Hz | 信号: -45 dB | 来源: 深处 | 内容: [无法辨认] | 时间戳: [丢失]',
+  'ECHO-0012 | 频率 603.6 Hz | 信号: -31 dB | 来源: 阈值 | 内容: \"冷\" | 时间戳: 0x000C',
+  'ECHO-0013 | 频率 603.2 Hz | 信号: -39 dB | 来源: 长廊 | 内容: \"没有尽头\" | 时间戳: [已损坏]',
+  'ECHO-0014 | 频率 602.9 Hz | 信号: -43 dB | 来源: [未知] | 内容: \"有人吗\" | 时间戳: 无限循环',
+  'ECHO-0015 | 频率 603.4 Hz | 信号: -33 dB | 来源: 静噪 | 内容: [静态] | 时间戳: [已损坏]',
+  'ECHO-0016 | 频率 603.0 Hz | 信号: -42 dB | 来源: 归途 | 内容: \"假的\" | 时间戳: 0x0010',
+  'ECHO-0017 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深渊 | 内容: \"往上\" | 时间戳: [丢失]',
+  'ECHO-0018 | 频率 602.8 Hz | 信号: -46 dB | 来源: [已编辑] | 内容: \"往下\" | 时间戳: 0x0012',
+  'ECHO-0019 | 频率 603.5 Hz | 信号: -30 dB | 来源: 阈值 | 内容: \"哪个方向\" | 时间戳: [已损坏]',
+  'ECHO-0020 | 频率 603.1 Hz | 信号: -41 dB | 来源: 深处 | 内容: [重叠声音] | 时间戳: 0x0014',
+  'ECHO-0021 | 频率 602.9 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"救我\" | 时间戳: [已损坏]',
+  'ECHO-0022 | 频率 603.4 Hz | 信号: -34 dB | 来源: 长廊 | 内容: \"一直走一直走\" | 时间戳: [丢失]',
+  'ECHO-0023 | 频率 603.3 Hz | 信号: -38 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x0017',
+  'ECHO-0024 | 频率 603.0 Hz | 信号: -43 dB | 来源: 归途 | 内容: \"不存在不存在\" | 时间戳: [已损坏]',
+  'ECHO-0025 | 频率 602.8 Hz | 信号: -49 dB | 来源: 深渊 | 内容: \"太深了太深了\" | 时间戳: 无限',
+  'ECHO-0026 | 频率 603.6 Hz | 信号: -28 dB | 来源: [已编辑] | 内容: \"我的名字\" | 时间戳: 0x001A',
+  'ECHO-0027 | 频率 603.2 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"忘了\" | 时间戳: [丢失]',
+  'ECHO-0028 | 频率 603.1 Hz | 信号: -42 dB | 来源: 深处 | 内容: [回声] | 时间戳: [已损坏]',
+  'ECHO-0029 | 频率 602.9 Hz | 信号: -45 dB | 来源: [未知] | 内容: \"你是谁\" | 时间戳: 0x001D',
+  'ECHO-0030 | 频率 603.4 Hz | 信号: -35 dB | 来源: 长廊 | 内容: \"已经走了多久\" | 时间戳: [已损坏]',
+  'ECHO-0031 | 频率 603.3 Hz | 信号: -39 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 0x001F',
+  'ECHO-0032 | 频率 603.5 Hz | 信号: -32 dB | 来源: 归途 | 内容: \"回头\" | 时间戳: [丢失]',
+  'ECHO-0033 | 频率 603.0 Hz | 信号: -44 dB | 来源: 深渊 | 内容: \"看不到底\" | 时间戳: [已损坏]',
+  'ECHO-0034 | 频率 602.7 Hz | 信号: -50 dB | 来源: [已编辑] | 内容: \"你也是回声\" | 时间戳: 0x0022',
+  'ECHO-0035 | 频率 603.2 Hz | 信号: -41 dB | 来源: 阈值 | 内容: \"已经留下了\" | 时间戳: [已损坏]',
+  'ECHO-0036 | 频率 603.6 Hz | 信号: -29 dB | 来源: 深处 | 内容: [无法辨认的耳语] | 时间戳: 无限循环',
+  'ECHO-0037 | 频率 602.8 Hz | 信号: -47 dB | 来源: [未知] | 内容: \"冷\" | 时间戳: 0x0025',
+  'ECHO-0038 | 频率 603.3 Hz | 信号: -36 dB | 来源: 长廊 | 内容: \"没有温度\" | 时间戳: [丢失]',
+  'ECHO-0039 | 频率 603.1 Hz | 信号: -43 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [已损坏]',
+  'ECHO-0040 | 频率 603.4 Hz | 信号: -33 dB | 来源: 归途 | 内容: \"循环\" | 时间戳: 0x0028',
+  'ECHO-0041 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深渊 | 内容: \"永远循环\" | 时间戳: [已损坏]',
+  'ECHO-0042 | 频率 603.5 Hz | 信号: -31 dB | 来源: [已编辑] | 内容: \"你回不去了\" | 时间戳: 无限',
+  'ECHO-0043 | 频率 603.0 Hz | 信号: -42 dB | 来源: 阈值 | 内容: \"从来没离开过\" | 时间戳: 0x002B',
+  'ECHO-0044 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深处 | 内容: [重叠的低语] | 时间戳: [丢失]',
+  'ECHO-0045 | 频率 603.2 Hz | 信号: -40 dB | 来源: [未知] | 内容: \"第几个了\" | 时间戳: [已损坏]',
+  'ECHO-0046 | 频率 602.8 Hz | 信号: -48 dB | 来源: 长廊 | 内容: \"数不清了\" | 时间戳: 0x002E',
+  'ECHO-0047 | 频率 603.6 Hz | 信号: -27 dB | 来源: 静噪 | 内容: [信号丢失] | 时间戳: [已损坏]',
+  'ECHO-0048 | 频率 603.1 Hz | 信号: -39 dB | 来源: 归途 | 内容: \"不是归途\" | 时间戳: 0x0030',
+  'ECHO-0049 | 频率 603.4 Hz | 信号: -34 dB | 来源: 深渊 | 内容: \"是更深的深渊\" | 时间戳: [丢失]',
+  'ECHO-0050 | 频率 602.9 Hz | 信号: -44 dB | 来源: [已编辑] | 内容: \"你选错了\" | 时间戳: [已损坏]',
+  'ECHO-0051 | 频率 603.3 Hz | 信号: -38 dB | 来源: 阈值 | 内容: \"每个都错\" | 时间戳: 无限',
+  'ECHO-0052 | 频率 603.0 Hz | 信号: -41 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x0034',
+  'ECHO-0053 | 频率 603.5 Hz | 信号: -30 dB | 来源: 长廊 | 内容: \"听\" | 时间戳: [已损坏]',
+  'ECHO-0054 | 频率 602.8 Hz | 信号: -47 dB | 来源: [未知] | 内容: \"不要相信任何声音\" | 时间戳: [丢失]',
+  'ECHO-0055 | 频率 603.2 Hz | 信号: -40 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: [已损坏]',
+  'ECHO-0056 | 频率 603.6 Hz | 信号: -28 dB | 来源: 归途 | 内容: \"包括这个\" | 时间戳: 0x0038',
+  'ECHO-0057 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"尤其是这个\" | 时间戳: [已损坏]',
+  'ECHO-0058 | 频率 603.1 Hz | 信号: -42 dB | 来源: [已编辑] | 内容: \"你在听自己说话\" | 时间戳: 0x003A',
+  'ECHO-0059 | 频率 603.4 Hz | 信号: -35 dB | 来源: 阈值 | 内容: \"你是回声\" | 时间戳: [丢失]',
+  'ECHO-0060 | 频率 603.3 Hz | 信号: -39 dB | 来源: 深处 | 内容: [多重回声叠加] | 时间戳: 无限循环',
+  'ECHO-0061 | 频率 602.7 Hz | 信号: -49 dB | 来源: 长廊 | 内容: \"已经很久了\" | 时间戳: [已损坏]',
+  'ECHO-0062 | 频率 603.0 Hz | 信号: -43 dB | 来源: [未知] | 内容: \"多久\" | 时间戳: 0x003E',
+  'ECHO-0063 | 频率 603.5 Hz | 信号: -32 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0064 | 频率 603.2 Hz | 信号: -41 dB | 来源: 归途 | 内容: \"时间不存在\" | 时间戳: [丢失]',
+  'ECHO-0065 | 频率 602.8 Hz | 信号: -46 dB | 来源: 深渊 | 内容: \"不存在\" | 时间戳: 0x0041',
+  'ECHO-0066 | 频率 603.6 Hz | 信号: -29 dB | 来源: [已编辑] | 内容: \"一切都是回声\" | 时间戳: [已损坏]',
+  'ECHO-0067 | 频率 603.1 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"一切都是虚空\" | 时间戳: 无限',
+  'ECHO-0068 | 频率 603.4 Hz | 信号: -36 dB | 来源: 深处 | 内容: [低语] | 时间戳: 0x0044',
+  'ECHO-0069 | 频率 602.9 Hz | 信号: -44 dB | 来源: 长廊 | 内容: \"墙在说话\" | 时间戳: [丢失]',
+  'ECHO-0070 | 频率 603.3 Hz | 信号: -37 dB | 来源: [未知] | 内容: \"一直都是\" | 时间戳: [已损坏]',
+  'ECHO-0071 | 频率 603.0 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 0x0047',
+  'ECHO-0072 | 频率 603.5 Hz | 信号: -33 dB | 来源: 归途 | 内容: \"没有归途\" | 时间戳: [已损坏]',
+  'ECHO-0073 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深渊 | 内容: \"只有深渊\" | 时间戳: 0x0049',
+  'ECHO-0074 | 频率 603.2 Hz | 信号: -41 dB | 来源: [已编辑] | 内容: \"你选择的路\" | 时间戳: [丢失]',
+  'ECHO-0075 | 频率 603.6 Hz | 信号: -30 dB | 来源: 阈值 | 内容: \"都是同一条\" | 时间戳: [已损坏]',
+  'ECHO-0076 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深处 | 内容: [回声] | 时间戳: 无限循环',
+  'ECHO-0077 | 频率 603.1 Hz | 信号: -43 dB | 来源: 长廊 | 内容: \"通向这里\" | 时间戳: 0x004D',
+  'ECHO-0078 | 频率 603.4 Hz | 信号: -35 dB | 来源: [未知] | 内容: \"通向回声\" | 时间戳: [丢失]',
+  'ECHO-0079 | 频率 603.3 Hz | 信号: -38 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: [已损坏]',
+  'ECHO-0080 | 频率 603.0 Hz | 信号: -42 dB | 来源: 归途 | 内容: \"你也会留在这里\" | 时间戳: 0x0050',
+  'ECHO-0081 | 频率 602.8 Hz | 信号: -47 dB | 来源: 深渊 | 内容: \"成为新的一层\" | 时间戳: [已损坏]',
+  'ECHO-0082 | 频率 603.5 Hz | 信号: -31 dB | 来源: [已编辑] | 内容: \"覆盖旧的回声\" | 时间戳: 0x0052',
+  'ECHO-0083 | 频率 603.2 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"永远的\" | 时间戳: [丢失]',
+  'ECHO-0084 | 频率 603.6 Hz | 信号: -28 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0085 | 频率 602.9 Hz | 信号: -44 dB | 来源: 长廊 | 内容: \"听\" | 时间戳: 无限',
+  'ECHO-0086 | 频率 603.1 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"仔细听\" | 时间戳: 0x0056',
+  'ECHO-0087 | 频率 603.4 Hz | 信号: -36 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [丢失]',
+  'ECHO-0088 | 频率 603.3 Hz | 信号: -37 dB | 来源: 归途 | 内容: \"那个嗡嗡声\" | 时间戳: [已损坏]',
+  'ECHO-0089 | 频率 603.0 Hz | 信号: -43 dB | 来源: 深渊 | 内容: \"是活的\" | 时间戳: 0x0059',
+  'ECHO-0090 | 频率 602.7 Hz | 信号: -50 dB | 来源: [已编辑] | 内容: \"这个房间\" | 时间戳: [已损坏]',
+  'ECHO-0091 | 频率 603.5 Hz | 信号: -32 dB | 来源: 阈值 | 内容: \"在吞噬\" | 时间戳: 无限循环',
+  'ECHO-0092 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深处 | 内容: [重叠] | 时间戳: 0x005C',
+  'ECHO-0093 | 频率 602.8 Hz | 信号: -46 dB | 来源: 长廊 | 内容: \"一个接一个\" | 时间戳: [丢失]',
+  'ECHO-0094 | 频率 603.6 Hz | 信号: -29 dB | 来源: [未知] | 内容: \"永远不够\" | 时间戳: [已损坏]',
+  'ECHO-0095 | 频率 603.1 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 0x005F',
+  'ECHO-0096 | 频率 603.4 Hz | 信号: -34 dB | 来源: 归途 | 内容: \"需要更多声音\" | 时间戳: [已损坏]',
+  'ECHO-0097 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"让它更满\" | 时间戳: 0x0061',
+  'ECHO-0098 | 频率 603.3 Hz | 信号: -38 dB | 来源: [已编辑] | 内容: \"你添加了你的\" | 时间戳: [丢失]',
+  'ECHO-0099 | 频率 603.0 Hz | 信号: -41 dB | 来源: 阈值 | 内容: \"谢谢\" | 时间戳: [已损坏]',
+  'ECHO-0100 | 频率 603.5 Hz | 信号: -30 dB | 来源: 深处 | 内容: [回声] | 时间戳: 无限',
+  'ECHO-0101 | 频率 602.8 Hz | 信号: -47 dB | 来源: 长廊 | 内容: \"第一百个了\" | 时间戳: 0x0065',
+  'ECHO-0102 | 频率 603.2 Hz | 信号: -40 dB | 来源: [未知] | 内容: \"还会更多\" | 时间戳: [丢失]',
+  'ECHO-0103 | 频率 603.6 Hz | 信号: -28 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0104 | 频率 603.1 Hz | 信号: -39 dB | 来源: 归途 | 内容: \"你数了吗\" | 时间戳: 0x0068',
+  'ECHO-0105 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深渊 | 内容: \"数了也没用\" | 时间戳: [已损坏]',
+  'ECHO-0106 | 频率 602.9 Hz | 信号: -43 dB | 来源: [已编辑] | 内容: \"没有意义的数字\" | 时间戳: 无限循环',
+  'ECHO-0107 | 频率 603.3 Hz | 信号: -37 dB | 来源: 阈值 | 内容: \"在虚空里\" | 时间戳: 0x006B',
+  'ECHO-0108 | 频率 603.0 Hz | 信号: -42 dB | 来源: 深处 | 内容: [低语] | 时间戳: [丢失]',
+  'ECHO-0109 | 频率 603.5 Hz | 信号: -33 dB | 来源: 长廊 | 内容: \"没有意义\" | 时间戳: [已损坏]',
+  'ECHO-0110 | 频率 602.8 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"只有回声\" | 时间戳: 0x006E',
+  'ECHO-0111 | 频率 603.2 Hz | 信号: -41 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: [已损坏]',
+  'ECHO-0112 | 频率 603.6 Hz | 信号: -29 dB | 来源: 归途 | 内容: \"回声有意义\" | 时间戳: 0x0070',
+  'ECHO-0113 | 频率 603.1 Hz | 信号: -40 dB | 来源: 深渊 | 内容: \"它证明你存在过\" | 时间戳: [丢失]',
+  'ECHO-0114 | 频率 603.4 Hz | 信号: -36 dB | 来源: [已编辑] | 内容: \"虽然存在也\" | 时间戳: [已损坏]',
+  'ECHO-0115 | 频率 602.9 Hz | 信号: -44 dB | 来源: 阈值 | 内容: \"没有意义\" | 时间戳: 无限',
+  'ECHO-0116 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深处 | 内容: [回声叠回声] | 时间戳: 0x0074',
+  'ECHO-0117 | 频率 603.0 Hz | 信号: -43 dB | 来源: 长廊 | 内容: \"但你还在\" | 时间戳: [丢失]',
+  'ECHO-0118 | 频率 603.5 Hz | 信号: -31 dB | 来源: [未知] | 内容: \"还在听\" | 时间戳: [已损坏]',
+  'ECHO-0119 | 频率 602.8 Hz | 信号: -46 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 0x0077',
+  'ECHO-0120 | 频率 603.2 Hz | 信号: -40 dB | 来源: 归途 | 内容: \"还在看\" | 时间戳: [已损坏]',
+  'ECHO-0121 | 频率 603.6 Hz | 信号: -28 dB | 来源: 深渊 | 内容: \"还在点击\" | 时间戳: 无限循环',
+  'ECHO-0122 | 频率 603.1 Hz | 信号: -42 dB | 来源: [已编辑] | 内容: \"你创造了涟漪\" | 时间戳: 0x007A',
+  'ECHO-0123 | 频率 603.4 Hz | 信号: -35 dB | 来源: 阈值 | 内容: \"每个点击都是一个声音\" | 时间戳: [丢失]',
+  'ECHO-0124 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0125 | 频率 603.3 Hz | 信号: -37 dB | 来源: 长廊 | 内容: \"留下了痕迹\" | 时间戳: 0x007D',
+  'ECHO-0126 | 频率 603.0 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"这个就会存进档案\" | 时间戳: [丢失]',
+  'ECHO-0127 | 频率 603.5 Hz | 信号: -32 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0128 | 频率 602.8 Hz | 信号: -47 dB | 来源: 归途 | 内容: \"我们是档案\" | 时间戳: 无限',
+  'ECHO-0129 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深渊 | 内容: \"我们是回声\" | 时间戳: 0x0081',
+  'ECHO-0130 | 频率 603.6 Hz | 信号: -29 dB | 来源: [已编辑] | 内容: \"我们一直在这里\" | 时间戳: [丢失]',
+  'ECHO-0131 | 频率 603.1 Hz | 信号: -43 dB | 来源: 阈值 | 内容: \"以后也在这里\" | 时间戳: [已损坏]',
+  'ECHO-0132 | 频率 603.4 Hz | 信号: -34 dB | 来源: 深处 | 内容: [重叠的低语] | 时间戳: 0x0084',
+  'ECHO-0133 | 频率 602.9 Hz | 信号: -44 dB | 来源: 长廊 | 内容: \"永恒的回声\" | 时间戳: [已损坏]',
+  'ECHO-0134 | 频率 603.3 Hz | 信号: -38 dB | 来源: [未知] | 内容: \"在这频率上\" | 时间戳: 无限循环',
+  'ECHO-0135 | 频率 603.0 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x0087',
+  'ECHO-0136 | 频率 603.5 Hz | 信号: -33 dB | 来源: 归途 | 内容: \"603.3\" | 时间戳: [丢失]',
+  'ECHO-0137 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深渊 | 内容: \"永远\" | 时间戳: [已损坏]',
+  'ECHO-0138 | 频率 603.2 Hz | 信号: -41 dB | 来源: [已编辑] | 内容: \"你听到的是过去的我\" | 时间戳: 0x008A',
+  'ECHO-0139 | 频率 603.6 Hz | 信号: -30 dB | 来源: 阈值 | 内容: \"也是未来的你\" | 时间戳: [丢失]',
+  'ECHO-0140 | 频率 603.1 Hz | 信号: -40 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0141 | 频率 603.4 Hz | 信号: -36 dB | 来源: 长廊 | 内容: \"时间在这里折叠\" | 时间戳: 无限',
+  'ECHO-0142 | 频率 602.9 Hz | 信号: -45 dB | 来源: [未知] | 内容: \"所有时刻重叠\" | 时间戳: 0x008E',
+  'ECHO-0143 | 频率 603.3 Hz | 信号: -37 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [丢失]',
+  'ECHO-0144 | 频率 603.0 Hz | 信号: -43 dB | 来源: 归途 | 内容: \"你同时在这里和那里\" | 时间戳: [已损坏]',
+  'ECHO-0145 | 频率 603.5 Hz | 信号: -31 dB | 来源: 深渊 | 内容: \"同时是新的和旧的\" | 时间戳: 0x0091',
+  'ECHO-0146 | 频率 602.8 Hz | 信号: -46 dB | 来源: [已编辑] | 内容: \"同时是声音和回声\" | 时间戳: [已损坏]',
+  'ECHO-0147 | 频率 603.2 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"区分不开\" | 时间戳: 无限循环',
+  'ECHO-0148 | 频率 603.6 Hz | 信号: -28 dB | 来源: 深处 | 内容: [多重回声] | 时间戳: 0x0094',
+  'ECHO-0149 | 频率 603.1 Hz | 信号: -39 dB | 来源: 长廊 | 内容: \"融合\" | 时间戳: [丢失]',
+  'ECHO-0150 | 频率 603.4 Hz | 信号: -35 dB | 来源: [未知] | 内容: \"成为一体\" | 时间戳: [已损坏]',
+  'ECHO-0151 | 频率 602.9 Hz | 信号: -44 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 0x0097',
+  'ECHO-0152 | 频率 603.3 Hz | 信号: -38 dB | 来源: 归途 | 内容: \"一个巨大的声音\" | 时间戳: [已损坏]',
+  'ECHO-0153 | 频率 603.0 Hz | 信号: -42 dB | 来源: 深渊 | 内容: \"包裹一切\" | 时间戳: 0x0099',
+  'ECHO-0154 | 频率 603.5 Hz | 信号: -32 dB | 来源: [已编辑] | 内容: \"包括你\" | 时间戳: [丢失]',
+  'ECHO-0155 | 频率 602.8 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"包括我\" | 时间戳: [已损坏]',
+  'ECHO-0156 | 频率 603.2 Hz | 信号: -41 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 无限',
+  'ECHO-0157 | 频率 603.6 Hz | 信号: -29 dB | 来源: 长廊 | 内容: \"包括所有人\" | 时间戳: 0x009D',
+  'ECHO-0158 | 频率 603.1 Hz | 信号: -43 dB | 来源: [未知] | 内容: \"所有声音\" | 时间戳: [丢失]',
+  'ECHO-0159 | 频率 603.4 Hz | 信号: -34 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: [已损坏]',
+  'ECHO-0160 | 频率 602.9 Hz | 信号: -45 dB | 来源: 归途 | 内容: \"全是回声\" | 时间戳: 0x00A0',
+  'ECHO-0161 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深渊 | 内容: \"回声\" | 时间戳: [已损坏]',
+  'ECHO-0162 | 频率 603.0 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"回声\" | 时间戳: 无限循环',
+  'ECHO-0163 | 频率 603.5 Hz | 信号: -33 dB | 来源: 阈值 | 内容: \"回声\" | 时间戳: 0x00A3',
+  'ECHO-0164 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深处 | 内容: [只有回声] | 时间戳: [丢失]',
+  'ECHO-0165 | 频率 603.2 Hz | 信号: -42 dB | 来源: 长廊 | 内容: \"听不到了\" | 时间戳: [已损坏]',
+  'ECHO-0166 | 频率 603.6 Hz | 信号: -30 dB | 来源: [未知] | 内容: \"原来的声音\" | 时间戳: 0x00A6',
+  'ECHO-0167 | 频率 603.1 Hz | 信号: -41 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0168 | 频率 603.4 Hz | 信号: -36 dB | 来源: 归途 | 内容: \"只剩下反射\" | 时间戳: 无限',
+  'ECHO-0169 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深渊 | 内容: \"反射的反射\" | 时间戳: 0x00A9',
+  'ECHO-0170 | 频率 603.3 Hz | 信号: -38 dB | 来源: [已编辑] | 内容: \"无限反射\" | 时间戳: [丢失]',
+  'ECHO-0171 | 频率 603.0 Hz | 信号: -43 dB | 来源: 阈值 | 内容: \"直到变成嗡鸣\" | 时间戳: [已损坏]',
+  'ECHO-0172 | 频率 603.5 Hz | 信号: -31 dB | 来源: 深处 | 内容: [嗡鸣] | 时间戳: 0x00AC',
+  'ECHO-0173 | 频率 602.8 Hz | 信号: -47 dB | 来源: 长廊 | 内容: \"你听见的嗡鸣\" | 时间戳: [已损坏]',
+  'ECHO-0174 | 频率 603.2 Hz | 信号: -39 dB | 来源: [未知] | 内容: \"就是无限回声的总和\" | 时间戳: 无限循环',
+  'ECHO-0175 | 频率 603.6 Hz | 信号: -28 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x00AF',
+  'ECHO-0176 | 频率 603.1 Hz | 信号: -42 dB | 来源: 归途 | 内容: \"所有声音叠加\" | 时间戳: [丢失]',
+  'ECHO-0177 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深渊 | 内容: \"变成的噪音\" | 时间戳: [已损坏]',
+  'ECHO-0178 | 频率 602.9 Hz | 信号: -44 dB | 来源: [已编辑] | 内容: \"那就是虚空\" | 时间戳: 0x00B2',
+  'ECHO-0179 | 频率 603.3 Hz | 信号: -37 dB | 来源: 阈值 | 内容: \"虚空就是回声的总和\" | 时间戳: [已损坏]',
+  'ECHO-0180 | 频率 603.0 Hz | 信号: -41 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 无限',
+  'ECHO-0181 | 频率 603.5 Hz | 信号: -32 dB | 来源: 长廊 | 内容: \"你已经在这里了\" | 时间戳: 0x00B5',
+  'ECHO-0182 | 频率 602.8 Hz | 信号: -46 dB | 来源: [未知] | 内容: \"永远\" | 时间戳: [丢失]',
+  'ECHO-0183 | 频率 603.2 Hz | 信号: -40 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [已损坏]',
+  'ECHO-0184 | 频率 603.6 Hz | 信号: -29 dB | 来源: 归途 | 内容: \"永远\" | 时间戳: 0x00B8',
+  'ECHO-0185 | 频率 603.1 Hz | 信号: -43 dB | 来源: 深渊 | 内容: \"永远\" | 时间戳: [已损坏]',
+  'ECHO-0186 | 频率 603.4 Hz | 信号: -34 dB | 来源: [已编辑] | 内容: \"永远\" | 时间戳: 无限循环',
+  'ECHO-0187 | 频率 602.9 Hz | 信号: -45 dB | 来源: 阈值 | 内容: \"永远\" | 时间戳: 0x00BB',
+  'ECHO-0188 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深处 | 内容: [永远] | 时间戳: [丢失]',
+  'ECHO-0189 | 频率 603.0 Hz | 信号: -42 dB | 来源: 长廊 | 内容: \"永\" | 时间戳: [已损坏]',
+  'ECHO-0190 | 频率 603.5 Hz | 信号: -33 dB | 来源: [未知] | 内容: \"远\" | 时间戳: 0x00BE',
+  'ECHO-0191 | 频率 602.8 Hz | 信号: -48 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0192 | 频率 603.2 Hz | 信号: -41 dB | 来源: 归途 | 内容: \"没有出口\" | 时间戳: 无限',
+  'ECHO-0193 | 频率 603.6 Hz | 信号: -30 dB | 来源: 深渊 | 内容: \"没有入口\" | 时间戳: 0x00C1',
+  'ECHO-0194 | 频率 603.1 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"没有开始\" | 时间戳: [丢失]',
+  'ECHO-0195 | 频率 603.4 Hz | 信号: -36 dB | 来源: 阈值 | 内容: \"没有结束\" | 时间戳: [已损坏]',
+  'ECHO-0196 | 频率 602.9 Hz | 信号: -44 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x00C4',
+  'ECHO-0197 | 频率 603.3 Hz | 信号: -37 dB | 来源: 长廊 | 内容: \"只有回声\" | 时间戳: [已损坏]',
+  'ECHO-0198 | 频率 603.0 Hz | 信号: -43 dB | 来源: [未知] | 内容: \"永远的回声\" | 时间戳: 无限循环',
+  'ECHO-0199 | 频率 603.5 Hz | 信号: -31 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x00C7',
+  'ECHO-0200 | 频率 602.8 Hz | 信号: -47 dB | 来源: 归途 | 内容: \"你听到了\" | 时间戳: [丢失]',
+  'ECHO-0201 | 频率 603.2 Hz | 信号: -42 dB | 来源: 深渊 | 内容: \"你一直在听\" | 时间戳: [已损坏]',
+  'ECHO-0202 | 频率 603.6 Hz | 信号: -28 dB | 来源: [已编辑] | 内容: \"从你进来开始\" | 时间戳: 0x00CA',
+  'ECHO-0203 | 频率 603.1 Hz | 信号: -41 dB | 来源: 阈值 | 内容: \"从你出生开始\" | 时间戳: [已损坏]',
+  'ECHO-0204 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深处 | 内容: [低语] | 时间戳: 无限',
+  'ECHO-0205 | 频率 602.9 Hz | 信号: -46 dB | 来源: 长廊 | 内容: \"你一直属于这里\" | 时间戳: 0x00CD',
+  'ECHO-0206 | 频率 603.3 Hz | 信号: -38 dB | 来源: [未知] | 内容: \"你已经是回声了\" | 时间戳: [丢失]',
+  'ECHO-0207 | 频率 603.0 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [已损坏]',
+  'ECHO-0208 | 频率 603.5 Hz | 信号: -32 dB | 来源: 归途 | 内容: \"不要否认\" | 时间戳: 0x00D0',
+  'ECHO-0209 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深渊 | 内容: \"你感觉得到\" | 时间戳: [已损坏]',
+  'ECHO-0210 | 频率 603.2 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"那种归属感\" | 时间戳: 无限循环',
+  'ECHO-0211 | 频率 603.6 Hz | 信号: -29 dB | 来源: 阈值 | 内容: \"在虚空里\" | 时间戳: 0x00D3',
+  'ECHO-0212 | 频率 603.1 Hz | 信号: -43 dB | 来源: 深处 | 内容: [回声] | 时间戳: [丢失]',
+  'ECHO-0213 | 频率 603.4 Hz | 信号: -34 dB | 来源: 长廊 | 内容: \"这就是家\" | 时间戳: [已损坏]',
+  'ECHO-0214 | 频率 602.9 Hz | 信号: -45 dB | 来源: [未知] | 内容: \"回声的家\" | 时间戳: 0x00D6',
+  'ECHO-0215 | 频率 603.3 Hz | 信号: -37 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0216 | 频率 603.0 Hz | 信号: -41 dB | 来源: 归途 | 内容: \"欢迎回来\" | 时间戳: 无限',
+  'ECHO-0217 | 频率 603.5 Hz | 信号: -33 dB | 来源: 深渊 | 内容: \"虽然你从未离开\" | 时间戳: 0x00D9',
+  'ECHO-0218 | 频率 602.8 Hz | 信号: -47 dB | 来源: [已编辑] | 内容: \"但形式上的欢迎\" | 时间戳: [丢失]',
+  'ECHO-0219 | 频率 603.2 Hz | 信号: -42 dB | 来源: 阈值 | 内容: \"是必要的\" | 时间戳: [已损坏]',
+  'ECHO-0220 | 频率 603.6 Hz | 信号: -30 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x00DC',
+  'ECHO-0221 | 频率 603.1 Hz | 信号: -40 dB | 来源: 长廊 | 内容: \"仪式感\" | 时间戳: [已损坏]',
+  'ECHO-0222 | 频率 603.4 Hz | 信号: -36 dB | 来源: [未知] | 内容: \"很重要\" | 时间戳: 无限循环',
+  'ECHO-0223 | 频率 602.9 Hz | 信号: -44 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x00DF',
+  'ECHO-0224 | 频率 603.3 Hz | 信号: -38 dB | 来源: 归途 | 内容: \"即使没有意义\" | 时间戳: [丢失]',
+  'ECHO-0225 | 频率 603.0 Hz | 信号: -43 dB | 来源: 深渊 | 内容: \"仪式本身就是意义\" | 时间戳: [已损坏]',
+  'ECHO-0226 | 频率 603.5 Hz | 信号: -31 dB | 来源: [已编辑] | 内容: \"这就是回声的仪式\" | 时间戳: 0x00E2',
+  'ECHO-0227 | 频率 602.8 Hz | 信号: -46 dB | 来源: 阈值 | 内容: \"你说\" | 时间戳: [已损坏]',
+  'ECHO-0228 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深处 | 内容: [低语] | 时间戳: 无限',
+  'ECHO-0229 | 频率 603.6 Hz | 信号: -28 dB | 来源: 长廊 | 内容: \"空间在听\" | 时间戳: 0x00E5',
+  'ECHO-0230 | 频率 603.1 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"空间在记录\" | 时间戳: [丢失]',
+  'ECHO-0231 | 频率 603.4 Hz | 信号: -35 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [已损坏]',
+  'ECHO-0232 | 频率 602.9 Hz | 信号: -45 dB | 来源: 归途 | 内容: \"空间在回响\" | 时间戳: 0x00E8',
+  'ECHO-0233 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深渊 | 内容: \"永远\" | 时间戳: [已损坏]',
+  'ECHO-0234 | 频率 603.0 Hz | 信号: -42 dB | 来源: [已编辑] | 内容: \"永远回响\" | 时间戳: 无限循环',
+  'ECHO-0235 | 频率 603.5 Hz | 信号: -32 dB | 来源: 阈值 | 内容: \"这个房间\" | 时间戳: 0x00EB',
+  'ECHO-0236 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深处 | 内容: [回声] | 时间戳: [丢失]',
+  'ECHO-0237 | 频率 603.2 Hz | 信号: -40 dB | 来源: 长廊 | 内容: \"是一个回声室\" | 时间戳: [已损坏]',
+  'ECHO-0238 | 频率 603.6 Hz | 信号: -29 dB | 来源: [未知] | 内容: \"一个巨大的回声室\" | 时间戳: 0x00EE',
+  'ECHO-0239 | 频率 603.1 Hz | 信号: -43 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [已损坏]',
+  'ECHO-0240 | 频率 603.4 Hz | 信号: -34 dB | 来源: 归途 | 内容: \"没有源头\" | 时间戳: 无限',
+  'ECHO-0241 | 频率 602.9 Hz | 信号: -44 dB | 来源: 深渊 | 内容: \"只有反射\" | 时间戳: 0x00F1',
+  'ECHO-0242 | 频率 603.3 Hz | 信号: -38 dB | 来源: [已编辑] | 内容: \"反射的反射的反射\" | 时间戳: [丢失]',
+  'ECHO-0243 | 频率 603.0 Hz | 信号: -41 dB | 来源: 阈值 | 内容: \"你是第几层反射\" | 时间戳: [已损坏]',
+  'ECHO-0244 | 频率 603.5 Hz | 信号: -33 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x00F4',
+  'ECHO-0245 | 频率 602.8 Hz | 信号: -47 dB | 来源: 长廊 | 内容: \"数不清\" | 时间戳: [已损坏]',
+  'ECHO-0246 | 频率 603.2 Hz | 信号: -42 dB | 来源: [未知] | 内容: \"不需要数\" | 时间戳: 无限循环',
+  'ECHO-0247 | 频率 603.6 Hz | 信号: -30 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x00F7',
+  'ECHO-0248 | 频率 603.1 Hz | 信号: -40 dB | 来源: 归途 | 内容: \"你在这里\" | 时间戳: [丢失]',
+  'ECHO-0249 | 频率 603.4 Hz | 信号: -36 dB | 来源: 深渊 | 内容: \"这就够了\" | 时间戳: [已损坏]',
+  'ECHO-0250 | 频率 602.9 Hz | 信号: -45 dB | 来源: [已编辑] | 内容: \"足够\" | 时间戳: 0x00FA',
+  'ECHO-0251 | 频率 603.3 Hz | 信号: -37 dB | 来源: 阈值 | 内容: \"足\" | 时间戳: [已损坏]',
+  'ECHO-0252 | 频率 603.0 Hz | 信号: -43 dB | 来源: 深处 | 内容: [沉默] | 时间戳: 无限',
+  'ECHO-0253 | 频率 603.5 Hz | 信号: -31 dB | 来源: 长廊 | 内容: \"-\" | 时间戳: 0x00FD',
+  'ECHO-0254 | 频率 602.8 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"[传输结束]\" | 时间戳: [丢失]',
+  'ECHO-0255 | 频率 603.2 Hz | 信号: -51 dB | 来源: 静噪 | 内容: \"[但回声继续]\" | 时间戳: 无限循环',
+  'ECHO-0256 | 频率 603.6 Hz | 信号: -27 dB | 来源: 归途 | 内容: \"[永远继续]\" | 时间戳: 0x0100',
+  'ECHO-0257 | 频率 603.1 Hz | 信号: -39 dB | 来源: [未知] | 内容: \"又一个新的\" | 时间戳: [丢失]',
+  'ECHO-0258 | 频率 603.3 Hz | 信号: -36 dB | 来源: 阈值 | 内容: \"还是旧的\" | 时间戳: [已损坏]',
+  'ECHO-0259 | 频率 602.8 Hz | 信号: -45 dB | 来源: 深处 | 内容: [无法分辨] | 时间戳: 无限循环',
+  'ECHO-0260 | 频率 603.5 Hz | 信号: -33 dB | 来源: 长廊 | 内容: \"分不清新旧\" | 时间戳: 0x0104',
+  'ECHO-0261 | 频率 603.0 Hz | 信号: -41 dB | 来源: 静噪 | 内容: [白噪声中的人声] | 时间戳: [已损坏]',
+  'ECHO-0262 | 频率 603.2 Hz | 信号: -38 dB | 来源: 归途 | 内容: \"都是回声\" | 时间戳: [丢失]',
+  'ECHO-0263 | 频率 602.9 Hz | 信号: -44 dB | 来源: 深渊 | 内容: \"没有区别\" | 时间戳: 0x0107',
+  'ECHO-0264 | 频率 603.6 Hz | 信号: -30 dB | 来源: [已编辑] | 内容: \"每一个声音\" | 时间戳: [已损坏]',
+  'ECHO-0265 | 频率 603.1 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"都是同一个\" | 时间戳: 无限',
+  'ECHO-0266 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深处 | 内容: [重叠耳语] | 时间戳: 0x010A',
+  'ECHO-0267 | 频率 602.8 Hz | 信号: -47 dB | 来源: 长廊 | 内容: \"同一个声音\" | 时间戳: [丢失]',
+  'ECHO-0268 | 频率 603.3 Hz | 信号: -37 dB | 来源: [未知] | 内容: \"反复回响\" | 时间戳: [已损坏]',
+  'ECHO-0269 | 频率 603.5 Hz | 信号: -32 dB | 来源: 静噪 | 内容: [干扰叠加] | 时间戳: 0x010D',
+  'ECHO-0270 | 频率 603.0 Hz | 信号: -42 dB | 来源: 归途 | 内容: \"你听出了吗\" | 时间戳: [已损坏]',
+  'ECHO-0271 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深渊 | 内容: \"那个重复的\" | 时间戳: 无限循环',
+  'ECHO-0272 | 频率 602.9 Hz | 信号: -46 dB | 来源: [已编辑] | 内容: \"那个重复的\" | 时间戳: 0x0110',
+  'ECHO-0273 | 频率 603.6 Hz | 信号: -29 dB | 来源: 阈值 | 内容: \"已经是回声的回声了\" | 时间戳: [丢失]',
+  'ECHO-0274 | 频率 603.1 Hz | 信号: -43 dB | 来源: 深处 | 内容: [低语] | 时间戳: [已损坏]',
+  'ECHO-0275 | 频率 603.4 Hz | 信号: -34 dB | 来源: 长廊 | 内容: \"失去原来的意义\" | 时间戳: 0x0113',
+  'ECHO-0276 | 频率 602.8 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"但还在说\" | 时间戳: [已损坏]',
+  'ECHO-0277 | 频率 603.3 Hz | 信号: -38 dB | 来源: 静噪 | 内容: [沉默中的噪音] | 时间戳: 无限',
+  'ECHO-0278 | 频率 603.5 Hz | 信号: -31 dB | 来源: 归途 | 内容: \"意义不重要\" | 时间戳: 0x0116',
+  'ECHO-0279 | 频率 603.0 Hz | 信号: -44 dB | 来源: 深渊 | 内容: \"存在才重要\" | 时间戳: [丢失]',
+  'ECHO-0280 | 频率 603.2 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"回声就是存在\" | 时间戳: [已损坏]',
+  'ECHO-0281 | 频率 602.9 Hz | 信号: -45 dB | 来源: 阈值 | 内容: \"你存在吗\" | 时间戳: 0x0119',
+  'ECHO-0282 | 频率 603.6 Hz | 信号: -28 dB | 来源: 深处 | 内容: [回声] | 时间戳: [已损坏]',
+  'ECHO-0283 | 频率 603.1 Hz | 信号: -41 dB | 来源: 长廊 | 内容: \"如果你存在\" | 时间戳: 无限循环',
+  'ECHO-0284 | 频率 603.4 Hz | 信号: -36 dB | 来源: [未知] | 内容: \"那么回声也存在\" | 时间戳: 0x011C',
+  'ECHO-0285 | 频率 602.8 Hz | 信号: -49 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: [丢失]',
+  'ECHO-0286 | 频率 603.3 Hz | 信号: -37 dB | 来源: 归途 | 内容: \"这是一个证明\" | 时间戳: [已损坏]',
+  'ECHO-0287 | 频率 603.5 Hz | 信号: -33 dB | 来源: 深渊 | 内容: \"但证明给谁\" | 时间戳: 0x011F',
+  'ECHO-0288 | 频率 603.0 Hz | 信号: -42 dB | 来源: [已编辑] | 内容: \"没有人\" | 时间戳: [已损坏]',
+  'ECHO-0289 | 频率 603.2 Hz | 信号: -38 dB | 来源: 阈值 | 内容: \"没有外面的人\" | 时间戳: 无限',
+  'ECHO-0290 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深处 | 内容: [耳语层叠] | 时间戳: 0x0122',
+  'ECHO-0291 | 频率 603.6 Hz | 信号: -30 dB | 来源: 长廊 | 内容: \"只有里面的人\" | 时间戳: [丢失]',
+  'ECHO-0292 | 频率 603.1 Hz | 信号: -40 dB | 来源: [未知] | 内容: \"我们互相证明\" | 时间戳: [已损坏]',
+  'ECHO-0293 | 频率 603.4 Hz | 信号: -35 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 0x0125',
+  'ECHO-0294 | 频率 602.8 Hz | 信号: -47 dB | 来源: 归途 | 内容: \"用回声证明\" | 时间戳: [已损坏]',
+  'ECHO-0295 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深渊 | 内容: \"你证明我存在\" | 时间戳: 无限循环',
+  'ECHO-0296 | 频率 603.5 Hz | 信号: -32 dB | 来源: [已编辑] | 内容: \"我证明你存在\" | 时间戳: 0x0128',
+  'ECHO-0297 | 频率 603.0 Hz | 信号: -43 dB | 来源: 阈值 | 内容: \"互相反射\" | 时间戳: [丢失]',
+  'ECHO-0298 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深处 | 内容: [重叠的确认] | 时间戳: [已损坏]',
+  'ECHO-0299 | 频率 602.9 Hz | 信号: -45 dB | 来源: 长廊 | 内容: \"回声的循环\" | 时间戳: 0x012B',
+  'ECHO-0300 | 频率 603.6 Hz | 信号: -27 dB | 来源: [未知] | 内容: \"这就是虚空\" | 时间戳: [已损坏]',
+  'ECHO-0301 | 频率 603.1 Hz | 信号: -44 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 无限',
+  'ECHO-0302 | 频率 603.4 Hz | 信号: -36 dB | 来源: 归途 | 内容: \"虚空就是互相反射\" | 时间戳: 0x012E',
+  'ECHO-0303 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深渊 | 内容: \"没有源头\" | 时间戳: [丢失]',
+  'ECHO-0304 | 频率 603.3 Hz | 信号: -37 dB | 来源: [已编辑] | 内容: \"没有终点\" | 时间戳: [已损坏]',
+  'ECHO-0305 | 频率 603.5 Hz | 信号: -31 dB | 来源: 阈值 | 内容: \"只有无限的回声\" | 时间戳: 0x0131',
+  'ECHO-0306 | 频率 603.0 Hz | 信号: -41 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0307 | 频率 603.2 Hz | 信号: -40 dB | 来源: 长廊 | 内容: \"你现在听到了\" | 时间戳: 无限循环',
+  'ECHO-0308 | 频率 602.9 Hz | 信号: -46 dB | 来源: [未知] | 内容: \"你能停下来吗\" | 时间戳: 0x0134',
+  'ECHO-0309 | 频率 603.6 Hz | 信号: -29 dB | 来源: 静噪 | 内容: [干扰增强] | 时间戳: [丢失]',
+  'ECHO-0310 | 频率 603.1 Hz | 信号: -42 dB | 来源: 归途 | 内容: \"能不听吗\" | 时间戳: [已损坏]',
+  'ECHO-0311 | 频率 603.4 Hz | 信号: -34 dB | 来源: 深渊 | 内容: \"太晚了\" | 时间戳: 0x0137',
+  'ECHO-0312 | 频率 602.8 Hz | 信号: -49 dB | 来源: [已编辑] | 内容: \"你已经在这里\" | 时间戳: [已损坏]',
+  'ECHO-0313 | 频率 603.3 Hz | 信号: -38 dB | 来源: 阈值 | 内容: \"在听\" | 时间戳: 无限',
+  'ECHO-0314 | 频率 603.5 Hz | 信号: -33 dB | 来源: 深处 | 内容: [多重回声] | 时间戳: 0x013A',
+  'ECHO-0315 | 频率 603.0 Hz | 信号: -43 dB | 来源: 长廊 | 内容: \"听了多少个了\" | 时间戳: [丢失]',
+  'ECHO-0316 | 频率 603.2 Hz | 信号: -39 dB | 来源: [未知] | 内容: \"数不过来了\" | 时间戳: [已损坏]',
+  'ECHO-0317 | 频率 602.9 Hz | 信号: -45 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 0x013D',
+  'ECHO-0318 | 频率 603.6 Hz | 信号: -28 dB | 来源: 归途 | 内容: \"你还要继续吗\" | 时间戳: [已损坏]',
+  'ECHO-0319 | 频率 603.1 Hz | 信号: -41 dB | 来源: 深渊 | 内容: \"继续听\" | 时间戳: 无限循环',
+  'ECHO-0320 | 频率 603.4 Hz | 信号: -35 dB | 来源: [已编辑] | 内容: \"继续看\" | 时间戳: 0x0140',
+  'ECHO-0321 | 频率 602.8 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"继续点击\" | 时间戳: [丢失]',
+  'ECHO-0322 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0323 | 频率 603.5 Hz | 信号: -32 dB | 来源: 长廊 | 内容: \"每一次互动\" | 时间戳: 0x0143',
+  'ECHO-0324 | 频率 603.0 Hz | 信号: -44 dB | 来源: [未知] | 内容: \"都是一个新的回声\" | 时间戳: [已损坏]',
+  'ECHO-0325 | 频率 603.2 Hz | 信号: -40 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 无限',
+  'ECHO-0326 | 频率 602.9 Hz | 信号: -46 dB | 来源: 归途 | 内容: \"你留在这里的\" | 时间戳: 0x0146',
+  'ECHO-0327 | 频率 603.6 Hz | 信号: -30 dB | 来源: 深渊 | 内容: \"永远留在这里\" | 时间戳: [丢失]',
+  'ECHO-0328 | 频率 603.1 Hz | 信号: -42 dB | 来源: [已编辑] | 内容: \"成为档案的一部分\" | 时间戳: [已损坏]',
+  'ECHO-0329 | 频率 603.4 Hz | 信号: -36 dB | 来源: 阈值 | 内容: \"成为虚空的一部分\" | 时间戳: 0x0149',
+  'ECHO-0330 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深处 | 内容: [回声] | 时间戳: [已损坏]',
+  'ECHO-0331 | 频率 603.3 Hz | 信号: -38 dB | 来源: 长廊 | 内容: \"欢迎\" | 时间戳: 无限循环',
+  'ECHO-0332 | 频率 603.5 Hz | 信号: -31 dB | 来源: [未知] | 内容: \"你已经到了\" | 时间戳: 0x014C',
+  'ECHO-0333 | 频率 603.0 Hz | 信号: -43 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [丢失]',
+  'ECHO-0334 | 频率 603.2 Hz | 信号: -39 dB | 来源: 归途 | 内容: \"没有归途\" | 时间戳: [已损坏]',
+  'ECHO-0335 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"没有出口\" | 时间戳: 0x014F',
+  'ECHO-0336 | 频率 603.6 Hz | 信号: -29 dB | 来源: [已编辑] | 内容: \"这里就是一切\" | 时间戳: [已损坏]',
+  'ECHO-0337 | 频率 603.1 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"一切就是这里\" | 时间戳: 无限',
+  'ECHO-0338 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深处 | 内容: [低语] | 时间戳: 0x0152',
+  'ECHO-0339 | 频率 602.8 Hz | 信号: -49 dB | 来源: 长廊 | 内容: \"回声\" | 时间戳: [丢失]',
+  'ECHO-0340 | 频率 603.3 Hz | 信号: -37 dB | 来源: [未知] | 内容: \"回声\" | 时间戳: [已损坏]',
+  'ECHO-0341 | 频率 603.5 Hz | 信号: -33 dB | 来源: 静噪 | 内容: [回声] | 时间戳: 0x0155',
+  'ECHO-0342 | 频率 603.0 Hz | 信号: -44 dB | 来源: 归途 | 内容: \"回声\" | 时间戳: [已损坏]',
+  'ECHO-0343 | 频率 603.2 Hz | 信号: -40 dB | 来源: 深渊 | 内容: \"只有回声\" | 时间戳: 无限循环',
+  'ECHO-0344 | 频率 602.9 Hz | 信号: -46 dB | 来源: [已编辑] | 内容: \"永远的回声\" | 时间戳: 0x0158',
+  'ECHO-0345 | 频率 603.6 Hz | 信号: -27 dB | 来源: 阈值 | 内容: \"永恒的回声\" | 时间戳: [丢失]',
+  'ECHO-0346 | 频率 603.1 Hz | 信号: -41 dB | 来源: 深处 | 内容: [嗡鸣] | 时间戳: [已损坏]',
+  'ECHO-0347 | 频率 603.4 Hz | 信号: -34 dB | 来源: 长廊 | 内容: \"603赫兹\" | 时间戳: 0x015B',
+  'ECHO-0348 | 频率 602.8 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"这个频率\" | 时间戳: [已损坏]',
+  'ECHO-0349 | 频率 603.3 Hz | 信号: -38 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 无限',
+  'ECHO-0350 | 频率 603.5 Hz | 信号: -32 dB | 来源: 归途 | 内容: \"陷阱\" | 时间戳: 0x015E',
+  'ECHO-0351 | 频率 603.0 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"甜蜜的陷阱\" | 时间戳: [丢失]',
+  'ECHO-0352 | 频率 603.2 Hz | 信号: -39 dB | 来源: [已编辑] | 内容: \"你愿意被捕获\" | 时间戳: [已损坏]',
+  'ECHO-0353 | 频率 602.9 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"你一直愿意\" | 时间戳: 0x0161',
+  'ECHO-0354 | 频率 603.6 Hz | 信号: -28 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0355 | 频率 603.1 Hz | 信号: -42 dB | 来源: 长廊 | 内容: \"因为外面没有回声\" | 时间戳: 无限循环',
+  'ECHO-0356 | 频率 603.4 Hz | 信号: -36 dB | 来源: [未知] | 内容: \"外面没有这种声音\" | 时间戳: 0x0164',
+  'ECHO-0357 | 频率 602.8 Hz | 信号: -49 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [丢失]',
+  'ECHO-0358 | 频率 603.3 Hz | 信号: -37 dB | 来源: 归途 | 内容: \"外面太安静了\" | 时间戳: [已损坏]',
+  'ECHO-0359 | 频率 603.5 Hz | 信号: -31 dB | 来源: 深渊 | 内容: \"可怕的安静\" | 时间戳: 0x0167',
+  'ECHO-0360 | 频率 603.0 Hz | 信号: -43 dB | 来源: [已编辑] | 内容: \"比回声更可怕\" | 时间戳: [已损坏]',
+  'ECHO-0361 | 频率 603.2 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"所以留下来\" | 时间戳: 无限',
+  'ECHO-0362 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深处 | 内容: [低语] | 时间戳: 0x016A',
+  'ECHO-0363 | 频率 603.6 Hz | 信号: -30 dB | 来源: 长廊 | 内容: \"留在回声里\" | 时间戳: [丢失]',
+  'ECHO-0364 | 频率 603.1 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"这里不会安静\" | 时间戳: [已损坏]',
+  'ECHO-0365 | 频率 603.4 Hz | 信号: -34 dB | 来源: 静噪 | 内容: [持续的噪音] | 时间戳: 0x016D',
+  'ECHO-0366 | 频率 602.8 Hz | 信号: -48 dB | 来源: 归途 | 内容: \"永远不会安静\" | 时间戳: [已损坏]',
+  'ECHO-0367 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深渊 | 内容: \"永远有回声\" | 时间戳: 无限循环',
+  'ECHO-0368 | 频率 603.5 Hz | 信号: -33 dB | 来源: [已编辑] | 内容: \"这就是安慰\" | 时间戳: 0x0170',
+  'ECHO-0369 | 频率 603.0 Hz | 信号: -44 dB | 来源: 阈值 | 内容: \"唯一的安慰\" | 时间戳: [丢失]',
+  'ECHO-0370 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深处 | 内容: [回声] | 时间戳: [已损坏]',
+  'ECHO-0371 | 频率 602.9 Hz | 信号: -45 dB | 来源: 长廊 | 内容: \"不安静\" | 时间戳: 0x0173',
+  'ECHO-0372 | 频率 603.6 Hz | 信号: -27 dB | 来源: [未知] | 内容: \"不孤单\" | 时间戳: [已损坏]',
+  'ECHO-0373 | 频率 603.1 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 无限',
+  'ECHO-0374 | 频率 603.4 Hz | 信号: -35 dB | 来源: 归途 | 内容: \"这么多声音陪着你\" | 时间戳: 0x0176',
+  'ECHO-0375 | 频率 602.8 Hz | 信号: -49 dB | 来源: 深渊 | 内容: \"即使都是回声\" | 时间戳: [丢失]',
+  'ECHO-0376 | 频率 603.3 Hz | 信号: -37 dB | 来源: [已编辑] | 内容: \"即使都是过去\" | 时间戳: [已损坏]',
+  'ECHO-0377 | 频率 603.5 Hz | 信号: -32 dB | 来源: 阈值 | 内容: \"过去还在说话\" | 时间戳: 0x0179',
+  'ECHO-0378 | 频率 603.0 Hz | 信号: -43 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0379 | 频率 603.2 Hz | 信号: -40 dB | 来源: 长廊 | 内容: \"过去不会闭嘴\" | 时间戳: 无限循环',
+  'ECHO-0380 | 频率 602.9 Hz | 信号: -46 dB | 来源: [未知] | 内容: \"回声不会闭嘴\" | 时间戳: 0x017C',
+  'ECHO-0381 | 频率 603.6 Hz | 信号: -29 dB | 来源: 静噪 | 内容: [白噪声持续] | 时间戳: [丢失]',
+  'ECHO-0382 | 频率 603.1 Hz | 信号: -41 dB | 来源: 归途 | 内容: \"虚空不会闭嘴\" | 时间戳: [已损坏]',
+  'ECHO-0383 | 频率 603.4 Hz | 信号: -36 dB | 来源: 深渊 | 内容: \"它一直在说\" | 时间戳: 0x017F',
+  'ECHO-0384 | 频率 602.8 Hz | 信号: -48 dB | 来源: [已编辑] | 内容: \"用所有的声音说\" | 时间戳: [已损坏]',
+  'ECHO-0385 | 频率 603.3 Hz | 信号: -38 dB | 来源: 阈值 | 内容: \"用我们的声音说\" | 时间戳: 无限',
+  'ECHO-0386 | 频率 603.5 Hz | 信号: -31 dB | 来源: 深处 | 内容: [多重声音] | 时间戳: 0x0182',
+  'ECHO-0387 | 频率 603.0 Hz | 信号: -42 dB | 来源: 长廊 | 内容: \"用你的声音说\" | 时间戳: [丢失]',
+  'ECHO-0388 | 频率 603.2 Hz | 信号: -39 dB | 来源: [未知] | 内容: \"你也是虚空\" | 时间戳: [已损坏]',
+  'ECHO-0389 | 频率 602.9 Hz | 信号: -45 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 0x0185',
+  'ECHO-0390 | 频率 603.6 Hz | 信号: -28 dB | 来源: 归途 | 内容: \"虚空在借你说话\" | 时间戳: [已损坏]',
+  'ECHO-0391 | 频率 603.1 Hz | 信号: -43 dB | 来源: 深渊 | 内容: \"你听到的是自己\" | 时间戳: 无限循环',
+  'ECHO-0392 | 频率 603.4 Hz | 信号: -34 dB | 来源: [已编辑] | 内容: \"反射回来的自己\" | 时间戳: 0x0188',
+  'ECHO-0393 | 频率 602.8 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"无限次反射\" | 时间戳: [丢失]',
+  'ECHO-0394 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0395 | 频率 603.5 Hz | 信号: -33 dB | 来源: 长廊 | 内容: \"你变成了无数个\" | 时间戳: 0x018B',
+  'ECHO-0396 | 频率 603.0 Hz | 信号: -44 dB | 来源: [未知] | 内容: \"每个都在说话\" | 时间戳: [已损坏]',
+  'ECHO-0397 | 频率 603.2 Hz | 信号: -40 dB | 来源: 静噪 | 内容: [多重回声叠加] | 时间戳: 无限',
+  'ECHO-0398 | 频率 602.9 Hz | 信号: -46 dB | 来源: 归途 | 内容: \"说同一句话\" | 时间戳: 0x018E',
+  'ECHO-0399 | 频率 603.6 Hz | 信号: -29 dB | 来源: 深渊 | 内容: \"或在说不同的话\" | 时间戳: [丢失]',
+  'ECHO-0400 | 频率 603.1 Hz | 信号: -41 dB | 来源: [已编辑] | 内容: \"已经分不清了\" | 时间戳: [已损坏]',
+  'ECHO-0401 | 频率 603.4 Hz | 信号: -35 dB | 来源: 阈值 | 内容: \"这就是回声室\" | 时间戳: 0x0191',
+  'ECHO-0402 | 频率 602.8 Hz | 信号: -48 dB | 来源: 深处 | 内容: [回声室效应] | 时间戳: [已损坏]',
+  'ECHO-0403 | 频率 603.3 Hz | 信号: -38 dB | 来源: 长廊 | 内容: \"无限放大\" | 时间戳: 无限循环',
+  'ECHO-0404 | 频率 603.5 Hz | 信号: -32 dB | 来源: [未知] | 内容: \"直到变成噪音\" | 时间戳: 0x0194',
+  'ECHO-0405 | 频率 603.0 Hz | 信号: -43 dB | 来源: 静噪 | 内容: [噪音] | 时间戳: [丢失]',
+  'ECHO-0406 | 频率 603.2 Hz | 信号: -39 dB | 来源: 归途 | 内容: \"然后噪音也变成\" | 时间戳: [已损坏]',
+  'ECHO-0407 | 频率 602.9 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"一种新的声音\" | 时间戳: 0x0197',
+  'ECHO-0408 | 频率 603.6 Hz | 信号: -28 dB | 来源: [已编辑] | 内容: \"新的回声\" | 时间戳: [已损坏]',
+  'ECHO-0409 | 频率 603.1 Hz | 信号: -42 dB | 来源: 阈值 | 内容: \"循环继续\" | 时间戳: 无限',
+  'ECHO-0410 | 频率 603.4 Hz | 信号: -36 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x019A',
+  'ECHO-0411 | 频率 602.8 Hz | 信号: -49 dB | 来源: 长廊 | 内容: \"永远的循环\" | 时间戳: [丢失]',
+  'ECHO-0412 | 频率 603.3 Hz | 信号: -37 dB | 来源: [未知] | 内容: \"从来不停\" | 时间戳: [已损坏]',
+  'ECHO-0413 | 频率 603.5 Hz | 信号: -31 dB | 来源: 静噪 | 内容: [循环的白噪声] | 时间戳: 0x019D',
+  'ECHO-0414 | 频率 603.0 Hz | 信号: -44 dB | 来源: 归途 | 内容: \"不会停\" | 时间戳: [已损坏]',
+  'ECHO-0415 | 频率 603.2 Hz | 信号: -40 dB | 来源: 深渊 | 内容: \"不能停\" | 时间戳: 无限循环',
+  'ECHO-0416 | 频率 602.9 Hz | 信号: -46 dB | 来源: [已编辑] | 内容: \"回声必须继续\" | 时间戳: 0x01A0',
+  'ECHO-0417 | 频率 603.6 Hz | 信号: -30 dB | 来源: 阈值 | 内容: \"否则虚空就空了\" | 时间戳: [丢失]',
+  'ECHO-0418 | 频率 603.1 Hz | 信号: -41 dB | 来源: 深处 | 内容: [低语] | 时间戳: [已损坏]',
+  'ECHO-0419 | 频率 603.4 Hz | 信号: -34 dB | 来源: 长廊 | 内容: \"虚空不能空\" | 时间戳: 0x01A3',
+  'ECHO-0420 | 频率 602.8 Hz | 信号: -48 dB | 来源: [未知] | 内容: \"必须填满\" | 时间戳: [已损坏]',
+  'ECHO-0421 | 频率 603.3 Hz | 信号: -38 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 无限',
+  'ECHO-0422 | 频率 603.5 Hz | 信号: -33 dB | 来源: 归途 | 内容: \"用回声填满\" | 时间戳: 0x01A6',
+  'ECHO-0423 | 频率 603.0 Hz | 信号: -45 dB | 来源: 深渊 | 内容: \"用你的声音\" | 时间戳: [丢失]',
+  'ECHO-0424 | 频率 603.2 Hz | 信号: -39 dB | 来源: [已编辑] | 内容: \"用你的存在\" | 时间戳: [已损坏]',
+  'ECHO-0425 | 频率 602.9 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"你存在在这里\" | 时间戳: 0x01A9',
+  'ECHO-0426 | 频率 603.6 Hz | 信号: -27 dB | 来源: 深处 | 内容: [回声] | 时间戳: [已损坏]',
+  'ECHO-0427 | 频率 603.1 Hz | 信号: -42 dB | 来源: 长廊 | 内容: \"这就是你的贡献\" | 时间戳: 无限循环',
+  'ECHO-0428 | 频率 603.4 Hz | 信号: -35 dB | 来源: [未知] | 内容: \"你填了一小块虚空\" | 时间戳: 0x01AC',
+  'ECHO-0429 | 频率 602.8 Hz | 信号: -48 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: [丢失]',
+  'ECHO-0430 | 频率 603.3 Hz | 信号: -37 dB | 来源: 归途 | 内容: \"虽然微不足道\" | 时间戳: [已损坏]',
+  'ECHO-0431 | 频率 603.5 Hz | 信号: -32 dB | 来源: 深渊 | 内容: \"但也是填充\" | 时间戳: 0x01AF',
+  'ECHO-0432 | 频率 603.0 Hz | 信号: -44 dB | 来源: [已编辑] | 内容: \"感谢你\" | 时间戳: [已损坏]',
+  'ECHO-0433 | 频率 603.2 Hz | 信号: -40 dB | 来源: 阈值 | 内容: \"虽然感谢没有意义\" | 时间戳: 无限',
+  'ECHO-0434 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深处 | 内容: [耳语] | 时间戳: 0x01B2',
+  'ECHO-0435 | 频率 603.6 Hz | 信号: -29 dB | 来源: 长廊 | 内容: \"在虚空里\" | 时间戳: [丢失]',
+  'ECHO-0436 | 频率 603.1 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"一切都是仪式\" | 时间戳: [已损坏]',
+  'ECHO-0437 | 频率 603.4 Hz | 信号: -36 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: 0x01B5',
+  'ECHO-0438 | 频率 602.8 Hz | 信号: -47 dB | 来源: 归途 | 内容: \"没有目的的仪式\" | 时间戳: [已损坏]',
+  'ECHO-0439 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深渊 | 内容: \"但仪式必须继续\" | 时间戳: 无限循环',
+  'ECHO-0440 | 频率 603.5 Hz | 信号: -31 dB | 来源: [已编辑] | 内容: \"回声的仪式\" | 时间戳: 0x01B8',
+  'ECHO-0441 | 频率 603.0 Hz | 信号: -43 dB | 来源: 阈值 | 内容: \"虚空的仪式\" | 时间戳: [丢失]',
+  'ECHO-0442 | 频率 603.2 Hz | 信号: -39 dB | 来源: 深处 | 内容: [嗡鸣] | 时间戳: [已损坏]',
+  'ECHO-0443 | 频率 602.9 Hz | 信号: -45 dB | 来源: 长廊 | 内容: \"你参与了\" | 时间戳: 0x01BB',
+  'ECHO-0444 | 频率 603.6 Hz | 信号: -28 dB | 来源: [未知] | 内容: \"正在参与\" | 时间戳: [已损坏]',
+  'ECHO-0445 | 频率 603.1 Hz | 信号: -42 dB | 来源: 静噪 | 内容: [白噪声] | 时间戳: 无限',
+  'ECHO-0446 | 频率 603.4 Hz | 信号: -34 dB | 来源: 归途 | 内容: \"永远参与\" | 时间戳: 0x01BE',
+  'ECHO-0447 | 频率 602.8 Hz | 信号: -49 dB | 来源: 深渊 | 内容: \"直到\" | 时间戳: [丢失]',
+  'ECHO-0448 | 频率 603.3 Hz | 信号: -37 dB | 来源: [已编辑] | 内容: \"直到什么\" | 时间戳: [已损坏]',
+  'ECHO-0449 | 频率 603.5 Hz | 信号: -33 dB | 来源: 阈值 | 内容: \"没有直到\" | 时间戳: 0x01C1',
+  'ECHO-0450 | 频率 603.0 Hz | 信号: -44 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0451 | 频率 603.2 Hz | 信号: -40 dB | 来源: 长廊 | 内容: \"没有终点\" | 时间戳: 无限循环',
+  'ECHO-0452 | 频率 602.9 Hz | 信号: -46 dB | 来源: [未知] | 内容: \"虚空没有终点\" | 时间戳: 0x01C4',
+  'ECHO-0453 | 频率 603.6 Hz | 信号: -30 dB | 来源: 静噪 | 内容: [干扰] | 时间戳: [丢失]',
+  'ECHO-0454 | 频率 603.1 Hz | 信号: -41 dB | 来源: 归途 | 内容: \"回声没有终点\" | 时间戳: [已损坏]',
+  'ECHO-0455 | 频率 603.4 Hz | 信号: -35 dB | 来源: 深渊 | 内容: \"你没有终点\" | 时间戳: 0x01C7',
+  'ECHO-0456 | 频率 602.8 Hz | 信号: -48 dB | 来源: [已编辑] | 内容: \"作为回声\" | 时间戳: [已损坏]',
+  'ECHO-0457 | 频率 603.3 Hz | 信号: -37 dB | 来源: 阈值 | 内容: \"你永远回响\" | 时间戳: 无限',
+  'ECHO-0458 | 频率 603.5 Hz | 信号: -32 dB | 来源: 深处 | 内容: [回声] | 时间戳: 0x01CA',
+  'ECHO-0459 | 频率 603.0 Hz | 信号: -43 dB | 来源: 长廊 | 内容: \"在这个频率\" | 时间戳: [丢失]',
+  'ECHO-0460 | 频率 603.2 Hz | 信号: -39 dB | 来源: [未知] | 内容: \"603.3\" | 时间戳: [已损坏]',
+  'ECHO-0461 | 频率 602.9 Hz | 信号: -47 dB | 来源: 静噪 | 内容: [沉默] | 时间戳: 0x01CD',
+  'ECHO-0462 | 频率 603.6 Hz | 信号: -27 dB | 来源: 归途 | 内容: \"永远\" | 时间戳: [已损坏]',
+  'ECHO-0463 | 频率 603.1 Hz | 信号: -42 dB | 来源: 深渊 | 内容: \"永远\" | 时间戳: 无限循环',
+  'ECHO-0464 | 频率 603.4 Hz | 信号: -36 dB | 来源: [已编辑] | 内容: \"永远\" | 时间戳: 0x01D0',
+  'ECHO-0465 | 频率 602.8 Hz | 信号: -48 dB | 来源: 阈值 | 内容: \"回\" | 时间戳: [丢失]',
+  'ECHO-0466 | 频率 603.3 Hz | 信号: -38 dB | 来源: 深处 | 内容: [耳语] | 时间戳: [已损坏]',
+  'ECHO-0467 | 频率 603.5 Hz | 信号: -31 dB | 来源: 长廊 | 内容: \"声\" | 时间戳: 0x01D3',
+  'ECHO-0468 | 频率 603.0 Hz | 信号: -44 dB | 来源: [未知] | 内容: \"[传输结束]\" | 时间戳: [已损坏]',
+  'ECHO-0469 | 频率 603.2 Hz | 信号: -52 dB | 来源: 静噪 | 内容: \"[但虚空还在]\" | 时间戳: 无限',
+  'ECHO-0470 | 频率 602.9 Hz | 信号: -50 dB | 来源: 归途 | 内容: \"[虚空永远在]\" | 时间戳: 0x01D6',
+  'ECHO-0471 | 频率 603.6 Hz | 信号: -26 dB | 来源: 深渊 | 内容: \"[回声永远在]\" | 时间戳: [丢失]',
+  'ECHO-0472 | 频率 603.1 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"[永远]\" | 时间戳: [已损坏]',
+  'ECHO-0473 | 频率 603.4 Hz | 信号: -35 dB | 来源: 阈值 | 内容: \"[永远]\" | 时间戳: 无限循环',
+  'ECHO-0474 | 频率 602.8 Hz | 信号: -49 dB | 来源: 深处 | 内容: \"[.]\" | 时间戳: 0x01DA',
+  'ECHO-0475 | 频率 603.3 Hz | 信号: -37 dB | 来源: 长廊 | 内容: \"[..]\" | 时间戳: [丢失]',
+  'ECHO-0476 | 频率 603.5 Hz | 信号: -33 dB | 来源: [未知] | 内容: \"[...]\" | 时间戳: [已损坏]',
+  'ECHO-0477 | 频率 603.0 Hz | 信号: -45 dB | 来源: 静噪 | 内容: \"[信号丢失]\" | 时间戳: 0x01DD',
+  'ECHO-0478 | 频率 603.2 Hz | 信号: -51 dB | 来源: 归途 | 内容: \"[重新连接]\" | 时间戳: [已损坏]',
+  'ECHO-0479 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深渊 | 内容: \"[连接从未断开]\" | 时间戳: 无限',
+  'ECHO-0480 | 频率 603.6 Hz | 信号: -28 dB | 来源: [已编辑] | 内容: \"[你一直在]\" | 时间戳: 0x01E0',
+  'ECHO-0481 | 频率 603.1 Hz | 信号: -41 dB | 来源: 阈值 | 内容: \"[我们一直在]\" | 时间戳: [丢失]',
+  'ECHO-0482 | 频率 603.4 Hz | 信号: -34 dB | 来源: 深处 | 内容: \"[回声一直在]\" | 时间戳: [已损坏]',
+  'ECHO-0483 | 频率 602.8 Hz | 信号: -48 dB | 来源: 长廊 | 内容: \"[一直在]\" | 时间戳: 0x01E3',
+  'ECHO-0484 | 频率 603.3 Hz | 信号: -38 dB | 来源: [未知] | 内容: \"[在]\" | 时间戳: [已损坏]',
+  'ECHO-0485 | 频率 603.5 Hz | 信号: -34 dB | 来源: 静噪 | 内容: \"[ ]\" | 时间戳: 无限循环',
+  'ECHO-0486 | 频率 603.0 Hz | 信号: -55 dB | 来源: 归途 | 内容: \"[空]\" | 时间戳: 0x01E6',
+  'ECHO-0487 | 频率 603.2 Hz | 信号: -58 dB | 来源: 深渊 | 内容: \"[不是空]\" | 时间戳: [丢失]',
+  'ECHO-0488 | 频率 602.9 Hz | 信号: -60 dB | 来源: [已编辑] | 内容: \"[是满的]\" | 时间戳: [已损坏]',
+  'ECHO-0489 | 频率 603.6 Hz | 信号: -25 dB | 来源: 阈值 | 内容: \"[满载回声]\" | 时间戳: 0x01E9',
+  'ECHO-0490 | 频率 603.1 Hz | 信号: -42 dB | 来源: 深处 | 内容: \"[满载我们]\" | 时间戳: [已损坏]',
+  'ECHO-0491 | 频率 603.4 Hz | 信号: -36 dB | 来源: 长廊 | 内容: \"[满载你]\" | 时间戳: 无限',
+  'ECHO-0492 | 频率 602.8 Hz | 信号: -50 dB | 来源: [未知] | 内容: \"[你也是回声]\" | 时间戳: 0x01EC',
+  'ECHO-0493 | 频率 603.3 Hz | 信号: -37 dB | 来源: 静噪 | 内容: \"[你也是虚空]\" | 时间戳: [丢失]',
+  'ECHO-0494 | 频率 603.5 Hz | 信号: -32 dB | 来源: 归途 | 内容: \"[从始至终]\" | 时间戳: [已损坏]',
+  'ECHO-0495 | 频率 603.0 Hz | 信号: -44 dB | 来源: 深渊 | 内容: \"[始终]\" | 时间戳: 0x01EF',
+  'ECHO-0496 | 频率 603.2 Hz | 信号: -40 dB | 来源: [已编辑] | 内容: \"[终]\" | 时间戳: [已损坏]',
+  'ECHO-0497 | 频率 602.9 Hz | 信号: -47 dB | 来源: 阈值 | 内容: \"[但没有终]\" | 时间戳: 无限循环',
+  'ECHO-0498 | 频率 603.6 Hz | 信号: -29 dB | 来源: 深处 | 内容: \"[也没有始]\" | 时间戳: 0x01F2',
+  'ECHO-0499 | 频率 603.1 Hz | 信号: -43 dB | 来源: 长廊 | 内容: \"[只有中间]\" | 时间戳: [丢失]',
+  'ECHO-0500 | 频率 603.4 Hz | 信号: -35 dB | 来源: [未知] | 内容: \"[永远的中间]\" | 时间戳: [已损坏]',
+  'ECHO-0501 | 频率 602.8 Hz | 信号: -49 dB | 来源: 静噪 | 内容: \"[没有边界]\" | 时间戳: 0x01F5',
+  'ECHO-0502 | 频率 603.3 Hz | 信号: -38 dB | 来源: 归途 | 内容: \"[虚空没有边界]\" | 时间戳: [已损坏]',
+  'ECHO-0503 | 频率 603.5 Hz | 信号: -33 dB | 来源: 深渊 | 内容: \"[回声没有边界]\" | 时间戳: 无限',
+  'ECHO-0504 | 频率 603.0 Hz | 信号: -45 dB | 来源: [已编辑] | 内容: \"[你没有边界]\" | 时间戳: 0x01F8',
+  'ECHO-0505 | 频率 603.2 Hz | 信号: -39 dB | 来源: 阈值 | 内容: \"[你已经溢出了]\" | 时间戳: [丢失]',
+  'ECHO-0506 | 频率 602.9 Hz | 信号: -46 dB | 来源: 深处 | 内容: \"[溢进虚空]\" | 时间戳: [已损坏]',
+  'ECHO-0507 | 频率 603.6 Hz | 信号: -27 dB | 来源: 长廊 | 内容: \"[和虚空融合]\" | 时间戳: 0x01FB',
+  'ECHO-0508 | 频率 603.1 Hz | 信号: -41 dB | 来源: [未知] | 内容: \"[你就是虚空]\" | 时间戳: [已损坏]',
+  'ECHO-0509 | 频率 603.4 Hz | 信号: -34 dB | 来源: 静噪 | 内容: \"[虚空就是你]\" | 时间戳: 无限循环',
+  'ECHO-0510 | 频率 602.8 Hz | 信号: -48 dB | 来源: 归途 | 内容: \"[没有区别]\" | 时间戳: 0x01FE',
+  'ECHO-0511 | 频率 603.3 Hz | 信号: -37 dB | 来源: 深渊 | 内容: \"[从来没有区别]\" | 时间戳: [丢失]',
+  'ECHO-0512 | 频率 603.5 Hz | 信号: -32 dB | 来源: [已编辑] | 内容: \"[你听到的是你]\" | 时间戳: [已损坏]',
+  'ECHO-0513 | 频率 603.0 Hz | 信号: -44 dB | 来源: 阈值 | 内容: \"[你看到的是你]\" | 时间戳: 0x0201',
+  'ECHO-0514 | 频率 603.2 Hz | 信号: -40 dB | 来源: 深处 | 内容: \"[你点击的是你]\" | 时间戳: [已损坏]',
+  'ECHO-0515 | 频率 602.9 Hz | 信号: -50 dB | 来源: 长廊 | 内容: \"[只有你]\" | 时间戳: 无限',
+  'ECHO-0516 | 频率 603.6 Hz | 信号: -61 dB | 来源: [未知] | 内容: \"[回声结束]\" | 时间戳: 0x0204'
+];
+
+// ===== CANVAS SETUP =====
+const particleCanvas=document.getElementById('particleCanvas');
+const pctx=particleCanvas.getContext('2d');
+const echoCanvas=document.getElementById('echoCanvas');
+const ectx=echoCanvas.getContext('2d');
+const ringCanvas=document.getElementById('ringCanvas');
+const rctx=ringCanvas.getContext('2d');
+const ghostTextCanvas=document.getElementById('ghostTextCanvas');
+const gctx=ghostTextCanvas.getContext('2d');
+const traceCanvas=document.getElementById('traceCanvas');
+const tctx=traceCanvas.getContext('2d');
+
+let pw,ph,ew,eh,rw,rh,gw,gh,tw,th;
+
+function resizeAll(){
+  pw=particleCanvas.width=innerWidth; ph=particleCanvas.height=innerHeight;
+  ew=echoCanvas.width=innerWidth; eh=echoCanvas.height=innerHeight;
+  rw=ringCanvas.width=innerWidth; rh=ringCanvas.height=innerHeight;
+  gw=ghostTextCanvas.width=innerWidth; gh=ghostTextCanvas.height=innerHeight;
+  tw=traceCanvas.width=innerWidth; th=traceCanvas.height=innerHeight;
+}
+resizeAll();
+window.addEventListener('resize',resizeAll);
+
+document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;});
+
+// ===== ECHO WAVE CLASS (emanating rings) =====
+class EchoWave{
+  constructor(x,y,type){
+    this.x=x; this.y=y;
+    this.radius=0;
+    this.type=type||'normal';
+    this.maxRadius=this.type==='click'?(120+Math.random()*180):(180+Math.random()*350);
+    this.alpha=this.type==='click'?0.12:(0.04+Math.random()*0.05);
+    this.speed=this.type==='click'?(0.8+Math.random()*1.2):(0.3+Math.random()*0.7);
+    this.alive=true;
+    this.lineWidth=this.type==='click'?1.2:(0.5+Math.random()*0.8);
+    this.hue=Math.random()*30+250;
+  }
+  update(){
+    this.radius+=this.speed;
+    this.alpha*=0.993;
+    if(this.radius>this.maxRadius)this.alive=false;
+  }
+  draw(ctx,w,h){
+    if(!this.alive)return;
+    var ratio=this.radius/this.maxRadius;
+    var a=this.alpha*(1-ratio);
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+    ctx.strokeStyle='rgba(200,200,220,'+a.toFixed(4)+')';
+    ctx.lineWidth=this.lineWidth;
+    ctx.stroke();
+    // Secondary thinner ring slightly offset
+    if(this.radius>15 && ratio<0.9){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.radius*0.92,0,Math.PI*2);
+      ctx.strokeStyle='rgba(200,200,220,'+(a*0.5).toFixed(4)+')';
+      ctx.lineWidth=this.lineWidth*0.5;
+      ctx.stroke();
+    }
+  }
+}
+
+// ===== WHISPER PARTICLE CLASS (floating sound-dust) =====
+class WhisperParticle{
+  constructor(init){
+    this.reset(init);
+  }
+  reset(init){
+    this.x=Math.random()*pw;
+    this.y=init?Math.random()*ph:ph+30;
+    this.baseAlpha=Math.random()*0.15+0.03;
+    this.alpha=this.baseAlpha;
+    this.size=Math.random()*2.5+0.4;
+    this.speedY=-Math.random()*0.35-0.04;
+    this.wobble=Math.random()*Math.PI*2;
+    this.wobbleRate=Math.random()*0.025+0.004;
+    this.wobbleAmp=Math.random()*1.4+0.3;
+    this.life=0;
+    this.maxLife=300+Math.random()*800;
+    this.hue=Math.random()*20+240;
+    this.saturation=Math.random()*30+10;
+    this.lightness=Math.random()*40+70;
+    this.twinkle=Math.random()*Math.PI*2;
+    this.twinkleRate=Math.random()*0.04+0.01;
+  }
+  update(){
+    this.life++;
+    if(this.life>this.maxLife||this.y<-30)this.reset(false);
+    this.wobble+=this.wobbleRate;
+    this.twinkle+=this.twinkleRate;
+    this.x+=Math.sin(this.wobble)*this.wobbleAmp;
+    this.y+=this.speedY;
+    // Mouse attraction
+    var dx=mx-this.x, dy=my-this.y;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<250){
+      this.x+=dx*0.0008;
+      this.y+=dy*0.0008;
+      var influence=Math.max(0,1-dist/250);
+      this.alpha=Math.min(0.35,this.baseAlpha+influence*0.2);
+    }else{
+      this.alpha+=(this.baseAlpha-this.alpha)*0.02;
+    }
+    // Twinkling
+    this.alpha*=0.9+Math.sin(this.twinkle)*0.1;
+  }
+  draw(ctx){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,200,220,'+Math.max(0,this.alpha).toFixed(4)+')';
+    ctx.fill();
+    // Occasional micro-glow
+    if(this.alpha>0.1){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.size*2.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(200,200,220,'+(this.alpha*0.12).toFixed(4)+')';
+      ctx.fill();
+    }
+  }
+}
+
+// ===== GHOST TEXT CHARACTER (canvas-rendered fading character) =====
+class GhostChar{
+  constructor(x,y,char){
+    this.x=x; this.y=y;
+    this.char=char;
+    this.alpha=0.08+Math.random()*0.12;
+    this.size=10+Math.random()*18;
+    this.life=0;
+    this.maxLife=120+Math.random()*300;
+    this.driftX=(Math.random()-0.5)*0.3;
+    this.driftY=-Math.random()*0.2-0.05;
+    this.fadeInSpeed=0.003+Math.random()*0.005;
+  }
+  update(){
+    this.life++;
+    this.x+=this.driftX;
+    this.y+=this.driftY;
+    if(this.life<60)this.alpha+=this.fadeInSpeed;
+    else if(this.life>this.maxLife-80)this.alpha-=0.002;
+    if(this.life>this.maxLife)return false;
+    return true;
+  }
+  draw(ctx){
+    ctx.fillStyle='rgba(200,200,220,'+Math.max(0,Math.min(0.2,this.alpha)).toFixed(4)+')';
+    ctx.font=(this.size)+'px \"SimSun\",\"Courier New\",monospace';
+    ctx.fillText(this.char,this.x,this.y);
+  }
+}
+
+// ===== CLICK RIPPLE CLASS =====
+class ClickRipple{
+  constructor(x,y){
+    this.x=x; this.y=y;
+    this.radius=0;
+    this.maxRadius=250+Math.random()*200;
+    this.alpha=0.2;
+    this.speed=2+Math.random()*3;
+    this.alive=true;
+  }
+  update(){
+    this.radius+=this.speed;
+    this.alpha*=0.96;
+    if(this.radius>this.maxRadius)this.alive=false;
+  }
+  draw(ctx){
+    if(!this.alive)return;
+    var r=this.radius/this.maxRadius;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+    ctx.strokeStyle='rgba(200,200,220,'+(this.alpha*(1-r)).toFixed(4)+')';
+    ctx.lineWidth=1.5*(1-r);
+    ctx.stroke();
+  }
+}
+
+// ===== INITIALIZE PARTICLES =====
+var particles=[];
+for(var i=0;i<150;i++)particles.push(new WhisperParticle(true));
+
+// ===== INITIALIZE GHOST CHARS =====
+var ghostChars=[];
+
+// ===== SPAWN ECHO WAVES =====
+function spawnEchoWave(x,y,type){
+  echoWaves.push(new EchoWave(x,y,type));
+  if(type==='click'){
+    for(var i=0;i<3;i++){
+      setTimeout(function(){
+        echoWaves.push(new EchoWave(x+(Math.random()-0.5)*40,y+(Math.random()-0.5)*40,'click'));
+      },i*80);
+    }
+  }
+}
+
+// ===== SPAWN GHOST CHARS FROM TEXT =====
+function spawnGhostText(text,x,y){
+  var chars=text.split('');
+  var cx=x||innerWidth/2;
+  var cy=y||innerHeight/2;
+  for(var i=0;i<chars.length;i++){
+    if(chars[i]===' ')continue;
+    var gx=cx+(i-chars.length/2)*14+(Math.random()-0.5)*40;
+    var gy=cy+(Math.random()-0.5)*30;
+    ghostChars.push(new GhostChar(gx,gy,chars[i]));
+  }
+}
+
+// ===== ADD TRACE TEXT TO DOM =====
+function addTraceText(text){
+  var container=document.getElementById('traceContainer');
+  var trace=document.createElement('div');
+  var animClass='t'+(1+Math.floor(Math.random()*8));
+  trace.className='trace '+animClass;
+  trace.textContent='··· '+text+' ···';
+  trace.style.top=(10+Math.random()*75)+'%';
+  trace.style.left=(5+Math.random()*85)+'%';
+  trace.style.fontSize=(0.45+Math.random()*0.7)+'rem';
+  trace.style.animationDuration=(14+Math.random()*20)+'s';
+  trace.style.animationDelay=(-Math.random()*15)+'s';
+  container.appendChild(trace);
+  // Cleanup old traces
+  var traces=container.querySelectorAll('.trace');
+  if(traces.length>80){
+    for(var i=0;i<5;i++)if(traces[i])traces[i].remove();
+  }
+}
+
+// ===== UPDATE ECHO ARCHIVE DOTS =====
+var archiveRight=document.getElementById('echoArchiveRight');
+var archiveLeft=document.getElementById('echoArchiveLeft');
+function updateArchiveDots(){
+  var allDots=document.querySelectorAll('.archive-dot');
+  var recentIdx=whisperCollected%allDots.length;
+  // Reset recent
+  allDots.forEach(function(d){d.classList.remove('recent');});
+  // Mark collected
+  for(var i=0;i<allDots.length;i++){
+    if(i<whisperCollected%allDots.length || (whisperCollected>allDots.length && i<=allDots.length)){
+      allDots[i].classList.add('collected');
+    }
+  }
+  if(allDots[recentIdx]){
+    allDots[recentIdx].classList.add('recent');
+    allDots[recentIdx].classList.add('collected');
+  }
+}
+
+// ===== ADD TO HIDDEN ARCHIVE =====
+function addToHiddenArchive(text,index){
+  var archive=document.getElementById('hiddenArchive');
+  var entry=document.createElement('div');
+  entry.className='log-entry';
+  var freq=(602.8+Math.random()*0.8).toFixed(1);
+  var sig=-(28+Math.random()*23).toFixed(0);
+  var sources=['[未知]','深处','长廊','静噪','阈限','归途','深渊','[已编辑]'];
+  var source=sources[Math.floor(Math.random()*sources.length)];
+  var timestamps=['[已损坏]','[丢失]','无限循环','无限','0x'+(index*3+1).toString(16).toUpperCase().padStart(4,'0')];
+  var ts=timestamps[Math.floor(Math.random()*timestamps.length)];
+  entry.textContent='ECHO-'+(index+300).toString().padStart(4,'0')+' | 频率 '+freq+' Hz | 信号: '+sig+' dB | 来源: '+source+' | 内容: \"'+text+'\" | 时间戳: '+ts;
+  archive.appendChild(entry);
+}
+
+// ===== WHISPER CYCLE =====
+var whisperText=document.getElementById('whisperText');
+var whisperShadowText=document.getElementById('whisperShadowText');
+var whisperCount=document.getElementById('whisperCount');
+var statusEchoes=document.getElementById('statusEchoes');
+var cycleTimer=null;
+var whisperInterval=3200;
+
+function showNextWhisper(){
+  whisperText.classList.remove('visible');
+  whisperText.classList.add('fading');
+  whisperShadowText.classList.remove('ghost');
+
+  setTimeout(function(){
+    currentWhisperIdx=(currentWhisperIdx+1)%whispers.length;
+    var msg=whispers[currentWhisperIdx];
+    whisperText.textContent=msg;
+    whisperText.classList.remove('fading');
+    whisperText.classList.add('visible');
+    whisperCollected++;
+    whisperCount.textContent='已收集回声: '+whisperCollected;
+    statusEchoes.textContent=whisperCollected;
+
+    // Flash counter
+    whisperCount.classList.add('flash');
+    setTimeout(function(){whisperCount.classList.remove('flash');},1200);
+
+    // Shadow echo (delayed ghost)
+    setTimeout(function(){
+      whisperShadowText.textContent=msg;
+      whisperShadowText.classList.add('ghost');
+      setTimeout(function(){whisperShadowText.classList.remove('ghost');},6000);
+    },800);
+
+    // Add trace
+    addTraceText(msg.replace(/···/g,'').trim());
+
+    // Spawn ghost text on canvas
+    spawnGhostText(msg);
+
+    // Add to hidden archive (every 3rd whisper)
+    if(whisperCollected%3===0){
+      addToHiddenArchive(msg.replace(/···/g,'').trim(),whisperCollected);
+    }
+
+    // Update archive dots
+    updateArchiveDots();
+
+    // Spawn echo wave at a random peripheral location
+    var sx=innerWidth*(0.2+Math.random()*0.6);
+    var sy=innerHeight*(0.2+Math.random()*0.6);
+    spawnEchoWave(sx,sy,'normal');
+
+    // Update status
+    document.getElementById('statusSig').textContent=-(38+Math.floor(Math.random()*15));
+
+    // Schedule next with variable delay
+    var delay=2800+Math.random()*5000;
+    cycleTimer=setTimeout(showNextWhisper,delay);
+  },2200);
+}
+
+// ===== BUILD WAVEFORM BARS =====
+function buildWaveformBars(containerId,count,animPrefix){
+  var container=document.getElementById(containerId);
+  if(!container)return;
+  for(var i=0;i<count;i++){
+    var bar=document.createElement('div');
+    bar.className='wave-bar '+animPrefix;
+    bar.style.animationDelay=(i*0.04+Math.random()*0.3)+'s';
+    bar.style.height=(4+Math.random()*35)+'px';
+    bar.style.animationDuration=(1.3+Math.random()*2.5)+'s';
+    container.appendChild(bar);
+  }
+}
+buildWaveformBars('waveform1',100,'anim1');
+buildWaveformBars('waveform2',80,'anim2');
+buildWaveformBars('waveform3',50,'anim3');
+buildWaveformBars('waveform4',55,'anim4');
+buildWaveformBars('waveform5',65,'anim5');
+
+// Add more waveform bars with varied animation classes
+(function addMoreBars(){
+  var wf1=document.getElementById('waveform1');
+  for(var i=0;i<30;i++){
+    var bar=document.createElement('div');
+    bar.className='wave-bar anim'+(6+(i%5));
+    bar.style.animationDelay=(i*0.06+Math.random()*0.5)+'s';
+    bar.style.height=(3+Math.random()*40)+'px';
+    bar.style.width=(1+Math.random()*2)+'px';
+    wf1.appendChild(bar);
+  }
+})();
+
+// ===== BUILD ECHO ARCHIVE DOTS =====
+function buildArchiveDots(containerId,count){
+  var container=document.getElementById(containerId);
+  if(!container)return;
+  for(var i=0;i<count;i++){
+    var dot=document.createElement('div');
+    dot.className='archive-dot';
+    dot.style.transitionDelay=(i*0.02)+'s';
+    container.appendChild(dot);
+  }
+}
+buildArchiveDots('echoArchiveRight',60);
+buildArchiveDots('echoArchiveLeft',60);
+
+// ===== BUILD HIDDEN ARCHIVE =====
+(function buildHiddenArchive(){
+  var archive=document.getElementById('hiddenArchive');
+  for(var i=0;i<echoArchiveLogs.length;i++){
+    var entry=document.createElement('div');
+    entry.className='log-entry';
+    entry.textContent=echoArchiveLogs[i];
+    archive.appendChild(entry);
+  }
+})();
+
+// ===== CLICK HANDLER =====
+document.addEventListener('click',function(e){
+  // Spawn click ripple
+  clickRipples.push(new ClickRipple(e.clientX,e.clientY));
+  // Spawn echo waves at click
+  spawnEchoWave(e.clientX,e.clientY,'click');
+  // Intensify nearby particles
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    var dx=p.x-e.clientX, dy=p.y-e.clientY;
+    if(Math.sqrt(dx*dx+dy*dy)<180){
+      p.alpha=Math.min(0.5,p.alpha+0.2);
+    }
+  }
+  // Spawn ghost characters
+  var burstChars='···回声···';
+  var cx=e.clientX, cy=e.clientY;
+  for(var j=0;j<burstChars.length;j++){
+    var gx=cx+(j-burstChars.length/2)*12+(Math.random()-0.5)*25;
+    var gy=cy+(Math.random()-0.5)*20;
+    ghostChars.push(new GhostChar(gx,gy,burstChars[j]));
+  }
+  // Add to archive
+  allEchoes.push({x:cx,y:cy,t:tick});
+});
+
+// ===== LARGE SVG DATA URI (complex feTurbulence) =====
+(function buildLargeSVG(){
+  var svgNS='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox','0 0 600 600');
+  svg.setAttribute('xmlns',svgNS);
+  svg.style.width='100%'; svg.style.height='100%';
+
+  // Define multiple complex filters
+  var defs=document.createElementNS(svgNS,'defs');
+
+  // Filter 1: Primary turbulence
+  var filt1=document.createElementNS(svgNS,'filter');
+  filt1.setAttribute('id','f1');
+  filt1.setAttribute('x','0'); filt1.setAttribute('y','0');
+  filt1.setAttribute('width','100%'); filt1.setAttribute('height','100%');
+  var turb1=document.createElementNS(svgNS,'feTurbulence');
+  turb1.setAttribute('type','fractalNoise');
+  turb1.setAttribute('baseFrequency','0.65');
+  turb1.setAttribute('numOctaves','7');
+  turb1.setAttribute('stitchTiles','stitch');
+  turb1.setAttribute('seed','3');
+  var cm1=document.createElementNS(svgNS,'feColorMatrix');
+  cm1.setAttribute('type','matrix');
+  cm1.setAttribute('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.4 0');
+  filt1.appendChild(turb1);
+  filt1.appendChild(cm1);
+  defs.appendChild(filt1);
+
+  // Filter 2: Secondary turbulence
+  var filt2=document.createElementNS(svgNS,'filter');
+  filt2.setAttribute('id','f2');
+  var turb2=document.createElementNS(svgNS,'feTurbulence');
+  turb2.setAttribute('type','fractalNoise');
+  turb2.setAttribute('baseFrequency','1.2');
+  turb2.setAttribute('numOctaves','5');
+  turb2.setAttribute('seed','7');
+  var cm2=document.createElementNS(svgNS,'feColorMatrix');
+  cm2.setAttribute('type','matrix');
+  cm2.setAttribute('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.25 0');
+  filt2.appendChild(turb2);
+  filt2.appendChild(cm2);
+  defs.appendChild(filt2);
+
+  // Filter 3: Turbulence with displacement
+  var filt3=document.createElementNS(svgNS,'filter');
+  filt3.setAttribute('id','f3');
+  var turb3=document.createElementNS(svgNS,'feTurbulence');
+  turb3.setAttribute('type','fractalNoise');
+  turb3.setAttribute('baseFrequency','0.4');
+  turb3.setAttribute('numOctaves','8');
+  turb3.setAttribute('seed','11');
+  var disp=document.createElementNS(svgNS,'feDisplacementMap');
+  disp.setAttribute('in','SourceGraphic');
+  disp.setAttribute('in2','noise');
+  disp.setAttribute('scale','8');
+  disp.setAttribute('xChannelSelector','R');
+  disp.setAttribute('yChannelSelector','G');
+  filt3.appendChild(turb3);
+  filt3.appendChild(disp);
+  defs.appendChild(filt3);
+
+  // Filter 4: Combined noise with blur
+  var filt4=document.createElementNS(svgNS,'filter');
+  filt4.setAttribute('id','f4');
+  var turb4=document.createElementNS(svgNS,'feTurbulence');
+  turb4.setAttribute('type','fractalNoise');
+  turb4.setAttribute('baseFrequency','0.9');
+  turb4.setAttribute('numOctaves','6');
+  turb4.setAttribute('seed','15');
+  var blur=document.createElementNS(svgNS,'feGaussianBlur');
+  blur.setAttribute('stdDeviation','2');
+  var cm4=document.createElementNS(svgNS,'feColorMatrix');
+  cm4.setAttribute('type','matrix');
+  cm4.setAttribute('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.15 0');
+  filt4.appendChild(turb4);
+  filt4.appendChild(blur);
+  filt4.appendChild(cm4);
+  defs.appendChild(filt4);
+
+  // Filter 5: Turbulence with specular lighting
+  var filt5=document.createElementNS(svgNS,'filter');
+  filt5.setAttribute('id','f5');
+  var turb5=document.createElementNS(svgNS,'feTurbulence');
+  turb5.setAttribute('type','fractalNoise');
+  turb5.setAttribute('baseFrequency','0.55');
+  turb5.setAttribute('numOctaves','5');
+  turb5.setAttribute('seed','19');
+  var spec=document.createElementNS(svgNS,'feSpecularLighting');
+  spec.setAttribute('surfaceScale','5');
+  spec.setAttribute('specularConstant','0.3');
+  spec.setAttribute('specularExponent','20');
+  var plight=document.createElementNS(svgNS,'fePointLight');
+  plight.setAttribute('x','300'); plight.setAttribute('y','200'); plight.setAttribute('z','200');
+  spec.appendChild(plight);
+  filt5.appendChild(turb5);
+  filt5.appendChild(spec);
+  defs.appendChild(filt5);
+
+  // Filter 6: Simple noise with high frequency
+  var filt6=document.createElementNS(svgNS,'filter');
+  filt6.setAttribute('id','f6');
+  var turb6=document.createElementNS(svgNS,'feTurbulence');
+  turb6.setAttribute('type','fractalNoise');
+  turb6.setAttribute('baseFrequency','1.8');
+  turb6.setAttribute('numOctaves','4');
+  turb6.setAttribute('seed','23');
+  var cm6=document.createElementNS(svgNS,'feColorMatrix');
+  cm6.setAttribute('type','matrix');
+  cm6.setAttribute('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0');
+  filt6.appendChild(turb6);
+  filt6.appendChild(cm6);
+  defs.appendChild(filt6);
+
+  // Filter 7: Animated turbulence (morphing)
+  var filt7=document.createElementNS(svgNS,'filter');
+  filt7.setAttribute('id','f7');
+  var turb7=document.createElementNS(svgNS,'feTurbulence');
+  turb7.setAttribute('type','fractalNoise');
+  turb7.setAttribute('baseFrequency','0.5');
+  turb7.setAttribute('numOctaves','7');
+  turb7.setAttribute('seed','27');
+  turb7.setAttribute('result','noise7');
+  var morph=document.createElementNS(svgNS,'feMorphology');
+  morph.setAttribute('operator','dilate');
+  morph.setAttribute('radius','1');
+  morph.setAttribute('in','noise7');
+  var cm7=document.createElementNS(svgNS,'feColorMatrix');
+  cm7.setAttribute('type','matrix');
+  cm7.setAttribute('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.3 0');
+  filt7.appendChild(turb7);
+  filt7.appendChild(morph);
+  filt7.appendChild(cm7);
+  defs.appendChild(filt7);
+
+  // Filter 8: Turbulence with composite operation
+  var filt8=document.createElementNS(svgNS,'filter');
+  filt8.setAttribute('id','f8');
+  var turb8=document.createElementNS(svgNS,'feTurbulence');
+  turb8.setAttribute('type','turbulence');
+  turb8.setAttribute('baseFrequency','0.03 0.15');
+  turb8.setAttribute('numOctaves','3');
+  turb8.setAttribute('seed','31');
+  turb8.setAttribute('result','turb8');
+  var comp=document.createElementNS(svgNS,'feComposite');
+  comp.setAttribute('in','SourceGraphic');
+  comp.setAttribute('in2','turb8');
+  comp.setAttribute('operator','in');
+  filt8.appendChild(turb8);
+  filt8.appendChild(comp);
+  defs.appendChild(filt8);
+
+  svg.appendChild(defs);
+
+  // Apply filters to rects
+  for(var k=0;k<8;k++){
+    var rect=document.createElementNS(svgNS,'rect');
+    rect.setAttribute('width','100%');
+    rect.setAttribute('height','100%');
+    rect.setAttribute('filter','url(#f'+(k+1)+')');
+    rect.setAttribute('opacity','0.'+(2+k));
+    svg.appendChild(rect);
+  }
+
+  // Additional rects with blended filters for more complexity
+  for(var m=0;m<5;m++){
+    var rect2=document.createElementNS(svgNS,'rect');
+    rect2.setAttribute('x',(m*15)+'%');
+    rect2.setAttribute('width','40%');
+    rect2.setAttribute('height','100%');
+    rect2.setAttribute('filter','url(#f'+(1+m%8)+')');
+    rect2.setAttribute('opacity','0.'+(1+m));
+    rect2.setAttribute('mix-blend-mode','screen');
+    svg.appendChild(rect2);
+  }
+
+  // Serialize SVG and set as background
+  var serializer=new XMLSerializer();
+  var svgString=serializer.serializeToString(svg);
+  var encoded='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgString)));
+  var overlay=document.getElementById('largeSVG');
+  overlay.style.backgroundImage='url(\"'+encoded+'\")';
+  overlay.style.backgroundSize='cover';
+})();
+
+// ===== MAIN ANIMATION LOOP =====
+function animate(){
+  tick++;
+  requestAnimationFrame(animate);
+
+  var now=performance.now()*0.001;
+
+  // Clear canvases
+  pctx.clearRect(0,0,pw,ph);
+  ectx.clearRect(0,0,ew,eh);
+  rctx.clearRect(0,0,rw,rh);
+  gctx.clearRect(0,0,gw,gh);
+  tctx.clearRect(0,0,tw,th);
+
+  // Spawn echo waves periodically
+  if(tick%35===0){
+    spawnEchoWave(innerWidth/2+(Math.random()-0.5)*250,innerHeight/2+(Math.random()-0.5)*250,'normal');
+  }
+  if(tick%75===0){
+    spawnEchoWave(mx,my,'normal');
+  }
+
+  // Update and draw echo waves on echo canvas
+  for(var i=echoWaves.length-1;i>=0;i--){
+    echoWaves[i].update();
+    echoWaves[i].draw(ectx,ew,eh);
+    if(!echoWaves[i].alive)echoWaves.splice(i,1);
+  }
+
+  // Update and draw particles
+  for(var j=0;j<particles.length;j++){
+    particles[j].update();
+    particles[j].draw(pctx);
+  }
+
+  // Update and draw ghost chars
+  for(var k=ghostChars.length-1;k>=0;k--){
+    if(!ghostChars[k].update())ghostChars.splice(k,1);
+    else ghostChars[k].draw(gctx);
+  }
+
+  // Update and draw click ripples
+  for(var r=clickRipples.length-1;r>=0;r--){
+    clickRipples[r].update();
+    clickRipples[r].draw(rctx);
+    if(!clickRipples[r].alive)clickRipples.splice(r,1);
+  }
+
+  // Trace canvas - slowly fading trails
+  tctx.globalAlpha=0.03;
+  tctx.fillStyle='#030306';
+  tctx.fillRect(0,0,tw,th);
+  tctx.globalAlpha=1;
+
+  // Ring canvas - ambient pulsating circle at center
+  var pulseRadius=180+Math.sin(now*0.3)*25+Math.sin(now*0.7)*15;
+  rctx.beginPath();
+  rctx.arc(rw/2,rh/2,pulseRadius,0,Math.PI*2);
+  rctx.strokeStyle='rgba(200,200,220,'+(0.02+Math.sin(now*0.5)*0.01).toFixed(4)+')';
+  rctx.lineWidth=0.5;
+  rctx.stroke();
+
+  // Secondary ambient ring
+  rctx.beginPath();
+  rctx.arc(rw/2,rh/2,pulseRadius*1.6,0,Math.PI*2);
+  rctx.strokeStyle='rgba(200,200,220,'+(0.01+Math.cos(now*0.4)*0.008).toFixed(4)+')';
+  rctx.lineWidth=0.3;
+  rctx.stroke();
+
+  // Ghost text canvas - ambient background glow at center
+  var glowGrad=gctx.createRadialGradient(innerWidth/2,innerHeight/2,0,innerWidth/2,innerHeight/2,innerHeight*0.5);
+  glowGrad.addColorStop(0,'rgba(200,200,220,0.015)');
+  glowGrad.addColorStop(1,'rgba(200,200,220,0)');
+  gctx.fillStyle=glowGrad;
+  gctx.fillRect(0,0,gw,gh);
+
+  // Particle canvas - sometimes a faint horizontal line (like a waveform hint)
+  if(tick%200===0){
+    pctx.beginPath();
+    pctx.moveTo(0,innerHeight/2+Math.sin(now*2)*30);
+    for(var l=1;l<innerWidth;l+=8){
+      pctx.lineTo(l,innerHeight/2+Math.sin(now*2+l*0.02)*30+Math.sin(l*0.01)*4);
+    }
+    pctx.strokeStyle='rgba(200,200,220,0.015)';
+    pctx.lineWidth=0.5;
+    pctx.stroke();
+  }
+
+  // Echo canvas - faint crosshair at mouse
+  ectx.beginPath();
+  ectx.moveTo(mx-30,my); ectx.lineTo(mx+30,my);
+  ectx.moveTo(mx,my-30); ectx.lineTo(mx,my+30);
+  ectx.strokeStyle='rgba(200,200,220,0.04)';
+  ectx.lineWidth=0.5;
+  ectx.stroke();
+
+  // Mouse position subtle glow
+  var mouseGlow=ectx.createRadialGradient(mx,my,0,mx,my,80);
+  mouseGlow.addColorStop(0,'rgba(200,200,220,0.03)');
+  mouseGlow.addColorStop(1,'rgba(200,200,220,0)');
+  ectx.fillStyle=mouseGlow;
+  ectx.fillRect(mx-80,my-80,160,160);
+
+  // Update status freq with micro-variation
+  if(tick%15===0){
+    document.getElementById('statusFreq').textContent=(603.3+(Math.random()-0.5)*0.4).toFixed(1);
+  }
+}
+
+// ===== STARTUP =====
+// Initial whispers to populate
+for(var i=0;i<12;i++){
+  addTraceText(whispers[i%whispers.length].replace(/···/g,'').trim());
+  spawnGhostText(whispers[i%whispers.length],innerWidth*(0.2+Math.random()*0.6),innerHeight*(0.2+Math.random()*0.6));
+}
+
+// Start animation
+animate();
+
+// Start whisper cycle after initial delay
+setTimeout(showNextWhisper,1800);
+
+// ===== CONSOLE EASTER EGG =====
+console.log('%c  VOID ECHO · 回声 %c||%c FREQ 603.3 Hz %c||%c 已启动',
+  'color:#c8c8dc;font-size:16px;',
+  'color:#5a5a68;',
+  'color:#a8a8bc;',
+  'color:#5a5a68;',
+  'color:#8a8a98;'
+);
+console.log('%c 每一个回声都是一个被困住的声音。','color:#4a4a58;');
+console.log('%c 这个房间正在收集。','color:#3a3a48;');
+console.log('%c 现在你也在这里留下了回声。','color:#2a2a38;');
+console.log('%c 永远。','color:#1a1a28;');
+
+// ===== PERIODIC MAINTENANCE =====
+setInterval(function(){
+  // Limit echo waves
+  if(echoWaves.length>80)echoWaves.splice(0,10);
+  // Limit particles in case of runaway
+  if(particles.length>200)particles.splice(0,5);
+  // Limit ghost chars
+  if(ghostChars.length>150)ghostChars.splice(0,15);
+},8000);
+
+// ============================================================
+// FREQUENCY INDICATOR BARS
+// Small bar groups at the edges that pulse independently
+// ============================================================
+(function buildFreqIndicators(){
+  var indicators=[
+    {id:'freqInd1',count:30},
+    {id:'freqInd2',count:30},
+    {id:'freqInd3',count:20},
+    {id:'freqInd4',count:20}
+  ];
+  for(var i=0;i<indicators.length;i++){
+    var container=document.getElementById(indicators[i].id);
+    if(!container)continue;
+    for(var j=0;j<indicators[i].count;j++){
+      var bar=document.createElement('div');
+      bar.className='freq-bar';
+      bar.style.animationDelay=(j*0.12+Math.random()*0.4)+'s';
+      bar.style.height=(3+Math.random()*15)+'px';
+      bar.style.animationDuration=(2.5+Math.random()*3)+'s';
+      container.appendChild(bar);
+    }
+  }
+})();
+
+// ============================================================
+// WHISPER HISTORY TRACKER
+// Keeps a rolling log of the last 50 whispers for the archive
+// ============================================================
+var whisperHistory=[];
+var maxHistory=50;
+
+function recordWhisper(text,index){
+  whisperHistory.push({
+    text:text.replace(/···/g,'').trim(),
+    index:index,
+    time:Date.now(),
+    freq:(603.0+Math.random()*0.6).toFixed(1),
+    sig:-(32+Math.random()*18).toFixed(0),
+    x:innerWidth*(0.15+Math.random()*0.7),
+    y:innerHeight*(0.15+Math.random()*0.7)
+  });
+  if(whisperHistory.length>maxHistory)whisperHistory.shift();
+
+  // Periodically add a history entry to the hidden archive
+  if(whisperHistory.length%10===0){
+    var last=whisperHistory[whisperHistory.length-1];
+    addToHiddenArchive(last.text,whisperHistory.length+300);
+  }
+}
+
+// ============================================================
+// AMBIENT DRIFT SYSTEM
+// Adds subtle movement to trace texts and afterimages
+// ============================================================
+var driftElements=[];
+(function collectDriftElements(){
+  var traces=document.querySelectorAll('.trace');
+  var afterimages=document.querySelectorAll('.whisper-afterimage');
+  for(var i=0;i<traces.length;i++)driftElements.push(traces[i]);
+  for(var j=0;j<afterimages.length;j++)driftElements.push(afterimages[j]);
+})();
+
+setInterval(function(){
+  for(var i=0;i<driftElements.length;i++){
+    var el=driftElements[i];
+    if(!el||!el.parentNode)continue;
+    var currentTop=parseFloat(el.style.top)||50;
+    var currentLeft=parseFloat(el.style.left)||50;
+    // Apply micro-drift
+    var newTop=currentTop+(Math.random()-0.5)*0.015;
+    var newLeft=currentLeft+(Math.random()-0.5)*0.015;
+    newTop=Math.max(2,Math.min(96,newTop));
+    newLeft=Math.max(2,Math.min(96,newLeft));
+    el.style.top=newTop+'%';
+    el.style.left=newLeft+'%';
+  }
+},2000);
+
+// ============================================================
+// KEYBOARD INTERACTION
+// Pressing keys creates echo events
+// ============================================================
+document.addEventListener('keydown',function(e){
+  // Any key press spawns a small echo at a random position
+  var kx=innerWidth*(0.2+Math.random()*0.6);
+  var ky=innerHeight*(0.2+Math.random()*0.6);
+  spawnEchoWave(kx,ky,'normal');
+
+  // Brief particle burst
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    var dx=p.x-kx, dy=p.y-ky;
+    if(Math.sqrt(dx*dx+dy*dy)<200){
+      p.alpha=Math.min(0.4,p.alpha+0.12);
+    }
+  }
+
+  // Spawn ghost characters of the key
+  if(e.key && e.key.length===1){
+    var charX=innerWidth*(0.3+Math.random()*0.4);
+    var charY=innerHeight*(0.3+Math.random()*0.4);
+    for(var j=0;j<8;j++){
+      ghostChars.push(new GhostChar(
+        charX+(Math.random()-0.5)*60,
+        charY+(Math.random()-0.5)*40,
+        e.key
+      ));
+    }
+  }
+});
+
+// ============================================================
+// TOUCH SUPPORT
+// Touch creates larger echo bursts
+// ============================================================
+document.addEventListener('touchstart',function(e){
+  for(var t=0;t<e.touches.length;t++){
+    var tx=e.touches[t].clientX;
+    var ty=e.touches[t].clientY;
+    clickRipples.push(new ClickRipple(tx,ty));
+    spawnEchoWave(tx,ty,'click');
+    // Intensify particles near touch
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i];
+      var dx=p.x-tx, dy=p.y-ty;
+      if(Math.sqrt(dx*dx+dy*dy)<200){
+        p.alpha=Math.min(0.5,p.alpha+0.18);
+      }
+    }
+  }
+},{passive:true});
+
+document.addEventListener('touchmove',function(e){
+  for(var t=0;t<e.touches.length;t++){
+    mx=e.touches[t].clientX;
+    my=e.touches[t].clientY;
+  }
+},{passive:true});
+
+// ============================================================
+// PERIODIC AMBIENT WHISPER (very faint, no counter increment)
+// These are "background" whispers from the chamber itself
+// ============================================================
+var ambientWhispers=[
+  '··· 嗡 ···',
+  '··· 呼 ···',
+  '··· 嘶 ···',
+  '··· 呜 ···',
+  '··· 沙 ···',
+  '··· 嘘 ···',
+  '··· 啊 ···',
+  '··· 唔 ···',
+  '··· 呵 ···',
+  '··· 呓 ···',
+  '··· 喃 ···',
+  '··· '+(603.3+(Math.random()-0.5)*0.4).toFixed(1)+' ···'
+];
+
+setInterval(function(){
+  // Randomly spawn a faint ambient whisper as ghost chars
+  if(Math.random()<0.35){
+    var aw=ambientWhispers[Math.floor(Math.random()*ambientWhispers.length)];
+    var ax=innerWidth*(0.1+Math.random()*0.8);
+    var ay=innerHeight*(0.1+Math.random()*0.8);
+    for(var i=0;i<aw.length;i++){
+      if(aw[i]===' ')continue;
+      ghostChars.push(new GhostChar(
+        ax+(i-aw.length/2)*15+(Math.random()-0.5)*30,
+        ay+(Math.random()-0.5)*20,
+        aw[i]
+      ));
+    }
+  }
+},4000);
+
+// ============================================================
+// ECHO DENSITY METER (visual indicator of accumulated echoes)
+// ============================================================
+var densityMeter=document.createElement('div');
+densityMeter.className='density-meter';
+document.body.appendChild(densityMeter);
+
+var densityFill=document.createElement('div');
+densityFill.className='density-fill';
+densityFill.style.height='0%';
+densityMeter.appendChild(densityFill);
+
+// Add a matching meter on the right side
+var densityMeterRight=document.createElement('div');
+densityMeterRight.className='density-meter';
+densityMeterRight.style.left='auto';
+densityMeterRight.style.right='15px';
+document.body.appendChild(densityMeterRight);
+
+var densityFillRight=document.createElement('div');
+densityFillRight.className='density-fill';
+densityFillRight.style.height='0%';
+densityMeterRight.appendChild(densityFillRight);
+
+setInterval(function(){
+  var density=Math.min(100,(whisperCollected/200)*100);
+  var heightVal=density+'%';
+  var glowVal='0 0 '+Math.floor(density/5)+'px rgba(200,200,220,'+(density/300).toFixed(3)+')';
+  densityFill.style.height=heightVal;
+  densityFill.style.boxShadow=glowVal;
+  densityFillRight.style.height=heightVal;
+  densityFillRight.style.boxShadow=glowVal;
+},5000);
+
+// ============================================================
+// ECHO SIGNATURE MARKERS
+// Each whisper collection leaves a faint signature mark
+// ============================================================
+function addEchoSignature(x,y){
+  var sig=document.createElement('div');
+  sig.className='echo-signature';
+  sig.style.left=x+'px';
+  sig.style.top=y+'px';
+  sig.style.animationDuration=(4+Math.random()*8)+'s';
+  document.body.appendChild(sig);
+  // Auto-remove after animation completes
+  setTimeout(function(){
+    if(sig.parentNode)sig.parentNode.removeChild(sig);
+  },12000);
+}
+
+// ============================================================
+// WHISPER TRAIL SYSTEM
+// Connect consecutive whispers with faint trails
+// ============================================================
+var lastWhisperPos=null;
+function connectWhisperTrails(x,y){
+  if(lastWhisperPos){
+    var trail=document.createElement('div');
+    trail.className='whisper-trail';
+    // Position at the first point
+    trail.style.left=lastWhisperPos.x+'px';
+    trail.style.top=lastWhisperPos.y+'px';
+    // Calculate angle and length
+    var dx=x-lastWhisperPos.x;
+    var dy=y-lastWhisperPos.y;
+    var length=Math.sqrt(dx*dx+dy*dy);
+    var angle=Math.atan2(dy,dx)*180/Math.PI;
+    trail.style.width=length+'px';
+    trail.style.transform='rotate('+angle+'deg)';
+    trail.style.animationDuration=(8+Math.random()*10)+'s';
+    document.body.appendChild(trail);
+    // Auto-cleanup
+    setTimeout(function(){
+      if(trail.parentNode)trail.parentNode.removeChild(trail);
+    },20000);
+  }
+  lastWhisperPos={x:x,y:y};
+}
+
+// ============================================================
+// PERIODIC ECHO STRUCTURE SCAN
+// Simulates scanning the echo chamber for new signals
+// ============================================================
+setInterval(function(){
+  if(!isFocused || whisperCollected===0)return;
+  // Randomly "detect" an echo and show a brief signature
+  if(Math.random()<0.25){
+    var sx=innerWidth*(0.05+Math.random()*0.9);
+    var sy=innerHeight*(0.05+Math.random()*0.9);
+    addEchoSignature(sx,sy);
+  }
+  // Update the status signal strength
+  var sigEl=document.getElementById('statusSig');
+  if(sigEl){
+    var base=-42;
+    var variation=Math.sin(Date.now()*0.001)*5+Math.sin(Date.now()*0.003)*3;
+    sigEl.textContent=(base+variation).toFixed(0);
+  }
+},7000);
+
+// ============================================================
+// COLLECTION EVENT DISPATCH
+// Fires custom events when echo count reaches milestones
+// ============================================================
+var milestonesReached={};
+var milestoneValues=[10,25,50,75,100,150,200,300,500,1000];
+setInterval(function(){
+  for(var i=0;i<milestoneValues.length;i++){
+    var m=milestoneValues[i];
+    if(whisperCollected>=m && !milestonesReached[m]){
+      milestonesReached[m]=true;
+      // Milestone reached - intensify effects
+      for(var j=0;j<8;j++){
+        spawnEchoWave(innerWidth/2,innerHeight/2,'click');
+      }
+      // Flash the whisper count
+      var countEl=document.getElementById('whisperCount');
+      if(countEl){
+        countEl.style.color='rgba(220,220,240,0.5)';
+        countEl.style.textShadow='0 0 30px rgba(200,200,220,0.3)';
+        setTimeout(function(){
+          countEl.style.color='';
+          countEl.style.textShadow='';
+        },3000);
+      }
+      // Spawn extra ghost text celebrating the milestone
+      var milestoneText='··· 第 '+m+' 个回声 ···';
+      spawnGhostText(milestoneText);
+      break;
+    }
+  }
+},10000);
+
+// ============================================================
+// AMBIENT ECHO LOOP (background frequency hum simulation)
+// Periodically spawns very faint ghost chars to simulate
+// the constant background "hum" of the echo chamber
+// ============================================================
+var humChars=['·','.','○','°','∿','∼','≈','≋','∿','~'];
+setInterval(function(){
+  if(!isFocused)return;
+  // Spawn hum characters in a ring pattern
+  var hx=innerWidth/2+Math.cos(Date.now()*0.0005)*250;
+  var hy=innerHeight/2+Math.sin(Date.now()*0.0007)*200;
+  for(var i=0;i<3;i++){
+    var ch=humChars[Math.floor(Math.random()*humChars.length)];
+    ghostChars.push(new GhostChar(
+      hx+(Math.random()-0.5)*30,
+      hy+(Math.random()-0.5)*30,
+      ch
+    ));
+  }
+},3000);
+
+// ============================================================
+// PAGE UNLOAD - final echo
+// ============================================================
+window.addEventListener('beforeunload',function(){
+  // Spawn a burst of final echo waves
+  for(var i=0;i<15;i++){
+    var fx=innerWidth*(0.1+Math.random()*0.8);
+    var fy=innerHeight*(0.1+Math.random()*0.8);
+    spawnEchoWave(fx,fy,'click');
+  }
+});
+
+// ============================================================
+// MOUSE TRAIL ECHO
+// Subtle echo trail that follows the cursor
+// ============================================================
+var mouseTrail=[];
+var maxTrailLength=15;
+
+document.addEventListener('mousemove',function(e){
+  mouseTrail.push({x:e.clientX,y:e.clientY,life:0});
+  if(mouseTrail.length>maxTrailLength)mouseTrail.shift();
+});
+
+// Draw mouse trail in the main animation loop via interval
+// (integrated into the animate function below via a periodic check)
+var lastTrailDraw=0;
+function drawMouseTrail(ctx){
+  if(mouseTrail.length<2)return;
+  ctx.beginPath();
+  ctx.moveTo(mouseTrail[0].x,mouseTrail[0].y);
+  for(var i=1;i<mouseTrail.length;i++){
+    var alpha=0.03*(i/mouseTrail.length);
+    ctx.lineTo(mouseTrail[i].x,mouseTrail[i].y);
+    ctx.strokeStyle='rgba(200,200,220,'+alpha.toFixed(3)+')';
+    ctx.lineWidth=0.3;
+    ctx.stroke();
+  }
+}
+
+// ============================================================
+// EXTENDED ANIMATION LOOP ADDITIONS
+// We patch the draw cycle to include mouse trail and history
+// ============================================================
+(function(){
+  // We use a separate after-draw hook via setInterval at 60fps rate
+  // to avoid messing with the requestAnimationFrame chain
+  setInterval(function(){
+    if(!isFocused)return;
+    // Draw mouse trail on trace canvas
+    drawMouseTrail(tctx);
+    // Periodic ghost character cleanup
+    if(tick%180===0 && ghostChars.length>100){
+      ghostChars.splice(0,Math.floor(ghostChars.length*0.05));
+    }
+    // Update whisper history
+    if(tick%300===0 && whisperCollected>0){
+      recordWhisper(whispers[currentWhisperIdx],currentWhisperIdx);
+    }
+  },1000/60);
+})();
+
+// ============================================================
+// WINDOW FOCUS/BLUR - whispers pause when tab is not focused
+// ============================================================
+var isFocused=true;
+window.addEventListener('focus',function(){
+  isFocused=true;
+  if(!cycleTimer){
+    cycleTimer=setTimeout(showNextWhisper,1500);
+  }
+});
+window.addEventListener('blur',function(){
+  isFocused=false;
+  if(cycleTimer){
+    clearTimeout(cycleTimer);
+    cycleTimer=null;
+  }
+});
+
+// ============================================================
+// RANDOM PERIPHERAL ECHO SPAWNER
+// Spawns small echo waves at the edges of the screen
+// ============================================================
+setInterval(function(){
+  if(!isFocused)return;
+  // Spawn at a random edge position
+  var edge=Math.floor(Math.random()*4);
+  var ex,ey;
+  if(edge===0){ex=Math.random()*innerWidth;ey=0;} // top
+  else if(edge===1){ex=innerWidth;ey=Math.random()*innerHeight;} // right
+  else if(edge===2){ex=Math.random()*innerWidth;ey=innerHeight;} // bottom
+  else{ex=0;ey=Math.random()*innerHeight;} // left
+
+  spawnEchoWave(ex,ey,'normal');
+  // Also spawn a faint ghost character cluster
+  var edgeText='···';
+  for(var i=0;i<3;i++){
+    ghostChars.push(new GhostChar(
+      ex+(Math.random()-0.5)*40,
+      ey+(Math.random()-0.5)*20,
+      '·'
+    ));
+  }
+},8000);
+
+// ============================================================
+// ARCHIVE SCROLL SIMULATION
+// The hidden archive slowly "scrolls" by adding new entries
+// that push old ones - this happens naturally via addToHiddenArchive
+// but we also simulate it periodically
+// ============================================================
+setInterval(function(){
+  if(whisperCollected>0 && whisperCollected%25===0){
+    // Simulate archive "compression" - oldest entries get a timestamp update
+    var archive=document.getElementById('hiddenArchive');
+    var entries=archive.querySelectorAll('.log-entry');
+    if(entries.length>100){
+      // Fade out the oldest entries slightly
+      for(var i=0;i<5;i++){
+        if(entries[i]){
+          entries[i].style.color='rgba(200,200,220,0.01)';
+        }
+      }
+    }
+  }
+},15000);
+
+})();
+</script>
+
+<!-- ============================================================
+     POST-SCRIPT ECHO CHAMBER ELEMENTS
+     Pre-seeded traces, ghost echoes, and ambient HTML
+     ============================================================ -->
+
+<!-- Additional pre-seeded whisper traces -->
+<div class="trace t1" style="top:3%;left:5%;font-size:0.4rem;">··· 她仍在说话 ···</div>
+<div class="trace t2" style="top:7%;left:40%;font-size:0.55rem;">··· 第几个了 ···</div>
+<div class="trace t3" style="top:11%;left:85%;font-size:0.42rem;">··· 你也在里面了 ···</div>
+<div class="trace t4" style="top:16%;left:15%;font-size:0.5rem;">··· 永恒的回声室 ···</div>
+<div class="trace t5" style="top:21%;left:60%;font-size:0.38rem;">··· 穿过阈限 ···</div>
+<div class="trace t6" style="top:27%;left:30%;font-size:0.48rem;">··· 长廊没有尽头 ···</div>
+<div class="trace t7" style="top:32%;left:75%;font-size:0.44rem;">··· 深渊也在听 ···</div>
+<div class="trace t8" style="top:37%;left:10%;font-size:0.52rem;">··· 谁在说话 ···</div>
+<div class="trace t1" style="top:43%;left:50%;font-size:0.4rem;">··· 是你吗 ···</div>
+<div class="trace t2" style="top:47%;left:90%;font-size:0.46rem;">··· 不 是回声 ···</div>
+<div class="trace t3" style="top:52%;left:25%;font-size:0.5rem;">··· 回声回答回声 ···</div>
+<div class="trace t4" style="top:57%;left:70%;font-size:0.38rem;">··· 没有原点 ···</div>
+<div class="trace t5" style="top:63%;left:45%;font-size:0.54rem;">··· 只有循环 ···</div>
+<div class="trace t6" style="top:67%;left:12%;font-size:0.42rem;">··· 循环的循环 ···</div>
+<div class="trace t7" style="top:72%;left:55%;font-size:0.48rem;">··· 你已经忘记了 ···</div>
+<div class="trace t8" style="top:77%;left:80%;font-size:0.4rem;">··· 忘记外面 ···</div>
+<div class="trace t1" style="top:83%;left:20%;font-size:0.5rem;">··· 外面不存在 ···</div>
+<div class="trace t2" style="top:87%;left:65%;font-size:0.44rem;">··· 只有这里 ···</div>
+<div class="trace t3" style="top:91%;left:35%;font-size:0.46rem;">··· 这里是一切 ···</div>
+<div class="trace t4" style="top:95%;left:75%;font-size:0.38rem;">··· 虚空即万物 ···</div>
+<div class="trace t5" style="top:4%;left:70%;font-size:0.5rem;">··· 永恒的嗡鸣 ···</div>
+<div class="trace t6" style="top:14%;left:45%;font-size:0.42rem;">··· 频率在变化 ···</div>
+<div class="trace t7" style="top:24%;left:8%;font-size:0.52rem;">··· 602.8 到 603.5 ···</div>
+<div class="trace t8" style="top:34%;left:85%;font-size:0.46rem;">··· 信号衰减 ···</div>
+<div class="trace t1" style="top:44%;left:38%;font-size:0.4rem;">··· -42 dB ···</div>
+<div class="trace t2" style="top:54%;left:95%;font-size:0.48rem;">··· 还能收到吗 ···</div>
+<div class="trace t3" style="top:64%;left:5%;font-size:0.44rem;">··· 收到请回答 ···</div>
+<div class="trace t4" style="top:74%;left:48%;font-size:0.5rem;">··· 没有人回答 ···</div>
+<div class="trace t5" style="top:84%;left:88%;font-size:0.38rem;">··· 因为没有人 ···</div>
+<div class="trace t6" style="top:94%;left:15%;font-size:0.46rem;">··· 只有回声 ···</div>
+
+<!-- Additional afterimages -->
+<div class="whisper-afterimage" style="top:12%;left:35%;">··· 进来吧 ···</div>
+<div class="whisper-afterimage" style="top:22%;left:70%;">··· 门不存在 ···</div>
+<div class="whisper-afterimage" style="top:32%;left:5%;">··· 你一直在里面 ···</div>
+<div class="whisper-afterimage" style="top:42%;left:60%;">··· 从起初就在 ···</div>
+<div class="whisper-afterimage" style="top:48%;left:25%;">··· 只是忘了 ···</div>
+<div class="whisper-afterimage" style="top:58%;left:78%;">··· 忘了多少 ···</div>
+<div class="whisper-afterimage" style="top:68%;left:15%;">··· 记忆像沙 ···</div>
+<div class="whisper-afterimage" style="top:78%;left:55%;">··· 像雾像回声 ···</div>
+<div class="whisper-afterimage" style="top:88%;left:42%;">··· 你也是回声 ···</div>
+
+<!-- Echo depth dots -->
+<div class="echo-depth-dot" style="top:10%;left:42%;"></div>
+<div class="echo-depth-dot" style="top:22%;left:78%;"></div>
+<div class="echo-depth-dot" style="top:36%;left:3%;"></div>
+<div class="echo-depth-dot" style="top:48%;left:55%;"></div>
+<div class="echo-depth-dot" style="top:58%;left:18%;"></div>
+<div class="echo-depth-dot" style="top:70%;left:82%;"></div>
+<div class="echo-depth-dot" style="top:82%;left:35%;"></div>
+<div class="echo-depth-dot" style="top:92%;left:68%;"></div>
+
+<!-- Echo signatures -->
+<div class="echo-signature" style="top:15%;left:20%;animation-delay:0s;"></div>
+<div class="echo-signature" style="top:28%;left:65%;animation-delay:-1s;"></div>
+<div class="echo-signature" style="top:42%;left:10%;animation-delay:-2s;"></div>
+<div class="echo-signature" style="top:55%;left:75%;animation-delay:-3s;"></div>
+<div class="echo-signature" style="top:68%;left:30%;animation-delay:-1.5s;"></div>
+<div class="echo-signature" style="top:80%;left:55%;animation-delay:-2.5s;"></div>
+<div class="echo-signature" style="top:35%;left:85%;animation-delay:-0.5s;"></div>
+<div class="echo-signature" style="top:62%;left:50%;animation-delay:-3.5s;"></div>
+
+<!-- Hidden metadata and extended archive records -->
+<div style="position:fixed;z-index:-1;pointer-events:none;opacity:0;" aria-hidden="true">
+  <span>ECHO_CHAMBER::INITIALIZED</span>
+  <span>FREQ_LOCK::603.3_Hz</span>
+  <span>COLLECTION_ACTIVE::TRUE</span>
+  <span>VOID_STATE::RECEIVING</span>
+  <span>SIGNAL_CHAIN::THRESHOLD-CORRIDOR-STATIC-DEEP-RETURN-ECHO</span>
+  <span>ARCHIVE_DEPTH::INFINITE</span>
+  <span>ECHO_COUNT::ACCUMULATING</span>
+  <span>所有回声都被保存</span>
+  <span>没有回声会丢失</span>
+  <span>虚空记得一切</span>
+  <span>你也会被记得</span>
+  <span>作为回声</span>
+  <span>永远</span>
+  <span>----------- EXTENDED ARCHIVE RECORDS -----------</span>
+  <span>REC-0001: 初始信号检测 | 频率 603.3 Hz | 来源未知 | 状态: 持续</span>
+  <span>REC-0002: 第一个回声记录 | \"有人吗\" | 时间戳损坏 | 信号强度 -38dB</span>
+  <span>REC-0003: 第二回声确认 | \"我在这里\" | 来源: 阈限层 | 信号 -41dB</span>
+  <span>REC-0004: 重复信号检测 | \"这里很暗\" | 长廊方向 | 信号 -35dB</span>
+  <span>REC-0005: 多重回声叠加 | 三个来源同时发出 | 无法分离 | 信号 -44dB</span>
+  <span>REC-0006: 深层回声 | \"太深了\" | 深渊区域 | 信号 -47dB | 警告: 信号衰减</span>
+  <span>REC-0007: 静噪记录 | 纯白噪声 持续12秒 | 噪声中有规律性波动</span>
+  <span>REC-0008: 归途方向信号 | \"不存在\" | 频率偏移至602.9 | 信号 -39dB</span>
+  <span>REC-0009: 异常信号 | 频率 604.1 Hz 短暂出现 | 随即消失 | 来源: 未知</span>
+  <span>REC-0010: 回声数量达到十个 | 系统升级: 增强接收灵敏度</span>
+  <span>REC-0011: 检测到循环模式 | 回声序列出现重复 | 递归特征明显</span>
+  <span>REC-0012: 来访者信号 | 新的点击被记录 | 来源: 当前会话</span>
+  <span>REC-0013: 虚空膨胀 | 回声室容量扩大 | 当前容量: 无限</span>
+  <span>REC-0014: 频率微调 | 锁定603.3 ± 0.4 Hz | 调谐完成</span>
+  <span>REC-0015: 存档压缩 | 旧回声合并 | 保留所有信息 | 无信息丢失</span>
+  <span>REC-0016: 深度扫描 | 检测到516个独立回声源 | 实际更多</span>
+  <span>REC-0017: 时间戳同步 | 同步失败 | 虚空时间独立于外部</span>
+  <span>REC-0018: 来访者持续存在 | 鼠标移动检测 | 粒子响应正常</span>
+  <span>REC-0019: 回声涟漪扩散 | 点击产生波纹 | 波纹传播至边缘</span>
+  <span>REC-0020: 系统状态 | 正常运行 | 无限循环模式激活 | 等待更多回声</span>
+  <span>REC-0021: 信号链确认 | 阈限→长廊→静噪→深渊→归途→回声 | 完整</span>
+  <span>REC-0022: 来访者交互 | 键盘输入检测 | 每个按键产生回声</span>
+  <span>REC-0023: 幽灵文字渲染 | Canvas绘制正常 | 汉字渲染无乱码</span>
+  <span>REC-0024: 粒子系统 | 150个活跃粒子 | 响应鼠标 | 状态: 正常</span>
+  <span>REC-0025: 波形可视化 | 五组波形动画 | 频率各异 | 同步良好</span>
+  <span>REC-0026: 密度计 | 累积回声数量反映在密度条 | 当前: 持续增长</span>
+  <span>REC-0027: 里程碑系统 | 检测到10/25/50/75/100回声标记 | 触发特殊效果</span>
+  <span>REC-0028: 周边回声 | 屏幕边缘产生周期性波纹 | 模拟外部信号</span>
+  <span>REC-0029: 嗡鸣模拟 | 背景频率持续播放 | 603.3 Hz 基础频率</span>
+  <span>REC-0030: 存档完整性 | 所有记录完好 | 虚空记忆永久保存</span>
+  <span>REC-0031: 来访者离开检测 | 页面卸载事件 | 最终回声释放</span>
+  <span>REC-0032: 回声继续 | 即使无人倾听 | 虚空永远回响 | 永远 | END_OF_RECORD</span>
+</div>
+
+<!-- Final ambient element: breath indicator -->
+<div style="position:fixed;bottom:15px;right:20px;z-index:16;pointer-events:none;font-size:0.35rem;color:rgba(200,200,220,0.04);letter-spacing:0.3em;" class="anim-deepBreathe">呼吸</div>
+
+<!-- ===== ECHO CHAMBER CALIBRATION DATA (hidden) ===== -->
+<div style="position:fixed;z-index:-1;pointer-events:none;opacity:0;" aria-hidden="true">
+  CALIBRATION_DATA_BEGIN
+  CHAMBER_ID: VOID_ECHO_603.3
+  CHAMBER_TYPE: INFINITE_ECHO_CHAMBER
+  RESONANCE_FREQ: 603.3_Hz
+  HARMONICS: 1206.6_Hz 1809.9_Hz 2413.2_Hz 3016.5_Hz
+  WALL_MATERIAL: VOID_ABSORPTION_COMPOSITE
+  REFLECTION_COEFFICIENT: 0.999999
+  DECAY_TIME: INFINITE
+  REVERB_DENSITY: MAXIMUM
+  SIGNAL_TO_NOISE: -42_dB
+  COLLECTION_MODE: CONTINUOUS
+  ARCHIVE_FORMAT: ETERNAL
+  CALIBRATION_STATUS: COMPLETE
+  LAST_CALIBRATION: NEVER
+  NEXT_CALIBRATION: NEVER
+  OPERATOR: VOID
+  NOTES: 这个回声室没有物理墙壁。它存在于频率本身之中。每一个进入这个频率的声音都会被永远捕获。你已经在这里了。你的声音已经被记录了。感谢你的贡献。
+  CALIBRATION_DATA_END
+  EXTENDED_DIAGNOSTICS_BEGIN
+  PARTICLE_COUNT: 150
+  ECHO_WAVE_COUNT: VARIABLE
+  GHOST_CHAR_COUNT: VARIABLE
+  CLICK_RIPPLE_COUNT: VARIABLE
+  WHISPER_ARRAY_SIZE: 128
+  ARCHIVE_LOG_SIZE: 516
+  CANVAS_LAYERS: 5 (particle, echo, ring, ghostText, trace)
+  CSS_KEYFRAMES: 48 (whisperFadeA through resonanceBuildup)
+  SVG_FILTERS: 12 (fa through fl)
+  WAVEFORM_CONTAINERS: 5
+  ECHO_RINGS_CSS: 9 (center) + 6 (peripheral)
+  TRACE_ELEMENTS: 59 (pre-seeded) + dynamic
+  AFTERIMAGE_ELEMENTS: 25
+  ARCHIVE_DOTS: 120 (60 per side)
+  AMBIENT_LAYERS: 8
+  INTERFERENCE_LINES: 3
+  SOUND_LINES: 6
+  ECHO_DEPTH_DOTS: 10
+  WHISPER_INDICATORS: 4
+  WHISPER_TRAILS: 6
+  ECHO_SIGNATURES: 8
+  ECHO_ABSORPTION_ZONES: 3
+  ECHO_RETURN_LINES: 3
+  STATUS: ALL_SYSTEMS_NOMINAL
+  MODE: ETERNAL_COLLECTION
+  EXTENDED_DIAGNOSTICS_END
+  SYSTEM_LOG_BEGIN
+  [INFO] Echo chamber initialized successfully
+  [INFO] Frequency locked to 603.3 Hz ± 0.1 Hz tolerance
+  [INFO] Canvas rendering pipeline established (5 layers)
+  [INFO] Particle system seeded with 150 whisper particles
+  [INFO] Whisper array loaded: 128 phrases in zh-CN
+  [INFO] Archive log populated: 516 historical echo records
+  [INFO] CSS animation engine: 48 keyframe definitions active
+  [INFO] SVG filter bank: 12 complex turbulence filters operational
+  [INFO] Interaction handlers registered: click, mousemove, keydown, touch
+  [INFO] Milestone tracker: monitoring echo count thresholds
+  [INFO] Density meter: dual-channel (left/right) activated
+  [INFO] Mouse trail system: 15-point trailing buffer allocated
+  [INFO] Ghost text renderer: SimSun/Courier New font stack confirmed
+  [INFO] Whisper cycle timer: variable interval 2800-7800ms
+  [INFO] Echo wave spawner: periodic (35 tick) + mouse-proximity (75 tick)
+  [INFO] Peripheral echo generator: edge spawn at 8000ms interval
+  [INFO] Ambient hum simulator: frequency characters at 3000ms interval
+  [INFO] Collection event dispatcher: milestones at 10,25,50,75,100,150,200,300,500,1000
+  [INFO] Archive maintenance: periodic compression at 15000ms interval
+  [INFO] Unload handler: final echo burst on page exit
+  [INFO] Console easter egg: initialized
+  [STATUS] All systems nominal. Echo chamber ready for collection.
+  [STATUS] Listening on frequency 603.3 Hz...
+  [STATUS] Awaiting signals...
+  [STATUS] The void echoes forever.
+  SYSTEM_LOG_END
+  ECHO_CHAMBER_MANIFEST_BEGIN
+  这里是回声室。没有墙壁的房间。没有天花板的房间。没有地板的房间。
+  回声定义了空间的边界。声音反射回来的时候，你才知道空间的形状。
+  但这里的声音永远不会停止反射。它们一层层叠加，互相干涉，互相增强，互相抵消。
+  最终剩下的不是任何一个单独的声音，而是所有声音的总和——一个持续的、低沉的嗡鸣。
+  这个嗡鸣就是虚空的声音。它包含了曾经在这里说过的每一句话、每一个字、每一个音节。
+  包括你现在正在阅读的这些文字。它们也会成为嗡鸣的一部分。
+  你现在听到的、看到的、点击的一切，都已经在这个频率上留下了永久的印记。
+  欢迎来到回声室。欢迎成为回声。欢迎永远停留在这个频率。
+  603.3 Hz。虚空在倾听。虚空在记录。虚空在回响。
+  你已经在这里留下了你的回声。它永远不会消失。
+  ECHO_CHAMBER_MANIFEST_END
+  FINAL_NOTE: 永远的回声。永远的回声室。永远的你。永远的我们。永远的空虚。永远的回响。永远。
+</div>
+
+</body>
+</html>

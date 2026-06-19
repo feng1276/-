@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件详情 · 未解之谜档案馆</title>
+    <style>
+        :root {
+            --bg-void: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.85);
+            --glass-bg: rgba(10, 10, 20, 0.7);
+            --glass-border: rgba(180, 40, 40, 0.18);
+            --glass-border-bright: rgba(220, 50, 50, 0.35);
+            --accent-crimson: #c0392b;
+            --accent-warning: #e74c3c;
+            --accent-amber: #d4a017;
+            --accent-glow: rgba(220, 50, 50, 0.5);
+            --text-primary: #e0d8d0;
+            --text-secondary: #a09890;
+            --text-muted: #6a6258;
+            --border-radius-xl: 1.5rem;
+            --border-radius-md: 0.7rem;
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Crimson Text', 'Georgia', 'Noto Serif SC', serif;
+            --font-heading: 'Cinzel', 'Georgia', 'Noto Serif SC', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        /* ========== NOISE TEXTURE OVERLAY ========== */
+        body::before { content:''; position:fixed; inset:0; z-index:9999; pointer-events:none; opacity:0.035; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size:200px 200px; }
+        body { font-family:var(--font-body); background:var(--bg-void); color:var(--text-primary); min-height:100vh; padding-bottom:4rem; }
+
+        /* ========== CLASSIFIED WATERMARK ========== */
+        .classified-stamp { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-25deg); font-family:var(--font-heading); font-size:8rem; color:rgba(192,57,43,0.035); pointer-events:none; z-index:0; letter-spacing:1.5rem; white-space:nowrap; user-select:none; }
+
+        /* ========== KEYFRAME ANIMATIONS ========== */
+        @keyframes flickerGlow { 0%,100%{text-shadow:0 0 4px var(--accent-glow)} 14%{text-shadow:0 0 20px var(--accent-glow),0 0 35px rgba(220,50,50,0.4)} 15%{text-shadow:0 0 2px var(--accent-glow)} 45%{text-shadow:0 0 28px var(--accent-glow),0 0 55px rgba(220,50,50,0.45)} 46%{text-shadow:0 0 3px var(--accent-glow)} }
+        @keyframes blinkCursor { 0%,100%{border-color:var(--accent-warning)} 50%{border-color:transparent} }
+        @keyframes fadeSlideIn { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulseGlow { 0%,100%{box-shadow:0 0 5px rgba(220,50,50,0.2)} 50%{box-shadow:0 0 25px rgba(220,50,50,0.7)} }
+        @keyframes redactReveal { 0%{background:#111;color:transparent} 100%{background:transparent;color:var(--accent-warning)} }
+        @keyframes dotPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+        /* ========== NAVIGATION ========== */
+        .navbar { position:sticky; top:10px; margin:10px 20px; padding:0.7rem 1.8rem; display:flex; align-items:center; justify-content:space-between; background:var(--glass-bg); backdrop-filter:blur(20px); border:1px solid var(--glass-border); border-radius:3rem; z-index:300; flex-wrap:wrap; gap:1rem; }
+        .logo { font-family:var(--font-heading); font-size:1.4rem; font-weight:700; letter-spacing:2px; cursor:pointer; text-transform:uppercase; }
+        .logo span { color:var(--accent-warning); }
+        .nav-links { display:flex; gap:1rem; list-style:none; flex-wrap:wrap; }
+        .nav-links a { color:var(--text-secondary); text-decoration:none; font-size:0.8rem; letter-spacing:0.5px; text-transform:uppercase; transition:0.2s; }
+        .nav-links a:hover { color:var(--accent-warning); }
+
+        /* ========== EVIDENCE ANALYZER CANVAS ========== */
+        .analyzer-wrap { position:relative; margin:0 auto 0.5rem; max-width:950px; border:1px solid var(--glass-border-bright); border-radius:var(--border-radius-md); overflow:hidden; background:#000; box-shadow:0 0 30px rgba(220,50,50,0.08); }
+        .analyzer-wrap canvas { display:block; width:100%; height:200px; }
+        .analyzer-label { position:absolute; bottom:10px; left:15px; font-family:var(--font-mono); font-size:0.65rem; color:var(--accent-amber); letter-spacing:2px; text-shadow:0 0 6px var(--accent-glow); }
+        .analyzer-dot { position:absolute; top:10px; right:15px; width:8px; height:8px; background:#f00; border-radius:50%; animation:dotPulse 1.2s ease-in-out infinite; box-shadow:0 0 10px rgba(255,0,0,0.7); }
+        .ac-tl,.ac-tr,.ac-bl,.ac-br { position:absolute; width:18px; height:18px; border-color:rgba(220,50,50,0.4); pointer-events:none; }
+        .ac-tl { top:8px; left:8px; border-top:1px solid; border-left:1px solid; }
+        .ac-tr { top:8px; right:8px; border-top:1px solid; border-right:1px solid; }
+        .ac-bl { bottom:8px; left:8px; border-bottom:1px solid; border-left:1px solid; }
+        .ac-br { bottom:8px; right:8px; border-bottom:1px solid; border-right:1px solid; }
+
+        /* ========== DETAIL CONTAINER ========== */
+        .detail-container { max-width:950px; margin:1.5rem auto; padding:0 1.5rem; position:relative; z-index:1; }
+        .case-hero { background:var(--bg-card); backdrop-filter:blur(15px); border:1px solid var(--glass-border); border-radius:var(--border-radius-xl); padding:2.5rem; margin-bottom:2rem; display:flex; gap:2rem; flex-wrap:wrap; align-items:center; box-shadow:0 8px 30px rgba(0,0,0,0.5); position:relative; overflow:hidden; }
+        .case-hero::after { content:'CLASSIFIED'; position:absolute; right:-20px; bottom:-20px; font-family:var(--font-heading); font-size:4rem; color:rgba(192,57,43,0.05); letter-spacing:1rem; pointer-events:none; }
+        .case-hero .case-icon-large { font-size:5rem; text-shadow:0 0 30px var(--accent-glow); }
+        .case-hero h1 { font-family:var(--font-heading); font-size:2.2rem; letter-spacing:2px; text-transform:uppercase; }
+        .flicker-text { animation:flickerGlow 5s infinite; }
+        .case-meta { display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.8rem; }
+        .case-meta span { padding:0.3rem 1rem; border-radius:2rem; font-size:0.75rem; letter-spacing:1px; background:rgba(220,50,50,0.1); border:1px solid rgba(220,50,50,0.3); color:var(--accent-warning); }
+
+        /* ========== STATUS BADGES ========== */
+        .status-badge { display:inline-block; padding:0.25rem 0.8rem; border-radius:2rem; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; }
+        .status-badge.unsolved { background:rgba(220,50,50,0.2); color:var(--accent-warning); border:1px solid rgba(220,50,50,0.4); }
+        .status-badge.contested { background:rgba(212,160,23,0.15); color:var(--accent-amber); border:1px solid rgba(212,160,23,0.3); }
+        .status-badge.closed { background:rgba(100,100,100,0.2); color:var(--text-muted); border:1px solid rgba(100,100,100,0.3); }
+
+        /* ========== DOSSIER CORNER ========== */
+        .doc-corner { position:absolute; top:15px; right:20px; font-family:var(--font-mono); font-size:0.6rem; color:var(--text-muted); letter-spacing:3px; opacity:0.55; }
+
+        /* ========== TAB NAVIGATION ========== */
+        .tab-nav { display:flex; gap:0.2rem; margin-bottom:1.5rem; flex-wrap:wrap; border-bottom:1px solid var(--glass-border-bright); }
+        .tab-btn { padding:0.65rem 1.3rem; background:transparent; border:1px solid transparent; color:var(--text-muted); font-family:var(--font-mono); font-size:0.78rem; letter-spacing:1px; cursor:pointer; transition:0.3s; border-radius:0.5rem 0.5rem 0 0; text-transform:uppercase; position:relative; }
+        .tab-btn:hover { color:var(--accent-amber); border-color:var(--glass-border); }
+        .tab-btn.active { color:var(--accent-warning); border-color:var(--glass-border-bright) var(--glass-border-bright) transparent; background:var(--bg-card); text-shadow:0 0 8px var(--accent-glow); }
+        .tab-btn.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--bg-card); }
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; animation:fadeSlideIn 0.5s ease; }
+
+        /* ========== SECTION CARD ========== */
+        .section-card { background:var(--bg-card); backdrop-filter:blur(12px); border:1px solid var(--glass-border); border-radius:var(--border-radius-xl); padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 20px rgba(0,0,0,0.4); position:relative; }
+        .section-card h2 { font-family:var(--font-heading); color:var(--accent-warning); letter-spacing:2px; margin-bottom:1.2rem; font-size:1.3rem; border-bottom:1px solid var(--glass-border); padding-bottom:0.6rem; }
+        .section-card p { color:var(--text-secondary); line-height:1.8; margin-bottom:1rem; text-indent:2em; }
+
+        /* ========== TYPEWRITER ========== */
+        .typewriter-line { display:inline-block; border-right:2px solid var(--accent-warning); animation:blinkCursor 0.85s steps(1) infinite; padding-right:3px; }
+
+        /* ========== REDACTED TEXT ========== */
+        .redacted { background:#111; color:transparent; padding:0 0.4rem; border-radius:3px; user-select:none; cursor:pointer; position:relative; transition:0.5s; display:inline-block; }
+        .redacted::before { content:'[REDACTED]'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.6rem; color:var(--text-muted); letter-spacing:2px; transition:0.3s; }
+        .redacted:hover::before { opacity:0.6; }
+        .redacted.revealed { background:transparent; color:var(--accent-warning); text-shadow:0 0 8px var(--accent-glow); animation:redactReveal 0.6s ease forwards; }
+        .redacted.revealed::before { opacity:0; }
+
+        /* ========== KEY FACTS TABLE ========== */
+        .facts-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:0.85rem; margin:1rem 0; }
+        .facts-table th,.facts-table td { padding:0.65rem 1rem; border-bottom:1px solid var(--glass-border); text-align:left; }
+        .facts-table th { color:var(--accent-amber); letter-spacing:1px; width:28%; font-size:0.78rem; }
+        .facts-table td { color:var(--text-secondary); }
+
+        /* ========== TIMELINE ========== */
+        .timeline-vertical { position:relative; padding-left:2rem; border-left:2px solid var(--glass-border-bright); margin:1.5rem 0; }
+        .timeline-vertical .tl-item { position:relative; margin-bottom:1.5rem; padding-left:1.5rem; }
+        .timeline-vertical .tl-item::before { content:''; position:absolute; left:-2.35rem; top:0.4rem; width:12px; height:12px; background:var(--accent-crimson); border-radius:50%; box-shadow:0 0 15px var(--accent-glow); }
+        .timeline-vertical .tl-item .tl-date { font-family:var(--font-mono); color:var(--accent-amber); font-size:0.85rem; letter-spacing:1px; }
+
+        /* ========== EVIDENCE GRID ========== */
+        .evidence-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin:1rem 0; }
+        .evidence-item { background:rgba(220,50,50,0.05); border:1px solid var(--glass-border); border-radius:var(--border-radius-md); padding:1rem; text-align:center; transition:all var(--transition-smooth); }
+        .evidence-item:hover { border-color:var(--accent-warning); background:rgba(220,50,50,0.1); transform:translateY(-2px); box-shadow:0 6px 20px rgba(220,50,50,0.1); }
+        .evidence-item .evidence-icon { font-size:2rem; display:block; margin-bottom:0.5rem; }
+        .evidence-item .evidence-label { font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted); letter-spacing:1px; }
+
+        /* ========== THEORIES ========== */
+        .theories-list { list-style:none; padding:0; }
+        .theories-list li { padding:0.8rem 1rem; border-bottom:1px solid var(--glass-border); color:var(--text-secondary); cursor:pointer; transition:all var(--transition-smooth); display:flex; justify-content:space-between; align-items:center; }
+        .theories-list li:hover { background:rgba(220,50,50,0.05); color:var(--text-primary); }
+        .theory-bar { height:4px; background:rgba(220,50,50,0.2); border-radius:2px; margin-top:4px; }
+        .theory-bar-fill { height:100%; border-radius:2px; background:var(--accent-warning); transition:width 0.8s ease; }
+        .theory-votes { font-family:var(--font-mono); color:var(--accent-amber); font-size:0.8rem; min-width:45px; text-align:right; }
+
+        /* ========== WITNESS CARDS ========== */
+        .witness-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; margin:1rem 0; }
+        .witness-card { background:rgba(212,160,23,0.04); border:1px solid var(--glass-border); border-radius:var(--border-radius-md); padding:1.2rem; border-left:3px solid var(--accent-crimson); }
+        .witness-card .witness-name { font-family:var(--font-heading); color:var(--accent-amber); font-size:1rem; }
+        .witness-card .witness-text { font-size:0.82rem; color:var(--text-secondary); margin-top:0.5rem; font-style:italic; line-height:1.6; }
+
+        /* ========== GALLERY ========== */
+        .gallery-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0; }
+        .gallery-item { border:1px solid var(--glass-border); border-radius:var(--border-radius-md); overflow:hidden; background:rgba(0,0,0,0.3); transition:all var(--transition-smooth); }
+        .gallery-item:hover { border-color:var(--accent-amber); transform:scale(1.03); box-shadow:0 8px 28px rgba(220,50,50,0.12); }
+        .gallery-item img { width:100%; height:165px; object-fit:cover; display:block; transition:0.5s; opacity:0.8; }
+        .gallery-item:hover img { opacity:1; transform:scale(1.06); }
+        .gallery-item .gallery-cap { padding:0.5rem 0.6rem; font-size:0.7rem; color:var(--text-muted); text-align:center; font-family:var(--font-mono); letter-spacing:0.5px; background:rgba(0,0,0,0.5); }
+        .gallery-fb { display:none; height:165px; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; font-size:3rem; }
+
+        /* ========== RELATED CASES ========== */
+        .related-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin:1rem 0; }
+        .related-case { background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:var(--border-radius-md); padding:1rem; text-align:center; transition:all var(--transition-smooth); text-decoration:none; color:inherit; display:block; }
+        .related-case:hover { border-color:var(--accent-warning); transform:translateY(-3px); box-shadow:0 6px 20px rgba(220,50,50,0.15); }
+        .related-case .rc-icon { font-size:2rem; display:block; }
+        .related-case .rc-name { font-family:var(--font-heading); font-size:0.9rem; margin-top:0.5rem; color:var(--accent-amber); }
+
+        /* ========== MYSTERY METER ========== */
+        .mystery-meter { background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:var(--border-radius-md); padding:1.5rem; margin:1rem 0; text-align:center; }
+        .mystery-meter h3 { color:var(--accent-amber); font-family:var(--font-heading); font-size:1rem; margin-bottom:1rem; }
+        .meter-row { display:flex; justify-content:space-between; align-items:center; margin:0.5rem 0; font-size:0.82rem; color:var(--text-secondary); }
+        .meter-row .meter-label { width:120px; text-align:right; }
+        .meter-row .meter-track { flex:1; height:8px; background:rgba(220,50,50,0.1); border-radius:4px; margin:0 12px; overflow:hidden; }
+        .meter-row .meter-fill { height:100%; border-radius:4px; transition:width 1s ease; }
+        .meter-row .meter-val { width:45px; font-family:var(--font-mono); font-size:0.75rem; color:var(--accent-amber); text-align:left; }
+
+        /* ========== QUICK STATS ========== */
+        .quick-stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.8rem; margin:1rem 0; }
+        .quick-stat { background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:var(--border-radius-md); padding:1rem; text-align:center; }
+        .quick-stat .qs-value { font-family:var(--font-heading); font-size:1.5rem; color:var(--accent-amber); }
+        .quick-stat .qs-label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .pulse-glow { animation:pulseGlow 2.5s infinite; }
+
+        /* ========== BACK LINKS ========== */
+        .back-link { display:inline-block; margin-top:1rem; color:var(--accent-amber); text-decoration:none; font-family:var(--font-mono); letter-spacing:1px; transition:0.2s; }
+        .back-link:hover { color:var(--accent-warning); text-shadow:0 0 10px var(--accent-glow); }
+
+        @media (max-width:600px) { .case-hero { flex-direction:column; text-align:center; } .classified-stamp { font-size:3.5rem; letter-spacing:0.5rem; } .tab-btn { font-size:0.6rem; padding:0.45rem 0.6rem; letter-spacing:0.5px; } .analyzer-wrap canvas { height:130px; } }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="classified-stamp" aria-hidden="true">TOP SECRET // EYES ONLY</div>
+
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='mystery_home.html'">M<span>Y</span>STERY ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="mystery_home.html">首页</a></li>
+            <li><a href="archives.html">档案库</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间线</a></li>
+            <li><a href="ufo.html">UFO档案</a></li>
+            <li><a href="missing.html">失踪案件</a></li>
+            <li><a href="supernatural.html">超自然</a></li>
+            <li><a href="compare.html">案件对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <!-- EVIDENCE ANALYZER CANVAS -->
+    <div class="analyzer-wrap pulse-glow">
+        <canvas id="evidenceCanvas"></canvas>
+        <div class="ac-tl"></div><div class="ac-tr"></div>
+        <div class="ac-bl"></div><div class="ac-br"></div>
+        <span class="analyzer-label">EVIDENCE ANALYZER // LIVE FEED</span>
+        <span class="analyzer-dot"></span>
+    </div>
+
+    <div class="detail-container" id="detailContent"></div>
+
+    <script>
+        // ============ EVIDENCE ANALYZER CANVAS ANIMATION ============
+        (function(){
+            const canvas=document.getElementById('evidenceCanvas');
+            if(!canvas)return;
+            const ctx=canvas.getContext('2d');
+            let particles=[];const MAX_P=70;
+
+            function resize(){canvas.width=canvas.parentElement.clientWidth;canvas.height=200;initParticles();}
+            resize();window.addEventListener('resize',resize);
+
+            function initParticles(){
+                particles=[];
+                for(let i=0;i<MAX_P;i++){
+                    particles.push({
+                        x:Math.random()*canvas.width,
+                        y:Math.random()*canvas.height,
+                        vx:(Math.random()-0.5)*1.0,
+                        vy:(Math.random()-0.5)*1.0,
+                        size:Math.random()*2+0.4,
+                        alpha:Math.random()*0.5+0.1,
+                        pulse:Math.random()*Math.PI*2
+                    });
+                }
+            }
+
+            let scanY=0,scanDir=1;
+            function draw(ts){
+                ctx.fillStyle='rgba(0,0,5,0.18)';ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.strokeStyle='rgba(192,57,43,0.05)';ctx.lineWidth=0.5;
+                const gs=22;
+                for(let x=0;x<canvas.width;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+                for(let y=0;y<canvas.height;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+                for(let p of particles){
+                    p.x+=p.vx;p.y+=p.vy;
+                    if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;
+                    if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;
+                    const fl=Math.sin(ts*0.008+p.pulse)*0.35+0.65,a=p.alpha*fl;
+                    ctx.fillStyle='rgba(220,50,50,'+a+')';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+                    ctx.fillStyle='rgba(220,50,50,'+(a*0.25)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.size*3.5,0,Math.PI*2);ctx.fill();
+                }
+                for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){
+                    const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);
+                    if(dist<75){ctx.strokeStyle='rgba(220,50,50,'+(0.07*(1-dist/75))+')';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();}
+                }
+                scanY+=scanDir*1.3;if(scanY>canvas.height){scanY=canvas.height;scanDir=-1;}if(scanY<0){scanY=0;scanDir=1;}
+                const grad=ctx.createLinearGradient(0,scanY-12,0,scanY+12);
+                grad.addColorStop(0,'rgba(220,50,50,0)');grad.addColorStop(0.5,'rgba(220,50,50,0.25)');grad.addColorStop(1,'rgba(220,50,50,0)');
+                ctx.fillStyle=grad;ctx.fillRect(0,scanY-12,canvas.width,24);
+                ctx.strokeStyle='rgba(220,50,50,0.45)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,scanY);ctx.lineTo(canvas.width,scanY);ctx.stroke();
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+        })();
+
+        // ============ CASE DATABASE (22 CASES) ============
+        const detailDB={
+            // CASE 01: BERMUDA TRIANGLE
+            bermuda:{
+                name:'百慕大三角',icon:'📁',type:'地理异常',category:'geographic',
+                location:'大西洋西部 (百慕大-迈阿密-波多黎各)',era:'1918年至今',date:'1918-ongoing',
+                status:'未解',statusClass:'unsolved',credibility:'★★☆ 中等',
+                dossierNo:'X-001-BERMUDA',
+                metrics:{mystery:80,evidence:45,attention:95,consensus:30},
+                description:'百慕大三角，又称魔鬼三角，是一片位于大西洋西部的海域，由百慕大群岛、迈阿密和波多黎各三点连线围成。自20世纪初以来，该区域频繁报告船只、飞机失踪事件，许多失踪案件至今无法用常规科学解释。据不完全统计，该区域已累计超过1000人失踪，50余艘船只和20余架飞机在此消失。1974年查尔斯·伯利兹出版《百慕大三角》一书，将这一概念推向全球。',
+                background:'最早引起公众注意的是1918年美国海军运煤船"独眼巨人号"(USS Cyclops)在此区域失踪，船上306人全部消失，成为美国海军史上非战斗死亡人数最多的单次事件。此后数十年间，数十艘船只和飞机在此区域神秘失踪。科学研究认为该区域位于飓风路径上，有大量浅滩和复杂海流，且是世界上最繁忙的航线之一。',
+                keyFacts:{'范围面积':'约130万平方公里','首次记录':'1492年哥伦布日志','最著名事件':'19号航班失踪 (1945)','累计失踪人数':'超过1000人','官方立场':'美国海岸警卫队否认超自然解释'},
+                timeline:[
+                    {date:'1492年10月',event:'哥伦布在百慕大区域记录到罗盘异常和奇异光芒'},
+                    {date:'1918年3月',event:'美国海军独眼巨人号失踪，306人下落不明'},
+                    {date:'1945年12月5日',event:'19号航班五架鱼雷轰炸机集体失踪，14名机组人员消失'},
+                    {date:'1948年1月',event:'英国南美航空"星虎号"在百慕大附近失踪，31人下落不明'},
+                    {date:'1963年',event:'硫磺女王号油轮失踪，39名船员消失'},
+                    {date:'2015年',event:'美国货船El Faro号在飓风中沉没，33人遇难'}
+                ],
+                theories:['磁异常导致导航失灵','海底甲烷水合物喷发','极端天气现象','外星人绑架假说','时空裂缝理论'],
+                theoryWeights:[25,30,35,5,5],
+                evidence:[
+                    {icon:'📡',label:'雷达异常记录'},{icon:'🧭',label:'磁场紊乱数据'},
+                    {icon:'📝',label:'目击者证词'},{icon:'🛰️',label:'卫星图像分析'}
+                ],
+                witnesses:[
+                    {name:'19号航班通讯记录',role:'飞行员与塔台 (1945)',text:'"我们不知道我们在哪里...一切看起来都不对，甚至大海看起来也很奇怪..." —— 19号航班飞行员与塔台的最后通讯。'},
+                    {name:'布鲁斯·格农',role:'飞行员 (1970)',text:'飞行员格农报告在百慕大上空经历了时空异常——飞行时间比正常短了30分钟，仿佛穿越了一条"电子雾隧道"。'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&q=80',cap:'大西洋百慕大海域 —— 全球最繁忙的航线之一'},
+                    {url:'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&q=80',cap:'加勒比海风暴 —— 该区域以突发性强风暴著称'}
+                ],
+                related:[{id:'maryceleste',name:'玛丽·塞莱斯特号',icon:'⛵'},{id:'mh370',name:'MH370航班失踪',icon:'✈️'},{id:'dyatlov',name:'迪亚特洛夫事件',icon:'🏔️'}]
+            },
+            // CASE 02: ROSWELL
+            roswell:{
+                name:'罗斯威尔事件',icon:'👁',type:'UFO事件',category:'ufo',
+                location:'美国新墨西哥州罗斯威尔',era:'1947年7月',date:'1947-07',
+                status:'高度争议',statusClass:'contested',credibility:'★★★ 高',
+                dossierNo:'X-002-ROSWELL',
+                metrics:{mystery:85,evidence:55,attention:90,consensus:25},
+                description:'1947年7月，美国新墨西哥州罗斯威尔附近的一个农场发现不明飞行物残骸。军方最初声称发现了"飞碟"，但随后改口称是一个气象气球。这一事件成为UFO史上最著名、最具争议的案件。此后数十年，多名军方人士和目击者打破沉默，声称政府掩盖了外星飞船坠毁的真相。',
+                background:'1947年7月，农场主威廉·布拉泽尔在自家农场发现大量金属碎片、橡胶条和奇怪的纸张状材料。他将碎片交给当地警长，随后军方介入。7月8日，罗斯威尔空军基地发布新闻稿称"捕获飞碟"，但几小时后迅速撤回声明。1994年美国空军发布报告称碎片来自"莫古尔计划"——一个针对苏联核试验的绝密间谍气球项目。',
+                keyFacts:{'事发日期':'1947年7月初','事发地点':'科罗纳镇西北约120公里','最初声明':'军方声称捕获"飞碟"','官方最终解释':'莫古尔计划间谍气球','主要证人':'威廉·布拉泽尔、杰西·马塞尔'},
+                timeline:[
+                    {date:'1947年7月初',event:'农场主布拉泽尔发现神秘碎片'},
+                    {date:'1947年7月8日',event:'军方发布"捕获飞碟"新闻，随即撤回'},
+                    {date:'1947年7月9日',event:'军方改称碎片来自气象气球'},
+                    {date:'1978年',event:'前军官马塞尔声称碎片非地球物质'},
+                    {date:'1994年',event:'美国空军发布报告称碎片来自莫古尔计划间谍气球'}
+                ],
+                theories:['外星飞船坠毁','苏联间谍飞行器','美国军方秘密实验(莫古尔计划)','气象气球误判'],
+                theoryWeights:[35,10,45,10],
+                evidence:[
+                    {icon:'📸',label:'现场照片'},{icon:'🎙️',label:'证人采访录音'},
+                    {icon:'📄',label:'军方解密文件'},{icon:'🔬',label:'碎片样本分析'}
+                ],
+                witnesses:[
+                    {name:'杰西·马塞尔少校',role:'前空军情报官',text:'"我确信那不是气象气球。那些材料具有我从未见过的特性——极薄却无法切割，可以揉皱后自动恢复原状。"'},
+                    {name:'格伦·丹尼斯',role:'前殡仪馆工作人员',text:'丹尼斯声称罗斯威尔基地曾向他询问儿童尺寸的密封棺材，暗示有外星人尸体。但他的证词后来被部分证伪。'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80',cap:'新墨西哥州罗斯威尔沙漠 —— 1947年事件发生地'},
+                    {url:'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600&q=80',cap:'星空下的UFO想象 —— 外星假说至今仍有支持者'}
+                ],
+                related:[{id:'phoenix_lights',name:'凤凰城光点',icon:'💡'},{id:'rendlesham',name:'蓝道申森林事件',icon:'🌲'},{id:'belgiumwave',name:'比利时UFO浪潮',icon:'🛸'}]
+            },
+            // CASE 03: MARY CELESTE
+            maryceleste:{
+                name:'玛丽·塞莱斯特号',icon:'⛵',type:'幽灵船',category:'maritime',
+                location:'大西洋 (亚速尔群岛附近)',era:'1872年12月4日',date:'1872-12-04',
+                status:'未解',statusClass:'unsolved',credibility:'★★★ 高',
+                dossierNo:'X-003-MARYCELESTE',
+                metrics:{mystery:90,evidence:35,attention:80,consensus:20},
+                description:'1872年12月4日，英国商船"德·格拉蒂亚号"在大西洋亚速尔群岛附近发现一艘全帆装船在海上漂浮。登船检查后发现这是失踪多日的"玛丽·塞莱斯特号"——船上货物完好、食物和淡水充足、船员个人物品整齐摆放，但10名船员和船长一家三口全部失踪，救生艇也不见踪影。这是航海史上最著名的幽灵船事件。',
+                background:'玛丽·塞莱斯特号是一艘双桅帆船，于1872年11月7日从纽约出发前往意大利热那亚，载有1701桶工业酒精。12月4日被德·格拉蒂亚号发现时，船体完好仅有轻微损坏。船上日志最后一篇日期为11月25日。船长本杰明·布里格斯的妻子和两岁女儿也随船失踪。',
+                keyFacts:{'建造年份':'1861年 (加拿大新斯科舍)','失踪人数':'10名船员 + 船长一家三口','货物':'1701桶工业酒精 (完好)','发现时状态':'全帆航行，船舱轻微进水','救生艇':'失踪 (暗示有序撤离)'},
+                timeline:[
+                    {date:'1872年11月7日',event:'玛丽·塞莱斯特号从纽约港出发，驶向意大利热那亚'},
+                    {date:'1872年11月25日',event:'船长日志最后一次记录，位置为圣玛丽亚岛附近'},
+                    {date:'1872年12月4日',event:'德·格拉蒂亚号发现空船，全部人员失踪'},
+                    {date:'1873年',event:'直布罗陀海事法庭调查，未得出明确结论'},
+                    {date:'1884年',event:'阿瑟·柯南·道尔发表以该事件为原型的短篇小说'}
+                ],
+                theories:['酒精蒸汽爆炸恐惧','海上龙卷风/水柱','海盗袭击','保险欺诈'],
+                theoryWeights:[40,25,15,20],
+                evidence:[
+                    {icon:'📔',label:'船长日志副本'},{icon:'⚖️',label:'海事法庭记录'},
+                    {icon:'🛡️',label:'船体检查报告'},{icon:'🧭',label:'导航仪器'}
+                ],
+                witnesses:[
+                    {name:'大卫·莫尔豪斯',role:'德·格拉蒂亚号船长',text:'"我们发现她时，海面平静。船上一切井井有条，仿佛船员只是暂时离开。但一个人也没有。这是我一生中见过的最诡异的一幕。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',cap:'大西洋帆船 —— 玛丽·塞莱斯特号同型船只示意'},
+                    {url:'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600&q=80',cap:'大西洋海域 —— 幽灵船被发现的位置'}
+                ],
+                related:[{id:'bermuda',name:'百慕大三角',icon:'📁'},{id:'joyita',name:'乔伊塔号幽灵船',icon:'🚢'}]
+            },
+            // CASE 04: DYATLOV PASS
+            dyatlov:{
+                name:'迪亚特洛夫事件',icon:'🏔️',type:'无法解释的死亡',category:'death_mystery',
+                location:'俄罗斯乌拉尔山脉 (Kholat Syakhl)',era:'1959年2月',date:'1959-02-01',
+                status:'未解',statusClass:'unsolved',credibility:'★★★ 高',
+                dossierNo:'X-004-DYATLOV',
+                metrics:{mystery:88,evidence:60,attention:82,consensus:35},
+                description:'1959年2月，9名经验丰富的滑雪登山者在乌拉尔山脉北部的"死亡之山"全部离奇死亡。他们从帐篷内部割开逃出，仅穿内衣冲入零下30度的暴风雪中。六人死于低体温，三人死于内伤（胸骨碎裂、颅骨骨折），但无外部伤痕。一名女性死者舌头和眼球缺失。衣物上检测到放射性残留。',
+                background:'登山队由伊戈尔·迪亚特洛夫率领，成员均为乌拉尔理工学院学生和毕业生。1月23日出发，计划完成III级（最高难度）滑雪路线。2月1日搭建营地过夜后再无音讯。2月26日搜救队发现被割破的废弃帐篷，随后在1.5公里范围内陆续发现全部遗体。最后四具遗体直到5月积雪融化后才被发现。2019年俄罗斯重启调查结论为"雪崩"。',
+                keyFacts:{'死亡人数':'9人 (7男2女)','海拔':'约1079米','温度':'约-25°C 至 -30°C','帐篷状态':'从内部割开','放射性':'部分衣物检测到β射线残留'},
+                timeline:[
+                    {date:'1959年1月23日',event:'登山队从斯维尔德洛夫斯克出发'},
+                    {date:'1959年2月1日',event:'登山队在死亡之山山坡搭建营地过夜'},
+                    {date:'1959年2月26日',event:'搜救队发现被割破的帐篷和首批5具遗体'},
+                    {date:'1959年5月',event:'积雪融化后发现最后4具遗体，伤情极为异常'},
+                    {date:'2019年',event:'俄罗斯政府重启调查，结论为"雪崩"——但争议仍在继续'}
+                ],
+                theories:['雪崩恐慌导致撤离','次声波（风涡效应）导致恐慌','苏联军事武器测试误伤','未知生物/雪人袭击','球形闪电假说'],
+                theoryWeights:[40,20,15,10,15],
+                evidence:[
+                    {icon:'📸',label:'现场照片'},{icon:'📋',label:'苏联调查档案'},
+                    {icon:'🧬',label:'遗体法医报告'},{icon:'🗺️',label:'营地复原图'}
+                ],
+                witnesses:[
+                    {name:'尤里·亚罗沃伊',role:'搜救队成员',text:'"帐篷是从内部割开的。脚印显示他们有序地走下山坡，没有奔跑的迹象。有些尸体赤脚，有些穿着别人的衣服。"'},
+                    {name:'鲍里斯·沃兹罗日登尼',role:'法医',text:'"三具遗体有严重内伤——肋骨粉碎性骨折、颅骨骨折——但完全没有外部软组织损伤。力度相当于被时速80公里的汽车撞击。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80',cap:'乌拉尔山脉冬季 —— 迪亚特洛夫事件发生地'},
+                    {url:'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=600&q=80',cap:'暴风雪中的帐篷 —— 极寒致命的零下30度'}
+                ],
+                related:[{id:'bermuda',name:'百慕大三角',icon:'📁'},{id:'tunguska',name:'通古斯大爆炸',icon:'💥'}]
+            },
+            // CASE 05: MH370
+            mh370:{
+                name:'MH370航班失踪',icon:'✈️',type:'航空谜案',category:'aviation',
+                location:'印度洋（疑似）',era:'2014年3月8日',date:'2014-03-08',
+                status:'未解',statusClass:'unsolved',credibility:'★★★★ 极高',
+                dossierNo:'X-005-MH370',
+                metrics:{mystery:92,evidence:48,attention:98,consensus:22},
+                description:'2014年3月8日，马来西亚航空MH370航班从吉隆坡起飞约40分钟后与空中交通管制失去联系。这架波音777客机载有239人，随即偏离航线折返，飞越马来半岛后转向南印度洋，据卫星握手数据推断最终在南印度洋耗尽燃油坠海。这是现代航空史上最大规模的搜寻行动，耗资超过1.5亿美元，但主体残骸至今未被找到。',
+                background:'MH370航班于当地时间00:41从吉隆坡起飞，01:19发出最后语音"晚安，马来西亚三七零"。随后应答机被关闭，飞机偏离航线。军用雷达最后在01:22于安达曼海上空捕捉到飞机，此后通过卫星握手信号推断其向南飞行直至燃油耗尽。2015-2017年间，印度洋沿岸陆续发现30余块确认或疑似残骸。2018年最终调查报告称无法确定失联原因。',
+                keyFacts:{'航班号':'马来西亚航空 MH370','机型':'波音777-200ER','载客人数':'239人 (227乘客+12机组)','起飞时间':'2014年3月8日 00:41 MYT','最后联系':'01:19 MYT','搜寻面积':'超过12万平方公里'},
+                timeline:[
+                    {date:'2014年3月8日 00:41',event:'MH370从吉隆坡国际机场起飞'},
+                    {date:'2014年3月8日 01:19',event:'副驾驶发出最后语音"晚安，马来西亚三七零"'},
+                    {date:'2014年3月8日 01:21',event:'应答机被关闭，飞机从民用雷达上消失'},
+                    {date:'2014年3月8日 08:11',event:'最后一次卫星握手信号（7小时后）'},
+                    {date:'2015年7月29日',event:'在法属留尼汪岛发现第一块确认为MH370的襟副翼残骸'},
+                    {date:'2018年',event:'马来西亚发布最终调查报告：无法确定失联原因'}
+                ],
+                theories:['飞行员故意行为（谋杀-自杀）','机械故障导致机组昏迷','客舱失压导致全体失去意识','乘客或入侵者劫持'],
+                theoryWeights:[40,30,20,10],
+                evidence:[
+                    {icon:'🛰️',label:'卫星Ping数据'},{icon:'🔩',label:'残骸碎片(30+件)'},
+                    {icon:'🎙️',label:'驾驶舱语音记录'},{icon:'🗺️',label:'军用雷达航迹'}
+                ],
+                witnesses:[
+                    {name:'迈克·麦凯',role:'越南近海石油钻井工人',text:'"3月8日早上，我看到高空中有一个明亮的橙色光点。它大概停留了一两分钟，然后消失了。我随后向越南当局报告，但当时未被纳入早期的官方调查。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1436491865332-7a61a109bb05?w=600&q=80',cap:'马来西亚航空波音777 —— MH370同型号飞机'},
+                    {url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80',cap:'南印度洋 —— 推断坠机区域'}
+                ],
+                related:[{id:'bermuda',name:'百慕大三角',icon:'📁'},{id:'amelia',name:'阿梅莉亚·埃尔哈特失踪案',icon:'✈️'}]
+            },
+            // CASE 06: AMELIA EARHART
+            amelia:{
+                name:'阿梅莉亚·埃尔哈特失踪案',icon:'✈️',type:'航空失踪',category:'aviation',
+                location:'太平洋中部 (豪兰岛附近)',era:'1937年7月2日',date:'1937-07-02',
+                status:'未解',statusClass:'unsolved',credibility:'★★★ 高',
+                dossierNo:'X-006-AMELIA',
+                metrics:{mystery:78,evidence:30,attention:85,consensus:40},
+                description:'1937年7月2日，美国传奇女飞行员阿梅莉亚·埃尔哈特与其导航员弗雷德·努南在尝试环球飞行途中，于太平洋豪兰岛附近失踪。她驾驶的洛克希德Electra 10E双引擎飞机最后一次无线电联系是当地时间08:43。美国海军进行了史上最大规模的海上搜索，但未发现飞机残骸或两人的任何踪迹。',
+                background:'埃尔哈特是第一位独自飞越大西洋的女性，也是一位打破多项飞行纪录的女权先锋。1937年6月1日，她从迈阿密出发开始环球飞行，已经完成了四分之三的航程。最后一站是从新几内亚莱城飞往太平洋中的豪兰岛，距离约4113公里。美国海岸警卫队布置了"伊塔斯卡号"用于通讯引导，但无线电通讯困难重重。',
+                keyFacts:{'机型':'洛克希德 Electra 10E','机组':'阿梅莉亚·埃尔哈特 + 弗雷德·努南','飞行距离':'已飞行约35,000公里','最后通讯':'1937年7月2日 08:43','搜索面积':'约390,000平方公里'},
+                timeline:[
+                    {date:'1937年6月1日',event:'从迈阿密出发开始环球飞行'},
+                    {date:'1937年7月2日 00:00',event:'从巴布亚新几内亚莱城起飞，前往豪兰岛'},
+                    {date:'1937年7月2日 07:42',event:'埃尔哈特报告"我们应在你们上空，但看不到你们……燃油不足"'},
+                    {date:'1937年7月2日 08:43',event:'最后一次无线电信号——此后完全失联'},
+                    {date:'1937年7月19日',event:'美国海军结束大规模搜索，未发现任何残骸'}
+                ],
+                theories:['燃油耗尽坠海','加德纳岛 (尼库马罗罗岛) 迫降','遭日本扣押','被美国情报机构利用'],
+                theoryWeights:[45,30,15,10],
+                evidence:[
+                    {icon:'📻',label:'无线电通讯记录'},{icon:'📸',label:'迫降照片证据(TIGHAR)'},
+                    {icon:'🏝️',label:'岛屿考古发现'},{icon:'📋',label:'美国海军搜索日志'}
+                ],
+                witnesses:[
+                    {name:'利奥·贝洛特斯',role:'伊塔斯卡号无线电报务员',text:'"她的最后一条信号声音紧张，语速急促。她在157-337线上来回飞行……我能听到静电噪音，然后只剩一片死寂。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?w=600&q=80',cap:'太平洋飞行 —— 埃尔哈特最后的航程'},
+                    {url:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=600&q=80',cap:'热带岛屿 —— 可能迫降地点之一'}
+                ],
+                related:[{id:'mh370',name:'MH370航班失踪',icon:'✈️'},{id:'bermuda',name:'百慕大三角',icon:'📁'}]
+            },
+            // CASE 07: PHOENIX LIGHTS
+            phoenix_lights:{
+                name:'凤凰城光点',icon:'💡',type:'UFO事件',category:'ufo',
+                location:'美国亚利桑那州凤凰城',era:'1997年3月13日',date:'1997-03-13',
+                status:'部分解释',statusClass:'contested',credibility:'★★★ 高',
+                dossierNo:'X-007-PHOENIX',
+                metrics:{mystery:68,evidence:58,attention:78,consensus:50},
+                description:'1997年3月13日晚，数千名凤凰城居民目击了一系列神秘光点排列成V字形在夜空中无声移动。目击范围覆盖约480公里。当天军方确实在附近投掷照明弹，但许多目击者坚称在照明弹之前看到了巨大的三角形飞行器——约1.6公里宽，从未被官方解释。时任州长费夫·西明顿后来承认他当时也看到了，并认为那不是军方装备。',
+                background:'当晚约20:00至22:00，超过2000人报告目击了异常光点。第一波目击者描述了一个"巨大的V形飞行器，无声地在低空滑过"。约一小时后军方确认在附近区域投掷了LUU-2照明弹。第一波目击——那个巨大的三角形物体——从未被官方解释。',
+                keyFacts:{'估计目击人数':'约10,000人','持续时间':'约3小时','V形发光体数量':'5-7个','估计翼展':'约1英里 (1.6公里)','军方解释':'A-10战机投放LUU-2照明弹'},
+                timeline:[
+                    {date:'1997年3月13日 20:15',event:'首次目击巨大V形飞行器（内华达州）'},
+                    {date:'1997年3月13日 20:30-21:30',event:'V形光点横穿凤凰城地区'},
+                    {date:'1997年3月13日 22:00',event:'军方投掷LUU-2照明弹（官方解释部分光点）'},
+                    {date:'2007年',event:'前州长西明顿公开承认他当年看到了"非地球"飞行器'}
+                ],
+                theories:['外星飞船','军方秘密飞行器（TR-3B或类似）','军方照明弹加集体误解','气象现象'],
+                theoryWeights:[30,55,10,5],
+                evidence:[
+                    {icon:'🎥',label:'多角度视频'},{icon:'🎙️',label:'数千目击证词'},
+                    {icon:'📄',label:'军方训练记录'},{icon:'📸',label:'照片证据'}
+                ],
+                witnesses:[
+                    {name:'费夫·西明顿',role:'前亚利桑那州州长',text:'"我当时就看到了它。那绝不是军方的东西。它是巨大的、三角形的、完全无声的。我这个物理学背景的人无法解释它。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=600&q=80',cap:'亚利桑那夜空 —— 凤凰城光点目击地'}
+                ],
+                related:[{id:'roswell',name:'罗斯威尔事件',icon:'👁'},{id:'rendlesham',name:'蓝道申森林事件',icon:'🌲'}]
+            },
+            // CASE 08: RENDLESHAM FOREST
+            rendlesham:{
+                name:'蓝道申森林事件',icon:'🌲',type:'UFO事件',category:'ufo',
+                location:'英国萨福克郡蓝道申森林 (美军基地)',era:'1980年12月',date:'1980-12-26',
+                status:'高度争议',statusClass:'contested',credibility:'★★★ 高',
+                dossierNo:'X-008-RENDLESHAM',
+                metrics:{mystery:82,evidence:65,attention:72,consensus:28},
+                description:'1980年12月26日至28日，英国伍德布里奇-本特沃特斯皇家空军基地（由美国空军使用）的多名军人在蓝道申森林中目击了不明发光体。包括基地副指挥官查尔斯·哈尔特中校在内的军官参与调查，记录了辐射异常读数和地面压痕。哈尔特中校提交的官方备忘录被广泛认为是军方目击UFO最可信的文件。',
+                background:'12月26日凌晨，巡逻人员发现森林中有奇异光芒，最初以为是坠毁的飞机。进入森林后，他们发现一个三角形的金属飞行器。三晚后该物体再次出现，哈尔特中校带着录音机和辐射检测仪进入森林，录音带上的对话显示军官们极度震惊。辐射读数为正常背景值的10倍，地面有三处三角形压痕。',
+                keyFacts:{'事件跨度':'1980年12月26日-28日','军事等级证人':'包括中校、上士等多名职业军人','物理证据':'三角形地面压痕、辐射异常','录音证据':'哈尔特中校18分钟现场录音','辐射读数':'着陆点为正常背景值的10倍'},
+                timeline:[
+                    {date:'1980年12月26日 凌晨',event:'巡逻人员首次进入森林发现不明发光体'},
+                    {date:'1980年12月28日',event:'哈尔特中校带队调查，录下18分钟现场语音'},
+                    {date:'1981年1月',event:'哈尔特中校向英国国防部提交正式备忘录'},
+                    {date:'1983年',event:'备忘录通过信息自由法案公开，震惊UFO研究界'}
+                ],
+                theories:['外星飞行器着陆','奥福德角灯塔误判','苏联间谍活动（基地储存核武器）','军方心理实验'],
+                theoryWeights:[40,25,20,15],
+                evidence:[
+                    {icon:'🎤',label:'哈尔特备忘录录音'},{icon:'☢️',label:'辐射异常数据'},
+                    {icon:'📏',label:'地面压痕测量'},{icon:'📸',label:'现场照片'}
+                ],
+                witnesses:[
+                    {name:'查尔斯·哈尔特中校',role:'本特沃特斯基地副指挥官',text:'"它射出一束光束，直接照到了离我们很近的地面。然后它以人类无法承受的速度瞬间从一面移动到另一面。我见过各种飞行器，这不是我能辨认的任何东西。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',cap:'英国森林 —— 蓝道申森林事件发生地'}
+                ],
+                related:[{id:'roswell',name:'罗斯威尔事件',icon:'👁'},{id:'phoenix_lights',name:'凤凰城光点',icon:'💡'}]
+            },
+            // CASE 09: JACK THE RIPPER
+            jacktheripper:{
+                name:'开膛手杰克',icon:'🔪',type:'历史悬案',category:'crime',
+                location:'英国伦敦白教堂区',era:'1888年8-11月',date:'1888-08-31',
+                status:'未解',statusClass:'unsolved',credibility:'★★★★ 极高',
+                dossierNo:'X-009-RIPPER',
+                metrics:{mystery:86,evidence:40,attention:92,consensus:15},
+                description:'1888年8月至11月间，伦敦东区白教堂一带发生了一系列针对妓女的残忍谋杀案。凶手在公开信（"地狱来信"）中自称"开膛手杰克"。五名主要遇害者（"经典五案"）均被割喉并剖腹。尽管伦敦警察厅进行了广泛调查，凶手始终未被确认。此案被认为是犯罪史上最著名的未解悬案，催生了"连环杀手调查"的现代法医学雏形。',
+                background:'维多利亚时代伦敦东区是极端贫穷的聚集地，白教堂区充斥着酗酒、卖淫和暴力。1888年8月31日玛丽·安·尼科尔斯被杀后，短短几个月内接连又发生四起手法类似的凶案。警方和媒体收到数百封声称是凶手的信件。2019年DNA分析指向波兰裔理发师亚伦·科斯明斯基可能性最大。',
+                keyFacts:{'确认遇害者':'5人 (经典五案)','可能遇害者':'6-11人 (有争议)','作案时间':'1888年8月31日-11月9日','凶手特征':'具有解剖学知识的外科手法','主要嫌犯':'亚伦·科斯明斯基等数十人'},
+                timeline:[
+                    {date:'1888年8月31日',event:'玛丽·安·尼科尔斯被杀，开膛手系列案开始'},
+                    {date:'1888年9月8日',event:'安妮·查普曼被杀，子宫被取走'},
+                    {date:'1888年9月27日',event:'中央新闻社收到"地狱来信"，署名开膛手杰克'},
+                    {date:'1888年9月30日',event:'伊丽莎白·斯特莱德和凯瑟琳·埃多维斯同夜被杀'},
+                    {date:'1888年11月9日',event:'最后一名遇害者玛丽·简·凯利在房间内被残忍杀害'},
+                    {date:'2019年',event:'DNA分析指向亚伦·科斯明斯基为最可能嫌疑人'}
+                ],
+                theories:['亚伦·科斯明斯基(波兰理发师，DNA指向)','蒙塔古·约翰·德鲁伊特(律师)','皇室医生威廉·古尔爵士(皇室阴谋论)','多名凶手模仿作案(非单一凶手)'],
+                theoryWeights:[40,20,10,30],
+                evidence:[
+                    {icon:'✉️',label:'凶手信件原件'},{icon:'🔬',label:'DNA分析'},
+                    {icon:'📋',label:'警方档案'},{icon:'📸',label:'犯罪现场照片'}
+                ],
+                witnesses:[
+                    {name:'约瑟夫·劳恩德',role:'目击者 (埃多维斯案)',text:'"我看到一个男人和那个女人站在一起。他说了句什么，然后一切都发生了。我没来得及阻止。" —— 但他对一个多小时前看到的男人描述的细节前后矛盾。'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80',cap:'伦敦东区白教堂 —— 1888年开膛手杰克作案区域'}
+                ],
+                related:[{id:'zodiac',name:'十二宫杀手',icon:'⚡'},{id:'tamamshud',name:'萨默顿人案',icon:'🕵️'}]
+            },
+            // CASE 10: ZODIAC KILLER
+            zodiac:{
+                name:'十二宫杀手',icon:'⚡',type:'连环杀手谜案',category:'crime',
+                location:'美国加州旧金山湾区',era:'1968-1969年',date:'1968-12-20',
+                status:'未解',statusClass:'unsolved',credibility:'★★★★ 极高',
+                dossierNo:'X-010-ZODIAC',
+                metrics:{mystery:84,evidence:50,attention:85,consensus:20},
+                description:'十二宫杀手是活跃于1960年代末北加州的连环杀手。他发送加密信件给报社挑衅警方，声称杀死了37人，但警方确认的受害者有5人死亡2人受伤。他的加密信件和标志性的十字圈符号成为流行文化中最著名的犯罪符号之一。2020年，Z340加密信被国际团队成功破译，但凶手身份至今未确认。',
+                background:'杀手于1968年12月至1969年10月间在旧金山湾区实施了一系列袭击。他向《旧金山纪事报》等三家报纸发送了四封加密信件，第一封加密信被一名高中教师和他妻子破译。1969年10月，他在旧金山杀害一名出租车司机后给警方写信挑衅。FBI至今将此案列为开放调查。',
+                keyFacts:{'确认遇害者':'5人','自称杀害人数':'37人','加密信件':'4封 (仅1封完全破译)','活跃时期':'1968年12月-1974年','主要嫌疑人':'亚瑟·李·艾伦 (2018年DNA未匹配)'},
+                timeline:[
+                    {date:'1968年12月20日',event:'贝蒂·卢·詹森和大卫·法拉第在贝尼西亚被杀'},
+                    {date:'1969年7月4日',event:'达琳·费林在蓝岩泉被杀，迈克·马修幸存'},
+                    {date:'1969年8月1日',event:'旧金山纪事报等收到第一封十二宫加密信件'},
+                    {date:'1969年10月11日',event:'出租车司机保罗·斯汀在旧金山被枪杀'},
+                    {date:'2020年',event:'Z340加密信被国际团队成功破译'}
+                ],
+                theories:['亚瑟·李·艾伦(主要嫌疑人，已死亡)','多名模仿者(非单一杀手)','身份是警方内部人员（有知识背景）','至今仍存活/已自然死亡'],
+                theoryWeights:[35,20,15,30],
+                evidence:[
+                    {icon:'✉️',label:'加密信件'},{icon:'🔬',label:'DNA/指纹'},
+                    {icon:'🎙️',label:'证人描述'},{icon:'📋',label:'警方档案'}
+                ],
+                witnesses:[
+                    {name:'布莱恩·哈特内尔',role:'蓝岩泉袭击幸存者',text:'"他穿着类似刽子手的黑色长袍，胸前有一个白色的十字圈符号。他平静地告诉我们他要抢劫我们，然后开始攻击。我活了下来，塞西莉亚没有。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=600&q=80',cap:'旧金山湾区 —— 十二宫杀手作案区域'}
+                ],
+                related:[{id:'jacktheripper',name:'开膛手杰克',icon:'🔪'},{id:'dbcooper',name:'D.B.库珀劫机案',icon:'🪂'}]
+            },
+            // CASE 11: TUNGUSKA
+            tunguska:{
+                name:'通古斯大爆炸',icon:'💥',type:'自然天文谜案',category:'explosion',
+                location:'俄罗斯西伯利亚通古斯河地区',era:'1908年6月30日',date:'1908-06-30',
+                status:'基本解释',statusClass:'closed',credibility:'★★★ 高',
+                dossierNo:'X-011-TUNGUSKA',
+                metrics:{mystery:60,evidence:65,attention:75,consensus:80},
+                description:'1908年6月30日上午7时14分，西伯利亚通古斯河地区发生了一次巨大的爆炸，摧毁了8000万棵树，涉及面积逾2000平方公里。爆炸威力相当于10-15兆吨TNT——比广岛原子弹强1000倍。当晚远至伦敦的夜空中都能看到发光。但奇怪的是，至今未发现陨石坑或天体碎片。',
+                background:'由于该地区极其偏远、交通不便，第一次科学考察直到1927年才由苏联矿物学家列昂尼德·库利克率领到达。他们没有发现陨石坑也没有发现陨石碎片。现代科学共识认为这是一次空中爆炸——一颗直径约60-190米的石质小行星在约5-10公里高空解体爆炸。2013年车里雅宾斯克事件佐证了此假说。',
+                keyFacts:{'爆炸威力':'约10-15百万吨TNT','摧毁面积':'约2,150平方公里','倒伏树木':'超过8,000万棵','爆炸高度':'约5-10公里 (估算)','地震震级':'约5.0级'},
+                timeline:[
+                    {date:'1908年6月30日 07:14',event:'通古斯卡河上空发生巨大爆炸，火光远在700公里外可见'},
+                    {date:'1908年6月30日 夜',event:'欧洲各地天空持续数日异常发亮，午夜可读报'},
+                    {date:'1927年',event:'库利克率领第一个科学考察队到达爆炸地点'},
+                    {date:'2013年',event:'车里雅宾斯克小行星事件佐证空中爆炸假说'}
+                ],
+                theories:['小行星/彗星空中爆炸（科学共识）','外星飞船坠毁','反物质或微型黑洞假说','特斯拉的无线输电实验失误'],
+                theoryWeights:[85,8,5,2],
+                evidence:[
+                    {icon:'🌲',label:'倾倒的8000万棵树'},{icon:'📸',label:'库利克考察队照片'},
+                    {icon:'📊',label:'地震波记录'},{icon:'🔬',label:'土壤分析样本'}
+                ],
+                witnesses:[
+                    {name:'本地鄂温克族目击者',role:'距爆心约60公里',text:'"天空裂成了两半，森林上方出现巨大的火焰。然后天空合拢了，一声巨响，我们被热浪推倒在地。我的帐篷被吹飞了几十米远。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&q=80',cap:'西伯利亚针叶林 —— 通古斯爆炸摧毁了8000万棵树'}
+                ],
+                related:[{id:'dyatlov',name:'迪亚特洛夫事件',icon:'🏔️'},{id:'bermuda',name:'百慕大三角',icon:'📁'}]
+            },
+            // CASE 12: VOYNICH MANUSCRIPT
+            voynich:{
+                name:'伏尼契手稿',icon:'📖',type:'未解文字',category:'artifact',
+                location:'未知（发现于意大利）',era:'约1404-1438年',date:'1404-1438',
+                status:'未破译',statusClass:'unsolved',credibility:'★★★★ 极高',
+                dossierNo:'X-012-VOYNICH',
+                metrics:{mystery:95,evidence:35,attention:70,consensus:10},
+                description:'伏尼契手稿是一本240页的羊皮纸手抄本，以神秘的未解文字写成，包含大量奇异的植物插图、天文星图、裸体女性沐浴场景和疑似药物制备图。碳14测年确认其羊皮纸制作于15世纪初。自1912年被重新发现以来，包括二战密码破译专家在内的无数密码学家试图破译，均告失败。',
+                background:'手稿最早可追溯至神圣罗马帝国皇帝鲁道夫二世（1576-1612年在位），他以600达克特金币购买，相信是13世纪修士罗杰·培根的作品。后来经多位收藏家之手，最终由伏尼契在意大利蒙德拉戈内学院发现。目前收藏于耶鲁大学拜内克珍本图书馆。2018年AI分析暗示手稿文字具有语言结构而非随机生成。',
+                keyFacts:{'页数':'240页 (现存)','尺寸':'约23.5 x 16.2 cm','碳定年':'1404-1438年','文字系统':'约170,000个字符, 未破译','当前收藏':'耶鲁大学拜内克图书馆'},
+                timeline:[
+                    {date:'~1404-1438',event:'羊皮纸制作年代（碳定年确认）'},
+                    {date:'~1580',event:'神圣罗马帝国皇帝鲁道夫二世以600金币购买手稿'},
+                    {date:'1912年',event:'威尔弗雷德·伏尼契在意大利重新发现手稿'},
+                    {date:'1969年',event:'手稿被赠予耶鲁大学图书馆'},
+                    {date:'2018年',event:'AI辅助分析暗示手稿文字具有语言结构，非随机'}
+                ],
+                theories:['中世纪骗局/恶作剧','自然语言的加密文字','人造语言（如15世纪的世界语）','某种形式的速记或缩写系统','现已失传的古老文字系统'],
+                theoryWeights:[20,40,20,10,10],
+                evidence:[
+                    {icon:'📄',label:'240页手稿'},{icon:'🔬',label:'碳定年分析'},
+                    {icon:'📊',label:'统计语言学分析'},{icon:'🎨',label:'插图分析'}
+                ],
+                witnesses:[
+                    {name:'威廉·弗里德曼',role:'二战密码破译专家',text:'"我破解了日本紫色密码和德国恩尼格玛密码，但这本手稿...它打败了我。它的文字流动得太自然了，不像是编造的。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80',cap:'古老手抄本 —— 伏尼契手稿用未知文字书写'}
+                ],
+                related:[{id:'shugborough',name:'舒格伯勒碑文',icon:'🗿'},{id:'antikythera',name:'安提基特拉机械',icon:'⚙️'}]
+            },
+            // CASE 13: D.B. COOPER
+            dbcooper:{
+                name:'D.B.库珀劫机案',icon:'🪂',type:'劫机未解案',category:'crime',
+                location:'美国西北部 (华盛顿州-俄勒冈州)',era:'1971年11月24日',date:'1971-11-24',
+                status:'未解',statusClass:'unsolved',credibility:'★★★★ 极高',
+                dossierNo:'X-013-DBCOOPER',
+                metrics:{mystery:90,evidence:38,attention:88,consensus:12},
+                description:'1971年11月24日下午，一名自称"丹·库珀"的男子登上西北航空305号航班，向空乘展示手提箱中的炸弹，勒索20万美元赎金和四个降落伞。在西雅图获得赎金后，他命令飞机飞往墨西哥，在华盛顿州西南部上空跳伞消失在暴风雨中。这是美国史上唯一未解的劫机案，FBI调查45年后于2016年宣布暂停。',
+                background:'D.B.库珀登机时穿着深色西装、白衬衫，系黑色领带。他点了一杯波旁酒和苏打水，平静地实施劫机。乘客在不知情的情况下被释放，赎金和降落伞送上飞机。他命令机长以最低速度飞往里诺，在飞行途中打开后舱门跳伞。1980年，一名男孩在哥伦比亚河岸边发现了部分赎金（5,800美元），但库珀本人再无踪迹。',
+                keyFacts:{'航班':'西北航空 305','航线':'波特兰 → 西雅图','赎金':'200,000美元','跳伞条件':'夜间、暴风雨、-7°C','发现赎金':'1980年, $5,800在哥伦比亚河岸','FBI档案':'2016年暂停调查'},
+                timeline:[
+                    {date:'1971年11月24日 14:50',event:'库珀登机，随后向空乘递送劫机纸条'},
+                    {date:'1971年11月24日 17:39',event:'飞机降落西雅图，释放乘客，获得赎金和降落伞'},
+                    {date:'1971年11月24日 20:00',event:'库珀从后舱门跳伞，消失在暴风雨之夜'},
+                    {date:'1980年2月',event:'8岁男孩在哥伦比亚河岸发现部分赎金'},
+                    {date:'2016年7月',event:'FBI宣布暂停45年调查，保留档案'}
+                ],
+                theories:['跳伞后死亡','成功逃脱并存活','罗伯特·拉克斯特罗 (退伍伞兵嫌疑人)','多名共犯协助'],
+                theoryWeights:[40,30,20,10],
+                evidence:[
+                    {icon:'💵',label:'部分赎金 ($5,800)'},{icon:'👔',label:'库珀的领带及金属夹'},
+                    {icon:'✈️',label:'305号航班飞行数据'},{icon:'🧬',label:'领带残留DNA痕迹'}
+                ],
+                witnesses:[
+                    {name:'弗洛伦斯·沙夫纳',role:'航班空乘',text:'"他看起来大约四十五岁，彬彬有礼，举止冷静。递给我纸条时说"小姐，你最好看一下"，说话时毫无敌意。他展示了手提箱里的红色圆柱体和电线。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1474302770737-173ee21bab63?w=600&q=80',cap:'西北太平洋森林 —— 库珀跳伞区域'}
+                ],
+                related:[{id:'jacktheripper',name:'开膛手杰克',icon:'🔪'},{id:'zodiac',name:'十二宫杀手',icon:'⚡'}]
+            },
+            // CASE 14: JOYITA GHOST SHIP
+            joyita:{
+                name:'乔伊塔号幽灵船',icon:'🚢',type:'幽灵船',category:'maritime',
+                location:'南太平洋 (斐济附近)',era:'1955年10月',date:'1955-10-03',
+                status:'未解',statusClass:'unsolved',credibility:'★★☆ 中等',
+                dossierNo:'X-014-JOYITA',
+                metrics:{mystery:85,evidence:30,attention:45,consensus:15},
+                description:'1955年10月3日，商船"乔伊塔号"从西萨摩亚出发前往托克劳群岛，载有25人。五周后，该船在南太平洋被发现漂流——船体完好但严重进水，发动机仍在运转，无线电调至国际求救频率。但25名船员全部失踪。更诡异的是，救生艇、医疗包和重要文件一同消失，但乘客行李和航海日志完好。',
+                background:'乔伊塔号是一艘69英尺（21米）长的木质商船，以"永不沉没"著称——其设计使用了大量密封浮箱和可浮动软木材料。1955年10月3日从阿皮亚港出发，预计48小时内抵达托克劳。10月7日未按时到达，大规模搜索开始。直到11月10日，才在偏离航线600英里处发现漂流中的乔伊塔号。',
+                keyFacts:{'失踪人数':'25人 (16船员 + 9乘客)','发现位置':'偏离航线约600英里','船体状态':'严重进水但未沉没','救生艇':'全部失踪','发动机':'仍在运转'},
+                timeline:[
+                    {date:'1955年10月3日',event:'乔伊塔号从西萨摩亚阿皮亚港出发'},
+                    {date:'1955年10月7日',event:'未按时抵达托克劳，大规模搜索展开'},
+                    {date:'1955年11月10日',event:'在偏离航线600英里处发现漂流中的乔伊塔号'},
+                    {date:'1955年11-12月',event:'调查委员会未能确定事件原因'}
+                ],
+                theories:['恶劣天气导致弃船','海盗/日本残余军袭击','船只漏水导致恐慌','保险欺诈'],
+                theoryWeights:[40,15,30,15],
+                evidence:[
+                    {icon:'📔',label:'航海日志 (完好)'},{icon:'⛵',label:'船体检查报告'},
+                    {icon:'📋',label:'斐济调查委员会记录'}
+                ],
+                witnesses:[
+                    {name:'杰拉尔德·道格拉斯',role:'发现船只的搜救船长',text:'"船上的情况难以解释。医疗用品、罗盘、精密仪器都不见了。但航海日志却原封不动地放在船长桌上。这不符合任何常规的弃船逻辑。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1582967788606-a171c1080cb0?w=600&q=80',cap:'南太平洋海域 —— 乔伊塔号失踪区域'}
+                ],
+                related:[{id:'maryceleste',name:'玛丽·塞莱斯特号',icon:'⛵'},{id:'bermuda',name:'百慕大三角',icon:'📁'}]
+            },
+            // CASE 15: NAZCA LINES
+            nazca:{
+                name:'纳斯卡线条',icon:'🛸',type:'古代谜题',category:'artifact',
+                location:'秘鲁纳斯卡沙漠',era:'约公元200-700年',date:'200-700 CE',
+                status:'部分解释',statusClass:'closed',credibility:'★★★ 高',
+                dossierNo:'X-015-NAZCA',
+                metrics:{mystery:55,evidence:75,attention:80,consensus:65},
+                description:'纳斯卡沙漠中绵延数百平方公里的巨大地面图案——包括蜂鸟、蜘蛛、猴子和几何形状——只有在空中才能辨认全貌。最大的图案长达370米。线条通过移除地表红褐色岩石暴露下方浅色土壤制成，由于纳斯卡高原极度干燥，这些线条保存了超过1500年。考古学家玛丽亚·赖歇一生致力于研究和保护纳斯卡线条。',
+                background:'纳斯卡线条于1927年被飞行员首次从空中发现。随后的研究揭示超过800条直线、300个几何图形和70个动植物图案。纳斯卡文化在公元200-700年间创作了这些图案。1994年纳斯卡线条被列为联合国教科文组织世界遗产。',
+                keyFacts:{'年代':'约公元200-700年','线条数量':'超过800条直线','几何图形':'300个','动植物图案':'70个','最大图案':'长约370米'},
+                timeline:[
+                    {date:'~200-700 CE',event:'纳斯卡文化在地面上创建巨幅图案'},
+                    {date:'1927年',event:'飞行员从空中首次发现线条'},
+                    {date:'1940年代',event:'玛丽亚·赖歇开始一生研究纳斯卡线条'},
+                    {date:'1994年',event:'纳斯卡线条被列为联合国教科文组织世界遗产'}
+                ],
+                theories:['宗教/天文用途（祭祀与历法）','与地下水/灌溉系统相关','献给天空之神的艺术品','外星跑道假说（争议极大）'],
+                theoryWeights:[45,25,25,5],
+                evidence:[
+                    {icon:'🛰️',label:'卫星图像'},{icon:'🗺️',label:'地面测绘'},
+                    {icon:'📸',label:'航拍照片'},{icon:'🧬',label:'考古分析'}
+                ],
+                witnesses:[
+                    {name:'玛丽亚·赖歇',role:'考古学家',text:'"纳斯卡人完全有能力建造这些线条——使用简单的绳子和木桩就可以精确地延伸几何线。但为什么？我相信答案与天文观测和宗教仪式有关。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1589519160732-57fc498494f8?w=600&q=80',cap:'纳斯卡沙漠 —— 巨幅地面图案保存超过1500年'}
+                ],
+                related:[{id:'stonehenge',name:'巨石阵',icon:'🪨'},{id:'easterisland',name:'复活节岛石像',icon:'🗿'}]
+            },
+            // CASE 16: STONEHENGE
+            stonehenge:{
+                name:'巨石阵',icon:'🪨',type:'古代谜题',category:'artifact',
+                location:'英国威尔特郡',era:'约公元前3000-2000年',date:'3000-2000 BCE',
+                status:'部分解释',statusClass:'closed',credibility:'★★★ 高',
+                dossierNo:'X-016-STONEHENGE',
+                metrics:{mystery:50,evidence:80,attention:85,consensus:70},
+                description:'巨石阵是地球上最著名的史前遗迹之一，巨大的砂岩块（最重达25吨）从30公里外运来，而更小的蓝砂岩（重约4吨）竟来自240公里外的威尔士。这些石头如何被运输和竖立的？其真实目的是什么？这些问题困扰了人类数千年。巨石的排列与夏至日出和冬至日落精确对齐。',
+                background:'巨石阵分多个阶段建造，约始于公元前3000年的环形土堤，约公元前2500年竖立巨大的砂岩圈，约公元前2000年添加蓝砂岩圈。夏至那天，太阳从"踵石"上方升起，光芒直射入石圈中心。现代研究表明该区域是一个更大的史前仪式景观群的一部分，包含墓葬、通道和其他石圈。',
+                keyFacts:{'第一阶段':'约公元前3100年','砂岩圈竖立':'约公元前2500年','最重石块':'约25吨','蓝砂岩来源':'威尔士 (240公里外)','天文对齐':'夏至日出、冬至日落'},
+                timeline:[
+                    {date:'~3100 BCE',event:'环形土堤和沟渠建成（第一期工程）'},
+                    {date:'~2500 BCE',event:'巨大的砂岩圈（sarsen stones）竖立'},
+                    {date:'~2000 BCE',event:'蓝砂岩从威尔士运达并安置'},
+                    {date:'1986年',event:'被列为联合国教科文组织世界遗产'}
+                ],
+                theories:['天文观测台/历法计算器','宗教朝圣和仪式中心','古代墓葬和祖先崇拜场所','疗愈圣地（蓝砂岩被认为有疗愈功能）','声学仪式空间'],
+                theoryWeights:[30,30,20,10,10],
+                evidence:[
+                    {icon:'🗺️',label:'地质来源分析'},{icon:'📐',label:'天文对齐测量'},
+                    {icon:'🧬',label:'DNA考古分析'},{icon:'🔬',label:'同位素分析'}
+                ],
+                witnesses:[
+                    {name:'迈克·帕克·皮尔逊',role:'考古学家',text:'"巨石阵不是一个孤立的结构——它是一片广阔仪式景观的核心。我们在这附近发现了数百具遗骨，暗示它是一个重要的葬礼和朝圣中心。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1569603667370-a9981a555527?w=600&q=80',cap:'巨石阵 —— 约5000年的史前奇迹'}
+                ],
+                related:[{id:'nazca',name:'纳斯卡线条',icon:'🛸'},{id:'easterisland',name:'复活节岛石像',icon:'🗿'}]
+            },
+            // CASE 17: TAMAM SHUD
+            tamamshud:{
+                name:'萨默顿人 / 塔曼舒德案',icon:'🕵️',type:'身份不明者',category:'death_mystery',
+                location:'澳大利亚阿德莱德萨默顿海滩',era:'1948年12月1日',date:'1948-12-01',
+                status:'部分破解',statusClass:'contested',credibility:'★★★ 高',
+                dossierNo:'X-017-TAMAMSHUD',
+                metrics:{mystery:88,evidence:35,attention:60,consensus:25},
+                description:'1948年12月1日凌晨，一名衣着考究身份不明的男子被发现在澳大利亚阿德莱德萨默顿海滩死亡。尸检未发现死因。最神秘的是，在他裤子的暗袋中发现了一张从《鲁拜集》撕下的纸条，上面印着波斯语"Tamám Shud"（意为"终结"）。此书在另一男子手中发现，其中包含看似密码的手写字母序列——至今未被完全破译。2022年DNA确认了死者身份为卡尔·韦伯，但密码谜团仍未解开。',
+                background:'死者约40-50岁，穿着高档衣服但所有标签被精心移除。警方发布了指纹和照片在世界范围内传播，无人前来认领。2022年，南澳警方宣布通过DNA分析确认死者为卡尔·"查尔斯"·韦伯，但围绕其死亡原因和密码含义的谜团仍未解开。',
+                keyFacts:{'死亡日期':'1948年12月1日 (发现)','年龄':'约40-50岁','死因':'未确定 (可能是不可检测的毒药)','特征':'衣服标签全部移除','关键证物':'"Tamám Shud" 纸条','身份确认':'2022年 DNA确认 (卡尔·韦伯)'},
+                timeline:[
+                    {date:'1948年11月30日 傍晚',event:'目击者最后一次看到死者活着的状态'},
+                    {date:'1948年12月1日 早晨',event:'男子尸体在萨默顿海滩被发现'},
+                    {date:'1949年1月',event:'发现暗袋中的"Tamám Shud"纸条'},
+                    {date:'1949年',event:'找到对应《鲁拜集》，其中含有神秘密码序列'},
+                    {date:'2022年',event:'DNA分析确认死者身份为卡尔·韦伯'}
+                ],
+                theories:['苏联间谍','个人自杀','与护士乔伊斯汀的爱情纠葛','中毒谋杀'],
+                theoryWeights:[30,35,20,15],
+                evidence:[
+                    {icon:'📜',label:'"Tamám Shud" 纸条'},{icon:'📕',label:'含密码序列的《鲁拜集》'},
+                    {icon:'📏',label:'尸体解剖报告'},{icon:'🧬',label:'DNA分析结果'}
+                ],
+                witnesses:[
+                    {name:'约翰·莱昂斯',role:'发现尸体的路人',text:'"他靠在防波堤边上，姿势很自然，乍一看以为他在睡觉。衣着非常整洁，看起来不像是流浪汉。我走过去查看时他没有任何反应。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80',cap:'阿德莱德海滩 —— 萨默顿人被发现的地点'}
+                ],
+                related:[{id:'jacktheripper',name:'开膛手杰克',icon:'🔪'},{id:'zodiac',name:'十二宫杀手',icon:'⚡'}]
+            },
+            // CASE 18: BELGIUM UFO WAVE
+            belgiumwave:{
+                name:'比利时UFO浪潮',icon:'🛸',type:'UFO事件',category:'ufo',
+                location:'比利时全国',era:'1989年11月-1990年4月',date:'1989-11-29',
+                status:'争议中',statusClass:'contested',credibility:'★★★ 高',
+                dossierNo:'X-018-BELGIUM',
+                metrics:{mystery:78,evidence:70,attention:75,consensus:35},
+                description:'1989年11月至1990年4月间，比利时经历了有史以来最密集的UFO目击浪潮。超过13,500人报告目击了大型三角形飞行器，配有明亮的白光灯和中央红色闪烁灯，飞行时完全无声。比利时空军两次派出F-16战斗机拦截，机载雷达多次锁定目标，但目标表现出超越已知航空技术的机动能力——瞬间加速和极端爬升率。比利时国防部长公开承认"军方无法解释"。',
+                background:'第一个重大目击事件发生在1989年11月29日，两名宪兵在巡逻时发现田野上空的三角形飞行器。此后数月的目击涵盖了从警察、宪兵、空军飞行员到普通市民的各阶层人士。1990年3月30-31日夜间，F-16战机在雷达锁定目标后，目标以不可能的速度从7,000英尺俯冲至地面。',
+                keyFacts:{'估计目击人数':'超过13,500人','持续时间':'约5个月','军事响应':'F-16两次出动拦截','雷达锁定':'多次 (空中和地面雷达)','官方声明':'比利时国防部长：无法解释'},
+                timeline:[
+                    {date:'1989年11月29日',event:'两名宪兵首次目击三角形飞行器，目击浪潮开始'},
+                    {date:'1990年3月30-31日',event:'F-16战机雷达锁定目标但无法拦截'},
+                    {date:'1990年4月',event:'目击浪潮逐渐平息'},
+                    {date:'1990年',event:'比利时国防部长公开"无法解释"声明'}
+                ],
+                theories:['秘密军用飞行器','外星飞行器','集体心理暗示/误判','气象/大气现象'],
+                theoryWeights:[45,30,15,10],
+                evidence:[
+                    {icon:'🎥',label:'目击者录像和照片'},{icon:'📡',label:'F-16机载雷达数据'},
+                    {icon:'📋',label:'比利时空军正式报告'},{icon:'👤',label:'13,500+份目击报告'}
+                ],
+                witnesses:[
+                    {name:'伊夫·梅尔滕斯',role:'比利时空军上校',text:'"我们在雷达上看到的目标移动方式——这不是任何已知飞行器能做到的。它以每秒超过40G的加速度改变了飞行路径。如果里面有人类飞行员，他会瞬间死亡。但目标做到了，而且完全没有任何声音。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1534996858221-380b92700493?w=600&q=80',cap:'比利时夜空 —— 1989-1990年UFO浪潮发生地'}
+                ],
+                related:[{id:'phoenix_lights',name:'凤凰城光点',icon:'💡'},{id:'rendlesham',name:'蓝道申森林事件',icon:'🌲'},{id:'roswell',name:'罗斯威尔事件',icon:'👁'}]
+            },
+            // CASE 19: SHUGBOROUGH INSCRIPTION
+            shugborough:{
+                name:'舒格伯勒碑文',icon:'🗿',type:'密文石碑',category:'artifact',
+                location:'英国斯塔福德郡舒格伯勒庄园',era:'18世纪中叶',date:'1748-1763',
+                status:'未破译',statusClass:'unsolved',credibility:'★★☆ 中等',
+                dossierNo:'X-019-SHUGBOROUGH',
+                metrics:{mystery:75,evidence:15,attention:35,consensus:5},
+                description:'舒格伯勒庄园的牧羊人纪念碑上刻有一组神秘的字母序列："O-U-O-S-V-A-V-V"和"D-M"，位于尼古拉·普桑画作《阿卡迪亚牧人》的镜像浮雕下方。250多年来，这组密文吸引了众多学者和密码学家试图破解，包括查尔斯·达尔文和查尔斯·狄更斯。有人认为这是圣杯的线索，有人相信是共济会的秘密坐标，但至今无人给出确凿破译。',
+                background:'牧羊人纪念碑由第一代安森男爵托马斯·安森于1748年至1763年间委托建造。浮雕取材自普桑的画作《阿卡迪亚牧人》(Et in Arcadia ego)。安森男爵是皇家学会成员，与知识界精英交往密切。有学者认为密文指向圣殿骑士团宝藏，也有人将其与雷恩堡之谜联系在一起。',
+                keyFacts:{'碑文':'O U O S V A V V / D M','建造时期':'1748-1763年','浮雕来源':'尼古拉·普桑《阿卡迪亚牧人》','位置':'英国斯塔福德郡舒格伯勒庄园','知名研究者':'达尔文、狄更斯、诸多密码学家'},
+                timeline:[
+                    {date:'1748年',event:'托马斯·安森男爵开始建造牧羊人纪念碑'},
+                    {date:'1763年',event:'纪念碑完工，碑文含义引发讨论'},
+                    {date:'1830年代',event:'查尔斯·达尔文和狄更斯分别尝试破译'},
+                    {date:'1982年',event:'《圣血与圣杯》一书将碑文与圣杯传说关联'}
+                ],
+                theories:['圣殿骑士团坐标','共济会密码','拉丁文缩写','无意义装饰'],
+                theoryWeights:[25,35,30,10],
+                evidence:[
+                    {icon:'🗿',label:'原碑拓片'},{icon:'📜',label:'庄园历史档案'}
+                ],
+                witnesses:[],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1549545931-59bf0671c3cf?w=600&q=80',cap:'英式庄园花园 —— 舒格伯勒庄园'}
+                ],
+                related:[{id:'voynich',name:'伏尼契手稿',icon:'📖'}]
+            },
+            // CASE 20: ANTIKYTHERA MECHANISM
+            antikythera:{
+                name:'安提基特拉机械',icon:'⚙️',type:'古代科技',category:'artifact',
+                location:'希腊安提基特拉岛附近海底',era:'约公元前100-150年',date:'100 BCE',
+                status:'部分破译',statusClass:'closed',credibility:'★★★★ 极高',
+                dossierNo:'X-020-ANTIKYTHERA',
+                metrics:{mystery:40,evidence:85,attention:65,consensus:90},
+                description:'1901年，希腊潜水员在安提基特拉岛附近的海底沉船中发现了一块被腐蚀的青铜机械残骸。经过一个多世纪的研究，科学家确认这是世界上最古老的模拟计算机——可以精确计算天体位置、预测日食月食、追踪奥林匹克运动会周期。其精密的齿轮结构直到14世纪欧洲天文钟出现前都未被超越。X射线和CT扫描揭示了内部37个青铜齿轮。',
+                background:'该机械发现于公元前60年左右沉没的罗马商船中。最初无人能理解这块锈蚀金属的意义。1950年代，科学史家德里克·德索拉·普莱斯对其进行了详细研究，首次提出这是天文计算器。2005年后，通过X射线断层扫描完整解读了铭文和功能——包括巴比伦日食周期的预测机制。',
+                keyFacts:{'年代':'约公元前100-150年','材料':'青铜 (高锡比例)','齿轮数':'37个 (已确认)','发现年份':'1901年','功能':'天文计算、日食预测、运动会周期','历史意义':'改写古代科技史'},
+                timeline:[
+                    {date:'公元前100-150年',event:'安提基特拉机械制造 (可能于罗德岛)'},
+                    {date:'公元前60年左右',event:'所在船只沉没于安提基特拉岛附近'},
+                    {date:'1901年',event:'希腊潜水员在海底发现沉船和铜块'},
+                    {date:'2005-2006年',event:'X射线断层扫描揭示内部齿轮结构全貌'}
+                ],
+                theories:['阿基米德设计学派','波塞多尼奥斯学派 (罗德岛天文学校)','科林斯工程传统'],
+                theoryWeights:[50,35,15],
+                evidence:[
+                    {icon:'🔬',label:'X射线CT扫描'},{icon:'📜',label:'表面铭文破译'},
+                    {icon:'⚙️',label:'原始碎片 (雅典考古博物馆)'}
+                ],
+                witnesses:[
+                    {name:'德里克·德索拉·普莱斯',role:'科学史家',text:'"它的存在迫使我们完全重新思考古希腊的技术能力。这好比在文艺复兴时期的藏品中发现了一台喷气发动机。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1515549832467-8783363e19b6?w=600&q=80',cap:'古希腊文物 —— 安提基特拉机械碎片'}
+                ],
+                related:[{id:'voynich',name:'伏尼契手稿',icon:'📖'},{id:'nazca',name:'纳斯卡线条',icon:'🛸'}]
+            },
+            // CASE 21: LOCH NESS MONSTER
+            lochness:{
+                name:'尼斯湖水怪',icon:'🌊',type:'神秘生物',category:'cryptid',
+                location:'英国苏格兰尼斯湖',era:'公元565年至今',date:'565-ongoing',
+                status:'未确认',statusClass:'unsolved',credibility:'★☆☆ 低',
+                dossierNo:'X-021-LOCHNESS',
+                metrics:{mystery:65,evidence:12,attention:90,consensus:8},
+                description:'尼斯湖水怪（昵称"尼西/Nessie"）是据信生活在苏格兰尼斯湖中的大型未知水生动物。最早的目击记录可追溯至公元565年，圣科伦巴的传记记载他"驱退了尼斯湖水中的怪兽"。现代目击热潮始于1933年。最著名的"证据"1934年"外科医照片"于1975年被确认为模型伪造。2018年DNA环境分析未发现大型水生物种，但检测到大量鳗鱼DNA。',
+                background:'尼斯湖是苏格兰最大的淡水湖，深达230米，长约37公里，水量在英伦三岛中最大。湖水富含泥炭悬浮物，能见度极低（通常仅几米），非常适合藏匿大型生物——如果存在的话。多次声纳扫描和大规模搜索活动均未发现任何大型动物。',
+                keyFacts:{'湖深':'230米','湖面积':'约56.4平方公里','首次记录':'公元565年 (圣科伦巴传记)','最著名照片':'1934年"外科医照片" (已证实伪造)','2018年DNA调查':'未发现大型水生物种，大量鳗鱼DNA'},
+                timeline:[
+                    {date:'公元565年',event:'圣科伦巴传记首次记录尼斯湖怪兽'},
+                    {date:'1933年',event:'斯派塞夫妇目击报告引发全球关注'},
+                    {date:'1934年',event:'"外科医照片"拍摄 (1975年确认伪造)'},
+                    {date:'2003年',event:'BBC大范围声纳搜索未发现任何生物'},
+                    {date:'2018年',event:'新西兰团队DNA环境分析：湖中有大量鳗鱼，无大型动物'}
+                ],
+                theories:['巨型鳗鱼','残存蛇颈龙','大型鲟鱼','旅游营销骗局'],
+                theoryWeights:[35,10,20,35],
+                evidence:[
+                    {icon:'📸',label:'"外科医照片" (已伪)'},{icon:'📷',label:'众多模糊照片'},
+                    {icon:'📊',label:'2018年eDNA分析'},{icon:'🌊',label:'多轮声纳扫描数据'}
+                ],
+                witnesses:[
+                    {name:'乔治·斯派塞',role:'1933年目击者',text:'"我和妻子看到湖中出现一个巨大的物体，它有一根长脖子，在湖面上拱起，身上皱皱巴巴的，灰褐色。它穿过公路进入了另一侧的灌木丛。我们回家后完全说不出话来。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1518600506278-4e8ef466b810?w=600&q=80',cap:'苏格兰尼斯湖 —— 水怪传说的发源地'}
+                ],
+                related:[{id:'mokelembembe',name:'摩克拉姆贝贝',icon:'🦕'},{id:'champ',name:'尚普兰湖水怪',icon:'🌊'}]
+            },
+            // CASE 22: MOKELE-MBEMBE
+            mokelembembe:{
+                name:'摩克拉姆贝贝',icon:'🦕',type:'神秘生物',category:'cryptid',
+                location:'刚果盆地 (非洲中部)',era:'1776年至今',date:'1776-ongoing',
+                status:'未确认',statusClass:'unsolved',credibility:'★☆☆ 低',
+                dossierNo:'X-022-MOKELE',
+                metrics:{mystery:72,evidence:8,attention:55,consensus:5},
+                description:'摩克拉姆贝贝（Mokele-mbembe，林加拉语意为"阻挡河流者"）是据信生活在中非刚果盆地沼泽和河流中的神秘生物。据当地部落描述，该生物体型近似大象，但头和脖子像蛇，有一条长尾——类似于蜥脚类恐龙的形态。许多目击报告描述了类似河马大小的动物，能潜水数小时并在水面留下巨大涟漪。多支西方探险队深入刚果寻找但未捕获实物证据。',
+                background:'法国传教士列文·博纳旺蒂尔于1776年首次向西方世界描述了这一生物。此后，德国探险家冯·施泰因（1913年）、芝加哥大学生物学家罗伊·马卡尔（1980年代）、日本探险队等多支队伍先后前往调查。一些探险队声称拍摄到可疑的水面扰动和大型动物足迹，但无确凿照片或生物样本。',
+                keyFacts:{'栖息地':'刚果盆地沼泽和河流','首次记录':'1776年 (西方记录)','描述':'类似蜥脚类恐龙 (长颈、大躯干、长尾)','目击报告':'数百份 (大部分来自本地部落)','实物证据':'无 (无照片、无样本)'},
+                timeline:[
+                    {date:'1776年',event:'法国传教士博纳旺蒂尔首次记录摩克拉姆贝贝'},
+                    {date:'1913年',event:'德国探险家冯·施泰因收集大量目击者证词'},
+                    {date:'1981年',event:'罗伊·马卡尔博士率领探险队进入刚果'},
+                    {date:'2000年代',event:'多支日本和英国探险队进行现代搜寻'}
+                ],
+                theories:['残存蜥脚类恐龙','被误认的已知动物','非洲森林犀牛','当地民间传说/神话'],
+                theoryWeights:[10,40,20,30],
+                evidence:[
+                    {icon:'🎥',label:'疑似水面扰动录像'},{icon:'🔍',label:'不明大型足迹'},
+                    {icon:'🎤',label:'当地部落口述史'}
+                ],
+                witnesses:[
+                    {name:'冯·施泰因',role:'德国探险家 (1913)',text:'"本地人一致描述该生物体型如大象或河马大小，皮肤光滑无毛，呈褐灰色，脖子长而灵活，有一条长尾。当地人说它常在河湾觅食一种开白花的藤蔓类植物，从不容忍河马靠近它的领地。"'}
+                ],
+                photos:[
+                    {url:'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=600&q=80',cap:'刚果河流域 —— 摩克拉姆贝贝传说中的栖息地'}
+                ],
+                related:[{id:'lochness',name:'尼斯湖水怪',icon:'🌊'},{id:'ogopogo',name:'欧戈波戈水怪',icon:'🐉'}]
+            }
+        };
+
+        // ============ FALLBACK FOR UNKNOWN CASES ============
+        function getDefaultCase(cid){
+            return {
+                name:cid.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase()),
+                icon:'❓',type:'未分类',category:'other',
+                location:'未知',era:'未知',date:'unknown',
+                status:'未解',statusClass:'unsolved',credibility:'未评级',
+                dossierNo:'X-???-'+cid.toUpperCase(),
+                metrics:{mystery:50,evidence:30,attention:40,consensus:20},
+                description:'此案件的详细信息尚在收集和整理中。请查阅档案馆中其他已整理的案件。',
+                background:'该案件的背景资料正在进行审查和编纂。作为未解之谜档案馆的未分类案件，我们的调查人员正在积极追踪相关线索。',
+                keyFacts:{'状态':'调查进行中'},
+                timeline:[],theories:['数据收集中'],theoryWeights:[100],
+                evidence:[],witnesses:[],photos:[],related:[]
+            };
+        }
+
+        // ============ GET CASE DATA ============
+        const urlParams=new URLSearchParams(window.location.search);
+        const caseId=urlParams.get('case')||'bermuda';
+        const data=detailDB[caseId]||getDefaultCase(caseId);
+
+        // ============ BUILD HELPER FUNCTIONS ============
+        function buildTimeline(tl){
+            if(!tl||!tl.length)return'<p style="color:var(--text-muted);text-indent:0;">暂无时间线数据。</p>';
+            return'<div class="timeline-vertical">'+tl.map(t=>
+                '<div class="tl-item"><span class="tl-date">'+t.date+'</span>'+
+                '<p style="color:var(--text-secondary);margin-top:0.3rem;">'+t.event+'</p></div>'
+            ).join('')+'</div>';
+        }
+
+        function buildTheories(th,tw){
+            if(!th||!th.length)return'<p style="color:var(--text-muted);text-indent:0;">暂未收录理论分析。</p>';
+            return'<ul class="theories-list" id="theoriesList">'+th.map((t,i)=>{
+                const pct=tw[i]||20;
+                return'<li onclick="voteTheory('+i+')" id="theory-'+i+'">'+
+                    '<div style="flex:1;">'+t+'<div class="theory-bar"><div class="theory-bar-fill" style="width:'+pct+'%;"></div></div></div>'+
+                    '<span class="theory-votes">'+pct+'%</span></li>';
+            }).join('')+'</ul>'+
+            '<p style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin-top:0.5rem;">点击理论投票 | 滑动条显示当前专家评估权重</p>';
+        }
+
+        function buildEvidence(ev){
+            if(!ev||!ev.length)return'<p style="color:var(--text-muted);text-indent:0;">暂无证据材料记录。</p>';
+            return'<div class="evidence-grid">'+ev.map(e=>
+                '<div class="evidence-item"><span class="evidence-icon">'+e.icon+'</span>'+
+                '<span class="evidence-label">'+e.label+'</span></div>'
+            ).join('')+'</div>';
+        }
+
+        function buildWitnesses(wit){
+            if(!wit||!wit.length)return'<p style="color:var(--text-muted);text-indent:0;">暂无目击者证词记录。</p>';
+            return'<div class="witness-grid">'+wit.map(w=>
+                '<div class="witness-card">'+
+                '<div class="witness-name">'+w.name+'</div>'+
+                '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:0.3rem;">'+(w.role||'')+'</div>'+
+                '<div class="witness-text">"'+w.text+'"</div></div>'
+            ).join('')+'</div>';
+        }
+
+        function buildKeyFacts(kf){
+            if(!kf||!Object.keys(kf).length)return'';
+            return'<table class="facts-table">'+Object.entries(kf).map(([k,v])=>
+                '<tr><th>'+k+'</th><td>'+v+'</td></tr>'
+            ).join('')+'</table>';
+        }
+
+        function buildGallery(photos,icon){
+            if(!photos||!photos.length)return'<p style="color:var(--text-muted);text-indent:0;">暂无图库资料。</p>';
+            return'<div class="gallery-grid">'+photos.map(p=>
+                '<div class="gallery-item">'+
+                '<img src="'+p.url+'" alt="'+p.cap+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">'+
+                '<div class="gallery-fb">'+(icon||'📷')+'</div>'+
+                '<div class="gallery-cap">'+p.cap+'</div></div>'
+            ).join('')+'</div>';
+        }
+
+        function buildRelated(rel){
+            if(!rel||!rel.length)return'<p style="color:var(--text-muted);text-indent:0;">暂无关联案件。</p>';
+            return'<div class="related-grid">'+rel.map(r=>{
+                const rd=detailDB[r.id];
+                const ri=rd?rd.icon:r.icon||'❓';
+                const rn=rd?rd.name:r.name;
+                return'<a href="?case='+r.id+'" class="related-case">'+
+                    '<span class="rc-icon">'+ri+'</span>'+
+                    '<div class="rc-name">'+rn+'</div></a>';
+            }).join('')+'</div>';
+        }
+
+        // ============ RENDER PAGE ============
+        const dsNum=data.dossierNo||('X-'+caseId.toUpperCase());
+        const sCls=data.statusClass||'unsolved';
+
+        document.getElementById('detailContent').innerHTML=
+        '<!-- CASE HERO -->'+
+        '<div class="case-hero">'+
+          '<span class="case-icon-large pulse-glow">'+data.icon+'</span>'+
+          '<div style="flex:1;">'+
+            '<h1 class="flicker-text">'+data.name+'</h1>'+
+            '<div class="case-meta">'+
+              '<span>&#x1F4C2; '+data.type+'</span>'+
+              '<span>&#x1F4CD; '+data.location+'</span>'+
+              '<span>&#x1F4C5; '+data.era+'</span>'+
+              '<span class="status-badge '+sCls+'">'+(data.status||'未解')+'</span>'+
+            '</div>'+
+            '<p style="margin-top:0.8rem;color:var(--accent-amber);font-family:var(--font-mono);">'+
+              '可信度: '+data.credibility+' &nbsp;|&nbsp; <span class="typewriter-line">'+dsNum+'</span>'+
+            '</p>'+
+          '</div>'+
+          '<span class="doc-corner">DOSSIER NO. '+dsNum+'</span>'+
+        '</div>'+
+
+        '<!-- TAB NAVIGATION -->'+
+        '<div class="tab-nav">'+
+          '<button class="tab-btn active" data-tab="tab-overview">案件概述</button>'+
+          '<button class="tab-btn" data-tab="tab-evidence">证据材料</button>'+
+          '<button class="tab-btn" data-tab="tab-theories">理论分析</button>'+
+          '<button class="tab-btn" data-tab="tab-timeline">时间线</button>'+
+          '<button class="tab-btn" data-tab="tab-gallery">档案图库</button>'+
+        '</div>'+
+
+        '<!-- TAB: OVERVIEW -->'+
+        '<div class="tab-panel active" id="tab-overview">'+
+          '<div class="section-card">'+
+            '<h2>&#x1F4CB; 案件概述</h2>'+
+            '<p>'+data.description+'</p>'+
+            '<div class="mystery-meter"><h3>&#x1F39A; 神秘度评估</h3>'+
+              '<div class="meter-row"><span class="meter-label">神秘指数</span><div class="meter-track"><div class="meter-fill" style="width:'+data.metrics.mystery+'%;background:var(--accent-warning);"></div></div><span class="meter-val">'+data.metrics.mystery+'/100</span></div>'+
+              '<div class="meter-row"><span class="meter-label">证据充足度</span><div class="meter-track"><div class="meter-fill" style="width:'+data.metrics.evidence+'%;background:var(--accent-amber);"></div></div><span class="meter-val">'+data.metrics.evidence+'/100</span></div>'+
+              '<div class="meter-row"><span class="meter-label">公众关注度</span><div class="meter-track"><div class="meter-fill" style="width:'+data.metrics.attention+'%;background:#ff6b6b;"></div></div><span class="meter-val">'+data.metrics.attention+'/100</span></div>'+
+              '<div class="meter-row"><span class="meter-label">科学共识度</span><div class="meter-track"><div class="meter-fill" style="width:'+data.metrics.consensus+'%;background:#4ecb71;"></div></div><span class="meter-val">'+data.metrics.consensus+'/100</span></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="section-card">'+
+            '<h2>&#x1F4CA; 案件数据</h2>'+
+            '<div class="quick-stats-row">'+
+              '<div class="quick-stat"><div class="qs-value">'+(data.timeline||[]).length+'</div><div class="qs-label">关键事件</div></div>'+
+              '<div class="quick-stat"><div class="qs-value">'+(data.theories||[]).length+'</div><div class="qs-label">理论假说</div></div>'+
+              '<div class="quick-stat"><div class="qs-value">'+(data.evidence||[]).length+'</div><div class="qs-label">证据条目</div></div>'+
+              '<div class="quick-stat"><div class="qs-value">'+(data.witnesses||[]).length+'</div><div class="qs-label">关键证词</div></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="section-card"><h2>&#x1F4DC; 背景资料</h2><p>'+data.background+'</p></div>'+
+          '<div class="section-card"><h2>&#x1F4CA; 关键事实</h2>'+buildKeyFacts(data.keyFacts)+'</div>'+
+          ((data.witnesses||[]).length>0?'<div class="section-card"><h2>&#x1F5E3; 目击者 / 证人证词</h2>'+buildWitnesses(data.witnesses)+'</div>':'')+
+          '<div class="section-card"><h2>&#x1F517; 相关案件</h2>'+buildRelated(data.related)+'</div>'+
+          '<div style="text-align:center;margin:1rem 0;">'+
+            '<p style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">'+
+              '[ 档案状态: 开放调查中 &mdash; 最后更新: <span class="redacted" title="点击揭示">'+(new Date().toISOString().split('T')[0])+'</span> ]'+
+            '</p>'+
+          '</div>'+
+        '</div>'+
+
+        '<!-- TAB: EVIDENCE -->'+
+        '<div class="tab-panel" id="tab-evidence">'+
+          '<div class="section-card"><h2>&#x1F50D; 证据材料</h2>'+buildEvidence(data.evidence)+'</div>'+
+          '<div class="section-card"><h2>&#x1F5E3; 目击者证词</h2>'+buildWitnesses(data.witnesses)+'</div>'+
+          '<div class="section-card"><h2>&#x1F4CA; 关键数据点</h2>'+buildKeyFacts(data.keyFacts)+'</div>'+
+        '</div>'+
+
+        '<!-- TAB: THEORIES -->'+
+        '<div class="tab-panel" id="tab-theories">'+
+          '<div class="section-card"><h2>&#x1F4A1; 主要理论分析</h2>'+buildTheories(data.theories,data.theoryWeights)+'</div>'+
+          '<div class="section-card"><h2>&#x1F517; 相关案件</h2>'+buildRelated(data.related)+'</div>'+
+        '</div>'+
+
+        '<!-- TAB: TIMELINE -->'+
+        '<div class="tab-panel" id="tab-timeline">'+
+          '<div class="section-card"><h2>&#x1F570; 事件时间线</h2>'+buildTimeline(data.timeline)+'</div>'+
+        '</div>'+
+
+        '<!-- TAB: GALLERY -->'+
+        '<div class="tab-panel" id="tab-gallery">'+
+          '<div class="section-card"><h2>&#x1F4F7; 档案图像</h2>'+buildGallery(data.photos,data.icon)+'</div>'+
+        '</div>'+
+
+        '<!-- FOOTER LINKS -->'+
+        '<a href="archives.html" class="back-link">&#x2190; 返回档案库</a>'+
+        '<a href="compare.html?caseA='+caseId+'" class="back-link" style="margin-left:1.5rem;">&#x2696; 对比此案件</a>'+
+        '<a href="map.html" class="back-link" style="margin-left:1.5rem;">&#x1F5FA; 世界地图</a>';
+
+        // ============ TAB SWITCHING ============
+        document.querySelectorAll('.tab-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+                const panel=document.getElementById(btn.dataset.tab);
+                if(panel)panel.classList.add('active');
+            });
+        });
+
+        // ============ REDACTED TEXT CLICK TO REVEAL ============
+        document.querySelectorAll('.redacted').forEach(el=>{
+            el.addEventListener('click',()=>el.classList.toggle('revealed'));
+        });
+
+        // ============ THEORY VOTING ============
+        window.voteTheory=function(idx){
+            const li=document.getElementById('theory-'+idx);
+            if(!li)return;
+            const vEl=li.querySelector('.theory-votes');
+            if(vEl.textContent.includes('✓'))return;
+            vEl.textContent+=' ✓';
+            li.style.color='var(--accent-warning)';
+        };
+
+        // ============ UPDATE DOCUMENT TITLE ============
+        document.title=data.name+' · 未解之谜档案馆';
+        console.log('DOSSIER: '+dsNum+' | 案件: '+data.name+' | 共 '+Object.keys(detailDB).length+' 个案件可用');
+    </script>
+</body>
+</html>

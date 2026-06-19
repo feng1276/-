@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处方药(Rx) · 药典通</title>
+    <meta name="description" content="药典通处方药目录，收录抗生素、降压药、降糖药、他汀类等20+种常用处方药，包含药理机制、临床用途和用药监测要点。">
+    <style>
+        :root {
+            --white-pure:#ffffff;--white-warm:#fafbfc;--gray-50:#f8f9fa;--gray-100:#f0f2f4;--gray-200:#e2e6ea;--gray-300:#cdd3d9;--gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
+            --blue-50:#eff6ff;--blue-100:#dbeafe;--blue-500:#3b82f6;--blue-600:#2563eb;--green-50:#f0fdf4;--green-500:#22c55e;--red-50:#fef2f2;--red-500:#ef4444;--red-600:#dc2626;--amber-50:#fffbeb;--amber-500:#f59e0b;
+            --text-primary:#111827;--text-secondary:#374151;--text-muted:#6b7280;--border-light:#e2e6ea;--border-medium:#cdd3d9;
+            --shadow-xs:0 1px 3px rgba(0,0,0,0.04);--shadow-md:0 4px 16px rgba(0,0,0,0.08);
+            --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-full:9999px;
+            --transition-fast:0.15s ease;--transition-smooth:0.25s ease;
+            --font-sans:'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','Consolas',monospace;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:var(--font-sans);background:var(--white-warm);color:var(--text-primary);min-height:100vh;padding-bottom:3rem;line-height:1.6;}
+        .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border-light);padding:0.7rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+        .logo{display:flex;align-items:center;gap:0.5rem;cursor:pointer;text-decoration:none;}
+        .logo-icon{width:34px;height:34px;background:var(--red-500);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;}
+        .logo-text{font-weight:700;font-size:1.2rem;color:var(--gray-900);}
+        .nav-links{display:flex;gap:1.2rem;list-style:none;flex-wrap:wrap;}
+        .nav-links a{color:var(--text-secondary);text-decoration:none;font-weight:500;font-size:0.85rem;transition:color var(--transition-fast);border-bottom:2px solid transparent;}
+        .nav-links a:hover{color:var(--red-500);border-bottom-color:var(--red-500);}
+        .nav-links a.active{color:var(--red-600);border-bottom-color:var(--red-500);font-weight:600;}
+        .page-header{text-align:center;padding:2rem 1rem 1rem;}
+        .page-header h1{font-size:2rem;font-weight:700;color:var(--gray-900);}
+        .container{max-width:1100px;margin:0 auto;padding:0 1.5rem;}
+        .rx-notice{background:var(--red-50);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-lg);padding:1.5rem 2rem;margin-bottom:2rem;text-align:center;border-left:4px solid var(--red-500);}
+        .rx-notice h3{color:var(--red-600);margin-bottom:0.4rem;}
+        .rx-notice p{color:#991b1b;font-size:0.9rem;}
+        .filter-bar{display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0;}
+        .filter-chip{padding:0.45rem 1.1rem;border-radius:var(--radius-full);background:white;border:1px solid var(--border-medium);cursor:pointer;transition:all var(--transition-fast);font-size:0.82rem;font-weight:500;color:var(--text-secondary);}
+        .filter-chip:hover{border-color:var(--red-500);color:var(--red-500);}
+        .filter-chip.active{background:var(--red-500);color:white;border-color:var(--red-500);}
+        .rx-list{display:flex;flex-direction:column;gap:1.2rem;}
+        .rx-item{background:white;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:1.8rem;box-shadow:var(--shadow-xs);transition:all var(--transition-smooth);border-left:4px solid var(--red-500);}
+        .rx-item:hover{box-shadow:var(--shadow-md);}
+        .rx-item h3{font-size:1.2rem;font-weight:700;color:var(--gray-900);}
+        .rx-item .generic-name{font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:0.8rem;}
+        .rx-item .rx-badge{display:inline-block;padding:0.15rem 0.6rem;border-radius:var(--radius-full);font-size:0.65rem;font-weight:700;letter-spacing:0.5px;background:var(--red-50);color:var(--red-600);border:1px solid rgba(239,68,68,0.2);}
+        .rx-item .info-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+        .rx-item .info-cell{font-size:0.85rem;}
+        .rx-item .info-cell .cell-label{font-weight:600;color:var(--text-muted);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;}
+        .rx-item .info-cell .cell-value{color:var(--text-secondary);margin-top:0.1rem;}
+        .rx-item p{font-size:0.9rem;color:var(--text-secondary);line-height:1.7;margin:0.4rem 0;}
+        .rx-item .monitor-box{background:var(--amber-50);border-left:3px solid var(--amber-500);padding:0.7rem 1rem;margin-top:0.8rem;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:0.82rem;color:#92400e;line-height:1.5;}
+        @media(max-width:768px){.rx-item .info-row{grid-template-columns:1fr;}}
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="pharmacy_home.html" class="logo"><span class="logo-icon">💊</span><span class="logo-text">药典通</span></a>
+        <ul class="nav-links">
+            <li><a href="pharmacy_home.html">首页</a></li>
+            <li><a href="pharmacy_otc.html">非处方药</a></li>
+            <li><a href="pharmacy_rx.html" class="active">处方药</a></li>
+            <li><a href="pharmacy_tcm.html">中成药</a></li>
+            <li><a href="pharmacy_guide.html">用药指南</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>📋 处方药 (Rx)</h1>
+        <p style="color:var(--text-muted);">须凭执业医师处方购买，在医生指导下使用</p>
+    </div>
+
+    <div class="container">
+        <div class="rx-notice">
+            <h3>⚠️ 重要提示</h3>
+            <p>处方药必须凭医生处方购买和使用，严禁自行购买和使用处方药。以下信息仅供医药专业人员参考和患者教育目的，不构成用药建议。用药请遵医嘱。</p>
+        </div>
+
+        <div class="filter-bar" id="filterBar">
+            <span class="filter-chip active" data-cat="all">全部</span>
+            <span class="filter-chip" data-cat="antibiotic">🦠 抗生素</span>
+            <span class="filter-chip" data-cat="cardio">💓 心血管</span>
+            <span class="filter-chip" data-cat="diabetes">🩸 糖尿病</span>
+            <span class="filter-chip" data-cat="lipid">🫀 降脂药</span>
+            <span class="filter-chip" data-cat="antifungal">🍄 抗真菌</span>
+        </div>
+
+        <div class="rx-list" id="rxList"></div>
+    </div>
+
+    <script>
+        const rxDrugs=[
+            {id:'amoxicillin',name:'阿莫西林胶囊',generic:'Amoxicillin',cat:'antibiotic',icon:'🦠',
+                class:'青霉素类',spec:'0.5g×24粒',manufacturer:'联邦制药',
+                usage:'口服，成人一次0.5g，每6-8小时一次。疗程根据感染类型和严重程度决定。',
+                indications:'用于敏感菌所致呼吸道感染、泌尿道感染、皮肤软组织感染、急性单纯性淋病等。需皮试阴性后使用。',
+                pharmacology:'广谱半合成青霉素，与细菌青霉素结合蛋白(PBPs)结合，抑制细胞壁合成，导致细菌溶解死亡。对革兰阳性菌和部分革兰阴性菌有效。',
+                adverse:'过敏反应最常见（皮疹、荨麻疹、过敏性休克）。胃肠道反应：恶心、腹泻。偶见伪膜性肠炎。',
+                monitoring:'用药前必须进行青霉素皮试。治疗期间监测肾功能。如出现皮疹立即停药就医。',
+                resistance:'耐药问题严重。产β-内酰胺酶细菌可水解本品。不可用于耐甲氧西林金黄色葡萄球菌(MRSA)。'},
+            {id:'metformin',name:'盐酸二甲双胍片',generic:'Metformin',cat:'diabetes',icon:'🩸',
+                class:'双胍类口服降糖药',spec:'0.5g×20片',manufacturer:'中美施贵宝',
+                usage:'口服，起始剂量0.5g bid，随餐服用。最大日剂量2g。',
+                indications:'用于单纯饮食控制及体育锻炼无效的2型糖尿病。可单用或与磺脲类、胰岛素合用。',
+                pharmacology:'减少肝葡萄糖输出；增加外周组织（肌肉）对葡萄糖的摄取和利用；抑制肠道葡萄糖吸收。不刺激胰岛素分泌，单用不引起低血糖。',
+                adverse:'常见胃肠道反应（金属味、恶心、腹泻），多为一过性。罕见乳酸酸中毒（死亡率高）。',
+                monitoring:'定期监测肾功能（eGFR<30禁用）。造影检查前48小时需停药。监测维生素B12水平。',
+                interaction:'与碘造影剂合用增加乳酸酸中毒风险。酒精增加低血糖和乳酸酸中毒风险。'},
+            {id:'amlodipine',name:'苯磺酸氨氯地平片',generic:'Amlodipine',cat:'cardio',icon:'💓',
+                class:'钙通道阻滞剂(CCB)',spec:'5mg×7片',manufacturer:'辉瑞',
+                usage:'口服，起始剂量5mg qd，最大剂量10mg qd。',
+                indications:'用于高血压、慢性稳定型心绞痛和变异型心绞痛。',
+                pharmacology:'二氢吡啶类钙通道阻滞剂，选择性阻滞血管平滑肌L型钙通道，扩张外周动脉，降低外周阻力。起效缓慢，作用持久。',
+                adverse:'常见：踝部水肿、头痛、面部潮红、心悸。与剂量相关。',
+                monitoring:'监测血压和心率。注意踝部水肿。肝功能不全需减量。',
+                interaction:'与CYP3A4抑制剂（酮康唑等）合用需减量。辛伐他汀与氨氯地平合用剂量限制。'},
+            {id:'atorvastatin',name:'阿托伐他汀钙片',generic:'Atorvastatin',cat:'lipid',icon:'🫀',
+                class:'HMG-CoA还原酶抑制剂',spec:'20mg×7片',manufacturer:'辉瑞',
+                usage:'口服，起始剂量10-20mg qd，晚餐时服用。最大日剂量80mg。',
+                indications:'用于高胆固醇血症和混合型高脂血症，降低心血管事件风险。',
+                pharmacology:'竞争性抑制HMG-CoA还原酶，减少肝脏胆固醇合成。上调LDL受体表达，增加LDL清除。强效降LDL-C。',
+                adverse:'常见：肌肉疼痛、关节痛。严重：横纹肌溶解（罕见）、肝酶升高。',
+                monitoring:'治疗前和治疗期间监测肝功能。出现肌痛、肌无力需查肌酸激酶(CK)。',
+                interaction:'与CYP3A4抑制剂合用增加肌病风险。与吉非罗齐合用禁忌。葡萄柚汁增加暴露量。'},
+            {id:'azithromycin',name:'阿奇霉素片',generic:'Azithromycin',cat:'antibiotic',icon:'🦠',
+                class:'大环内酯类',spec:'0.25g×6片',manufacturer:'辉瑞',
+                usage:'口服，成人一日0.5g qd，连用3天。或首日0.5g，第2-5日0.25g qd。',
+                indications:'用于敏感菌所致呼吸道感染、皮肤软组织感染、非淋菌性尿道炎等。',
+                pharmacology:'大环内酯类抗生素，与50S核糖体亚基结合，抑制细菌蛋白质合成。组织浓度高，半衰期长（68小时）。',
+                adverse:'胃肠道反应（腹泻、恶心）。偶见肝功能异常、QT间期延长。',
+                monitoring:'肝功能不全慎用。先天性QT延长综合征禁用。',
+                interaction:'与抗酸剂间隔至少2小时。可能增强华法林抗凝作用。'},
+            {id:'metoprolol',name:'酒石酸美托洛尔片',generic:'Metoprolol',cat:'cardio',icon:'💓',
+                class:'β1受体阻滞剂',spec:'25mg×20片',manufacturer:'阿斯利康',
+                usage:'口服，高血压：25-100mg bid；心绞痛：25-50mg bid。',
+                indications:'用于高血压、心绞痛、心力衰竭（稳定期）。',
+                pharmacology:'选择性β1受体阻滞剂，减慢心率、降低心肌收缩力、减少心输出量。抑制肾素释放。',
+                adverse:'常见：疲劳、头晕、心动过缓、肢端发冷。可影响糖代谢。',
+                monitoring:'监测心率和血压。突然停药可致反跳性高血压和心绞痛加重。',
+                interaction:'与维拉帕米合用增加心动过缓和心力衰竭风险。NSAID可减弱降压效果。'},
+            {id:'levofloxacin',name:'左氧氟沙星片',generic:'Levofloxacin',cat:'antibiotic',icon:'🦠',
+                class:'氟喹诺酮类',spec:'0.5g×4片',manufacturer:'第一三共',
+                usage:'口服，成人一日0.5g qd。疗程根据感染类型决定。',
+                indications:'用于敏感菌所致社区获得性肺炎、复杂性尿路感染等。',
+                pharmacology:'氟喹诺酮类，抑制DNA旋转酶和拓扑异构酶Ⅳ，阻断细菌DNA复制。抗菌谱广，组织穿透力强。',
+                adverse:'胃肠道反应。中枢神经系统反应（头晕、失眠）。肌腱炎和肌腱断裂风险。',
+                monitoring:'老年人和使用激素者肌腱损伤风险增加。避免过度日晒（光敏反应）。',
+                interaction:'与含钙、镁、铁制剂间隔至少2小时。可增强华法林抗凝作用。'},
+            {id:'lisinopril',name:'盐酸贝那普利片',generic:'Lisinopril',cat:'cardio',icon:'💓',
+                class:'ACEI类',spec:'10mg×14片',manufacturer:'诺华',
+                usage:'口服，初始剂量5-10mg qd，维持剂量20-40mg qd。',
+                indications:'用于治疗高血压、充血性心力衰竭。降低心肌梗死后的死亡率。',
+                pharmacology:'血管紧张素转换酶抑制剂(ACEI)，抑制血管紧张素Ⅱ生成，扩张血管，降低外周阻力，降低血压。减少醛固酮分泌，减轻心脏负荷。',
+                adverse:'干咳最常见（10-20%）。血管性水肿（罕见但严重）。高钾血症、肾功能恶化。',
+                monitoring:'治疗前后监测肾功能和血钾。出现干咳可考虑换用ARB类。双侧肾动脉狭窄禁用。',
+                interaction:'与保钾利尿剂合用增加高钾血症风险。与NSAIDs合用降低降压效果。'},
+            {id:'glipizide',name:'格列吡嗪片',generic:'Glipizide',cat:'diabetes',icon:'🩸',
+                class:'磺脲类降糖药',spec:'5mg×30片',manufacturer:'辉瑞',
+                usage:'口服，初始剂量2.5-5mg qd，早餐前30分钟服用。根据血糖调整剂量，最大日剂量20mg。',
+                indications:'用于2型糖尿病，饮食控制效果不佳时。可与二甲双胍、胰岛素等联合使用。',
+                pharmacology:'磺脲类降糖药，刺激胰岛β细胞分泌胰岛素，降低血糖。促进葡萄糖转运蛋白4(GLUT4)转位，增加外周组织葡萄糖摄取。',
+                adverse:'低血糖最常见（尤其老年人和肾功能不全者）。体重增加。偶见肝功能异常、皮疹。',
+                monitoring:'定期监测血糖和糖化血红蛋白。警惕低血糖症状（出汗、心悸、饥饿感）。避免空腹饮酒。',
+                interaction:'与β受体阻滞剂合用可能掩盖低血糖症状。与水杨酸类合用增强降糖作用。'},
+            {id:'simvastatin',name:'辛伐他汀片',generic:'Simvastatin',cat:'lipid',icon:'🫀',
+                class:'HMG-CoA还原酶抑制剂',spec:'20mg×7片',manufacturer:'默沙东',
+                usage:'口服，初始剂量10-20mg qd，晚餐时服用。最大日剂量40mg。',
+                indications:'用于高胆固醇血症、冠心病等，降低心血管事件风险。',
+                pharmacology:'他汀类降脂药，竞争性抑制HMG-CoA还原酶，减少胆固醇合成。上调LDL受体表达，增加LDL清除。还具有抗炎、稳定斑块作用。',
+                adverse:'肌肉疼痛最常见。严重：横纹肌溶解（罕见）、肝酶升高。',
+                monitoring:'治疗前和治疗期间监测肝功能。出现不明原因肌肉疼痛需查肌酸激酶。',
+                interaction:'与CYP3A4抑制剂合用增加肌病风险。与吉非罗齐合用禁忌。葡萄柚汁增加暴露量。'},
+            {id:'fluconazole',name:'氟康唑胶囊',generic:'Fluconazole',cat:'antibiotic',icon:'🦠',
+                class:'三唑类抗真菌药',spec:'50mg×4粒',manufacturer:'辉瑞',
+                usage:'口服，根据感染类型调整剂量。念珠菌性阴道炎：150mg单次。系统性感染：200-400mg qd。',
+                indications:'用于念珠菌病、隐球菌病等真菌感染。预防免疫功能低下患者的真菌感染。',
+                pharmacology:'三唑类抗真菌药，抑制真菌细胞膜麦角甾醇合成，破坏真菌细胞膜完整性。对念珠菌、隐球菌等广谱有效。',
+                adverse:'胃肠道反应（恶心、腹痛）。肝功能异常。皮疹。',
+                monitoring:'治疗期间监测肝功能。长期使用需定期检查血常规和肝功能。',
+                interaction:'与华法林、磺脲类等合用需监测。可延长苯妥英、环孢素等药物半衰期。'},
+            {id:'carvedilol',name:'卡维地洛片',generic:'Carvedilol',cat:'cardio',icon:'💓',
+                class:'非选择性β受体阻滞剂',spec:'10mg×28片',manufacturer:'罗氏',
+                usage:'口服，初始剂量3.125mg bid，逐渐增量。最大日剂量50mg，分2次服用。',
+                indications:'用于高血压、心力衰竭、心肌梗死后心功能不全。',
+                pharmacology:'非选择性β和α1受体阻滞剂，降低心率和心肌收缩力，扩张血管。抗氧化和抗增殖作用，对心脏有保护作用。',
+                adverse:'头晕、乏力（体位性低血压）。心动过缓。糖脂代谢异常。',
+                monitoring:'监测心率和血压。心力衰竭患者需缓慢增量。突然停药可反跳性加重。',
+                interaction:'与维拉帕米合用增加心动过缓和心力衰竭风险。与胰岛素合用可能增强降糖作用。'},
+            {id:'ramipril',name:'雷米普利片',generic:'Ramipril',cat:'cardio',icon:'💓',
+                class:'ACEI类',spec:'5mg×7片',manufacturer:'赛诺菲',
+                usage:'口服，高血压：2.5-10mg qd；心力衰竭：1.25-2.5mg bid。',
+                indications:'用于高血压、充血性心力衰竭、心肌梗死后心功能不全。降低心血管事件风险。',
+                pharmacology:'ACEI类药物，抑制血管紧张素转换酶，减少血管紧张素Ⅱ生成，扩张血管，降低血压。',
+                adverse:'干咳、血管性水肿、高钾血症、肾功能异常。',
+                monitoring:'治疗前后监测肾功能和血钾。',
+                interaction:'与保钾利尿剂、NSAIDs合用需谨慎。'},
+            {id:'valsartan',name:'缬沙坦胶囊',generic:'Valsartan',cat:'cardio',icon:'💓',
+                class:'ARB类',spec:'80mg×7粒',manufacturer:'诺华',
+                usage:'口服，80-160mg qd，空腹或餐后服用。',
+                indications:'用于高血压、心力衰竭、心肌梗死后心功能不全。',
+                pharmacology:'血管紧张素Ⅱ受体拮抗剂(ARB)，阻断AT1受体，扩张血管，降低血压。不影响缓激肽降解，因此干咳副作用较少。',
+                adverse:'头晕、头痛。血管性水肿（罕见）。高钾血症、肾功能异常。',
+                monitoring:'监测血压、肾功能和血钾。',
+                interaction:'与保钾利尿剂合用增加高钾血症风险。与锂剂合用增加锂毒性。'},
+            {id:'amlodipine_ben',name:'苯磺酸氨氯地平片',generic:'Amlodipine Besylate',cat:'cardio',icon:'💓',
+                class:'钙通道阻滞剂(CCB)',spec:'5mg×7片',manufacturer:'辉瑞',
+                usage:'口服，起始剂量5mg qd，最大剂量10mg qd。',
+                indications:'用于高血压、慢性稳定型心绞痛和变异型心绞痛。',
+                pharmacology:'二氢吡啶类钙通道阻滞剂，选择性阻滞血管平滑肌L型钙通道，扩张外周动脉，降低外周阻力。起效缓慢，作用持久。',
+                adverse:'常见：踝部水肿、头痛、面部潮红、心悸。与剂量相关。',
+                monitoring:'监测血压和心率。注意踝部水肿。肝功能不全需减量。',
+                interaction:'与CYP3A4抑制剂（酮康唑等）合用需减量。辛伐他汀与氨氯地平合用剂量限制。'},
+            {id:'bisoprolol',name:'富马酸比索洛尔片',generic:'Bisoprolol',cat:'cardio',icon:'💓',
+                class:'β1受体阻滞剂',spec:'5mg×10片',manufacturer:'默克',
+                usage:'口服，2.5-10mg qd，早晨空腹服用。',
+                indications:'用于高血压、冠心病、心绞痛。',
+                pharmacology:'选择性β1受体阻滞剂，减慢心率、降低心肌收缩力和血压。对支气管和糖代谢影响较小。',
+                adverse:'心动过缓、疲劳、头晕。支气管痉挛（哮喘患者慎用）。',
+                monitoring:'监测心率、血压。不可突然停药。',
+                interaction:'与维拉帕米、地尔硫卓合用需谨慎。与胰岛素合用可能掩盖低血糖症状。'},
+            {id:'nifedipine',name:'硝苯地平缓释片',generic:'Nifedipine',cat:'cardio',icon:'💓',
+                class:'钙通道阻滞剂(CCB)',spec:'20mg×30片',manufacturer:'拜耳',
+                usage:'口服，20-40mg bid，整片吞服不可掰开。',
+                indications:'用于高血压、冠心病心绞痛。',
+                pharmacology:'二氢吡啶类钙通道阻滞剂，扩张冠状动脉和外周动脉，降低血压和心脏负荷。',
+                adverse:'头痛、面部潮红、踝部水肿。牙龈增生。',
+                monitoring:'监测血压和心率。长期使用需检查牙龈。',
+                interaction:'葡萄柚汁增加生物利用度。与CYP3A4抑制剂合用需调整剂量。'},
+            {id:'gliclazide',name:'格列齐特缓释片',generic:'Gliclazide MR',cat:'diabetes',icon:'🩸',
+                class:'磺脲类降糖药',spec:'30mg×30片',manufacturer:'施维雅',
+                usage:'口服，30-120mg qd，早餐时服用。',
+                indications:'用于2型糖尿病，饮食控制和运动疗法血糖控制不佳者。',
+                pharmacology:'磺脲类降糖药，刺激胰岛β细胞分泌胰岛素。释放速度缓慢，峰值低，低血糖风险较低。',
+                adverse:'低血糖（比格列本脲风险低）、体重增加、胃肠反应。',
+                monitoring:'定期监测血糖。老年患者从低剂量开始。',
+                interaction:'与CYP2C9抑制剂合用需调整剂量。增强抗凝药作用。'},
+            {id:'acarbose',name:'阿卡波糖片',generic:'Acarbose',cat:'diabetes',icon:'🩸',
+                class:'α-葡萄糖苷酶抑制剂',spec:'50mg×30片',manufacturer:'拜耳',
+                usage:'口服，50-100mg tid，与前几口食物一起服用。',
+                indications:'用于2型糖尿病，辅助饮食控制和运动疗法。',
+                pharmacology:'抑制小肠α-葡萄糖苷酶，延缓碳水化合物消化吸收，降低餐后血糖。不刺激胰岛素分泌。',
+                adverse:'胃肠道反应（腹胀、排气增多、腹泻）。肝功能异常（罕见）。',
+                monitoring:'定期监测肝功能。有消化道疾病者慎用。',
+                interaction:'与其他降糖药合用可能增加低血糖风险。考来烯胺可能减弱作用。'},
+            {id:'sitagliptin',name:'西格列汀片',generic:'Sitagliptin',cat:'diabetes',icon:'🩸',
+                class:'DPP-4抑制剂',spec:'100mg×7片',manufacturer:'默沙东',
+                usage:'口服，100mg qd，餐前或餐后服用均可。',
+                indications:'用于2型糖尿病，可单用或与二甲双胍、磺脲类合用。',
+                pharmacology:'二肽基肽酶-4(DPP-4)抑制剂，提高内源性GLP-1水平，促进葡萄糖依赖性胰岛素分泌，抑制胰高血糖素分泌。',
+                adverse:'鼻咽炎、头痛。偶见胰腺炎。',
+                monitoring:'监测血糖。有胰腺炎病史者慎用。',
+                interaction:'与其他降糖药合用需调整剂量。肾功能不全需调整剂量。'},
+            {id:'rosuvastatin',name:'瑞舒伐他汀钙片',generic:'Rosuvastatin',cat:'lipid',icon:'🫀',
+                class:'HMG-CoA还原酶抑制剂',spec:'10mg×7片',manufacturer:'阿斯利康',
+                usage:'口服，5-20mg qd，晚间服用。',
+                indications:'用于高胆固醇血症和混合型高脂血症。',
+                pharmacology:'强效他汀类药物，抑制HMG-CoA还原酶，降低LDL-C效果显著。对HDL-C有一定升高作用。',
+                adverse:'肌肉疼痛、肝酶升高。严重：横纹肌溶解（罕见）。',
+                monitoring:'治疗前监测肝功能。出现肌痛需查CK。',
+                interaction:'与环孢素、吉非罗齐合用禁忌。与CYP2C9抑制剂合用增加暴露量。'},
+            {id:'fenofibrate',name:'非诺贝特胶囊',generic:'Fenofibrate',cat:'lipid',icon:'🫀',
+                class:'贝特类降脂药',spec:'200mg×10粒',manufacturer:'雅培',
+                usage:'口服，200mg qd，随餐服用。',
+                indications:'用于高甘油三酯血症和混合型高脂血症。',
+                pharmacology:'过氧化物酶体增殖物激活受体α(PPARα)激动剂，降低甘油三酯，升高HDL-C。',
+                adverse:'胃肠道反应。肌肉疼痛。肝功能异常。',
+                monitoring:'监测肝功能和肌酸激酶。',
+                interaction:'与他汀类合用增加肌病风险。与华法林合用增强抗凝。'},
+            {id:'omeprazole_rx',name:'奥美拉唑肠溶胶囊',generic:'Omeprazole',cat:'digestive',icon:'🍽️',
+                class:'质子泵抑制剂(PPI)',spec:'20mg×14粒',manufacturer:'阿斯利康',
+                usage:'口服，20-40mg qd，晨起空腹服用。',
+                indications:'用于胃溃疡、十二指肠溃疡、胃食管反流病、卓-艾综合征。',
+                pharmacology:'特异性抑制胃壁细胞H+/K+-ATP酶，强效抑制胃酸分泌。作用持续时间长。',
+                adverse:'头痛、腹泻、便秘。长期使用增加骨折风险、维生素B12缺乏风险。',
+                monitoring:'长期使用需定期检查骨密度和维生素B12水平。',
+                interaction:'可影响酮康唑、伊曲康唑吸收。减弱氯吡格雷抗血小板作用。'},
+            {id:'esomeprazole',name:'埃索美拉唑镁肠溶片',generic:'Esomeprazole',cat:'digestive',icon:'🍽️',
+                class:'质子泵抑制剂(PPI)',spec:'20mg×7片',manufacturer:'阿斯利康',
+                usage:'口服，20-40mg qd，晨起空腹服用。',
+                indications:'用于胃食管反流病、消化性溃疡、卓-艾综合征。',
+                pharmacology:'奥美拉唑的S-异构体，抑制壁细胞H+/K+-ATP酶，抑酸效果更强。',
+                adverse:'头痛、腹泻、恶心。长期使用增加骨折风险。',
+                monitoring:'长期使用监测骨密度和维生素B12。',
+                interaction:'与氯吡格雷相互作用较奥美拉唑少。影响某些药物吸收。'},
+            {id:'metoclopramide',name:'甲氧氯普胺片',generic:'Metoclopramide',cat:'digestive',icon:'🍽️',
+                class:'胃动力药',spec:'5mg×100片',manufacturer:'永光制药',
+                usage:'口服，5-10mg tid，餐前30分钟服用。',
+                indications:'用于功能性消化不良、胃食管反流病、恶心呕吐。',
+                pharmacology:'多巴胺D2受体拮抗剂和5-HT4受体激动剂，增强胃蠕动，促进胃排空，具有止吐作用。',
+                adverse:'锥体外系反应（长期使用）。嗜睡、头晕。溢乳。',
+                monitoring:'长期使用需评估锥体外系症状。',
+                interaction:'与抗精神病药合用增加锥体外系反应风险。增强镇静药作用。'},
+            {id:'itraconazole',name:'伊曲康唑胶囊',generic:'Itraconazole',cat:'antifungal',icon:'🍄',
+                class:'三唑类抗真菌药',spec:'100mg×14粒',manufacturer:'杨森',
+                usage:'口服，100-200mg bid，随餐服用以促进吸收。',
+                indications:'用于念珠菌病、隐球菌病、曲霉病、芽生菌病等。',
+                pharmacology:'广谱抗真菌药，抑制真菌细胞膜麦角甾醇合成。组织分布广，在皮肤和甲板中停留时间长。',
+                adverse:'胃肠道反应、肝功能异常。心力衰竭（罕见）。',
+                monitoring:'监测肝功能。用药前检查心功能。',
+                interaction:'与CYP3A4底物合用增加毒性风险。禁忌与某些抗心律失常药合用。'},
+            {id:'voriconazole',name:'伏立康唑片',generic:'Voriconazole',cat:'antifungal',icon:'🍄',
+                class:'三唑类抗真菌药',spec:'200mg×14片',manufacturer:'辉瑞',
+                usage:'口服，体重≥40kg：400mg q12h（首日），后200mg q12h。体重<40kg：200mg q12h（首日），后100mg q12h。',
+                indications:'用于侵袭性曲霉病、佛珠菌属感染等严重真菌感染。',
+                pharmacology:'广谱抗真菌药，抑制真菌细胞色素P450依赖性酶，阻断麦角甾醇合成。',
+                adverse:'视觉障碍（常见、一过性）。肝功能异常、皮疹。',
+                monitoring:'治疗期间监测肝功能和视觉功能。',
+                interaction:'与多种药物相互作用。与利福平、卡马西平合用禁忌。'},
+            {id:'valacyclovir',name:'盐酸伐昔洛韦片',generic:'Valacyclovir',cat:'antiviral',icon:'🦠',
+                class:'抗病毒药',spec:'500mg×10片',manufacturer:'葛兰素史克',
+                usage:'口服，带状疱疹：1000mg tid，7天；单纯疱疹：500mg bid，3-5天。',
+                indications:'用于带状疱疹、单纯疱疹、生殖器疱疹。',
+                pharmacology:'阿昔洛韦的前体药物，口服吸收后在体内转化为阿昔洛韦，抑制病毒DNA复制。',
+                adverse:'头痛、恶心。偶见肾功能异常。',
+                monitoring:'肾功能不全者需调整剂量。',
+                interaction:'与肾毒性药物合用增加肾毒性风险。'},
+            {id:'oseltamivir',name:'磷酸奥司他韦胶囊',generic:'Oseltamivir',cat:'antiviral',icon:'🦠',
+                class:'抗病毒药',spec:'75mg×10粒',manufacturer:'罗氏',
+                usage:'口服，成人75mg bid，连用5天。在出现症状48小时内使用效果最佳。',
+                indications:'用于甲型和乙型流感的治疗和预防。',
+                pharmacology:'神经氨酸酶抑制剂，抑制流感病毒表面神经氨酸酶，阻止病毒从感染细胞释放。',
+                adverse:'恶心、呕吐、头痛。精神神经事件（罕见，儿童多见）。',
+                monitoring:'肾功能不全需调整剂量。',
+                interaction:'活疫苗应在停用本品48小时后接种。'},
+        ];
+
+        let activeCat='all';
+        function render(){
+            const filtered=activeCat==='all'?rxDrugs:rxDrugs.filter(d=>d.cat===activeCat);
+            document.getElementById('rxList').innerHTML=filtered.map((d,i)=>`
+            <div class="rx-item" style="animation:fadeIn 0.4s ease ${i*0.04}s both;">
+              <h3>${d.name} <span class="rx-badge">${d.class}</span></h3>
+              <span class="generic-name">${d.generic} | ${d.manufacturer} | ${d.spec}</span>
+              <div class="info-row">
+                <div class="info-cell"><span class="cell-label">用法用量</span><div class="cell-value">${d.usage}</div></div>
+                <div class="info-cell"><span class="cell-label">适应症</span><div class="cell-value">${d.indications}</div></div>
+              </div>
+              <p><strong>药理机制：</strong>${d.pharmacology}</p>
+              <p><strong>不良反应：</strong>${d.adverse}</p>
+              <p><strong>耐药性：</strong>${d.resistance||'需根据药敏试验选择用药'}</p>
+              <div class="monitor-box"><strong>📊 用药监测：</strong>${d.monitoring}<br><strong>💊 药物相互作用：</strong>${d.interaction}</div>
+            </div>`).join('');
+        }
+        document.getElementById('filterBar').addEventListener('click',function(e){if(e.target.classList.contains('filter-chip')){document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));e.target.classList.add('active');activeCat=e.target.dataset.cat;render();}});
+        const urlP=new URLSearchParams(window.location.search);if(urlP.get('cat')){activeCat=urlP.get('cat');document.querySelectorAll('.filter-chip').forEach(c=>{c.classList.remove('active');if(c.dataset.cat===activeCat)c.classList.add('active');});}
+        render();
+        const st=document.createElement('style');st.textContent='@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}';document.head.appendChild(st);
+    </script>
+</body>
+</html>

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间线 · 未解之谜档案馆</title>
+    <style>
+        :root {
+            --bg-void: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.85);
+            --glass-bg: rgba(10, 10, 20, 0.7);
+            --glass-border: rgba(180, 40, 40, 0.18);
+            --accent-crimson: #c0392b;
+            --accent-warning: #e74c3c;
+            --accent-amber: #d4a017;
+            --accent-glow: rgba(220, 50, 50, 0.5);
+            --accent-neon: #ff3030;
+            --text-primary: #e0d8d0;
+            --text-secondary: #a09890;
+            --text-muted: #6a6258;
+            --border-radius-xl: 1.5rem;
+            --font-body: 'Crimson Text', 'Georgia', serif;
+            --font-heading: 'Cinzel', 'Georgia', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+            /* Category colors */
+            --cat-ufo: #4fc3f7;
+            --cat-ufo-bg: rgba(79, 195, 247, 0.12);
+            --cat-ufo-border: rgba(79, 195, 247, 0.3);
+            --cat-ufo-glow: rgba(79, 195, 247, 0.4);
+            --cat-missing: #ffb74d;
+            --cat-missing-bg: rgba(255, 183, 77, 0.12);
+            --cat-missing-border: rgba(255, 183, 77, 0.3);
+            --cat-missing-glow: rgba(255, 183, 77, 0.4);
+            --cat-supernatural: #ce93d8;
+            --cat-supernatural-bg: rgba(206, 147, 216, 0.12);
+            --cat-supernatural-border: rgba(206, 147, 216, 0.3);
+            --cat-supernatural-glow: rgba(206, 147, 216, 0.4);
+            --cat-historical: #ef5350;
+            --cat-historical-bg: rgba(239, 83, 80, 0.12);
+            --cat-historical-border: rgba(239, 83, 80, 0.3);
+            --cat-historical-glow: rgba(239, 83, 80, 0.4);
+            --cat-cryptid: #81c784;
+            --cat-cryptid-bg: rgba(129, 199, 132, 0.12);
+            --cat-cryptid-border: rgba(129, 199, 132, 0.3);
+            --cat-cryptid-glow: rgba(129, 199, 132, 0.4);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+        /* ========== NAVIGATION ========== */
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .logo span {
+            color: var(--accent-warning);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-warning);
+        }
+        /* ========== HEADER ========== */
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        /* ========== STATS BAR ========== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+        .stats-bar .stat-mini {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.8rem;
+            text-align: center;
+        }
+        .stat-mini .sm-value {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            color: var(--accent-warning);
+            letter-spacing: 1px;
+        }
+        .stat-mini .sm-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 0.2rem;
+        }
+        /* ========== ERA FILTER BAR ========== */
+        .era-filter-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+        }
+        .era-filter-btn {
+            padding: 0.4rem 1.1rem;
+            border-radius: 2rem;
+            background: rgba(220, 50, 50, 0.06);
+            border: 1px solid rgba(220, 50, 50, 0.2);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        .era-filter-btn:hover,
+        .era-filter-btn.active {
+            background: rgba(220, 50, 50, 0.2);
+            color: var(--accent-warning);
+            border-color: var(--accent-warning);
+            box-shadow: 0 0 15px rgba(220, 50, 50, 0.25);
+        }
+        .era-filter-btn .era-count {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            opacity: 0.7;
+            margin-left: 0.3rem;
+        }
+        /* ========== JUMP TO ERA ========== */
+        .jump-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .jump-nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+        .jump-nav a:hover {
+            color: var(--accent-warning);
+            border-color: rgba(220, 50, 50, 0.3);
+            background: rgba(220, 50, 50, 0.08);
+        }
+        /* ========== SPACING TOGGLE ========== */
+        .view-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        .view-controls span {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+        .spacing-toggle {
+            display: flex;
+            border-radius: 2rem;
+            overflow: hidden;
+            border: 1px solid rgba(220, 50, 50, 0.25);
+        }
+        .spacing-toggle button {
+            padding: 0.3rem 0.9rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            transition: 0.2s;
+        }
+        .spacing-toggle button.active {
+            background: rgba(220, 50, 50, 0.2);
+            color: var(--accent-warning);
+        }
+        /* ========== TIMELINE MAIN ========== */
+        .timeline-vertical-main {
+            position: relative;
+            padding-left: 3.5rem;
+        }
+        .timeline-vertical-main::before {
+            content: '';
+            position: absolute;
+            left: 1.5rem;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent-crimson), var(--accent-amber), var(--accent-crimson), var(--accent-amber), var(--accent-crimson));
+            border-radius: 2px;
+        }
+        /* Era section dividers */
+        .era-divider {
+            position: relative;
+            margin: 3rem 0 1.5rem;
+            padding-left: 2rem;
+        }
+        .era-divider .era-label {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            color: var(--accent-warning);
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+        }
+        .era-divider .era-label::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: -20px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-warning), transparent);
+        }
+        .era-divider::before {
+            content: '';
+            position: absolute;
+            left: -2.15rem;
+            top: 0.65rem;
+            width: 18px;
+            height: 18px;
+            background: var(--bg-void);
+            border: 3px solid var(--accent-amber);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-glow);
+            z-index: 2;
+        }
+        /* ========== TIMELINE ENTRY ========== */
+        .tl-entry {
+            position: relative;
+            margin-bottom: 2.5rem;
+            padding-left: 2rem;
+            cursor: pointer;
+            transition: 0.3s;
+            border-left: 3px solid transparent;
+            border-radius: 0 0.8rem 0.8rem 0;
+        }
+        .tl-entry:hover {
+            transform: translateX(8px);
+        }
+        .tl-entry.compact {
+            margin-bottom: 1.2rem;
+        }
+        .tl-entry.compact .tl-desc {
+            display: none;
+        }
+        .tl-entry.compact .tl-year {
+            font-size: 1.3rem;
+        }
+        .tl-entry::before {
+            content: '';
+            position: absolute;
+            left: -2.05rem;
+            top: 0.5rem;
+            width: 14px;
+            height: 14px;
+            background: var(--bg-void);
+            border: 3px solid var(--accent-crimson);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-glow);
+            z-index: 2;
+        }
+        /* Category-specific node styling */
+        .tl-entry.cat-ufo::before {
+            border-color: var(--cat-ufo);
+            box-shadow: 0 0 18px var(--cat-ufo-glow);
+        }
+        .tl-entry.cat-missing::before {
+            border-color: var(--cat-missing);
+            box-shadow: 0 0 18px var(--cat-missing-glow);
+        }
+        .tl-entry.cat-supernatural::before {
+            border-color: var(--cat-supernatural);
+            box-shadow: 0 0 18px var(--cat-supernatural-glow);
+        }
+        .tl-entry.cat-historical::before {
+            border-color: var(--cat-historical);
+            box-shadow: 0 0 18px var(--cat-historical-glow);
+        }
+        .tl-entry.cat-cryptid::before {
+            border-color: var(--cat-cryptid);
+            box-shadow: 0 0 18px var(--cat-cryptid-glow);
+        }
+        /* Major event pulse animation */
+        .tl-entry.major::before {
+            animation: nodePulse 2s ease-in-out infinite;
+        }
+        @keyframes nodePulse {
+            0%,
+            100% {
+                box-shadow: 0 0 15px var(--accent-glow);
+            }
+            50% {
+                box-shadow: 0 0 35px var(--accent-glow-strong), 0 0 60px var(--accent-glow);
+            }
+        }
+        .tl-entry .tl-year {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-crimson);
+            letter-spacing: 2px;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+        .tl-entry .tl-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+        .tl-entry .tl-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: 0.3rem;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+        .tl-entry .tl-desc.expanded {
+            max-height: 300px;
+        }
+        .tl-entry .tl-type {
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: rgba(220, 50, 50, 0.12);
+            border: 1px solid rgba(220, 50, 50, 0.3);
+            color: var(--accent-warning);
+            margin-top: 0.4rem;
+        }
+        /* Category-specific type badge colors */
+        .tl-type.type-ufo {
+            background: var(--cat-ufo-bg);
+            border-color: var(--cat-ufo-border);
+            color: var(--cat-ufo);
+        }
+        .tl-type.type-missing {
+            background: var(--cat-missing-bg);
+            border-color: var(--cat-missing-border);
+            color: var(--cat-missing);
+        }
+        .tl-type.type-supernatural {
+            background: var(--cat-supernatural-bg);
+            border-color: var(--cat-supernatural-border);
+            color: var(--cat-supernatural);
+        }
+        .tl-type.type-historical {
+            background: var(--cat-historical-bg);
+            border-color: var(--cat-historical-border);
+            color: var(--cat-historical);
+        }
+        .tl-type.type-cryptid {
+            background: var(--cat-cryptid-bg);
+            border-color: var(--cat-cryptid-border);
+            color: var(--cat-cryptid);
+        }
+        /* Era-specific left border gradient */
+        .tl-entry.era-ancient {
+            border-left-color: rgba(212, 160, 23, 0.3);
+            background: linear-gradient(90deg, rgba(212, 160, 23, 0.04), transparent);
+        }
+        .tl-entry.era-medieval {
+            border-left-color: rgba(206, 147, 216, 0.3);
+            background: linear-gradient(90deg, rgba(206, 147, 216, 0.04), transparent);
+        }
+        .tl-entry.era-1800s {
+            border-left-color: rgba(239, 83, 80, 0.3);
+            background: linear-gradient(90deg, rgba(239, 83, 80, 0.04), transparent);
+        }
+        .tl-entry.era-1900-1950 {
+            border-left-color: rgba(255, 183, 77, 0.3);
+            background: linear-gradient(90deg, rgba(255, 183, 77, 0.04), transparent);
+        }
+        .tl-entry.era-1950-2000 {
+            border-left-color: rgba(79, 195, 247, 0.3);
+            background: linear-gradient(90deg, rgba(79, 195, 247, 0.04), transparent);
+        }
+        .tl-entry.era-2000plus {
+            border-left-color: rgba(255, 48, 48, 0.3);
+            background: linear-gradient(90deg, rgba(255, 48, 48, 0.04), transparent);
+        }
+        /* ========== SVG TRACK ========== */
+        .svg-track-container {
+            position: relative;
+            margin: 2rem 0;
+            overflow-x: auto;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1rem;
+        }
+        .svg-track-container h4 {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .svg-track-container svg {
+            width: 100%;
+            min-width: 700px;
+            height: 150px;
+        }
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .timeline-vertical-main {
+                padding-left: 2.5rem;
+            }
+            .tl-entry .tl-year {
+                font-size: 1.4rem;
+            }
+            .era-filter-bar {
+                gap: 0.3rem;
+            }
+            .era-filter-btn {
+                padding: 0.3rem 0.7rem;
+                font-size: 0.65rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .stats-bar {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ========== NAVIGATION ========== -->
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='mystery_home.html'">M<span>Y</span>STERY ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="mystery_home.html">首页</a></li>
+            <li><a href="archives.html">档案库</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html" class="active">时间线</a></li>
+            <li><a href="ufo.html">UFO档案</a></li>
+            <li><a href="missing.html">失踪案件</a></li>
+            <li><a href="supernatural.html">超自然</a></li>
+            <li><a href="compare.html">案件对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🕰️ 神秘事件时间线</h1>
+        <p style="color:var(--text-muted); letter-spacing:1px;">CHRONOLOGICAL ARCHIVE OF UNEXPLAINED EVENTS</p>
+    </div>
+
+    <div class="container">
+        <!-- ========== STATS BAR ========== -->
+        <div class="stats-bar" id="statsBar"></div>
+
+        <!-- ========== JUMP TO ERA ========== -->
+        <div class="jump-nav" id="jumpNav"></div>
+
+        <!-- ========== ERA FILTER BAR ========== -->
+        <div class="era-filter-bar" id="eraFilterBar"></div>
+
+        <!-- ========== SVG TRACK ========== -->
+        <div class="svg-track-container">
+            <h4>VISUAL CHRONOLOGY TRACK</h4>
+            <svg id="svgTrack" viewBox="0 0 1200 150" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+
+        <!-- ========== VIEW CONTROLS ========== -->
+        <div class="view-controls">
+            <span>间距模式</span>
+            <div class="spacing-toggle">
+                <button id="spacingExpanded" class="active">展开</button>
+                <button id="spacingCompact">紧凑</button>
+            </div>
+        </div>
+
+        <!-- ========== TIMELINE MAIN ========== -->
+        <div class="timeline-vertical-main" id="timelineContainer"></div>
+    </div>
+
+    <script>
+        // ========== EXPANDED TIMELINE EVENTS (50+) ==========
+        const timelineEvents = [
+            // --- ANCIENT ERA ---
+            { year: '公元前3000', title: '巨石阵建造一期', type: '历史悬案', cat: 'historical', era: 'ancient',
+                desc: '英国索尔兹伯里平原上开始建造巨石阵第一阶段——环形沟渠与奥布里孔。其精确的天文对准和巨大的石块运输方式至今仍是考古学谜题。',
+                major: true },
+            { year: '公元前2560', title: '吉萨大金字塔完工', type: '历史悬案', cat: 'historical', era: 'ancient',
+                desc: '古埃及第四王朝法老胡夫的大金字塔建成。其精确度、石块重量与当时的技术水平之间的矛盾至今无法完美解释。', major: true },
+            { year: '公元前1400', title: '纳斯卡线条开始绘制', type: '历史悬案', cat: 'historical', era: 'ancient',
+                desc: '秘鲁南部纳斯卡沙漠中出现巨大地面图案。其用途——天文、宗教仪式还是其他——迄今没有定论。', major: false },
+            { year: '约公元前500', title: '巴比伦空中花园之谜', type: '历史悬案', cat: 'historical', era: 'ancient',
+                desc: '古代世界七大奇迹之一——巴比伦空中花园的确切位置和真实存在性至今在学者中存在争议，考古证据仍不充分。', major: false },
+            { year: '约公元前300', title: '亚历山大灯塔之谜', type: '历史悬案', cat: 'historical', era: 'ancient',
+                desc: '古代世界七大奇迹之一的亚历山大灯塔确切结构已失传，考古学家仅能从古代文献和海底遗迹中推测其原貌。', major: false },
+
+            // --- MEDIEVAL ERA ---
+            { year: '公元793', title: '林迪斯法恩袭击', type: '历史悬案', cat: 'historical', era: 'medieval',
+                desc: '维京人对英格兰林迪斯法恩修道院的袭击震惊欧洲，但维京人为何突然开始大规模扩张性掠夺仍是历史之谜。', major: false },
+            { year: '公元1211', title: '伍尔皮特绿孩', type: '超自然现象', cat: 'supernatural', era: 'medieval',
+                desc: '英格兰萨福克郡出现两名绿色皮肤的儿童，讲一种无人能懂的语言。女孩后学会英语，声称来自一个永远黑暗的"圣马丁之地"。', major: false },
+            { year: '1307年10月13日', title: '圣殿骑士团大逮捕', type: '历史悬案', cat: 'historical', era: 'medieval',
+                desc: '法国国王腓力四世下令逮捕全部圣殿骑士团成员，这正是"星期五13日"不吉利传说的来源之一。骑士团传说中的宝藏至今下落不明。',
+                major: true },
+            { year: '公元1434', title: '伏尼契手稿推测年代', type: '历史悬案', cat: 'historical', era: 'medieval',
+                desc: '这份用未知文字写成的神秘手稿碳定年推测产于15世纪早期。数百年来，各国密码学家都无法破译，甚至无法确定这是密码还是恶作剧。',
+                major: false },
+            { year: '1561年4月', title: '纽伦堡天体异象', type: 'UFO事件', cat: 'ufo', era: '1800s',
+                desc: '德国纽伦堡上空出现数百个圆柱体、球体和十字形物体在空中"战斗"。当地报纸以木版画详细记录了这一奇异事件，被认为是历史上最早的UFO大规模目击记载之一。',
+                major: false },
+
+            // --- 1500-1800 ---
+            { year: '1587', title: '罗阿诺克殖民地消失', type: '集体失踪', cat: 'missing', era: '1800s',
+                desc: '英格兰在北美最早殖民地罗阿诺克岛上的115名殖民者全部失踪，只留下一棵树上的"克洛安"刻字。', major: true },
+            { year: '1692', title: '塞勒姆女巫审判', type: '超自然现象', cat: 'supernatural', era: '1800s',
+                desc: '马萨诸塞殖民地大规模歇斯底里事件，超过200人被指控为巫术，20人被处决。真正起因——麦角中毒、社会冲突或真实的集体心理异常——至今争论不休。',
+                major: false },
+            { year: '1764-1767', title: '热沃当怪兽', type: '未知生物', cat: 'cryptid', era: '1800s',
+                desc: '法国热沃当地区超过200起野兽攻击事件，受害者被残忍撕咬。多数人认为是巨型狼，但有人怀疑是连续杀手。', major: false },
+
+            // --- 1800s ---
+            { year: '1803', title: '飞行荷兰人号首次目击', type: '船只失踪', cat: 'missing', era: '1800s',
+                desc: '传闻一般无法靠岸的幽灵船"飞行荷兰人号"在好望角海域被首次目击，此后数世纪不断有水手声称看见了它。', major: false },
+            { year: '1848', title: '菲斯托斯圆盘出土', type: '历史悬案', cat: 'historical', era: '1800s',
+                desc: '克里特岛出土的粘土圆盘上刻有螺旋排列的241个象形文字符号，至今无法解读，是考古学最持久的密码之一。', major: false },
+            { year: '1872', title: '玛丽·赛勒斯特号失踪', type: '船只失踪', cat: 'missing', era: '1800s',
+                desc: '一艘完好无损的商船被发现漂流在大西洋上，全体船员神秘消失，留下未解的谜团。船上物质完全未动，救生艇被带走。', major: true },
+            { year: '1888', title: '开膛手杰克连环谋杀', type: '历史悬案', cat: 'historical', era: '1800s',
+                desc: '伦敦白教堂区发生一系列残忍谋杀案，凶手身份至今未确认，成为历史上最著名的悬案之一。', major: true },
+            { year: '1897', title: '奥罗拉德州UFO事件', type: 'UFO事件', cat: 'ufo', era: '1800s',
+                desc: '德克萨斯州奥罗拉小镇报称一艘太空船撞毁在该地，飞行员下葬在当地墓地——比罗斯威尔事件早了50年。部分墓碑刻有雪茄形符号。',
+                major: false },
+            { year: '1896', title: '美国神秘飞行船浪潮', type: 'UFO事件', cat: 'ufo', era: '1800s',
+                desc: '横跨美国全国的大规模"天空飞行船"目击浪潮——比人类首次飞艇真正飞行早了数年。数千人声称看见带有探照灯的雪茄形飞行器。',
+                major: false },
+
+            // --- 1900-1950 ---
+            { year: '1908', title: '通古斯大爆炸', type: 'UFO/未知', cat: 'ufo', era: '1900-1950',
+                desc: '西伯利亚通古斯地区发生巨大爆炸，威力相当于1000颗原子弹，摧毁800平方英里森林，原因至今未明。', major: true },
+            { year: '1912', title: '伏尼契手稿公之于世', type: '历史悬案', cat: 'historical', era: '1900-1950',
+                desc: '由威尔弗雷德·伏尼契发现的手稿成为20世纪最神秘的密码本。碳定年后确认其年代并非造假，但内容依旧无法解读。',
+                major: false },
+            { year: '1917', title: '法蒂玛太阳奇迹', type: '超自然现象', cat: 'supernatural', era: '1900-1950',
+                desc: '葡萄牙法蒂玛镇约7万人目击太阳"跳舞"、旋转、向地面坠落——被天主教会认定为奇迹，但怀疑者认为这是大规模集体幻觉或UFO现象。',
+                major: false },
+            { year: '1918', title: '独眼巨人号失踪', type: '船只失踪', cat: 'missing', era: '1900-1950',
+                desc: '美国海军运煤船在百慕大三角海域消失，船上306人全部失踪，未发出任何求救信号。', major: true },
+            { year: '1930', title: '爱斯基摩村庄消失', type: '集体失踪', cat: 'missing', era: '1900-1950',
+                desc: '加拿大北部整个因纽特村庄居民神秘消失，留下烧焦的食物和拴着的狗。毛瑟枪还挂在墙上——人却一个不剩。', major: false },
+            { year: '1933', title: '尼斯湖水怪经典照片', type: '未知生物', cat: 'cryptid', era: '1900-1950',
+                desc: '休·格雷的所谓"外科医生照片"拍下尼斯湖中的长颈生物。虽然多年来争议不断，但仍然是神秘生物学最具标志性的图像。', major: false },
+            { year: '1942', title: '洛杉矶战役', type: 'UFO事件', cat: 'ufo', era: '1900-1950',
+                desc: '珍珠港事件后洛杉矶夜空出现不明飞行器，美国陆军发射超过1400发防空弹却未能击中任何目标——到底当时在攻击什么至今是谜。',
+                major: false },
+            { year: '1945', title: '19号航班失踪', type: '航空失踪', cat: 'missing', era: '1900-1950',
+                desc: '五架美国海军鱼雷轰炸机在百慕大三角训练时集体失踪，14名机组人员消失。其最后无线电通讯"一切都在变...海面看起来不对"令人毛骨悚然。',
+                major: true },
+            { year: '1947', title: '罗斯威尔事件', type: 'UFO事件', cat: 'ufo', era: '1900-1950',
+                desc: '新墨西哥州发现不明飞行物残骸，军方最初宣布"捕获飞碟"后迅速撤回声明。至今仍是UFO研究的核心案例。', major: true },
+            { year: '1948', title: '曼特尔UFO事件', type: 'UFO事件', cat: 'ufo', era: '1900-1950',
+                desc: '美国空军上尉托马斯·曼特尔在追击一个"金属物体"时坠机身亡——这是首次因追击UFO导致的飞行员死亡事件。', major: false },
+            { year: '1946', title: '北欧幽灵火箭浪潮', type: 'UFO事件', cat: 'ufo', era: '1900-1950',
+                desc: '瑞典和芬兰上空出现数千次"幽灵火箭"目击报告，军方调查200余案例仍无法解释其来源——可能是二战后首次大规模UFO浪潮。',
+                major: false },
+            { year: '1951', title: '霍普金斯维尔小精灵事件', type: '未知生物', cat: 'cryptid', era: '1900-1950',
+                desc: '肯塔基州一户人家声称被一群小型的、银色的、大耳人形生物围攻整夜。警方在现场找到不明来源的荧光物质痕迹。',
+                major: false },
+
+            // --- 1950-2000 ---
+            { year: '1952', title: '华盛顿DC UFO事件', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '多架不明飞行器出现在白宫和国会大厦上空，被多座机场雷达探测到。美国空军紧急出动F-94喷气战斗机拦截但无法追上。', major: true },
+            { year: '1959', title: '迪亚特洛夫事件', type: '集体死亡', cat: 'supernatural', era: '1950-2000',
+                desc: '九名登山者在乌拉尔山脉离奇死亡，部分遗体有严重内伤却无外伤，舌被撕掉，衣物检测出高放射性。六十余年未解。', major: true },
+            { year: '1961', title: '希尔夫妇外星绑架案', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '贝蒂和巴尼·希尔在新罕布什尔州被"光线追踪"，随后出现数小时"丢失时间"。通过催眠回忆起被外星生物检查的细节，成为首例广为人知的外星绑架案。',
+                major: true },
+            { year: '1964', title: '索科罗UFO着陆事件', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '新墨西哥州警长朗尼·扎莫拉追踪一辆超速车辆时发现一枚蛋形白色物体降落在沙漠中，旁边有小型人形生物。物体随后喷火升空消失——FBI空军调查结论为"无法解释"。',
+                major: false },
+            { year: '1966', title: '天蛾人目击', type: '未知生物', cat: 'cryptid', era: '1950-2000',
+                desc: '西弗吉尼亚州频繁目击大型有翼人形生物，眼睛发出红色光芒，随后当地发生银桥坍塌灾难。天蛾人被视为灾难前兆的预言者。', major: false },
+            { year: '1967', title: '沙格港UFO坠毁', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '加拿大新斯科舍省沙格港多个目击者看见一个发光物体以45度角落入海中。加拿大海军马上搜索但未找到任何残骸——被称为加拿大的罗斯威尔。',
+                major: false },
+            { year: '1971', title: 'D.B.库珀劫机事件', type: '航空失踪', cat: 'missing', era: '1950-2000',
+                desc: '一名神秘男子劫持航班获取20万美元赎金后从波音727后门伞降，从此人间蒸发。这是美国历史上唯一未破的劫机悬案。', major: true },
+            { year: '1974', title: '帕斯卡古拉外星绑架', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '两名密西西比渔夫声称被三个灰肤生物绑架到一艘UFO上进行医学检查。录音带上的私下对话——他们以为无人听到——展示出极度真实的精神创伤。',
+                major: false },
+            { year: '1977', title: '恩菲尔德骚灵事件', type: '超自然现象', cat: 'supernatural', era: '1950-2000',
+                desc: '伦敦一户人家中频繁出现家具自行移动、物品飞起等异常现象，多名警察在现场目击。录音带记录下粗暴的"鬼声"，至今难以解释。', major: true },
+            { year: '1980', title: '蓝道申森林事件', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '美军基地人员在英国森林中目击发光三角形飞行器，接触者后来声称收到加密消息。被称为"英国的罗斯威尔"。', major: false },
+            { year: '1989', title: '比利时UFO浪潮', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '大规模三角形UFO目击浪潮，1000多人向上千次报告不明三角飞行器。比利时空军F-16多次拦截并锁定了雷达，但物体骤降速度超出物理常识。',
+                major: true },
+            { year: '1997', title: '凤凰城光点', type: 'UFO事件', cat: 'ufo', era: '1950-2000',
+                desc: '数千人目击巨大V形光点群缓慢飞过凤凰城上空，持续数小时。官方说是照明弹，但目击事件发生在照明弹投放时间之前。', major: true },
+            // --- 2000+ ---
+            { year: '2004', title: '尼米兹号UFO事件', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '美国海军遭遇"Tic-Tac"形飞行器——在F-18雷达和红外摄像仪上清晰可见。五角大楼2019年正式确认视频真实性，但至今无法解释其来源。',
+                major: true },
+            { year: '2006', title: '奥黑尔国际机场UFO', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '芝加哥奥黑尔国际机场上空出现碟形飞行器，多名联合航空员工目击。物体突然垂直加速穿过云层，在云中冲出一个洞后消失。联邦航空局拒绝调查。',
+                major: false },
+            { year: '2008', title: '斯蒂芬维尔UFO事件', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '德克萨斯州斯蒂芬维尔小镇数百名居民目击巨大无声飞行器低空掠过，后被F-16追踪。地面雷达数据与目击高度吻合，军方先否认后承认确实有战机出动。',
+                major: false },
+            { year: '2014', title: '马航MH370失踪', type: '航空失踪', cat: 'missing', era: '2000plus',
+                desc: '马来西亚航空客机失联，239人失踪，成为现代航空史上最大的谜团之一。卫星"握手"数据虽大致定位飞机方向，但残骸搜索至今只找到零星碎片。', major: true },
+            { year: '2017', title: '五角大楼UFO项目曝光', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '《纽约时报》揭露五角大楼"先进航空威胁识别计划"(AATIP)自2007年起秘密调查UFO/UAP事件，标志UFO话题由边缘走向主流。', major: true },
+            { year: '2021', title: '美国UAP报告发布', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '美国国家情报总监办公室发布史无前例的非机密UAP报告，审查144起军事目击事件，143起"仍无法解释"。', major: true },
+            { year: '2023', title: '国会UAP听证会', type: 'UFO事件', cat: 'ufo', era: '2000plus',
+                desc: '美国国会举行公开UAP听证会，前情报官大卫·格鲁什作证称非人类飞行器的回收项目已被美国政府隐瞒数十年。UFO谜团正式进入国家立法层面。',
+                major: true },
+        ];
+
+        // ========== ERA DEFINITIONS ==========
+        const eraDefs = [
+            { key: 'all', label: '全部事件', anchor: 'top' },
+            { key: 'ancient', label: '古代', anchor: 'era-ancient' },
+            { key: 'medieval', label: '中世纪', anchor: 'era-medieval' },
+            { key: '1800s', label: '1500-1800s', anchor: 'era-1800s' },
+            { key: '1900-1950', label: '1900-1950', anchor: 'era-1900-1950' },
+            { key: '1950-2000', label: '1950-2000', anchor: 'era-1950-2000' },
+            { key: '2000plus', label: '2000+', anchor: 'era-2000plus' },
+        ];
+
+        let activeEraFilter = 'all';
+        let compactMode = false;
+
+        // ========== STATS BAR ==========
+        function renderStatsBar(filteredEvents) {
+            const events = filteredEvents || timelineEvents;
+            const total = events.length;
+            // Most active decade
+            const decadeMap = {};
+            events.forEach(e => {
+                const y = parseInt(e.year.replace(/[^0-9]/g, ''));
+                if (!isNaN(y)) {
+                    const dec = Math.floor(y / 10) * 10;
+                    decadeMap[dec] = (decadeMap[dec] || 0) + 1;
+                }
+            });
+            let bestDecade = 'N/A';
+            let bestCount = 0;
+            Object.entries(decadeMap).forEach(([dec, c]) => { if (c > bestCount) { bestCount = c;
+                    bestDecade = dec + 's'; } });
+            // Most common category
+            const catMap = {};
+            events.forEach(e => { catMap[e.cat] = (catMap[e.cat] || 0) + 1; });
+            let bestCat = 'N/A';
+            let bestCatCount = 0;
+            Object.entries(catMap).forEach(([cat, c]) => { if (c > bestCatCount) { bestCatCount = c;
+                    bestCat = cat; } });
+            const catLabels = { ufo: 'UFO/UAP', missing: '失踪案件', supernatural: '超自然', historical: '历史悬案', cryptid: '未知生物' };
+
+            document.getElementById('statsBar').innerHTML = `
+                <div class="stat-mini"><div class="sm-value">${total}</div><div class="sm-label">事件总数</div></div>
+                <div class="stat-mini"><div class="sm-value">${bestDecade}</div><div class="sm-label">最活跃年代</div></div>
+                <div class="stat-mini"><div class="sm-value">${catLabels[bestCat] || bestCat}</div><div class="sm-label">最常见类别</div></div>
+                <div class="stat-mini"><div class="sm-value">${events.filter(e => e.major).length}</div><div class="sm-label">重大事件</div></div>
+            `;
+        }
+        renderStatsBar();
+
+        // ========== JUMP NAV ==========
+        document.getElementById('jumpNav').innerHTML = eraDefs.filter(ed => ed.key !== 'all').map(ed =>
+            `<a href="#${ed.anchor}" data-era="${ed.key}">⬡ ${ed.label}</a>`
+        ).join('');
+
+        document.querySelectorAll('.jump-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const era = this.dataset.era;
+                activeEraFilter = era;
+                updateFilterButtons();
+                renderTimeline();
+                const eraSection = document.getElementById('era-' + era);
+                if (eraSection) {
+                    eraSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // ========== ERA FILTER BAR ==========
+        function countEventsByEra(eraKey) {
+            if (eraKey === 'all') return timelineEvents.length;
+            return timelineEvents.filter(e => e.era === eraKey).length;
+        }
+
+        function renderFilterButtons() {
+            document.getElementById('eraFilterBar').innerHTML = eraDefs.map(ed => {
+                const count = countEventsByEra(ed.key);
+                const activeClass = ed.key === activeEraFilter ? ' active' : '';
+                return `<button class="era-filter-btn${activeClass}" data-era="${ed.key}">${ed.label}<span class="era-count">${count}</span></button>`;
+            }).join('');
+        }
+        renderFilterButtons();
+
+        function updateFilterButtons() {
+            document.querySelectorAll('.era-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.era === activeEraFilter);
+            });
+        }
+
+        document.querySelectorAll('.era-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                activeEraFilter = this.dataset.era;
+                updateFilterButtons();
+                renderTimeline();
+                updateSVGTrack();
+            });
+        });
+
+        // ========== SPACING TOGGLE ==========
+        document.getElementById('spacingExpanded').addEventListener('click', function() {
+            compactMode = false;
+            this.classList.add('active');
+            document.getElementById('spacingCompact').classList.remove('active');
+            renderTimeline();
+        });
+        document.getElementById('spacingCompact').addEventListener('click', function() {
+            compactMode = true;
+            this.classList.add('active');
+            document.getElementById('spacingExpanded').classList.remove('active');
+            renderTimeline();
+        });
+
+        // ========== RENDER TIMELINE ==========
+        function renderTimeline() {
+            const filtered = activeEraFilter === 'all' ?
+                timelineEvents :
+                timelineEvents.filter(e => e.era === activeEraFilter);
+
+            renderStatsBar(filtered);
+
+            const container = document.getElementById('timelineContainer');
+            const eraOrder = ['ancient', 'medieval', '1800s', '1900-1950', '1950-2000', '2000plus'];
+            const eraLabels = { ancient: 'ANCIENT ERA · 古代', medieval: 'MEDIEVAL ERA · 中世纪', '1800s': '1500-1800s · 近代早期',
+                '1900-1950': '1900-1950 · 二战前后', '1950-2000': '1950-2000 · 冷战时代', '2000plus': '2000+ · 新世纪' };
+
+            let html = '';
+            let currentEra = null;
+
+            filtered.forEach((e, i) => {
+                if (e.era !== currentEra && activeEraFilter === 'all') {
+                    currentEra = e.era;
+                    html += `<div class="era-divider" id="era-${currentEra}"><span class="era-label">${eraLabels[currentEra] || ''}</span></div>`;
+                }
+                const catClass = `cat-${e.cat}`;
+                const majorClass = e.major ? ' major' : '';
+                const compactClass = compactMode ? ' compact' : '';
+                const eraClass = `era-${e.era}`;
+                const typeClass = `type-${e.cat}`;
+                html += `
+                <div class="tl-entry ${catClass}${majorClass}${compactClass} ${eraClass}" style="animation: fadeInUp 0.5s ease-out ${i*0.02}s both;" data-title="${encodeURIComponent(e.title)}" data-idx="${i}">
+                  <span class="tl-year">${e.year}</span>
+                  <div class="tl-title">${e.title}${e.major ? ' <span style="font-size:0.6rem;color:var(--accent-neon);animation:pulse 1.5s ease-in-out infinite;vertical-align:middle;">MAJOR</span>' : ''}</div>
+                  <span class="tl-type ${typeClass}">${e.type}</span>
+                  <p class="tl-desc">${e.desc}</p>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+
+            // Click handler: expand detail on click
+            container.querySelectorAll('.tl-entry').forEach(entry => {
+                entry.addEventListener('click', function(e) {
+                    // Don't interfere with archive link navigation on type badge
+                    const desc = this.querySelector('.tl-desc');
+                    if (desc) {
+                        desc.classList.toggle('expanded');
+                    }
+                });
+                // Double-click to navigate to archives
+                entry.addEventListener('dblclick', function() {
+                    const title = decodeURIComponent(this.dataset.title);
+                    window.location.href = 'archives.html?search=' + encodeURIComponent(title);
+                });
+            });
+
+            updateSVGTrack();
+        }
+
+        // ========== SVG TIMELINE TRACK ==========
+        function updateSVGTrack() {
+            const svg = document.getElementById('svgTrack');
+            const filtered = activeEraFilter === 'all' ?
+                timelineEvents :
+                timelineEvents.filter(e => e.era === activeEraFilter);
+
+            const w = 1200;
+            const h = 150;
+            const padX = 60;
+            const padY = 30;
+            const trackY = h / 2;
+            const usableW = w - padX * 2;
+
+            // Determine year range
+            const years = filtered.map(e => {
+                const s = e.year.replace(/[^0-9]/g, '');
+                if (s.length === 0) return null;
+                let y = parseInt(s);
+                if (e.year.includes('公元前') || e.year.includes('BC')) y = -y;
+                return y;
+            }).filter(y => y !== null);
+            if (years.length === 0) { svg.innerHTML = ''; return; }
+            const minY = Math.min(...years);
+            const maxY = Math.max(...years);
+            const range = maxY - minY || 1;
+
+            const catColors = { ufo: '#4fc3f7', missing: '#ffb74d', supernatural: '#ce93d8', historical: '#ef5350',
+                cryptid: '#81c784' };
+
+            let svgHTML = `
+            <!-- Track line -->
+            <line x1="${padX}" y1="${trackY}" x2="${w-padX}" y2="${trackY}" stroke="rgba(220,50,50,0.2)" stroke-width="2"/>
+            <!-- Grid lines -->
+            ${[...Array(11)].map((_, i) => {
+                const x = padX + (usableW/10)*i;
+                return `<line x1="${x}" y1="${trackY-15}" x2="${x}" y2="${trackY+15}" stroke="rgba(220,50,50,0.1)" stroke-width="0.5"/>`;
+            }).join('')}
+            <!-- Nodes -->
+            ${filtered.map((e, i) => {
+                const y = years[i];
+                const x = padX + ((y - minY) / range) * usableW;
+                const color = catColors[e.cat] || '#c0392b';
+                const r = e.major ? 7 : 4;
+                const glow = e.major ? `filter="url(#glow)"` : '';
+                return `
+                <g class="svg-node" data-idx="${i}" style="cursor:pointer;">
+                    <circle cx="${x}" cy="${trackY}" r="${r+3}" fill="none" stroke="${color}" stroke-width="1" opacity="0.4"/>
+                    <circle cx="${x}" cy="${trackY}" r="${r}" fill="${color}" ${glow} opacity="0.9"/>
+                    <title>${e.year} - ${e.title}</title>
+                </g>`;
+            }).join('')}
+            <!-- Year labels -->
+            ${filtered.filter((e, i) => e.major || i % Math.max(1, Math.floor(filtered.length/10)) === 0).map((e, i) => {
+                const y = years[filtered.indexOf(e)];
+                const x = padX + ((y - minY) / range) * usableW;
+                return `<text x="${x}" y="${trackY+25}" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9" letter-spacing="0.5">${e.year}</text>`;
+            }).join('')}
+            <!-- Glow filter -->
+            <defs>
+                <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+            `;
+
+            svg.innerHTML = svgHTML;
+
+            // SVG node click handlers
+            svg.querySelectorAll('.svg-node').forEach(node => {
+                node.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.idx);
+                    const title = encodeURIComponent(filtered[idx].title);
+                    window.location.href = 'archives.html?search=' + title;
+                });
+            });
+        }
+
+        // ========== INITIAL RENDER ==========
+        renderTimeline();
+
+        // ========== CONSOLE ==========
+        console.log('🕰️ 时间线已加载 - ' + timelineEvents.length + ' 个事件, ' +
+            timelineEvents.filter(e => e.major).length + ' 个重大事件, 覆盖 ' +
+            [...new Set(timelineEvents.map(e => e.era))].length + ' 个时代');
+    </script>
+</body>
+</html>

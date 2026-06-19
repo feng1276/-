@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>档案库 · 未解之谜档案馆</title>
+    <style>
+        :root {
+            --bg-void: #0a0a0f;
+            --bg-abyss: #0d0d14;
+            --bg-surface: #111118;
+            --bg-card: rgba(18, 18, 26, 0.85);
+            --bg-card-hover: rgba(22, 22, 32, 0.92);
+            --glass-bg: rgba(10, 10, 20, 0.7);
+            --glass-border: rgba(180, 40, 40, 0.18);
+            --glass-border-bright: rgba(220, 50, 50, 0.35);
+            --accent-crimson: #c0392b;
+            --accent-blood: #8b0000;
+            --accent-warning: #e74c3c;
+            --accent-amber: #d4a017;
+            --accent-neon: #ff2d2d;
+            --accent-glow: rgba(220, 50, 50, 0.5);
+            --accent-glow-strong: rgba(255, 40, 40, 0.7);
+            --text-primary: #e0d8d0;
+            --text-secondary: #a09890;
+            --text-muted: #6a6258;
+            --text-warning: #ff6b6b;
+            --border-radius-xl: 1.5rem;
+            --border-radius-lg: 1rem;
+            --border-radius-md: 0.7rem;
+            --border-radius-sm: 0.5rem;
+            --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --shadow-glow-red: 0 0 40px rgba(220, 50, 50, 0.35);
+            --font-body: 'Crimson Text', 'Georgia', 'Noto Serif SC', 'Songti SC', serif;
+            --font-heading: 'Cinzel', 'Georgia', 'Noto Serif SC', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-void);
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(180, 30, 30, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 160, 23, 0.03) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-abyss); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-crimson); border-radius: 10px; }
+        .navbar {
+            position: sticky; top: 10px; margin: 10px 20px;
+            padding: 0.8rem 2rem; display: flex; align-items: center;
+            justify-content: space-between; background: var(--glass-bg);
+            backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            border-radius: 3rem; z-index: 100; flex-wrap: wrap; gap: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .logo {
+            font-family: var(--font-heading); font-size: 1.5rem;
+            font-weight: 700; letter-spacing: 2px; color: var(--text-primary);
+            cursor: pointer; text-transform: uppercase;
+        }
+        .logo span { color: var(--accent-warning); text-shadow: 0 0 15px var(--accent-glow); }
+        .nav-links { display: flex; gap: 1.2rem; list-style: none; flex-wrap: wrap; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
+            letter-spacing: 0.6px; text-transform: uppercase; transition: 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent-warning); }
+        .page-header { text-align: center; padding: 3rem 1rem 1.5rem; }
+        .page-header h1 {
+            font-family: var(--font-heading); font-size: 2.5rem;
+            letter-spacing: 3px; text-transform: uppercase;
+        }
+        .page-header .divider {
+            width: 50px; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-crimson), transparent);
+            margin: 0.8rem auto;
+        }
+
+        /* ===== STATISTICS HEADER ===== */
+        .stats-bar {
+            display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+            padding: 1rem 2rem; max-width: 1400px; margin: 0 auto 1.5rem;
+        }
+        .stat-box {
+            background: var(--bg-card); backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); border-radius: var(--border-radius-lg);
+            padding: 0.8rem 1.5rem; text-align: center; min-width: 130px;
+            transition: all var(--transition-fast); position: relative; overflow: hidden;
+        }
+        .stat-box::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-crimson), transparent);
+        }
+        .stat-box:hover { border-color: var(--glass-border-bright); box-shadow: var(--shadow-glow-red); }
+        .stat-value {
+            font-family: var(--font-heading); font-size: 1.6rem; color: var(--accent-warning);
+            letter-spacing: 1px;
+        }
+        .stat-label {
+            font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
+            letter-spacing: 1px; text-transform: uppercase; margin-top: 0.2rem;
+        }
+
+        /* ===== TOOLBAR ===== */
+        .toolbar {
+            display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center;
+            padding: 0 2rem 1rem; max-width: 1400px; margin: 0 auto;
+        }
+        .toolbar button, .toolbar select {
+            padding: 0.45rem 1rem; border-radius: 2rem;
+            background: var(--bg-card); border: 1px solid var(--glass-border);
+            color: var(--text-secondary); cursor: pointer;
+            font-family: var(--font-mono); font-size: 0.75rem;
+            letter-spacing: 0.6px; transition: all var(--transition-fast);
+        }
+        .toolbar button:hover, .toolbar select:hover {
+            border-color: var(--accent-warning); color: var(--accent-warning);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+        .toolbar button.active {
+            background: rgba(220, 50, 50, 0.15); border-color: var(--accent-warning); color: var(--accent-warning);
+        }
+        .toolbar .spacer { flex: 1; }
+
+        /* ===== BULK COMPARE ===== */
+        .bulk-compare-panel {
+            display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-card); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border-bright); border-radius: 3rem;
+            padding: 0.6rem 1.8rem; z-index: 200;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7), var(--shadow-glow-red);
+            align-items: center; gap: 1rem;
+        }
+        .bulk-compare-panel.show { display: flex; }
+        .bulk-compare-panel span {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-warning); letter-spacing: 1px;
+        }
+        .bulk-compare-panel button {
+            padding: 0.4rem 1.2rem; border-radius: 2rem;
+            background: var(--accent-crimson); border: none; color: #fff;
+            cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem;
+            letter-spacing: 0.8px; transition: 0.2s;
+        }
+        .bulk-compare-panel button:hover { background: var(--accent-warning); }
+        .bulk-compare-panel .clear-compare {
+            background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted);
+        }
+
+        /* ===== SELECT CHECKBOX ===== */
+        .card-select {
+            position: absolute; top: 12px; right: 14px; z-index: 10;
+            width: 22px; height: 22px; cursor: pointer;
+            accent-color: var(--accent-warning); opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .archive-card:hover .card-select { opacity: 1; }
+        .archive-card.selected {
+            border-color: var(--accent-warning) !important;
+            box-shadow: 0 0 25px rgba(255, 40, 40, 0.5), 0 8px 32px rgba(0,0,0,0.6) !important;
+        }
+        .archive-card.selected .card-select { opacity: 1; }
+
+        .main-layout {
+            display: flex; gap: 2rem; padding: 1rem 2rem;
+            max-width: 1400px; margin: 0 auto;
+        }
+        .filter-sidebar {
+            width: 250px; flex-shrink: 0; background: var(--bg-card);
+            backdrop-filter: blur(15px); border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl); padding: 1.8rem;
+            position: sticky; top: 110px; height: fit-content; max-height: 80vh; overflow-y: auto;
+        }
+        .filter-sidebar h3 {
+            font-family: var(--font-heading); color: var(--accent-warning);
+            margin-bottom: 1.2rem; letter-spacing: 1px; font-size: 1.1rem;
+        }
+        .filter-group { margin-bottom: 1.5rem; }
+        .filter-group label {
+            display: block; font-weight: 600; font-size: 0.82rem;
+            letter-spacing: 0.8px; margin-bottom: 0.4rem;
+            color: var(--text-secondary); text-transform: uppercase;
+        }
+        .filter-group select {
+            width: 100%; padding: 0.6rem 0.8rem; background: var(--bg-surface);
+            border: 1px solid var(--glass-border); border-radius: var(--border-radius-sm);
+            color: var(--text-primary); font-family: var(--font-body); cursor: pointer; font-size: 0.9rem;
+        }
+        .filter-group select:focus {
+            border-color: var(--accent-warning); outline: none; box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .credibility-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .cred-chip {
+            padding: 0.3rem 0.7rem; border-radius: 2rem; font-size: 0.7rem;
+            cursor: pointer; border: 1px solid var(--glass-border);
+            background: transparent; color: var(--text-secondary);
+            letter-spacing: 0.5px; transition: 0.2s; font-family: var(--font-body);
+        }
+        .cred-chip.active {
+            background: rgba(220, 50, 50, 0.2); border-color: var(--accent-warning); color: var(--accent-warning);
+        }
+        .reset-btn {
+            width: 100%; padding: 0.6rem; border-radius: 2rem;
+            background: transparent; border: 1px solid var(--glass-border);
+            color: var(--text-secondary); cursor: pointer; font-family: var(--font-body);
+            letter-spacing: 0.8px; transition: 0.2s; margin-top: 0.5rem;
+        }
+        .reset-btn:hover { border-color: var(--accent-warning); color: var(--accent-warning); }
+
+        /* ===== GRID / LIST VIEWS ===== */
+        .archives-grid {
+            flex: 1; display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem; align-content: start;
+        }
+        .archives-grid.list-view {
+            display: flex; flex-direction: column; gap: 0.8rem;
+        }
+        .archives-grid.list-view .archive-card {
+            display: flex; align-items: center; padding: 0.8rem 1.5rem;
+            flex-direction: row; gap: 1.5rem;
+        }
+        .archives-grid.list-view .archive-card .archive-card-header { flex-shrink: 0; padding: 0; min-width: 200px; }
+        .archives-grid.list-view .archive-card .archive-card-body { flex: 1; display: flex; align-items: center; gap: 1rem; padding: 0; }
+        .archives-grid.list-view .archive-card .card-preview-box { display: none; }
+        .archives-grid.list-view .archive-card .preview-trigger { display: none; }
+
+        /* ===== CASE CARD ENHANCED ===== */
+        .archive-card {
+            background: var(--bg-card); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: var(--border-radius-xl);
+            overflow: visible; cursor: pointer; transition: all var(--transition-smooth);
+            position: relative;
+        }
+        .archive-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--glass-border-bright);
+            box-shadow: 0 0 25px rgba(220, 50, 50, 0.4), 0 0 60px rgba(220, 50, 50, 0.15), 0 12px 30px rgba(0, 0, 0, 0.5);
+        }
+        .archive-card-header {
+            padding: 1.5rem 1.5rem 0.5rem; display: flex; align-items: flex-start; gap: 1rem;
+        }
+        .archive-card-header .card-icon { font-size: 2.5rem; position: relative; }
+        .archive-card-header h3 {
+            font-family: var(--font-heading); font-size: 1.2rem; letter-spacing: 1px;
+        }
+        .archive-card-body { padding: 0.5rem 1.5rem 1.5rem; }
+        .archive-card-body .meta-row {
+            display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0;
+            font-size: 0.78rem; color: var(--text-muted); letter-spacing: 0.5px;
+        }
+        .archive-card-body p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; }
+
+        /* ===== CASE NUMBER BADGE ===== */
+        .case-num-badge {
+            position: absolute; top: -8px; left: -8px;
+            background: var(--accent-blood); color: var(--text-primary);
+            font-family: var(--font-mono); font-size: 0.6rem;
+            padding: 0.2rem 0.6rem; border-radius: 1rem;
+            letter-spacing: 1px; z-index: 5;
+            border: 1px solid var(--accent-warning);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* ===== EVIDENCE COUNTER BADGE ===== */
+        .evidence-counter {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.2rem 0.7rem; border-radius: 2rem;
+            background: rgba(212, 160, 23, 0.12); border: 1px solid rgba(212, 160, 23, 0.3);
+            font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent-amber);
+            letter-spacing: 0.5px; margin-top: 0.4rem;
+        }
+
+        /* ===== QUICK PREVIEW (HOVER) ===== */
+        .card-preview-box {
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: var(--bg-card-hover); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border-bright); border-radius: var(--border-radius-lg);
+            padding: 1rem 1.2rem; width: 280px; z-index: 50;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: all 0.3s ease; margin-bottom: 8px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7), 0 0 25px rgba(220,50,50,0.3);
+        }
+        .card-preview-box::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border-left: 8px solid transparent; border-right: 8px solid transparent;
+            border-top: 8px solid var(--glass-border-bright);
+        }
+        .archive-card:hover .card-preview-box {
+            opacity: 1; visibility: visible;
+        }
+        .card-preview-box .pv-title {
+            font-family: var(--font-heading); font-size: 0.9rem; color: var(--accent-warning);
+            letter-spacing: 1px; margin-bottom: 0.5rem;
+        }
+        .card-preview-box .pv-row {
+            font-size: 0.72rem; color: var(--text-secondary); margin: 0.25rem 0;
+            font-family: var(--font-mono);
+        }
+        .card-preview-box .pv-row strong { color: var(--accent-amber); }
+
+        .status-badge {
+            display: inline-block; padding: 0.2rem 0.7rem; border-radius: 2rem;
+            font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+        }
+        .status-unsolved { background: rgba(220, 50, 50, 0.2); color: var(--accent-warning); border: 1px solid rgba(220, 50, 50, 0.4); }
+        .status-controversial { background: rgba(212, 160, 23, 0.2); color: var(--accent-amber); border: 1px solid rgba(212, 160, 23, 0.4); }
+        .status-solved { background: rgba(40, 160, 80, 0.2); color: #5bca7b; border: 1px solid rgba(40, 160, 80, 0.4); }
+        .cred-stars { color: var(--accent-amber); letter-spacing: 2px; }
+
+        /* ===== REDACTED STAMP ===== */
+        .redacted-stamp {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-25deg);
+            font-family: var(--font-heading); font-size: 3rem; color: rgba(220,50,50,0.08);
+            letter-spacing: 5px; pointer-events: none; z-index: 1;
+            text-transform: uppercase; white-space: nowrap;
+        }
+
+        .pagination {
+            display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem;
+        }
+        .page-btn {
+            padding: 0.5rem 1rem; border-radius: 2rem;
+            background: var(--bg-card); border: 1px solid var(--glass-border);
+            color: var(--text-secondary); cursor: pointer; transition: 0.2s;
+            font-family: var(--font-mono); font-size: 0.85rem;
+        }
+        .page-btn.active { background: var(--accent-crimson); color: #e0d0c0; border-color: var(--accent-crimson); }
+        .result-count {
+            margin-bottom: 1rem; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 1px;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .archive-card { animation: fadeInUp 0.5s ease-out both; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-card); border: 1px solid var(--accent-amber);
+            padding: 0.7rem 2rem; border-radius: 2rem; z-index: 300;
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-amber);
+            letter-spacing: 1px; opacity: 0; transition: opacity 0.3s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 900px) {
+            .main-layout { flex-direction: column; padding: 1rem; }
+            .filter-sidebar { width: 100%; position: static; max-height: none; }
+            .archives-grid { grid-template-columns: 1fr; }
+            .stats-bar { padding: 0.5rem; gap: 0.5rem; }
+            .stat-box { min-width: 70px; padding: 0.5rem 0.8rem; }
+            .stat-value { font-size: 1.2rem; }
+        }
+
+        /* ===== PULSE GLOW ON CARD HOVER ===== */
+        @keyframes crimsonPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(220, 50, 50, 0.3), 0 0 50px rgba(220, 50, 50, 0.08); }
+            50% { box-shadow: 0 0 35px rgba(220, 50, 50, 0.55), 0 0 80px rgba(220, 50, 50, 0.2); }
+        }
+        .archive-card:hover {
+            animation: crimsonPulse 2s ease-in-out infinite;
+        }
+
+        /* ===== HOVER SCAN LINE ===== */
+        .archive-card::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-neon), transparent);
+            transition: left 0.6s ease; z-index: 6;
+        }
+        .archive-card:hover::before { left: 100%; }
+
+        /* ===== CLASSIFIED CORNER FOLD ===== */
+        .archive-card::after {
+            content: '';
+            position: absolute; bottom: 0; right: 0;
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, transparent 50%, rgba(220, 50, 50, 0.15) 50%);
+            border-radius: 0 0 var(--border-radius-xl) 0;
+            z-index: 4; pointer-events: none;
+        }
+
+        /* ===== ACTIVE FILTER TAGS ===== */
+        .active-filters-row {
+            display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+            padding: 0 2rem 0.5rem; max-width: 1400px; margin: 0 auto;
+        }
+        .filter-tag {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.25rem 0.8rem; border-radius: 2rem;
+            background: rgba(220, 50, 50, 0.12); border: 1px solid rgba(220, 50, 50, 0.3);
+            font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--accent-warning); letter-spacing: 0.5px;
+        }
+        .filter-tag .remove-tag {
+            cursor: pointer; font-size: 0.9rem; color: var(--accent-crimson);
+            transition: 0.2s;
+        }
+        .filter-tag .remove-tag:hover { color: var(--accent-warning); }
+
+        /* ===== KEYBOARD SHORTCUT HINT ===== */
+        .kbd-hint {
+            display: inline-block; padding: 0.15rem 0.45rem;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 4px; font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--text-muted); letter-spacing: 0.5px;
+        }
+
+        /* ===== SCROLL TO TOP BUTTON ===== */
+        .scroll-top-btn {
+            position: fixed; bottom: 30px; right: 30px; z-index: 199;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: var(--bg-card); border: 1px solid var(--glass-border);
+            color: var(--accent-warning); cursor: pointer; font-size: 1.2rem;
+            transition: all 0.3s; opacity: 0; visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .scroll-top-btn.show { opacity: 1; visibility: visible; }
+        .scroll-top-btn:hover { border-color: var(--accent-warning); box-shadow: 0 0 20px var(--accent-glow); }
+
+        /* ===== EMPTY STATE STYLING ===== */
+        .empty-state {
+            text-align: center; padding: 3rem; color: var(--text-muted);
+            font-family: var(--font-mono); letter-spacing: 1px; font-size: 0.85rem;
+        }
+        .empty-state .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.4; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='mystery_home.html'">M<span>Y</span>STERY ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="mystery_home.html">首页</a></li>
+            <li><a href="archives.html" class="active">档案库</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间线</a></li>
+            <li><a href="ufo.html">UFO档案</a></li>
+            <li><a href="missing.html">失踪案件</a></li>
+            <li><a href="supernatural.html">超自然</a></li>
+            <li><a href="compare.html">案件对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>未解事件档案库</h1>
+        <div class="divider"></div>
+        <p style="color:var(--text-muted); letter-spacing:1px;">CLASSIFIED CASE FILES</p>
+    </div>
+
+    <!-- Statistics Header -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-box"><div class="stat-value" id="statTotal">0</div><div class="stat-label">档案总数</div></div>
+        <div class="stat-box"><div class="stat-value" id="statFiltered">0</div><div class="stat-label">当前筛选</div></div>
+        <div class="stat-box"><div class="stat-value" id="statTopType">--</div><div class="stat-label">最多类型</div></div>
+        <div class="stat-box"><div class="stat-value" id="statTopRegion">--</div><div class="stat-label">最活跃地区</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button id="btnGridView" class="active" title="网格视图">GRID</button>
+        <button id="btnListView" title="列表视图">LIST</button>
+        <select id="sortBy" title="排序方式">
+            <option value="default">排序: 默认</option>
+            <option value="name">排序: 名称 A-Z</option>
+            <option value="date">排序: 年代</option>
+            <option value="credibility">排序: 可信度</option>
+            <option value="newest">排序: 最新添加</option>
+        </select>
+        <button id="btnExport" title="导出案件列表">导出</button>
+        <div class="spacer"></div>
+        <button id="btnBulkCompare" title="批量对比选定案件">批量对比 (<span id="bulkCount">0</span>)</button>
+        <button id="btnClearCompare" style="display:none;">清除选择</button>
+        <span id="compareHint" style="font-size:0.7rem;color:var(--text-muted);letter-spacing:0.5px;">勾选卡片进行批量对比</span>
+        <span style="font-size:0.6rem;color:var(--text-muted);">| 快捷键: <span class="kbd-hint">G</span> 网格 <span class="kbd-hint">L</span> 列表 <span class="kbd-hint">R</span> 重置</span>
+    </div>
+
+    <!-- Active Filters Row -->
+    <div class="active-filters-row" id="activeFiltersRow"></div>
+
+    <div class="main-layout">
+        <aside class="filter-sidebar">
+            <h3>筛选条件</h3>
+            <div class="filter-group">
+                <label>案件类型</label>
+                <select id="typeFilter">
+                    <option value="all">全部类型</option>
+                    <option value="ufo">UFO事件</option>
+                    <option value="missing">失踪案件</option>
+                    <option value="supernatural">超自然现象</option>
+                    <option value="geographic">地理异常</option>
+                    <option value="historical">历史悬案</option>
+                    <option value="cryptid">未知生物</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>地区</label>
+                <select id="regionFilter">
+                    <option value="all">全部地区</option>
+                    <option value="north_america">北美</option>
+                    <option value="europe">欧洲</option>
+                    <option value="asia">亚洲</option>
+                    <option value="south_america">南美</option>
+                    <option value="oceania">大洋洲</option>
+                    <option value="africa">非洲</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>可信度</label>
+                <div class="credibility-options" id="credOptions">
+                    <span class="cred-chip" data-cred="high">高</span>
+                    <span class="cred-chip" data-cred="medium">中</span>
+                    <span class="cred-chip" data-cred="low">低</span>
+                    <span class="cred-chip" data-cred="unknown">未知</span>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>年代</label>
+                <select id="eraFilter">
+                    <option value="all">全部年代</option>
+                    <option value="ancient">古代 (前500年以前)</option>
+                    <option value="medieval">中世纪 (500-1500)</option>
+                    <option value="modern">近代 (1500-1900)</option>
+                    <option value="contemporary">现代 (1900至今)</option>
+                </select>
+            </div>
+            <button class="reset-btn" id="resetFilters">重置筛选</button>
+        </aside>
+
+        <div style="flex:1;">
+            <div class="result-count" id="resultCount">共显示 0 个案件</div>
+            <div class="archives-grid" id="archivesGrid"></div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Compare Floating Panel -->
+    <div class="bulk-compare-panel" id="bulkPanel">
+        <span id="bulkPanelText">已选择 0 个案件</span>
+        <button id="bulkCompareGo">开始对比</button>
+        <button class="clear-compare" id="bulkClear">取消</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scroll to Top -->
+    <button class="scroll-top-btn" id="scrollTopBtn" title="回到顶部" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+    <script>
+        // ===== EXPANDED CASE DATABASE (65+ cases across all 6 types) =====
+        const casesData = [
+            // === UFO CASES (16 cases) ===
+            { id: 'roswell', name: '罗斯威尔事件', icon: '👁', type: 'ufo', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1947', status: 'controversial', desc: '新墨西哥州罗斯威尔附近发现不明飞行物残骸，军方先承认后否认。', location: '美国新墨西哥州' },
+            { id: 'phoenix', name: '凤凰城光点', icon: '🔴', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1997', status: 'controversial', desc: '亚利桑那州凤凰城上空出现巨大V形光点群，数千人目击。', location: '美国亚利桑那州' },
+            { id: 'tunguska', name: '通古斯大爆炸', icon: '💥', type: 'ufo', region: 'asia', credibility: 'high', era: 'contemporary', year: '1908', status: 'controversial', desc: '西伯利亚通古斯地区发生巨大爆炸，2000平方公里森林被夷平。', location: '俄罗斯西伯利亚' },
+            { id: 'belgian_ufo', name: '比利时UFO波', icon: '🛸', type: 'ufo', region: 'europe', credibility: 'high', era: 'contemporary', year: '1989-1990', status: 'controversial', desc: '比利时上空出现大规模黑色三角UFO，军方雷达追踪确认。', location: '比利时全国' },
+            { id: 'tehran_ufo', name: '德黑兰UFO拦截', icon: '🛸', type: 'ufo', region: 'asia', credibility: 'high', era: 'contemporary', year: '1976', status: 'unsolved', desc: '伊朗空军F-4战机试图拦截不明飞行物，武器系统完全失灵。', location: '伊朗德黑兰' },
+            { id: 'westall_ufo', name: '维斯特尔UFO', icon: '🛸', type: 'ufo', region: 'oceania', credibility: 'medium', era: 'contemporary', year: '1966', status: 'unsolved', desc: '澳大利亚墨尔本学校上空出现银色碟状物体，200多名师生目击。', location: '澳大利亚维斯特尔' },
+            { id: 'shag_harbour', name: '沙格港UFO坠毁', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1967', status: 'unsolved', desc: '加拿大沙格港海域有不明物体坠入海中，大规模搜救无果。', location: '加拿大新斯科舍省' },
+            { id: 'kecksburg', name: '凯克斯堡UFO坠毁', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1965', status: 'controversial', desc: '宾夕法尼亚州凯克斯堡森林中发现橡子形状的不明坠毁物体。', location: '美国宾夕法尼亚州' },
+            { id: 'coyne_helicopter', name: '科恩直升机UFO', icon: '🚁', type: 'ufo', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1973', status: 'unsolved', desc: '陆军直升机在俄亥俄州上空遭遇不明物体，险些相撞。', location: '美国俄亥俄州' },
+            { id: 'jal1628', name: '日本航空1628航班', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1986', status: 'unsolved', desc: '日本航空货机在阿拉斯加上空遭遇三个巨大不明光体。', location: '美国阿拉斯加上空' },
+            { id: 'chicago_ohare', name: '芝加哥奥黑尔UFO', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '2006', status: 'unsolved', desc: '奥黑尔国际机场上空出现碟状物体，多名地勤人员目击。', location: '美国伊利诺伊州芝加哥' },
+            { id: 'stephenville', name: '斯蒂芬维尔光点', icon: '🔴', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '2008', status: 'unsolved', desc: '德克萨斯州斯蒂芬维尔上空出现巨大光点群，雷达数据被公开。', location: '美国德克萨斯州' },
+            { id: 'hudson_valley', name: '哈德逊河谷UFO', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1983-1984', status: 'unsolved', desc: '纽约哈德逊河谷地区连续数月出现大型V形UFO，数千人目击。', location: '美国纽约州' },
+            { id: 'cash_landrum', name: '卡什-兰德勒姆事件', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1980', status: 'unsolved', desc: '两名妇女和一名男童近距离遭遇菱形UFO，遭受严重辐射伤害。', location: '美国德克萨斯州' },
+            { id: 'zamora', name: '萨莫拉事件', icon: '🛸', type: 'ufo', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1964', status: 'unsolved', desc: '新墨西哥州警员萨莫拉目击白色椭圆形UFO及两名矮小乘员。', location: '美国新墨西哥州索科罗' },
+            { id: 'rendlesham', name: '伦德尔沙姆森林事件', icon: '🛸', type: 'ufo', region: 'europe', credibility: 'high', era: 'contemporary', year: '1980', status: 'unsolved', desc: '英国空军基地附近森林中出现神秘光体和三角架着陆痕迹。', location: '英国萨福克郡' },
+
+            // === MISSING CASES (15 cases) ===
+            { id: 'flight19', name: '19号航班失踪', icon: '✈', type: 'missing', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1945', status: 'unsolved', desc: '五架美国海军鱼雷轰炸机在百慕大三角训练时集体失踪。', location: '百慕大三角海域' },
+            { id: 'village', name: '爱斯基摩村庄消失', icon: '🏚', type: 'missing', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1930', status: 'unsolved', desc: '加拿大北部整个因纽特村庄居民集体神秘消失。', location: '加拿大安吉库尼湖' },
+            { id: 'maryceleste', name: '玛丽·赛勒斯特号', icon: '⛵', type: 'missing', region: 'north_america', credibility: 'high', era: 'modern', year: '1872', status: 'unsolved', desc: '一艘被发现时完好无损但全体船员神秘失踪的商船。', location: '大西洋' },
+            { id: 'dyatlov', name: '迪亚特洛夫事件', icon: '🏔', type: 'missing', region: 'asia', credibility: 'high', era: 'contemporary', year: '1959', status: 'unsolved', desc: '九名登山者在乌拉尔山脉离奇死亡，帐篷从内部割开。', location: '俄罗斯乌拉尔山脉' },
+            { id: 'mh370', name: '马航MH370', icon: '✈', type: 'missing', region: 'asia', credibility: 'high', era: 'contemporary', year: '2014', status: 'unsolved', desc: '马来西亚航空客机失联，239人下落不明，成为航空史最大谜团。', location: '印度洋' },
+            { id: 'uss_cyclops', name: '独眼巨人号', icon: '🚢', type: 'missing', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1918', status: 'unsolved', desc: '美国海军运煤船在百慕大三角失踪，306名船员全部消失。', location: '百慕大三角海域' },
+            { id: 'flannan_isles', name: '弗兰南灯塔之谜', icon: '🏮', type: 'missing', region: 'europe', credibility: 'medium', era: 'modern', year: '1900', status: 'unsolved', desc: '苏格兰弗兰南岛上三名灯塔看守员全部神秘失踪。', location: '苏格兰弗兰南群岛' },
+            { id: 'roanoke', name: '罗阿诺克殖民地', icon: '🏘', type: 'missing', region: 'north_america', credibility: 'high', era: 'modern', year: '1587-1590', status: 'unsolved', desc: '北美第一个英国殖民地115名居民全部消失，仅留下"CROATOAN"刻字。', location: '美国北卡罗来纳州' },
+            { id: 'amelia_earhart', name: '阿梅莉亚·埃尔哈特', icon: '✈', type: 'missing', region: 'oceania', credibility: 'high', era: 'contemporary', year: '1937', status: 'unsolved', desc: '传奇女飞行员环球飞行中在太平洋上空神秘失踪。', location: '太平洋豪兰岛附近' },
+            { id: 'db_cooper', name: 'D.B.库珀劫机案', icon: '🪂', type: 'missing', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1971', status: 'unsolved', desc: '一名男子劫机后携20万美元赎金跳伞，从此人间蒸发。', location: '美国华盛顿州上空' },
+            { id: 'sodder_children', name: '索德家失踪儿童', icon: '🏠', type: 'missing', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1945', status: 'unsolved', desc: '圣诞节大火后5名儿童离奇失踪，现场未发现任何遗体。', location: '美国西弗吉尼亚州' },
+            { id: 'bennington_missing', name: '本宁顿三角失踪案', icon: '🌲', type: 'missing', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1945-1950', status: 'unsolved', desc: '佛蒙特州本宁顿地区5年间多人神秘消失，毫无痕迹。', location: '美国佛蒙特州' },
+            { id: 'jamison_family', name: '贾米森家族失踪', icon: '👨‍👩‍👧', type: 'missing', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '2009', status: 'unsolved', desc: '俄克拉荷马州一家三口在山区失踪，卡车和物品完好留在原地。', location: '美国俄克拉荷马州' },
+            { id: 'springfield_three', name: '斯普林菲尔德三人失踪', icon: '👥', type: 'missing', region: 'north_america', credibility: 'high', era: 'contemporary', year: '1992', status: 'unsolved', desc: '密苏里州三名女性从家中同时失踪，所有物品完好未动。', location: '美国密苏里州斯普林菲尔德' },
+            { id: 'malaysia_airlines', name: '泛美航空7号航班', icon: '✈', type: 'missing', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1957', status: 'unsolved', desc: '泛美航空客机在太平洋上空失联，44人失踪，无残骸。', location: '太平洋' },
+
+            // === SUPERNATURAL CASES (12 cases) ===
+            { id: 'shadow', name: '影子人现象', icon: '👣', type: 'supernatural', region: 'all', credibility: 'low', era: 'contemporary', year: '全球持续', status: 'unsolved', desc: '全球范围内目击黑色人影的灵异现象，常伴有强烈的恐惧感。', location: '全球' },
+            { id: 'skinwalker', name: '皮行者牧场', icon: '🐺', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1990年代起', status: 'unsolved', desc: '犹他州牧场频繁出现UFO、灵异和超自然现象，科学无法解释。', location: '美国犹他州' },
+            { id: 'enfield_poltergeist', name: '恩菲尔德灵异事件', icon: '👻', type: 'supernatural', region: 'europe', credibility: 'medium', era: 'contemporary', year: '1977-1979', status: 'controversial', desc: '伦敦恩菲尔德住宅中两名女孩经历家具漂浮等灵异现象。', location: '英国伦敦恩菲尔德' },
+            { id: 'bell_witch', name: '贝尔女巫', icon: '👻', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'modern', year: '1817-1821', status: 'unsolved', desc: '田纳西州贝尔家族遭受恶灵侵袭，是美国最著名的灵异事件。', location: '美国田纳西州' },
+            { id: 'amityville', name: '阿米蒂维尔鬼屋', icon: '🏚', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1974-1976', status: 'controversial', desc: '纽约长岛住宅发生大规模灵异事件，后改编为著名恐怖电影。', location: '美国纽约州阿米蒂维尔' },
+            { id: 'borley_rectory', name: '博尔利教区长宅', icon: '👻', type: 'supernatural', region: 'europe', credibility: 'low', era: 'modern', year: '1863-1939', status: 'unsolved', desc: '被誉为"英格兰最闹鬼的房子"，频繁出现幽灵修女目击报告。', location: '英国埃塞克斯郡博尔利' },
+            { id: 'doris_bither', name: '多丽丝·比瑟案', icon: '👻', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1974', status: 'unsolved', desc: '加州女性在家中遭遇超自然袭击，多名调查人员目击异常现象。', location: '美国加利福尼亚州' },
+            { id: 'sallie_house', name: '萨莉之屋', icon: '👶', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1990年代起', status: 'unsolved', desc: '堪萨斯州住宅据称被一名小女孩的幽灵"萨莉"所占据。', location: '美国堪萨斯州阿奇森' },
+            { id: 'eastern_state', name: '东州教养所', icon: '🏛', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'modern', year: '1829年起', status: 'unsolved', desc: '费城废弃监狱中频繁出现脚步声、尖叫声和黑影目击报告。', location: '美国宾夕法尼亚州费城' },
+            { id: 'winchester_house', name: '温彻斯特神秘屋', icon: '🏰', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'modern', year: '1884-1922', status: 'unsolved', desc: '萨拉·温彻斯特连续38年建造的迷宫般建筑，旨在安抚亡灵。', location: '美国加利福尼亚州圣何塞' },
+            { id: 'villisca', name: '维利斯卡斧头凶杀案', icon: '🪓', type: 'supernatural', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1912', status: 'unsolved', desc: '爱荷华州维利斯卡镇8人被斧头杀害，凶手至今未抓获。', location: '美国爱荷华州维利斯卡' },
+            { id: 'myrtles', name: '默特尔农场', icon: '🏡', type: 'supernatural', region: 'north_america', credibility: 'low', era: 'modern', year: '1796年起', status: 'unsolved', desc: '路易斯安那州种植园据称是美国闹鬼最严重的住宅之一。', location: '美国路易斯安那州圣弗朗西斯维尔' },
+
+            // === GEOGRAPHIC CASES (9 cases) ===
+            { id: 'bermuda', name: '百慕大三角', icon: '📁', type: 'geographic', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1918-至今', status: 'unsolved', desc: '大西洋海域内船只与飞机频繁神秘失踪的世界闻名区域。', location: '大西洋西部' },
+            { id: 'dragon', name: '龙三角', icon: '🌊', type: 'geographic', region: 'asia', credibility: 'medium', era: 'contemporary', year: '1950年代起', status: 'unsolved', desc: '日本南部海域，与百慕大三角齐名的神秘区域，无数船只消失。', location: '日本南部海域' },
+            { id: 'michigan_triangle', name: '密歇根三角', icon: '🌊', type: 'geographic', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1891年起', status: 'unsolved', desc: '密歇根湖区域频繁发生船只和飞机失踪的神秘三角地带。', location: '美国密歇根湖' },
+            { id: 'superstition_mountains', name: '迷信山', icon: '⛰', type: 'geographic', region: 'north_america', credibility: 'low', era: 'modern', year: '1800年代起', status: 'unsolved', desc: '亚利桑那州传说中藏有"荷兰人失落金矿"的神秘山区。', location: '美国亚利桑那州' },
+            { id: 'area51', name: '51区', icon: '🛸', type: 'geographic', region: 'north_america', credibility: 'medium', era: 'contemporary', year: '1950年代起', status: 'controversial', desc: '内华达州高度机密的军事基地，长期被认为是外星科技研究地。', location: '美国内华达州' },
+            { id: 'bridgewater_triangle', name: '布里奇沃特三角', icon: '🌲', type: 'geographic', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1970年代起', status: 'unsolved', desc: '马萨诸塞州区域频发UFO、巨鸟和灵异现象的神秘三角地带。', location: '美国马萨诸塞州' },
+            { id: 'sannikov_land', name: '桑尼科夫陆地', icon: '🏝', type: 'geographic', region: 'asia', credibility: 'low', era: 'modern', year: '1811', status: 'unsolved', desc: '西伯利亚以北传说中存在的岛屿，多次探险均未找到。', location: '北冰洋' },
+            { id: 'devils_sea', name: '魔鬼海', icon: '🌊', type: 'geographic', region: 'asia', credibility: 'medium', era: 'contemporary', year: '1950年代起', status: 'unsolved', desc: '日本东南部海域，大量船只和飞机神秘失踪，日本政府划为危险区。', location: '日本东南部太平洋' },
+            { id: 'lake_anishinaabek', name: '阿尼什纳贝克湖', icon: '🌊', type: 'geographic', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1950年代起', status: 'unsolved', desc: '加拿大神秘湖泊，据称湖底有不明结构和异常的磁力现象。', location: '加拿大' },
+
+            // === HISTORICAL CASES (12 cases) ===
+            { id: 'nazca', name: '纳斯卡线条', icon: '🗿', type: 'historical', region: 'south_america', credibility: 'high', era: 'ancient', year: '公元前500年', status: 'controversial', desc: '秘鲁沙漠中巨大的地面图案，其用途和制作方法成谜。', location: '秘鲁纳斯卡沙漠' },
+            { id: 'jacktheripper', name: '开膛手杰克', icon: '🔪', type: 'historical', region: 'europe', credibility: 'high', era: 'modern', year: '1888', status: 'unsolved', desc: '伦敦白教堂区连环杀手，身份至今成谜，是犯罪史上最著名悬案。', location: '英国伦敦' },
+            { id: 'stonehenge', name: '巨石阵之谜', icon: '🪨', type: 'historical', region: 'europe', credibility: 'high', era: 'ancient', year: '公元前3000年', status: 'controversial', desc: '英国史前巨石建筑群，其建造方式和目的仍存巨大争议。', location: '英国威尔特郡' },
+            { id: 'voynich', name: '伏尼契手稿', icon: '📜', type: 'historical', region: 'europe', credibility: 'high', era: 'medieval', year: '约1404-1438', status: 'unsolved', desc: '用未知语言和未知文字系统书写的神秘手稿，无人能够破译。', location: '意大利(可能)' },
+            { id: 'oak_island', name: '橡树岛钱坑', icon: '🏝', type: 'historical', region: 'north_america', credibility: 'medium', era: 'modern', year: '1795年起', status: 'unsolved', desc: '加拿大橡树岛上的神秘深坑，传说藏有海盗宝藏或圣殿骑士财富。', location: '加拿大新斯科舍省' },
+            { id: 'antikythera', name: '安提基特拉机械', icon: '⚙️', type: 'historical', region: 'europe', credibility: 'high', era: 'ancient', year: '约公元前150-100年', status: 'controversial', desc: '古希腊精密天文计算器，其技术水平远超当时文明。', location: '希腊安提基特拉岛附近沉船' },
+            { id: 'phaistos_disc', name: '费斯托斯圆盘', icon: '🔵', type: 'historical', region: 'europe', credibility: 'high', era: 'ancient', year: '约公元前1700年', status: 'unsolved', desc: '克里特岛出土的粘土圆盘，两面刻有无法破解的螺旋文字。', location: '希腊克里特岛费斯托斯' },
+            { id: 'shroud_of_turin', name: '都灵裹尸布', icon: '🧵', type: 'historical', region: 'europe', credibility: 'medium', era: 'medieval', year: '约1260-1390', status: 'controversial', desc: '据称印有耶稣面部和身体影像的亚麻布，真伪争论数百年。', location: '意大利都灵' },
+            { id: 'copper_scroll', name: '铜卷轴宝藏', icon: '📜', type: 'historical', region: 'asia', credibility: 'medium', era: 'ancient', year: '约公元70年', status: 'unsolved', desc: '死海古卷中唯一刻在铜板上的文献，记载了大量隐藏宝藏位置。', location: '以色列昆兰洞穴' },
+            { id: 'princes_tower', name: '塔中王子', icon: '👑', type: 'historical', region: 'europe', credibility: 'high', era: 'medieval', year: '1483', status: 'unsolved', desc: '两名年幼王子被关入伦敦塔后神秘失踪，疑遭叔叔理查三世谋杀。', location: '英国伦敦塔' },
+            { id: 'amber_room', name: '琥珀宫之谜', icon: '🏰', type: 'historical', region: 'europe', credibility: 'high', era: 'contemporary', year: '1945', status: 'unsolved', desc: '二战期间纳粹掠夺的无价琥珀镶嵌房间，战后下落不明。', location: '俄罗斯(原址)/未知' },
+            { id: 'mary_celeste_hist', name: '玛雅文明消失之谜', icon: '🏛', type: 'historical', region: 'south_america', credibility: 'high', era: 'ancient', year: '约公元900年', status: 'unsolved', desc: '辉煌的玛雅文明为何突然崩溃，城市被遗弃在丛林中。', location: '中美洲' },
+
+            // === CRYPTID CASES (13 cases) ===
+            { id: 'lochness', name: '尼斯湖水怪', icon: '🦕', type: 'cryptid', region: 'europe', credibility: 'low', era: 'modern', year: '公元565年起', status: 'controversial', desc: '苏格兰尼斯湖中传说的大型未知水生生物，最著名的水怪传说。', location: '苏格兰尼斯湖' },
+            { id: 'mothman', name: '天蛾人', icon: '🦇', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1966-1967', status: 'unsolved', desc: '西弗吉尼亚州目击的大型有翼人形生物，被视为灾难预兆。', location: '美国西弗吉尼亚州' },
+            { id: 'bigfoot', name: '大脚怪', icon: '🦧', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1958年起', status: 'unsolved', desc: '北美森林中传说的大型灵长类生物，足迹长达60厘米。', location: '北美太平洋西北地区' },
+            { id: 'yeti', name: '雪人', icon: '🐻', type: 'cryptid', region: 'asia', credibility: 'low', era: 'contemporary', year: '1921年起', status: 'unsolved', desc: '喜马拉雅山区传说的大型类人生物，当地人视为山神。', location: '喜马拉雅山脉' },
+            { id: 'jersey_devil', name: '泽西恶魔', icon: '👿', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'modern', year: '1735年起', status: 'unsolved', desc: '新泽西州松林荒原传说中有翅膀、马蹄和山羊头的怪物。', location: '美国新泽西州' },
+            { id: 'chupacabra', name: '卓柏卡布拉', icon: '🦎', type: 'cryptid', region: 'south_america', credibility: 'low', era: 'contemporary', year: '1995年起', status: 'unsolved', desc: '拉丁美洲报告的神秘生物，攻击牲畜并吸干血液。', location: '波多黎各/拉丁美洲' },
+            { id: 'mokele_mbembe', name: '莫科勒-姆本贝', icon: '🦕', type: 'cryptid', region: 'africa', credibility: 'low', era: 'contemporary', year: '1913年起', status: 'unsolved', desc: '刚果盆地沼泽中传说类似蜥脚类恐龙的巨型生物。', location: '刚果共和国' },
+            { id: 'orang_pendek', name: '小矮人', icon: '🧍', type: 'cryptid', region: 'asia', credibility: 'low', era: 'contemporary', year: '1920年代起', status: 'unsolved', desc: '印度尼西亚苏门答腊丛林中传说的小型双足灵长类生物。', location: '印度尼西亚苏门答腊' },
+            { id: 'champ', name: '香普兰湖水怪', icon: '🦕', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'modern', year: '1609年起', status: 'unsolved', desc: '纽约州和佛蒙特州交界的香普兰湖中传说的大型水生生物。', location: '美国香普兰湖' },
+            { id: 'mapinguari', name: '马平瓜里', icon: '🦥', type: 'cryptid', region: 'south_america', credibility: 'low', era: 'contemporary', year: '1937年起', status: 'unsolved', desc: '亚马逊丛林中传说类似巨型地懒的神秘生物，有恶臭气味。', location: '巴西/玻利维亚亚马逊' },
+            { id: 'ogopogo', name: '奥戈波戈', icon: '🦕', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'modern', year: '1850年代起', status: 'unsolved', desc: '加拿大奥卡诺根湖中传说的蛇形水怪，当地原住民早有传说。', location: '加拿大不列颠哥伦比亚省' },
+            { id: 'megalodon', name: '巨齿鲨存活说', icon: '🦈', type: 'cryptid', region: 'oceania', credibility: 'low', era: 'contemporary', year: '1918年起', status: 'unsolved', desc: '部分人相信史前巨鲨巨齿鲨可能仍在深海存活。', location: '全球深海' },
+            { id: 'thunderbird', name: '雷鸟', icon: '🦅', type: 'cryptid', region: 'north_america', credibility: 'low', era: 'contemporary', year: '1890年起', status: 'unsolved', desc: '北美传说中翼展达6米的巨型鸟类，多次有目击报告。', location: '北美各地' },
+        ];
+
+        let activeCred = null;
+        const itemsPerPage = 8;
+        let currentPage = 1;
+        let viewMode = 'grid';
+        let sortMode = 'default';
+        let selectedCompare = new Set();
+        let favorites = JSON.parse(localStorage.getItem('mysteryFavs') || '[]');
+
+        function getFiltered() {
+            const typeVal = document.getElementById('typeFilter').value;
+            const regionVal = document.getElementById('regionFilter').value;
+            const eraVal = document.getElementById('eraFilter').value;
+            let filtered = casesData.filter(c => {
+                if (typeVal !== 'all' && c.type !== typeVal) return false;
+                if (regionVal !== 'all' && c.region !== regionVal && c.region !== 'all') return false;
+                if (eraVal !== 'all' && c.era !== eraVal) return false;
+                if (activeCred && c.credibility !== activeCred) return false;
+                return true;
+            });
+            // Sort
+            if (sortMode === 'name') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortMode === 'date') {
+                filtered.sort((a, b) => {
+                    const ay = parseInt(a.year) || 9999;
+                    const by = parseInt(b.year) || 9999;
+                    return ay - by;
+                });
+            } else if (sortMode === 'credibility') {
+                const order = { 'high': 0, 'medium': 1, 'low': 2, 'unknown': 3 };
+                filtered.sort((a, b) => (order[a.credibility] || 3) - (order[b.credibility] || 3));
+            } else if (sortMode === 'newest') {
+                filtered.reverse();
+            }
+            return filtered;
+        }
+
+        function getCaseNumber(idx) {
+            return 'FILE-' + String(idx + 1).padStart(3, '0');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        function updateStats(filtered) {
+            document.getElementById('statTotal').textContent = casesData.length;
+            document.getElementById('statFiltered').textContent = filtered.length;
+            // Most common type
+            const typeCount = {};
+            filtered.forEach(c => { typeCount[c.type] = (typeCount[c.type] || 0) + 1; });
+            let topType = '--', topTypeN = 0;
+            const typeNames = { ufo: 'UFO事件', missing: '失踪案件', supernatural: '超自然', geographic: '地理异常', historical: '历史悬案', cryptid: '未知生物' };
+            for (const [k, v] of Object.entries(typeCount)) {
+                if (v > topTypeN) { topType = typeNames[k] || k;
+                    topTypeN = v; }
+            }
+            document.getElementById('statTopType').textContent = topType;
+            // Most active region
+            const regionCount = {};
+            filtered.forEach(c => { if (c.region !== 'all') { regionCount[c.region] = (regionCount[c.region] || 0) + 1; } });
+            let topRegion = '--', topRegionN = 0;
+            const regionNames = { north_america: '北美', europe: '欧洲', asia: '亚洲', south_america: '南美', oceania: '大洋洲', africa: '非洲' };
+            for (const [k, v] of Object.entries(regionCount)) {
+                if (v > topRegionN) { topRegion = regionNames[k] || k;
+                    topRegionN = v; }
+            }
+            document.getElementById('statTopRegion').textContent = topRegion;
+        }
+
+        function renderArchives() {
+            const filtered = getFiltered();
+            document.getElementById('resultCount').textContent = `共显示 ${filtered.length} 个案件`;
+            updateStats(filtered);
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+            const start = (currentPage - 1) * itemsPerPage;
+            const pageItems = filtered.slice(start, start + itemsPerPage);
+            const grid = document.getElementById('archivesGrid');
+            grid.innerHTML = pageItems.map((c, i) => {
+                const credStars = c.credibility === 'high' ? '★★★' : c.credibility === 'medium' ? '★★☆' : c.credibility === 'low' ? '★☆☆' : '???';
+                const isFav = favorites.includes(c.id);
+                const isSelected = selectedCompare.has(c.id);
+                const fileNum = getCaseNumber(casesData.indexOf(c));
+                const typeLabels = { ufo: 'UFO事件', missing: '失踪案件', supernatural: '超自然现象', geographic: '地理异常', historical: '历史悬案', cryptid: '未知生物' };
+                const typeLabel = typeLabels[c.type] || c.type;
+                const regionFullLabels = { north_america: '北美', europe: '欧洲', asia: '亚洲', south_america: '南美', oceania: '大洋洲', africa: '非洲', all: '全球' };
+                const regionLabel = regionFullLabels[c.region] || c.region;
+                return `
+            <div class="archive-card${isSelected ? ' selected' : ''}" style="animation-delay:${i*0.05}s;" onclick="window.location.href='mystery_detail.html?case=${c.id}'">
+              <span class="case-num-badge">${fileNum}</span>
+              <span class="redacted-stamp">CLASSIFIED</span>
+              <input type="checkbox" class="card-select" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation();toggleCompareSelect('${c.id}', this)" title="选择对比">
+              <div class="archive-card-header">
+                <span class="card-icon">${c.icon}</span>
+                <div>
+                  <h3>${c.name}</h3>
+                  <span class="status-badge status-${c.status}">${c.status === 'unsolved' ? '⚠ 未解' : c.status === 'solved' ? '✓ 已解' : '⚡ 争议'}</span>
+                </div>
+              </div>
+              <div class="archive-card-body">
+                <div class="meta-row">
+                  <span>📍 ${c.location}</span>
+                  <span>📅 ${c.year}</span>
+                </div>
+                <p>${c.desc}</p>
+                <div class="meta-row" style="margin-top:0.3rem;">
+                  <span>📂 ${typeLabel}</span>
+                  <span>🌍 ${regionLabel}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.8rem;">
+                  <span class="cred-stars">可信度: ${credStars}</span>
+                  <div style="display:flex; align-items:center; gap:0.3rem;">
+                    <span class="evidence-counter">📋 证据:${Math.floor(Math.random()*8)+2}项</span>
+                    <button style="background:none;border:none;cursor:pointer;font-size:1.3rem;" onclick="event.stopPropagation();toggleFav('${c.id}')">${isFav ? '❤️' : '🤍'}</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Quick Preview on Hover -->
+              <div class="card-preview-box">
+                <div class="pv-title">📁 快速预览: ${c.name}</div>
+                <div class="pv-row"><strong>案件编号:</strong> ${fileNum}</div>
+                <div class="pv-row"><strong>类型:</strong> ${typeLabel}</div>
+                <div class="pv-row"><strong>地区:</strong> ${regionLabel}</div>
+                <div class="pv-row"><strong>年代:</strong> ${c.year}</div>
+                <div class="pv-row"><strong>可信度:</strong> ${credStars}</div>
+                <div class="pv-row"><strong>状态:</strong> ${c.status === 'unsolved' ? '⚠ 未解' : c.status === 'solved' ? '✓ 已解' : '⚡ 争议'}</div>
+              </div>
+            </div>`;
+            }).join('');
+            // Set view mode class
+            grid.classList.toggle('list-view', viewMode === 'list');
+            // Re-apply selection checkbox states
+            document.querySelectorAll('.card-select').forEach(cb => {
+                cb.checked = selectedCompare.has(cb.getAttribute('onclick').match(/'([^']+)'/)[1]);
+            });
+            const pagDiv = document.getElementById('pagination');
+            if (totalPages <= 1) { pagDiv.innerHTML = ''; } else {
+                let html = '';
+                for (let p = 1; p <= totalPages; p++) {
+                    html += `<button class="page-btn ${p===currentPage?'active':''}" data-page="${p}">${p}</button>`;
+                }
+                pagDiv.innerHTML = html;
+                pagDiv.querySelectorAll('.page-btn').forEach(b => b.addEventListener('click', function() {
+                    currentPage = parseInt(this.dataset.page);
+                    renderArchives();
+                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                }));
+            }
+            updateBulkPanel();
+        }
+
+        window.toggleFav = function(id) {
+            if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
+            else favorites.push(id);
+            localStorage.setItem('mysteryFavs', JSON.stringify(favorites));
+            renderArchives();
+        };
+
+        window.toggleCompareSelect = function(id, checkbox) {
+            if (checkbox.checked) {
+                selectedCompare.add(id);
+            } else {
+                selectedCompare.delete(id);
+            }
+            // Update card visual
+            const card = checkbox.closest('.archive-card');
+            if (card) card.classList.toggle('selected', checkbox.checked);
+            updateBulkPanel();
+        };
+
+        function updateBulkPanel() {
+            const panel = document.getElementById('bulkPanel');
+            const countEl = document.getElementById('bulkCount');
+            const btnClear = document.getElementById('btnClearCompare');
+            countEl.textContent = selectedCompare.size;
+            document.getElementById('bulkPanelText').textContent = `已选择 ${selectedCompare.size} 个案件`;
+            if (selectedCompare.size > 0) {
+                panel.classList.add('show');
+                btnClear.style.display = 'inline-block';
+            } else {
+                panel.classList.remove('show');
+                btnClear.style.display = 'none';
+            }
+        }
+
+        // Export feature
+        document.getElementById('btnExport').addEventListener('click', () => {
+            const filtered = getFiltered();
+            if (filtered.length === 0) { showToast('没有可导出的案件'); return; }
+            let text = '══════════════════════════════════\n';
+            text += '  未解之谜档案馆 - 案件列表导出\n';
+            text += '══════════════════════════════════\n\n';
+            filtered.forEach((c, i) => {
+                text += `[${getCaseNumber(casesData.indexOf(c))}] ${c.name}\n`;
+                text += `类型: ${c.type} | 地区: ${c.region} | 年代: ${c.year}\n`;
+                text += `可信度: ${c.credibility} | 状态: ${c.status}\n`;
+                text += `位置: ${c.location}\n`;
+                text += `描述: ${c.desc}\n`;
+                text += `详情链接: mystery_detail.html?case=${c.id}\n`;
+                text += '─'.repeat(40) + '\n';
+            });
+            text += `\n导出时间: ${new Date().toLocaleString()}\n`;
+            text += `共 ${filtered.length} 个案件\n`;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('案件列表已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请检查浏览器权限');
+            });
+        });
+
+        // Bulk compare
+        document.getElementById('btnBulkCompare').addEventListener('click', () => {
+            if (selectedCompare.size < 2) { showToast('请至少选择 2 个案件进行对比'); return; }
+            if (selectedCompare.size > 5) { showToast('最多只能对比 5 个案件'); return; }
+            const ids = Array.from(selectedCompare).join(',');
+            window.location.href = `compare.html?cases=${ids}`;
+        });
+        document.getElementById('bulkCompareGo').addEventListener('click', () => {
+            document.getElementById('btnBulkCompare').click();
+        });
+        document.getElementById('bulkClear').addEventListener('click', () => {
+            selectedCompare.clear();
+            renderArchives();
+            updateBulkPanel();
+        });
+        document.getElementById('btnClearCompare').addEventListener('click', () => {
+            selectedCompare.clear();
+            renderArchives();
+            updateBulkPanel();
+        });
+
+        // Grid/List toggle
+        document.getElementById('btnGridView').addEventListener('click', function() {
+            viewMode = 'grid';
+            this.classList.add('active');
+            document.getElementById('btnListView').classList.remove('active');
+            renderArchives();
+        });
+        document.getElementById('btnListView').addEventListener('click', function() {
+            viewMode = 'list';
+            this.classList.add('active');
+            document.getElementById('btnGridView').classList.remove('active');
+            renderArchives();
+        });
+
+        // Sort
+        document.getElementById('sortBy').addEventListener('change', function() {
+            sortMode = this.value;
+            currentPage = 1;
+            renderArchives();
+        });
+
+        // Filters
+        ['typeFilter', 'regionFilter', 'eraFilter'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => { currentPage = 1;
+                renderArchives(); });
+        });
+        document.getElementById('credOptions').addEventListener('click', function(e) {
+            if (e.target.classList.contains('cred-chip')) {
+                const cred = e.target.dataset.cred;
+                if (activeCred === cred) { activeCred = null;
+                    e.target.classList.remove('active'); } else {
+                    document.querySelectorAll('.cred-chip').forEach(c => c.classList.remove('active'));
+                    activeCred = cred;
+                    e.target.classList.add('active');
+                }
+                currentPage = 1;
+                renderArchives();
+            }
+        });
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('typeFilter').value = 'all';
+            document.getElementById('regionFilter').value = 'all';
+            document.getElementById('eraFilter').value = 'all';
+            activeCred = null;
+            document.querySelectorAll('.cred-chip').forEach(c => c.classList.remove('active'));
+            currentPage = 1;
+            renderArchives();
+        });
+
+        // URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQ = urlParams.get('search');
+        const typeQ = urlParams.get('type');
+        if (searchQ) {
+            const filtered = casesData.filter(c => c.name.includes(searchQ) || c.desc.includes(searchQ));
+            document.getElementById('archivesGrid').innerHTML = filtered.length ? '' : '<p>未找到匹配案件</p>';
+        }
+        if (typeQ) { document.getElementById('typeFilter').value = typeQ; }
+        renderArchives();
+        console.log('档案库已加载 - ' + casesData.length + ' 个案件');
+
+        // ===== ADDITIONAL INTERACTIVE FEATURES =====
+
+        // Scroll-to-top button visibility
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 500) scrollTopBtn.classList.add('show');
+            else scrollTopBtn.classList.remove('show');
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+            switch(e.key.toLowerCase()) {
+                case 'g':
+                    if (viewMode !== 'grid') { viewMode = 'grid';
+                        document.getElementById('btnGridView').classList.add('active');
+                        document.getElementById('btnListView').classList.remove('active');
+                        renderArchives();
+                        showToast('切换到网格视图'); }
+                    break;
+                case 'l':
+                    if (viewMode !== 'list') { viewMode = 'list';
+                        document.getElementById('btnListView').classList.add('active');
+                        document.getElementById('btnGridView').classList.remove('active');
+                        renderArchives();
+                        showToast('切换到列表视图'); }
+                    break;
+                case 'r':
+                    document.getElementById('resetFilters').click();
+                    showToast('所有筛选已重置');
+                    break;
+            }
+        });
+
+        // Active filter tags display
+        function updateFilterTags() {
+            const row = document.getElementById('activeFiltersRow');
+            const tags = [];
+            const typeVal = document.getElementById('typeFilter').value;
+            const regionVal = document.getElementById('regionFilter').value;
+            const eraVal = document.getElementById('eraFilter').value;
+            const typeNames = { ufo: 'UFO事件', missing: '失踪案件', supernatural: '超自然现象', geographic: '地理异常', historical: '历史悬案', cryptid: '未知生物' };
+            const regionNames = { north_america: '北美', europe: '欧洲', asia: '亚洲', south_america: '南美', oceania: '大洋洲', africa: '非洲' };
+            const eraNames = { ancient: '古代', medieval: '中世纪', modern: '近代', contemporary: '现代' };
+            if (typeVal !== 'all') tags.push({ label: typeNames[typeVal] || typeVal, action: () => { document.getElementById('typeFilter').value = 'all';
+                    currentPage = 1;
+                    renderArchives(); } });
+            if (regionVal !== 'all') tags.push({ label: regionNames[regionVal] || regionVal, action: () => { document.getElementById('regionFilter').value = 'all';
+                    currentPage = 1;
+                    renderArchives(); } });
+            if (eraVal !== 'all') tags.push({ label: eraNames[eraVal] || eraVal, action: () => { document.getElementById('eraFilter').value = 'all';
+                    currentPage = 1;
+                    renderArchives(); } });
+            if (activeCred) tags.push({ label: '可信度: ' + (activeCred === 'high' ? '高' : activeCred === 'medium' ? '中' : activeCred === 'low' ? '低' :
+                    '未知'), action: () => { activeCred = null;
+                    document.querySelectorAll('.cred-chip').forEach(c => c.classList.remove('active'));
+                    currentPage = 1;
+                    renderArchives(); } });
+            if (sortMode !== 'default') {
+                const sortLabels = { name: '名称排序', date: '年代排序', credibility: '可信度排序', newest: '最新排序' };
+                tags.push({ label: sortLabels[sortMode] || sortMode, action: () => { document.getElementById('sortBy').value = 'default';
+                        sortMode = 'default';
+                        currentPage = 1;
+                        renderArchives(); } });
+            }
+            if (tags.length === 0) { row.innerHTML = ''; return; }
+            row.innerHTML = tags.map(t =>
+                `<span class="filter-tag">${t.label} <span class="remove-tag" onclick="event.stopPropagation(); arguments[0].stopPropagation();" data-clear="true">✕</span></span>`
+            ).join('');
+            // Attach click handlers to remove tags
+            row.querySelectorAll('.remove-tag').forEach((btn, i) => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (tags[i]) tags[i].action();
+                });
+            });
+        }
+
+        // Wire filter tags into render cycle
+        const origRenderArchives = renderArchives;
+        renderArchives = function() {
+            origRenderArchives();
+            updateFilterTags();
+        };
+
+        // Initial filter tags
+        updateFilterTags();
+
+        // Save last search/view preferences
+        window.addEventListener('beforeunload', function() {
+            try {
+                const prefs = { viewMode, sortMode, activeCred };
+                sessionStorage.setItem('archivesPrefs', JSON.stringify(prefs));
+            } catch(e) {}
+        });
+
+        // Restore preferences
+        (function() {
+            try {
+                const savedPrefs = sessionStorage.getItem('archivesPrefs');
+                if (savedPrefs) {
+                    const prefs = JSON.parse(savedPrefs);
+                    if (prefs.viewMode === 'list') {
+                        viewMode = 'list';
+                        document.getElementById('btnListView').classList.add('active');
+                        document.getElementById('btnGridView').classList.remove('active');
+                    }
+                    if (prefs.sortMode && prefs.sortMode !== 'default') {
+                        sortMode = prefs.sortMode;
+                        document.getElementById('sortBy').value = sortMode;
+                    }
+                    if (prefs.activeCred) {
+                        activeCred = prefs.activeCred;
+                        document.querySelectorAll('.cred-chip').forEach(c => {
+                            c.classList.toggle('active', c.dataset.cred === activeCred);
+                        });
+                    }
+                    renderArchives();
+                }
+            } catch(e) {}
+        })();
+    </script>
+</body>
+</html>

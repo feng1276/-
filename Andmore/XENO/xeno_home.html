@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>XENOCOM://星际广播站 | 外星文明通讯中心</title>
+    <meta name="description" content="XENOCOM星际广播站——人类与外星文明通讯的虚拟控制中心。接收、解码和分析来自深空的信号。">
+    <style>
+        /* ============================================================
+           深空广播站色彩系统
+           ============================================================ */
+        :root {
+            --space-void: #020510;
+            --space-deep: #060d1f;
+            --space-navy: #0a1830;
+            --space-blue: #0d2245;
+            --space-panel: #081020;
+            --nebula-purple: #1a1040;
+            --nebula-teal: #0a3040;
+            --star-white: #e0e8f8;
+            --star-dim: #a0b0d0;
+            --star-muted: #607090;
+            --signal-green: #00ff88;
+            --signal-green-dim: #00cc66;
+            --signal-cyan: #00e5ff;
+            --signal-amber: #ffab00;
+            --signal-red: #ff3d3d;
+            --signal-purple: #b388ff;
+            --alien-blue: #448aff;
+            --alien-teal: #1de9b6;
+            --text-primary: #d0d8f0;
+            --text-secondary: #8899bb;
+            --text-muted: #556688;
+            --border-panel: #1a2a45;
+            --border-active: #448aff;
+            --border-signal: #00e5ff;
+            --shadow-glow-blue: 0 0 25px rgba(68,138,255,0.3);
+            --shadow-glow-green: 0 0 25px rgba(0,255,136,0.25);
+            --shadow-glow-cyan: 0 0 25px rgba(0,229,255,0.25);
+            --shadow-glow-purple: 0 0 25px rgba(179,136,255,0.25);
+            --radius-xs: 3px;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --font-mono: 'Courier New','Consolas','SF Mono','Monaco','Menlo',monospace;
+            --font-display: 'Georgia','Noto Serif SC','Songti SC',serif;
+            --font-body: 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;font-size:15px;}
+        body{
+            font-family:var(--font-body);
+            background:var(--space-void);
+            background-image:
+                radial-gradient(ellipse at 25% 8%,rgba(68,138,255,0.05) 0%,transparent 50%),
+                radial-gradient(ellipse at 65% 20%,rgba(179,136,255,0.04) 0%,transparent 45%),
+                radial-gradient(ellipse at 40% 70%,rgba(0,229,255,0.03) 0%,transcent 50%),
+                url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='40' r='0.5' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='120' cy='20' r='0.4' fill='%23ffffff' opacity='0.25'/%3E%3Ccircle cx='80' cy='150' r='0.6' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='170' cy='80' r='0.3' fill='%23ffffff' opacity='0.35'/%3E%3Ccircle cx='45' cy='120' r='0.5' fill='%23ffffff' opacity='0.28'/%3E%3Ccircle cx='150' cy='160' r='0.4' fill='%23ffffff' opacity='0.22'/%3E%3C/svg%3E");
+            color:var(--text-primary);line-height:1.6;min-height:100vh;
+            -webkit-font-smoothing:antialiased;overflow-x:hidden;
+        }
+        ::-webkit-scrollbar{width:5px;}
+        ::-webkit-scrollbar-track{background:var(--space-void);}
+        ::-webkit-scrollbar-thumb{background:var(--alien-blue);border-radius:3px;}
+        ::-webkit-scrollbar-thumb:hover{background:var(--signal-cyan);}
+
+        /* ============================================================
+           顶部状态栏
+           ============================================================ */
+        .top-bar{
+            background:var(--space-deep);border-bottom:1px solid var(--border-panel);
+            padding:0.3rem 1.5rem;display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:0.8rem;font-size:0.7rem;color:var(--star-muted);
+            font-family:var(--font-mono);letter-spacing:0.5px;
+        }
+        .top-bar .status-indicator{display:flex;align-items:center;gap:0.3rem;}
+        .top-bar .status-dot{width:6px;height:6px;border-radius:50%;}
+        .status-dot.green{background:var(--signal-green);box-shadow:0 0 8px var(--signal-green);animation:pulse 2s infinite;}
+        .status-dot.cyan{background:var(--signal-cyan);box-shadow:0 0 8px var(--signal-cyan);animation:pulse 1.8s infinite 0.3s;}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+        /* ============================================================
+           主导航
+           ============================================================ */
+        .navbar{
+            background:rgba(8,16,32,0.94);backdrop-filter:blur(16px);
+            border-bottom:2px solid var(--border-panel);
+            padding:0.7rem 2rem;display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:1rem;position:sticky;top:0;z-index:100;
+        }
+        .logo{display:flex;align-items:center;gap:0.5rem;cursor:pointer;text-decoration:none;}
+        .logo-icon{
+            width:42px;height:42px;background:radial-gradient(circle,var(--signal-cyan),var(--alien-blue));
+            border-radius:50%;display:flex;align-items:center;justify-content:center;
+            font-size:1.3rem;box-shadow:0 0 20px rgba(0,229,255,0.4);
+        }
+        .logo-text{font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--star-white);letter-spacing:1px;}
+        .logo-text .accent{color:var(--signal-cyan);}
+        .nav-links{display:flex;gap:1.3rem;list-style:none;flex-wrap:wrap;}
+        .nav-links a{color:var(--star-dim);text-decoration:none;font-size:0.82rem;letter-spacing:0.6px;transition:all 0.2s;padding:0.3rem 0;border-bottom:2px solid transparent;font-family:var(--font-mono);}
+        .nav-links a:hover{color:var(--signal-cyan);border-bottom-color:var(--signal-cyan);text-shadow:0 0 10px rgba(0,229,255,0.4);}
+        .nav-links a.active{color:var(--signal-cyan);border-bottom-color:var(--signal-cyan);font-weight:600;}
+
+        /* ============================================================
+           主容器
+           ============================================================ */
+        .container{max-width:1300px;margin:0 auto;padding:1.5rem;}
+
+        /* ============================================================
+           Hero区域
+           ============================================================ */
+        .hero-section{
+            text-align:center;padding:3rem 1.5rem;position:relative;overflow:hidden;
+            background:radial-gradient(ellipse at 50% 0%,rgba(0,229,255,0.06) 0%,transparent 60%);
+            border-bottom:1px solid var(--border-panel);margin-bottom:2rem;
+        }
+        .hero-badge{
+            display:inline-flex;align-items:center;gap:0.4rem;padding:0.4rem 1.2rem;
+            background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2);
+            border-radius:3rem;font-size:0.78rem;color:var(--signal-cyan);
+            font-family:var(--font-mono);letter-spacing:1px;margin-bottom:1.2rem;
+        }
+        .hero-title{font-family:var(--font-display);font-size:clamp(2rem,4vw,3.2rem);font-weight:700;color:var(--star-white);margin-bottom:0.8rem;letter-spacing:-0.5px;}
+        .hero-title .highlight{color:var(--signal-cyan);text-shadow:0 0 30px rgba(0,229,255,0.4);}
+        .hero-subtitle{font-size:1rem;color:var(--star-dim);max-width:600px;margin:0 auto 2rem;}
+        .hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
+        .hero-stat{text-align:center;}
+        .hero-stat .stat-num{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--signal-cyan);}
+        .hero-stat .stat-label{font-size:0.72rem;color:var(--star-muted);letter-spacing:0.5px;}
+
+        /* ============================================================
+           面板网格
+           ============================================================ */
+        .panel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:1.5rem;margin-bottom:2rem;}
+        .panel{
+            background:var(--space-panel);border:1px solid var(--border-panel);
+            border-radius:var(--radius-md);overflow:hidden;
+            box-shadow:0 4px 20px rgba(0,0,0,0.4);
+        }
+        .panel .panel-header{
+            background:var(--space-deep);border-bottom:1px solid var(--border-panel);
+            padding:0.7rem 1.2rem;display:flex;align-items:center;gap:0.6rem;
+            font-family:var(--font-mono);font-size:0.78rem;color:var(--signal-cyan);
+            letter-spacing:0.5px;
+        }
+        .panel .panel-header .panel-dot{width:8px;height:8px;border-radius:50%;}
+        .panel .panel-body{padding:1.2rem;max-height:350px;overflow-y:auto;}
+        .log-entry{font-family:var(--font-mono);font-size:0.75rem;margin-bottom:0.3rem;line-height:1.5;color:var(--star-dim);}
+        .log-entry .ts{color:var(--star-muted);}
+        .log-entry .tag{color:var(--signal-amber);font-weight:700;}
+        .log-entry .tag-green{color:var(--signal-green);font-weight:700;}
+        .log-entry .tag-cyan{color:var(--signal-cyan);font-weight:700;}
+        .log-entry .data{color:var(--star-white);}
+
+        /* ============================================================
+           频谱可视化
+           ============================================================ */
+        .spectrum-display{display:flex;align-items:flex-end;gap:2px;height:80px;margin:0.5rem 0;}
+        .spectrum-bar{flex:1;background:linear-gradient(180deg,var(--signal-cyan),var(--alien-blue));border-radius:1px 1px 0 0;transition:height 0.3s ease;min-width:3px;}
+
+        /* ============================================================
+           页脚
+           ============================================================ */
+        .footer{text-align:center;padding:2rem;border-top:1px solid var(--border-panel);margin-top:2rem;color:var(--star-muted);font-size:0.78rem;}
+        .footer .freq-line{font-family:var(--font-mono);color:var(--signal-cyan);margin:0.5rem 0;}
+
+        @media(max-width:768px){.panel-grid{grid-template-columns:1fr;}}
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <span>STATION://XENOCOM-ALPHA</span>
+        <span class="status-indicator"><span class="status-dot green"></span> RECEIVING</span>
+        <span class="status-indicator"><span class="status-dot cyan"></span> DECODING</span>
+        <span>UPTIME: 847d 12h 33m</span>
+        <span>FREQ: 1.42GHz | 7.832Hz | 22.3GHz</span>
+    </div>
+    <nav class="navbar">
+        <a href="xeno_home.html" class="logo"><span class="logo-icon">📡</span><span class="logo-text">XENO<span class="accent">COM</span></span></a>
+        <ul class="nav-links">
+            <li><a href="xeno_home.html" class="active">广播主控台</a></li>
+            <li><a href="xeno_signals.html">信号档案馆</a></li>
+            <li><a href="xeno_civilizations.html">文明档案库</a></li>
+            <li><a href="xeno_transmissions.html">星际广播</a></li>
+            <li><a href="xeno_analysis.html">深度分析</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero-section">
+        <div class="hero-badge">📡 INTERSTELLAR COMMUNICATION CENTER</div>
+        <h1 class="hero-title">外星文明<span class="highlight">广播站</span></h1>
+        <p class="hero-subtitle">人类与地外文明的虚拟通讯枢纽——接收、解码、分析与回应来自深空的信号</p>
+        <div class="hero-stats">
+            <div class="hero-stat"><div class="stat-num">1,847</div><div class="stat-label">累计接收信号</div></div>
+            <div class="hero-stat"><div class="stat-num">23</div><div class="stat-label">已确认文明</div></div>
+            <div class="hero-stat"><div class="stat-num">5</div><div class="stat-label">主动广播文明</div></div>
+            <div class="hero-stat"><div class="stat-num">142</div><div class="stat-label">未解码信号</div></div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="panel-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-green);box-shadow:0 0 6px var(--signal-green);"></span> 实时信号接收日志</div>
+                <div class="panel-body" id="signalLog">
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:22:01]</span> <span class="tag-cyan">RECV</span> 信号源: VEGA-III | 频率: 1.42GHz | 强度: -68dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:22:15]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: QPSK。数据流开始。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:22:30]</span> <span class="tag">DECODE</span> 解码进度: 45%。检测到重复模式。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:22:45]</span> <span class="tag-cyan">RECV</span> 第二信号源: KEPLER-442b | 频率: 7.832Hz</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:23:00]</span> <span class="tag">DECODE</span> 舒曼共振载波。可能为生物信号。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:23:18]</span> <span class="tag-cyan">RECV</span> 新信号源: ANDROMEDA-7 | 频率: 3.14GHz | 强度: -91dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:23:42]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: BPSK。质数序列验证通过。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:24:05]</span> <span class="tag">DECODE</span> 解码进度: 12%。检测到斐波那契数列模式。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:24:33]</span> <span class="tag-cyan">RECV</span> 信号源: LUYTEN-B | 频率: 1.42GHz | 强度: -76dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:25:01]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: QPSK。信号特征与VEGA-III相似。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:25:28]</span> <span class="tag">DECODE</span> 解码进度: 67%。检测到重复模式: 氢原子能级图。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:26:15]</span> <span class="tag-cyan">RECV</span> 信号源: TRAPPIST-1 | 频率: 5.55GHz | 强度: -83dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:26:42]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: 8-PSK。信号带宽: 2.4MHz。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:27:10]</span> <span class="tag">DECODE</span> 解码进度: 34%。检测到数学常数序列: π, e, φ。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:27:38]</span> <span class="tag-cyan">RECV</span> 信号源: PROXIMA-C | 频率: 1.42GHz | 强度: -65dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:28:05]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: QPSK。信号强度异常高。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:28:33]</span> <span class="tag">DECODE</span> 解码进度: 89%。内容初步识别: 坐标信息。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:29:10]</span> <span class="tag-cyan">RECV</span> 信号源: WOLF-1061 | 频率: 7.832Hz | 强度: -102dBm</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:29:45]</span> <span class="tag-green">LOCK</span> 载波锁定。调制方式: FM。舒曼共振载波。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-16 08:30:20]</span> <span class="tag">DECODE</span> 解码进度: 56%。检测到脑电波同步模式。</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-cyan);box-shadow:0 0 6px var(--signal-cyan);"></span> 信号频谱分析仪</div>
+                <div class="panel-body">
+                    <div class="spectrum-display" id="spectrumDisplay"></div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--star-muted);margin-top:0.3rem;">
+                        <span>0Hz</span><span>500MHz</span><span>1GHz</span><span>1.42GHz</span><span>2GHz</span>
+                    </div>
+                    <div style="margin-top:1rem;font-size:0.72rem;color:var(--star-dim);">
+                        <p>峰值频率: 1.420GHz (氢线)</p>
+                        <p>二次峰值: 7.832Hz (舒曼共振)</p>
+                        <p>调制模式: QPSK / BPSK / FM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- 新增：深空监测网络概览 -->
+        <div class="panel-grid" style="margin-top:2rem;">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-purple);box-shadow:0 0 6px var(--signal-purple);"></span> 深空监测网络节点</div>
+                <div class="panel-body">
+                    <div class="log-entry"><span class="ts">[节点 A-1]</span> <span class="tag-green">ONLINE</span> 阿雷西博(替代)阵列 | 口径: 500m | 覆盖: 0.3-30GHz</div>
+                    <div class="log-entry"><span class="ts">[节点 A-2]</span> <span class="tag-green">ONLINE</span> FAST天眼 | 口径: 500m | 覆盖: 0.07-3GHz</div>
+                    <div class="log-entry"><span class="ts">[节点 A-3]</span> <span class="tag-green">ONLINE</span> VLA甚大阵 | 口径: 等效36km | 覆盖: 74MHz-50GHz</div>
+                    <div class="log-entry"><span class="ts">[节点 B-1]</span> <span class="tag-green">ONLINE</span> ALMA阵列 | 口径: 等效14.8km | 覆盖: 84-950GHz</div>
+                    <div class="log-entry"><span class="ts">[节点 B-2]</span> <span class="tag-green">ONLINE</span> 平方千米阵(SKA) | 口径: 等效1km | 覆盖: 50MHz-20GHz</div>
+                    <div class="log-entry"><span class="ts">[节点 C-1]</span> <span class="tag-amber">MAINT</span> 月球背面阵列 | 口径: 200m | 覆盖: 0.1-10GHz | 维护中</div>
+                    <div class="log-entry"><span class="ts">[节点 C-2]</span> <span class="tag-green">ONLINE</span> 日地L2点探测器 | 口径: 15m | 覆盖: 1-50GHz</div>
+                    <div style="margin-top:1rem;font-size:0.72rem;color:var(--star-dim);">
+                        <p>全球监测网络覆盖率: 87.3%</p>
+                        <p>实时数据吞吐量: 14.7 PB/天</p>
+                        <p>AI辅助分析节点: 256个</p>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-amber);box-shadow:0 0 6px var(--signal-amber);"></span> 近期重大发现简报</div>
+                <div class="panel-body">
+                    <div class="log-entry"><span class="ts">[2049-03-10]</span> <span class="tag">ALERT</span> 仙女座星系方向检测到规律性脉冲。周期: 11.3天。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-08]</span> <span class="tag-green">INFO</span> LUYTEN-B信号完成初步解码。内容疑似问候信息。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-05]</span> <span class="tag">ALERT</span> 银河系中心方向 Broadband hum 强度增加 23%。</div>
+                    <div class="log-entry"><span class="ts">[2049-03-01]</span> <span class="tag-green">INFO</span> PROXIMA-C文明确认。距离: 4.2光年。技术水平: I型。</div>
+                    <div class="log-entry"><span class="ts">[2049-02-28]</span> <span class="tag">ALERT</span> 舒曼共振异常信号出现新调制模式。频率漂移 ±0.003Hz。</div>
+                    <div class="log-entry"><span class="ts">[2049-02-25]</span> <span class="tag-green">INFO</span> TRAPPIST-1系统检测到人工电磁泄漏。至少3颗行星存在文明迹象。</div>
+                    <div class="log-entry"><span class="ts">[2049-02-20]</span> <span class="tag">ALERT</span> VEGA-III方向红外辐射特征变化。戴森球结构可能正在扩建。</div>
+                    <div style="margin-top:1rem;font-size:0.72rem;color:var(--star-dim);">
+                        <p>本月新确认文明: 2个</p>
+                        <p>本月异常信号报告: 47次</p>
+                        <p>待解码信号队列: 142条</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增：通讯协议与操作指南 -->
+        <div style="background:var(--space-panel);border:1px solid var(--border-panel);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:1.5rem;">
+            <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--signal-cyan);margin-bottom:1rem;">📋 星际通讯操作协议 v4.2</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.5rem;">第一节：信号接收标准流程</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">所有疑似人工信号必须经由三重验证：首先通过AI滤波器排除已知自然天体干扰源(脉冲星、磁星、射电星系等)；随后进行数学特征分析，确认是否存在质数序列、斐波那契数列或其他数学常数模式；最后由至少两名资深分析师进行人工复核。未经三重验证的信号不得标记为"已确认"。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.5rem;">第二节：解码优先级分级</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">P0级(最高)：包含明确警告信息或来自已知活跃文明的直接通讯。P1级：来自新确认文明的首次通讯。P2级：重复信号且包含可识别数据结构。P3级：单次信号或自然现象无法完全排除。P0级信号必须在15分钟内上报至联合国星际事务委员会。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.5rem;">第三节：广播安全守则</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">鉴于VEGA-III文明的警告，所有主动星际广播必须经过XENOCOM安全委员会批准。禁止广播任何可能暴露地球精确位置的参考信息(如太阳系行星排列、脉冲星导航坐标等)。所有广播内容需使用UEC-7宇宙通用编码标准，以数学常数作为开场标识。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.5rem;">第四节：文明接触伦理准则</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">遵循《关于地外文明接触的国际伦理公约》(2048年签署)：不得向技术水平低于人类的地外文明透露先进军事或技术信息；不得干预其他文明的内部发展进程；所有接触记录必须向全球科学界公开；尊重每个文明的独特文化和价值观。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增：系统状态仪表盘 -->
+        <div class="panel-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-green);box-shadow:0 0 6px var(--signal-green);"></span> AI解码引擎状态</div>
+                <div class="panel-body">
+                    <div style="margin-bottom:0.8rem;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--star-dim);margin-bottom:0.2rem;"><span>神经网络负载</span><span>78%</span></div>
+                        <div style="height:6px;background:var(--space-deep);border-radius:3px;"><div style="height:100%;width:78%;background:linear-gradient(90deg,var(--signal-green),var(--signal-cyan));border-radius:3px;"></div></div>
+                    </div>
+                    <div style="margin-bottom:0.8rem;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--star-dim);margin-bottom:0.2rem;"><span>量子计算阵列</span><span>92%</span></div>
+                        <div style="height:6px;background:var(--space-deep);border-radius:3px;"><div style="height:100%;width:92%;background:linear-gradient(90deg,var(--signal-cyan),var(--signal-purple));border-radius:3px;"></div></div>
+                    </div>
+                    <div style="margin-bottom:0.8rem;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--star-dim);margin-bottom:0.2rem;"><span>分布式存储</span><span>64%</span></div>
+                        <div style="height:6px;background:var(--space-deep);border-radius:3px;"><div style="height:100%;width:64%;background:linear-gradient(90deg,var(--signal-green),var(--alien-blue));border-radius:3px;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--star-dim);margin-bottom:0.2rem;"><span>语言模型训练</span><span>45%</span></div>
+                        <div style="height:6px;background:var(--space-deep);border-radius:3px;"><div style="height:100%;width:45%;background:linear-gradient(90deg,var(--signal-amber),var(--signal-red));border-radius:3px;"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-dot" style="background:var(--signal-red);box-shadow:0 0 6px var(--signal-red);"></span> 威胁监测仪表盘</div>
+                <div class="panel-body">
+                    <div class="log-entry"><span class="ts">[威胁级别]</span> <span class="tag" style="color:var(--signal-amber);">ELEVATED ( elevated )</span></div>
+                    <div class="log-entry"><span class="ts">[黑暗森林]</span> <span class="tag">概率评估: 67.3%</span></div>
+                    <div class="log-entry"><span class="ts">[先行者]</span> <span class="tag">活跃性: 未知</span></div>
+                    <div class="log-entry"><span class="ts">[暴露窗口]</span> <span class="tag-green">已关闭 (2047/09)</span></div>
+                    <div class="log-entry"><span class="ts">[无线电静默]</span> <span class="tag-green">已执行</span></div>
+                    <div class="log-entry"><span class="ts">[防御准备]</span> <span class="tag-amber">Level 2 (警戒)</span></div>
+                    <div style="margin-top:1rem;font-size:0.72rem;color:var(--star-dim);">
+                        <p>上次威胁评估更新: 2049-03-15 23:59 UTC</p>
+                        <p>下次全面评估: 2049-04-01 00:00 UTC</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 新增：星际通讯FAQ -->
+        <div style="background:var(--space-panel);border:1px solid var(--border-panel);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:1.5rem;">
+            <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--signal-cyan);margin-bottom:1rem;">❓ 常见问题解答 (FAQ)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.2rem;">
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 我们如何确认一个信号来自智慧文明而非自然现象？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: XENOCOM采用"三重验证"机制。第一重是排除法——通过AI系统比对已知的自然天体射电特征库（脉冲星、磁星、射电星系、类星体等），排除所有已知自然源。第二重是数学特征分析——任何包含质数序列、斐波那契数列、二进制编码的数学常数（π、e、φ）的信号，几乎不可能由自然过程产生。第三重是人工复核——由至少两名资深分析师独立评估信号特征，确认其智能来源。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 为什么VEGA-III文明能在2年内回复我们的广播？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: 这是XENOCOM面临的最大谜团之一。按光速计算，信号到达25光年外的VEGA星系需要25年，回复又需要25年——总共50年。但人类在2045年广播后仅2年（2047年）就收到了回复。三种假说正在研究中：(1) VEGA-III文明早已在太阳系附近部署了监测站或探测器，能够实时接收和转发信号；(2) VEGA-III掌握了某种超光速通讯技术（如量子纠缠通讯或曲率驱动信使）；(3) VEGA-III对人类进行了长期监听，他们在2045年广播之前就已经准备好了回复。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: "黑暗森林"法则是否已被证实？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: 目前尚未获得直接证据。黑暗森林假说仍然是一种理论推测，基于博弈论的推理。支持证据包括：VEGA-III的警告、银河系中缺乏可观测的II型和III型文明（费米悖论）、以及宇宙中文明的异常沉默。反对证据包括：多个文明（如LUYTEN-B）似乎并不惧怕暴露位置，主动与人类建立了联系。XENOCOM安全委员会当前的评估是：黑暗森林法则有一定概率成立（67.3%），因此在获得更多证据前，人类应保持谨慎的无线电静默。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 公众可以参与XENOCOM项目吗？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: 可以。XENOCOM设立了"公民科学家计划"，公众可以通过以下方式参与：(1) 使用个人射电望远镜（如RTL-SDR设备）监测指定频段，将数据上传至XENOCOM分布式分析网络；(2) 参与SETI@home的继任项目XENOCOM@home，利用个人计算机的闲置算力帮助分析信号数据；(3) 参与外星语言解码的众包项目，帮助识别信号中的模式；(4) 关注XENOCOM官方网站和社交媒体，获取最新的研究进展。所有公民科学家的贡献都将被记录并公开致谢。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 我们是否已经与任何文明建立了持续对话？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: 严格意义上的"对话"——即双向的信息交换——目前仅与LUYTEN-B文明建立了初步形式。但由于12.2光年的距离，每条信息的往返需要约24.4年。人类在2049年发出的问候，预计最早在2073年才能收到回复。与PROXIMA-C文明的初步接触也在进行中，但解码进度仅为12%。与WOLF-1061的"生物共鸣实验"是人类首次尝试非数学方式的交流，结果尚待观察。大多数其他文明仍处于单向监听阶段。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 外星信号是否对人类健康构成威胁？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: 绝大多数射电信号的频率和强度远低于对人体造成伤害的阈值。然而，WOLF-1061文明的信号使用了7.832Hz的舒曼共振频率，这与人类大脑的某些节律（如α波和θ波）存在重叠。有少数分析师报告称，在长时间接触这些信号后，他们经历了异常的梦境和情绪波动。XENOCOM已成立生物安全小组，对所有信号进行生物兼容性评估。BIS-1协议规定了严格的安全暴露时限（单次不超过30分钟）。公众无需担心日常接触的风险。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: XENOCOM的年度预算从何而来？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: XENOCOM由联合国星际事务委员会监管，年度预算约120亿美元，由47个成员国按GDP比例分摊。此外，项目还获得了多家私人基金会和科技公司的资助。预算主要用于：(1) 射电望远镜网络的运营和维护（约占40%）；(2) AI计算基础设施和量子计算资源（约占25%）；(3) 研究和分析人员薪资（约占20%）；(4) 国际协调和行政管理（约占10%）；(5) 公民科学教育和公众传播（约占5%）。所有财务报告均向公众公开。</p>
+                </div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--star-white);margin-bottom:0.3rem;">Q: 如果发现一个敌对外星文明，人类有防御计划吗？</h4>
+                    <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">A: XENOCOM安全委员会制定了多层次的应急预案。Level 1（观察）：持续监测，收集情报。Level 2（警戒）：当前状态。停止所有主动广播，加强被动监测。Level 3（准备）：启动全球疏散演练，建立地下避难设施，保护关键基础设施。Level 4（威胁）：实施全球军事动员，部署太空防御系统。Level 5（接触）：面对不可避免的接触，采取一切必要手段保护人类文明。需要注意的是，面对一个II型或III型文明，人类的任何军事防御可能都是无效的。因此，XENOCOM的优先策略是避免暴露和被动隐藏。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增：核心术语表 -->
+        <div style="background:var(--space-panel);border:1px solid var(--border-panel);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:1.5rem;">
+            <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--signal-cyan);margin-bottom:1rem;">📖 XENOCOM 核心术语表</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.8rem;font-size:0.78rem;color:var(--text-secondary);line-height:1.6;">
+                <div><strong style="color:var(--star-white);">卡尔达肖夫指数 (Kardashev Scale)</strong><br/>由苏联天文学家尼古拉·卡尔达肖夫提出的文明分类标准，基于文明能够利用的能量级别。I型文明能够利用所在行星的所有能源；II型文明能够利用整个恒星系统的能源；III型文明能够利用整个星系的能源。</div>
+                <div><strong style="color:var(--star-white);">氢线 (Hydrogen Line)</strong><br/>频率为1.42GHz的电磁波，由中性氢原子的超精细结构跃迁产生。这是宇宙中最普遍的射电谱线，被视为星际通讯的"通用频道"。</div>
+                <div><strong style="color:var(--star-white);">舒曼共振 (Schumann Resonance)</strong><br/>地球-电离层空腔的电磁共振基频，约为7.832Hz。被认为是地球生物圈电磁活动的基准频率，某些外星文明用它来建立行星级别的通讯。</div>
+                <div><strong style="color:var(--star-white);">戴森球 (Dyson Sphere)</strong><br/>理论上的巨型结构，围绕恒星建造以捕获其大部分能量输出。II型文明的标志。在红外波段表现为异常强烈的辐射特征。</div>
+                <div><strong style="color:var(--star-white);">黑暗森林 (Dark Forest)</strong><br/>对费米悖论的一种解释，认为宇宙中的文明都选择保持沉默，因为暴露位置可能招致灭顶之灾。宇宙就像一座黑暗的森林，每个文明都是潜伏的猎人。</div>
+                <div><strong style="color:var(--star-white);">三重验证 (Triple Verification)</strong><br/>XENOCOM确认智能信号的标准流程：AI排除已知自然干扰源→数学特征分析确认智能签名→人工复核。</div>
+                <div><strong style="color:var(--star-white);">UEC-7 编码</strong><br/>宇宙通用编码标准，定义了如何将信息编码为可被任何技术文明解读的格式。以数学常数作为起点，逐步构建复杂的语义体系。</div>
+                <div><strong style="color:var(--star-white);">ICS-1 载波标准</strong><br/>星际载波标准，定义了星际通讯的物理层规范。规定了频率、调制方式、功率和极化等参数。</div>
+                <div><strong style="color:var(--star-white);">信号色散 (Dispersion)</strong><br/>星际介质中的自由电子导致不同频率的电磁波以不同速度传播的现象。脉冲信号在传播过程中会被展宽，色散量可以用来估算信号源的距离。</div>
+                <div><strong style="color:var(--star-white);">量子纠缠通讯 (Quantum Entanglement Comms)</strong><br/>理论上的超光速通讯方式，利用量子纠缠态的非定域性实现瞬时信息传输。目前人类技术尚未实现，但某些高等文明可能已掌握。</div>
+                <div><strong style="color:var(--star-white);">水洞频段 (Water Hole)</strong><br/>射电天文学中指1.42GHz氢线和1.66GHz羟基线之间的频段，被认为是最适合星际通讯的"安静"区域，宇宙背景噪声极低。</div>
+                <div><strong style="color:var(--star-white);">无线电静默 (Radio Silence)</strong><br/>为降低被外星文明探测到的风险而采取的策略，停止所有非必要的射电发射活动。2047年联合国第8847号决议正式实施了全球无线电静默。</div>
+            </div>
+        </div>
+
+        <!-- 新增：项目里程碑与统计 -->
+        <div style="background:var(--space-panel);border:1px solid var(--border-panel);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:1.5rem;">
+            <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--signal-cyan);margin-bottom:1rem;">📊 XENOCOM 项目里程碑与全球统计</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-cyan);font-weight:700;">47</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">参与国家/地区</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-green);font-weight:700;">1,847</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">累计接收信号</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-purple);font-weight:700;">23</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">已确认文明</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-amber);font-weight:700;">142</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">待解码信号</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-cyan);font-weight:700;">7</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">全球监测节点</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--space-deep);border-radius:var(--radius-sm);">
+                    <div style="font-size:1.8rem;color:var(--signal-green);font-weight:700;">120亿</div>
+                    <div style="font-size:0.72rem;color:var(--star-dim);margin-top:0.3rem;">年度预算(美元)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="freq-line">📡 XENOCOM://星际广播站 · 持续监听着宇宙的声音</div>
+        <p>"宇宙之广，远超想象。而我们，正在倾听。"</p>
+        <p style="margin-top:0.5rem;">XENOCOM项目由联合国星际事务委员会监管 | 全球47国参与 | 数据向全人类开放</p>
+    </footer>
+
+    <script>
+        setInterval(()=>{
+            const spectrum=document.getElementById('spectrumDisplay');
+            spectrum.innerHTML=Array.from({length:60},()=>`<div class="spectrum-bar" style="height:${5+Math.random()*75}px;"></div>`).join('');
+        },2000);
+        setInterval(()=>{
+            const log=document.getElementById('signalLog');
+            const entries=['扫描频率: 1.42GHz...','检查载波锁定...','数据完整性: 100%','信号强度: -72dBm','解码器状态: ACTIVE'];
+            const entry=entries[Math.floor(Math.random()*entries.length)];
+            const div=document.createElement('div');div.className='log-entry';
+            const ts=new Date().toLocaleTimeString('en-US',{hour12:false});
+            div.innerHTML=`<span class="ts">[${ts}]</span> <span class="tag-cyan">RECV</span> ${entry}`;
+            log.appendChild(div);log.scrollTop=log.scrollHeight;
+        },5000);
+    </script>
+</body>
+</html>

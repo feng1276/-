@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件对比 · 未解之谜档案馆</title>
+    <style>
+        :root {
+            --bg-void: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.85);
+            --glass-bg: rgba(10, 10, 20, 0.7);
+            --glass-border: rgba(180, 40, 40, 0.18);
+            --accent-crimson: #c0392b;
+            --accent-warning: #e74c3c;
+            --accent-amber: #d4a017;
+            --accent-glow: rgba(220, 50, 50, 0.5);
+            --text-primary: #e0d8d0;
+            --text-secondary: #a09890;
+            --text-muted: #6a6258;
+            --border-radius-xl: 1.5rem;
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --font-body: 'Crimson Text', 'Georgia', serif;
+            --font-heading: 'Cinzel', 'Georgia', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .logo span {
+            color: var(--accent-warning);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-warning);
+        }
+        .page-header {
+            text-align: center;
+            padding: 3rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .selector-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        select {
+            padding: 0.8rem 1.5rem;
+            border-radius: 3rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            max-width: 300px;
+        }
+        select:focus {
+            border-color: var(--accent-warning);
+            outline: none;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .vs-badge {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-crimson);
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--glass-border);
+        }
+        .compare-table th,
+        .compare-table td {
+            padding: 1rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-primary);
+        }
+        .compare-table th {
+            background: rgba(180, 30, 30, 0.12);
+            color: var(--accent-warning);
+            font-family: var(--font-heading);
+            letter-spacing: 1px;
+        }
+        .compare-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .diff-highlight {
+            background: rgba(220, 50, 50, 0.06);
+        }
+        .match-highlight {
+            background: rgba(46, 139, 87, 0.06);
+        }
+
+        /* ===== NEW CSS: Quick Facts Summary Cards ===== */
+        .quick-facts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 1.5rem 0 2rem;
+        }
+        @media (max-width: 600px) { .quick-facts-row { grid-template-columns: 1fr; } }
+        .quick-fact-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+        .quick-fact-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            color: var(--accent-warning);
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+        }
+        .quick-fact-card .fact-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.35rem 0;
+            font-size: 0.82rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .quick-fact-card .fact-item .fact-label { color: var(--text-muted); }
+        .quick-fact-card .fact-item .fact-value { color: var(--text-primary); font-weight: 600; }
+
+        /* ===== NEW CSS: Similarity Meter ===== */
+        .similarity-wrap {
+            text-align: center;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+        }
+        .similarity-wrap h3 {
+            font-family: var(--font-heading);
+            letter-spacing: 2px;
+            font-size: 1rem;
+            color: var(--accent-amber);
+            margin-bottom: 1rem;
+        }
+        .similarity-bar-outer {
+            width: 100%;
+            max-width: 500px;
+            height: 24px;
+            background: #1a1420;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 auto;
+            border: 1px solid var(--glass-border);
+        }
+        .similarity-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #8b0000, var(--accent-crimson), var(--accent-amber), #2e8b57);
+            background-size: 300% 100%;
+            transition: width 0.6s ease;
+            border-radius: 12px;
+            position: relative;
+        }
+        .similarity-score {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-warning);
+            margin-top: 0.5rem;
+        }
+
+        /* ===== NEW CSS: Comparison Visualization (Bar Chart) ===== */
+        .viz-wrap {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+        }
+        .viz-wrap h3 {
+            font-family: var(--font-heading);
+            letter-spacing: 2px;
+            font-size: 1rem;
+            color: var(--accent-amber);
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .viz-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            gap: 0.8rem;
+        }
+        .viz-label {
+            width: 120px;
+            font-size: 0.7rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .viz-bars {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .viz-bar-a, .viz-bar-b {
+            height: 14px;
+            border-radius: 7px;
+            transition: width 0.6s ease;
+            position: relative;
+            min-width: 4px;
+        }
+        .viz-bar-a { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        .viz-bar-b { background: linear-gradient(90deg, #2471a3, #2e86c1); }
+        .viz-bar-label {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.6rem;
+            font-family: var(--font-mono);
+            color: #fff;
+            white-space: nowrap;
+        }
+        .viz-legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+        }
+        .viz-legend span { display: flex; align-items: center; gap: 0.3rem; }
+        .viz-legend .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+        .legend-a { background: #c0392b; }
+        .legend-b { background: #2471a3; }
+
+        /* ===== NEW CSS: Common Patterns ===== */
+        .patterns-wrap {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+        }
+        .patterns-wrap h3 {
+            font-family: var(--font-heading);
+            letter-spacing: 2px;
+            font-size: 1rem;
+            color: var(--accent-amber);
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+        }
+        .patterns-wrap p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .patterns-wrap .pattern-tag {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 1rem;
+            font-size: 0.68rem;
+            font-family: var(--font-mono);
+            background: rgba(180,40,40,0.1);
+            border: 1px solid rgba(180,40,40,0.25);
+            color: var(--accent-crimson);
+            margin: 0.2rem 0.3rem;
+        }
+
+        /* ===== NEW CSS: Most Similar Cases ===== */
+        .similar-cases-wrap {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+        }
+        .similar-cases-wrap h3 {
+            font-family: var(--font-heading);
+            letter-spacing: 2px;
+            font-size: 1rem;
+            color: var(--accent-amber);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .similar-case-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .similar-case-row:last-child { border-bottom: none; }
+        .similar-case-name {
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            flex: 1;
+        }
+        .similar-case-score {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--accent-amber);
+            min-width: 50px;
+            text-align: right;
+        }
+        .mini-bar {
+            width: 80px;
+            height: 6px;
+            background: #1a1420;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .mini-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c0392b, #e74c3c);
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* ===== NEW CSS: Share Button ===== */
+        .share-wrap {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.5rem;
+            border-radius: 2rem;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            transition: all 0.3s;
+            margin: 0 0.5rem;
+        }
+        .btn:hover {
+            border-color: var(--accent-warning);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .btn-share { color: var(--accent-warning); }
+        .btn-random { color: var(--accent-amber); }
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--accent-amber);
+            color: var(--text-primary);
+            padding: 0.8rem 2rem;
+            border-radius: 2rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        /* ===== NEW CSS: Tags & Badges ===== */
+        .case-badge {
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.65rem;
+            font-family: var(--font-mono);
+            background: rgba(180,40,40,0.1);
+            color: var(--accent-crimson);
+            letter-spacing: 0.5px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='mystery_home.html'">M<span>Y</span>STERY ATLAS</div>
+        <ul class="nav-links">
+            <li><a href="mystery_home.html">首页</a></li>
+            <li><a href="archives.html">档案库</a></li>
+            <li><a href="map.html">世界地图</a></li>
+            <li><a href="timeline.html">时间线</a></li>
+            <li><a href="ufo.html">UFO档案</a></li>
+            <li><a href="missing.html">失踪案件</a></li>
+            <li><a href="supernatural.html">超自然</a></li>
+            <li><a href="compare.html" class="active">案件对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>⚖️ 案件对比系统</h1>
+        <p style="color:var(--text-muted); letter-spacing:1px;">CASE COMPARISON ANALYSIS</p>
+    </div>
+
+    <div class="container">
+        <div class="selector-row">
+            <select id="caseASelect"></select>
+            <span class="vs-badge">VS</span>
+            <select id="caseBSelect"></select>
+        </div>
+
+        <div class="share-wrap">
+            <button class="btn btn-random" onclick="randomMatchup()">🎲 随机匹配</button>
+            <button class="btn btn-share" onclick="shareComparison()">🔗 复制对比链接</button>
+        </div>
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <!-- ===== QUICK FACTS CARDS ===== -->
+    <div class="container" id="quickFactsContainer">
+        <div class="quick-facts-row">
+            <div class="quick-fact-card" id="quickFactsA"><h4 id="factsHeaderA">案件A概要</h4><div id="factsContentA"></div></div>
+            <div class="quick-fact-card" id="quickFactsB"><h4 id="factsHeaderB">案件B概要</h4><div id="factsContentB"></div></div>
+        </div>
+    </div>
+
+    <!-- ===== COMPARISON TABLE ===== -->
+    <div class="container">
+        <table class="compare-table" id="compareTable">
+            <thead>
+                <tr><th>对比维度</th><th id="headerA">案件A</th><th id="headerB">案件B</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- ===== SIMILARITY SCORE ===== -->
+    <div class="container">
+        <div class="similarity-wrap">
+            <h3>🔬 相似度评分 · SIMILARITY SCORE</h3>
+            <div class="similarity-bar-outer">
+                <div class="similarity-bar-inner" id="similarityBar" style="width:0%"></div>
+            </div>
+            <div class="similarity-score" id="similarityScoreText">0%</div>
+        </div>
+    </div>
+
+    <!-- ===== COMMON PATTERNS ===== -->
+    <div class="container">
+        <div class="patterns-wrap">
+            <h3>🔗 共同模式分析 · COMMON PATTERNS</h3>
+            <div id="commonPatternsContent">
+                <p style="color:var(--text-muted);">选择一个案件对比以查看共同模式...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== COMPARISON VISUALIZATION ===== -->
+    <div class="container">
+        <div class="viz-wrap">
+            <h3>📊 对比可视化 · COMPARISON CHART</h3>
+            <div class="viz-legend">
+                <span><span class="legend-swatch legend-a"></span> <span id="legendAName">案件A</span></span>
+                <span><span class="legend-swatch legend-b"></span> <span id="legendBName">案件B</span></span>
+            </div>
+            <div id="vizContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== MOST SIMILAR CASES ===== -->
+    <div class="container">
+        <div class="similar-cases-wrap">
+            <h3>🎯 最相似案件建议 · MOST SIMILAR CASES</h3>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom:1rem;">基于数据库中所有案件与当前选中案件A的相似度排名</p>
+            <div id="similarCasesContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const compareDB = {
+            // ---- Original 6 preserved ----
+            bermuda: { name: '百慕大三角', type: '地理异常', category: 'geographic', era: '1918年至今', location: '大西洋西部', victims: '数千人(估算)',
+                credibility: '中等', status: '未解', theories: '磁异常/甲烷水合物/外星人', evidence: '雷达异常/目击证词/失踪记录',
+                numberOfWitnesses: '数千+', governmentInvolvement: '有限调查', mediaAttention: '极高', scientificConsensus: '自然现象集合',
+                conspiracyTheories_count: 12, documentaryCoverage: '50+纪录片', physicalEvidence_items: '船只残骸/飞行记录', witnessCredibility: '混合' },
+            dragon: { name: '龙三角', type: '地理异常', category: 'geographic', era: '1950年代起', location: '日本南部海域', victims: '数百人(估算)',
+                credibility: '中等', status: '未解', theories: '海底火山/磁异常/不明现象', evidence: '船只失踪记录/渔民报告',
+                numberOfWitnesses: '数百', governmentInvolvement: '日本海上保安厅记录', mediaAttention: '中等', scientificConsensus: '海洋自然灾害',
+                conspiracyTheories_count: 5, documentaryCoverage: '10+纪录片', physicalEvidence_items: '航行日志/救援记录', witnessCredibility: '中等' },
+            roswell: { name: '罗斯威尔事件', type: 'UFO事件', category: 'ufo', era: '1947年', location: '美国新墨西哥州', victims: '0(物质证据)',
+                credibility: '高', status: '高度争议', theories: '外星飞船/间谍气球/军事实验', evidence: '碎片样本/军方文件/证人采访',
+                numberOfWitnesses: '200+', governmentInvolvement: '高度介入(军方)', mediaAttention: '极高', scientificConsensus: '气象气球(Mogul计划)',
+                conspiracyTheories_count: 25, documentaryCoverage: '100+纪录片', physicalEvidence_items: '气球碎片/FBI备忘录', witnessCredibility: '高(多名军官)' },
+            flight19: { name: '19号航班', type: '航空失踪', category: 'missing', era: '1945年', location: '百慕大三角海域', victims: '14人',
+                credibility: '高', status: '未解', theories: '导航失灵/磁异常/时空异常', evidence: '无线电通讯记录/搜救报告',
+                numberOfWitnesses: '0(直接)' , governmentInvolvement: '美国海军全面调查', mediaAttention: '高', scientificConsensus: '导航错误/燃料耗尽',
+                conspiracyTheories_count: 8, documentaryCoverage: '30+纪录片', physicalEvidence_items: '无线电抄本/飞行计划', witnessCredibility: '官方记录' },
+            dyatlov: { name: '迪亚特洛夫事件', type: '集体死亡', category: 'historical', era: '1959年', location: '俄罗斯乌拉尔山脉', victims: '9人',
+                credibility: '高', status: '未解', theories: '雪崩/次声波/军事实验/外星人', evidence: '尸体解剖报告/辐射检测/照片',
+                numberOfWitnesses: '0(间接)', governmentInvolvement: '苏联官方调查(保密)', mediaAttention: '高', scientificConsensus: '板状雪崩(2021年模型)',
+                conspiracyTheories_count: 20, documentaryCoverage: '40+纪录片', physicalEvidence_items: '帐篷/衣物/相机/解剖报告', witnessCredibility: '法医证据' },
+            tunguska: { name: '通古斯大爆炸', type: '未知爆炸', category: 'geographic', era: '1908年', location: '俄罗斯西伯利亚', victims: '0(无人区)',
+                credibility: '高', status: '争议', theories: '陨石/彗星/UFO坠毁/反物质', evidence: '爆炸痕迹/树木倒塌模式/地震记录',
+                numberOfWitnesses: '少量偏远居民', governmentInvolvement: '苏联科学院多次考察', mediaAttention: '高', scientificConsensus: '空中爆炸的小行星或彗星',
+                conspiracyTheories_count: 18, documentaryCoverage: '60+纪录片', physicalEvidence_items: '爆炸痕迹/地震图/湖底沉积物', witnessCredibility: '偏远目击者有限' },
+
+            // ---- New entries: UFO cases ----
+            phoenix_lights: { name: '凤凰城光点事件', type: 'UFO事件', category: 'ufo', era: '1997年', location: '美国亚利桑那州凤凰城', victims: '0',
+                credibility: '高', status: '争议', theories: '外星飞船/军方照明弹/无人机编队', evidence: '视频/数千目击证词/官方否认',
+                numberOfWitnesses: '10,000+', governmentInvolvement: '空军声明(照明弹)', mediaAttention: '极高', scientificConsensus: '军方照明弹+商业飞机',
+                conspiracyTheories_count: 10, documentaryCoverage: '20+纪录片', physicalEvidence_items: '视频录像/照片', witnessCredibility: '包括州长Fife Symington' },
+            rendlesham: { name: '蓝道申森林事件', type: 'UFO事件', category: 'ufo', era: '1980年12月', location: '英国萨福克郡空军基地', victims: '0',
+                credibility: '极高', status: '未解', theories: '外星飞船/灯塔误认/苏联间谍装置', evidence: '军方备忘录/录音带/辐射检测/树木损伤',
+                numberOfWitnesses: '10+(军事人员)', governmentInvolvement: '英美军事人员直接卷入', mediaAttention: '高', scientificConsensus: 'Orford Ness灯塔误认/军方观点有分歧',
+                conspiracyTheories_count: 15, documentaryCoverage: '30+纪录片', physicalEvidence_items: '辐射读数/石膏模具/录音带', witnessCredibility: '高(美空军军官)' },
+            belgium_wave: { name: '比利时不明飞行物波', type: 'UFO事件', category: 'ufo', era: '1989-1991年', location: '比利时', victims: '0',
+                credibility: '高', status: '未解', theories: '外星飞船/F-117隐形机/秘密无人机', evidence: '雷达追踪/战机拦截/F-16雷达锁定/地面目击',
+                numberOfWitnesses: '13,500+', governmentInvolvement: '比利时空军出动F-16', mediaAttention: '极高(欧洲)', scientificConsensus: '未知/直升机误认理论受质疑',
+                conspiracyTheories_count: 12, documentaryCoverage: '25+纪录片', physicalEvidence_items: 'F-16雷达记录/照片/地面雷达数据', witnessCredibility: '高(宪兵/军方)' },
+            nimitz: { name: '尼米兹号UFO遭遇', type: 'UFO事件', category: 'ufo', era: '2004年11月', location: '美国加州外海太平洋', victims: '0',
+                credibility: '极高', status: '官方确认不明', theories: '外国先进飞行器/外星技术/传感器故障', evidence: 'FLIR视频/雷达数据/飞行员证词',
+                numberOfWitnesses: '7+(航母战斗群)', governmentInvolvement: '五角大楼AATIP项目/官方解密', mediaAttention: '极高(2017年后)', scientificConsensus: '官方确认"不明空中现象"(UAP)',
+                conspiracyTheories_count: 20, documentaryCoverage: '50+纪录片', physicalEvidence_items: 'FLIR视频(Gimbal/Go Fast)/雷达日志', witnessCredibility: '极高(海军飞行员)' },
+
+            // ---- New entries: Missing cases ----
+            mh370: { name: 'MH370航班失踪', type: '航空失踪', category: 'missing', era: '2014年', location: '印度洋南部', victims: '239人',
+                credibility: '极高', status: '未解(主体残骸未寻)', theories: '飞行员自杀/劫机/火灾/集体缺氧', evidence: '卫星握手信号/漂移残骸/雷达数据',
+                numberOfWitnesses: '0(直接目击)', governmentInvolvement: '多国联合搜索(史上最昂贵)', mediaAttention: '全球持续至今', scientificConsensus: '南印度洋终结于燃料耗尽',
+                conspiracyTheories_count: 30, documentaryCoverage: '80+纪录片', physicalEvidence_items: '襟副翼/卫星数据/模拟器数据', witnessCredibility: '卫星/雷达数据' },
+            amelia: { name: 'Amelia Earhart失踪', type: '航空失踪', category: 'missing', era: '1937年', location: '太平洋中部豪兰岛附近', victims: '2人',
+                credibility: '高', status: '未解(可能已破译)', theories: '坠海/荒岛求生/被日军俘虏/间谍任务', evidence: '无线电通讯/搜救记录/可能的骨骼碎片',
+                numberOfWitnesses: '0(最后无线电)', governmentInvolvement: '美国海军大规模搜救', mediaAttention: '极高(近百年)', scientificConsensus: 'Nikumaroro岛着陆后待援(支持证据增加)',
+                conspiracyTheories_count: 25, documentaryCoverage: '60+纪录片', physicalEvidence_items: '无线电通讯记录/骨片分析/铝板碎片', witnessCredibility: '依赖考古发现' },
+            sodder: { name: 'Sodder家族失踪', type: '失踪事件', category: 'missing', era: '1945年圣诞夜', location: '美国西弗吉尼亚州', victims: '5名儿童(失踪)',
+                credibility: '中等', status: '未解', theories: '被绑架/火灾中死亡/西西里黑手党', evidence: '火灾后无遗骸/可疑人物/明信片线索',
+                numberOfWitnesses: '父母及兄弟姐妹', governmentInvolvement: '当地警方/FBI有限介入', mediaAttention: '中等(持续数十年)', scientificConsensus: '火灾中死亡可能性最大',
+                conspiracyTheories_count: 8, documentaryCoverage: '5+纪录片', physicalEvidence_items: '火灾现场/家庭照片/可疑信件', witnessCredibility: '父母证词存在矛盾' },
+
+            // ---- New entries: Supernatural/Cryptid ----
+            enfield: { name: '恩菲尔德骚灵事件', type: '骚灵现象', category: 'supernatural', era: '1977-1979年', location: '英国伦敦恩菲尔德', victims: 'Hodgson一家',
+                credibility: '中等', status: '争议', theories: '真实骚灵/儿童恶作剧/部分真实叠加表演', evidence: '录音/照片/警方证词/记者目击',
+                numberOfWitnesses: '30+(含警方/记者)', governmentInvolvement: '无', mediaAttention: '高(英国)', scientificConsensus: '部分为儿童恶作剧，部分无法解释',
+                conspiracyTheories_count: 3, documentaryCoverage: '10+纪录片/电影', physicalEvidence_items: '录音带/照片/家具', witnessCredibility: '混合(儿童证词存疑)' },
+            mothman: { name: '天蛾人目击', type: '未知生物', category: 'cryptid', era: '1966-1967年', location: '美国西弗吉尼亚州', victims: '0(间接关联银桥灾难46死)',
+                credibility: '低', status: '未解', theories: '沙丘鹤/猫头鹰/外星人/集体幻觉', evidence: '目击证词/新闻报道',
+                numberOfWitnesses: '100+', governmentInvolvement: '无直接介入', mediaAttention: '高(美国)', scientificConsensus: '沙丘鹤误认/集体癔症',
+                conspiracyTheories_count: 6, documentaryCoverage: '15+纪录片/电影', physicalEvidence_items: '报纸剪报/目击记录', witnessCredibility: '低至中等' },
+            skinwalker: { name: '皮行者牧场现象', type: '综合超自然', category: 'supernatural', era: '1950年代起', location: '美国犹他州', victims: '0',
+                credibility: '低', status: '持续调查中', theories: '跨维度通道/外星基地/心理影响', evidence: '视频/照片/辐射异常/军方报告',
+                numberOfWitnesses: '研究人员及周边居民', governmentInvolvement: 'AAWSAP/AATIP曾资助研究', mediaAttention: '中等(秘传)', scientificConsensus: '缺乏可复制证据',
+                conspiracyTheories_count: 15, documentaryCoverage: '8+纪录片', physicalEvidence_items: '视频录像/辐射检测/动物尸检', witnessCredibility: '争议' },
+
+            // ---- New entries: Historical mysteries ----
+            mary_celeste: { name: '玛丽·塞莱斯特号', type: '航海失踪', category: 'historical', era: '1872年12月', location: '大西洋(葡萄牙与亚速尔群岛之间)', victims: '10人(失踪)',
+                credibility: '高(历史记录)', status: '未解', theories: '酒精挥发/海盗/保险欺诈/海龙卷/暴风雨恐慌', evidence: '发现时的船只状态/航海日志/货物清单',
+                numberOfWitnesses: '发现船员(Dei Gratia号)', governmentInvolvement: '英国海军部调查', mediaAttention: '极高(19世纪)', scientificConsensus: '酒精罐泄漏引发恐慌弃船',
+                conspiracyTheories_count: 12, documentaryCoverage: '20+纪录片', physicalEvidence_items: '航海日志/船只检查报告', witnessCredibility: '历史记录' },
+            roanoke: { name: '罗阿诺克殖民地消失', type: '集体失踪', category: 'historical', era: '1587-1590年', location: '美国北卡罗来纳州罗阿诺克岛', victims: '115-117名殖民者',
+                credibility: '高(历史事实)', status: '未解', theories: '融入原住民/被西班牙人杀害/饥荒/迁移至内陆', evidence: '刻字"CROATOAN"/考古遗址/历史档案',
+                numberOfWitnesses: '返回补给船的船员', governmentInvolvement: '英国王室殖民计划', mediaAttention: '持续性(400+年)', scientificConsensus: '融入友好的Croatoan部落',
+                conspiracyTheories_count: 10, documentaryCoverage: '30+纪录片', physicalEvidence_items: 'CROATOAN刻字/考古陶器碎片', witnessCredibility: '间接(历史记录)' },
+            oak_island: { name: '橡树岛钱坑', type: '宝藏/历史谜团', category: 'historical', era: '1795年起', location: '加拿大新斯科舍省橡树岛', victims: '6人(搜索中死亡)',
+                credibility: '中等', status: '未解', theories: '海盗宝藏/圣殿骑士财宝/莎士比亚手稿/天然落水洞', evidence: '人工结构层/椰子纤维/羊皮纸碎片/金属探测',
+                numberOfWitnesses: '历代搜索者', governmentInvolvement: '加拿大政府颁发挖掘许可', mediaAttention: '高(History频道)', scientificConsensus: '天然落水洞+历代搜索活动堆积层',
+                conspiracyTheories_count: 20, documentaryCoverage: 'History频道系列', physicalEvidence_items: '木板层/金属物/羊皮纸碎片', witnessCredibility: '考古/历史分析' },
+
+            // ---- New entries: Geographic anomalies ----
+            michigan_triangle: { name: '密歇根三角', type: '地理异常', category: 'geographic', era: '1891年起', location: '美国密歇根湖', victims: '未知(多起失踪)',
+                credibility: '中等', status: '未解', theories: '磁异常/湖底巨浪/外星诱拐/天气突变', evidence: '失踪记录/目击证词/声纳异常',
+                numberOfWitnesses: '众多(分散)', governmentInvolvement: '海岸警卫队搜救记录', mediaAttention: '中等(区域)', scientificConsensus: '突发风暴/湖底地形复杂',
+                conspiracyTheories_count: 4, documentaryCoverage: '5+纪录片', physicalEvidence_items: '失踪船只/飞机残骸记录', witnessCredibility: '混合' },
+            nazca: { name: '纳斯卡线条', type: '古代遗址谜团', category: 'geographic', era: '公元前500-公元500年', location: '秘鲁纳斯卡沙漠', victims: '无',
+                credibility: '极高(存在)', status: '目的争议', theories: '天文日历/宗教仪式/外星人跑道/水资源标记', evidence: '巨型地面图案/考古学分析/无人机测绘',
+                numberOfWitnesses: '全球研究者', governmentInvolvement: '联合国教科文组织世界遗产', mediaAttention: '极高(全球)', scientificConsensus: '仪式/天文用途——外星假说被考古学拒绝',
+                conspiracyTheories_count: 15, documentaryCoverage: '40+纪录片', physicalEvidence_items: '地面图案测量/考古发现/陶瓷片', witnessCredibility: '考古/科学证据' },
+
+            // ---- New entries: more variety ----
+            voynich: { name: '伏尼契手稿', type: '未解文献', category: 'historical', era: '15世纪初(碳定年)', location: '欧洲中部(推测)', victims: '无',
+                credibility: '极高(实物)', status: '未解', theories: '加密科学文本/骗局/外星文字/自然语言', evidence: '240页手稿实物/碳-14定年/墨水分析',
+                numberOfWitnesses: '全球学者', governmentInvolvement: '无', mediaAttention: '高', scientificConsensus: '可能为15世纪自然语言密文',
+                conspiracyTheories_count: 8, documentaryCoverage: '15+纪录片', physicalEvidence_items: '手稿实物/碳定年报告/植物图鉴比对', witnessCredibility: '物理证据' },
+            wow_signal: { name: 'Wow!信号', type: 'SETI信号', category: 'ufo', era: '1977年8月15日', location: '从人马座方向(探测于俄亥俄州)', victims: '无',
+                credibility: '高', status: '未再现', theories: '外星文明信号/彗星氢云/地面干扰/军事卫星', evidence: '打印记录/射电望远镜数据/频率匹配氢线',
+                numberOfWitnesses: '1名天文学家(J.Ehman)', governmentInvolvement: '大学研究(Big Ear)', mediaAttention: '高', scientificConsensus: '可能为彗星266P和335P的氢云——有争议',
+                conspiracyTheories_count: 6, documentaryCoverage: '10+纪录片', physicalEvidence_items: '计算机打印记录(6EQUJ5)', witnessCredibility: '高(科学记录)' },
+        };
+
+        // ---- Build select options ----
+        function buildSelectOptions() {
+            const keys = Object.keys(compareDB);
+            const opts = keys.map(k => `<option value="${k}">${compareDB[k].name}</option>`).join('');
+            document.getElementById('caseASelect').innerHTML = opts;
+            document.getElementById('caseBSelect').innerHTML = opts;
+            // Default: bermuda vs dragon
+            if (document.getElementById('caseASelect').querySelector('option[value="bermuda"]')) {
+                document.getElementById('caseASelect').value = 'bermuda';
+            }
+            if (document.getElementById('caseBSelect').querySelector('option[value="dragon"]')) {
+                document.getElementById('caseBSelect').value = 'dragon';
+            }
+        }
+
+        // ---- Complete dimension list (original + new) ----
+        const dimensionDefs = [
+            { key: 'type', label: '案件类型' },
+            { key: 'category', label: '案件分类' },
+            { key: 'era', label: '发生年代' },
+            { key: 'location', label: '地理位置' },
+            { key: 'victims', label: '涉及人数' },
+            { key: 'credibility', label: '可信度' },
+            { key: 'status', label: '当前状态' },
+            { key: 'theories', label: '主要理论' },
+            { key: 'evidence', label: '证据类型' },
+            { key: 'numberOfWitnesses', label: '目击者数量' },
+            { key: 'governmentInvolvement', label: '政府介入程度' },
+            { key: 'mediaAttention', label: '媒体关注度' },
+            { key: 'scientificConsensus', label: '科学共识' },
+            { key: 'conspiracyTheories_count', label: '阴谋理论数量' },
+            { key: 'documentaryCoverage', label: '纪录片覆盖' },
+            { key: 'physicalEvidence_items', label: '物证条目' },
+            { key: 'witnessCredibility', label: '证人可信度' },
+        ];
+
+        // ---- Similarity calculation ----
+        function calcSimilarity(a, b) {
+            if (!a || !b || a === b) return a === b ? 100 : 0;
+            let matches = 0;
+            let total = 0;
+            const compareKeys = ['type', 'category', 'credibility', 'status'];
+            compareKeys.forEach(k => {
+                total++;
+                if (a[k] === b[k]) matches++;
+            });
+            // Partial match on location keywords
+            total++;
+            const locWordsA = (a.location || '').toLowerCase().split(/[\s,，]+/).filter(w => w.length > 1);
+            const locWordsB = (b.location || '').toLowerCase().split(/[\s,，]+/).filter(w => w.length > 1);
+            const locOverlap = locWordsA.filter(w => locWordsB.includes(w)).length;
+            if (locOverlap > 0) matches += Math.min(1, locOverlap / Math.max(1, Math.min(locWordsA.length, locWordsB.length)));
+
+            // Era overlap
+            total++;
+            if (a['era'] === b['era']) matches++;
+
+            // Victims similar scale
+            total++;
+            const vA = parseInt((a['victims'] || '0').replace(/[^0-9]/g, '').slice(0, 5)) || 0;
+            const vB = parseInt((b['victims'] || '0').replace(/[^0-9]/g, '').slice(0, 5)) || 0;
+            if (vA === vB) matches++;
+            else if (vA > 0 && vB > 0 && Math.abs(Math.log10(vA+1) - Math.log10(vB+1)) < 0.7) matches += 0.5;
+
+            return Math.round((matches / total) * 100);
+        }
+
+        // ---- Common Patterns Analysis ----
+        function generateCommonPatterns(a, b) {
+            const patterns = [];
+            if (a.type === b.type) patterns.push({ text: '相同案件类型: ' + a.type, tag: '类型匹配' });
+            if (a.category === b.category) patterns.push({ text: '相同分类范畴: ' + a.category, tag: '分类一致' });
+            if (a.credibility === b.credibility) patterns.push({ text: '相同可信度评级: ' + a.credibility, tag: '可信度匹配' });
+            if (a.status === b.status) patterns.push({ text: '相同的案件状态: ' + a.status, tag: '状态一致' });
+            if (a.governmentInvolvement && b.governmentInvolvement &&
+                (a.governmentInvolvement.includes('军') || a.governmentInvolvement.includes('政府')) &&
+                (b.governmentInvolvement.includes('军') || b.governmentInvolvement.includes('政府'))) {
+                patterns.push({ text: '双方均有政府/军方介入调查', tag: '政府介入' });
+            }
+            if (a.mediaAttention === b.mediaAttention) patterns.push({ text: '相同媒体关注度: ' + a.mediaAttention, tag: '媒体匹配' });
+            // Check location overlap
+            const locA = (a.location || '').toLowerCase();
+            const locB = (b.location || '').toLowerCase();
+            const commonWords = locA.split(/[\s,，]+/).filter(w => w.length > 1 && locB.includes(w));
+            if (commonWords.length > 0) patterns.push({ text: '地理位置关键词重叠: ' + commonWords.join(', '), tag: '地点关联' });
+
+            if (patterns.length === 0) {
+                return '<p>这两个案件在关键维度上差异较大，没有发现显著共同模式。这种差异本身可能暗示它们属于完全不同类别的未解之谜。</p>';
+            }
+            let html = '<p>以下为两个案件在关键维度上识别出的共同点：</p>';
+            patterns.forEach(p => {
+                html += `<span class="pattern-tag">${p.tag}</span> `;
+            });
+            html += '<p style="margin-top:0.8rem;">' + patterns.map(p => p.text).join('；') + '。</p>';
+            html += '<p style="margin-top:0.6rem; font-style:italic;">注：共同模式不代表因果关系，仅提供多维度对比的结构化视角。</p>';
+            return html;
+        }
+
+        // ---- Bar Chart Visualization ----
+        const vizMetrics = [
+            { key: 'credibility', label: '可信度', score: v => v === '极高' ? 5 : v === '高' ? 4 : v === '中等' ? 3 : v === '低' ? 2 : 1 },
+            { key: 'mediaAttention', label: '媒体关注', score: v => v === '极高' ? 5 : v.includes('全球') ? 5 : v === '高' ? 4 : v === '中等' ? 3 : v === '低' ? 2 : 1 },
+            { key: 'witnessCredibility', label: '证人可信', score: v => v === '极高' ? 5 : v.includes('高') ? 4 : v === '中等' ? 3 : v.includes('混合') ? 2.5 : v === '低' ? 2 : 1 },
+            { key: 'conspiracyTheories_count', label: '阴谋论(标准化)', score: v => Math.min(5, (parseInt(v) || 1) / 5) },
+            { key: 'victims', label: '影响规模(对数)', score: v => { const n = parseInt((v||'').replace(/[^0-9]/g,'').slice(0,5))||1; return Math.min(5, Math.log10(n+1)); } },
+            { key: 'governmentInvolvement', label: '政府参与', score: v => v.includes('高度')||v.includes('直接')||v.includes('全面') ? 5 : v.includes('介入')||v.includes('调查') ? 4 : v.includes('有限') ? 2.5 : v.includes('无') ? 1 : 3 },
+        ];
+
+        function buildViz(a, b) {
+            let html = '';
+            vizMetrics.forEach(m => {
+                const scoreA = m.score(a[m.key]);
+                const scoreB = m.score(b[m.key]);
+                const maxScore = 5;
+                const pctA = Math.max(4, (scoreA / maxScore) * 100);
+                const pctB = Math.max(4, (scoreB / maxScore) * 100);
+                html += `<div class="viz-row">
+                    <div class="viz-label">${m.label}</div>
+                    <div class="viz-bars">
+                        <div class="viz-bar-a" style="width:${pctA}%"><span class="viz-bar-label">${scoreA.toFixed(1)}</span></div>
+                        <div class="viz-bar-b" style="width:${pctB}%"><span class="viz-bar-label">${scoreB.toFixed(1)}</span></div>
+                    </div>
+                </div>`;
+            });
+            return html;
+        }
+
+        // ---- Most Similar Cases ----
+        function findMostSimilar(targetKey, excludeKey) {
+            const target = compareDB[targetKey];
+            if (!target) return [];
+            const results = [];
+            Object.keys(compareDB).forEach(k => {
+                if (k === targetKey || k === excludeKey) return;
+                const score = calcSimilarity(target, compareDB[k]);
+                results.push({ key: k, name: compareDB[k].name, type: compareDB[k].type, score });
+            });
+            results.sort((a, b) => b.score - a.score);
+            return results.slice(0, 6);
+        }
+
+        function renderSimilarCases(targetKey, excludeKey) {
+            const cases = findMostSimilar(targetKey, excludeKey);
+            const container = document.getElementById('similarCasesContent');
+            if (cases.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);">数据库中暂无其他案件可供比较。</p>';
+                return;
+            }
+            container.innerHTML = cases.map(c => `
+                <div class="similar-case-row">
+                    <span class="similar-case-name">${c.name} <span class="case-badge">${c.type}</span></span>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:${c.score}%"></div></div>
+                    <span class="similar-case-score">${c.score}%</span>
+                </div>
+            `).join('');
+        }
+
+        // ---- Update quick facts ----
+        function updateQuickFacts(a, b) {
+            const factKeys = [
+                { key: 'type', label: '类型' },
+                { key: 'category', label: '分类' },
+                { key: 'era', label: '年代' },
+                { key: 'location', label: '地点' },
+                { key: 'victims', label: '涉及人数' },
+                { key: 'status', label: '状态' },
+            ];
+            document.getElementById('factsHeaderA').textContent = a.name;
+            document.getElementById('factsHeaderB').textContent = b.name;
+            document.getElementById('factsContentA').innerHTML = factKeys.map(f =>
+                `<div class="fact-item"><span class="fact-label">${f.label}</span><span class="fact-value">${a[f.key] || 'N/A'}</span></div>`
+            ).join('');
+            document.getElementById('factsContentB').innerHTML = factKeys.map(f =>
+                `<div class="fact-item"><span class="fact-label">${f.label}</span><span class="fact-value">${b[f.key] || 'N/A'}</span></div>`
+            ).join('');
+        }
+
+        // ---- Main update function ----
+        function updateComparison() {
+            const aKey = document.getElementById('caseASelect').value;
+            const bKey = document.getElementById('caseBSelect').value;
+            const a = compareDB[aKey];
+            const b = compareDB[bKey];
+
+            if (!a || !b) return;
+
+            // Headers
+            document.getElementById('headerA').textContent = a.name;
+            document.getElementById('headerB').textContent = b.name;
+
+            // Table rows
+            const rowsHTML = dimensionDefs.map(d => {
+                const valA = a[d.key] !== undefined ? a[d.key] : 'N/A';
+                const valB = b[d.key] !== undefined ? b[d.key] : 'N/A';
+                const isDiff = String(valA) !== String(valB);
+                const cls = isDiff ? 'diff-highlight' : 'match-highlight';
+                return `<tr class="${cls}"><td>${d.label}</td><td>${valA}</td><td>${valB}</td></tr>`;
+            }).join('');
+            document.getElementById('tableBody').innerHTML = rowsHTML;
+
+            // Similarity score
+            const sim = calcSimilarity(a, b);
+            document.getElementById('similarityBar').style.width = sim + '%';
+            document.getElementById('similarityScoreText').textContent = sim + '%';
+
+            // Common patterns
+            document.getElementById('commonPatternsContent').innerHTML = generateCommonPatterns(a, b);
+
+            // Visualization
+            document.getElementById('vizContent').innerHTML = buildViz(a, b);
+            document.getElementById('legendAName').textContent = a.name;
+            document.getElementById('legendBName').textContent = b.name;
+
+            // Quick facts
+            updateQuickFacts(a, b);
+
+            // Most similar cases
+            renderSimilarCases(aKey, bKey);
+
+            // Update URL hash
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', '#a=' + aKey + '&b=' + bKey);
+            }
+
+            console.log('⚖️ 对比已更新: ' + a.name + ' vs ' + b.name + ' | 相似度: ' + sim + '%');
+        }
+
+        // ---- Random Matchup ----
+        function randomMatchup() {
+            const keys = Object.keys(compareDB);
+            if (keys.length < 2) return;
+            let aIdx, bIdx;
+            do {
+                aIdx = Math.floor(Math.random() * keys.length);
+                bIdx = Math.floor(Math.random() * keys.length);
+            } while (aIdx === bIdx);
+            document.getElementById('caseASelect').value = keys[aIdx];
+            document.getElementById('caseBSelect').value = keys[bIdx];
+            updateComparison();
+        }
+
+        // ---- Share Comparison ----
+        function shareComparison() {
+            const aKey = document.getElementById('caseASelect').value;
+            const bKey = document.getElementById('caseBSelect').value;
+            const a = compareDB[aKey];
+            const b = compareDB[bKey];
+            const text = `未解之谜对比: ${a ? a.name : '?'} VS ${b ? b.name : '?'} —— 相似度 ${calcSimilarity(a,b)}%\n` + window.location.href.split('#')[0] + '#a=' + aKey + '&b=' + bKey;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const toast = document.getElementById('toast');
+                    toast.textContent = '✓ 对比链接已复制到剪贴板';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 2500);
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch(e) {}
+            document.body.removeChild(ta);
+            const toast = document.getElementById('toast');
+            toast.textContent = '✓ 对比链接已复制到剪贴板';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // ---- Init ----
+        document.getElementById('caseASelect').addEventListener('change', updateComparison);
+        document.getElementById('caseBSelect').addEventListener('change', updateComparison);
+
+        buildSelectOptions();
+
+        // Restore from URL hash if present
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const aParam = params.get('a');
+            const bParam = params.get('b');
+            if (aParam && compareDB[aParam]) document.getElementById('caseASelect').value = aParam;
+            if (bParam && compareDB[bParam]) document.getElementById('caseBSelect').value = bParam;
+        }
+
+        updateComparison();
+        console.log('⚖️ 案件对比系统已加载 - ' + Object.keys(compareDB).length + ' 个案件');
+    </script>
+</body>
+</html>
