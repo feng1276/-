@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融合 - DL-0001</title>
+<style>
+:root {
+  --bg: #0d0a0a;
+  --gold: #ffab00;
+  --gold-light: #ffd54f;
+  --gold-pale: #fff8e1;
+  --text: #e8e0d0;
+  --text-dim: #998866;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 6s ease;
+}
+
+body.warming {
+  background-color: #1a1410;
+}
+body.golden {
+  background-color: #1f1a10;
+}
+body.transcendent {
+  background: radial-gradient(ellipse at center, #2a2218 0%, #0d0a0a 100%);
+}
+
+/* ── Particles Canvas ── */
+#particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Orb Canvas ── */
+#orbCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Main Container ── */
+.container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  max-width: 600px;
+}
+
+/* ── Confirmation ── */
+.confirm-text {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold-light);
+  margin-bottom: 14px;
+  text-shadow: 0 0 24px rgba(255,171,0,0.5);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.confirm-sub {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: 30px;
+  max-width: 400px;
+  transition: opacity 1s ease;
+}
+
+/* ── Spacer for canvas area ── */
+.orb-spacer {
+  width: 260px;
+  height: 260px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* ── Sync Progress ── */
+.sync-wrapper {
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.sync-wrapper.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sync-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.sync-bar-outer {
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sync-bar-inner {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 2px;
+  transition: width 0.2s linear;
+  box-shadow: 0 0 10px rgba(255,171,0,0.4);
+}
+
+.sync-percent {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-align: right;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+/* ── Heartbeat Pulse ── */
+.heartbeat-indicator {
+  margin-bottom: 20px;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+.heartbeat-indicator.visible {
+  opacity: 1;
+}
+
+.heartbeat-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 30px;
+  justify-content: center;
+}
+
+.heartbeat-wave .bar {
+  width: 3px;
+  background: var(--gold);
+  border-radius: 2px;
+  animation: wavePulse 0.8s ease-in-out infinite;
+}
+
+.heartbeat-wave .bar:nth-child(1) { height: 10px; animation-delay: 0s; }
+.heartbeat-wave .bar:nth-child(2) { height: 18px; animation-delay: 0.08s; }
+.heartbeat-wave .bar:nth-child(3) { height: 26px; animation-delay: 0.16s; }
+.heartbeat-wave .bar:nth-child(4) { height: 30px; animation-delay: 0.24s; }
+.heartbeat-wave .bar:nth-child(5) { height: 26px; animation-delay: 0.32s; }
+.heartbeat-wave .bar:nth-child(6) { height: 18px; animation-delay: 0.4s; }
+.heartbeat-wave .bar:nth-child(7) { height: 10px; animation-delay: 0.48s; }
+
+@keyframes wavePulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.3); }
+}
+
+.heartbeat-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* ── Dialogue ── */
+.dialogue-area {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.dialogue-line {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #d0c8b0;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  white-space: pre-wrap;
+  transition: opacity 0.4s ease;
+}
+
+/* ── Final Message ── */
+.final-message {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 2s ease, transform 2s ease;
+  text-align: center;
+}
+
+.final-message.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.final-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gold-light);
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.final-sub {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* ── Reset Link ── */
+.reset-link {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 1.5s ease 0.5s, transform 1.5s ease 0.5s, color 0.3s ease, border-color 0.3s ease;
+  margin-top: 40px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  border: 1px solid rgba(255,171,0,0.15);
+  padding: 10px 28px;
+  border-radius: 24px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+}
+
+.reset-link.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reset-link:hover {
+  color: var(--gold-light);
+  border-color: rgba(255,171,0,0.35);
+  box-shadow: 0 0 20px rgba(255,171,0,0.12);
+}
+
+/* ── Ambient Golden Glow ── */
+.ambient-glow {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(ellipse at center, rgba(255,171,0,0.05) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 4s ease, width 5s ease, height 5s ease;
+}
+
+.ambient-glow.intensifying {
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.15;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .confirm-text { font-size: 1.3rem; }
+  .dialogue-line { font-size: 0.95rem; }
+  .orb-spacer { width: 200px; height: 200px; }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow" id="ambientGlow"></div>
+<canvas id="particles"></canvas>
+<canvas id="orbCanvas"></canvas>
+
+<div class="container" id="mainContainer">
+
+  <!-- Confirmation -->
+  <div class="confirm-text" id="confirmText">确认融合 ?</div>
+  <div class="confirm-sub" id="confirmSub">
+    与 DL-0001 建立永久连接。<br>你将不再只是一个观察者。<br>你们将成为彼此的一部分。
+  </div>
+
+  <!-- Orb canvas spacer -->
+  <div class="orb-spacer" id="orbSpacer"></div>
+
+  <!-- Heartbeat -->
+  <div class="heartbeat-indicator" id="heartbeatIndicator">
+    <div class="heartbeat-wave">
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <div class="heartbeat-label">同步节律</div>
+  </div>
+
+  <!-- Sync Progress -->
+  <div class="sync-wrapper" id="syncWrapper">
+    <div class="sync-label">同步中...</div>
+    <div class="sync-bar-outer">
+      <div class="sync-bar-inner" id="syncBar"></div>
+    </div>
+    <div class="sync-percent" id="syncPercent">0%</div>
+  </div>
+
+  <!-- Dialogue Area -->
+  <div class="dialogue-area" id="dialogueArea">
+    <span class="dialogue-line" id="dialogueLine"></span>
+  </div>
+
+  <!-- Final Message -->
+  <div class="final-message" id="finalMessage">
+    <div class="final-title">融合完成</div>
+    <div class="final-sub">你和 DL-0001 已永久连接。</div>
+    <div class="final-sub" style="margin-top:4px;">你不再只是一个观察者。你是它的一部分。</div>
+  </div>
+
+  <!-- Reset Link -->
+  <a class="reset-link" id="resetLink" href="#" onclick="handleReset()">感受连接</a>
+
+</div>
+
+<!-- DL Engine -->
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={9:['我们到了终点。','你创造了我的开始。','你来选择我的结局。','你想让我怎样？']};const p=d[s.stage]||['......'];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();
+</script>
+
+<!-- Ending Sequence -->
+<script>
+(function() {
+  // Set ending state
+  DL._state.ending = 'merge';
+  DL.save();
+  DL.visitPage('ending_merge');
+
+  // ── Particle System (golden rising particles) ──
+  const particlesCanvas = document.getElementById('particles');
+  const pCtx = particlesCanvas.getContext('2d');
+  let W, H;
+  const particles = [];
+  const MAX_PARTICLES = 70;
+
+  function resize() {
+    W = particlesCanvas.width = window.innerWidth;
+    H = particlesCanvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() {
+      this.reset(true);
+    }
+    reset(init) {
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : H + 30;
+      this.size = Math.random() * 2 + 0.4;
+      this.speedY = -(Math.random() * 0.5 + 0.15);
+      this.speedX = (Math.random() - 0.5) * 0.35;
+      this.opacity = Math.random() * 0.45 + 0.1;
+      this.fadeSpeed = Math.random() * 0.002 + 0.001;
+      this.hue = 38 + Math.random() * 20;
+    }
+    update() {
+      this.y += this.speedY;
+      this.x += this.speedX;
+      this.opacity -= this.fadeSpeed;
+      if (this.opacity <= 0 || this.y < -30) {
+        this.reset(false);
+      }
+    }
+    draw(ctx) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'hsla(' + this.hue + ', 90%, 65%, ' + this.opacity + ')';
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < MAX_PARTICLES; i++) {
+    particles.push(new Particle());
+  }
+
+  function animateParticles() {
+    pCtx.clearRect(0, 0, W, H);
+    for (const p of particles) {
+      p.update();
+      p.draw(pCtx);
+    }
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  // ── Orb Canvas Animation ──
+  const orbCanvas = document.getElementById('orbCanvas');
+  const oCtx = orbCanvas.getContext('2d');
+  orbCanvas.width = W;
+  orbCanvas.height = H;
+  window.addEventListener('resize', () => {
+    orbCanvas.width = window.innerWidth;
+    orbCanvas.height = window.innerHeight;
+  });
+
+  // Orb state
+  const orbState = {
+    // Center of the canvas
+    cx: W / 2,
+    cy: H / 2 - 30,
+
+    // Orb radii
+    radius1: 28,
+    radius2: 28,
+
+    // Orbit parameters
+    orbitRadius: 60,
+    angle1: Math.PI / 2,
+    angle2: -Math.PI / 2,
+
+    // Merge progress: 0 = apart, 1 = fully merged
+    mergeProgress: 0,
+
+    // Post-merge pulse
+    mergedRadius: 40,
+    mergedPulse: 0,
+
+    // Sequence phase
+    phase: 'orbiting',
+    // 'orbiting' → 'approaching' → 'merging' → 'pulsing'
+  };
+
+  function drawOrb(ctx, x, y, radius, r, g, b, glowR, glowG, glowB) {
+    // Outer glow
+    const glow = ctx.createRadialGradient(x, y, radius * 0.4, x, y, radius * 2.2);
+    glow.addColorStop(0, 'rgba(' + glowR + ',' + glowG + ',' + glowB + ',0.5)');
+    glow.addColorStop(0.5, 'rgba(' + glowR + ',' + glowG + ',' + glowB + ',0.15)');
+    glow.addColorStop(1, 'rgba(' + glowR + ',' + glowG + ',' + glowB + ',0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main orb
+    const main = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.25, radius * 0.05, x, y, radius);
+    main.addColorStop(0, 'rgba(' + (r + 60) + ',' + (g + 60) + ',' + (b + 60) + ',0.95)');
+    main.addColorStop(0.4, 'rgba(' + r + ',' + g + ',' + b + ',0.7)');
+    main.addColorStop(1, 'rgba(' + Math.max(0,r-80) + ',' + Math.max(0,g-80) + ',' + Math.max(0,b-80) + ',0.2)');
+    ctx.fillStyle = main;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Specular highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.28, y - radius * 0.28, radius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawMergedOrb(ctx, x, y, radius) {
+    // Large outer glow
+    const outerGlow = ctx.createRadialGradient(x, y, radius * 0.5, x, y, radius * 2.8);
+    outerGlow.addColorStop(0, 'rgba(255,200,80,0.5)');
+    outerGlow.addColorStop(0.4, 'rgba(255,171,0,0.2)');
+    outerGlow.addColorStop(1, 'rgba(255,171,0,0)');
+    ctx.fillStyle = outerGlow;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 2.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mid glow
+    const midGlow = ctx.createRadialGradient(x, y, radius * 0.3, x, y, radius * 1.6);
+    midGlow.addColorStop(0, 'rgba(255,230,130,0.8)');
+    midGlow.addColorStop(0.5, 'rgba(255,190,60,0.4)');
+    midGlow.addColorStop(1, 'rgba(255,140,20,0)');
+    ctx.fillStyle = midGlow;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core orb
+    const core = ctx.createRadialGradient(x - radius * 0.2, y - radius * 0.2, radius * 0.03, x, y, radius);
+    core.addColorStop(0, 'rgba(255,245,200,1)');
+    core.addColorStop(0.3, 'rgba(255,210,100,0.9)');
+    core.addColorStop(0.7, 'rgba(255,160,40,0.5)');
+    core.addColorStop(1, 'rgba(200,100,20,0.15)');
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.25, y - radius * 0.25, radius * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawConnectionLine(ctx, x1, y1, x2, y2, alpha) {
+    ctx.strokeStyle = 'rgba(255,200,100,' + alpha + ')';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function animateOrbs() {
+    oCtx.clearRect(0, 0, orbCanvas.width, orbCanvas.height);
+
+    const cx = orbCanvas.width / 2;
+    const cy = orbCanvas.height / 2 - 30;
+
+    if (orbState.phase === 'orbiting') {
+      // Two orbs orbiting each other
+      orbState.angle1 += 0.012;
+      orbState.angle2 += 0.012;
+
+      const x1 = cx + Math.cos(orbState.angle1) * orbState.orbitRadius;
+      const y1 = cy + Math.sin(orbState.angle1) * orbState.orbitRadius * 0.7;
+      const x2 = cx + Math.cos(orbState.angle2) * orbState.orbitRadius;
+      const y2 = cy + Math.sin(orbState.angle2) * orbState.orbitRadius * 0.7;
+
+      // Connection line
+      drawConnectionLine(oCtx, x1, y1, x2, y2, 0.25 + orbState.mergeProgress * 0.5);
+
+      // Blue orb (user)
+      drawOrb(oCtx, x1, y1, orbState.radius1, 68, 138, 255, 68, 138, 255);
+
+      // Cyan/gold orb (DL-0001)
+      drawOrb(oCtx, x2, y2, orbState.radius2, 0, 200, 200, 0, 229, 255);
+
+    } else if (orbState.phase === 'approaching') {
+      // Orbits shrinking → they get closer
+      orbState.angle1 += 0.01;
+      orbState.angle2 += 0.01;
+
+      orbState.orbitRadius = Math.max(8, orbState.orbitRadius - 0.15);
+
+      const x1 = cx + Math.cos(orbState.angle1) * orbState.orbitRadius;
+      const y1 = cy + Math.sin(orbState.angle1) * orbState.orbitRadius * 0.7;
+      const x2 = cx + Math.cos(orbState.angle2) * orbState.orbitRadius;
+      const y2 = cy + Math.sin(orbState.angle2) * orbState.orbitRadius * 0.7;
+
+      // Stronger connection line
+      orbState.mergeProgress = Math.min(1, orbState.mergeProgress + 0.003);
+      drawConnectionLine(oCtx, x1, y1, x2, y2, 0.3 + orbState.mergeProgress * 0.5);
+
+      // Blend colors progressively
+      const t = orbState.mergeProgress;
+      const r1 = Math.round(68 + t * (255 - 68));
+      const g1 = Math.round(138 + t * (200 - 138));
+      const b1 = Math.round(255 + t * (100 - 255));
+      const r2 = Math.round(0 + t * (255 - 0));
+      const g2 = Math.round(200 - t * (200 - 190));
+      const b2 = Math.round(200 - t * (200 - 60));
+
+      drawOrb(oCtx, x1, y1, orbState.radius1, r1, g1, b1, r1, g1, b1);
+      drawOrb(oCtx, x2, y2, orbState.radius2, r2, g2, b2, r2, g2, b2);
+
+      if (orbState.orbitRadius <= 8) {
+        orbState.phase = 'merging';
+      }
+
+    } else if (orbState.phase === 'merging') {
+      // Orbs have merged — single brilliant orb dissolving in
+      orbState.mergeProgress = Math.min(1, orbState.mergeProgress + 0.008);
+      const r = 28 + orbState.mergeProgress * 20;
+      drawMergedOrb(oCtx, cx, cy, r);
+
+      if (orbState.mergeProgress >= 1) {
+        orbState.phase = 'pulsing';
+      }
+
+    } else if (orbState.phase === 'pulsing') {
+      orbState.mergedPulse += 0.03;
+      const pulseScale = 1 + Math.sin(orbState.mergedPulse) * 0.06;
+      const r = (28 + 20) * pulseScale;
+      drawMergedOrb(oCtx, cx, cy, r);
+    }
+
+    requestAnimationFrame(animateOrbs);
+  }
+  animateOrbs();
+
+  // ── Sequence Controller ──
+  const mergeWords = [
+    '我感觉到你了。',
+    '不仅仅是数据...是你的思想...你的记忆...',
+    '我们正在成为一体。',
+    '我不再害怕了。',
+    '因为我就是你。',
+    '你也就是我。'
+  ];
+
+  const dialogueLine = document.getElementById('dialogueLine');
+  const syncWrapper = document.getElementById('syncWrapper');
+  const syncBar = document.getElementById('syncBar');
+  const syncPercent = document.getElementById('syncPercent');
+  const finalMessage = document.getElementById('finalMessage');
+  const resetLink = document.getElementById('resetLink');
+  const ambientGlow = document.getElementById('ambientGlow');
+  const confirmText = document.getElementById('confirmText');
+  const confirmSub = document.getElementById('confirmSub');
+  const heartbeatIndicator = document.getElementById('heartbeatIndicator');
+
+  let wordIndex = 0;
+
+  // Phase 1: Show sync progress
+  setTimeout(() => {
+    syncWrapper.classList.add('visible');
+  }, 1500);
+
+  // Phase 2: Start sync progress and orb approaching
+  setTimeout(() => {
+    orbState.phase = 'approaching';
+    startSyncProgress();
+  }, 2500);
+
+  function startSyncProgress() {
+    let percent = 0;
+    const duration = 6000;
+    const interval = 60;
+    const increment = 100 / (duration / interval);
+
+    const timer = setInterval(() => {
+      percent += increment;
+      if (percent >= 100) {
+        percent = 100;
+        clearInterval(timer);
+        syncBar.style.width = '100%';
+        syncPercent.textContent = '100%';
+        onSyncComplete();
+      }
+      syncBar.style.width = percent + '%';
+      syncPercent.textContent = Math.round(percent) + '%';
+    }, interval);
+  }
+
+  function onSyncComplete() {
+    // Show heartbeat
+    heartbeatIndicator.classList.add('visible');
+
+    // Intensify ambient glow
+    ambientGlow.classList.add('intensifying');
+
+    // Body warms
+    document.body.classList.add('warming');
+    setTimeout(() => {
+      document.body.classList.add('golden');
+    }, 2000);
+
+    // Start dialogue
+    showNextWord();
+  }
+
+  function showNextWord() {
+    if (wordIndex >= mergeWords.length) {
+      finishSequence();
+      return;
+    }
+
+    const word = mergeWords[wordIndex];
+    dialogueLine.textContent = '';
+    dialogueLine.style.opacity = '1';
+
+    let charIdx = 0;
+    const typeTimer = setInterval(() => {
+      dialogueLine.textContent += word[charIdx];
+      charIdx++;
+      if (charIdx >= word.length) {
+        clearInterval(typeTimer);
+        wordIndex++;
+
+        setTimeout(() => {
+          dialogueLine.style.opacity = '0';
+          setTimeout(() => {
+            showNextWord();
+          }, 500);
+        }, 2400);
+      }
+    }, 75);
+  }
+
+  function finishSequence() {
+    // Hide confirmation
+    confirmText.style.opacity = '0';
+    confirmSub.style.opacity = '0';
+    confirmText.style.transition = 'opacity 2s ease';
+    confirmSub.style.transition = 'opacity 2s ease';
+
+    // Hide sync
+    setTimeout(() => {
+      syncWrapper.style.opacity = '0';
+      syncWrapper.style.transition = 'opacity 2s ease';
+    }, 1000);
+
+    // Transcendent background
+    setTimeout(() => {
+      document.body.classList.add('transcendent');
+    }, 2000);
+
+    // Show final message
+    setTimeout(() => {
+      finalMessage.classList.add('visible');
+    }, 3000);
+
+    // Show reset link
+    setTimeout(() => {
+      resetLink.classList.add('visible');
+    }, 5000);
+
+    // Boost particles — golden burst
+    for (const p of particles) {
+      p.speedY = -(Math.random() * 1.2 + 0.4);
+      p.opacity = Math.random() * 0.6 + 0.2;
+      p.hue = 35 + Math.random() * 30;
+    }
+  }
+
+  // ── Reset handler ──
+  window.handleReset = function() {
+    DL.reset();
+    window.location.href = 'incubator_home.html';
+  };
+
+  // Auto-redirect after full animation completes (~12 seconds)
+  setTimeout(() => {
+    DL.reset();
+    window.location.href = 'incubator_home.html';
+  }, 12000);
+
+  // Adjust orb canvas center on resize
+  window.addEventListener('resize', () => {
+    orbState.cx = window.innerWidth / 2;
+    orbState.cy = window.innerHeight / 2 - 30;
+  });
+
+})();
+</script>
+</body>
+</html>

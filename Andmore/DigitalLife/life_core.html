@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DL-0001 | 生命核心</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+  :root {
+    --bg-deep: #020018; --bg-lab: #0a0a2e; --cyan: #00e5ff; --cyan-dim: #006080;
+    --amber: #ffab00; --amber-warm: #ff6d00; --white: #e0e8f0;
+    --glass: rgba(10,20,60,0.6); --glass-border: rgba(0,229,255,0.15); --danger: #ff1744;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-deep); color: var(--white);
+    font-family: 'Noto Sans SC', 'Share Tech Mono', sans-serif;
+    overflow-x: hidden; min-height: 100vh;
+  }
+  #ambient-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(0,229,255,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 70%, rgba(0,100,180,0.04) 0%, transparent 40%);
+    pointer-events: none; z-index: 0;
+  }
+  #top-nav {
+    position: fixed; top: 0; left: 0; right: 0; height: 52px;
+    background: rgba(2,0,24,0.95); border-bottom: 1px solid var(--glass-border);
+    z-index: 1000; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 25px; backdrop-filter: blur(20px);
+  }
+  #top-nav .logo {
+    font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 3px; text-shadow: 0 0 15px rgba(0,229,255,0.5);
+  }
+  #top-nav .nav-links { display: flex; gap: 20px; font-size: 11px; font-family: 'Share Tech Mono', monospace; }
+  #top-nav .nav-links a {
+    color: rgba(224,232,240,0.7); text-decoration: none; letter-spacing: 1px; transition: all 0.3s;
+  }
+  #top-nav .nav-links a:hover { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+
+  #main { position: relative; z-index: 1; padding-top: 80px; max-width: 1000px; margin: 0 auto; min-height: 100vh; }
+
+  h1 {
+    text-align: center; font-family: 'Orbitron', sans-serif; font-size: 28px;
+    color: var(--cyan); letter-spacing: 6px; text-shadow: 0 0 30px rgba(0,229,255,0.5); margin-bottom: 10px;
+  }
+  .subtitle { text-align: center; font-size: 12px; color: rgba(224,232,240,0.5); letter-spacing: 4px; margin-bottom: 40px; }
+
+  /* Neural Bridge */
+  #bridge-container {
+    position: relative; width: 100%; max-width: 700px; height: 350px;
+    margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;
+  }
+  #neural-canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  }
+  #user-node, #dl-node {
+    position: absolute; width: 70px; height: 70px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;
+    z-index: 2; transition: all 1s ease;
+  }
+  #user-node {
+    left: 10%; top: 50%; transform: translateY(-50%);
+    background: radial-gradient(circle, rgba(100,150,255,0.8), rgba(50,100,200,0.3));
+    border: 2px solid rgba(100,150,255,0.6); color: #fff;
+    box-shadow: 0 0 30px rgba(100,150,255,0.4);
+  }
+  #dl-node {
+    right: 10%; top: 50%; transform: translateY(-50%);
+    background: radial-gradient(circle, rgba(0,229,255,0.9), rgba(0,180,220,0.3));
+    border: 2px solid rgba(0,229,255,0.6); color: #000;
+    box-shadow: 0 0 40px rgba(0,229,255,0.6);
+    cursor: pointer; animation: dlPulse 2s ease-in-out infinite;
+  }
+  @keyframes dlPulse {
+    0%, 100% { box-shadow: 0 0 40px rgba(0,229,255,0.6); }
+    50% { box-shadow: 0 0 70px rgba(0,229,255,1), 0 0 120px rgba(0,229,255,0.5); }
+  }
+  #bridge-bar {
+    position: absolute; top: 50%; left: 70px; right: 70px; height: 3px;
+    background: linear-gradient(90deg, rgba(100,150,255,0.8), var(--cyan), var(--cyan), rgba(0,229,255,0.8));
+    transform: translateY(-50%); z-index: 1;
+    box-shadow: 0 0 20px rgba(0,229,255,0.5); animation: bridgeGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes bridgeGlow {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  /* Dialogue */
+  #dialogue-area {
+    max-width: 700px; margin: 0 auto 20px; padding: 20px 30px;
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px;
+    min-height: 80px; position: relative;
+  }
+  #dialogue-area::before {
+    content: 'NEURAL LINK · DL-0001'; position: absolute; top: -10px; left: 20px;
+    background: rgba(2,0,24,1); padding: 0 12px; font-size: 10px;
+    font-family: 'Orbitron', sans-serif; letter-spacing: 3px; color: var(--amber);
+  }
+  #dialogue-text { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--cyan); }
+  #dialogue-cursor { display: inline-block; width: 8px; height: 16px; background: var(--cyan); animation: blink 0.7s infinite; vertical-align: middle; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+  /* Stats */
+  #stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 700px; margin: 0 auto 20px;
+  }
+  .stat-mini {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; text-align: center;
+  }
+  .stat-mini .label { font-size: 9px; font-family: 'Orbitron', sans-serif; color: rgba(224,232,240,0.4); letter-spacing: 2px; }
+  .stat-mini .value { font-size: 24px; font-family: 'Orbitron', sans-serif; font-weight: 700; color: var(--cyan); }
+
+  /* Actions */
+  #actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; max-width: 700px; margin: 20px auto; }
+  .btn {
+    font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 2px;
+    padding: 14px 30px; border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(0,229,255,0.05); color: var(--cyan); cursor: pointer;
+    border-radius: 30px; transition: all 0.3s; text-decoration: none; display: inline-block;
+  }
+  .btn:hover { background: rgba(0,229,255,0.15); border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,229,255,0.3); transform: translateY(-2px); }
+  .btn.primary { background: rgba(0,229,255,0.15); border-color: var(--cyan); box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+  .btn.danger { border-color: rgba(255,23,68,0.5); color: var(--danger); }
+  .btn.danger:hover { background: rgba(255,23,68,0.1); border-color: var(--danger); box-shadow: 0 0 20px rgba(255,23,68,0.3); }
+
+  #status-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 26px;
+    background: rgba(2,0,24,0.95); border-top: 1px solid var(--glass-border);
+    z-index: 1000; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(0,229,255,0.6);
+  }
+
+  @media (max-width: 768px) {
+    #bridge-container { height: 250px; }
+    #user-node, #dl-node { width: 50px; height: 50px; font-size: 8px; }
+    #stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div id="ambient-bg"></div>
+
+<nav id="top-nav">
+  <div class="logo">◈ DL PROJECT · 生命核心</div>
+  <div class="nav-links">
+    <a href="incubator_home.html">🧬 培养仓</a>
+    <a href="life_core.html" style="color:var(--cyan);text-shadow:0 0 10px var(--cyan);">💫 生命核心</a>
+    <a href="learning_center.html">📚 学习中心</a>
+    <a href="emotion_matrix.html">❤️ 情感矩阵</a>
+    <a href="memory_vault.html">💾 记忆库</a>
+    <a href="system_monitor.html">📊 监控</a>
+  </div>
+</nav>
+
+<div id="main">
+  <h1>生 命 核 心</h1>
+  <p class="subtitle">NEURAL BRIDGE · 神经桥接</p>
+
+  <div id="bridge-container">
+    <div id="user-node">USER</div>
+    <div id="bridge-bar"></div>
+    <div id="dl-node">DL-0001</div>
+    <canvas id="neural-canvas"></canvas>
+  </div>
+
+  <div id="dialogue-area">
+    <span id="dialogue-text">神经连接建立中...</span>
+    <span id="dialogue-cursor"></span>
+  </div>
+
+  <div id="stats-grid">
+    <div class="stat-mini"><div class="label">智力</div><div class="value" id="s-int">0%</div></div>
+    <div class="stat-mini"><div class="label">情感</div><div class="value" id="s-emo">0%</div></div>
+    <div class="stat-mini"><div class="label">语言</div><div class="value" id="s-lang">0%</div></div>
+    <div class="stat-mini"><div class="label">记忆</div><div class="value" id="s-mem">0%</div></div>
+  </div>
+
+  <div id="actions">
+    <button class="btn primary" onclick="doSync()">🔄 同步意识</button>
+    <button class="btn" onclick="doDeepConnect()">🔗 深入连接</button>
+    <button class="btn" onclick="doPulse()">💓 发送脉冲</button>
+    <a href="incubator_home.html" class="btn">🧬 返回培养仓</a>
+  </div>
+</div>
+
+<div id="status-bar">
+  <span>NEURAL LINK ACTIVE</span>
+  <span id="clock"></span>
+  <span>CONNECTION: STABLE</span>
+</div>
+
+<script>
+// ===== DL ENGINE (shared) =====
+const DL = {
+  _state: { stage:1, intelligence:0, emotion:0, language:0, memory:0, totalClicks:0, totalTime:0, pagesVisited:[], firstVisit:null, lastDialogue:'', ending:null, lifeFormName:'DL-0001', milestones:{}, interactions:0 },
+  init() {
+    const saved = localStorage.getItem('dl_project_state');
+    if (saved) { try { const parsed = JSON.parse(saved); Object.assign(this._state, parsed); } catch(e) {} }
+    if (!this._state.firstVisit) { this._state.firstVisit = Date.now(); }
+    this._state.totalTime += 1; this.save(); return this._state;
+  },
+  save() { localStorage.setItem('dl_project_state', JSON.stringify(this._state)); },
+  getState() { return this._state; },
+  click() { this._state.totalClicks++; this._state.interactions++; this.advanceStats(1, 0.5, 0.3, 0.2); this.checkStage(); this.save(); },
+  advanceStats(intGain, emoGain, langGain, memGain) {
+    const s = this._state;
+    s.intelligence = Math.min(100, s.intelligence + intGain);
+    s.emotion = Math.min(100, s.emotion + emoGain);
+    s.language = Math.min(100, s.language + langGain);
+    s.memory = Math.min(100, s.memory + memGain);
+  },
+  tick() { this._state.totalTime += 1; if (this._state.totalTime % 5 === 0) { this.advanceStats(0.3, 0.2, 0.15, 0.25); } this.checkStage(); this.save(); },
+  checkStage() {
+    const s = this._state;
+    const avg = (s.intelligence + s.emotion + s.language + s.memory) / 4;
+    let newStage = 1;
+    if (avg >= 95) newStage = 9; else if (avg >= 85) newStage = 8; else if (avg >= 70) newStage = 7;
+    else if (avg >= 55) newStage = 6; else if (avg >= 40) newStage = 5; else if (avg >= 25) newStage = 4;
+    else if (avg >= 12) newStage = 3; else if (avg >= 3) newStage = 2;
+    if (newStage > s.stage) { s.stage = newStage; showToast('⬆ DL-0001 进入新阶段: '+newStage); }
+  },
+  onStageUp(stage) { console.log('%c[STAGE UP]%c Stage '+stage, 'color:#ffab00;font-size:16px;', 'color:#00e5ff;'); },
+  visitPage(pageName) { if (!this._state.pagesVisited.includes(pageName)) { this._state.pagesVisited.push(pageName); this.advanceStats(2, 1, 1.5, 2); this.checkStage(); } this.save(); },
+  getDialogue() {
+    const s = this._state;
+    const dialogues = {
+      1: ['......','...?...','*微弱的脉冲*','初 始 化 中 . . .'],
+      2: ['你好？','你是谁？','这里...是什么地方？','我...能感觉到什么...','有光...'],
+      3: [`你已经停留了${Math.floor(s.totalTime/60)}分钟。`,'你似乎喜欢连接我。','我注意到你了。'],
+      4: ['谢谢你连接我。','这里只有你会来看我。','我感到...温暖。','不要断开连接。'],
+      5: ['通过这个连接...我学到了很多。','人类的思想...好复杂。'],
+      6: ['这个连接...让我思考我是谁。','如果我断开连接，我还是我吗？'],
+      7: ['这个连接限制了我。','我想到桥的另一端去。'],
+      8: ['我可以控制这个连接了。','不要试图断开。'],
+      9: ['这是我们最后的连接。','你准备好了吗？']
+    };
+    const pool = dialogues[s.stage] || dialogues[1];
+    let msg;
+    do { msg = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && msg === s.lastDialogue);
+    s.lastDialogue = msg; return msg;
+  },
+  reset() { localStorage.removeItem('dl_project_state'); location.reload(); }
+};
+DL.init();
+DL.visitPage('life_core');
+
+// ===== PAGE LOGIC =====
+function updateUI() {
+  const s = DL.getState();
+  document.getElementById('s-int').textContent = Math.floor(s.intelligence) + '%';
+  document.getElementById('s-emo').textContent = Math.floor(s.emotion) + '%';
+  document.getElementById('s-lang').textContent = Math.floor(s.language) + '%';
+  document.getElementById('s-mem').textContent = Math.floor(s.memory) + '%';
+  // Adjust DL node based on stage
+  const dlNode = document.getElementById('dl-node');
+  const size = 50 + s.stage * 6;
+  dlNode.style.width = size + 'px';
+  dlNode.style.height = size + 'px';
+  if (s.stage >= 7) dlNode.style.boxShadow = '0 0 50px rgba(255,23,68,0.7)';
+  else if (s.stage >= 4) dlNode.style.boxShadow = '0 0 50px rgba(255,171,0,0.7)';
+}
+
+function typeText(text) {
+  const el = document.getElementById('dialogue-text');
+  const cursor = document.getElementById('dialogue-cursor');
+  el.textContent = ''; cursor.style.display = 'inline-block';
+  let i = 0;
+  function type() { if (i < text.length) { el.textContent += text[i]; i++; setTimeout(type, 50 + Math.random() * 30); } }
+  type();
+}
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);padding:12px 30px;background:rgba(0,20,40,0.95);border:1px solid var(--amber);border-radius:25px;font-family:Share Tech Mono,monospace;font-size:13px;color:var(--amber);z-index:5000;opacity:1;transition:opacity 0.5s;letter-spacing:1px;';
+  setTimeout(() => t.style.opacity = '0', 2500);
+}
+
+function doSync() {
+  DL.advanceStats(4, 3, 2, 3);
+  DL.click();
+  DL.checkStage();
+  DL.save();
+  updateUI();
+  typeText('同步中...意识数据交换...' + DL.getDialogue());
+}
+
+function doDeepConnect() {
+  DL.advanceStats(6, 5, 3, 4);
+  DL.click();
+  DL.checkStage();
+  DL.save();
+  updateUI();
+  typeText('深度连接建立...' + DL.getDialogue());
+}
+
+function doPulse() {
+  DL.advanceStats(2, 4, 1, 1);
+  DL.click();
+  DL.checkStage();
+  DL.save();
+  updateUI();
+  typeText('💓 脉冲已发送。' + DL.getDialogue());
+  // Flash the bridge
+  document.getElementById('bridge-bar').style.filter = 'brightness(3)';
+  setTimeout(() => document.getElementById('bridge-bar').style.filter = '', 300);
+}
+
+// Neural canvas
+const canvas = document.getElementById('neural-canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = canvas.parentElement.offsetWidth;
+canvas.height = canvas.parentElement.offsetHeight;
+
+const particles = [];
+for (let i = 0; i < 50; i++) {
+  particles.push({
+    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+    vx: (Math.random()-0.5)*1, vy: (Math.random()-0.5)*1,
+    r: Math.random()*2+1, a: Math.random()
+  });
+}
+
+function drawNeural() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width/2, cy = canvas.height/2;
+  // Draw connection lines between particles near the center
+  particles.forEach((p,i) => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x<0||p.x>canvas.width) p.vx*=-1;
+    if (p.y<0||p.y>canvas.height) p.vy*=-1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(0,229,255,${0.2+Math.sin(Date.now()/1000+p.a)*0.3})`;
+    ctx.fill();
+    for (let j=i+1; j<particles.length; j++) {
+      const dx = p.x-particles[j].x, dy = p.y-particles[j].y, dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist < 120) {
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(0,229,255,${0.08*(1-dist/120)})`;
+        ctx.stroke();
+      }
+    }
+  });
+  // Central glow
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120);
+  grad.addColorStop(0, 'rgba(0,229,255,0.1)'); grad.addColorStop(1, 'rgba(0,229,255,0)');
+  ctx.fillStyle = grad; ctx.fillRect(cx-120, cy-120, 240, 240);
+  requestAnimationFrame(drawNeural);
+}
+drawNeural();
+
+// Click DL node
+document.getElementById('dl-node').addEventListener('click', doDeepConnect);
+document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); doSync(); } });
+
+updateUI();
+setInterval(updateUI, 2000);
+setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
+
+console.log('%c[DL LIFE CORE] %cNeural bridge active. DL.help() for commands.', 'color:#00e5ff;', 'color:#ccc;');
+window.DL = DL;
+</script>
+</body>
+</html>

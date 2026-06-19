@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文化详情 · 文化寰宇</title>
+    <style>
+        :root {
+            --bg-cream: #fdf6ee;
+            --bg-card: #ffffff;
+            --text-primary: #3d3226;
+            --text-secondary: #6b5d4f;
+            --text-muted: #9b8b7a;
+            --accent-terracotta: #c67b5c;
+            --accent-sage: #8b9d83;
+            --accent-ochre: #d4a853;
+            --border-warm: #e8dccf;
+            --shadow-soft: 0 4px 20px rgba(61,50,38,0.06);
+            --shadow-medium: 0 8px 30px rgba(61,50,38,0.1);
+            --radius-xl: 1.5rem;
+            --radius-md: 0.75rem;
+            --transition-gentle: 0.3s ease;
+            --font-body: 'Georgia','Noto Serif SC',serif;
+            --font-heading: 'Palatino','Noto Serif SC',serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font-body); background:var(--bg-cream); color:var(--text-primary); min-height:100vh; padding-bottom:4rem; }
+        .navbar { position:sticky; top:0; z-index:100; background:rgba(253,246,238,0.88); backdrop-filter:blur(16px); border-bottom:1px solid var(--border-warm); padding:0.8rem 2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+        .logo { font-family:var(--font-heading); font-size:1.5rem; font-weight:700; color:var(--accent-terracotta); cursor:pointer; }
+        .nav-links { display:flex; gap:1.3rem; list-style:none; flex-wrap:wrap; }
+        .nav-links a { color:var(--text-secondary); text-decoration:none; font-size:0.88rem; transition:0.2s; }
+        .nav-links a:hover { color:var(--accent-terracotta); }
+
+        .detail-container { max-width:900px; margin:2rem auto; padding:0 1.5rem; }
+
+        /* Hero */
+        .hero-card { background:var(--bg-card); border:1px solid var(--border-warm); border-radius:var(--radius-xl); padding:2.5rem; margin-bottom:2rem; display:flex; gap:2rem; flex-wrap:wrap; align-items:center; box-shadow:var(--shadow-soft); }
+        .flag-display { font-size:5rem; }
+        .hero-info h1 { font-family:var(--font-heading); font-size:2.2rem; margin-bottom:0.5rem; }
+        .hero-info .sub-info { color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.6; }
+        .meta-tags { display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:0.5rem; }
+        .meta-tag { padding:0.3rem 1rem; border-radius:2rem; font-size:0.8rem; background:rgba(198,123,92,0.08); border:1px solid rgba(198,123,92,0.25); color:var(--accent-terracotta); }
+
+        /* Tab nav */
+        .tab-nav { display:flex; justify-content:center; gap:0.6rem; margin:2rem 0 1rem; flex-wrap:wrap; }
+        .tab-btn { padding:0.6rem 1.3rem; border-radius:3rem; background:var(--bg-card); border:1px solid var(--border-warm); color:var(--text-secondary); cursor:pointer; font-family:var(--font-body); font-weight:600; font-size:0.85rem; transition:all var(--transition-gentle); }
+        .tab-btn.active { background:var(--accent-sage); color:#fff; border-color:var(--accent-sage); }
+        .tab-btn:hover:not(.active) { border-color:var(--accent-sage); color:var(--accent-sage); }
+
+        /* Section card */
+        .section-card { background:var(--bg-card); border:1px solid var(--border-warm); border-radius:var(--radius-xl); padding:2rem; margin-bottom:1.5rem; box-shadow:var(--shadow-soft); }
+        .section-card h2 { font-family:var(--font-heading); color:var(--accent-sage); margin-bottom:1rem; font-size:1.4rem; border-bottom:2px solid var(--border-warm); padding-bottom:0.5rem; }
+        .section-card ul { list-style:none; padding:0; }
+        .section-card li { padding:0.6rem 0; border-bottom:1px solid rgba(232,220,207,0.5); color:var(--text-secondary); font-size:0.95rem; }
+        .section-card li::before { content:'✦ '; color:var(--accent-ochre); }
+
+        /* Timeline */
+        .timeline-mini { display:flex; gap:0; margin:1.5rem 0; flex-wrap:wrap; justify-content:center; }
+        .timeline-dot { text-align:center; padding:0.5rem 0.8rem; position:relative; font-size:0.85rem; color:var(--text-secondary); }
+        .timeline-dot::after { content:'→'; margin-left:0.5rem; color:var(--accent-terracotta); }
+        .timeline-dot:last-child::after { content:''; }
+
+        /* Image gallery */
+        .image-gallery { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:1rem; margin:1rem 0; }
+        .gallery-img { height:130px; border-radius:var(--radius-md); background-size:cover; background-position:center; cursor:pointer; transition:all var(--transition-gentle); border:1px solid var(--border-warm); }
+        .gallery-img:hover { transform:scale(1.03); box-shadow:var(--shadow-medium); }
+
+        /* Fun facts */
+        .facts-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:1rem; margin:1rem 0; }
+        .fact-card { background:rgba(212,168,83,0.06); border:1px solid rgba(212,168,83,0.2); border-radius:var(--radius-md); padding:1.2rem; text-align:center; }
+        .fact-card .fact-icon { font-size:2rem; }
+        .fact-card .fact-text { color:var(--text-secondary); font-size:0.85rem; margin-top:0.5rem; }
+
+        /* Weather / time info */
+        .info-bar { display:flex; gap:1.5rem; flex-wrap:wrap; margin:1rem 0; }
+        .info-chip { padding:0.5rem 1.2rem; border-radius:3rem; background:rgba(139,157,131,0.08); border:1px solid rgba(139,157,131,0.2); font-size:0.85rem; color:var(--accent-sage); }
+
+        /* Quick nav */
+        .quick-nav { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; flex-direction:column; gap:0.5rem; z-index:50; }
+        .quick-nav a { width:40px; height:40px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-warm); display:flex; align-items:center; justify-content:center; text-decoration:none; color:var(--accent-sage); font-size:1.2rem; box-shadow:var(--shadow-soft); transition:all var(--transition-gentle); }
+        .quick-nav a:hover { background:var(--accent-terracotta); color:#fff; border-color:var(--accent-terracotta); }
+
+        @keyframes fadeIn { from{opacity:0;transform:translateY(15px);} to{opacity:1;transform:translateY(0);} }
+        @media (max-width:600px) { .hero-card{flex-direction:column;text-align:center;} .tab-nav{gap:0.3rem;} .tab-btn{padding:0.4rem 0.8rem;font-size:0.75rem;} }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='culture_home.html'">文化寰宇✦</div>
+        <ul class="nav-links">
+            <li><a href="culture_home.html">首页</a></li>
+            <li><a href="countries.html">国家文化库</a></li>
+            <li><a href="culture_detail.html" class="active" style="color:var(--accent-terracotta);">文化详情</a></li>
+            <li><a href="festivals.html">节日大全</a></li>
+            <li><a href="etiquette.html">礼仪指南</a></li>
+            <li><a href="clothing.html">服饰文化</a></li>
+            <li><a href="food_culture.html">饮食文化</a></li>
+            <li><a href="world_map.html">地图探索</a></li>
+            <li><a href="culture_compare.html">文化对比</a></li>
+            <li><a href="about.html">关于</a></li>
+        </ul>
+    </nav>
+
+    <div class="detail-container" id="detailContent"></div>
+
+    <div class="quick-nav">
+        <a href="#top" title="回到顶部">↑</a>
+        <a href="countries.html" title="返回列表">📖</a>
+    </div>
+
+    <script>
+        const cultureDB = {
+            japan: { name:'日本', flag:'🇯🇵', capital:'东京', region:'东亚', language:'日语', population:'约1.25亿', timezone:'UTC+9',
+                greeting:'鞠躬 (Ojigi)', greetingDetail:'15度浅躬用于日常问候，30度用于正式场合，45度表达最深歉意。',
+                taboos:['忌绿色和紫色(丧事)', '忌送梳子(谐音"苦死")', '忌三人合影(中间者不幸)', '忌筷子插饭(丧礼仪式)', '忌公共场合大声说话'],
+                customs:['进入室内脱鞋', '使用敬语体系', '交换名片用双手', '公共场合保持安静', '泡温泉前洗净身体', '排队文化严格'],
+                festivals:['樱花节 (3-4月)', '祇园祭 (7月)', '盂兰盆节 (8月)', '新年 (1月1-3日)', '女儿节 (3月3日)', '男孩节/儿童节 (5月5日)'],
+                clothing:'和服(Kimono)、浴衣(Yukata)、羽织(Haori)、振袖(Furisode)',
+                clothingDetail:'和服的历史可追溯至平安时代，不同季节穿不同材质与花纹。振袖为未婚女性正式礼服，袖子越长越正式。',
+                food:'寿司、刺身、天妇罗、味噌汤、拉面、乌冬面、怀石料理',
+                foodDetail:'和食(Washoku)于2013年被UNESCO列入非物质文化遗产。核心理念是尊重食材本味，注重视觉呈现与季节感。',
+                etiquette:'鞠躬是日本最基础的社交礼仪。进入和室要脱鞋，坐在榻榻米上要跪坐或盘腿。送礼用双手递出，收到礼物不当面打开。',
+                music:'雅乐、尺八、三味线、太鼓、演歌',
+                funFacts:['日本有超过3000座温泉', '福袋(Fukubukuro)新年贩售', '自动贩卖机数量世界第一', 'Hello Kitty是官方旅游大使之一'],
+                images:['https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&h=300&fit=crop'] },
+            china: { name:'中国', flag:'🇨🇳', capital:'北京', region:'东亚', language:'汉语', population:'约14亿', timezone:'UTC+8',
+                greeting:'握手/点头', greetingDetail:'正式场合右手握手，目视对方。传统场合可行拱手礼。',
+                taboos:['忌送钟表(谐音"送终")', '忌分梨(谐音"分离")', '忌绿色帽子', '忌数字4(谐音"死")', '忌用筷子敲碗'],
+                customs:['春节贴春联放鞭炮', '中秋赏月吃月饼', '端午赛龙舟吃粽子', '茶文化(敬茶礼仪)', '红包文化(压岁钱)', '筷子礼仪(不竖插)'],
+                festivals:['春节 (农历正月初一)', '元宵节 (正月十五)', '端午节 (五月初五)', '中秋节 (八月十五)', '国庆节 (10月1日)', '重阳节 (九月初九)'],
+                clothing:'汉服、旗袍、中山装、唐装',
+                clothingDetail:'汉服历史超过4000年，基本形制为交领右衽。各朝代有不同风格：汉朝庄重、唐朝华丽、宋朝清新、明朝典雅。',
+                food:'北京烤鸭、四川火锅、广式点心、兰州拉面、小笼包、宫保鸡丁',
+                foodDetail:'中华料理讲究色香味形俱全，八大菜系各有特色。筷子文化源远流长，餐桌礼仪强调尊老爱幼、共享菜肴。',
+                etiquette:'握手是最常见的问候方式。正式场合名片的递送和接受用双手。餐桌礼仪：长辈先动筷，敬酒时杯沿低于对方表示尊敬。',
+                music:'古琴、二胡、琵琶、京剧、昆曲',
+                funFacts:['中国有超过800种方言', '长城全长超过21000公里', '茶最早在中国被发现和饮用', '春节是全球最大规模的人类迁徙'],
+                images:['https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=400&h=300&fit=crop'] },
+            india: { name:'印度', flag:'🇮🇳', capital:'新德里', region:'南亚', language:'印地语、英语', population:'约14亿', timezone:'UTC+5:30',
+                greeting:'合十礼 (Namaste)', greetingDetail:'双手合十于胸前，微微低头。对长者触摸其脚以示崇高敬意。',
+                taboos:['忌用左手递物(不洁)', '忌食牛肉(牛为圣物)', '忌触摸头部', '忌在寺庙穿鞋', '忌公开亲吻'],
+                customs:['进入寺庙脱鞋', '用手吃饭(右手)', '尊重牛', '节日穿鲜艳服饰', '额头点吉祥痣(Bindi)', '绕行圣物顺时针'],
+                festivals:['排灯节 (10-11月)', '洒红节 (3月)', '十胜节 (9-10月)', '象神节 (8-9月)', '克利须那神诞 (8月)', '开斋节'],
+                clothing:'纱丽(Sari)、旁遮普套装(Salwar Kameez)、多蒂腰布(Dhoti)、库尔塔(Kurta)',
+                clothingDetail:'纱丽是世界上最古老且仍在穿着的服饰之一，一段5-9米布料以不同方式缠绕，每种绕法代表不同地区和阶层。',
+                food:'咖喱、印度香饭(Biryani)、馕饼(Naan)、豆糊(Dal)、坦都里烤鸡、萨摩萨(Samosa)',
+                foodDetail:'印度料理以香料为核心，不同地区风味各异：北印度偏重奶制品和面食，南印度以米饭和椰子为主。阿育吠陀饮食理念影响深远。',
+                etiquette:'合十礼是最常见问候方式。用餐时只用右手，左手被视为不洁。接受礼物时也用右手。进入他人家中和寺庙必须脱鞋。',
+                music:'印度古典音乐(拉格)、宝莱坞音乐、西塔琴、塔布拉鼓',
+                funFacts:['印度有22种官方语言', '瑜伽起源于印度约5000年前', '印度是全球最大电影生产国', '泰姬陵每年吸引约800万游客'],
+                images:['https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1566837945700-30057527ade0?w=400&h=300&fit=crop'] },
+            italy: { name:'意大利', flag:'🇮🇹', capital:'罗马', region:'南欧', language:'意大利语', population:'约5900万', timezone:'UTC+1',
+                greeting:'贴面礼 (Bacio sulla guancia)', greetingDetail:'通常左右各一次贴面，从左侧开始。见面和告别均行贴面礼。',
+                taboos:['忌送菊花(葬礼用)', '忌数字17(不祥)', '忌在公共场合擤鼻涕', '忌把奶酪撒在海鲜意面上', '忌倒拿面包'],
+                customs:['晚餐时间较晚(20:00后)', '喝咖啡站着喝', '家庭聚会重要', '周日午餐是神圣时刻', '挥手告别说"Ciao"'],
+                festivals:['威尼斯狂欢节 (2月)', '复活节', '圣诞节', '共和国日 (6月2日)', '锡耶纳赛马节 (7-8月)'],
+                clothing:'时尚设计闻名全球，传统服饰因地区而异。威尼斯狂欢节面具和华服最具特色。',
+                clothingDetail:'意大利是世界时尚之都之一，米兰时装周是全球时尚风向标。传统服饰中，撒丁岛和西西里岛的民间服饰保留着千年传统。',
+                food:'意面、披萨、意式冰淇淋(Gelato)、浓缩咖啡(Espresso)、帕尔马火腿、帕玛森奶酪',
+                foodDetail:'地中海饮食代表，强调新鲜食材和橄榄油。意面有超过300种形状。用餐是重要的社交活动，一顿正餐可持续2-3小时。',
+                etiquette:'见面贴面两次，先左后右。餐前说"Buon appetito"。卡布奇诺只在早餐时喝，餐后只喝浓缩咖啡。不要将意面切断或要求加番茄酱。',
+                music:'歌剧、那不勒斯民谣、古典音乐',
+                funFacts:['意大利拥有55个UNESCO世界遗产', '披萨起源于那不勒斯', '威尼斯建在118个小岛上', '意大利人每年人均消费约23公斤意面'],
+                images:['https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=400&h=300&fit=crop'] },
+            france: { name:'法国', flag:'🇫🇷', capital:'巴黎', region:'西欧', language:'法语', population:'约6800万', timezone:'UTC+1',
+                greeting:'贴面礼 (La bise)', greetingDetail:'通常左右各一次，部分地区可能2-4次。贴面时不真正亲吻，只是脸颊相触。',
+                taboos:['忌送菊花', '忌13号星期五', '忌在公共场合大声打嗝', '忌用手拿奶酪', '忌问薪资等私人问题'],
+                customs:['使用"Vous"(您)直到被邀请使用"Tu"', '法餐礼仪严格', '面包直接放在桌布上', '餐后喝浓缩咖啡', '晚餐时间通常20:00之后'],
+                festivals:['巴士底日 (7月14日)', '尼斯狂欢节 (2月)', '夏至音乐节 (6月21日)', '圣诞节', '丰收节'],
+                clothing:'高级定制时装(Haute Couture)发源地。巴黎时装周引领全球时尚潮流。传统贝雷帽是文化符号。',
+                clothingDetail:'法国是全球时尚产业中心，Chanel、Dior、Louis Vuitton等品牌享誉世界。传统服饰因地区而异，布列塔尼和阿尔萨斯地区保留独特的民俗服装。',
+                food:'可颂、鹅肝、马卡龙、红酒炖牛肉(Boeuf Bourguignon)、法式洋葱汤、奶酪拼盘',
+                foodDetail:'法式料理于2010年被UNESCO列入非遗。讲究酱汁艺术和食材搭配，一餐包括开胃菜、主菜、奶酪和甜点。法国有超过365种奶酪。',
+                etiquette:'用餐时手要放在桌上(非腿上)。面包应撕开而非切开。奶酪在甜点之前食用。用餐过程中讨论美食和文化是常态而非失礼。',
+                music:'香颂(Chanson)、电子音乐、古典音乐',
+                funFacts:['法国每年接待近9000万游客', '法棍面包受法律保护', '法国人每天消费约3000万个法棍', '埃菲尔铁塔每7年重新粉刷一次'],
+                images:['https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1431274172761-fca41d930114?w=400&h=300&fit=crop'] },
+            brazil: { name:'巴西', flag:'🇧🇷', capital:'巴西利亚', region:'南美洲', language:'葡萄牙语', population:'约2.15亿', timezone:'UTC-3',
+                greeting:'拥抱与贴面', greetingDetail:'女性贴面两次，男性之间握手并轻拍背部。巴西人身体接触较多，社交距离很近。',
+                taboos:['忌紫色(哀悼)', '忌OK手势(冒犯)', '忌送偶数朵花', '忌在公共场合掏鼻子'],
+                customs:['烤肉(Churrasco)是社交活动核心', '海滩文化盛行', '足球是全民宗教', '狂欢节全民参与', '咖啡文化浓厚'],
+                festivals:['里约狂欢节 (2-3月)', '圣若昂节 (6月)', '独立日 (9月7日)', '除夕海滩派对'],
+                clothing:'狂欢节盛装(色彩缤纷的桑巴服饰)、海滩比基尼文化',
+                clothingDetail:'巴西狂欢节的服饰以其夸张的色彩和羽毛装饰闻名，桑巴舞学校的巡游服装每年都是艺术杰作。日常穿着以热带气候适应的轻便服饰为主。',
+                food:'烤肉(Churrasco)、黑豆饭(Feijoada)、阿萨伊(Acai)、芝士面包(Pao de Queijo)',
+                foodDetail:'巴西饮食融合了原住民、葡萄牙殖民者和非洲奴隶的烹饪传统。Feijoada是国菜，每逢周三和周六传统上食用。烤肉以粗盐简单调味凸显肉质本味。',
+                etiquette:'巴西人热情不拘小节。商务会面可能比预定时间晚开始。用餐时双手都放在桌上。喝咖啡是社交活动的必备环节。绝对不要使用OK手势。',
+                music:'桑巴(Samba)、波萨诺瓦(Bossa Nova)、Forro',
+                funFacts:['巴西拥有亚马逊雨林60%的面积', '巴西是世界最大咖啡生产国', '里约基督像高30米', '巴西世界杯冠军次数最多(5次)'],
+                images:['https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1518639192441-8fce0a366e2e?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1533702165324-66678b20689d?w=400&h=300&fit=crop'] },
+            morocco: { name:'摩洛哥', flag:'🇲🇦', capital:'拉巴特', region:'北非', language:'阿拉伯语、柏柏尔语', population:'约3700万', timezone:'UTC+1',
+                greeting:'握手 + 抚摸心口', greetingDetail:'右手握手后抚摸心口表示真诚。同性之间可能拥抱。异性之间由女性决定是否握手。',
+                taboos:['忌左手递物或进食', '忌在斋月期间白天公开饮食', '忌送酒类', '忌在清真寺内拍照', '忌穿过于暴露的服装'],
+                customs:['薄荷茶(Mint Tea)礼仪', '进入清真寺和家中脱鞋', '用手吃饭(右手)', '集市(Bazaar)讨价还价', '周五主麻日祈祷'],
+                festivals:['斋月和开斋节', '宰牲节', '马拉喀什国际电影节', '玫瑰节 (5月)', '新年(Yennayer, 1月)'],
+                clothing:'杰拉巴(Djellaba)、卡夫坦(Kaftan)、巴巴什(Babouche)拖鞋',
+                clothingDetail:'杰拉巴是男女皆穿的传统长袍，配有尖顶兜帽。卡夫坦是女性在婚礼和节日穿着的精美刺绣礼服，工艺精湛。',
+                food:'塔吉锅(Tagine)、库斯库斯(Couscous)、薄荷茶、哈里拉汤(Harira)',
+                foodDetail:'摩洛哥料理以香料复杂著称，融合了阿拉伯、柏柏尔和地中海烹饪传统。塔吉锅以锥形陶锅慢炖，保留食材原味。薄荷茶是待客必备。',
+                etiquette:'接受主人提供的薄荷茶是基本礼貌，通常要喝三杯。用餐时只用右手。进入他人家中或清真寺必须脱鞋。斋月期间白天避免在公共场合饮食。',
+                music:'安达卢西亚音乐、格纳瓦(Gnawa)音乐',
+                funFacts:['马拉喀什的Jemaa el-Fna广场是UNESCO非遗', '摩洛哥以皮革制品闻名', '蓝色之城舍夫沙万是网红目的地', '摩洛哥是第一个承认美国的国家之一'],
+                images:['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1504197885-609741792ce7?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&h=300&fit=crop'] },
+            germany: { name:'德国', flag:'🇩🇪', capital:'柏林', region:'中欧', language:'德语', population:'约8400万', timezone:'UTC+1',
+                greeting:'握手(短而有力)', greetingDetail:'握手时直视对方眼睛。社交场合男性先向女性问候，年轻人先向年长者问候。',
+                taboos:['忌行纳粹礼(违法)', '忌迟到', '忌在高速公路讨论速度', '忌不回收垃圾', '忌在正式场合称呼名(除非对方邀请)'],
+                customs:['守时是美德', '垃圾分类严格', '周日商店关门', '啤酒文化深厚', '圣诞市场传统'],
+                festivals:['慕尼黑啤酒节 (9-10月)', '圣诞市场 (12月)', '狂欢节 (2月)', '柏林电影节 (2月)', '莱茵烟火节'],
+                clothing:'Tracht(巴伐利亚传统服饰) — 女性穿Dirndl，男性穿Lederhosen',
+                clothingDetail:'Dirndl的蝴蝶结系法暗示感情状态：左前表示单身，右前表示有伴或已婚。皮短裤(Lederhosen)曾是阿尔卑斯山区农民的工作服。',
+                food:'香肠(Bratwurst)、猪肘(Schweinshaxe)、黑森林蛋糕、碱水面包(Brezel)、酸菜(Sauerkraut)',
+                foodDetail:'德国菜以丰盛著称，猪肉是主要肉类。德国有超过1500种香肠。面包文化极为丰富，全国有300多种面包。啤酒遵循1516年纯净法酿造。',
+                etiquette:'正式场合使用"Sie"(您)直到对方邀请使用"Du"(你)。商务会议准时开始。用餐时左手拿叉右手拿刀，吃完后刀叉平行放在盘子上。',
+                music:'古典音乐(巴赫、贝多芬)、电子音乐(发电站乐队)',
+                funFacts:['德国有超过20000座城堡', '柏林面积是巴黎的9倍', '德国面包文化是UNESCO非遗', '高速公路约70%路段无限速'],
+                images:['https://images.unsplash.com/photo-1533106958148-daaeab8b83fe?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1528728329032-2972f65dfb3f?w=400&h=300&fit=crop'] },
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const countryId = urlParams.get('country') || 'japan';
+        const data = cultureDB[countryId] || cultureDB.japan;
+
+        function buildSections(data) {
+            return `
+            <div class="hero-card" style="animation:fadeIn 0.4s ease-out both;">
+              <div class="flag-display">${data.flag}</div>
+              <div class="hero-info">
+                <h1>${data.name}</h1>
+                <p class="sub-info">首都：${data.capital} · 地区：${data.region} · 语言：${data.language}<br>人口：${data.population} · 时区：${data.timezone}</p>
+                <div class="meta-tags">
+                  <span class="meta-tag">🤝 ${data.greeting}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-nav">
+              <button class="tab-btn active" data-tab="overview">📋 总览</button>
+              <button class="tab-btn" data-tab="festivals">🎉 节日</button>
+              <button class="tab-btn" data-tab="food">🍽️ 饮食</button>
+              <button class="tab-btn" data-tab="clothing">👘 服饰</button>
+              <button class="tab-btn" data-tab="funfacts">💡 趣闻</button>
+              <button class="tab-btn" data-tab="gallery">📷 图集</button>
+            </div>
+
+            <div id="tab-overview" class="tab-content">
+              <div class="section-card" style="animation:fadeIn 0.5s ease-out both;">
+                <h2>📋 文化习俗</h2>
+                <ul>${data.customs.map(c => `<li>${c}</li>`).join('')}</ul>
+              </div>
+              <div class="section-card" style="animation:fadeIn 0.5s ease-out 0.05s both;">
+                <h2>🚫 文化禁忌</h2>
+                <ul>${data.taboos.map(t => `<li>${t}</li>`).join('')}</ul>
+              </div>
+              <div class="section-card" style="animation:fadeIn 0.5s ease-out 0.1s both;">
+                <h2>🤝 问候礼仪</h2>
+                <p style="color:var(--text-secondary);"><strong>${data.greeting}</strong></p>
+                <p style="color:var(--text-secondary); margin-top:0.5rem;">${data.greetingDetail}</p>
+              </div>
+              <div class="section-card" style="animation:fadeIn 0.5s ease-out 0.15s both;">
+                <h2>🤝 礼仪细节</h2>
+                <p style="color:var(--text-secondary);">${data.etiquette}</p>
+              </div>
+              <div class="section-card" style="animation:fadeIn 0.5s ease-out 0.2s both;">
+                <h2>🎵 音乐传统</h2>
+                <p style="color:var(--text-secondary);">${data.music}</p>
+              </div>
+            </div>
+
+            <div id="tab-festivals" class="tab-content" style="display:none;">
+              <div class="section-card" style="animation:fadeIn 0.4s ease-out both;">
+                <h2>🎉 重要节日</h2>
+                <div class="timeline-mini">${data.festivals.map(f => `<span class="timeline-dot">${f}</span>`).join('')}</div>
+              </div>
+            </div>
+
+            <div id="tab-food" class="tab-content" style="display:none;">
+              <div class="section-card" style="animation:fadeIn 0.4s ease-out both;">
+                <h2>🍽️ 饮食文化</h2>
+                <p style="color:var(--text-secondary);"><strong>代表美食：</strong>${data.food}</p>
+                <p style="color:var(--text-secondary); margin-top:0.8rem;">${data.foodDetail || ''}</p>
+              </div>
+            </div>
+
+            <div id="tab-clothing" class="tab-content" style="display:none;">
+              <div class="section-card" style="animation:fadeIn 0.4s ease-out both;">
+                <h2>👘 传统服饰</h2>
+                <p style="color:var(--text-secondary);"><strong>${data.clothing}</strong></p>
+                <p style="color:var(--text-secondary); margin-top:0.8rem;">${data.clothingDetail || ''}</p>
+              </div>
+            </div>
+
+            <div id="tab-funfacts" class="tab-content" style="display:none;">
+              <div class="section-card" style="animation:fadeIn 0.4s ease-out both;">
+                <h2>💡 文化趣闻</h2>
+                <div class="facts-grid">
+                  ${data.funFacts.map(f => `<div class="fact-card"><div class="fact-icon">✨</div><div class="fact-text">${f}</div></div>`).join('')}
+                </div>
+              </div>
+            </div>
+
+            <div id="tab-gallery" class="tab-content" style="display:none;">
+              <div class="section-card" style="animation:fadeIn 0.4s ease-out both;">
+                <h2>📷 图片集</h2>
+                <div class="image-gallery">
+                  ${(data.images || []).map(img => `<div class="gallery-img" style="background-image:url('${img}');" onclick="window.open('${img}','_blank')" title="点击查看大图"></div>`).join('')}
+                </div>
+                <p style="color:var(--text-muted);font-size:0.82rem;margin-top:1rem;">图片来自 Unsplash，点击可查看原图。</p>
+              </div>
+            </div>
+
+            <div class="info-bar" style="animation:fadeIn 0.6s ease-out both;justify-content:center;margin:1.5rem 0;">
+              <span class="info-chip">🌍 ${data.region}</span>
+              <span class="info-chip">🕐 ${data.timezone}</span>
+              <span class="info-chip">👥 ${data.population}</span>
+              <span class="info-chip">🗣️ ${data.language}</span>
+            </div>
+
+            <div style="text-align:center;margin-top:2rem;">
+              <a href="culture_compare.html" style="color:var(--accent-sage);text-decoration:none;font-weight:600;margin:0 0.8rem;">⚖️ 对比其他国家</a>
+              <a href="countries.html" style="color:var(--accent-sage);text-decoration:none;font-weight:600;margin:0 0.8rem;">← 返回国家文化库</a>
+            </div>`;
+        }
+
+        document.getElementById('detailContent').innerHTML = buildSections(data);
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const tab = this.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+                document.getElementById('tab-' + tab).style.display = 'block';
+            });
+        });
+
+        console.log('📖 文化详情已加载 — ' + data.name);
+    </script>
+</body>
+</html>

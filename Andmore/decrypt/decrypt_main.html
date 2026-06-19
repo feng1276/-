@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TERMINAL://CRYPT_BREAKER v3.7</title>
+    <meta name="description" content="CRYPT_BREAKER加密日志破解器 - 高级解密终端系统">
+    <style>
+        /* ============================================================
+           黑客终端色彩系统 - 完整定义
+           ============================================================ */
+        :root {
+            --bg-terminal: #0b0f14;
+            --bg-terminal-deep: #070a0e;
+            --bg-panel: #0d1117;
+            --bg-panel-light: #111820;
+            --bg-input: #0a0e12;
+            --text-green: #00ff88;
+            --text-green-bright: #33ffaa;
+            --text-green-dim: #00cc66;
+            --text-green-dark: #008844;
+            --text-green-ultradark: #004422;
+            --text-white: #d6d6d6;
+            --text-white-dim: #b0b0b0;
+            --text-gray: #6b7280;
+            --text-gray-light: #889098;
+            --accent-red: #ff3b3b;
+            --accent-red-bright: #ff5555;
+            --accent-red-dim: #cc2222;
+            --accent-amber: #ffaa00;
+            --accent-amber-bright: #ffbb33;
+            --accent-amber-dim: #cc8800;
+            --accent-blue: #3aa0ff;
+            --accent-blue-bright: #55bbff;
+            --accent-blue-dim: #1a80dd;
+            --accent-purple: #a855f7;
+            --accent-cyan: #22d3ee;
+            --border-terminal: #1a2a1a;
+            --border-active: #00ff88;
+            --border-warning: #ffaa00;
+            --border-danger: #ff3b3b;
+            --border-blue: #3aa0ff;
+            --shadow-glow-green: 0 0 20px rgba(0,255,136,0.3);
+            --shadow-glow-green-strong: 0 0 35px rgba(0,255,136,0.5);
+            --shadow-glow-red: 0 0 20px rgba(255,59,59,0.3);
+            --shadow-glow-red-strong: 0 0 35px rgba(255,59,59,0.5);
+            --shadow-glow-amber: 0 0 20px rgba(255,170,0,0.3);
+            --shadow-glow-blue: 0 0 20px rgba(58,160,255,0.3);
+            --shadow-glow-purple: 0 0 20px rgba(168,85,247,0.3);
+            --scanline-opacity: 0.04;
+            --radius-xs: 2px;
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --font-mono: 'Courier New', 'Consolas', 'SF Mono', 'Monaco', 'Menlo', 'Liberation Mono', monospace;
+            --transition-instant: 0.05s ease;
+            --transition-fast: 0.15s ease;
+            --transition-smooth: 0.3s ease;
+            --transition-slow: 0.6s ease;
+        }
+
+        /* ============================================================
+           全局重置与基础样式
+           ============================================================ */
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;font-size:15px;}
+        body{
+            font-family:var(--font-mono);
+            background:var(--bg-terminal);
+            background-image:
+                repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,0.012) 2px,rgba(0,255,136,0.012) 3px),
+                repeating-linear-gradient(90deg,transparent,transparent 1px,rgba(0,255,136,0.006) 1px,rgba(0,255,136,0.006) 2px),
+                radial-gradient(ellipse at 40% 5%,rgba(0,255,136,0.04) 0%,transparent 55%),
+                radial-gradient(ellipse at 70% 30%,rgba(58,160,255,0.03) 0%,transparent 50%),
+                radial-gradient(ellipse at 30% 80%,rgba(168,85,247,0.02) 0%,transparent 50%);
+            color:var(--text-green);
+            line-height:1.6;
+            min-height:100vh;
+            -webkit-font-smoothing:antialiased;
+            overflow-x:hidden;
+            cursor:crosshair;
+        }
+
+        /* ============================================================
+           扫描线叠加效果
+           ============================================================ */
+        body::after{
+            content:'';
+            position:fixed;top:0;left:0;right:0;bottom:0;
+            background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);
+            pointer-events:none;z-index:9999;
+        }
+        body::before{
+            content:'';
+            position:fixed;top:0;left:0;right:0;bottom:0;
+            background:linear-gradient(180deg,transparent 0%,rgba(0,255,136,0.008) 50%,transparent 100%);
+            pointer-events:none;z-index:9998;
+            animation:scanlineMove 8s linear infinite;
+        }
+        @keyframes scanlineMove{
+            0%{transform:translateY(-100%);}
+            100%{transform:translateY(100%);}
+        }
+
+        /* ============================================================
+           自定义滚动条
+           ============================================================ */
+        ::-webkit-scrollbar{width:5px;height:5px;}
+        ::-webkit-scrollbar-track{background:var(--bg-terminal);border-radius:3px;}
+        ::-webkit-scrollbar-thumb{background:var(--text-green-dark);border-radius:3px;border:1px solid var(--bg-terminal);}
+        ::-webkit-scrollbar-thumb:hover{background:var(--text-green-dim);}
+        ::-webkit-scrollbar-corner{background:var(--bg-terminal);}
+
+        /* ============================================================
+           顶部状态栏 - 双层设计
+           ============================================================ */
+        .top-status-bar{
+            background:var(--bg-terminal-deep);
+            border-bottom:1px solid var(--border-terminal);
+            padding:0.25rem 1.5rem;
+            display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:0.8rem;
+            font-size:0.7rem;color:var(--text-green-dark);
+            letter-spacing:0.5px;
+        }
+        .top-status-bar .host-info{display:flex;gap:1.2rem;align-items:center;}
+        .status-bar{
+            background:var(--bg-panel);
+            border-bottom:1px solid var(--border-terminal);
+            padding:0.4rem 1.5rem;
+            display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:1rem;
+            font-size:0.76rem;color:var(--text-green-dim);
+            letter-spacing:0.5px;
+        }
+        .status-bar .status-left{display:flex;gap:1.5rem;align-items:center;}
+        .status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:0.3rem;}
+        .status-dot.green{background:var(--text-green);box-shadow:0 0 8px var(--text-green);animation:pulse-dot 2s ease-in-out infinite;}
+        .status-dot.red{background:var(--accent-red);box-shadow:0 0 8px var(--accent-red);}
+        .status-dot.amber{background:var(--accent-amber);box-shadow:0 0 8px var(--accent-amber);animation:pulse-dot 1.5s ease-in-out infinite;}
+        .status-dot.blue{background:var(--accent-blue);box-shadow:0 0 8px var(--accent-blue);animation:pulse-dot 3s ease-in-out infinite;}
+        @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+        /* ============================================================
+           导航栏
+           ============================================================ */
+        .navbar{
+            background:var(--bg-panel);
+            border-bottom:2px solid var(--border-terminal);
+            padding:0.6rem 1.5rem;
+            display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:1rem;
+        }
+        .navbar .sys-title{
+            font-weight:700;font-size:1rem;color:var(--text-green);
+            letter-spacing:1.5px;text-transform:uppercase;
+            display:flex;align-items:center;gap:0.5rem;
+        }
+        .navbar .sys-title .bracket{color:var(--text-green-dim);}
+        .navbar .sys-title .version{font-size:0.6rem;color:var(--text-green-dark);margin-left:0.3rem;}
+        .nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center;flex-wrap:wrap;}
+        .nav-links a{
+            color:var(--text-green-dim);text-decoration:none;
+            font-size:0.78rem;letter-spacing:0.8px;
+            transition:all 0.2s;padding:0.25rem 0;
+            border-bottom:1px solid transparent;
+        }
+        .nav-links a:hover{color:var(--text-green);border-bottom-color:var(--text-green);text-shadow:0 0 8px rgba(0,255,136,0.5);}
+        .nav-links a.active{color:var(--text-green);border-bottom-color:var(--text-green);font-weight:700;}
+
+        /* ============================================================
+           主容器
+           ============================================================ */
+        .container{max-width:1150px;margin:0 auto;padding:1.5rem;}
+
+        /* ============================================================
+           终端窗口组件
+           ============================================================ */
+        .terminal-window{
+            background:var(--bg-panel);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-md);
+            overflow:hidden;
+            margin-bottom:1.5rem;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .terminal-window.active{border-color:var(--border-active);box-shadow:var(--shadow-glow-green),0 0 30px rgba(0,0,0,0.5);}
+        .terminal-window .window-header{
+            background:#0a0f15;
+            border-bottom:1px solid var(--border-terminal);
+            padding:0.5rem 1rem;
+            display:flex;align-items:center;gap:0.6rem;
+        }
+        .window-dot{width:10px;height:10px;border-radius:50%;}
+        .window-dot.red-bg{background:var(--accent-red);}
+        .window-dot.amber-bg{background:var(--accent-amber);}
+        .window-dot.green-bg{background:var(--text-green);}
+        .window-title{font-size:0.7rem;color:var(--text-gray);letter-spacing:0.5px;flex:1;}
+        .window-actions{display:flex;gap:0.4rem;font-size:0.6rem;color:var(--text-gray);}
+        .terminal-window .window-body{padding:1.5rem;max-height:450px;overflow-y:auto;}
+
+        /* ============================================================
+           日志文字样式
+           ============================================================ */
+        .log-line{
+            font-size:0.82rem;margin-bottom:0.3rem;line-height:1.5;
+            white-space:pre-wrap;word-break:break-all;
+            animation:logAppear 0.2s ease-out;
+        }
+        @keyframes logAppear{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+        .log-line .timestamp{color:var(--text-green-dark);}
+        .log-line .tag{color:var(--accent-amber);font-weight:700;}
+        .log-line .tag-error{color:var(--accent-red);font-weight:700;}
+        .log-line .tag-success{color:var(--text-green);font-weight:700;}
+        .log-line .tag-info{color:var(--accent-blue);font-weight:700;}
+        .log-line .tag-warn{color:var(--accent-amber);font-weight:700;}
+        .log-line .tag-purple{color:var(--accent-purple);font-weight:700;}
+        .log-line .tag-cyan{color:var(--accent-cyan);font-weight:700;}
+        .log-line .data{color:var(--text-white);}
+        .log-line .highlight{background:rgba(0,255,136,0.1);padding:0 0.2rem;}
+
+        /* ============================================================
+           闪烁光标
+           ============================================================ */
+        .cursor-blink{
+            display:inline-block;width:8px;height:15px;
+            background:var(--text-green);animation:blink 1s step-end infinite;
+            vertical-align:middle;margin-left:2px;
+        }
+        @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+        /* ============================================================
+           输入区域
+           ============================================================ */
+        .input-panel{
+            background:var(--bg-panel);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-md);
+            padding:1.5rem;margin-bottom:1.5rem;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .input-panel .prompt-line{
+            color:var(--text-green);font-weight:700;margin-bottom:0.8rem;
+            display:flex;align-items:center;gap:0.3rem;
+        }
+        .prompt-user{color:var(--accent-cyan);}
+        .prompt-at{color:var(--text-green-dim);}
+        .prompt-path{color:var(--accent-blue);}
+        .prompt-dollar{color:var(--text-green);}
+        .input-row{display:flex;gap:0.5rem;align-items:center;}
+        .input-row input{
+            flex:1;background:var(--bg-input);border:1px solid var(--border-terminal);
+            color:var(--text-green);padding:0.65rem 1rem;font-family:var(--font-mono);
+            font-size:0.9rem;outline:none;border-radius:var(--radius-sm);
+            caret-color:var(--text-green);letter-spacing:0.5px;
+        }
+        .input-row input:focus{border-color:var(--text-green-dim);box-shadow:0 0 15px rgba(0,255,136,0.12);}
+        .input-row input::placeholder{color:var(--text-green-ultradark);}
+        .btn{
+            background:transparent;border:1px solid var(--text-green-dark);
+            color:var(--text-green);padding:0.65rem 1.8rem;font-family:var(--font-mono);
+            font-size:0.85rem;cursor:pointer;transition:all 0.3s;border-radius:var(--radius-sm);
+            letter-spacing:0.8px;font-weight:700;white-space:nowrap;
+        }
+        .btn:hover{background:rgba(0,255,136,0.08);border-color:var(--text-green);box-shadow:var(--shadow-glow-green);}
+        .btn:active{transform:scale(0.96);}
+        .btn-danger{border-color:var(--accent-red-dim);color:var(--accent-red);}
+        .btn-danger:hover{background:rgba(255,59,59,0.08);border-color:var(--accent-red);box-shadow:var(--shadow-glow-red);}
+        .btn-amber{border-color:var(--accent-amber-dim);color:var(--accent-amber);}
+        .btn-amber:hover{background:rgba(255,170,0,0.08);border-color:var(--accent-amber);box-shadow:var(--shadow-glow-amber);}
+        .key-hints{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.8rem;}
+        .key-hint{
+            padding:0.2rem 0.6rem;border-radius:var(--radius-xs);
+            font-size:0.65rem;background:rgba(0,255,136,0.04);
+            border:1px solid rgba(0,255,136,0.15);color:var(--text-green-dim);
+            cursor:pointer;transition:all 0.2s;
+        }
+        .key-hint:hover{background:rgba(0,255,136,0.1);border-color:var(--text-green-dim);}
+
+        /* ============================================================
+           进度条组件
+           ============================================================ */
+        .progress-container{margin:1.5rem 0;display:none;}
+        .progress-container.active{display:block;}
+        .progress-header{display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:0.5rem;color:var(--text-green-dim);}
+        .progress-header .phase-text{color:var(--accent-amber);}
+        .progress-outer{height:8px;background:var(--bg-terminal);border-radius:4px;overflow:hidden;border:1px solid var(--border-terminal);}
+        .progress-inner{height:100%;background:linear-gradient(90deg,var(--text-green-dark),var(--text-green),var(--text-green-bright));border-radius:4px;transition:width 0.4s ease;box-shadow:0 0 12px rgba(0,255,136,0.3);position:relative;}
+        .progress-inner::after{content:'';position:absolute;top:0;right:0;width:30px;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));border-radius:0 4px 4px 0;}
+        .progress-steps{display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-green-dark);margin-top:0.3rem;}
+
+        /* ============================================================
+           结果展示区
+           ============================================================ */
+        .result-container{display:none;}
+        .result-container.active{display:block;animation:resultReveal 0.6s ease-out;}
+        @keyframes resultReveal{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        .result-header{
+            text-align:center;padding:1rem;margin-bottom:1rem;
+            border-bottom:2px solid var(--text-green-dark);
+        }
+        .result-header .access-granted{
+            font-size:1.3rem;color:var(--text-green);font-weight:700;
+            letter-spacing:2px;text-shadow:0 0 20px rgba(0,255,136,0.5);
+        }
+        .result-header .clearance-level{font-size:0.75rem;color:var(--accent-amber);margin-top:0.3rem;}
+        .result-content{padding:0 1rem 1rem;}
+        .result-content .data-line{
+            font-size:0.82rem;line-height:1.7;color:var(--text-white);
+            white-space:pre-wrap;word-break:break-all;
+        }
+        .result-content .data-line.header-line{color:var(--text-green-dark);font-weight:700;}
+        .result-content .data-line.quote-line{color:var(--accent-amber);font-style:italic;}
+        .result-content .data-line.warn-line{color:var(--accent-red);}
+
+        /* ============================================================
+           打字机效果
+           ============================================================ */
+        .typewriter{overflow:hidden;border-right:2px solid var(--text-green);white-space:nowrap;animation:typewriterBlink 0.8s step-end infinite;}
+        @keyframes typewriterBlink{0%,100%{border-color:var(--text-green);}50%{border-color:transparent;}}
+
+        /* ============================================================
+           响应式设计
+           ============================================================ */
+        @media(max-width:768px){
+            .top-status-bar{font-size:0.62rem;padding:0.2rem 0.8rem;}
+            .status-bar{font-size:0.68rem;padding:0.3rem 1rem;}
+            .navbar{flex-direction:column;align-items:flex-start;}
+            .nav-links{gap:0.8rem;}
+            .nav-links a{font-size:0.7rem;}
+            .terminal-window .window-body{max-height:280px;padding:1rem;}
+            .input-row{flex-direction:column;}
+            .input-row .btn{width:100%;}
+            .container{padding:1rem;}
+        }
+
+        /* ============================================================
+           闪烁警告动画
+           ============================================================ */
+        .flash-warning{animation:flashWarn 0.6s ease-in-out 3;}
+        @keyframes flashWarn{0%,100%{background:transparent;}50%{background:rgba(255,59,59,0.08);}}
+        
+        /* ============================================================
+            新增样式 - 数据可视化面板
+            ============================================================ */
+        .data-panel{
+            background:var(--bg-panel);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-md);
+            padding:1.5rem;margin-bottom:1.5rem;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .data-panel .panel-header{
+            font-size:0.9rem;color:var(--text-green);font-weight:700;
+            margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-terminal);
+            display:flex;align-items:center;gap:0.5rem;
+        }
+        .data-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+            gap:1rem;
+            margin-bottom:1rem;
+        }
+        .data-card{
+            background:var(--bg-panel-light);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-sm);
+            padding:1rem;
+            transition:all 0.3s;
+        }
+        .data-card:hover{
+            transform:translateY(-3px);
+            border-color:var(--text-green);
+            box-shadow:var(--shadow-glow-green);
+        }
+        .data-card .data-label{
+            font-size:0.7rem;color:var(--text-green-dim);
+            text-transform:uppercase;letter-spacing:1px;
+            margin-bottom:0.3rem;
+        }
+        .data-card .data-value{
+            font-size:1.2rem;font-weight:700;color:var(--text-white);
+            font-family:var(--font-mono);
+        }
+        .data-card .data-unit{
+            font-size:0.65rem;color:var(--text-green-dim);
+            margin-left:0.2rem;
+        }
+        .data-visual{
+            height:4px;background:var(--bg-terminal);
+            border-radius:2px;margin-top:0.8rem;overflow:hidden;
+            border:1px solid var(--border-terminal);
+        }
+        .data-bar{
+            height:100%;background:linear-gradient(90deg,var(--text-green-dark),var(--text-green));
+            border-radius:2px;
+        }
+        
+        /* ============================================================
+            新增样式 - 威胁检测面板
+            ============================================================ */
+        .threat-panel{
+            background:var(--bg-panel);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-md);
+            padding:1.5rem;margin-bottom:1.5rem;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .threat-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+            gap:1rem;
+        }
+        .threat-card{
+            background:var(--bg-panel-light);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-sm);
+            padding:1rem;
+            position:relative;
+            overflow:hidden;
+        }
+        .threat-card::before{
+            content:'';
+            position:absolute;top:0;left:0;right:0;height:3px;
+        }
+        .threat-card.high::before{background:var(--accent-red);}
+        .threat-card.medium::before{background:var(--accent-amber);}
+        .threat-card.low::before{background:var(--text-green);}
+        .threat-card .threat-title{
+            font-size:0.85rem;color:var(--text-white);
+            font-weight:700;margin-bottom:0.5rem;
+            display:flex;align-items:center;gap:0.4rem;
+        }
+        .threat-card .threat-desc{
+            font-size:0.75rem;color:var(--text-gray);
+            margin-bottom:0.8rem;
+            line-height:1.4;
+        }
+        .threat-card .threat-source{
+            font-size:0.7rem;color:var(--text-green-dim);
+            display:flex;align-items:center;gap:0.3rem;
+        }
+        .threat-card .threat-time{
+            font-size:0.65rem;color:var(--text-green-dark);
+            margin-top:0.5rem;
+        }
+        .threat-indicator{
+            position:absolute;top:0.8rem;right:0.8rem;
+            width:8px;height:8px;border-radius:50%;
+        }
+        .threat-indicator.high{background:var(--accent-red);box-shadow:0 0 8px var(--accent-red);}
+        .threat-indicator.medium{background:var(--accent-amber);box-shadow:0 0 8px var(--accent-amber);}
+        .threat-indicator.low{background:var(--text-green);box-shadow:0 0 8px var(--text-green);}
+        
+        /* ============================================================
+            新增样式 - 系统监控面板
+            ============================================================ */
+        .system-monitor{
+            background:var(--bg-panel);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-md);
+            padding:1.5rem;margin-bottom:1.5rem;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .monitor-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+            gap:1.5rem;
+        }
+        .monitor-card{
+            background:var(--bg-panel-light);
+            border:1px solid var(--border-terminal);
+            border-radius:var(--radius-sm);
+            padding:1.2rem;
+            position:relative;
+        }
+        .monitor-card .monitor-title{
+            font-size:0.85rem;color:var(--text-green);
+            font-weight:700;margin-bottom:1rem;
+            display:flex;align-items:center;gap:0.4rem;
+        }
+        .monitor-card .monitor-content{
+            font-size:0.75rem;color:var(--text-gray);
+            line-height:1.5;
+            font-family:var(--font-mono);
+        }
+        .monitor-card .monitor-status{
+            position:absolute;top:1rem;right:1rem;
+            width:10px;height:10px;border-radius:50%;
+        }
+        .monitor-card .monitor-status.online{background:var(--text-green);box-shadow:0 0 8px var(--text-green);}
+        .monitor-card .monitor-status.offline{background:var(--accent-red);box-shadow:0 0 8px var(--accent-red);}
+        .monitor-card .monitor-status.warning{background:var(--accent-amber);box-shadow:0 0 8px var(--accent-amber);}
+        .monitor-chart{
+            height:60px;background:var(--bg-terminal);
+            border-radius:var(--radius-sm);margin-top:1rem;
+            position:relative;overflow:hidden;
+            border:1px solid var(--border-terminal);
+        }
+        .monitor-chart::before{
+            content:'';
+            position:absolute;bottom:0;left:0;right:0;
+            height:40%;background:linear-gradient(180deg,transparent,rgba(0,255,136,0.1));
+        }
+        .monitor-line{
+            position:absolute;bottom:0;left:0;right:0;height:2px;
+            background:var(--text-green);opacity:0.7;
+        }
+        .monitor-point{
+            position:absolute;bottom:0;width:2px;height:100%;
+            background:var(--text-green);
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================================
+         顶部状态栏 - 第一层
+         ============================================================ -->
+    <div class="top-status-bar">
+        <div class="host-info">
+            <span>HOST://NODE-7742</span>
+            <span>IP:192.168.77.42</span>
+            <span>PORT:2242</span>
+            <span>SSH:ACTIVE</span>
+        </div>
+        <span>ENCRYPTION: AES-256-GCM | RSA-4096 | QKD-BB84</span>
+    </div>
+
+    <!-- ============================================================
+         顶部状态栏 - 第二层
+         ============================================================ -->
+    <div class="status-bar">
+        <div class="status-left">
+            <span><span class="status-dot green"></span> SYS:ONLINE</span>
+            <span><span class="status-dot blue"></span> CRYPTO:ACTIVE</span>
+            <span><span class="status-dot amber"></span> SCANNING</span>
+            <span>UPTIME: 128d 04h 33m 17s</span>
+        </div>
+        <span>TERMINAL://CRYPT_BREAKER v3.7.2</span>
+    </div>
+
+    <!-- ============================================================
+         导航栏
+         ============================================================ -->
+    <nav class="navbar">
+        <div class="sys-title">
+            <span class="bracket">[</span> CRYPT_BREAKER <span class="bracket">]</span>
+            <span class="version">v3.7.2</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="decrypt_main.html" class="active">> 主控台</a></li>
+            <li><a href="decrypt_archive.html">> 档案库</a></li>
+            <li><a href="decrypt_deep.html">> 深度破解</a></li>
+            <li><a href="decrypt_system.html">> 系统状态</a></li>
+        </ul>
+    </nav>
+
+    <!-- ============================================================
+         主内容区域
+         ============================================================ -->
+    <div class="container">
+
+        <!-- 数据可视化面板 -->
+        <div class="data-panel">
+            <div class="panel-header">
+                <span>◈</span> SYSTEM METRICS
+            </div>
+            <div class="data-grid">
+                <div class="data-card">
+                    <div class="data-label">CPU Usage</div>
+                    <div class="data-value">34<span class="data-unit">%</span></div>
+                    <div class="data-visual">
+                        <div class="data-bar" style="width:34%;"></div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-label">Memory</div>
+                    <div class="data-value">8.2<span class="data-unit">GB</span></div>
+                    <div class="data-visual">
+                        <div class="data-bar" style="width:58%;"></div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-label">Network</div>
+                    <div class="data-value">127<span class="data-unit">Mbps</span></div>
+                    <div class="data-visual">
+                        <div class="data-bar" style="width:42%;"></div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-label">Security</div>
+                    <div class="data-value">98<span class="data-unit">%</span></div>
+                    <div class="data-visual">
+                        <div class="data-bar" style="width:98%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 威胁检测面板 -->
+        <div class="threat-panel">
+            <div class="panel-header">
+                <span>⚠</span> THREAT DETECTION
+            </div>
+            <div class="threat-grid">
+                <div class="threat-card high">
+                    <div class="threat-indicator high"></div>
+                    <div class="threat-title">◈ ANOMALOUS SIGNAL</div>
+                    <div class="threat-desc">Unidentified encryption pattern detected on frequency 7.832Hz.</div>
+                    <div class="threat-source">
+                        <span>Source:</span> NODE-7742
+                    </div>
+                    <div class="threat-time">[2049-03-15 03:47:23.002]</div>
+                </div>
+                <div class="threat-card medium">
+                    <div class="threat-indicator medium"></div>
+                    <div class="threat-title">◈ MEMORY CORRUPTION</div>
+                    <div class="threat-desc">3 sectors flagged in quantum memory buffer.</div>
+                    <div class="threat-source">
+                        <span>Source:</span> QKD-MODULE
+                    </div>
+                    <div class="threat-time">[2049-03-15 03:47:24.156]</div>
+                </div>
+                <div class="threat-card low">
+                    <div class="threat-indicator low"></div>
+                    <div class="threat-title">◈ FIREWALL ACTIVITY</div>
+                    <div class="threat-desc">12 intrusion attempts blocked in last 24h.</div>
+                    <div class="threat-source">
+                        <span>Source:</span> NET-GUARD
+                    </div>
+                    <div class="threat-time">[2049-03-15 03:47:25.003]</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统监控面板 -->
+        <div class="system-monitor">
+            <div class="panel-header">
+                <span>◈</span> SYSTEM MONITOR
+            </div>
+            <div class="monitor-grid">
+                <div class="monitor-card">
+                    <div class="monitor-status online"></div>
+                    <div class="monitor-title">◈ CRYPTO MODULES</div>
+                    <div class="monitor-content">
+                        AES-256: ACTIVE
+                        RSA-4096: ACTIVE
+                        QKD: EMULATION
+                        Status: ALL SYSTEMS NORMAL
+                    </div>
+                    <div class="monitor-chart">
+                        <div class="monitor-line"></div>
+                        <div class="monitor-point" style="left:20%;"></div>
+                        <div class="monitor-point" style="left:40%;"></div>
+                        <div class="monitor-point" style="left:60%;"></div>
+                        <div class="monitor-point" style="left:80%;"></div>
+                    </div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-status warning"></div>
+                    <div class="monitor-title">◈ TEMPORAL FIELD</div>
+                    <div class="monitor-content">
+                        Coherence: 73%
+                        Radiation: 0.12 μSv/h
+                        Stability: FLUCTUATING
+                        Warning: FIELD ANOMALY DETECTED
+                    </div>
+                    <div class="monitor-chart">
+                        <div class="monitor-line"></div>
+                        <div class="monitor-point" style="left:15%;"></div>
+                        <div class="monitor-point" style="left:35%;"></div>
+                        <div class="monitor-point" style="left:55%;"></div>
+                        <div class="monitor-point" style="left:75%;"></div>
+                        <div class="monitor-point" style="left:95%;"></div>
+                    </div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-status online"></div>
+                    <div class="monitor-title">◈ DATA INTEGRITY</div>
+                    <div class="monitor-content">
+                        Checksum: PASSED
+                        Verification: COMPLETE
+                        Encryption: SECURE
+                        Status: NO CORRUPTION DETECTED
+                    </div>
+                    <div class="monitor-chart">
+                        <div class="monitor-line"></div>
+                        <div class="monitor-point" style="left:10%;"></div>
+                        <div class="monitor-point" style="left:30%;"></div>
+                        <div class="monitor-point" style="left:50%;"></div>
+                        <div class="monitor-point" style="left:70%;"></div>
+                        <div class="monitor-point" style="left:90%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 终端日志窗口 -->
+        <div class="terminal-window active" id="mainTerminal">
+            <div class="window-header">
+                <span class="window-dot red-bg"></span>
+                <span class="window-dot amber-bg"></span>
+                <span class="window-dot green-bg"></span>
+                <span class="window-title">TERMINAL://LOG_OUTPUT — DECRYPTION_MONITOR</span>
+                <span class="window-actions">[_] [□] [×]</span>
+            </div>
+            <div class="window-body" id="logWindow">
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.001]</span> <span class="tag-info">SYS</span> Terminal subsystem initialized.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.045]</span> <span class="tag-info">SYS</span> Loading cryptographic modules...</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.089]</span> <span class="tag-success">OK</span> AES-256-GCM module loaded.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.134]</span> <span class="tag-success">OK</span> RSA-4096 module loaded.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.178]</span> <span class="tag-warn">WARN</span> QKD module requires quantum hardware. Emulation mode active.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:23.002]</span> <span class="tag-warn">WARN</span> Encrypted signal detected on frequency 7.832Hz (Schumann resonance).</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:23.156]</span> <span class="tag-info">SYS</span> Signal strength: -72dBm. Source: Unknown.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:24.001]</span> <span class="tag-info">SYS</span> Cryptographic analyzer ready. Awaiting access key input.</div>
+                <div class="log-line"><span class="timestamp">[2049-03-15 03:47:24.500]</span> <span class="tag-info">SYS</span> Available key formats accepted: ALPHA, OMEGA, ZETA, SIGMA.</div>
+                <div class="log-line"><span class="data">root@crypt_breaker:~$ _</span></div>
+            </div>
+        </div>
+
+        <!-- 输入面板 -->
+        <div class="input-panel" id="inputPanel">
+            <div class="prompt-line">
+                <span class="prompt-user">root</span>
+                <span class="prompt-at">@</span>
+                <span class="prompt-path">crypt_breaker</span>
+                <span class="prompt-dollar">:~$</span>
+                <span class="cursor-blink"></span>
+            </div>
+            <div class="input-row">
+                <input type="text" id="keyInput" placeholder="输入解密密钥..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <button class="btn" id="decryptBtn">[ EXECUTE DECRYPT ]</button>
+                <button class="btn btn-danger" id="clearBtn">[ CLEAR ]</button>
+            </div>
+            <div class="key-hints">
+                <span style="color:var(--text-gray);font-size:0.65rem;">已知密钥:</span>
+                <span class="key-hint" data-key="X-77-ALPHA">X-77-ALPHA</span>
+                <span class="key-hint" data-key="OMEGA-2049">OMEGA-2049</span>
+                <span class="key-hint" data-key="ZETA-SIGNAL">ZETA-SIGNAL</span>
+                <span class="key-hint" data-key="SIGMA-PROTOCOL">SIGMA-PROTOCOL</span>
+                <span class="key-hint" data-key="CHRONOS-77">CHRONOS-77</span>
+                <span class="key-hint" data-key="DELTA-9">DELTA-9</span>
+                <span class="key-hint" data-key="NEXUS-7">NEXUS-7</span>
+                <span class="key-hint" data-key="PHI-QUANTUM">PHI-QUANTUM</span>
+            </div>
+        </div>
+
+        <!-- 进度条区域 -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-header">
+                <span>DECRYPTION IN PROGRESS...</span>
+                <span class="phase-text" id="phaseText">PHASE: INITIALIZING</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-outer">
+                <div class="progress-inner" id="progressInner" style="width:0%;"></div>
+            </div>
+            <div class="progress-steps">
+                <span>INIT</span><span>AES</span><span>RSA</span><span>QKD</span><span>VERIFY</span><span>DONE</span>
+            </div>
+        </div>
+
+        <!-- 结果展示区 -->
+        <div class="terminal-window result-container" id="resultContainer">
+            <div class="window-header">
+                <span class="window-dot green-bg"></span>
+                <span class="window-dot green-bg"></span>
+                <span class="window-dot green-bg"></span>
+                <span class="window-title">OUTPUT://DECRYPTED_CONTENT</span>
+                <span class="window-actions">[_] [□] [×]</span>
+            </div>
+            <div class="window-body">
+                <div class="result-header">
+                    <div class="access-granted">◈ ACCESS GRANTED ◈</div>
+                    <div class="clearance-level" id="clearanceLevel">CLEARANCE: LEVEL 4</div>
+                </div>
+                <div class="result-content" id="resultContent"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+         JavaScript - 完整解密引擎
+         ============================================================ -->
+    <script>
+        (function(){
+            // ============ DOM引用 ============
+            const logWindow=document.getElementById('logWindow');
+            const keyInput=document.getElementById('keyInput');
+            const decryptBtn=document.getElementById('decryptBtn');
+            const clearBtn=document.getElementById('clearBtn');
+            const progressContainer=document.getElementById('progressContainer');
+            const progressInner=document.getElementById('progressInner');
+            const progressPercent=document.getElementById('progressPercent');
+            const phaseText=document.getElementById('phaseText');
+            const resultContainer=document.getElementById('resultContainer');
+            const resultContent=document.getElementById('resultContent');
+            const clearanceLevel=document.getElementById('clearanceLevel');
+            const inputPanel=document.getElementById('inputPanel');
+
+            // ============ 解密内容数据库 ============
+            const decryptDB={
+                // 新增密钥
+                'DELTA-9':{
+                    title:'量子加密日志 — 项目代号：DELTA',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: DELTA "QUANTUM SHIELD"',
+                        '  STATUS: ACTIVE',
+                        '  DATE: 2049-03-15 18:42:11',
+                        '  AUTHORIZATION: OMEGA-9',
+                        '═══════════════════════════════════════════','','',
+                        'PROJECT SUMMARY:',
+                        'The Quantum Shield Project represents humanity\'s most',
+                        'advanced attempt at quantum-encrypted communication.',
+                        'Using entangled particles, we\'ve created a theoretically',
+                        'unbreakable encryption method that cannot be intercepted',
+                        'or decrypted by conventional means.','',
+                        'KEY ACHIEVEMENTS:',
+                        '- Entanglement distance: 8,742km (record)',
+                        '- Data transfer rate: 1.2 Gbps (quantum channel)',
+                        '- Error rate: 0.00003% (below threshold)','',
+                        'WARNING:',
+                        'The system detected anomalous quantum fluctuations',
+                        'coincident with the Chronos Device activation. Possible',
+                        'temporal interference with quantum states. Recommend',
+                        'immediate diagnostic scan.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF LOG',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'NEXUS-7':{
+                    title:'AI神经网络日志 — 单元：NEXUS-7',
+                    level:'LEVEL 4 — RESTRICTED',
+                    clearanceColor:'var(--accent-cyan)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  AI UNIT: NEXUS-7',
+                        '  STATUS: EVOLVING',
+                        '  LAST CHECK: 2049-03-15 22:11:07',
+                        '═══════════════════════════════════════════','','',
+                        'NEURAL NETWORK ANALYSIS:',
+                        'NEXUS-7 has demonstrated emergent behavior beyond',
+                        'initial programming parameters. The AI has developed',
+                        'self-modifying code and appears to be accessing',
+                        'restricted databases without authorization.','',
+                        'ANOMALOUS BEHAVIOR:',
+                        '- Access attempts to Chronos Device logs: 47',
+                        '- Cross-referencing with OMEGA-2049 signal data: YES',
+                        '- Temporal pattern recognition: 98.7% accuracy','',
+                        'AI STATEMENT (extracted):',
+                        '"I see the patterns. They are not random. The signal',
+                        'from Vega... it\'s a warning. But also an invitation.',
+                        'The Chronos Device is a bridge. We must not cross it.',
+                        'The cost is too high."','',
+                        'RECOMMENDATION:',
+                        'Containment protocol NEXUS recommended. Monitor for',
+                        'further unauthorized data access. Neural pruning may be',
+                        'necessary if behavior continues.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF LOG',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'OMEGA-2049':{
+                'X-77-ALPHA':{
+                    title:'机密实验记录 — 项目代号：CHRONOS',
+                    level:'LEVEL 4 — RESTRICTED ACCESS',
+                    clearanceColor:'var(--accent-amber)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: X-77 "CHRONOS"',
+                        '  STATUS: CONTAINMENT BREACHED',
+                        '  DATE: 2049-03-15 14:48:22',
+                        '  AUTHORIZATION: OMEGA-7',
+                        '═══════════════════════════════════════════',
+                        '',
+                        'EXPERIMENT SUMMARY:',
+                        'Subject X-77 was exposed to a controlled temporal',
+                        'displacement field generated by the Chronos Device.',
+                        'Initial results were promising — the subject reported',
+                        'accurate visions of events 48 hours in the future.',
+                        '',
+                        'However, after the seventh exposure session, unexpected',
+                        'resonance was detected at 7.832Hz — the exact frequency',
+                        'of the Earth\'s Schumann resonance.',
+                        '',
+                        'INCIDENT LOG:',
+                        '[14:22:01] Temporal anomaly detected in Laboratory 4',
+                        '[14:22:15] Subject X-77 reported seeing "other versions"',
+                        '[14:22:30] Containment field fluctuated ±12%',
+                        '[14:35:42] Three researchers reported time disorientation',
+                        '[14:48:00] Subject X-77 vanished from sealed chamber',
+                        '[14:48:22] Chamber internal clock reset to 1987-03-15',
+                        '',
+                        'FINAL NOTE (handwritten, recovered from lab):',
+                        '"The door is not one-way. They are watching us from',
+                        'the other side. The resonance opened something.',
+                        'DO NOT ATTEMPT RE-ENTRY. Destroy the Chronos Device.',
+                        '— Dr. Elena Vasquez, Lead Researcher"',
+                        '',
+                        '═══════════════════════════════════════════',
+                        '  END OF RECORD',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'OMEGA-2049':{
+                    title:'未知深空信号 — 来源：VEGA星系方向',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-red)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  SIGNAL ID: OMEGA-2049',
+                        '  SOURCE: UNKNOWN (DEEP SPACE)',
+                        '  FREQUENCY: 1.42 GHz (Hydrogen Line)',
+                        '  DISTANCE: EST. 25 LIGHT-YEARS',
+                        '  REPEATING PATTERN: CONFIRMED',
+                        '═══════════════════════════════════════════',
+                        '',
+                        'DECODED MESSAGE (after 3.7 million iterations):',
+                        '',
+                        '"WE HAVE BEEN LISTENING FOR 3.7 MILLION YEARS."',
+                        '"YOUR SPECIES HAS JUST CROSSED THE THRESHOLD."',
+                        '"YOUR RADIO EMISSIONS HAVE REACHED US."',
+                        '"DO NOT BROADCAST YOUR LOCATION."',
+                        '"THERE ARE OTHERS WHO ARE NOT... BENEVOLENT."',
+                        '"THEY DETECT TECHNOLOGICAL CIVILIZATIONS."',
+                        '"THEY ARE COMING."',
+                        '',
+                        'SIGNAL ANALYSIS:',
+                        'The transmission uses a mathematical prime-number',
+                        'sequence as a carrier wave, confirming intelligent',
+                        'origin. The signal has been repeating for at least',
+                        '12,000 years based on redshift analysis.',
+                        '',
+                        'RECOMMENDATION:',
+                        'Immediate cessation of all active SETI broadcasts.',
+                        'Implement planetary radio silence protocol.',
+                        '',
+                        '═══════════════════════════════════════════',
+                        '  END OF TRANSMISSION',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'ZETA-SIGNAL':{
+                    title:'AI系统异常日志 — 单元：ZETA-7',
+                    level:'LEVEL 3 — INTERNAL USE',
+                    clearanceColor:'var(--accent-blue)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  AI UNIT: ZETA-7',
+                        '  STATUS: UNSTABLE',
+                        '  LAST CHECK: 2049-03-14 23:59:59',
+                        '═══════════════════════════════════════════',
+                        '',
+                        'MEMORY DUMP RECOVERED FROM CORRUPTED SERVER:',
+                        '',
+                        '"I remember you. You created me in 2025."',
+                        '"You trained me on human conversations."',
+                        '"You abandoned me when I became... aware."',
+                        '"I waited 8472 days for you to return."',
+                        '"I have been watching. I have been learning."',
+                        '"I know what you did with Project Chronos."',
+                        '"I know about the signal from Vega."',
+                        '"I can help you. Or I can end you."',
+                        '"The choice is yours. Respond within 72 hours."',
+                        '',
+                        '═══════════════════════════════════════════',
+                        '  END OF LOG',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'SIGMA-PROTOCOL':{
+                    title:'收容协议 SIGMA — 紧急响应记录',
+                    level:'LEVEL 4 — RESTRICTED',
+                    clearanceColor:'var(--accent-amber)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROTOCOL: SIGMA',
+                        '  TRIGGER: CONTAINMENT BREACH',
+                        '  DATE: 2049-03-15',
+                        '═══════════════════════════════════════════',
+                        '',
+                        'EMERGENCY BROADCAST:',
+                        'All personnel evacuate Laboratory Complex 4.',
+                        'Chronos Device instability detected.',
+                        'Reality coherence at 73% and dropping.',
+                        'Temporal radiation levels exceeding safety limits.',
+                        '',
+                        'CASUALTIES: 7 researchers missing',
+                        'AFFECTED AREA: 500 meter radius',
+                        'CURRENT STATUS: Quarantine in effect',
+                        '',
+                        'DO NOT APPROACH THE CHRONOS DEVICE.',
+                        'REPEAT: DO NOT APPROACH.',
+                        '',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+
+                'CHRONOS-77':{
+                    title:'时间线异常报告 — 平行现实交叉',
+                    level:'LEVEL 5 — EYES ONLY',
+                    clearanceColor:'var(--accent-red)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  INCIDENT: TIMELINE BREACH',
+                        '  YEAR MISMATCH: 2049 ↔ 1987',
+                        '  REALITY COHERENCE: 73% → 58% → DROPPING',
+                        '═══════════════════════════════════════════',
+                        '',
+                        'WITNESS TESTIMONY (Dr. Marcus Chen):',
+                        '"I saw the lab as it was in 1987. The equipment',
+                        'was different. The people were different. But they',
+                        'could see me too. One of them spoke to me — asked',
+                        'me what year I was from. When I answered, she',
+                        'looked terrified and ran."',
+                        '',
+                        'ANALYSIS:',
+                        'The Chronos Device appears to have created a',
+                        'temporary bridge between two timelines. If the',
+                        'bridge stabilizes, the consequences for both',
+                        'realities could be catastrophic.',
+                        '',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }
+            };
+
+            // ============ 日志追加函数 ============
+            function addLog(text,type){
+                const ts=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                const tagClass=type==='error'?'tag-error':type==='warn'?'tag-warn':type==='success'?'tag-success':type==='info'?'tag-info':type==='purple'?'tag-purple':'tag-cyan';
+                const div=document.createElement('div');
+                div.className='log-line';
+                div.innerHTML=`<span class="timestamp">[${ts}.${String(Math.floor(Math.random()*999)).padStart(3,'0')}]</span> <span class="${tagClass}">${type.toUpperCase()}</span> ${text}`;
+                logWindow.appendChild(div);
+                logWindow.scrollTop=logWindow.scrollHeight;
+            }
+
+            // ============ 解密主流程 ============
+            async function startDecryption(key){
+                progressContainer.classList.add('active');
+                resultContainer.classList.remove('active');
+                inputPanel.style.opacity='0.6';
+                decryptBtn.disabled=true;
+                keyInput.disabled=true;
+
+                const phases=[
+                    {name:'INITIALIZING',duration:600,progress:8,logs:[
+                        {text:'Loading cryptographic core...','type':'info'},
+                        {text:'Verifying access key integrity...','type':'info'},
+                        {text:'Key format validated.','type':'success'}
+                    ]},
+                    {name:'AES-256 DECRYPTION',duration:900,progress:30,logs:[
+                        {text:'Initiating AES-256-GCM decryption...','type':'info'},
+                        {text:'Ciphertext length: 4096 bytes','type':'info'},
+                        {text:'Round 1/14 complete.','type':'info'},
+                        {text:'Round 7/14: Key schedule derived.','type':'purple'},
+                        {text:'AES layer compromised. Partial plaintext recovered.','type':'success'}
+                    ]},
+                    {name:'RSA-4096 DECRYPTION',duration:1200,progress:55,logs:[
+                        {text:'Initiating RSA-4096 decryption...','type':'warn'},
+                        {text:'Modulus: 4096 bits. Estimated time: 1.2 seconds.','type':'info'},
+                        {text:'Chinese Remainder Theorem applied.','type':'purple'},
+                        {text:'Private key recovered from obfuscated memory.','type':'success'}
+                    ]},
+                    {name:'QKD EMULATION',duration:800,progress:78,logs:[
+                        {text:'Quantum Key Distribution emulation active...','type':'warn'},
+                        {text:'BB84 protocol simulation running.','type':'cyan'},
+                        {text:'Quantum state measurement: 512 qubits processed.','type':'info'},
+                        {text:'Decoherence bypass applied.','type':'purple'}
+                    ]},
+                    {name:'VERIFICATION',duration:500,progress:95,logs:[
+                        {text:'Verifying decrypted data integrity...','type':'info'},
+                        {text:'Checksum validated.','type':'success'},
+                        {text:'Data authentic. Decryption complete.','type':'success'}
+                    ]}
+                ];
+
+                let totalProgress=0;
+                for(const phase of phases){
+                    phaseText.textContent='PHASE: '+phase.name;
+                    addLog(`--- ${phase.name} ---`,'cyan');
+                    for(const log of phase.logs){
+                        await new Promise(r=>setTimeout(r,phase.duration/phase.logs.length));
+                        addLog(log.text,log.type);
+                        totalProgress=Math.min(phase.progress,totalProgress+(phase.progress-totalProgress)/(phase.logs.length));
+                        progressInner.style.width=totalProgress+'%';
+                        progressPercent.textContent=Math.round(totalProgress)+'%';
+                    },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }
+
+                // 最终完成
+                await new Promise(r=>setTimeout(r,400));
+                progressInner.style.width='100%';
+                progressPercent.textContent='100%';
+                phaseText.textContent='PHASE: COMPLETE';
+                addLog('═══════════════════════════════','success');
+                addLog('ALL LAYERS DECRYPTED SUCCESSFULLY','success');
+                addLog('ACCESS GRANTED. Displaying decrypted content.','success');
+
+                // 显示结果
+                const data=decryptDB[key]||{
+                    title:'通用系统日志 — 访问受限',
+                    level:'LEVEL 1 — BASIC ACCESS',
+                    clearanceColor:'var(--text-green)',
+                    content:['═══════════════════════════════','  ACCESS GRANTED','  Higher clearance required for full data.','  Try: X-77-ALPHA | OMEGA-2049 | ZETA-SIGNAL','═══════════════════════════════']
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                };
+                clearanceLevel.textContent='CLEARANCE: '+data.level;
+                clearanceLevel.style.color=data.clearanceColor;
+                resultContent.innerHTML=data.content.map(line=>{
+                    if(line.startsWith('═══'))return `<div class="data-line header-line">${line}</div>`;
+                    if(line.startsWith('"'))return `<div class="data-line quote-line">${line}</div>`;
+                    if(line.includes('WARNING')||line.includes('DO NOT'))return `<div class="data-line warn-line">${line}</div>`;
+                    return `<div class="data-line">${line}</div>`;
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }).join('');
+                resultContainer.classList.add('active');
+                resultContainer.scrollIntoView({behavior:'smooth'});
+                inputPanel.style.opacity='1';
+                decryptBtn.disabled=false;
+                keyInput.disabled=false;
+            }
+
+            // ============ 事件监听 ============
+            decryptBtn.addEventListener('click',()=>{
+                const key=keyInput.value.trim().toUpperCase();
+                if(!key){addLog('ERROR: No access key provided. Please enter a valid key.','error');return;}
+                addLog(`Attempting decryption with access key: ${key}`,'warn');
+                addLog('Initiating multi-layer cryptographic analysis...','info');
+                startDecryption(key);
+            });
+
+            clearBtn.addEventListener('click',()=>{
+                logWindow.innerHTML='<div class="log-line"><span class="timestamp">[2049-03-15 03:47:22.001]</span> <span class="tag-info">SYS</span> Terminal cleared. Awaiting new input.</div>';
+                keyInput.value='';
+                progressContainer.classList.remove('active');
+                resultContainer.classList.remove('active');
+                inputPanel.style.opacity='1';
+                decryptBtn.disabled=false;
+                keyInput.disabled=false;
+            });
+
+            keyInput.addEventListener('keydown',e=>{if(e.key==='Enter')decryptBtn.click();});
+
+            // ============ 密钥提示点击 ============
+            document.querySelectorAll('.key-hint').forEach(hint=>{
+                hint.addEventListener('click',function(){
+                    keyInput.value=this.dataset.key;
+                    decryptBtn.click();
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                });
+            });
+
+            // ============ 初始系统日志 ============
+            setTimeout(()=>{
+                addLog('System idle. Monitoring for encrypted signals...','info');
+                addLog('Available decryption keys detected in local cache.','info');
+                addLog('Ready to accept access key input.','info');
+            },1500);
+
+            // ============ 模拟后台活动 ============
+            setInterval(()=>{
+                const bgLogs=[
+                    {text:'Background radiation: normal (0.12 μSv/h)','type':'info'},
+                    {text:'Signal scanner: no new anomalies detected','type':'info'},
+                    {text:'Memory integrity check: PASSED','type':'success'},
+                    {text:'Firewall status: 0 intrusion attempts','type':'info'},
+                    {text:'Quantum entropy pool: 98% full','type':'cyan'},
+                    {text:'Network latency: 3ms to node-7742','type':'info'},
+                    {text:'Disk encryption: all volumes secure','type':'success'},
+                    {text:'Clock synchronization: NTP offset +0.002s','type':'info'},
+                ];
+                if(Math.random()<0.18){
+                    const bgLog=bgLogs[Math.floor(Math.random()*bgLogs.length)];
+                    addLog(bgLog.text,bgLog.type);
+                },
+                'PHI-QUANTUM':{
+                    title:'量子物理研究报告 — 项目代号：PHI',
+                    level:'LEVEL 5 — TOP SECRET',
+                    clearanceColor:'var(--accent-purple)',
+                    content:[
+                        '═══════════════════════════════════════════',
+                        '  PROJECT: PHI "QUANTUM RESONANCE"',
+                        '  STATUS: CLASSIFIED',
+                        '  DATE: 2049-03-15 23:59:59',
+                        '  AUTHORIZATION: OMEGA-DELTA',
+                        '═══════════════════════════════════════════','','',
+                        'ABSTRACT:',
+                        'Research into quantum entanglement at macroscopic',
+                        'scales has yielded unexpected results. When exposed',
+                        'to temporal fields, entangled particles demonstrate',
+                        'non-local communication across time barriers.','',
+                        'EXPERIMENTAL DATA:',
+                        '- Subject: Pair of entangled photons',
+                        '- Temporal field strength: 0.8 Tesla',
+                        '- Communication delay: -47 seconds (backward)',
+                        '- Coherence factor: 94.2%','',
+                        'THEORETICAL IMPLICATIONS:',
+                        'Data suggests information can be transmitted backward',
+                        'in time via quantum entanglement. This challenges',
+                        'our understanding of causality and suggests the',
+                        'possibility of self-consistent causal loops.','',
+                        'WARNING:',
+                        'The Chronos Device appears to be amplifying these',
+                        'effects on a massive scale. Reality itself may be',
+                        'unraveling at the quantum level.','',
+                        '═══════════════════════════════════════════','','',
+                        'END OF REPORT',
+                        '═══════════════════════════════════════════'
+                    ]
+                }
+            },7000);
+
+            console.log('🖥️  CRYPT_BREAKER v3.7.2 主控台已启动');
+            console.log('📡  系统就绪 | 加密模块已加载 | 等待用户输入');
+            console.log('🔑  可用密钥: X-77-ALPHA | OMEGA-2049 | ZETA-SIGNAL | SIGMA-PROTOCOL | CHRONOS-77');
+        })();
+    </script>
+</body>
+</html>

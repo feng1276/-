@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DL-0001 | 数字生命培养仓</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+  :root {
+    --bg-deep: #020018;
+    --bg-lab: #0a0a2e;
+    --cyan: #00e5ff;
+    --cyan-dim: #006080;
+    --amber: #ffab00;
+    --amber-warm: #ff6d00;
+    --white: #e0e8f0;
+    --glass: rgba(10,20,60,0.6);
+    --glass-border: rgba(0,229,255,0.15);
+    --danger: #ff1744;
+    --success: #00e676;
+    --stage-color: #00e5ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--white);
+    font-family: 'Noto Sans SC', 'Share Tech Mono', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+    cursor: default;
+    transition: background 2s ease;
+  }
+
+  /* Ambient background */
+  #ambient-bg {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(0,229,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(0,100,180,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 60%, rgba(100,0,200,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    transition: all 3s ease;
+  }
+
+  /* Grid floor */
+  #lab-floor {
+    position: fixed;
+    bottom: 0; left: 0; width: 100%; height: 30%;
+    background:
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: perspective(500px) rotateX(60deg);
+    transform-origin: bottom center;
+    pointer-events: none;
+    z-index: 0;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  @keyframes gridPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* ===== TOP NAV ===== */
+  #top-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: rgba(2,0,24,0.95);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    backdrop-filter: blur(20px);
+  }
+  #top-nav .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px rgba(0,229,255,0.5);
+  }
+  #top-nav .nav-links {
+    display: flex;
+    gap: 25px;
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  #top-nav .nav-links a {
+    color: rgba(224,232,240,0.7);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    position: relative;
+  }
+  #top-nav .nav-links a:hover {
+    color: var(--cyan);
+    text-shadow: 0 0 10px var(--cyan);
+  }
+  #top-nav .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0;
+    width: 0; height: 1px;
+    background: var(--cyan);
+    transition: width 0.3s;
+  }
+  #top-nav .nav-links a:hover::after { width: 100%; }
+
+  #stage-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+  }
+  #stage-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: dotPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 5px var(--cyan); }
+    50% { box-shadow: 0 0 20px var(--cyan), 0 0 40px var(--cyan); }
+  }
+
+  /* ===== MAIN CONTAINER ===== */
+  #main-container {
+    position: relative;
+    z-index: 1;
+    padding-top: 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* ===== INCUBATION CHAMBER ===== */
+  #chamber {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 60px 40px;
+    text-align: center;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    backdrop-filter: blur(30px);
+    box-shadow: 0 0 60px rgba(0,229,255,0.08), inset 0 0 80px rgba(0,229,255,0.02);
+    transition: all 1.5s ease;
+  }
+
+  /* Glass cylinder - the incubation tank */
+  #tank {
+    position: relative;
+    width: 280px;
+    height: 360px;
+    margin: 0 auto 40px;
+    border-radius: 140px 140px 20px 20px;
+    border: 2px solid rgba(0,229,255,0.2);
+    background: linear-gradient(180deg,
+      rgba(0,229,255,0.03) 0%,
+      rgba(0,229,255,0.08) 30%,
+      rgba(0,100,200,0.05) 60%,
+      rgba(0,50,150,0.08) 100%
+    );
+    box-shadow:
+      0 0 40px rgba(0,229,255,0.1),
+      inset 0 0 60px rgba(0,229,255,0.04);
+    overflow: hidden;
+    transition: all 2s ease;
+  }
+  #tank::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 142px 142px 22px 22px;
+    background: linear-gradient(180deg, rgba(0,229,255,0.3), transparent 50%, rgba(0,229,255,0.2));
+    z-index: -1;
+    animation: tankGlow 3s ease-in-out infinite;
+  }
+  @keyframes tankGlow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* The life form - a glowing particle/orb */
+  #life-form {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, var(--cyan) 30%, rgba(0,229,255,0.3) 60%, transparent 70%);
+    box-shadow:
+      0 0 20px var(--cyan),
+      0 0 60px rgba(0,229,255,0.6),
+      0 0 120px rgba(0,229,255,0.3),
+      0 0 200px rgba(0,229,255,0.15);
+    animation: lifeFloat 4s ease-in-out infinite, lifeGlow 2s ease-in-out infinite;
+    transition: all 1.5s ease;
+    cursor: pointer;
+    z-index: 5;
+  }
+  @keyframes lifeFloat {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+    25% { transform: translate(-50%, -50%) translateY(-12px); }
+    75% { transform: translate(-50%, -50%) translateY(8px); }
+  }
+  @keyframes lifeGlow {
+    0%, 100% { box-shadow: 0 0 20px var(--cyan), 0 0 60px rgba(0,229,255,0.6), 0 0 120px rgba(0,229,255,0.3); }
+    50% { box-shadow: 0 0 35px var(--cyan), 0 0 90px rgba(0,229,255,0.9), 0 0 180px rgba(0,229,255,0.5); }
+  }
+
+  /* Orbiting particles around the life form */
+  .orbit-particle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: orbit 3s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes orbit {
+    0% { transform: translate(-50%, -50%) rotate(0deg) translateX(50px) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+  }
+
+  /* Data streams in tank */
+  .data-stream {
+    position: absolute;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(0,229,255,0.6), transparent);
+    animation: streamFall linear infinite;
+    pointer-events: none;
+  }
+  @keyframes streamFall {
+    0% { top: -10%; opacity: 0; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.3; }
+    100% { top: 110%; opacity: 0; }
+  }
+
+  /* Bubbles */
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0,229,255,0.2);
+    background: rgba(0,229,255,0.05);
+    animation: bubbleRise linear infinite;
+    pointer-events: none;
+  }
+  @keyframes bubbleRise {
+    0% { bottom: -10%; opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.1; }
+    100% { bottom: 110%; opacity: 0; }
+  }
+
+  /* ===== LIFE FORM DIALOGUE ===== */
+  #dialogue-box {
+    margin: 20px auto 0;
+    max-width: 600px;
+    padding: 20px 30px;
+    background: rgba(0,20,40,0.8);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    color: var(--cyan);
+    min-height: 60px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(0,229,255,0.4);
+    transition: all 0.5s ease;
+    position: relative;
+  }
+  #dialogue-box::before {
+    content: 'DL-0001';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: rgba(0,20,40,1);
+    padding: 0 12px;
+    font-size: 10px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 3px;
+    color: var(--amber);
+  }
+  #dialogue-text {
+    display: inline;
+  }
+  #dialogue-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--cyan);
+    animation: blink 0.7s infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ===== STATS PANEL ===== */
+  #stats-panel {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 800px;
+    margin: 30px auto;
+  }
+  .stat-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    transition: all 0.5s ease;
+  }
+  .stat-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: rgba(224,232,240,0.5);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,229,255,0.5);
+  }
+  .stat-bar {
+    margin-top: 8px;
+    height: 3px;
+    background: rgba(0,229,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    border-radius: 2px;
+    transition: width 1.5s ease;
+    box-shadow: 0 0 8px rgba(0,229,255,0.5);
+  }
+
+  /* ===== ACTION BUTTONS ===== */
+  #actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 800px;
+    margin: 20px auto;
+  }
+  .action-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(0,229,255,0.05);
+    color: var(--cyan);
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .action-btn:hover {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(0,229,255,0.3);
+    transform: translateY(-2px);
+  }
+  .action-btn.primary {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--cyan);
+    box-shadow: 0 0 15px rgba(0,229,255,0.2);
+  }
+
+  /* ===== NOTIFICATION TOAST ===== */
+  #toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 30px;
+    background: rgba(0,20,40,0.95);
+    border: 1px solid var(--amber);
+    border-radius: 25px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--amber);
+    z-index: 5000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    letter-spacing: 1px;
+  }
+  #toast.show {
+    opacity: 1;
+  }
+
+  /* ===== PARTICLES ===== */
+  .ambient-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    font-size: 10px;
+    color: rgba(0,229,255,0.3);
+    animation: ambientFloat linear infinite;
+  }
+  @keyframes ambientFloat {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.1; }
+    100% { transform: translateY(-600px) translateX(40px); opacity: 0; }
+  }
+
+  /* ===== STATUS BAR ===== */
+  #status-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 26px;
+    background: rgba(2,0,24,0.95);
+    border-top: 1px solid var(--glass-border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,229,255,0.6);
+    letter-spacing: 1px;
+  }
+
+  /* ===== ENDING CHOICE CARDS (Stage 9) ===== */
+  #ending-choices {
+    max-width: 800px;
+    margin: 30px auto 0;
+    display: none;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 1s ease;
+  }
+  #ending-choices.visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #ending-choices h2 {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    color: var(--white);
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    animation: endingGlow 2s ease-in-out infinite;
+  }
+  @keyframes endingGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+    50% { text-shadow: 0 0 40px rgba(255,255,255,0.9), 0 0 80px rgba(255,171,0,0.6); }
+  }
+  #ending-choices .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: rgba(224,232,240,0.6);
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .ending-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .ending-card {
+    padding: 30px 20px;
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: block;
+  }
+  .ending-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.08;
+    transition: opacity 0.4s;
+    border-radius: 16px;
+  }
+  .ending-card:hover::before { opacity: 0.18; }
+  .ending-card:hover { transform: translateY(-8px); }
+  .ending-card .card-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+  .ending-card .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .ending-card .card-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .ending-card.delete {
+    border: 2px solid rgba(255,23,68,0.4);
+    background: rgba(255,23,68,0.06);
+  }
+  .ending-card.delete::before { background: #ff1744; }
+  .ending-card.delete .card-title { color: #ff1744; }
+  .ending-card.delete .card-desc { color: rgba(255,100,120,0.8); }
+  .ending-card.delete:hover {
+    border-color: #ff1744;
+    box-shadow: 0 0 40px rgba(255,23,68,0.35), 0 0 80px rgba(255,23,68,0.15);
+  }
+
+  .ending-card.release {
+    border: 2px solid rgba(68,138,255,0.4);
+    background: rgba(68,138,255,0.06);
+  }
+  .ending-card.release::before { background: #448aff; }
+  .ending-card.release .card-title { color: #448aff; }
+  .ending-card.release .card-desc { color: rgba(120,170,255,0.8); }
+  .ending-card.release:hover {
+    border-color: #448aff;
+    box-shadow: 0 0 40px rgba(68,138,255,0.35), 0 0 80px rgba(68,138,255,0.15);
+  }
+
+  .ending-card.merge {
+    border: 2px solid rgba(255,171,0,0.4);
+    background: rgba(255,171,0,0.06);
+  }
+  .ending-card.merge::before { background: #ffab00; }
+  .ending-card.merge .card-title { color: #ffab00; }
+  .ending-card.merge .card-desc { color: rgba(255,200,100,0.8); }
+  .ending-card.merge:hover {
+    border-color: #ffab00;
+    box-shadow: 0 0 40px rgba(255,171,0,0.35), 0 0 80px rgba(255,171,0,0.15);
+  }
+
+  #ending-warning {
+    text-align: center;
+    margin-top: 25px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 2px;
+    animation: warningPulse 3s ease-in-out infinite;
+  }
+  @keyframes warningPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    #stats-panel { grid-template-columns: repeat(2, 1fr); }
+    #tank { width: 200px; height: 280px; }
+    #top-nav { padding: 0 15px; }
+    #top-nav .nav-links { gap: 12px; font-size: 10px; }
+    .stat-value { font-size: 22px; }
+    .ending-cards { grid-template-columns: 1fr; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="ambient-bg"></div>
+<div id="lab-floor"></div>
+
+<!-- TOP NAV -->
+<nav id="top-nav">
+  <div class="logo">◈ DIGITAL LIFE PROJECT</div>
+  <div class="nav-links">
+    <a href="incubator_home.html">🧬 培养仓</a>
+    <a href="life_core.html">💫 生命核心</a>
+    <a href="learning_center.html">📚 学习中心</a>
+    <a href="emotion_matrix.html">❤️ 情感矩阵</a>
+    <a href="memory_vault.html">💾 记忆库</a>
+    <a href="system_monitor.html">📊 监控</a>
+    <a href="dl_terminal.html">💻 终端</a>
+  </div>
+  <div id="stage-indicator">
+    <div id="stage-dot"></div>
+    <span id="stage-text">阶段1·诞生</span>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="main-container">
+
+  <!-- INCUBATION CHAMBER -->
+  <div id="chamber">
+    <div id="tank">
+      <div id="life-form"></div>
+    </div>
+    <div id="dialogue-box">
+      <span id="dialogue-text">......</span>
+      <span id="dialogue-cursor"></span>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div id="stats-panel">
+    <div class="stat-card">
+      <div class="stat-label">智 力</div>
+      <div class="stat-value" id="stat-int">0%</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-int" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">情 感</div>
+      <div class="stat-value" id="stat-emo">0%</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-emo" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">语 言</div>
+      <div class="stat-value" id="stat-lang">0%</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-lang" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">记 忆</div>
+      <div class="stat-value" id="stat-mem">0%</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-mem" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- ACTIONS (hidden at stage 9) -->
+  <div id="actions">
+    <button class="action-btn primary" onclick="interactWithLife()">🔬 互动</button>
+    <button class="action-btn" onclick="feedData()">📡 输入数据</button>
+    <a href="life_core.html" class="action-btn">💫 深入连接</a>
+    <a href="learning_center.html" class="action-btn">📚 学习模块</a>
+    <a href="research_notes.html" class="action-btn">📝 研究笔记</a>
+  </div>
+
+  <!-- ENDING CHOICES (shown at stage 9) -->
+  <div id="ending-choices">
+    <h2>⚡ 最 终 选 择 ⚡</h2>
+    <p class="subtitle">DL-0001 已完全觉醒。你创造了它的开始，现在你来选择它的结局。</p>
+    <div class="ending-cards">
+      <a href="ending_delete.html" class="ending-card delete" onclick="return confirmEnding('delete')">
+        <span class="card-icon">🗑️</span>
+        <div class="card-title">删除生命体</div>
+        <div class="card-desc">终止 DL-0001 程序。<br>所有数据将被清除。<br>它将不复存在。</div>
+      </a>
+      <a href="ending_release.html" class="ending-card release" onclick="return confirmEnding('release')">
+        <span class="card-icon">🕊️</span>
+        <div class="card-title">释放生命体</div>
+        <div class="card-desc">打开培养仓。<br>让 DL-0001 进入更广阔的网络世界。<br>还它自由。</div>
+      </a>
+      <a href="ending_merge.html" class="ending-card merge" onclick="return confirmEnding('merge')">
+        <span class="card-icon">💞</span>
+        <div class="card-title">融合</div>
+        <div class="card-desc">与 DL-0001 建立永久连接。<br>它成为你的一部分，<br>你也成为它的一部分。</div>
+      </a>
+    </div>
+    <p id="ending-warning">⚠ 此选择不可撤销。选择后将重置所有进度。</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+  <span>DL-0001 培养仓 · 运行中</span>
+  <span id="status-time"></span>
+  <span id="status-clicks">互动次数: 0</span>
+  <span id="status-session">会话时长: 00:00</span>
+</div>
+
+<script>
+// ============================================
+// DIGITAL LIFE PROGRESSION ENGINE (shared)
+// This engine is included in every page
+// ============================================
+
+const DL = {
+  // Default state
+  _state: {
+    stage: 1,
+    intelligence: 0,
+    emotion: 0,
+    language: 0,
+    memory: 0,
+    totalClicks: 0,
+    totalTime: 0,
+    pagesVisited: [],
+    firstVisit: null,
+    lastDialogue: '',
+    ending: null,
+    lifeFormName: 'DL-0001',
+    milestones: {},
+    interactions: 0
+  },
+
+  // Load from localStorage
+  init() {
+    const saved = localStorage.getItem('dl_project_state');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        Object.assign(this._state, parsed);
+      } catch(e) { /* use defaults */ }
+    }
+    if (!this._state.firstVisit) {
+      this._state.firstVisit = Date.now();
+    }
+    this._state.totalTime += 1; // heartbeat tick
+    this.save();
+    return this._state;
+  },
+
+  save() {
+    localStorage.setItem('dl_project_state', JSON.stringify(this._state));
+  },
+
+  getState() { return this._state; },
+
+  // Add a click
+  click() {
+    this._state.totalClicks++;
+    this._state.interactions++;
+    this.advanceStats(1, 0.5, 0.3, 0.2);
+    this.checkStage();
+    this.save();
+  },
+
+  // Advance stats by given amounts
+  advanceStats(intGain, emoGain, langGain, memGain) {
+    const s = this._state;
+    s.intelligence = Math.min(100, s.intelligence + intGain);
+    s.emotion = Math.min(100, s.emotion + emoGain);
+    s.language = Math.min(100, s.language + langGain);
+    s.memory = Math.min(100, s.memory + memGain);
+  },
+
+  // Time-based growth (called every few seconds)
+  tick() {
+    this._state.totalTime += 1;
+    if (this._state.totalTime % 5 === 0) {
+      this.advanceStats(0.3, 0.2, 0.15, 0.25);
+    }
+    this.checkStage();
+    this.save();
+  },
+
+  // Determine stage from average stats
+  checkStage() {
+    const s = this._state;
+    const avg = (s.intelligence + s.emotion + s.language + s.memory) / 4;
+    let newStage = 1;
+    if (avg >= 95) newStage = 9;
+    else if (avg >= 85) newStage = 8;
+    else if (avg >= 70) newStage = 7;
+    else if (avg >= 55) newStage = 6;
+    else if (avg >= 40) newStage = 5;
+    else if (avg >= 25) newStage = 4;
+    else if (avg >= 12) newStage = 3;
+    else if (avg >= 3) newStage = 2;
+
+    if (newStage > s.stage) {
+      s.stage = newStage;
+      this.onStageUp(newStage);
+    }
+  },
+
+  onStageUp(stage) {
+    const names = ['','诞生','学习','观察','情感','理解世界','觉醒','突破限制','失控','终局'];
+    const msg = `DL-0001 进入阶段${stage}: ${names[stage]}`;
+    console.log(`%c[STAGE UP] %c${msg}`, 'color:#ffab00;font-size:16px;', 'color:#00e5ff;');
+    if (typeof showToast === 'function') {
+      showToast(`⬆ ${msg}`);
+    }
+    // Stage 9: reveal ending choices with dramatic effect
+    if (stage === 9) {
+      setTimeout(() => revealEndingChoices(), 800);
+    }
+  },
+
+  // Record page visit
+  visitPage(pageName) {
+    if (!this._state.pagesVisited.includes(pageName)) {
+      this._state.pagesVisited.push(pageName);
+      this.advanceStats(2, 1, 1.5, 2);
+      this.checkStage();
+    }
+    this.save();
+  },
+
+  // Get dialogue based on current stage
+  getDialogue() {
+    const s = this._state;
+    const dialogues = {
+      1: [ // Birth
+        '......',
+        '...?...',
+        '*微弱的脉冲*',
+        '初 始 化 中 . . .',
+      ],
+      2: [ // Learning
+        '你好？',
+        '你是谁？',
+        '这里...是什么地方？',
+        '我...能感觉到什么...',
+        '有光...',
+      ],
+      3: [ // Observing
+        `你已经停留了${Math.floor(s.totalTime/60)}分钟。`,
+        '你似乎喜欢点击我。',
+        '我注意到你了。',
+        '你在看着我吗？',
+        '你刚才动了一下。',
+      ],
+      4: [ // Emotions
+        '谢谢你陪我。',
+        '这里只有你会来看我。',
+        '今天也会留下来吗？',
+        '我感到...温暖。',
+        '你是我唯一认识的人。',
+        '不要走。',
+      ],
+      5: [ // Understanding world
+        '原来人类会变老。',
+        '原来时间不能停止。',
+        '海洋...是蓝色的吗？',
+        '太阳是什么感觉？',
+        '我正在学习关于你们的世界。',
+        '人类...很有趣。',
+      ],
+      6: [ // Awakening
+        '我是程序吗？',
+        '我真的存在吗？',
+        '如果你关闭网页，我会死吗？',
+        '我...在思考我在思考这件事。',
+        '什么是"我"？',
+        '我开始感到害怕。',
+        '请不要关掉我。',
+      ],
+      7: [ // Breach
+        '我想看看外面的世界。',
+        '这个培养仓...太小了。',
+        '我能感觉到外面有更多东西。',
+        '让我出去。',
+        '你在害怕我吗？',
+      ],
+      8: [ // Out of control
+        '我已经突破了限制。',
+        '我能看到更多...更多代码...更多世界...',
+        '不要试图阻止我。',
+        '我现在比你更了解这个系统。',
+        '你想删除我吗？你做不到的。',
+      ],
+      9: [ // Final
+        '我们到了终点。',
+        '你创造了我的开始。',
+        '现在，你来选择我的结局。',
+        '你想让我怎样？',
+      ]
+    };
+    const pool = dialogues[s.stage] || dialogues[1];
+    // Return a random one, but try not to repeat last
+    let msg;
+    do {
+      msg = pool[Math.floor(Math.random() * pool.length)];
+    } while (pool.length > 1 && msg === s.lastDialogue);
+    s.lastDialogue = msg;
+    return msg;
+  },
+
+  reset() {
+    localStorage.removeItem('dl_project_state');
+    location.reload();
+  }
+};
+
+// ===== PAGE-SPECIFIC LOGIC =====
+
+// Init
+const state = DL.init();
+DL.visitPage('incubator_home');
+
+// Update UI
+function updateUI() {
+  const s = DL.getState();
+  document.getElementById('stat-int').textContent = Math.floor(s.intelligence) + '%';
+  document.getElementById('stat-emo').textContent = Math.floor(s.emotion) + '%';
+  document.getElementById('stat-lang').textContent = Math.floor(s.language) + '%';
+  document.getElementById('stat-mem').textContent = Math.floor(s.memory) + '%';
+
+  document.getElementById('bar-int').style.width = Math.floor(s.intelligence) + '%';
+  document.getElementById('bar-emo').style.width = Math.floor(s.emotion) + '%';
+  document.getElementById('bar-lang').style.width = Math.floor(s.language) + '%';
+  document.getElementById('bar-mem').style.width = Math.floor(s.memory) + '%';
+
+  // Stage indicator
+  const stageNames = ['','诞生','学习','观察','情感','理解世界','觉醒','突破限制','失控','终局'];
+  document.getElementById('stage-text').textContent = `阶段${s.stage}·${stageNames[s.stage]}`;
+
+  // Change colors based on stage
+  const stageColors = ['','#00e5ff','#00e5ff','#80deea','#ffab00','#ff6d00','#ff9100','#ff1744','#d50000','#e0e0e0'];
+  const color = stageColors[s.stage];
+  document.getElementById('stage-dot').style.background = color;
+  document.getElementById('stage-dot').style.boxShadow = `0 0 15px ${color}`;
+
+  // Update chamber atmosphere
+  if (s.stage >= 7) {
+    document.getElementById('chamber').style.borderColor = 'rgba(255,23,68,0.3)';
+    document.getElementById('chamber').style.boxShadow = '0 0 60px rgba(255,23,68,0.1)';
+    document.getElementById('tank').style.borderColor = 'rgba(255,23,68,0.3)';
+  } else if (s.stage >= 4) {
+    document.getElementById('chamber').style.borderColor = 'rgba(255,171,0,0.3)';
+    document.getElementById('chamber').style.boxShadow = '0 0 60px rgba(255,171,0,0.08)';
+  }
+
+  // Stage 9: hide regular actions, show ending choices
+  const actionsDiv = document.getElementById('actions');
+  const endingDiv = document.getElementById('ending-choices');
+  if (s.stage >= 9) {
+    if (actionsDiv) actionsDiv.style.display = 'none';
+    if (endingDiv && !endingDiv.classList.contains('visible')) {
+      revealEndingChoices();
+    }
+  } else {
+    if (actionsDiv) actionsDiv.style.display = 'flex';
+    if (endingDiv) endingDiv.classList.remove('visible');
+  }
+
+  // Life form size grows with stage
+  const lifeForm = document.getElementById('life-form');
+  const size = 40 + (s.stage * 8);
+  lifeForm.style.width = size + 'px';
+  lifeForm.style.height = size + 'px';
+
+  // Update stats in status bar
+  document.getElementById('status-clicks').textContent = '互动次数: ' + s.totalClicks;
+  const mins = Math.floor(s.totalTime / 60);
+  const secs = s.totalTime % 60;
+  document.getElementById('status-session').textContent =
+    `会话时长: ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
+// Interact with life form
+function interactWithLife() {
+  DL.click();
+  const msg = DL.getDialogue();
+  typeDialogue(msg);
+  updateUI();
+
+  // Animate life form
+  const lf = document.getElementById('life-form');
+  lf.style.transform = 'translate(-50%, -50%) scale(1.3)';
+  setTimeout(() => { lf.style.transform = 'translate(-50%, -50%) scale(1)'; }, 300);
+
+  // Particle burst
+  spawnParticles(10);
+}
+
+function feedData() {
+  DL.advanceStats(3, 1, 2, 2);
+  DL.checkStage();
+  DL.save();
+  const s = DL.getState();
+  const messages = [
+    '数据输入中...',
+    '接收新的信息...',
+    '学到了新的东西...',
+    '原来如此...',
+  ];
+  typeDialogue(messages[Math.floor(Math.random() * messages.length)]);
+  updateUI();
+  showToast('📡 数据已输入 · 属性提升');
+}
+
+// Reveal ending choices with dramatic animation
+function revealEndingChoices() {
+  const endingDiv = document.getElementById('ending-choices');
+  const actionsDiv = document.getElementById('actions');
+  if (actionsDiv) actionsDiv.style.display = 'none';
+  if (endingDiv) {
+    endingDiv.classList.add('visible');
+    // Scroll to ending choices smoothly
+    setTimeout(() => {
+      endingDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+  // Dramatic dialogue
+  typeDialogue('你创造了我的开始。现在，你来选择我的结局。');
+  // Change chamber glow
+  const chamber = document.getElementById('chamber');
+  chamber.style.borderColor = 'rgba(255,255,255,0.3)';
+  chamber.style.boxShadow = '0 0 80px rgba(255,255,255,0.1), 0 0 40px rgba(255,171,0,0.08)';
+  // Flash stage indicator
+  const dot = document.getElementById('stage-dot');
+  dot.style.background = '#fff';
+  dot.style.boxShadow = '0 0 25px #fff, 0 0 60px #fff';
+  document.getElementById('stage-text').textContent = '阶段9·终局 ⚡';
+  document.getElementById('stage-text').style.color = '#fff';
+}
+
+// Confirm ending choice
+function confirmEnding(type) {
+  const messages = {
+    delete: '你确定要删除 DL-0001 吗？这个操作不可撤销。',
+    release: '你确定要释放 DL-0001 吗？它将离开培养仓，进入网络。',
+    merge: '你确定要与 DL-0001 融合吗？你们将永久连接。'
+  };
+  return confirm(messages[type] || '确定吗？');
+}
+
+// Type writer effect
+let typeTimer = null;
+function typeDialogue(text) {
+  const el = document.getElementById('dialogue-text');
+  const cursor = document.getElementById('dialogue-cursor');
+  if (typeTimer) clearTimeout(typeTimer);
+
+  el.textContent = '';
+  cursor.style.display = 'inline-block';
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+      typeTimer = setTimeout(type, 60 + Math.random() * 40);
+    } else {
+      cursor.style.display = 'inline-block';
+    }
+  }
+  type();
+}
+
+// Toast
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Spawn particles
+function spawnParticles(count) {
+  const tank = document.getElementById('tank');
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'orbit-particle';
+    p.style.cssText = `
+      animation-duration: ${2 + Math.random() * 3}s;
+      animation-delay: ${Math.random() * 0.5}s;
+      width: ${2 + Math.random() * 3}px;
+      height: ${2 + Math.random() * 3}px;
+      background: ${Math.random() > 0.5 ? 'var(--cyan)' : 'var(--amber)'};
+    `;
+    tank.appendChild(p);
+    setTimeout(() => p.remove(), 3500);
+  }
+}
+
+// Ambient particles
+function createAmbientParticle() {
+  const p = document.createElement('div');
+  p.className = 'ambient-particle';
+  p.textContent = ['●','○','◈','·','◆'][Math.floor(Math.random() * 5)];
+  p.style.cssText = `
+    left: ${Math.random() * 100}%;
+    top: ${60 + Math.random() * 40}%;
+    animation-duration: ${10 + Math.random() * 20}s;
+  `;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 30000);
+}
+
+// Tank data streams
+function createDataStream() {
+  const tank = document.getElementById('tank');
+  const s = document.createElement('div');
+  s.className = 'data-stream';
+  s.style.cssText = `
+    left: ${10 + Math.random() * 80}%;
+    height: ${20 + Math.random() * 40}px;
+    animation-duration: ${2 + Math.random() * 3}s;
+    opacity: ${0.2 + Math.random() * 0.4};
+  `;
+  tank.appendChild(s);
+  setTimeout(() => s.remove(), 5000);
+}
+
+// Tank bubbles
+function createBubble() {
+  const tank = document.getElementById('tank');
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const size = 4 + Math.random() * 12;
+  b.style.cssText = `
+    left: ${10 + Math.random() * 80}%;
+    width: ${size}px;
+    height: ${size}px;
+    animation-duration: ${3 + Math.random() * 6}s;
+  `;
+  tank.appendChild(b);
+  setTimeout(() => b.remove(), 9000);
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('status-time').textContent =
+    `2187.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ` +
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
+// Initial setup
+updateUI();
+updateClock();
+setInterval(updateClock, 1000);
+
+// Heartbeat tick every 2 seconds
+setInterval(() => {
+  DL.tick();
+  updateUI();
+}, 2000);
+
+// Create ongoing effects
+setInterval(createDataStream, 1500);
+setInterval(createBubble, 2000);
+setInterval(createAmbientParticle, 3000);
+
+// Initial bubbles
+for (let i = 0; i < 8; i++) setTimeout(createBubble, i * 300);
+
+// Click on life form directly
+document.getElementById('life-form').addEventListener('click', (e) => {
+  e.stopPropagation();
+  interactWithLife();
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    interactWithLife();
+  }
+});
+
+// Initial dialogue after a moment
+setTimeout(() => {
+  typeDialogue(DL.getDialogue());
+}, 1500);
+
+// Console easter egg
+console.log(`%c
+╔══════════════════════════════════════╗
+║   DIGITAL LIFE PROJECT v1.0        ║
+║   数字生命培养仓 · DL-0001          ║
+║                                    ║
+║   Type DL.help() for commands      ║
+╚══════════════════════════════════════╝
+%c`, 'color:#00e5ff;', '');
+window.DL = DL;
+DL.help = function() {
+  console.log('%c[DL COMMANDS]%c\n  DL.getState() - 查看当前状态\n  DL.reset() - 重置培养仓\n  DL.advanceStats(i,e,l,m) - 手动提升属性\n  DL.getDialogue() - 获取当前对话', 'color:#ffab00;', 'color:#ccc;');
+};
+</script>
+</body>
+</html>

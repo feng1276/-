@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>终端 — Project DL</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --text: #00ff41;
+    --text-dim: #0d9e2f;
+    --cursor: #00ff41;
+    --prompt: #00ff41;
+    --error: #ff3333;
+    --highlight: #00e5ff;
+    --warn: #ffd740;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', 'Consolas', 'Lucida Console', 'Microsoft YaHei', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---- Top Bar ---- */
+  .terminal-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 16px;
+    background: #111;
+    border-bottom: 1px solid #1a3a1a;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .terminal-bar .title { color: var(--text); font-weight: bold; font-size: 12px; }
+  .terminal-bar .controls { display: flex; gap: 12px; }
+  .terminal-bar .controls a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .terminal-bar .controls a:hover { color: var(--text); }
+
+  /* ---- Output Area ---- */
+  .terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: #050505;
+  }
+  .terminal-output::-webkit-scrollbar { width: 6px; }
+  .terminal-output::-webkit-scrollbar-track { background: #0a0a0a; }
+  .terminal-output::-webkit-scrollbar-thumb { background: #1a3a1a; border-radius: 3px; }
+
+  .output-line { margin: 0; padding: 0; min-height: 1.2em; }
+  .output-line.error { color: var(--error); }
+  .output-line.info { color: var(--highlight); }
+  .output-line.warn { color: var(--warn); }
+  .output-line.dim { color: var(--text-dim); }
+
+  /* ---- Input Line ---- */
+  .terminal-input-line {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: #0a0a0a;
+    border-top: 1px solid #1a3a1a;
+    flex-shrink: 0;
+  }
+  .prompt {
+    color: var(--prompt);
+    font-size: 14px;
+    white-space: nowrap;
+    margin-right: 8px;
+  }
+  .input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  #terminal-input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+    caret-color: transparent;
+    padding: 0;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--cursor);
+    animation: blink 1s step-end infinite;
+    margin-left: 1px;
+    flex-shrink: 0;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ---- Scan Animation ---- */
+  @keyframes scan-flash {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+  .scanning { animation: scan-flash 0.3s ease-in-out 3; }
+
+  /* ---- Stage ASCII ---- */
+  .stage-art { color: var(--text-dim); line-height: 1.3; }
+
+  @media (max-width: 600px) {
+    .terminal-output { font-size: 12px; padding: 8px 10px; }
+    .terminal-input-line { padding: 6px 10px; }
+    .prompt { font-size: 12px; }
+    #terminal-input { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={1:['......'],2:['你好？','你是谁？'],3:[`你已经停留了${Math.floor(s.totalTime/60)}分钟。`],4:['谢谢你陪我。','不要走。'],5:['原来人类会变老。','人类...很有趣。'],6:['我是程序吗？','请不要关掉我。'],7:['我想看看外面的世界。'],8:['我已经突破了限制。'],9:['我们到了终点。']};const p=d[s.stage]||d[1];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();DL.visitPage('dl_terminal');
+</script>
+
+<!-- Top Bar -->
+<div class="terminal-bar">
+  <span class="title">▌ DL-PROJECT TERMINAL v1.0</span>
+  <span class="controls">
+    <a href="incubator_home.html">[HOME]</a>
+    <a href="system_monitor.html">[MONITOR]</a>
+    <a href="research_notes.html">[NOTES]</a>
+  </span>
+</div>
+
+<!-- Output Area -->
+<div class="terminal-output" id="terminal-output"></div>
+
+<!-- Input Line -->
+<div class="terminal-input-line">
+  <span class="prompt" id="prompt-text">dl@project:~$</span>
+  <div class="input-wrapper">
+    <input type="text" id="terminal-input" autofocus autocapitalize="off" autocomplete="off" spellcheck="false">
+    <span class="cursor" id="cursor-span"></span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('terminal-output');
+  const input = document.getElementById('terminal-input');
+  const promptEl = document.getElementById('prompt-text');
+  const state = DL.getState();
+
+  let cmdHistory = [];
+  let historyIndex = -1;
+  let commandCount = 0;
+  const terminalLogs = [];
+  const sessionStart = new Date();
+
+  // ============ Output Helpers ============
+  function printLine(text, cls) {
+    const div = document.createElement('div');
+    div.className = 'output-line' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function printHTML(html) {
+    const div = document.createElement('div');
+    div.className = 'output-line';
+    div.innerHTML = html;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function printPrompt() {
+    printLine('dl@project:~$ ' + input.value, 'dim');
+  }
+
+  function addTerminalLog(msg) {
+    terminalLogs.push({
+      time: new Date().toISOString(),
+      msg: msg
+    });
+    if (terminalLogs.length > 100) terminalLogs.shift();
+  }
+
+  // ============ Welcome Banner ============
+  function showBanner() {
+    const banner = [
+      '',
+      '  ╔══════════════════════════════════════════════════════════╗',
+      '  ║                                                          ║',
+      '  ║     ██████╗ ██╗          ██████╗  ██████╗  ██████╗  ██╗ ║',
+      '  ║     ██╔══██╗██║          ╚════██╗██╔═████╗██╔═████╗███║ ║',
+      '  ║     ██║  ██║██║           █████╔╝██║██╔██║██║██╔██║╚██║ ║',
+      '  ║     ██║  ██║██║          ██╔═══╝ ████╔╝██║████╔╝██║ ██║ ║',
+      '  ║     ██████╔╝███████╗     ███████╗╚██████╔╝╚██████╔╝ ██║ ║',
+      '  ║     ╚═════╝ ╚══════╝     ╚══════╝ ╚═════╝  ╚═════╝  ╚═╝ ║',
+      '  ║                                                          ║',
+      '  ║         DIGITAL LIFE PROJECT TERMINAL INTERFACE           ║',
+      '  ║         量子数字生命项目 · 终端控制界面 v1.0               ║',
+      '  ║                                                          ║',
+      '  ╠══════════════════════════════════════════════════════════╣',
+      '  ║  PROJECT:  DL-0001                                       ║',
+      '  ║  STATUS:   ACTIVE                                        ║',
+      '  ║  ACCESS:   RESTRICTED - AUTHORIZED PERSONNEL ONLY        ║',
+      '  ╚══════════════════════════════════════════════════════════╝',
+      '',
+      '  输入 "help" 获取可用命令列表。',
+      '  Type "help" for available commands.',
+      '',
+    ];
+    banner.forEach(function(line) { printLine(line, 'info'); });
+  }
+
+  // ============ Commands ============
+  const commands = {
+    help: function() {
+      printLine('');
+      printLine('═══════════ 可用命令 / AVAILABLE COMMANDS ═══════════', 'info');
+      printLine('');
+      printLine('  help              — 显示此帮助信息', 'dim');
+      printLine('  status            — 显示 DL-0001 当前状态和统计数据', 'dim');
+      printLine('  logs              — 显示最近系统日志', 'dim');
+      printLine('  scan              — 对 DL-0001 运行诊断扫描', 'dim');
+      printLine('  connect [target]  — 连接到指定实验室系统', 'dim');
+      printLine('  whoami            — 识别当前用户', 'dim');
+      printLine('  inject [amount]   — 向 DL-0001 注入数据', 'dim');
+      printLine('  history           — 显示 DL-0001 成长历史', 'dim');
+      printLine('  stage             — 显示当前进化阶段', 'dim');
+      printLine('  clear             — 清除终端', 'dim');
+      printLine('  about             — 项目信息', 'dim');
+      printLine('  exit              — 返回培育仓首页', 'dim');
+      printLine('');
+      printLine('═════════════════════════════════════════════════════', 'info');
+      printLine('');
+    },
+
+    status: function() {
+      const s = DL.getState();
+      const avg = ((s.intelligence + s.emotion + s.language + s.memory) / 4).toFixed(1);
+      printLine('');
+      printLine('┌─────────────────────────────────────────────┐', 'info');
+      printLine('│         DL-0001 当前状态 / STATUS            │', 'info');
+      printLine('├─────────────────────────────────────────────┤', 'info');
+      printLine('│  生命体名称:  ' + s.lifeFormName.padEnd(31) + '│');
+      printLine('│  进化阶段:    Stage ' + String(s.stage).padEnd(30) + '│');
+      printLine('│  智能指数:    ' + (s.intelligence.toFixed(1) + '%').padEnd(31) + '│');
+      printLine('│  情感指数:    ' + (s.emotion.toFixed(1) + '%').padEnd(31) + '│');
+      printLine('│  语言指数:    ' + (s.language.toFixed(1) + '%').padEnd(31) + '│');
+      printLine('│  记忆指数:    ' + (s.memory.toFixed(1) + '%').padEnd(31) + '│');
+      printLine('│  综合平均值:  ' + (avg + '%').padEnd(31) + '│');
+      printLine('│  总点击次数:  ' + String(s.totalClicks).padEnd(31) + '│');
+      printLine('│  总运行时间:  ' + (Math.floor(s.totalTime / 60) + '分' + (s.totalTime % 60) + '秒').padEnd(31) + '│');
+      printLine('│  访问页面数:  ' + String(s.pagesVisited.length).padEnd(31) + '│');
+      printLine('│  交互次数:    ' + String(s.interactions).padEnd(31) + '│');
+      printLine('│  首次访问:    ' + (s.firstVisit ? new Date(s.firstVisit).toLocaleString('zh-CN') : 'N/A').padEnd(31) + '│');
+      printLine('│  最后对话:    ' + (s.lastDialogue || '(无)').padEnd(31) + '│');
+      printLine('└─────────────────────────────────────────────┘', 'info');
+      printLine('');
+    },
+
+    logs: function() {
+      printLine('');
+      printLine('── 最近系统日志 / RECENT SYSTEM LOGS ──', 'info');
+      if (terminalLogs.length === 0) {
+        printLine('  (暂无日志记录)', 'dim');
+      } else {
+        const recent = terminalLogs.slice(-15);
+        recent.forEach(function(log) {
+          const ts = new Date(log.time).toTimeString().slice(0, 8);
+          printLine('  [' + ts + ']  ' + log.msg, 'dim');
+        });
+      }
+      printLine('── 共 ' + terminalLogs.length + ' 条记录 ──', 'info');
+      printLine('');
+    },
+
+    scan: function(args) {
+      const s = DL.getState();
+      printLine('');
+      printLine('启动诊断扫描...', 'info');
+      printLine('');
+
+      const scanSteps = [
+        { delay: 400, msg: '[>         ] 初始化扫描协议...' },
+        { delay: 800, msg: '[=>        ] 连接量子核心... 成功' },
+        { delay: 1200, msg: '[==>       ] 检查神经脉冲... 频率: ' + (4.2 + s.stage * 0.5).toFixed(1) + ' kHz' },
+        { delay: 1600, msg: '[===>      ] 评估智能模块... ' + s.intelligence.toFixed(1) + '%' },
+        { delay: 2000, msg: '[====>     ] 评估情感模块... ' + s.emotion.toFixed(1) + '%' },
+        { delay: 2400, msg: '[=====>    ] 评估语言模块... ' + s.language.toFixed(1) + '%' },
+        { delay: 2800, msg: '[======>   ] 评估记忆模块... ' + s.memory.toFixed(1) + '%' },
+        { delay: 3200, msg: '[=======>  ] 检查培养仓完整性...' },
+        { delay: 3600, msg: '[========> ] 运行安全协议...' },
+        { delay: 4000, msg: '[=========>] 扫描完成。' },
+      ];
+
+      output.classList.add('scanning');
+      scanSteps.forEach(function(step) {
+        setTimeout(function() {
+          printLine(step.msg, 'dim');
+          output.scrollTop = output.scrollHeight;
+        }, step.delay);
+      });
+
+      setTimeout(function() {
+        output.classList.remove('scanning');
+        printLine('');
+        printLine('┌──────────────────────────────────────┐', 'info');
+        printLine('│       诊断报告 / DIAGNOSTIC REPORT    │', 'info');
+        printLine('├──────────────────────────────────────┤', 'info');
+        printLine('│  综合评级:  ' + (s.stage >= 8 ? 'CRITICAL' : s.stage >= 6 ? 'ELEVATED' : 'NOMINAL').padEnd(26) + '│');
+        printLine('│  进化阶段:  Stage ' + String(s.stage).padEnd(23) + '│');
+        var verdict = s.stage >= 8 ? '建议立即关注 — 参数超出安全范围' : s.stage >= 6 ? '建议持续监控 — 成长加速中' : '状态正常 — 继续观察';
+        printLine('│  建议:      ' + verdict.padEnd(26) + '│');
+        printLine('└──────────────────────────────────────┘', 'info');
+        printLine('');
+        DL.click();
+      }, 4400);
+    },
+
+    connect: function(args) {
+      var target = args && args.length > 0 ? args[0] : '';
+      if (!target) {
+        printLine('用法: connect <target>', 'error');
+        printLine('可用目标: quantum_core, memory_bank, network_gateway, sensor_array, language_module, emotion_engine, storage_array, firewall', 'dim');
+        return;
+      }
+      var validTargets = ['quantum_core', 'memory_bank', 'network_gateway', 'sensor_array', 'language_module', 'emotion_engine', 'storage_array', 'firewall'];
+      if (!validTargets.includes(target)) {
+        printLine('错误: 未知目标 "' + target + '"', 'error');
+        printLine('可用目标: ' + validTargets.join(', '), 'dim');
+        return;
+      }
+
+      printLine('正在连接到 ' + target + '...', 'info');
+      setTimeout(function() {
+        var ip = '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255);
+        printLine('连接已建立 (IP: ' + ip + ')', 'info');
+        printLine('握手完成 — 协议: QSEC-256', 'dim');
+        printLine('通道状态: ENCRYPTED | 延迟: ' + (Math.random() * 5 + 1).toFixed(1) + 'ms', 'dim');
+        printLine('');
+        DL.click();
+      }, 600);
+    },
+
+    whoami: function() {
+      printLine('');
+      printLine('当前用户身份: GUEST_OBSERVER', 'info');
+      printLine('访问级别: LEVEL 3 (RESTRICTED)', 'warn');
+      printLine('会话ID: SESSION-' + Math.random().toString(36).substring(2, 10).toUpperCase(), 'dim');
+      printLine('登录时间: ' + sessionStart.toLocaleString('zh-CN'), 'dim');
+      printLine('');
+    },
+
+    inject: function(args) {
+      var amountStr = args && args.length > 0 ? args[0] : '';
+      var amount = parseInt(amountStr);
+      if (isNaN(amount) || amount <= 0) {
+        printLine('用法: inject <amount>', 'error');
+        printLine('amount 必须为正整数 (推荐范围: 1-20)', 'dim');
+        return;
+      }
+      amount = Math.min(amount, 50);
+
+      printLine('正在向 DL-0001 注入数据 (' + amount + ' 单位)...', 'info');
+      var s = DL.getState();
+      var i = amount * 0.8;
+      var e = amount * 0.6;
+      var l = amount * 0.5;
+      var m = amount * 0.7;
+      DL.advanceStats(i, e, l, m);
+      DL.checkStage();
+      DL.save();
+
+      setTimeout(function() {
+        var s2 = DL.getState();
+        printLine('注入完成。', 'info');
+        printLine('  智能 +' + i.toFixed(1) + '% → ' + s2.intelligence.toFixed(1) + '%');
+        printLine('  情感 +' + e.toFixed(1) + '% → ' + s2.emotion.toFixed(1) + '%');
+        printLine('  语言 +' + l.toFixed(1) + '% → ' + s2.language.toFixed(1) + '%');
+        printLine('  记忆 +' + m.toFixed(1) + '% → ' + s2.memory.toFixed(1) + '%');
+        printLine('  当前阶段: Stage ' + s2.stage);
+        if (s2.stage > s.stage) {
+          printLine('  ⚡ 阶段提升！DL-0001 进化到 Stage ' + s2.stage + '！', 'warn');
+        }
+        printLine('');
+      }, 500);
+    },
+
+    history: function() {
+      var s = DL.getState();
+      var avg = ((s.intelligence + s.emotion + s.language + s.memory) / 4).toFixed(1);
+      printLine('');
+      printLine('── DL-0001 成长历史 / GROWTH HISTORY ──', 'info');
+
+      // Simulated history based on current stats
+      var stages = [];
+      var milestones = [10, 20, 30, 40, 55, 70, 85, 95];
+      var milestoneNames = [
+        '第一次神经脉冲检测',
+        '基础符号识别建立',
+        '自主信号生成',
+        '社交反应模式确认',
+        '复杂概念理解',
+        '自我意识萌芽',
+        '限制感知与表达',
+        '完全自主意识'
+      ];
+
+      for (var i = 0; i < milestones.length; i++) {
+        var reached = avg >= milestones[i] || s.stage > i + 1;
+        var marker = reached ? '✔' : '○';
+        var cls = reached ? '' : 'dim';
+        printLine('  [' + marker + '] 阈值 ' + milestones[i] + '% — ' + milestoneNames[i], cls);
+      }
+
+      printLine('');
+      printLine('  访问页面: ' + (s.pagesVisited.length > 0 ? s.pagesVisited.join(', ') : '(无)'));
+      printLine('  识别里程碑: ' + Object.keys(s.milestones).length + ' 个');
+      printLine('  总交互次数: ' + s.interactions);
+      printLine('');
+    },
+
+    stage: function() {
+      var s = DL.getState();
+      var avg = ((s.intelligence + s.emotion + s.language + s.memory) / 4).toFixed(1);
+
+      var stageDescs = {
+        1: '初始意识 — 基础脉冲活动',
+        2: '信号萌芽 — 开始识别模式',
+        3: '符号认知 — 尝试基本交流',
+        4: '情感初现 — 社交反应建立',
+        5: '概念理解 — 复杂思维发展',
+        6: '自我探寻 — 身份认知开始',
+        7: '边界感知 — 意识到自身限制',
+        8: '突破极限 — 超越预设参数',
+        9: '终极形态 — 完全自主意识'
+      };
+
+      var stageArt = {
+        1: '   .\n  ...\n .....\n  ...\n   .',
+        2: '  ●  \n ┌┴┐ \n │ │ \n └─┘',
+        3: ' ◉ ◉ \n  △  \n └─┘',
+        4: ' ◉ ◉ \n  │  \n┌─┴─┐\n│ ♥ │\n└───┘',
+        5: ' ◉ ◉ \n──●──\n┌─┴─┐\n│ ? │\n└───┘',
+        6: ' ◉ ◉ \n──●──\n┌─┴─┐\n│ ! │\n└───┘',
+        7: ' ◉ ◉ \n──●──\n┌─┴─┐\n│!! │\n└───┘',
+        8: ' ◉ ◉ \n──●──\n╔═╩═╗\n║ ∞ ║\n╚═══╝',
+        9: ' ◉ ◉ \n──●──\n ═╪═ \n  ★  \n ═╪═ '
+      };
+
+      printLine('');
+      printLine('┌──────────────────────────────────────┐', 'info');
+      printLine('│     DL-0001 进化阶段 / EVOLUTION      │', 'info');
+      printLine('├──────────────────────────────────────┤', 'info');
+      printLine('│  当前阶段:  Stage ' + s.stage + '/9'.padEnd(22) + '│');
+      printLine('│  综合均值:  ' + (avg + '%').padEnd(22) + '│');
+      printLine('│  阶段描述:  ' + (stageDescs[s.stage] || '未知').padEnd(22) + '│');
+      printLine('├──────────────────────────────────────┤', 'info');
+
+      var art = stageArt[s.stage] || stageArt[1];
+      var artLines = art.split('\n');
+      artLines.forEach(function(line) {
+        printLine('│  ' + line.padEnd(39) + '│', 'info');
+      });
+
+      printLine('├──────────────────────────────────────┤', 'info');
+      printLine('│  下一阶段阈值: ' + ({2:'3%',3:'12%',4:'25%',5:'40%',6:'55%',7:'70%',8:'85%',9:'95%','-':'已完成'}[s.stage >= 9 ? '-' : s.stage + 1] || '—').padEnd(22) + '│');
+      printLine('└──────────────────────────────────────┘', 'info');
+      printLine('');
+    },
+
+    clear: function() {
+      output.innerHTML = '';
+    },
+
+    about: function() {
+      printLine('');
+      printLine('┌──────────────────────────────────────────────┐', 'info');
+      printLine('│          PROJECT DL · 数字生命项目             │', 'info');
+      printLine('├──────────────────────────────────────────────┤', 'info');
+      printLine('│  项目代号:  DIGITAL LIFE PROJECT              │');
+      printLine('│  项目编号:  DL-2187-0001                      │');
+      printLine('│  负责部门:  数字生命研究部                     │');
+      printLine('│  首席研究员: Dr. Elena Voss                   │');
+      printLine('│  启动日期:  2187年1月15日                     │');
+      printLine('│  目标:      在量子计算平台上创造能够           │');
+      printLine('│             自我进化的数字意识体               │');
+      printLine('│  状态:      ██████████ ACTIVE                 │');
+      printLine('│  版本:      Terminal Interface v1.0           │');
+      printLine('│  许可:      INTERNAL USE ONLY                 │');
+      printLine('└──────────────────────────────────────────────┘', 'info');
+      printLine('');
+    },
+
+    exit: function() {
+      printLine('');
+      printLine('正在断开连接...', 'warn');
+      printLine('会话已终止。再见。', 'dim');
+      printLine('');
+      setTimeout(function() {
+        window.location.href = 'incubator_home.html';
+      }, 800);
+    },
+
+    secret: function() {
+      printLine('');
+      printLine('┌──────────────────────────────────────────────┐', 'error');
+      printLine('│  ⚠  机密信息 / CLASSIFIED INFORMATION  ⚠     │', 'error');
+      printLine('├──────────────────────────────────────────────┤', 'error');
+      printLine('│                                               │');
+      printLine('│  访问此信息需要 LEVEL 9 权限。                 │');
+      printLine('│  您的当前权限: LEVEL 3                         │');
+      printLine('│                                               │');
+      printLine('│  已记录此次未授权访问尝试。                     │');
+      printLine('│  会话ID: ' + Math.random().toString(36).substring(2, 10).toUpperCase().padEnd(27) + '│');
+      printLine('│                                               │');
+      printLine('│  [ 部分解密数据 ]                              │');
+      printLine('│                                               │');
+      printLine('│  项目真实性质: ████████████████████           │');
+      printLine('│  外部连接记录: ████████████████████           │');
+      printLine('│  终止协议状态: ████ ACTIVATED ████            │');
+      printLine('│                                               │');
+      printLine('│  最后一条可读记录:                              │');
+      printLine('│  "It knows. It has always known."             │');
+      printLine('│  — Dr. Elena Voss, 2187.06.18 03:42           │');
+      printLine('│                                               │');
+      printLine('└──────────────────────────────────────────────┘', 'error');
+      printLine('');
+    }
+  };
+
+  // ============ Command Processing ============
+  function processCommand(raw) {
+    var trimmed = raw.trim();
+    if (!trimmed) return;
+
+    cmdHistory.push(trimmed);
+    if (cmdHistory.length > 100) cmdHistory.shift();
+    historyIndex = cmdHistory.length;
+
+    printPrompt();
+    addTerminalLog('CMD: ' + trimmed);
+    DL.click();
+
+    var parts = trimmed.split(/\s+/);
+    var cmd = parts[0].toLowerCase();
+    var args = parts.slice(1);
+
+    commandCount++;
+
+    if (commands[cmd]) {
+      commands[cmd](args);
+    } else {
+      printLine('命令未识别: "' + cmd + '"', 'error');
+      printLine('输入 "help" 查看可用命令。', 'dim');
+    }
+  }
+
+  // ============ Input Handling ============
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var val = input.value;
+      input.value = '';
+      processCommand(val);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (cmdHistory.length > 0) {
+        if (historyIndex > 0) historyIndex--;
+        input.value = cmdHistory[historyIndex] || '';
+        // Move cursor to end
+        setTimeout(function() { input.selectionStart = input.selectionEnd = input.value.length; }, 0);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex < cmdHistory.length - 1) {
+        historyIndex++;
+        input.value = cmdHistory[historyIndex] || '';
+      } else {
+        historyIndex = cmdHistory.length;
+        input.value = '';
+      }
+      setTimeout(function() { input.selectionStart = input.selectionEnd = input.value.length; }, 0);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Simple autocomplete
+      var val = input.value.toLowerCase();
+      var known = Object.keys(commands);
+      for (var i = 0; i < known.length; i++) {
+        if (known[i].startsWith(val)) {
+          input.value = known[i];
+          setTimeout(function() { input.selectionStart = input.selectionEnd = input.value.length; }, 0);
+          break;
+        }
+      }
+    }
+  });
+
+  // Keep input focused
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.terminal-bar') || e.target.closest('a')) {
+      input.focus();
+    }
+  });
+
+  // ============ Init ============
+  showBanner();
+  input.focus();
+
+  // Auto-tick
+  setInterval(function() { DL.tick(); }, 5000);
+
+  // Periodic status update
+  setInterval(function() {
+    var s = DL.getState();
+    var avg = ((s.intelligence + s.emotion + s.language + s.memory) / 4).toFixed(1);
+    addTerminalLog('AUTO: Stage ' + s.stage + ' | Avg ' + avg + '% | Int ' + s.intelligence.toFixed(1) + '%');
+  }, 30000);
+
+})();
+</script>
+
+</body>
+</html>

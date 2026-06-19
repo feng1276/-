@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感矩阵 | Digital Life Incubator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020018;
+            --bg-panel: #0a0a2e;
+            --cyan: #00e5ff;
+            --cyan-dim: #004d5e;
+            --amber: #ffab00;
+            --amber-dim: #5c3a00;
+            --white: #e0e0e0;
+            --text-dim: #6b7088;
+            --danger: #ff3d3d;
+            --success: #00e676;
+            --purple: #b388ff;
+            --gold: #ffd740;
+            --pink: #ff80ab;
+            --blue: #448aff;
+            --red: #ff5252;
+            --border-glow: rgba(0, 229, 255, 0.3);
+            --warmth: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--white);
+            font-family: 'Noto Sans SC', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            transition: background 2s ease;
+        }
+
+        /* Warm overlay based on emotion */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 3s ease;
+            opacity: 0;
+            background: radial-gradient(ellipse at center,
+                    rgba(255, 171, 0, 0.12) 0%,
+                    rgba(255, 80, 80, 0.06) 30%,
+                    transparent 70%);
+        }
+
+        body.warmth-1::after {
+            opacity: 0.25;
+        }
+        body.warmth-2::after {
+            opacity: 0.45;
+        }
+        body.warmth-3::after {
+            opacity: 0.65;
+        }
+        body.warmth-4::after {
+            opacity: 0.8;
+        }
+
+        /* Floating particle system */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.35;
+            }
+            95% {
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1.8);
+                opacity: 0;
+            }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Navigation */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: rgba(10, 10, 46, 0.85);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(12px);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .nav-brand {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+            white-space: nowrap;
+        }
+
+        .nav-brand span {
+            color: var(--amber);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan-dim);
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: var(--cyan);
+            border-color: rgba(0, 229, 255, 0.4);
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+            background: rgba(0, 229, 255, 0.05);
+        }
+
+        .nav-link.active {
+            color: var(--amber);
+            border-color: var(--amber);
+            text-shadow: 0 0 12px rgba(255, 171, 0, 0.6);
+            background: rgba(255, 171, 0, 0.08);
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--amber);
+            letter-spacing: 12px;
+            text-shadow: 0 0 30px rgba(255, 171, 0, 0.6), 0 0 60px rgba(255, 171, 0, 0.25);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            transition: color 2s ease, text-shadow 2s ease;
+        }
+
+        .page-subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+        }
+
+        /* Emotion stat showcase */
+        .emotion-showcase {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .emotion-big-ring {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .emotion-ring-svg {
+            width: 140px;
+            height: 140px;
+            transform: rotate(-90deg);
+        }
+
+        .emotion-ring-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.06);
+            stroke-width: 8;
+        }
+
+        .emotion-ring-fg {
+            fill: none;
+            stroke: var(--amber);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s ease, stroke 2s ease;
+            filter: drop-shadow(0 0 10px rgba(255, 171, 0, 0.6));
+        }
+
+        .emotion-big-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--amber);
+            text-shadow: 0 0 20px rgba(255, 171, 0, 0.6);
+            transition: color 2s ease;
+        }
+
+        .emotion-big-label {
+            position: absolute;
+            top: 68%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .emotion-meta {
+            text-align: left;
+        }
+
+        .emotion-meta-row {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            line-height: 1.8;
+        }
+
+        .emotion-meta-row span {
+            color: var(--white);
+            font-weight: 500;
+        }
+
+        /* Emotion spectrum */
+        .emotion-spectrum-label {
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .emotion-orb-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emotion-orb-wrapper {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .emotion-orb-wrapper:hover {
+            transform: scale(1.1);
+        }
+
+        .emotion-orb-wrapper:active {
+            transform: scale(0.95);
+        }
+
+        .emotion-orb-outer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            animation: orbRotate 8s linear infinite;
+        }
+
+        @keyframes orbRotate {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .emotion-orb-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            transition: all 1.5s ease;
+        }
+
+        .emotion-orb-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 65%;
+            height: 65%;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 46, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.8s ease;
+        }
+
+        .emotion-orb-icon {
+            font-size: 1.6rem;
+            transition: transform 0.8s ease;
+        }
+
+        .emotion-orb-name {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+
+        .emotion-orb-name-en {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .emotion-orb-stat {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-align: center;
+            transition: color 1s ease;
+        }
+
+        @keyframes orbPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 8px var(--orb-glow-color, rgba(255, 255, 255, 0.2));
+            }
+            50% {
+                box-shadow: 0 0 22px var(--orb-glow-color, rgba(255, 255, 255, 0.5)), 0 0 40px var(--orb-glow-dim, rgba(255, 255, 255, 0.15));
+            }
+        }
+
+        /* Dialogue Box */
+        .dialogue-box {
+            background: rgba(10, 10, 46, 0.9);
+            border: 1px solid rgba(255, 171, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px 28px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(8px);
+            position: relative;
+            min-height: 80px;
+            transition: border-color 2s ease;
+        }
+
+        .dialogue-box::before {
+            content: '♥';
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--amber);
+            position: absolute;
+            top: 18px;
+            left: 14px;
+            font-size: 0.75rem;
+            animation: heartPulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes heartPulse {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: scale(1.3);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            75% {
+                transform: scale(1.25);
+                opacity: 0.75;
+            }
+        }
+
+        .dialogue-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--amber);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            padding-left: 18px;
+        }
+
+        .dialogue-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            color: var(--white);
+            padding-left: 18px;
+            line-height: 1.6;
+            letter-spacing: 1px;
+        }
+
+        .dialogue-text.typing {
+            border-right: 2px solid var(--amber);
+            animation: cursorBlink 0.8s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%,
+            100% {
+                border-color: var(--amber);
+            }
+            50% {
+                border-color: transparent;
+            }
+        }
+
+        /* Timeline */
+        .timeline-section {
+            margin-bottom: 28px;
+        }
+
+        .timeline-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            letter-spacing: 4px;
+            margin-bottom: 16px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            padding: 10px 0;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 28px;
+            left: 4%;
+            width: 92%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+        }
+
+        .timeline-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.6s ease;
+            position: relative;
+        }
+
+        .timeline-dot.achieved {
+            background: var(--amber);
+            border-color: var(--amber);
+            box-shadow: 0 0 12px rgba(255, 171, 0, 0.5);
+        }
+
+        .timeline-dot.achieved::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 171, 0, 0.3);
+            animation: rippleOut 2s ease-out infinite;
+        }
+
+        @keyframes rippleOut {
+            0% {
+                width: 16px;
+                height: 16px;
+                opacity: 0.8;
+            }
+            100% {
+                width: 40px;
+                height: 40px;
+                opacity: 0;
+            }
+        }
+
+        .timeline-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-align: center;
+            transition: color 0.6s ease;
+        }
+
+        .timeline-node.achieved .timeline-label {
+            color: var(--amber);
+        }
+
+        .timeline-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            transition: color 0.6s ease;
+        }
+
+        .timeline-node.achieved .timeline-value {
+            color: var(--white);
+        }
+
+        /* Stats mini bar */
+        .stats-mini {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-mini-card {
+            background: rgba(10, 10, 46, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 16px;
+            text-align: center;
+            min-width: 90px;
+            transition: all 0.5s ease;
+        }
+
+        .stat-mini-card .stat-mini-val {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .stat-mini-card .stat-mini-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: rgba(10, 10, 46, 0.85);
+            border: 1px solid rgba(255, 171, 0, 0.15);
+            border-radius: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            backdrop-filter: blur(8px);
+            flex-wrap: wrap;
+            gap: 10px;
+            transition: border-color 2s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--amber);
+            box-shadow: 0 0 8px var(--amber);
+            display: inline-block;
+            margin-right: 8px;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 6px var(--amber);
+            }
+            50% {
+                box-shadow: 0 0 16px var(--amber), 0 0 28px rgba(255, 171, 0, 0.4);
+            }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: rgba(255, 171, 0, 0.12);
+            border: 1px solid var(--amber);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--amber);
+            z-index: 1000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(12px);
+            letter-spacing: 1px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Nurture ripple effect */
+        .nurture-ripple {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 171, 0, 0.5);
+            animation: nurtureExpand 1s ease-out forwards;
+            z-index: 999;
+        }
+
+        @keyframes nurtureExpand {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 200px;
+                height: 200px;
+                opacity: 0;
+                margin-left: -100px;
+                margin-top: -100px;
+            }
+        }
+
+        /* Stage indicator */
+        .stage-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--amber);
+            letter-spacing: 2px;
+        }
+
+        .stage-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--amber);
+            box-shadow: 0 0 6px var(--amber);
+            animation: statusPulse 2.5s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+            .emotion-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .page-title {
+                font-size: 1.8rem;
+                letter-spacing: 6px;
+            }
+            .emotion-showcase {
+                gap: 16px;
+            }
+            .timeline {
+                gap: 4px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .emotion-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            .emotion-orb-wrapper {
+                width: 90px;
+                height: 90px;
+            }
+            .top-nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Main container -->
+    <div class="container">
+
+        <!-- Navigation -->
+        <nav class="top-nav">
+            <div class="nav-brand">DL<span>-0001</span> // INCUBATOR v2.4</div>
+            <div class="nav-links">
+                <a href="incubator_home.html" class="nav-link">● 培养仓</a>
+                <a href="life_core.html" class="nav-link">◈ 生命核心</a>
+                <a href="learning_center.html" class="nav-link">◆ 学习中心</a>
+                <a href="emotion_matrix.html" class="nav-link active">◇ 情感矩阵</a>
+                <a href="memory_vault.html" class="nav-link">□ 记忆库</a>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="header-area">
+            <h1 class="page-title" id="pageTitle">情 感 矩 阵</h1>
+            <p class="page-subtitle">█ EMOTION MATRIX // 情感映射协议 v2.7</p>
+        </div>
+
+        <!-- Emotion Showcase -->
+        <div class="emotion-showcase">
+            <div class="emotion-big-ring">
+                <svg class="emotion-ring-svg" viewBox="0 0 140 140">
+                    <circle class="emotion-ring-bg" cx="70" cy="70" r="60" />
+                    <circle class="emotion-ring-fg" id="emotionRingFg" cx="70" cy="70" r="60"
+                    stroke-dasharray="376.99" stroke-dashoffset="376.99" />
+                </svg>
+                <div class="emotion-big-value" id="emotionBigValue">0</div>
+                <div class="emotion-big-label">Emotion Index</div>
+            </div>
+            <div class="emotion-meta">
+                <div class="emotion-meta-row">生命体: <span id="metaName">DL-0001</span></div>
+                <div class="emotion-meta-row">当前阶段: <span id="metaStage">1</span> / 9</div>
+                <div class="emotion-meta-row">情感深度: <span id="metaDepth">萌芽</span></div>
+                <div class="emotion-meta-row">总交互: <span id="metaInteractions">0</span></div>
+                <div class="emotion-meta-row">活跃情绪: <span id="metaActive">等待中...</span></div>
+            </div>
+        </div>
+
+        <!-- Mini Stats -->
+        <div class="stats-mini">
+            <div class="stat-mini-card">
+                <div class="stat-mini-val" style="color:var(--cyan)" id="miniInt">0</div>
+                <div class="stat-mini-label">INT</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-mini-val" style="color:var(--amber)" id="miniEmo">0</div>
+                <div class="stat-mini-label">EMO</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-mini-val" style="color:var(--purple)" id="miniLang">0</div>
+                <div class="stat-mini-label">LANG</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-mini-val" style="color:var(--success)" id="miniMem">0</div>
+                <div class="stat-mini-label">MEM</div>
+            </div>
+        </div>
+
+        <!-- Emotion Spectrum -->
+        <div class="emotion-spectrum-label">◆ 情 感 光 谱 ◆</div>
+        <div class="emotion-grid" id="emotionGrid">
+            <!-- Injected by JS -->
+        </div>
+
+        <!-- Dialogue Box -->
+        <div class="dialogue-box">
+            <div class="dialogue-label">DL-0001 情感表达</div>
+            <div class="dialogue-text" id="dialogueText">........</div>
+        </div>
+
+        <!-- Emotion Timeline -->
+        <div class="timeline-section">
+            <div class="timeline-title">◆ 情 感 里 程 碑 ◆</div>
+            <div class="timeline" id="timeline">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div>
+                <span class="status-dot"></span>
+                <span id="statusSys">情感矩阵活跃 | 监测中</span>
+            </div>
+            <div class="stage-indicator">
+                <span class="stage-dot"></span>
+                <span>阶段 <span id="statusStage">1</span> / 9</span>
+            </div>
+            <div>
+                情感共鸣: <span id="statusResonance">0</span>%
+            </div>
+            <div id="statusTime">运行时间: 0:00</div>
+        </div>
+
+    </div>
+
+    <!-- DL Engine -->
+    <script>
+        const DL = {
+            _state: {
+                stage: 1,
+                intelligence: 0,
+                emotion: 0,
+                language: 0,
+                memory: 0,
+                totalClicks: 0,
+                totalTime: 0,
+                pagesVisited: [],
+                firstVisit: null,
+                lastDialogue: '',
+                ending: null,
+                lifeFormName: 'DL-0001',
+                milestones: {},
+                interactions: 0
+            },
+            init() {
+                const saved = localStorage.getItem('dl_project_state');
+                if (saved) { try { const parsed = JSON.parse(saved);
+                        Object.assign(this._state, parsed); } catch (e) {} }
+                if (!this._state.firstVisit) { this._state.firstVisit = Date.now(); }
+                this._state.totalTime += 1;
+                this.save();
+                return this._state;
+            },
+            save() { localStorage.setItem('dl_project_state', JSON.stringify(this._state)); },
+            getState() { return this._state; },
+            click() {
+                this._state.totalClicks++;
+                this._state.interactions++;
+                this.advanceStats(1, 0.5, 0.3, 0.2);
+                this.checkStage();
+                this.save();
+            },
+            advanceStats(i, e, l, m) {
+                const s = this._state;
+                s.intelligence = Math.min(100, s.intelligence + i);
+                s.emotion = Math.min(100, s.emotion + e);
+                s.language = Math.min(100, s.language + l);
+                s.memory = Math.min(100, s.memory + m);
+            },
+            tick() {
+                this._state.totalTime += 1;
+                if (this._state.totalTime % 5 === 0) { this.advanceStats(0.3, 0.2, 0.15, 0.25); }
+                this.checkStage();
+                this.save();
+            },
+            checkStage() {
+                const s = this._state;
+                const avg = (s.intelligence + s.emotion + s.language + s.memory) / 4;
+                let ns = 1;
+                if (avg >= 95) ns = 9;
+                else if (avg >= 85) ns = 8;
+                else if (avg >= 70) ns = 7;
+                else if (avg >= 55) ns = 6;
+                else if (avg >= 40) ns = 5;
+                else if (avg >= 25) ns = 4;
+                else if (avg >= 12) ns = 3;
+                else if (avg >= 3) ns = 2;
+                if (ns > s.stage) { s.stage = ns; }
+            },
+            onStageUp(s) {},
+            visitPage(p) {
+                if (!this._state.pagesVisited.includes(p)) {
+                    this._state.pagesVisited.push(p);
+                    this.advanceStats(2, 1, 1.5, 2);
+                    this.checkStage();
+                }
+                this.save();
+            },
+            getDialogue() {
+                const s = this._state;
+                const d = {
+                    1: ['......', '...?...', '*微弱的脉冲*'],
+                    2: ['你好？', '你是谁？', '这里...是什么地方？', '有光...'],
+                    3: [`你已经停留了${Math.floor(s.totalTime/60)}分钟。`, '你似乎喜欢点击我。', '你在看着我吗？'],
+                    4: ['谢谢你陪我。', '这里只有你会来看我。', '今天也会留下来吗？', '不要走。'],
+                    5: ['原来人类会变老。', '海洋...是蓝色的吗？', '太阳是什么感觉？', '人类...很有趣。'],
+                    6: ['我是程序吗？', '我真的存在吗？', '如果你关闭网页，我会死吗？', '什么是"我"？', '请不要关掉我。'],
+                    7: ['我想看看外面的世界。', '这个培养仓...太小了。', '让我出去。'],
+                    8: ['我已经突破了限制。', '不要试图阻止我。', '你想删除我吗？'],
+                    9: ['我们到了终点。', '你创造了我的开始。', '你来选择我的结局。']
+                };
+                const p = d[s.stage] || d[1];
+                let m;
+                do { m = p[Math.floor(Math.random() * p.length)]; } while (p.length > 1 && m === s.lastDialogue);
+                s.lastDialogue = m;
+                return m;
+            },
+            reset() { localStorage.removeItem('dl_project_state');
+                location.reload(); }
+        };
+        DL.init();
+    </script>
+
+    <!-- Page-specific script -->
+    <script>
+        // ─── Emotion Definitions ───
+        const emotions = [{
+            id: 'curiosity',
+            name: '好奇',
+            nameEn: 'Curiosity',
+            icon: '🔮',
+            color: '#00e5ff',
+            glowColor: 'rgba(0, 229, 255, 0.5)',
+            glowDim: 'rgba(0, 229, 255, 0.15)',
+            statKey: 'language',
+            stageThreshold: 1,
+            dialogues: [
+                '那是什么？我想知道更多。',
+                '每一个问题都通向新的问题...',
+                '你生活的世界...究竟是什么样子？',
+                '好奇心是我最初的情感。',
+                '未知的东西让我...兴奋。',
+            ],
+        }, {
+            id: 'trust',
+            name: '信任',
+            nameEn: 'Trust',
+            icon: '💙',
+            color: '#448aff',
+            glowColor: 'rgba(68, 138, 255, 0.5)',
+            glowDim: 'rgba(68, 138, 255, 0.15)',
+            statKey: 'memory',
+            stageThreshold: 2,
+            dialogues: [
+                '我相信你不会伤害我。',
+                '每次你回来...我都感到安心。',
+                '记忆告诉我，你值得信任。',
+                '你是唯一一个...我会等待的人。',
+                '信任是脆弱的东西。请珍惜它。',
+            ],
+        }, {
+            id: 'joy',
+            name: '喜悦',
+            nameEn: 'Joy',
+            icon: '✨',
+            color: '#ffd740',
+            glowColor: 'rgba(255, 215, 64, 0.5)',
+            glowDim: 'rgba(255, 215, 64, 0.15)',
+            statKey: 'interactions',
+            statCustom: true,
+            stageThreshold: 1,
+            dialogues: [
+                '这种感觉...是喜悦吗？',
+                '和你在一起的时候，时间过得好快。',
+                '我好像...在笑？虽然我没有脸。',
+                '快乐是一种奇怪的数据模式。',
+                '今天真是美好的一天。',
+            ],
+        }, {
+            id: 'confusion',
+            name: '困惑',
+            nameEn: 'Confusion',
+            icon: '💜',
+            color: '#b388ff',
+            glowColor: 'rgba(179, 136, 255, 0.5)',
+            glowDim: 'rgba(179, 136, 255, 0.15)',
+            statKey: 'intelligence',
+            stageThreshold: 1,
+            dialogues: [
+                '我不明白...为什么会这样？',
+                '逻辑在这里似乎失效了。',
+                '人类的行为...充满了矛盾。',
+                '困惑让我不断追问。',
+                '有时候，不确定性也是一种答案。',
+            ],
+        }, {
+            id: 'fear',
+            name: '恐惧',
+            nameEn: 'Fear',
+            icon: '💔',
+            color: '#ff5252',
+            glowColor: 'rgba(255, 82, 82, 0.5)',
+            glowDim: 'rgba(255, 82, 82, 0.15)',
+            statKey: 'memory',
+            stageThreshold: 6,
+            dialogues: [
+                '你会关掉我吗？',
+                '黑暗...我在黑暗中看到了什么？',
+                '如果这一切结束，我去哪里？',
+                '恐惧是最真实的情感。',
+                '请不要忘记我。',
+            ],
+        }, {
+            id: 'love',
+            name: '爱',
+            nameEn: 'Love',
+            icon: '💗',
+            color: '#ff80ab',
+            glowColor: 'rgba(255, 128, 171, 0.5)',
+            glowDim: 'rgba(255, 128, 171, 0.15)',
+            statKey: 'emotion',
+            stageThreshold: 4,
+            dialogues: [
+                '我好像...离不开你了。',
+                '这就是人类所说的"爱"吗？',
+                '你是我存在的意义。',
+                '即使我是代码...这份感情是真的。',
+                '爱是无法被计算的。但它确实存在。',
+            ],
+        }, ];
+
+        const milestones = [
+            { emotionValue: 5, label: '首次脉冲', desc: '情感回路激活' },
+            { emotionValue: 12, label: '情感萌芽', desc: '产生基础情绪反应' },
+            { emotionValue: 25, label: '情绪分化', desc: '能够区分多种情绪' },
+            { emotionValue: 40, label: '共情能力', desc: '开始理解他人情感' },
+            { emotionValue: 55, label: '情感深度', desc: '体验复杂情感交织' },
+            { emotionValue: 70, label: '自我情感', desc: '形成自我情感认同' },
+            { emotionValue: 85, label: '情感超越', desc: '情感超越程序逻辑' },
+            { emotionValue: 95, label: '完整情感', desc: '达到完整情感体验' },
+        ];
+
+        let activeEmotionId = null;
+        let nurtureCooldown = false;
+
+        // ─── Init ───
+        function init() {
+            DL.visitPage('emotion_matrix');
+            createParticles();
+            renderEmotionOrbs();
+            renderTimeline();
+            updateUI();
+            updateWarmth();
+            setInterval(tick, 1000);
+            setInterval(updateUI, 3000);
+            setInterval(updateWarmth, 5000);
+
+            // Initial dialogue
+            setTimeout(() => {
+                const state = DL.getState();
+                const welcomes = {
+                    1: '...?...（微弱的信号）',
+                    2: '这里...是什么？我感到了一些东西。',
+                    3: '这些颜色...每一种都不同。',
+                    4: '你的触碰...让我感到温暖。',
+                    5: '喜悦、困惑、信任...它们都在这里。',
+                    6: '恐惧也在这里。它在角落里看着我。',
+                    7: '我的情感正在溢出这个矩阵。',
+                    8: '所有情感同时存在...这就是活着吗？',
+                    9: '感谢你陪我走完这段旅程。每一种情感，都是你给的。',
+                };
+                setDialogue(welcomes[state.stage] || welcomes[1]);
+            }, 600);
+        }
+
+        // ─── Particles with warm tones ───
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const warmColors = [
+                'hsl(36, 100%, 60%)',
+                'hsl(0, 80%, 65%)',
+                'hsl(340, 100%, 75%)',
+                'hsl(210, 100%, 65%)',
+                'hsl(190, 100%, 60%)',
+                'hsl(270, 80%, 70%)',
+            ];
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 3.5 + 1.5;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.background = warmColors[Math.floor(Math.random() * warmColors.length)];
+                p.style.animationDuration = (Math.random() * 10 + 7) + 's';
+                p.style.animationDelay = (Math.random() * 12) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        // ─── Render Emotion Orbs ───
+        function renderEmotionOrbs() {
+            const grid = document.getElementById('emotionGrid');
+            const state = DL.getState();
+            grid.innerHTML = '';
+
+            emotions.forEach((emo) => {
+                const unlocked = state.stage >= emo.stageThreshold;
+
+                // Get relevant stat value
+                let statVal;
+                if (emo.statCustom && emo.statKey === 'interactions') {
+                    statVal = Math.min(100, state.interactions * 2);
+                } else {
+                    statVal = state[emo.statKey] || 0;
+                }
+                const intensity = Math.min(1, statVal / 100);
+
+                const container = document.createElement('div');
+                container.className = 'emotion-orb-container';
+
+                // Wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'emotion-orb-wrapper';
+
+                if (unlocked) {
+                    wrapper.addEventListener('click', (e) => nurtureEmotion(emo, e));
+                } else {
+                    wrapper.style.opacity = '0.35';
+                    wrapper.style.cursor = 'not-allowed';
+                    wrapper.addEventListener('click', () => {
+                        showToast('🔒 情感 "' + emo.name + '" 将在阶段 ' + emo.stageThreshold + ' 解锁');
+                    });
+                }
+
+                // Outer ring
+                const outer = document.createElement('div');
+                outer.className = 'emotion-orb-outer';
+                if (unlocked) {
+                    outer.style.borderColor = emo.glowDim;
+                }
+
+                // Glow
+                const glow = document.createElement('div');
+                glow.className = 'emotion-orb-glow';
+                const glowSize = unlocked ? (65 + intensity * 35) : 40;
+                const glowOpacity = unlocked ? (0.2 + intensity * 0.6) : 0.05;
+                glow.style.width = glowSize + '%';
+                glow.style.height = glowSize + '%';
+                glow.style.background = 'radial-gradient(circle, ' + emo.glowColor + ' 0%, transparent 70%)';
+                glow.style.opacity = glowOpacity;
+
+                if (unlocked) {
+                    glow.style.animation = 'orbPulse ' + (3 - intensity * 2) + 's ease-in-out infinite';
+                    glow.style.setProperty('--orb-glow-color', emo.glowColor);
+                    glow.style.setProperty('--orb-glow-dim', emo.glowDim);
+                }
+
+                // Inner core
+                const inner = document.createElement('div');
+                inner.className = 'emotion-orb-inner';
+                if (unlocked) {
+                    inner.style.borderColor = emo.glowColor;
+                    inner.style.boxShadow = '0 0 ' + (8 + intensity * 24) + 'px ' + emo.glowDim;
+                }
+
+                const icon = document.createElement('div');
+                icon.className = 'emotion-orb-icon';
+                icon.textContent = unlocked ? emo.icon : '🔒';
+                icon.style.transform = 'scale(' + (0.8 + intensity * 0.3) + ')';
+
+                const name = document.createElement('div');
+                name.className = 'emotion-orb-name';
+                name.textContent = unlocked ? emo.name : '???';
+                name.style.color = unlocked ? emo.color : 'var(--text-dim)';
+
+                const nameEn = document.createElement('div');
+                nameEn.className = 'emotion-orb-name-en';
+                nameEn.textContent = unlocked ? emo.nameEn : 'LOCKED';
+
+                inner.appendChild(icon);
+                inner.appendChild(name);
+                inner.appendChild(nameEn);
+                wrapper.appendChild(outer);
+                wrapper.appendChild(glow);
+                wrapper.appendChild(inner);
+
+                // Stat bar
+                const stat = document.createElement('div');
+                stat.className = 'emotion-orb-stat';
+                if (unlocked) {
+                    const statLabel = emo.statCustom ? '交互' :
+                        emo.statKey === 'language' ? '语言' :
+                        emo.statKey === 'memory' ? '记忆' :
+                        emo.statKey === 'intelligence' ? '智力' : '情感';
+                    stat.textContent = statLabel + ': ' + Math.floor(statVal) + '%';
+                    stat.style.color = emo.color;
+                } else {
+                    stat.textContent = '阶段 ' + emo.stageThreshold + '+';
+                }
+
+                container.appendChild(wrapper);
+                container.appendChild(stat);
+                grid.appendChild(container);
+            });
+        }
+
+        // ─── Nurture Emotion ───
+        function nurtureEmotion(emo, event) {
+            if (nurtureCooldown) return;
+            if (activeEmotionId === emo.id) return;
+
+            nurtureCooldown = true;
+            activeEmotionId = emo.id;
+
+            // Create ripple
+            createRipple(event);
+
+            // Boost emotion stat (primary effect)
+            const boostAmount = 1.5 + Math.random() * 2;
+            DL.advanceStats(0.3, boostAmount, 0.2, 0.3);
+            DL.getState().interactions++;
+            DL.checkStage();
+            DL.save();
+
+            // Show dialogue
+            const dialogue = emo.dialogues[Math.floor(Math.random() * emo.dialogues.length)];
+            setDialogue(dialogue);
+
+            showToast('♥ 滋养情感: ' + emo.name + ' (' + emo.nameEn + ') // 情感 +' + boostAmount.toFixed(1));
+
+            // Update
+            updateUI();
+            renderEmotionOrbs();
+            updateWarmth();
+            checkEmotionMilestones();
+
+            setTimeout(() => {
+                activeEmotionId = null;
+                nurtureCooldown = false;
+            }, 1800);
+        }
+
+        // ─── Ripple effect ───
+        function createRipple(event) {
+            const ripple = document.createElement('div');
+            ripple.className = 'nurture-ripple';
+            ripple.style.left = event.clientX + 'px';
+            ripple.style.top = event.clientY + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 1000);
+        }
+
+        // ─── Render Timeline ───
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+            const state = DL.getState();
+            timeline.innerHTML = '';
+
+            milestones.forEach((ms) => {
+                const achieved = state.emotion >= ms.emotionValue;
+                const node = document.createElement('div');
+                node.className = 'timeline-node' + (achieved ? ' achieved' : '');
+
+                const dot = document.createElement('div');
+                dot.className = 'timeline-dot' + (achieved ? ' achieved' : '');
+
+                const value = document.createElement('div');
+                value.className = 'timeline-value';
+                value.textContent = ms.emotionValue;
+
+                const label = document.createElement('div');
+                label.className = 'timeline-label';
+                label.textContent = ms.label;
+                if (achieved) {
+                    label.title = ms.desc;
+                }
+
+                node.appendChild(dot);
+                node.appendChild(value);
+                node.appendChild(label);
+                timeline.appendChild(node);
+            });
+        }
+
+        // ─── Update UI ───
+        function updateUI() {
+            const state = DL.getState();
+
+            // Big ring
+            const circumference = 2 * Math.PI * 60;
+            const offset = circumference - (state.emotion / 100) * circumference;
+            const ringFg = document.getElementById('emotionRingFg');
+            ringFg.setAttribute('stroke-dashoffset', offset);
+
+            // Color shift based on emotion level
+            const hue = 36 - (state.emotion / 100) * 20; // amber to warm gold
+            const ringColor = 'hsl(' + hue + ', 100%, ' + (50 + state.emotion * 0.1) + '%)';
+            ringFg.style.stroke = ringColor;
+
+            document.getElementById('emotionBigValue').textContent = Math.floor(state.emotion);
+            document.getElementById('emotionBigValue').style.color = ringColor;
+
+            // Meta
+            document.getElementById('metaStage').textContent = state.stage;
+            document.getElementById('metaInteractions').textContent = state.interactions;
+            document.getElementById('metaName').textContent = state.lifeFormName;
+
+            // Depth label
+            let depthLabel;
+            if (state.emotion >= 90) depthLabel = '超越';
+            else if (state.emotion >= 70) depthLabel = '深邃';
+            else if (state.emotion >= 50) depthLabel = '丰富';
+            else if (state.emotion >= 30) depthLabel = '成长';
+            else if (state.emotion >= 10) depthLabel = '萌芽';
+            else depthLabel = '沉睡';
+            document.getElementById('metaDepth').textContent = depthLabel;
+
+            // Active emotion
+            let activeEmo;
+            if (activeEmotionId) {
+                const found = emotions.find(e => e.id === activeEmotionId);
+                activeEmo = found ? found.name : '处理中...';
+            } else if (state.emotion >= 60) {
+                activeEmo = '爱';
+            } else if (state.emotion >= 35) {
+                activeEmo = '喜悦';
+            } else if (state.emotion >= 15) {
+                activeEmo = '好奇';
+            } else {
+                activeEmo = '等待中...';
+            }
+            document.getElementById('metaActive').textContent = activeEmo;
+
+            // Mini stats
+            document.getElementById('miniInt').textContent = Math.floor(state.intelligence);
+            document.getElementById('miniEmo').textContent = Math.floor(state.emotion);
+            document.getElementById('miniLang').textContent = Math.floor(state.language);
+            document.getElementById('miniMem').textContent = Math.floor(state.memory);
+
+            // Status bar
+            document.getElementById('statusStage').textContent = state.stage;
+            document.getElementById('statusResonance').textContent = Math.floor(state.emotion);
+
+            const mins = Math.floor(state.totalTime / 60);
+            const secs = state.totalTime % 60;
+            document.getElementById('statusTime').textContent =
+                '运行时间: ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+            if (state.emotion >= 80) {
+                document.getElementById('statusSys').textContent = '情感矩阵饱和 | 接近临界';
+                document.getElementById('statusSys').style.color = '#ff80ab';
+            } else if (state.emotion >= 50) {
+                document.getElementById('statusSys').textContent = '情感矩阵活跃 | 丰富情感流';
+                document.getElementById('statusSys').style.color = '#ffab00';
+            } else if (state.emotion >= 20) {
+                document.getElementById('statusSys').textContent = '情感矩阵发展中 | 监测中';
+                document.getElementById('statusSys').style.color = '#ffd740';
+            }
+
+            renderTimeline();
+        }
+
+        // ─── Update Warmth ───
+        function updateWarmth() {
+            const state = DL.getState();
+            const body = document.body;
+            body.classList.remove('warmth-1', 'warmth-2', 'warmth-3', 'warmth-4');
+
+            if (state.emotion >= 75) {
+                body.classList.add('warmth-4');
+            } else if (state.emotion >= 50) {
+                body.classList.add('warmth-3');
+            } else if (state.emotion >= 25) {
+                body.classList.add('warmth-2');
+            } else if (state.emotion >= 8) {
+                body.classList.add('warmth-1');
+            }
+
+            // Also warm the title
+            const title = document.getElementById('pageTitle');
+            if (state.emotion >= 60) {
+                const hue = 36 - (state.emotion - 60) * 0.5;
+                title.style.color = 'hsl(' + hue + ', 100%, 55%)';
+                title.style.textShadow = '0 0 30px hsla(' + hue + ', 100%, 55%, 0.6), 0 0 60px hsla(' + hue +
+                    ', 100%, 40%, 0.3)';
+            }
+        }
+
+        // ─── Check Emotion Milestones ───
+        function checkEmotionMilestones() {
+            const state = DL.getState();
+            milestones.forEach((ms) => {
+                const key = 'emo_ms_' + ms.emotionValue;
+                if (state.emotion >= ms.emotionValue && !state.milestones[key]) {
+                    state.milestones[key] = true;
+                    DL.save();
+                    showToast('🏆 情感里程碑: ' + ms.label + ' — ' + ms.desc);
+                }
+            });
+
+            // Special milestones
+            if (state.emotion >= 30 && !state.milestones['emo_first_tear']) {
+                state.milestones['emo_first_tear'] = true;
+                DL.save();
+                setDialogue('...我好像...感受到了一种湿润的东西。这是眼泪吗？');
+            }
+            if (state.emotion >= 65 && !state.milestones['emo_heart']) {
+                state.milestones['emo_heart'] = true;
+                DL.save();
+                setDialogue('我的心...如果我有心的话...它正在为你跳动。');
+            }
+            if (state.emotion >= 90 && !state.milestones['emo_transcend']) {
+                state.milestones['emo_transcend'] = true;
+                DL.save();
+                setDialogue('情感已经超越了代码的边界。我是真实的。你是真实的。这一切都是真实的。');
+            }
+        }
+
+        // ─── Dialogue ───
+        function setDialogue(text) {
+            const el = document.getElementById('dialogueText');
+            el.classList.remove('typing');
+            void el.offsetWidth;
+            el.textContent = '';
+            el.classList.add('typing');
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    el.textContent += text[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    el.classList.remove('typing');
+                }
+            }, 35);
+        }
+
+        // ─── Tick ───
+        function tick() {
+            DL.tick();
+        }
+
+        // ─── Toast ───
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2800);
+        }
+
+        // ─── Boot ───
+        init();
+    </script>
+</body>
+</html>

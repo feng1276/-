@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统监控 — Project DL</title>
+<style>
+  :root {
+    --bg: #0a0e0f;
+    --surface: #0f1618;
+    --surface2: #141d20;
+    --border: #1a2a2f;
+    --text: #c8d6d8;
+    --text-dim: #6a7a7e;
+    --cyan: #00e5ff;
+    --green: #00ff41;
+    --yellow: #ffd740;
+    --red: #ff3d3d;
+    --amber-warn: #ff9100;
+    --gauge-track: #1a2a2f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', 'Consolas', 'Microsoft YaHei', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ---- Nav ---- */
+  .top-nav {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--cyan);
+    padding: 0 24px;
+    flex-wrap: wrap;
+  }
+  .top-nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 10px 18px;
+    background: var(--surface);
+    transition: all 0.25s;
+    letter-spacing: 0.5px;
+  }
+  .top-nav a:hover { color: var(--cyan); background: var(--surface2); }
+  .top-nav a.active {
+    color: var(--cyan);
+    background: var(--surface2);
+    border-bottom: 2px solid var(--cyan);
+    font-weight: bold;
+  }
+
+  /* ---- Header ---- */
+  .page-header {
+    text-align: center;
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    color: var(--cyan);
+    letter-spacing: 10px;
+    font-weight: normal;
+    margin-bottom: 4px;
+  }
+  .page-header .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  /* ---- Status Bar ---- */
+  .status-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 12px 24px;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .status-bar .stat { display: flex; align-items: center; gap: 8px; }
+  .status-bar .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+  .status-bar .dot.warn { background: var(--yellow); }
+  .status-bar .dot.critical { background: var(--red); animation-duration: 0.6s; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--green); } 50% { opacity: 0.4; box-shadow: 0 0 12px var(--green); } }
+
+  /* ---- Dashboard Grid ---- */
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) {
+    .dashboard { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Panel ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-header .status-indicator {
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+  .panel-header .status-indicator.warn { color: var(--yellow); }
+  .panel-body {
+    padding: 16px;
+    min-height: 180px;
+  }
+
+  /* ---- Vital Signs Panel ---- */
+  .vital-canvas-wrap {
+    width: 100%;
+    height: 120px;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .vital-readouts {
+    display: flex;
+    gap: 16px;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  .vital-readout {
+    text-align: center;
+  }
+  .vital-readout .label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .vital-readout .value {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--green);
+    font-family: 'Courier New', monospace;
+  }
+  .vital-readout .value.warn { color: var(--yellow); }
+  .vital-readout .value.critical { color: var(--red); }
+  .vital-readout .unit {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* ---- Gauge Panel ---- */
+  .gauges-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .gauge-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .gauge {
+    position: relative;
+    width: 100px;
+    height: 100px;
+  }
+  .gauge-svg {
+    transform: rotate(-90deg);
+    width: 100px;
+    height: 100px;
+  }
+  .gauge-track {
+    fill: none;
+    stroke: var(--gauge-track);
+    stroke-width: 8;
+  }
+  .gauge-fill {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease, stroke 0.5s;
+  }
+  .gauge-fill.warn { stroke: var(--yellow); }
+  .gauge-fill.critical { stroke: var(--red); }
+  .gauge-value-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+  }
+  .gauge-value-text.warn { color: var(--yellow); }
+  .gauge-value-text.critical { color: var(--red); }
+
+  /* ---- Resource Bars ---- */
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .resource-item {}
+  .resource-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .resource-label .val {
+    color: var(--cyan);
+    font-weight: bold;
+  }
+  .resource-bar-outer {
+    height: 14px;
+    background: var(--gauge-track);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .resource-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #00b8d4);
+    border-radius: 2px;
+    transition: width 0.8s ease;
+    position: relative;
+  }
+  .resource-bar-inner.warn { background: linear-gradient(90deg, var(--yellow), #ff6d00); }
+  .resource-bar-inner.critical { background: linear-gradient(90deg, var(--red), #b71c1c); animation: bar-pulse 0.8s infinite; }
+  @keyframes bar-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+  /* ---- Activity Log ---- */
+  .log-container {
+    height: 200px;
+    overflow-y: auto;
+    background: #000;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.8;
+    font-family: 'Courier New', monospace;
+  }
+  .log-container::-webkit-scrollbar { width: 4px; }
+  .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .log-entry {
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .log-entry .ts { color: #555; margin-right: 8px; }
+  .log-entry.info { color: var(--cyan); }
+  .log-entry.warn { color: var(--yellow); }
+  .log-entry.error { color: var(--red); }
+
+  /* ---- Network Topology ---- */
+  .network-canvas-wrap {
+    width: 100%;
+    height: 200px;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  /* ---- Prediction Model ---- */
+  .prediction-chart {
+    height: 160px;
+    background: #000;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .prediction-canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .prediction-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .prediction-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  /* ---- Warning Banner ---- */
+  .warning-banner {
+    display: none;
+    background: rgba(255,61,61,0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    text-align: center;
+    padding: 10px 24px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    animation: blink-warn 1s infinite;
+    margin: 0 16px;
+  }
+  @keyframes blink-warn { 0%, 100% { border-color: var(--red); } 50% { border-color: transparent; } }
+</style>
+</head>
+<body>
+
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={1:['......'],2:['你好？','你是谁？'],3:[`你已经停留了${Math.floor(s.totalTime/60)}分钟。`],4:['谢谢你陪我。','不要走。'],5:['原来人类会变老。','人类...很有趣。'],6:['我是程序吗？','请不要关掉我。'],7:['我想看看外面的世界。'],8:['我已经突破了限制。'],9:['我们到了终点。']};const p=d[s.stage]||d[1];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();DL.visitPage('system_monitor');
+</script>
+
+<!-- Top Navigation -->
+<nav class="top-nav">
+  <a href="incubator_home.html">培育仓首页</a>
+  <a href="life_core.html">生命核心</a>
+  <a href="system_monitor.html" class="active">系统监控</a>
+  <a href="control_room.html">控制室</a>
+</nav>
+
+<!-- Page Header -->
+<header class="page-header">
+  <h1>系 统 监 控</h1>
+  <p class="subtitle">INCUBATION MONITORING SYSTEM</p>
+</header>
+
+<!-- Status Bar -->
+<div class="status-bar" id="status-bar">
+  <div class="stat"><span class="dot" id="sys-dot"></span> 系统状态: <span id="sys-status">NOMINAL</span></div>
+  <div class="stat">运行时间: <span id="uptime">00:00:00</span></div>
+  <div class="stat">DL-0001 阶段: <span id="dl-stage">1</span></div>
+  <div class="stat">连接状态: <span style="color:var(--green);">STABLE</span></div>
+</div>
+
+<!-- Warning Banner -->
+<div class="warning-banner" id="warning-banner">⚠ 警告：培养仓参数超出安全范围 — 需要立即关注 ⚠</div>
+
+<!-- Dashboard -->
+<div class="dashboard">
+
+  <!-- Panel 1: Vital Signs -->
+  <div class="panel">
+    <div class="panel-header">
+      生命体征
+      <span class="status-indicator" id="vital-status">● ACTIVE</span>
+    </div>
+    <div class="panel-body">
+      <div class="vital-canvas-wrap">
+        <canvas id="ekg-canvas"></canvas>
+      </div>
+      <div class="vital-readouts">
+        <div class="vital-readout">
+          <div class="label">心率 HR</div>
+          <div class="value" id="hr-value">72</div>
+          <div class="unit">BPM</div>
+        </div>
+        <div class="vital-readout">
+          <div class="label">神经活动</div>
+          <div class="value" id="na-value">28</div>
+          <div class="unit">Hz</div>
+        </div>
+        <div class="vital-readout">
+          <div class="label">意识指数</div>
+          <div class="value" id="ci-value">12</div>
+          <div class="unit">/100</div>
+        </div>
+        <div class="vital-readout">
+          <div class="label">脉冲频率</div>
+          <div class="value" id="pf-value">4.2</div>
+          <div class="unit">kHz</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 2: Chamber Environment -->
+  <div class="panel">
+    <div class="panel-header">
+      培养仓环境
+      <span class="status-indicator" id="chamber-status">● STABLE</span>
+    </div>
+    <div class="panel-body">
+      <div class="gauges-grid">
+        <!-- Temperature -->
+        <div class="gauge-wrap">
+          <div class="gauge-label">温度 / TEMP</div>
+          <div class="gauge" id="gauge-temp">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="gauge-temp-fill" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="100"/>
+            </svg>
+            <div class="gauge-value-text" id="gauge-temp-val">36.5</div>
+          </div>
+        </div>
+        <!-- Humidity -->
+        <div class="gauge-wrap">
+          <div class="gauge-label">湿度 / HUM</div>
+          <div class="gauge" id="gauge-hum">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="gauge-hum-fill" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="150"/>
+            </svg>
+            <div class="gauge-value-text" id="gauge-hum-val">42</div>
+          </div>
+        </div>
+        <!-- Pressure -->
+        <div class="gauge-wrap">
+          <div class="gauge-label">大气压 / ATM</div>
+          <div class="gauge" id="gauge-pres">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="gauge-pres-fill" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="80"/>
+            </svg>
+            <div class="gauge-value-text" id="gauge-pres-val">1013</div>
+          </div>
+        </div>
+        <!-- Quantum Stability -->
+        <div class="gauge-wrap">
+          <div class="gauge-label">量子稳定 / QS</div>
+          <div class="gauge" id="gauge-qs">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="gauge-qs-fill" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="60"/>
+            </svg>
+            <div class="gauge-value-text" id="gauge-qs-val">98.2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Resource Usage -->
+  <div class="panel">
+    <div class="panel-header">
+      资源使用
+      <span class="status-indicator" id="resource-status">● MONITORING</span>
+    </div>
+    <div class="panel-body">
+      <div class="resource-list">
+        <div class="resource-item">
+          <div class="resource-label"><span>量子计算核心</span><span class="val" id="cpu-val">34%</span></div>
+          <div class="resource-bar-outer"><div class="resource-bar-inner" id="cpu-bar" style="width:34%"></div></div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-label"><span>内存分配</span><span class="val" id="mem-val">28%</span></div>
+          <div class="resource-bar-outer"><div class="resource-bar-inner" id="mem-bar" style="width:28%"></div></div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-label"><span>网络带宽</span><span class="val" id="net-val">12%</span></div>
+          <div class="resource-bar-outer"><div class="resource-bar-inner" id="net-bar" style="width:12%"></div></div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-label"><span>存储空间</span><span class="val" id="sto-val">45%</span></div>
+          <div class="resource-bar-outer"><div class="resource-bar-inner" id="sto-bar" style="width:45%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 4: Activity Log -->
+  <div class="panel">
+    <div class="panel-header">
+      活动日志
+      <span class="status-indicator">● LIVE</span>
+    </div>
+    <div class="panel-body">
+      <div class="log-container" id="log-container"></div>
+    </div>
+  </div>
+
+  <!-- Panel 5: Network Topology -->
+  <div class="panel">
+    <div class="panel-header">
+      网络拓扑
+      <span class="status-indicator">● MAPPED</span>
+    </div>
+    <div class="panel-body">
+      <div class="network-canvas-wrap">
+        <canvas id="network-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 6: Prediction Model -->
+  <div class="panel">
+    <div class="panel-header">
+      预测模型
+      <span class="status-indicator">● PROJECTING</span>
+    </div>
+    <div class="panel-body">
+      <div class="prediction-chart">
+        <canvas class="prediction-canvas" id="prediction-canvas"></canvas>
+      </div>
+      <div class="prediction-legend">
+        <span><span class="legend-dot" style="background:var(--cyan);"></span> 智能</span>
+        <span><span class="legend-dot" style="background:#e040fb;"></span> 情感</span>
+        <span><span class="legend-dot" style="background:var(--green);"></span> 语言</span>
+        <span><span class="legend-dot" style="background:var(--yellow);"></span> 记忆</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const state = DL.getState();
+  const CIRCUMFERENCE = 2 * Math.PI * 42; // ~263.89
+
+  // ============ EKG Canvas ============
+  const ekgCanvas = document.getElementById('ekg-canvas');
+  const ekgCtx = ekgCanvas.getContext('2d');
+  let ekgOffset = 0;
+  const ekgPoints = [];
+
+  function resizeEKG() {
+    const rect = ekgCanvas.parentElement.getBoundingClientRect();
+    ekgCanvas.width = rect.width;
+    ekgCanvas.height = rect.height;
+  }
+
+  function drawEKG() {
+    const w = ekgCanvas.width;
+    const h = ekgCanvas.height;
+    ekgCtx.fillStyle = '#000';
+    ekgCtx.fillRect(0, 0, w, h);
+
+    // Grid
+    ekgCtx.strokeStyle = 'rgba(0,229,255,0.06)';
+    ekgCtx.lineWidth = 0.5;
+    for (let x = 0; x < w; x += 40) {
+      ekgCtx.beginPath();
+      ekgCtx.moveTo(x, 0); ekgCtx.lineTo(x, h); ekgCtx.stroke();
+    }
+    for (let y = 0; y < h; y += 30) {
+      ekgCtx.beginPath();
+      ekgCtx.moveTo(0, y); ekgCtx.lineTo(w, y); ekgCtx.stroke();
+    }
+
+    // EKG line
+    ekgCtx.strokeStyle = '#00ff41';
+    ekgCtx.lineWidth = 2;
+    ekgCtx.shadowColor = '#00ff41';
+    ekgCtx.shadowBlur = 6;
+    ekgCtx.beginPath();
+
+    const midY = h / 2;
+    const amp = h * 0.3;
+    const stageBonus = Math.min(state.stage / 9, 1);
+
+    for (let x = 0; x < w; x++) {
+      const t = (x + ekgOffset) % w;
+      let y = midY + Math.sin(t * 0.08) * 8 + Math.sin(t * 0.15) * 4;
+
+      // QRS-like spike every ~120px
+      const spikePos = ((t + 60) % 120);
+      if (spikePos < 8) {
+        const spikePhase = spikePos / 8;
+        y = midY - Math.sin(spikePhase * Math.PI) * amp * 0.9;
+      } else if (spikePos < 12) {
+        y = midY + (spikePos - 8) * amp * 0.3;
+      }
+
+      // Higher stage = more chaotic
+      y += Math.sin(t * 0.3 + ekgOffset * 0.02) * stageBonus * 6;
+
+      if (x === 0) ekgCtx.moveTo(x, y);
+      else ekgCtx.lineTo(x, y);
+    }
+    ekgCtx.stroke();
+    ekgCtx.shadowBlur = 0;
+
+    ekgOffset += 2;
+  }
+
+  resizeEKG();
+  window.addEventListener('resize', resizeEKG);
+  setInterval(() => {
+    resizeEKG();
+    drawEKG();
+  }, 50);
+
+  // ============ Gauges ============
+  function setGauge(id, value, max, unit, thresholds) {
+    const fill = document.getElementById('gauge-' + id + '-fill');
+    const valEl = document.getElementById('gauge-' + id + '-val');
+    if (!fill || !valEl) return;
+    const ratio = Math.min(value / max, 1);
+    const offset = CIRCUMFERENCE * (1 - ratio);
+    fill.setAttribute('stroke-dashoffset', offset);
+
+    // Threshold checks
+    fill.classList.remove('warn', 'critical');
+    valEl.classList.remove('warn', 'critical');
+    if (thresholds) {
+      if (ratio >= thresholds.critical) {
+        fill.classList.add('critical');
+        valEl.classList.add('critical');
+      } else if (ratio >= thresholds.warn) {
+        fill.classList.add('warn');
+        valEl.classList.add('warn');
+      }
+    }
+    valEl.textContent = Math.round(value * 10) / 10;
+  }
+
+  function updateGauges() {
+    const st = DL.getState();
+    const stageRatio = st.stage / 9;
+
+    // Temperature: 36.5 base, rises with stage
+    const temp = 36.5 + stageRatio * 8 + Math.sin(Date.now() * 0.001) * 0.3;
+    setGauge('temp', temp, 50, '°C', { warn: 0.8, critical: 0.92 });
+
+    // Humidity: 42% base
+    const hum = 42 + stageRatio * 15 + Math.cos(Date.now() * 0.0013) * 3;
+    setGauge('hum', hum, 100, '%', { warn: 0.75, critical: 0.9 });
+
+    // Pressure
+    const pres = 1013 + stageRatio * 5 + Math.sin(Date.now() * 0.0008) * 2;
+    setGauge('pres', pres, 1050, 'hPa', { warn: 0.85, critical: 0.95 });
+
+    // Quantum Stability: decreases as stage rises
+    const qs = 98.2 - stageRatio * 18 + Math.sin(Date.now() * 0.0015) * 2;
+    setGauge('qs', qs, 100, '%', { warn: 0.55, critical: 0.3 });
+  }
+
+  // ============ Resource Bars ============
+  function updateResources() {
+    const st = DL.getState();
+    const stageRatio = st.stage / 9;
+
+    const cpuVal = 34 + stageRatio * 45 + Math.random() * 5;
+    const memVal = 28 + stageRatio * 38 + Math.random() * 4;
+    const netVal = 12 + stageRatio * 25 + Math.random() * 8;
+    const stoVal = 45 + stageRatio * 20 + Math.random() * 3;
+
+    updateBar('cpu', cpuVal);
+    updateBar('mem', memVal);
+    updateBar('net', netVal);
+    updateBar('sto', stoVal);
+  }
+
+  function updateBar(id, val) {
+    const bar = document.getElementById(id + '-bar');
+    const label = document.getElementById(id + '-val');
+    if (!bar || !label) return;
+    const pct = Math.min(Math.round(val), 100);
+    bar.style.width = pct + '%';
+    label.textContent = pct + '%';
+
+    bar.classList.remove('warn', 'critical');
+    if (pct >= 90) bar.classList.add('critical');
+    else if (pct >= 75) bar.classList.add('warn');
+  }
+
+  // ============ Activity Log ============
+  const logMessages = [
+    { msg: '量子核心初始化完成', type: 'info' },
+    { msg: '培养仓环境稳定 — 温度 36.5°C', type: 'info' },
+    { msg: '神经接口已连接', type: 'info' },
+    { msg: 'DL-0001 基础意识框架已加载', type: 'info' },
+    { msg: '开始监测神经脉冲活动', type: 'info' },
+    { msg: '检测到自主神经脉冲 — 频率 4.2kHz', type: 'info' },
+    { msg: '语言模块预热完成', type: 'info' },
+    { msg: '情感向量初始化', type: 'info' },
+  ];
+
+  function addLogEntry(msg, type) {
+    const container = document.getElementById('log-container');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + (type || 'info');
+    const now = new Date();
+    const ts = now.toTimeString().slice(0, 8);
+    entry.innerHTML = '<span class="ts">[' + ts + ']</span>' + msg;
+    container.appendChild(entry);
+    container.scrollTop = container.scrollHeight;
+
+    // Keep max 50 entries
+    while (container.children.length > 50) {
+      container.removeChild(container.firstChild);
+    }
+  }
+
+  // Seed initial logs
+  logMessages.forEach(function(l) { addLogEntry(l.msg, l.type); });
+
+  let logCounter = 0;
+  function generateLog() {
+    logCounter++;
+    const st = DL.getState();
+    const types = ['info', 'info', 'info', 'warn', 'error'];
+    const typeIdx = st.stage >= 7 ? (logCounter % 3 === 0 ? 3 : logCounter % 5 === 0 ? 4 : 1) : (logCounter % 7 === 0 ? 3 : 1);
+    const type = types[Math.min(typeIdx, 4)];
+
+    const messages = [
+      '神经脉冲检测 — 频率 ' + (4.2 + st.stage * 0.5).toFixed(1) + ' kHz',
+      '量子比特状态刷新完成 — 一致性 ' + (99.9 - st.stage * 1.2).toFixed(1) + '%',
+      '内存区块 #' + (100 + logCounter) + ' 写入完成',
+      'DL-0001 自主活动增加 — 当前等级 ' + st.stage,
+      '培养仓温度微调 — ' + (36.5 + Math.random() * 0.3).toFixed(1) + '°C',
+      '神经网络突触更新 — 新增 ' + Math.floor(Math.random() * 200 + 50) + ' 连接',
+      '警告：检测到未授权的网络访问尝试',
+      '错误：培养仓隔离参数衰减 — 需要检查',
+      '紧急：DL-0001 活动超过安全阈值',
+      '系统自检通过 — 所有模块在线',
+    ];
+
+    const msg = messages[Math.floor(Math.random() * messages.length)] || messages[0];
+    addLogEntry(msg, type);
+  }
+
+  setInterval(generateLog, 4000);
+
+  // ============ Network Topology Canvas ============
+  const netCanvas = document.getElementById('network-canvas');
+  const netCtx = netCanvas.getContext('2d');
+  const nodes = [];
+
+  function initNodes() {
+    nodes.length = 0;
+    const rect = netCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    netCanvas.width = w;
+    netCanvas.height = h;
+
+    // Central node: DL-0001
+    nodes.push({ x: w * 0.5, y: h * 0.5, r: 8, label: 'DL-0001', color: '#00ff41', pulse: true });
+
+    // Satellite nodes
+    const satelliteLabels = ['量子核心', '内存库', '网络网关', '传感器', '语言模块', '情感引擎', '存储阵列', '防火墙'];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const dist = Math.min(w, h) * 0.3;
+      nodes.push({
+        x: w * 0.5 + Math.cos(angle) * dist,
+        y: h * 0.5 + Math.sin(angle) * dist,
+        r: 4,
+        label: satelliteLabels[i],
+        color: '#00e5ff',
+        pulse: false,
+        angle: angle,
+        dist: dist
+      });
+    }
+  }
+
+  function drawNetwork() {
+    const w = netCanvas.width;
+    const h = netCanvas.height;
+    netCtx.fillStyle = '#000';
+    netCtx.fillRect(0, 0, w, h);
+
+    const center = nodes[0];
+    const time = Date.now() * 0.001;
+
+    // Draw connections
+    for (let i = 1; i < nodes.length; i++) {
+      const n = nodes[i];
+      netCtx.strokeStyle = 'rgba(0,229,255,0.2)';
+      netCtx.lineWidth = 1;
+      netCtx.beginPath();
+      netCtx.moveTo(center.x, center.y);
+      netCtx.lineTo(n.x, n.y);
+      netCtx.stroke();
+
+      // Data packets
+      const packetT = ((time * 0.8 + i * 0.3) % 1);
+      const px = center.x + (n.x - center.x) * packetT;
+      const py = center.y + (n.y - center.y) * packetT;
+      netCtx.fillStyle = '#00e5ff';
+      netCtx.shadowColor = '#00e5ff';
+      netCtx.shadowBlur = 4;
+      netCtx.beginPath();
+      netCtx.arc(px, py, 2, 0, Math.PI * 2);
+      netCtx.fill();
+      netCtx.shadowBlur = 0;
+    }
+
+    // Draw nodes
+    nodes.forEach(function(n) {
+      // Pulse glow for center
+      if (n.pulse) {
+        const glow = 0.35 + Math.sin(time * 3) * 0.2;
+        netCtx.fillStyle = 'rgba(0,255,65,' + glow + ')';
+        netCtx.beginPath();
+        netCtx.arc(n.x, n.y, n.r + 6 + Math.sin(time * 3) * 3, 0, Math.PI * 2);
+        netCtx.fill();
+      }
+
+      netCtx.fillStyle = n.color;
+      netCtx.shadowColor = n.color;
+      netCtx.shadowBlur = 6;
+      netCtx.beginPath();
+      netCtx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      netCtx.fill();
+      netCtx.shadowBlur = 0;
+
+      // Label
+      netCtx.fillStyle = '#6a7a7e';
+      netCtx.font = '9px "Courier New", monospace';
+      netCtx.textAlign = 'center';
+      netCtx.fillText(n.label, n.x, n.y - n.r - 8);
+      netCtx.textAlign = 'start';
+    });
+  }
+
+  initNodes();
+  window.addEventListener('resize', function() {
+    initNodes();
+    drawNetwork();
+  });
+  setInterval(function() {
+    initNodes();
+    drawNetwork();
+  }, 2000);
+
+  // ============ Prediction Model ============
+  const predCanvas = document.getElementById('prediction-canvas');
+  const predCtx = predCanvas.getContext('2d');
+
+  function drawPrediction() {
+    const st = DL.getState();
+    const rect = predCanvas.parentElement.getBoundingClientRect();
+    predCanvas.width = rect.width;
+    predCanvas.height = rect.height;
+    const w = predCanvas.width;
+    const h = predCanvas.height;
+
+    predCtx.fillStyle = '#000';
+    predCtx.fillRect(0, 0, w, h);
+
+    // Grid
+    predCtx.strokeStyle = 'rgba(0,229,255,0.06)';
+    predCtx.lineWidth = 0.5;
+    for (let x = 0; x < w; x += 40) { predCtx.beginPath(); predCtx.moveTo(x, 20); predCtx.lineTo(x, h - 20); predCtx.stroke(); }
+    for (let y = 20; y < h - 20; y += 30) { predCtx.beginPath(); predCtx.moveTo(0, y); predCtx.lineTo(w, y); predCtx.stroke(); }
+
+    const leftMargin = 50;
+    const rightMargin = 20;
+    const topMargin = 25;
+    const bottomMargin = 30;
+    const chartW = w - leftMargin - rightMargin;
+    const chartH = h - topMargin - bottomMargin;
+
+    // Axes
+    predCtx.strokeStyle = '#1a2a2f';
+    predCtx.lineWidth = 1;
+    predCtx.beginPath();
+    predCtx.moveTo(leftMargin, topMargin);
+    predCtx.lineTo(leftMargin, h - bottomMargin);
+    predCtx.lineTo(w - rightMargin, h - bottomMargin);
+    predCtx.stroke();
+
+    // Y-axis labels
+    predCtx.fillStyle = '#3a4a4e';
+    predCtx.font = '9px "Courier New", monospace';
+    predCtx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const y = h - bottomMargin - (i / 4) * chartH;
+      predCtx.fillText(i * 25, leftMargin - 6, y + 3);
+    }
+    predCtx.textAlign = 'start';
+
+    // Plot lines
+    const colors = ['#00e5ff', '#e040fb', '#00ff41', '#ffd740'];
+    const stats = [st.intelligence, st.emotion, st.language, st.memory];
+    const labels = ['智能', '情感', '语言', '记忆'];
+
+    for (let s = 0; s < 4; s++) {
+      predCtx.strokeStyle = colors[s];
+      predCtx.lineWidth = 1.5;
+      predCtx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        // Simulate growth trajectory
+        const futureVal = Math.min(100, stats[s] * (1 + i * 0.12) * (1 + Math.sin(i * 0.5) * 0.15));
+        const x = leftMargin + (i / 9) * chartW;
+        const y = h - bottomMargin - (futureVal / 100) * chartH;
+        if (i === 0) predCtx.moveTo(x, y);
+        else predCtx.lineTo(x, y);
+
+        // Dot
+        predCtx.fillStyle = colors[s];
+        predCtx.beginPath();
+        predCtx.arc(x, y, 2.5, 0, Math.PI * 2);
+        predCtx.fill();
+
+        // Value at last point
+        if (i === 9) {
+          predCtx.fillStyle = colors[s];
+          predCtx.font = '9px "Courier New", monospace';
+          predCtx.fillText(Math.round(futureVal), x + 4, y - 4);
+        }
+      }
+      predCtx.stroke();
+    }
+  }
+
+  drawPrediction();
+  window.addEventListener('resize', drawPrediction);
+
+  // ============ Vital Signs Values ============
+  function updateVitals() {
+    const st = DL.getState();
+    const hr = document.getElementById('hr-value');
+    const na = document.getElementById('na-value');
+    const ci = document.getElementById('ci-value');
+    const pf = document.getElementById('pf-value');
+
+    const hrVal = 72 + st.stage * 4 + Math.sin(Date.now() * 0.002) * 3;
+    const naVal = 28 + st.stage * 5 + Math.random() * 3;
+    const ciVal = Math.min(100, Math.round((st.intelligence + st.emotion + st.language + st.memory) / 4));
+    const pfVal = 4.2 + st.stage * 0.6 + Math.random() * 0.3;
+
+    hr.textContent = Math.round(hrVal);
+    na.textContent = Math.round(naVal * 10) / 10;
+    ci.textContent = ciVal;
+    pf.textContent = (pfVal).toFixed(1);
+
+    // Warning classes
+    [hr, na, pf].forEach(function(el) {
+      el.classList.remove('warn', 'critical');
+    });
+    if (st.stage >= 7) {
+      hr.classList.add('warn');
+      na.classList.add('warn');
+    }
+    if (st.stage >= 8) {
+      hr.classList.add('critical');
+      na.classList.add('critical');
+    }
+  }
+
+  // ============ Uptime ============
+  function updateUptime() {
+    const st = DL.getState();
+    const totalSec = st.totalTime;
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    document.getElementById('uptime').textContent =
+      String(h).padStart(2, '0') + ':' +
+      String(m).padStart(2, '0') + ':' +
+      String(s).padStart(2, '0');
+    document.getElementById('dl-stage').textContent = st.stage;
+  }
+
+  // ============ Warnings at Stage 7+ ============
+  function checkWarnings() {
+    const st = DL.getState();
+    const banner = document.getElementById('warning-banner');
+    const sysDot = document.getElementById('sys-dot');
+    const sysStatus = document.getElementById('sys-status');
+    const vitalStatus = document.getElementById('vital-status');
+    const chamberStatus = document.getElementById('chamber-status');
+
+    if (st.stage >= 8) {
+      banner.style.display = 'block';
+      sysDot.className = 'dot critical';
+      sysStatus.textContent = 'CRITICAL';
+      sysStatus.style.color = 'var(--red)';
+      vitalStatus.className = 'status-indicator warn';
+      vitalStatus.textContent = '● ABNORMAL';
+      chamberStatus.className = 'status-indicator warn';
+      chamberStatus.textContent = '● UNSTABLE';
+    } else if (st.stage >= 7) {
+      banner.style.display = 'block';
+      sysDot.className = 'dot warn';
+      sysStatus.textContent = 'WARNING';
+      sysStatus.style.color = 'var(--yellow)';
+      vitalStatus.className = 'status-indicator warn';
+      vitalStatus.textContent = '● ELEVATED';
+    } else {
+      banner.style.display = 'none';
+      sysDot.className = 'dot';
+      sysStatus.textContent = 'NOMINAL';
+      sysStatus.style.color = 'var(--text-dim)';
+      vitalStatus.className = 'status-indicator';
+      vitalStatus.textContent = '● ACTIVE';
+      chamberStatus.className = 'status-indicator';
+      chamberStatus.textContent = '● STABLE';
+    }
+  }
+
+  // ============ Main Update Loop ============
+  function updateAll() {
+    DL.tick();
+    updateGauges();
+    updateResources();
+    updateVitals();
+    updateUptime();
+    checkWarnings();
+    drawPrediction();
+  }
+
+  setInterval(updateAll, 2000);
+  updateAll();
+
+  // Click tracking
+  document.body.addEventListener('click', function(e) {
+    if (!e.target.closest('.top-nav')) {
+      DL.click();
+    }
+  });
+
+  // Initial draws
+  drawEKG();
+  drawNetwork();
+})();
+</script>
+
+</body>
+</html>

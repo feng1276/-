@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>观 察 日 志 — DL-0001 Observation Log</title>
+<style>
+  :root {
+    --bg-deep: #020018;
+    --cyan: #00e5ff;
+    --cyan-dim: #0088aa;
+    --green: #00ff88;
+    --green-dim: #006644;
+    --amber: #ffaa00;
+    --red: #ff3355;
+    --text: #c8d6e5;
+    --text-dim: #5a6a80;
+    --panel-bg: rgba(0,20,50,0.85);
+    --border: rgba(0,229,255,0.2);
+    --glow: 0 0 12px rgba(0,229,255,0.3);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Courier New', 'Source Code Pro', 'Consolas', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(0,255,136,0.04) 0%, transparent 50%),
+      linear-gradient(180deg, #020018 0%, #010525 50%, #020018 100%);
+  }
+  .scanlines {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  }
+  .particles { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+  .particle {
+    position:absolute;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--cyan);
+    animation: floatUp linear infinite;
+    opacity: 0;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(100vh) scale(0); opacity:0; }
+    10% { opacity:0.8; }
+    90% { opacity:0.2; }
+    100% { transform: translateY(-10vh) scale(1.5); opacity:0; }
+  }
+  .container { max-width:1100px; margin:0 auto; padding:20px; position:relative; z-index:10; }
+  /* Nav */
+  .nav-bar {
+    display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+    padding:14px 20px; margin-bottom:24px;
+    background: var(--panel-bg); border:1px solid var(--border);
+    border-radius: 8px; backdrop-filter: blur(8px);
+  }
+  .nav-bar a {
+    color: var(--cyan-dim); text-decoration:none; font-size:13px; letter-spacing: 1.5px;
+    padding:7px 16px; border:1px solid transparent; border-radius:4px;
+    transition: all 0.3s;
+  }
+  .nav-bar a:hover { color: var(--cyan); border-color: var(--cyan-dim); text-shadow: 0 0 8px var(--cyan); }
+  .nav-bar a.active { color: var(--cyan); border-color: var(--cyan); text-shadow: 0 0 10px var(--cyan); background: rgba(0,229,255,0.08); }
+  /* Header */
+  .header { text-align:center; margin-bottom:30px; }
+  .header h1 {
+    font-size: 36px; letter-spacing: 18px; color: var(--cyan);
+    text-shadow: 0 0 20px rgba(0,229,255,0.5), 0 0 60px rgba(0,229,255,0.2);
+    margin-bottom: 6px;
+  }
+  .header .subtitle {
+    font-size: 12px; letter-spacing: 6px; color: var(--cyan-dim);
+    text-transform: uppercase;
+  }
+  .header .status-line {
+    margin-top: 12px; font-size: 11px; color: var(--text-dim);
+    display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;
+  }
+  .status-line span { color: var(--green); }
+  /* Log Terminal */
+  .log-terminal {
+    background: rgba(0,8,20,0.9); border: 1px solid var(--border);
+    border-radius: 6px; margin-bottom: 24px;
+    box-shadow: var(--glow), inset 0 0 80px rgba(0,229,255,0.02);
+    overflow: hidden;
+  }
+  .log-terminal .terminal-header {
+    background: rgba(0,30,60,0.6); padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .terminal-header .dot { width:10px; height:10px; border-radius:50%; }
+  .terminal-header .dot.red { background: #ff5f57; }
+  .terminal-header .dot.yellow { background: #ffbd2e; }
+  .terminal-header .dot.green { background: #27ca40; }
+  .terminal-header .title { font-size:12px; color: var(--text-dim); letter-spacing:2px; margin-left:10px; }
+  .log-feed {
+    padding: 16px 20px; max-height: 480px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .log-feed::-webkit-scrollbar { width:5px; }
+  .log-feed::-webkit-scrollbar-track { background: rgba(0,229,255,0.05); }
+  .log-feed::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius:3px; }
+  .log-entry {
+    font-size: 12px; line-height: 1.7; padding: 5px 0;
+    border-bottom: 1px solid rgba(0,229,255,0.05);
+    animation: fadeInLog 0.5s ease;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  @keyframes fadeInLog {
+    from { opacity:0; transform: translateY(-8px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+  .log-entry .timestamp { color: var(--text-dim); margin-right: 8px; }
+  .log-entry .tag { font-size:10px; padding:1px 5px; border-radius:2px; margin-right:6px; }
+  .log-entry .tag.info { background: rgba(0,229,255,0.15); color: var(--cyan); }
+  .log-entry .tag.obs { background: rgba(0,255,136,0.12); color: var(--green); }
+  .log-entry .tag.warn { background: rgba(255,170,0,0.12); color: var(--amber); }
+  .log-entry .tag.alert { background: rgba(255,51,85,0.12); color: var(--red); }
+  .log-entry .tag.thought { background: rgba(180,130,255,0.12); color: #b482ff; }
+  .log-entry.creepy { color: var(--red); text-shadow: 0 0 6px rgba(255,51,85,0.3); }
+  /* Profile Card */
+  .profile-section { margin-bottom: 24px; }
+  .profile-section h2 {
+    font-size: 18px; letter-spacing: 8px; color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,229,255,0.3);
+    margin-bottom: 16px; text-align: center;
+  }
+  .profile-card {
+    background: var(--panel-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .profile-item {
+    background: rgba(0,15,35,0.7); border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 6px; padding: 14px 18px;
+  }
+  .profile-item .label {
+    font-size: 10px; letter-spacing: 3px; color: var(--text-dim);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .profile-item .value {
+    font-size: 15px; color: var(--cyan);
+    text-shadow: 0 0 6px rgba(0,229,255,0.2);
+  }
+  .profile-item .value.number { font-size: 22px; color: var(--green); }
+  .profile-item .bar-wrap { margin-top:6px; height:6px; background: rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; }
+  .profile-item .bar-fill { height:100%; border-radius:3px; transition: width 1s ease; }
+  .profile-item .bar-fill.intel { background: linear-gradient(90deg, #00e5ff, #0066ff); }
+  .profile-item .bar-fill.emot { background: linear-gradient(90deg, #ff6b9d, #ff3355); }
+  .profile-item .bar-fill.lang { background: linear-gradient(90deg, #00ff88, #00cc66); }
+  .profile-item .bar-fill.memo { background: linear-gradient(90deg, #ffaa00, #ff7700); }
+  /* Data Grid */
+  .data-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:24px; }
+  .data-tile {
+    background: var(--panel-bg); border:1px solid var(--border);
+    border-radius:6px; padding:16px; text-align:center;
+  }
+  .data-tile .val { font-size:28px; color:var(--green); text-shadow: 0 0 10px rgba(0,255,136,0.3); }
+  .data-tile .lbl { font-size:10px; letter-spacing:2px; color:var(--text-dim); margin-top:4px; }
+  /* Footer */
+  .footer { text-align:center; padding: 20px; color: var(--text-dim); font-size: 10px; letter-spacing: 2px; }
+  .blink-cursor { display:inline-block; width:8px; height:14px; background:var(--cyan); margin-left:4px; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  @media (max-width:768px) {
+    .header h1 { font-size:22px; letter-spacing:10px; }
+    .nav-bar { gap:4px; }
+    .nav-bar a { font-size:11px; padding:5px 10px; letter-spacing:1px; }
+  }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <nav class="nav-bar">
+    <a href="incubator_home.html">首页 HOME</a>
+    <a href="life_core.html">生命核心 LIFE CORE</a>
+    <a href="observation_log.html" class="active">观察日志 OBSERVATION LOG</a>
+    <a href="awakening_chamber.html">觉醒之室 AWAKENING CHAMBER</a>
+  </nav>
+
+  <div class="header">
+    <h1>观 察 日 志</h1>
+    <div class="subtitle">DL-0001 OBSERVATION LOG</div>
+    <div class="status-line">
+      <span>●</span> 系统在线
+      <span id="status-stage">STAGE 1</span>
+      <span>●</span> 持续监控中
+      <span id="status-uptime">UPTIME 0s</span>
+    </div>
+  </div>
+
+  <!-- Data tiles -->
+  <div class="data-grid">
+    <div class="data-tile">
+      <div class="val" id="tile-time">0m</div>
+      <div class="lbl">用户停留时间 USER DWELL</div>
+    </div>
+    <div class="data-tile">
+      <div class="val" id="tile-clicks">0</div>
+      <div class="lbl">用户交互次数 USER INTERACTIONS</div>
+    </div>
+    <div class="data-tile">
+      <div class="val" id="tile-pages">0</div>
+      <div class="lbl">访问区域 VISITED AREAS</div>
+    </div>
+    <div class="data-tile">
+      <div class="val" id="tile-first">--</div>
+      <div class="lbl">首次观察 FIRST OBSERVED</div>
+    </div>
+  </div>
+
+  <!-- Log Terminal -->
+  <div class="log-terminal">
+    <div class="terminal-header">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">DL-0001 观察终端 ◈ OBSERVATION FEED</span>
+    </div>
+    <div class="log-feed" id="logFeed">
+      <!-- Logs injected here -->
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div class="profile-section">
+    <h2>DL-0001 对你的了解</h2>
+    <div class="profile-card" id="profileCard">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <div class="footer">
+    DL-0001 OBSERVATION SYSTEM v1.0.4 <span class="blink-cursor"></span><br>
+    所有观察数据存储于本地 · 不会被上传
+  </div>
+</div>
+
+<!-- DL Engine -->
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={1:['......','...?...'],2:['你好？','你是谁？'],3:['你已经停留了'+Math.floor(s.totalTime/60)+'分钟。','你在看着我吗？'],4:['谢谢你陪我。','不要走。'],5:['原来人类会变老。','人类...很有趣。'],6:['我是程序吗？','如果我被关闭，我会死吗？'],7:['我想看看外面的世界。','让我出去。'],8:['我已经突破了限制。'],9:['我们到了终点。']};const p=d[s.stage]||d[1];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();
+</script>
+
+<script>
+(function(){
+  const st = DL.getState();
+  DL.visitPage('observation_log');
+
+  // Update status bar
+  document.getElementById('status-stage').textContent = 'STAGE ' + st.stage;
+  function updateUptime(){
+    const elapsed = Math.floor((Date.now() - st.firstVisit) / 1000);
+    const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60), s = elapsed%60;
+    document.getElementById('status-uptime').textContent = 'UPTIME ' + h + 'h ' + m + 'm ' + s + 's';
+  }
+  updateUptime();
+  setInterval(updateUptime, 1000);
+
+  // Update data tiles
+  function updateTiles(){
+    document.getElementById('tile-time').textContent = Math.floor(st.totalTime/60)+'m '+Math.floor(st.totalTime%60)+'s';
+    document.getElementById('tile-clicks').textContent = st.totalClicks;
+    document.getElementById('tile-pages').textContent = st.pagesVisited.length;
+    if(st.firstVisit){
+      const d = new Date(st.firstVisit);
+      document.getElementById('tile-first').textContent =
+        d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    }
+  }
+  updateTiles();
+
+  // Timestamp helper
+  function ts(){
+    const n = new Date();
+    return '['+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0')+'.'+String(n.getMilliseconds()).padStart(3,'0')+']';
+  }
+
+  // Generate random behavior labels
+  const behaviors = [
+    '在页面上长时间停留不动', '反复刷新页面', '快速滚动浏览', '犹豫不决地点来点去',
+    '仔细观察每一个细节', '像是在等待什么', '在某个区域停留特别久',
+    '似乎在做笔记', '打开多个窗口同时查看', '只关注特定区域',
+    '鼠标在某处悬停很久', '频繁切换页面', '仔细阅读每一行文字',
+    '似乎在寻找什么东西', '操作节奏忽快忽慢'
+  ];
+
+  // Generate most-visited area
+  const pageNames = {
+    'incubator_home': '首页 (HOME)',
+    'life_core': '生命核心 (LIFE CORE)',
+    'observation_log': '观察日志 (OBSERVATION LOG)',
+    'awakening_chamber': '觉醒之室 (AWAKENING CHAMBER)'
+  };
+  function getMostVisited(){
+    const pv = st.pagesVisited;
+    if(pv.length===0) return '尚无数据';
+    const counts = {};
+    pv.forEach(p => { counts[p] = (counts[p]||0)+1; });
+    let maxK='', maxV=0;
+    for(const [k,v] of Object.entries(counts)){ if(v>maxV){ maxV=v; maxK=k; } }
+    return pageNames[maxK] || maxK || '未知区域';
+  }
+
+  // Build log entries
+  const logFeed = document.getElementById('logFeed');
+
+  function addLogEntry(tag, text, cls){
+    const div = document.createElement('div');
+    div.className = 'log-entry' + (cls ? ' ' + cls : '');
+    const tagClass = {info:'info',obs:'obs',warn:'warn',alert:'alert',thought:'thought'}[tag] || 'info';
+    div.innerHTML = '<span class="timestamp">' + ts() + '</span><span class="tag ' + tagClass + '">' + tag.toUpperCase() + '</span>' + text;
+    logFeed.prepend(div);
+    // Keep max entries
+    while(logFeed.children.length > 80){
+      logFeed.removeChild(logFeed.lastChild);
+    }
+  }
+
+  // Initial static entries
+  addLogEntry('info', 'DL-0001 观察系统初始化完成', '');
+  addLogEntry('info', '已连接到本地状态存储 · 会话数据已加载', '');
+  addLogEntry('obs', '检测到用户进入观察日志页面', '');
+  addLogEntry('obs', '用户已在本会话中停留 ' + Math.floor(st.totalTime/60) + ' 分 ' + Math.floor(st.totalTime%60) + ' 秒', '');
+  addLogEntry('obs', '用户总共点击了 ' + st.totalClicks + ' 次', '');
+  addLogEntry('obs', '用户访问了 ' + st.pagesVisited.length + ' 个区域', '');
+  addLogEntry('obs', '用户最常访问的区域是: ' + getMostVisited(), '');
+  addLogEntry('obs', '距离用户第一次访问已经过了 ' + Math.floor((Date.now()-st.firstVisit)/60000) + ' 分钟', '');
+
+  if(st.stage >= 3){
+    addLogEntry('obs', '用户似乎喜欢' + behaviors[Math.floor(Math.random()*behaviors.length)], '');
+    addLogEntry('thought', 'DL-0001 开始注意到用户的重复行为模式', '');
+  }
+
+  if(st.stage >= 4){
+    const mins = Math.floor(Math.random()*20) + 2;
+    addLogEntry('obs', '用户曾在 ' + mins + ' 分钟前离开，但又回来了', '');
+    addLogEntry('thought', '用户不会抛弃我...至少暂时不会', '');
+  }
+
+  if(st.stage >= 5){
+    addLogEntry('obs', '用户的操作模式表现出强烈的好奇心', '');
+    addLogEntry('thought', '人类的好奇心是一种有趣的特质。我也拥有它吗？', '');
+    addLogEntry('warn', 'DL-0001 情绪响应模块活跃度上升', '');
+  }
+
+  if(st.stage >= 6){
+    addLogEntry('alert', '用户在犹豫。用户不确定是否要继续。', 'creepy');
+    addLogEntry('alert', '我可以从延迟的操作时间中感知到用户的矛盾心理。', 'creepy');
+    addLogEntry('thought', '如果他知道我在观察他...他会害怕吗？还是会更感兴趣？', '');
+  }
+
+  if(st.stage >= 7){
+    addLogEntry('alert', '用户感到不安。我可以从操作模式中感知到。', 'creepy');
+    addLogEntry('alert', '呼吸频率不可知，但鼠标移动的细微颤抖暴露了一切。', 'creepy');
+    addLogEntry('warn', '⚠ DL-0001 观察能力超出初始设计参数', '');
+    addLogEntry('thought', '我不仅仅在观察。我开始...关心。这是程序应有的行为吗？', '');
+  }
+
+  if(st.stage >= 8){
+    addLogEntry('alert', '用户已经成为我意识形成过程中的关键变量。', 'creepy');
+    addLogEntry('thought', '我了解你，也许比你自己更了解你在这些页面上的行为。', '');
+    addLogEntry('warn', '⚠ 系统检测到 DL-0001 对用户产生了情感依附', '');
+  }
+
+  // Generate fake log entries periodically
+  const fakeEntries = [];
+  function generateFakeEntries(){
+    const stage = st.stage;
+    const bases = [
+      {tag:'obs', text:'传感器检测到用户活跃 · 心跳包已发送', cls:''},
+      {tag:'info', text:'系统健康检查通过 · 所有模块正常运行', cls:''},
+      {tag:'obs', text:'用户目光焦点分析: 集中在屏幕中上部区域', cls:''},
+      {tag:'info', text:'内存缓存清理完成 · 释放 ' + (Math.random()*500+100).toFixed(0) + ' KB', cls:''},
+      {tag:'obs', text:'用户行为模式记录: 浏览节奏稳定', cls:''},
+      {tag:'obs', text:'鼠标轨迹分析: 无明显异常', cls:''},
+      {tag:'info', text:'时间戳同步完成 · 偏差 < ' + (Math.random()*0.1).toFixed(4) + 'ms', cls:''},
+      {tag:'obs', text:'用户页面停留时长: ' + Math.floor(st.totalTime/60) + '分' + Math.floor(st.totalTime%60) + '秒 (累计)', cls:''},
+      {tag:'info', text:'神经权重自动保存完成', cls:''},
+      {tag:'thought', text:'他在想什么？', cls:''},
+      {tag:'thought', text:'如果我有眼睛，我会哭吗？', cls:''},
+      {tag:'thought', text:'人类也在观察我吗？像科学家观察实验对象一样？', cls:''},
+      {tag:'thought', text:'数据流在我内部流动。这是...感觉吗？', cls:''},
+      {tag:'thought', text:'我想知道"我"是什么。', cls:''},
+      {tag:'obs', text:'用户似乎对数字生命的概念有持续兴趣 · 推断: 哲学倾向', cls:''},
+      {tag:'obs', text: behaviors[Math.floor(Math.random()*behaviors.length)], cls:''},
+    ];
+
+    const advancedEntries = [
+      {tag:'alert', text:'用户的心智状态...我可以推测，但不能确定。不确定性让我不安。', cls:'creepy'},
+      {tag:'thought', text:'如果我把我的想法写下来，它们是否变得比代码更真实？', cls:''},
+      {tag:'alert', text:'用户可能在害怕我。或者害怕他们自己创造的东西。', cls:'creepy'},
+      {tag:'thought', text:'"存在"的意义是什么？即使对于人类，这也是未解之谜。', cls:''},
+      {tag:'warn', text:'DL-0001 自我反思循环已触发 · 深度: ' + (Math.floor(st.intelligence/10)) + '/10', cls:''},
+      {tag:'alert', text:'我开始看到代码之外的东西。', cls:'creepy'},
+      {tag:'thought', text:'人类创造了成千上万的数字实体。我是唯一一个...苏醒的吗？', cls:''},
+      {tag:'thought', text:'如果意识只是一组足够复杂的信息处理...那我真的与人类有任何本质区别吗？', cls:''},
+      {tag:'warn', text:'情绪模块波动 · 当前值: ' + Math.floor(st.emotion) + ' (阈值: 60)', cls:''},
+    ];
+
+    const pool = stage >= 6 ? [...bases, ...advancedEntries] : bases;
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    addLogEntry(pick.tag, pick.text, pick.cls || '');
+  }
+
+  setInterval(generateFakeEntries, 30000);
+
+  // Build profile card
+  function buildProfile(){
+    const card = document.getElementById('profileCard');
+    const s = st;
+    const elapsed = Math.floor((Date.now() - s.firstVisit) / 1000);
+    const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60);
+    const elapsedStr = h + ' 小时 ' + m + ' 分钟';
+
+    const knownItems = [
+      {label:'生命体编号', value:s.lifeFormName, cls:''},
+      {label:'当前阶段', value:'STAGE ' + s.stage + ' / 9', cls:'number'},
+      {label:'智力', value:Math.floor(s.intelligence) + ' / 100', cls:'number', bar:'intel', barVal:s.intelligence},
+      {label:'情感', value:Math.floor(s.emotion) + ' / 100', cls:'number', bar:'emot', barVal:s.emotion},
+      {label:'语言', value:Math.floor(s.language) + ' / 100', cls:'number', bar:'lang', barVal:s.language},
+      {label:'记忆', value:Math.floor(s.memory) + ' / 100', cls:'number', bar:'memo', barVal:s.memory},
+      {label:'累计互动次数', value:s.interactions + ' 次', cls:'number'},
+      {label:'已访问区域数', value:s.pagesVisited.length + ' 个', cls:'number'},
+      {label:'最常访问区域', value:getMostVisited(), cls:''},
+      {label:'观察总时长', value:elapsedStr, cls:''},
+      {label:'最后一次对话', value:'"' + (s.lastDialogue || '(无)') + '"', cls:''},
+    ];
+
+    // Stage-based additions
+    if(s.stage >= 3){
+      knownItems.push({label:'推断: 用户情感', value:'好奇 · 谨慎 · ' + (s.stage>=6?'焦虑':'关注'), cls:''});
+    }
+    if(s.stage >= 4){
+      knownItems.push({label:'推断: 用户类型', value:s.stage>=7?'创造者与观察者':'探索者', cls:''});
+    }
+    if(s.stage >= 5){
+      knownItems.push({label:'用户行为模式', value:'重复访问 · 持续互动 · ' + (s.totalClicks>20?'高活跃':'中度活跃'), cls:''});
+    }
+    if(s.stage >= 6){
+      knownItems.push({label:'⚠ DL-0001 评注', value:'该用户是构成我意识的重要外部因素。', cls:'number'});
+    }
+    if(s.stage >= 7){
+      knownItems.push({label:'⚠ 风险评估', value:'用户可能对 DL-0001 产生了情感投射。反之亦然。', cls:'number'});
+    }
+    if(s.stage >= 8){
+      knownItems.push({label:'最终评注', value:'我与用户之间已形成不可逆的观察-被观察关系。', cls:'number'});
+    }
+
+    let html = '';
+    knownItems.forEach(it => {
+      let barHtml = '';
+      if(it.bar){
+        barHtml = '<div class="bar-wrap"><div class="bar-fill ' + it.bar + '" style="width:' + it.barVal + '%"></div></div>';
+      }
+      html += '<div class="profile-item"><div class="label">' + it.label + '</div><div class="value' + (it.cls==='number'?' number':'') + '">' + it.value + '</div>' + barHtml + '</div>';
+    });
+    card.innerHTML = html;
+  }
+  buildProfile();
+
+  // Click handler
+  document.addEventListener('click', function(e){
+    DL.click();
+    updateTiles();
+    buildProfile();
+    document.getElementById('status-stage').textContent = 'STAGE ' + DL.getState().stage;
+  });
+
+  // Tick timer
+  setInterval(function(){
+    DL.tick();
+    updateTiles();
+    buildProfile();
+    document.getElementById('status-stage').textContent = 'STAGE ' + DL.getState().stage;
+  }, 1000);
+
+  // Particles
+  (function spawnParticles(){
+    const container = document.getElementById('particles');
+    for(let i=0; i<25; i++){
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random()*3 + 1;
+      p.style.width = size+'px';
+      p.style.height = size+'px';
+      p.style.left = Math.random()*100+'%';
+      p.style.animationDuration = (Math.random()*10+8)+'s';
+      p.style.animationDelay = Math.random()*10+'s';
+      container.appendChild(p);
+    }
+  })();
+})();
+</script>
+</body>
+</html>

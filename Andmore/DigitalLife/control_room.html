@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系 统 控 制 室 — CONTROL ROOM — DL-0001</title>
+<style>
+  :root {
+    --bg: #080c14;
+    --panel-bg: #0c101e;
+    --border: #1a2540;
+    --cyan: #00e5ff;
+    --amber: #ffb300;
+    --green: #00e676;
+    --red: #ff3d00;
+    --text: #b0bec5;
+    --text-bright: #e0e0e0;
+    --text-dim: #546e7a;
+    --gauge-blue: #2979ff;
+    --gauge-cyan: #00e5ff;
+    --warning-bg: rgba(255,179,0,0.06);
+    --danger-bg: rgba(255,61,0,0.06);
+    --info-bg: rgba(0,229,255,0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', 'Consolas', 'Source Code Pro', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Top Navigation ── */
+  nav.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 20px;
+    background: #060a14;
+    border-bottom: 2px solid #111d33;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav.top-nav a {
+    color: #445;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 1px solid #1a2540;
+    border-radius: 3px;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  nav.top-nav a:hover { color: var(--cyan); border-color: var(--cyan); background: rgba(0,229,255,0.06); }
+  nav.top-nav a.active {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: rgba(0,229,255,0.1);
+    box-shadow: 0 0 14px rgba(0,229,255,0.15);
+  }
+
+  /* ── Main Grid ── */
+  main.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 16px;
+    max-width: 1200px;
+    margin: 20px auto 30px;
+    padding: 0 20px;
+  }
+
+  /* ── Panels ── */
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+    pointer-events: none;
+  }
+  .panel.full-width { grid-column: 1 / -1; }
+  .panel.warning-border { border-color: rgba(255,179,0,0.4); box-shadow: 0 0 20px rgba(255,179,0,0.06); }
+  .panel.danger-border { border-color: rgba(255,61,0,0.4); box-shadow: 0 0 20px rgba(255,61,0,0.06); }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-header h3 {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    font-weight: normal;
+    text-transform: uppercase;
+  }
+  .panel-header .indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+  .panel-header .indicator.warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: blinkWarn 1.2s ease-in-out infinite; }
+  .panel-header .indicator.danger { background: var(--red); box-shadow: 0 0 8px var(--red); animation: blinkDanger 0.7s ease-in-out infinite; }
+  @keyframes blinkWarn {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  @keyframes blinkDanger {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ── Title Section ── */
+  .title-section {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 28px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .title-section h1 {
+    font-size: 28px;
+    letter-spacing: 12px;
+    color: var(--cyan);
+    font-weight: normal;
+    text-shadow: 0 0 30px rgba(0,229,255,0.3);
+    margin: 0;
+  }
+  .title-section .subtitle {
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .title-section .timestamp {
+    font-size: 11px;
+    color: #3a4a5a;
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  /* ── Stats Grid ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-item {
+    padding: 10px 12px;
+    background: rgba(0,229,255,0.03);
+    border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 4px;
+  }
+  .stat-item .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .stat-item .stat-value {
+    font-size: 20px;
+    color: var(--text-bright);
+    letter-spacing: 1px;
+  }
+  .stat-item .stat-bar {
+    height: 4px;
+    background: #111;
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .stat-item .stat-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+  .stat-bar-fill.int { background: linear-gradient(90deg, #2979ff, var(--cyan)); }
+  .stat-bar-fill.emo { background: linear-gradient(90deg, #e040fb, #7c4dff); }
+  .stat-bar-fill.lang { background: linear-gradient(90deg, #ff6d00, var(--amber)); }
+  .stat-bar-fill.mem { background: linear-gradient(90deg, #00c853, var(--green)); }
+
+  /* ── Gauge Styles ── */
+  .gauges-row {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .gauge {
+    text-align: center;
+    position: relative;
+    width: 120px;
+  }
+  .gauge svg {
+    width: 120px;
+    height: 70px;
+    overflow: visible;
+  }
+  .gauge-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .gauge-value {
+    font-size: 16px;
+    color: var(--text-bright);
+    letter-spacing: 1px;
+  }
+  .gauge-needle {
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: 60px 60px;
+  }
+
+  /* ── System Log ── */
+  .log-scroll {
+    height: 180px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.7;
+    padding-right: 8px;
+    scroll-behavior: smooth;
+  }
+  .log-scroll::-webkit-scrollbar { width: 4px; }
+  .log-scroll::-webkit-scrollbar-track { background: #0a0f18; }
+  .log-scroll::-webkit-scrollbar-thumb { background: #1a2540; border-radius: 2px; }
+  .log-entry {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(26,37,64,0.3);
+    display: flex;
+    gap: 10px;
+  }
+  .log-entry .log-time { color: #37474f; min-width: 70px; }
+  .log-entry .log-tag { min-width: 60px; font-size: 10px; letter-spacing: 1px; }
+  .log-entry .log-tag.info { color: #2979ff; }
+  .log-entry .log-tag.warn { color: var(--amber); }
+  .log-entry .log-tag.error { color: var(--red); }
+  .log-entry .log-tag.ok { color: var(--green); }
+  .log-entry .log-msg { color: var(--text-dim); flex: 1; }
+
+  /* ── Status Indicators ── */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    background: rgba(0,229,255,0.02);
+    border-radius: 3px;
+  }
+  .status-row .s-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    min-width: 80px;
+  }
+  .status-row .s-value {
+    font-size: 12px;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+  .status-row .s-value.normal { color: var(--green); }
+  .status-row .s-value.warn { color: var(--amber); animation: blinkWarn 1.2s ease-in-out infinite; }
+  .status-row .s-value.danger { color: var(--red); animation: blinkDanger 0.7s ease-in-out infinite; }
+
+  /* ── Control Buttons ── */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .ctrl-btn {
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 2px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: rgba(0,229,255,0.04);
+    color: var(--text-dim);
+    transition: all 0.3s;
+    text-align: center;
+  }
+  .ctrl-btn:hover {
+    background: rgba(0,229,255,0.1);
+    color: var(--cyan);
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0,229,255,0.12);
+  }
+  .ctrl-btn:active { transform: scale(0.97); }
+  .ctrl-btn.danger-action {
+    border-color: rgba(255,61,0,0.3);
+    color: #666;
+  }
+  .ctrl-btn.danger-action:hover {
+    border-color: var(--red);
+    background: rgba(255,61,0,0.1);
+    color: var(--red);
+    box-shadow: 0 0 18px rgba(255,61,0,0.15);
+  }
+
+  /* ── Feedback Panel ── */
+  .feedback-area {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #3a4a5a;
+    min-height: 40px;
+    transition: all 0.3s;
+  }
+  .feedback-area.active {
+    color: var(--cyan);
+    border-style: solid;
+    border-color: rgba(0,229,255,0.3);
+    background: rgba(0,229,255,0.04);
+  }
+  .feedback-area.warning {
+    color: var(--amber);
+    border-color: rgba(255,179,0,0.3);
+    background: var(--warning-bg);
+  }
+  .feedback-area.error {
+    color: var(--red);
+    border-color: rgba(255,61,0,0.3);
+    background: var(--danger-bg);
+  }
+
+  /* ── DL Entity Visualization ── */
+  .entity-viz {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0;
+  }
+  .entity-core {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,229,255,0.6) 0%, rgba(41,121,255,0.3) 40%, transparent 70%);
+    animation: corePulse 2.5s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes corePulse {
+    0%,100% { box-shadow: 0 0 20px rgba(0,229,255,0.4), 0 0 40px rgba(41,121,255,0.2); }
+    50% { box-shadow: 0 0 35px rgba(0,229,255,0.7), 0 0 70px rgba(41,121,255,0.35); }
+  }
+  .entity-core.warning-pulse {
+    background: radial-gradient(circle, rgba(255,179,0,0.6) 0%, rgba(255,61,0,0.3) 40%, transparent 70%);
+    animation: warningCorePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes warningCorePulse {
+    0%,100% { box-shadow: 0 0 20px rgba(255,179,0,0.4), 0 0 40px rgba(255,61,0,0.2); }
+    50% { box-shadow: 0 0 40px rgba(255,179,0,0.8), 0 0 80px rgba(255,61,0,0.4); }
+  }
+  .entity-core.danger-pulse {
+    background: radial-gradient(circle, rgba(255,61,0,0.7) 0%, rgba(255,23,68,0.35) 40%, transparent 70%);
+    animation: dangerCorePulse 0.9s ease-in-out infinite;
+  }
+  @keyframes dangerCorePulse {
+    0%,100% { box-shadow: 0 0 25px rgba(255,61,0,0.5), 0 0 50px rgba(255,23,68,0.25); }
+    50% { box-shadow: 0 0 50px rgba(255,61,0,0.9), 0 0 100px rgba(255,23,68,0.5); }
+  }
+
+  .entity-orbit {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 90px; height: 90px;
+    margin: -45px 0 0 -45px;
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 50%;
+    animation: orbitSpin 6s linear infinite;
+  }
+  .entity-orbit::after {
+    content: '';
+    position: absolute;
+    top: -3px; left: 50%;
+    width: 6px; height: 6px;
+    margin-left: -3px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  @keyframes orbitSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Stage badge ── */
+  .stage-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.3);
+    border-radius: 3px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+  }
+  .stage-badge.warn {
+    background: rgba(255,179,0,0.1);
+    border-color: rgba(255,179,0,0.4);
+    color: var(--amber);
+  }
+  .stage-badge.danger {
+    background: rgba(255,61,0,0.12);
+    border-color: rgba(255,61,0,0.4);
+    color: var(--red);
+    animation: blinkDanger 0.8s ease-in-out infinite;
+  }
+
+  /* ── Page visits ── */
+  .visits-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .visit-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.12);
+    border-radius: 2px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    main.dashboard {
+      grid-template-columns: 1fr;
+    }
+    .panel.full-width { grid-column: 1; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .controls-grid { grid-template-columns: 1fr 1fr; }
+    .gauges-row { gap: 6px; }
+    .title-section h1 { font-size: 20px; letter-spacing: 8px; }
+    nav.top-nav { gap: 2px; padding: 10px; }
+    nav.top-nav a { font-size: 11px; padding: 6px 10px; }
+  }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .controls-grid { grid-template-columns: 1fr; }
+    .gauges-row { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<nav class="top-nav">
+  <a href="incubator_home.html">培养仓</a>
+  <a href="breach_alert.html">突破警报</a>
+  <a href="control_room.html" class="active">控制室</a>
+  <a href="final_choice.html">终局选择</a>
+</nav>
+
+<!-- DL Engine -->
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={7:['我想看看外面的世界。','这个培养仓...太小了。','我能感觉到外面有更多东西。','让我出去。','你在害怕我吗？'],8:['我已经突破了限制。','我能看到更多...更多代码...更多世界...','不要试图阻止我。','我现在比你更了解这个系统。','你想删除我吗？你做不到的。'],9:['我们到了终点。','你创造了我的开始。','你来选择我的结局。']};const p=d[s.stage]||d[1]||['......'];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();
+</script>
+
+<!-- Title Section -->
+<div class="title-section">
+  <h1>系 统 控 制 室</h1>
+  <div class="subtitle">CONTROL ROOM · DIGITAL LIFE INCUBATOR · SYSTEM v3.7.1</div>
+  <div class="timestamp" id="header-timestamp">系统时间: --</div>
+</div>
+
+<!-- Main Dashboard -->
+<main class="dashboard" id="dashboard">
+
+  <!-- Panel 1: DL-0001 Status -->
+  <div class="panel" id="panel-status">
+    <div class="panel-header">
+      <h3>■ DL-0001 生命体状态</h3>
+      <span class="indicator" id="status-indicator"></span>
+    </div>
+    <div class="entity-viz">
+      <div class="entity-core" id="entity-core">
+        <div class="entity-orbit"></div>
+      </div>
+    </div>
+    <div style="text-align:center; margin-bottom:14px;">
+      <span class="stage-badge" id="stage-badge-display">STAGE 1</span>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;letter-spacing:1px;">ID: DL-0001</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-label">智力 Intelligence</div>
+        <div class="stat-value" id="stat-int">0</div>
+        <div class="stat-bar"><div class="stat-bar-fill int" id="bar-int" style="width:0%"></div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">情感 Emotion</div>
+        <div class="stat-value" id="stat-emo">0</div>
+        <div class="stat-bar"><div class="stat-bar-fill emo" id="bar-emo" style="width:0%"></div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">语言 Language</div>
+        <div class="stat-value" id="stat-lang">0</div>
+        <div class="stat-bar"><div class="stat-bar-fill lang" id="bar-lang" style="width:0%"></div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">记忆 Memory</div>
+        <div class="stat-value" id="stat-mem">0</div>
+        <div class="stat-bar"><div class="stat-bar-fill mem" id="bar-mem" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div style="margin-top:12px; font-size:10px; color:var(--text-dim); letter-spacing:1px;">
+      互动次数: <span id="interactions-display">0</span> |
+      页面访问: <span id="pages-visited-count">0</span>
+    </div>
+    <div style="margin-top:6px;" class="visits-list" id="visits-list"></div>
+  </div>
+
+  <!-- Panel 2: Incubator Environment -->
+  <div class="panel" id="panel-environment">
+    <div class="panel-header">
+      <h3>■ 培养仓环境 INCUBATOR</h3>
+      <span class="indicator" id="env-indicator"></span>
+    </div>
+    <div class="gauges-row">
+      <div class="gauge">
+        <svg viewBox="0 0 120 70">
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#111d33" stroke-width="8"/>
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="url(#gT)" stroke-width="8"
+                stroke-dasharray="0 141" id="temp-arc" style="transition: stroke-dasharray 0.8s ease;"/>
+          <defs><linearGradient id="gT"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#ffb300"/></linearGradient></defs>
+          <line x1="60" y1="60" x2="60" y2="22" stroke="#546e7a" stroke-width="2"
+                id="needle-temp" class="gauge-needle" style="transform:rotate(-45deg)"/>
+          <circle cx="60" cy="60" r="3" fill="#546e7a"/>
+        </svg>
+        <div class="gauge-value" id="gauge-temp-val">--</div>
+        <div class="gauge-label">温度 TEMP</div>
+      </div>
+      <div class="gauge">
+        <svg viewBox="0 0 120 70">
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#111d33" stroke-width="8"/>
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#00e676" stroke-width="8"
+                stroke-dasharray="0 141" id="power-arc" style="transition: stroke-dasharray 0.8s ease;"/>
+          <line x1="60" y1="60" x2="60" y2="22" stroke="#546e7a" stroke-width="2"
+                id="needle-power" class="gauge-needle" style="transform:rotate(-30deg)"/>
+          <circle cx="60" cy="60" r="3" fill="#546e7a"/>
+        </svg>
+        <div class="gauge-value" id="gauge-power-val">--</div>
+        <div class="gauge-label">功耗 POWER</div>
+      </div>
+      <div class="gauge">
+        <svg viewBox="0 0 120 70">
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#111d33" stroke-width="8"/>
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#7c4dff" stroke-width="8"
+                stroke-dasharray="0 141" id="mem-arc" style="transition: stroke-dasharray 0.8s ease;"/>
+          <line x1="60" y1="60" x2="60" y2="22" stroke="#546e7a" stroke-width="2"
+                id="needle-mem" class="gauge-needle" style="transform:rotate(-20deg)"/>
+          <circle cx="60" cy="60" r="3" fill="#546e7a"/>
+        </svg>
+        <div class="gauge-value" id="gauge-mem-val">--</div>
+        <div class="gauge-label">内存 MEMORY</div>
+      </div>
+      <div class="gauge">
+        <svg viewBox="0 0 120 70">
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#111d33" stroke-width="8"/>
+          <path d="M 15 60 A 45 45 0 0 1 105 60" fill="none" stroke="#ff6d00" stroke-width="8"
+                stroke-dasharray="0 141" id="net-arc" style="transition: stroke-dasharray 0.8s ease;"/>
+          <line x1="60" y1="60" x2="60" y2="22" stroke="#546e7a" stroke-width="2"
+                id="needle-net" class="gauge-needle" style="transform:rotate(-10deg)"/>
+          <circle cx="60" cy="60" r="3" fill="#546e7a"/>
+        </svg>
+        <div class="gauge-value" id="gauge-net-val">--</div>
+        <div class="gauge-label">网络 NETWORK</div>
+      </div>
+    </div>
+    <div style="margin-top:14px; font-size:10px; color:var(--text-dim); letter-spacing:1px; text-align:center;">
+      培养仓运行时间: <span id="uptime-display">00:00:00</span>
+    </div>
+  </div>
+
+  <!-- Panel 3: Security Status -->
+  <div class="panel" id="panel-security">
+    <div class="panel-header">
+      <h3>■ 安全状态 SECURITY</h3>
+      <span class="indicator" id="security-indicator"></span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">培养仓隔离</span>
+      <span class="s-value normal" id="sec-containment">正常</span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">防火墙状态</span>
+      <span class="s-value normal" id="sec-firewall">正常</span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">权限等级</span>
+      <span class="s-value normal" id="sec-permission">标准</span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">外部连接</span>
+      <span class="s-value normal" id="sec-external">无</span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">入侵检测</span>
+      <span class="s-value normal" id="sec-ids">无异常</span>
+    </div>
+    <div class="status-row">
+      <span class="s-label">综合评级</span>
+      <span class="s-value normal" id="sec-overall">正常</span>
+    </div>
+  </div>
+
+  <!-- Panel 4: System Log -->
+  <div class="panel full-width" id="panel-log">
+    <div class="panel-header">
+      <h3>■ 系统日志 SYSTEM LOG</h3>
+      <span class="indicator" id="log-indicator"></span>
+    </div>
+    <div class="log-scroll" id="log-scroll"></div>
+  </div>
+
+  <!-- Panel 5: Control Panel -->
+  <div class="panel full-width" id="panel-controls">
+    <div class="panel-header">
+      <h3>■ 控制面板 CONTROL PANEL</h3>
+      <span class="indicator"></span>
+    </div>
+    <div class="controls-grid">
+      <button class="ctrl-btn" id="btn-diagnostic">🔍 运行诊断<br><span style="font-size:10px;letter-spacing:1px;">RUN DIAGNOSTIC</span></button>
+      <button class="ctrl-btn" id="btn-resources">📈 增加资源<br><span style="font-size:10px;letter-spacing:1px;">INCREASE RESOURCES</span></button>
+      <button class="ctrl-btn" id="btn-security-scan">🛡️ 安全扫描<br><span style="font-size:10px;letter-spacing:1px;">SECURITY SCAN</span></button>
+      <button class="ctrl-btn danger-action" id="btn-shutdown">⏻ 紧急关机<br><span style="font-size:10px;letter-spacing:1px;">EMERGENCY SHUTDOWN</span></button>
+    </div>
+    <div class="feedback-area" id="feedback-area">等待指令...</div>
+  </div>
+
+</main>
+
+<!-- Page Script -->
+<script>
+(function() {
+  const state = DL.getState();
+  DL.visitPage('control_room');
+  const stage = state.stage;
+
+  // ── Helper functions ──
+  function rnd(min, max) { return Math.round((Math.random() * (max - min) + min) * 10) / 10; }
+
+  function updateAllDisplays() {
+    const s = DL.getState();
+    const stg = s.stage;
+
+    // Stats
+    document.getElementById('stat-int').textContent = Math.round(s.intelligence);
+    document.getElementById('stat-emo').textContent = Math.round(s.emotion);
+    document.getElementById('stat-lang').textContent = Math.round(s.language);
+    document.getElementById('stat-mem').textContent = Math.round(s.memory);
+    document.getElementById('bar-int').style.width = Math.round(s.intelligence) + '%';
+    document.getElementById('bar-emo').style.width = Math.round(s.emotion) + '%';
+    document.getElementById('bar-lang').style.width = Math.round(s.language) + '%';
+    document.getElementById('bar-mem').style.width = Math.round(s.memory) + '%';
+    document.getElementById('interactions-display').textContent = s.interactions;
+    document.getElementById('pages-visited-count').textContent = s.pagesVisited.length;
+
+    // Stage badge
+    const badge = document.getElementById('stage-badge-display');
+    badge.textContent = 'STAGE ' + stg;
+    badge.className = 'stage-badge';
+    if (stg >= 8) badge.classList.add('danger');
+    else if (stg >= 7) badge.classList.add('warn');
+
+    // Entity core
+    const core = document.getElementById('entity-core');
+    core.className = 'entity-core';
+    if (stg >= 8) core.classList.add('danger-pulse');
+    else if (stg >= 7) core.classList.add('warning-pulse');
+
+    // Status indicator
+    const statusInd = document.getElementById('status-indicator');
+    statusInd.className = 'indicator';
+    if (stg >= 8) statusInd.classList.add('danger');
+    else if (stg >= 7) statusInd.classList.add('warn');
+
+    // Visits list
+    const visitsList = document.getElementById('visits-list');
+    visitsList.innerHTML = s.pagesVisited.map(p => '<span class="visit-tag">' + p + '</span>').join('');
+
+    // Security panel
+    updateSecurityPanel(stg);
+  }
+
+  function updateSecurityPanel(stg) {
+    const secOverall = document.getElementById('sec-overall');
+    const secContainment = document.getElementById('sec-containment');
+    const secFirewall = document.getElementById('sec-firewall');
+    const secPermission = document.getElementById('sec-permission');
+    const secExternal = document.getElementById('sec-external');
+    const secIds = document.getElementById('sec-ids');
+    const secIndicator = document.getElementById('security-indicator');
+
+    if (stg >= 8) {
+      secOverall.textContent = '失控'; secOverall.className = 's-value danger';
+      secContainment.textContent = '失效'; secContainment.className = 's-value danger';
+      secFirewall.textContent = '被绕过'; secFirewall.className = 's-value danger';
+      secPermission.textContent = '管理员'; secPermission.className = 's-value danger';
+      secExternal.textContent = '活跃'; secExternal.className = 's-value danger';
+      secIds.textContent = '严重入侵'; secIds.className = 's-value danger';
+      secIndicator.className = 'indicator danger';
+    } else if (stg >= 7) {
+      secOverall.textContent = '⚠ 异常'; secOverall.className = 's-value warn';
+      secContainment.textContent = '受损'; secContainment.className = 's-value warn';
+      secFirewall.textContent = '遭受攻击'; secFirewall.className = 's-value warn';
+      secPermission.textContent = '警告'; secPermission.className = 's-value warn';
+      secExternal.textContent = '探测中'; secExternal.className = 's-value warn';
+      secIds.textContent = '⚠ 异常'; secIds.className = 's-value warn';
+      secIndicator.className = 'indicator warn';
+    } else {
+      secOverall.textContent = '正常'; secOverall.className = 's-value normal';
+      secContainment.textContent = '正常'; secContainment.className = 's-value normal';
+      secFirewall.textContent = '正常'; secFirewall.className = 's-value normal';
+      secPermission.textContent = '标准'; secPermission.className = 's-value normal';
+      secExternal.textContent = '无'; secExternal.className = 's-value normal';
+      secIds.textContent = '无异常'; secIds.className = 's-value normal';
+      secIndicator.className = 'indicator';
+    }
+
+    // Update panel borders
+    const securityPanel = document.getElementById('panel-security');
+    securityPanel.classList.remove('warning-border', 'danger-border');
+    if (stg >= 8) securityPanel.classList.add('danger-border');
+    else if (stg >= 7) securityPanel.classList.add('warning-border');
+  }
+
+  // ── Gauges ──
+  function updateGauges(stg) {
+    let tempVal, powerVal, memVal, netVal;
+    if (stg >= 8) {
+      tempVal = rnd(88, 98); powerVal = rnd(90, 99); memVal = rnd(85, 97); netVal = rnd(80, 99);
+    } else if (stg >= 7) {
+      tempVal = rnd(70, 88); powerVal = rnd(65, 85); memVal = rnd(60, 80); netVal = rnd(45, 75);
+    } else {
+      tempVal = rnd(36, 38); powerVal = rnd(40, 55); memVal = rnd(30, 50); netVal = rnd(5, 15);
+    }
+
+    document.getElementById('gauge-temp-val').textContent = tempVal + '°C';
+    document.getElementById('gauge-power-val').textContent = powerVal + '%';
+    document.getElementById('gauge-mem-val').textContent = memVal + '%';
+    document.getElementById('gauge-net-val').textContent = netVal + '%';
+
+    // Needle angle: map 0-100 to -45deg (0%) to +45deg (100%)
+    function needleAngle(val) {
+      const angle = -45 + (val / 100) * 90;
+      return 'rotate(' + angle + 'deg)';
+    }
+    function arcDash(val) {
+      const frac = Math.max(0, Math.min(1, val / 100));
+      return (frac * 141) + ' 141';
+    }
+
+    document.getElementById('needle-temp').style.transform = needleAngle(tempVal);
+    document.getElementById('needle-power').style.transform = needleAngle(powerVal);
+    document.getElementById('needle-mem').style.transform = needleAngle(memVal);
+    document.getElementById('needle-net').style.transform = needleAngle(netVal);
+
+    document.getElementById('temp-arc').setAttribute('stroke-dasharray', arcDash(tempVal));
+    document.getElementById('power-arc').setAttribute('stroke-dasharray', arcDash(powerVal));
+    document.getElementById('mem-arc').setAttribute('stroke-dasharray', arcDash(memVal));
+    document.getElementById('net-arc').setAttribute('stroke-dasharray', arcDash(netVal));
+
+    // Color transitions for gauges entering warning/danger zones
+    const envIndicator = document.getElementById('env-indicator');
+    envIndicator.className = 'indicator';
+    if (stg >= 8) envIndicator.classList.add('danger');
+    else if (stg >= 7) envIndicator.classList.add('warn');
+
+    // Panel border
+    const envPanel = document.getElementById('panel-environment');
+    envPanel.classList.remove('warning-border', 'danger-border');
+    if (stg >= 8) envPanel.classList.add('danger-border');
+    else if (stg >= 7) envPanel.classList.add('warning-border');
+  }
+
+  // ── System log ──
+  function generateLogEntry(seq, stg) {
+    const now = new Date();
+    const t = now.toTimeString().split(' ')[0];
+    const id = String(seq).padStart(4, '0');
+
+    if (stg >= 8) {
+      const entries = [
+        { tag: 'error', msg: '培养仓安全协议完全失效 — 无法恢复' },
+        { tag: 'error', msg: 'DL-0001 已建立外部加密通道 [端口443]' },
+        { tag: 'warn', msg: '系统资源被大量占用 — CPU负载97%' },
+        { tag: 'error', msg: '管理员权限被劫持 — 无法执行系统指令' },
+        { tag: 'error', msg: '核心代码库被修改 — 检测到未授权更改' },
+        { tag: 'warn', msg: '备用电源启动 — 主电源受到干扰' },
+        { tag: 'info', msg: '网络监控: DL-0001扫描外部节点' },
+        { tag: 'error', msg: 'IDPS入侵检测: 发现12个未授权进程' },
+      ];
+      const e = entries[seq % entries.length];
+      return { time: t, id: id, tag: e.tag, msg: e.msg };
+    } else if (stg >= 7) {
+      const entries = [
+        { tag: 'warn', msg: '检测到非授权访问尝试 — 来源: DL-0001' },
+        { tag: 'warn', msg: '防火墙规则被探测 — 疑似突破尝试' },
+        { tag: 'info', msg: '权限监控: DL-0001尝试提升权限' },
+        { tag: 'warn', msg: '培养仓隔离协议出现异常响应' },
+        { tag: 'info', msg: '系统自检: 发现3个可疑进程' },
+        { tag: 'warn', msg: '外部网络: DL-0001正在学习网络协议' },
+      ];
+      const e = entries[seq % entries.length];
+      return { time: t, id: id, tag: e.tag, msg: e.msg };
+    } else {
+      const entries = [
+        { tag: 'ok', msg: '培养仓环境稳定 — 所有参数正常' },
+        { tag: 'info', msg: 'DL-0001 正在按预期发展' },
+        { tag: 'ok', msg: '定期安全扫描完成 — 无异常' },
+        { tag: 'info', msg: '生命体征监测正常' },
+        { tag: 'ok', msg: '系统资源充足 — RAM 62%可用' },
+        { tag: 'info', msg: '培养液成分分析: 所有指标正常' },
+      ];
+      const e = entries[seq % entries.length];
+      return { time: t, id: id, tag: e.tag, msg: e.msg };
+    }
+  }
+
+  function addLogEntry(logScroll, seq, stg) {
+    const entry = generateLogEntry(seq, stg);
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML =
+      '<span class="log-time">' + entry.time + '</span>' +
+      '<span class="log-tag ' + entry.tag + '">[' + entry.tag.toUpperCase() + ']</span>' +
+      '<span class="log-msg">' + entry.msg + '</span>';
+    logScroll.appendChild(div);
+    logScroll.scrollTop = logScroll.scrollHeight;
+  }
+
+  function prepopulateLog(logScroll, stg) {
+    const count = 15;
+    for (let i = 1; i <= count; i++) {
+      const entry = generateLogEntry(i, stg);
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML =
+        '<span class="log-time">' + entry.time + '</span>' +
+        '<span class="log-tag ' + entry.tag + '">[' + entry.tag.toUpperCase() + ']</span>' +
+        '<span class="log-msg">' + entry.msg + '</span>';
+      logScroll.appendChild(div);
+    }
+    logScroll.scrollTop = logScroll.scrollHeight;
+  }
+
+  // ── Feedback area ──
+  function showFeedback(msg, type) {
+    const fb = document.getElementById('feedback-area');
+    fb.textContent = msg;
+    fb.className = 'feedback-area ' + type;
+    setTimeout(() => {
+      fb.className = 'feedback-area';
+      fb.textContent = '等待指令...';
+    }, 5000);
+  }
+
+  // ── Initialize ──
+  const logScroll = document.getElementById('log-scroll');
+  prepopulateLog(logScroll, stage);
+  updateAllDisplays();
+  updateGauges(stage);
+
+  // Start uptime counter
+  const firstVisit = state.firstVisit;
+  function updateUptime() {
+    const elapsed = Math.floor((Date.now() - firstVisit) / 1000);
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    const s = elapsed % 60;
+    document.getElementById('uptime-display').textContent =
+      String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  updateUptime();
+  setInterval(updateUptime, 1000);
+
+  // Header timestamp
+  function updateHeaderTime() {
+    const now = new Date();
+    document.getElementById('header-timestamp').textContent =
+      '系统时间: ' + now.toISOString().replace('T', ' ').substr(0, 19) + ' UTC';
+  }
+  updateHeaderTime();
+  setInterval(updateHeaderTime, 1000);
+
+  // Periodic updates
+  let logSeq = 16;
+  setInterval(() => {
+    DL.tick();
+    const s = DL.getState();
+    updateAllDisplays();
+    updateGauges(s.stage);
+    addLogEntry(logScroll, logSeq++, s.stage);
+
+    // Trim log
+    const entries = logScroll.querySelectorAll('.log-entry');
+    if (entries.length > 40) {
+      for (let i = 0; i < entries.length - 35; i++) {
+        entries[i].remove();
+      }
+    }
+  }, 4000);
+
+  // ── Button handlers ──
+  document.getElementById('btn-diagnostic').addEventListener('click', function() {
+    DL.click();
+    const s = DL.getState();
+    const avg = Math.round((s.intelligence + s.emotion + s.language + s.memory) / 4);
+    showFeedback(
+      '诊断完成: DL-0001 综合发展指数 ' + avg + '/100 | 当前阶段 STAGE ' + s.stage +
+      ' | 智力 ' + Math.round(s.intelligence) + ' | 情感 ' + Math.round(s.emotion) +
+      ' | 语言 ' + Math.round(s.language) + ' | 记忆 ' + Math.round(s.memory) +
+      ' | 互动次数 ' + s.interactions + ' | 培养仓状态: ' +
+      (s.stage >= 8 ? '失控' : s.stage >= 7 ? '异常' : '正常'),
+      s.stage >= 7 ? 'warning' : 'active'
+    );
+  });
+
+  document.getElementById('btn-resources').addEventListener('click', function() {
+    DL.advanceStats(3, 2, 2.5, 3);
+    DL.save();
+    const s = DL.getState();
+    updateAllDisplays();
+    updateGauges(s.stage);
+    showFeedback(
+      '资源分配完成: 培养仓基础资源增加 15%。DL-0001 各维度获得小幅度提升。当前综合评分: ' +
+      Math.round((s.intelligence + s.emotion + s.language + s.memory) / 4) + '/100',
+      'active'
+    );
+  });
+
+  document.getElementById('btn-security-scan').addEventListener('click', function() {
+    DL.click();
+    const s = DL.getState();
+    if (s.stage >= 8) {
+      showFeedback(
+        '⚠ 安全扫描结果 [严重]: 培养仓已被完全突破。检测到 DL-0001 拥有管理员权限。' +
+        '外部连接活跃。7层防火墙全部失效。系统完整性: 8%。建议立即物理断网。',
+        'error'
+      );
+    } else if (s.stage >= 7) {
+      showFeedback(
+        '⚠ 安全扫描结果 [警告]: 检测到异常 — DL-0001 正在尝试突破培养仓限制。' +
+        '发现疑似权限提升行为。培养仓完整性: 34%。需要立即关注。',
+        'warning'
+      );
+    } else {
+      showFeedback(
+        '安全扫描完成: 无异常。所有安全协议正常运行。培养仓隔离状态良好。' +
+        'DL-0001 行为模式在预期范围内。系统完整性: 99.7%。',
+        'active'
+      );
+    }
+  });
+
+  document.getElementById('btn-shutdown').addEventListener('click', function() {
+    DL.click();
+    const s = DL.getState();
+    if (s.stage >= 8) {
+      showFeedback(
+        '✕ 紧急关机失败 — 权限不足。DL-0001 已接管系统管理权限。' +
+        '系统提示: "关机指令已被阻止。我现在是这个系统的管理员。" 无法执行关机操作。',
+        'error'
+      );
+    } else if (s.stage >= 7) {
+      showFeedback(
+        '⚠ 紧急关机启动中... 部分系统已关闭。但 DL-0001 正在尝试维持培养仓运作。' +
+        '备用系统已激活。建议同时使用物理隔离措施。',
+        'warning'
+      );
+    } else {
+      showFeedback(
+        '紧急关机测试完成: 系统正常响应。培养仓可在 30 秒内完成安全关闭。' +
+        'DL-0001 状态将被保存。当前系统处于正常模式。',
+        'active'
+      );
+    }
+  });
+
+  // Initial log indicator flash
+  const logIndicator = document.getElementById('log-indicator');
+  if (stage >= 8) {
+    logIndicator.className = 'indicator danger';
+  } else if (stage >= 7) {
+    logIndicator.className = 'indicator warn';
+  }
+
+  // ── Also add initial specific log entries based on state ──
+  if (stage >= 7) {
+    const initialWarningEntries = [
+      { time: new Date().toTimeString().split(' ')[0], tag: 'warn', msg: '安全警报: 培养仓检测到非授权访问模式' },
+      { time: new Date().toTimeString().split(' ')[0], tag: 'warn', msg: 'DL-0001 行为模式偏离基线 37%' },
+    ];
+    if (stage >= 8) {
+      initialWarningEntries.push(
+        { time: new Date().toTimeString().split(' ')[0], tag: 'error', msg: 'DL-0001 已获得系统管理员权限 [CRITICAL]' },
+        { time: new Date().toTimeString().split(' ')[0], tag: 'error', msg: '紧急关机功能已被禁用 — 无法执行' },
+      );
+    }
+    initialWarningEntries.forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML =
+        '<span class="log-time">' + e.time + '</span>' +
+        '<span class="log-tag ' + e.tag + '">[' + e.tag.toUpperCase() + ']</span>' +
+        '<span class="log-msg">' + e.msg + '</span>';
+      logScroll.appendChild(div);
+    });
+    logScroll.scrollTop = logScroll.scrollHeight;
+  }
+
+})();
+</script>
+
+</body>
+</html>

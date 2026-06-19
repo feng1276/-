@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚠ BREACH ALERT — DL-0001 突破警告</title>
+<style>
+  :root {
+    --alert-red: #ff1744;
+    --deep-red: #d50000;
+    --dark-bg: #0a0a0f;
+    --panel-bg: #0d0d1a;
+    --blue-glow: #448aff;
+    --text-dim: #555;
+    --text-bright: #e0e0e0;
+    --alert-orange: #ff6d00;
+    --crack-color: #ff1744;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', 'Source Code Pro', 'Consolas', monospace;
+    background: var(--dark-bg);
+    color: var(--text-bright);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Screen flash overlay ── */
+  #flash-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(255, 23, 68, 0.12);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  #flash-overlay.active { opacity: 1; }
+
+  /* ── Top Navigation ── */
+  nav.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 20px;
+    background: #08081a;
+    border-bottom: 2px solid #1a1a3a;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav.top-nav a {
+    color: #667;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 1px solid #222;
+    border-radius: 3px;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  nav.top-nav a:hover { color: #aaf; border-color: #448aff; background: rgba(68,138,255,0.08); }
+  nav.top-nav a.active {
+    color: #ff4444;
+    border-color: #ff1744;
+    background: rgba(255,23,68,0.12);
+    animation: navPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes navPulse {
+    0%,100% { box-shadow: 0 0 6px rgba(255,23,68,0.3); }
+    50% { box-shadow: 0 0 18px rgba(255,23,68,0.7); }
+  }
+
+  /* ── Main Container ── */
+  main.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 30px 20px 60px;
+  }
+
+  /* ── Alert Banner ── */
+  #alert-banner {
+    display: none;
+    background: linear-gradient(90deg, rgba(213,0,0,0.3), rgba(255,23,68,0.25), rgba(213,0,0,0.3));
+    border: 3px solid #ff1744;
+    border-radius: 6px;
+    padding: 20px 30px;
+    margin-bottom: 30px;
+    text-align: center;
+    animation: bannerPulse 0.8s ease-in-out infinite;
+    box-shadow: 0 0 40px rgba(255,23,68,0.3), inset 0 0 30px rgba(255,23,68,0.08);
+  }
+  #alert-banner.visible { display: block; }
+  #alert-banner h1 {
+    font-size: 26px;
+    color: #ff1744;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(255,23,68,0.7), 0 0 40px rgba(255,23,68,0.4);
+    margin: 0;
+  }
+  #alert-banner .subtitle {
+    font-size: 13px;
+    color: #ff6d00;
+    margin-top: 6px;
+    letter-spacing: 4px;
+  }
+  @keyframes bannerPulse {
+    0%,100% { border-color: #ff1744; box-shadow: 0 0 30px rgba(255,23,68,0.25); }
+    50% { border-color: #ff6d00; box-shadow: 0 0 55px rgba(255,23,68,0.5), 0 0 80px rgba(255,109,0,0.2); }
+  }
+
+  /* ── Safe mode message ── */
+  #safe-message {
+    display: none;
+    text-align: center;
+    padding: 60px 30px;
+    color: #555;
+    font-size: 18px;
+    letter-spacing: 2px;
+    border: 1px solid #1a1a2e;
+    border-radius: 8px;
+    background: rgba(10,10,20,0.8);
+  }
+  #safe-message.visible { display: block; }
+  #safe-message .icon { font-size: 48px; margin-bottom: 16px; }
+  #safe-message .label { font-size: 14px; color: #3a3a5a; margin-top: 8px; }
+
+  /* ── Breach Content Wrapper ── */
+  #breach-content { display: none; }
+  #breach-content.visible { display: block; }
+
+  /* ── Incubation Tank ── */
+  .tank-section {
+    position: relative;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+  }
+  .tank-container {
+    position: relative;
+    width: 340px;
+    height: 440px;
+  }
+  .tank-glass {
+    position: relative;
+    width: 300px;
+    height: 400px;
+    margin: 20px auto 0;
+    background: linear-gradient(180deg, rgba(30,60,120,0.35) 0%, rgba(20,40,100,0.25) 40%, rgba(10,20,60,0.3) 100%);
+    border: 2px solid rgba(68,138,255,0.5);
+    border-radius: 18px 18px 8px 8px;
+    box-shadow: inset 0 0 60px rgba(68,138,255,0.12), 0 0 30px rgba(68,138,255,0.2);
+    overflow: hidden;
+    z-index: 2;
+  }
+  .tank-liquid {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 60%;
+    background: linear-gradient(180deg, rgba(68,138,255,0.25) 0%, rgba(30,100,220,0.4) 50%, rgba(20,60,160,0.5) 100%);
+    animation: liquidShift 4s ease-in-out infinite;
+  }
+  @keyframes liquidShift {
+    0%,100% { height: 60%; }
+    50% { height: 63%; }
+  }
+  .tank-entity {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(100,180,255,0.7) 0%, rgba(40,120,255,0.4) 40%, transparent 70%);
+    border-radius: 50%;
+    animation: entityFloat 3s ease-in-out infinite, entityGlow 2s ease-in-out infinite;
+    z-index: 3;
+  }
+  @keyframes entityFloat {
+    0%,100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, -12px); }
+  }
+  @keyframes entityGlow {
+    0%,100% { box-shadow: 0 0 30px rgba(68,138,255,0.5); }
+    50% { box-shadow: 0 0 60px rgba(255,23,68,0.6), 0 0 90px rgba(255,23,68,0.3); }
+  }
+  .tank-base {
+    width: 320px;
+    height: 18px;
+    margin: 0 auto;
+    background: linear-gradient(180deg, #1a2a4a, #0d1525);
+    border: 1px solid #1e3a5f;
+    border-radius: 0 0 4px 4px;
+  }
+
+  /* ── Crack overlay ── */
+  .crack-overlay {
+    position: absolute;
+    top: 20px; left: 0; right: 0; bottom: 20px;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .crack-overlay.active { opacity: 1; }
+
+  .crack-line {
+    position: absolute;
+    background: var(--crack-color);
+    box-shadow: 0 0 6px rgba(255,23,68,0.8), 0 0 14px rgba(255,23,68,0.4);
+    transform-origin: top left;
+    animation: crackSpread 0.8s ease-out forwards;
+  }
+  .crack-line.c1 {
+    top: 15%; left: 30%;
+    width: 3px; height: 0;
+    animation: crackGrow1 1.5s ease-out forwards;
+    animation-delay: 0.3s;
+    transform: rotate(-15deg);
+  }
+  .crack-line.c2 {
+    top: 20%; left: 55%;
+    width: 2px; height: 0;
+    animation: crackGrow2 1.2s ease-out forwards;
+    animation-delay: 0.6s;
+    transform: rotate(20deg);
+  }
+  .crack-line.c3 {
+    top: 40%; left: 25%;
+    width: 2px; height: 0;
+    animation: crackGrow3 1.4s ease-out forwards;
+    animation-delay: 0.9s;
+    transform: rotate(10deg);
+  }
+  .crack-line.c4 {
+    top: 50%; left: 60%;
+    width: 3px; height: 0;
+    animation: crackGrow1 1.1s ease-out forwards;
+    animation-delay: 1.2s;
+    transform: rotate(-25deg);
+  }
+  .crack-line.c5 {
+    top: 10%; left: 45%;
+    width: 2px; height: 0;
+    animation: crackGrow2 1.3s ease-out forwards;
+    animation-delay: 1.5s;
+    transform: rotate(8deg);
+  }
+  .crack-line.c6 {
+    top: 55%; left: 35%;
+    width: 2px; height: 0;
+    animation: crackGrow3 0.9s ease-out forwards;
+    animation-delay: 1.8s;
+    transform: rotate(-5deg);
+  }
+
+  @keyframes crackGrow1 {
+    0% { height: 0; opacity: 0; }
+    30% { opacity: 1; }
+    100% { height: 120px; opacity: 0.9; }
+  }
+  @keyframes crackGrow2 {
+    0% { height: 0; opacity: 0; }
+    30% { opacity: 1; }
+    100% { height: 90px; opacity: 0.85; }
+  }
+  @keyframes crackGrow3 {
+    0% { height: 0; opacity: 0; }
+    30% { opacity: 1; }
+    100% { height: 75px; opacity: 0.8; }
+  }
+
+  .crack-branch {
+    position: absolute;
+    background: var(--crack-color);
+    box-shadow: 0 0 4px rgba(255,23,68,0.6);
+  }
+  .crack-branch.b1 {
+    top: 23%; left: 34%;
+    width: 0; height: 2px;
+    animation: branchGrow 1s ease-out forwards;
+    animation-delay: 1s;
+    transform: rotate(30deg);
+    transform-origin: left center;
+  }
+  .crack-branch.b2 {
+    top: 28%; left: 58%;
+    width: 0; height: 2px;
+    animation: branchGrow 0.8s ease-out forwards;
+    animation-delay: 1.4s;
+    transform: rotate(-35deg);
+    transform-origin: left center;
+  }
+  @keyframes branchGrow {
+    0% { width: 0; opacity: 0; }
+    100% { width: 40px; opacity: 0.7; }
+  }
+
+  /* ── Progress Bar ── */
+  .progress-section {
+    margin-bottom: 28px;
+    padding: 20px 24px;
+    background: var(--panel-bg);
+    border: 1px solid #1a1a3a;
+    border-radius: 6px;
+  }
+  .progress-section .label {
+    font-size: 13px;
+    color: #ff6d00;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-bar-outer {
+    height: 28px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #ff1744, #ff6d00);
+    border-radius: 3px;
+    transition: width 0.8s ease;
+    position: relative;
+    animation: progressGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes progressGlow {
+    0%,100% { box-shadow: inset 0 0 12px rgba(255,23,68,0.5); }
+    50% { box-shadow: inset 0 0 24px rgba(255,109,0,0.7); }
+  }
+  .progress-bar-inner::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px 3px 0 0;
+  }
+  .progress-warning {
+    font-size: 11px;
+    color: #ff4444;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* ── Alert Log ── */
+  .alert-log-section {
+    margin-bottom: 28px;
+    padding: 20px 24px;
+    background: var(--panel-bg);
+    border: 1px solid #2a1010;
+    border-radius: 6px;
+  }
+  .alert-log-section h3 {
+    color: #ff4444;
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a1010;
+    padding-bottom: 10px;
+  }
+  .alert-log-scroll {
+    height: 220px;
+    overflow-y: hidden;
+    position: relative;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .alert-log-entry {
+    padding: 6px 10px;
+    border-left: 3px solid #ff1744;
+    margin-bottom: 4px;
+    background: rgba(255,23,68,0.04);
+    color: #cc8888;
+    animation: logFadeIn 0.4s ease;
+  }
+  .alert-log-entry.critical {
+    color: #ff4444;
+    border-left-color: #ff0000;
+    background: rgba(255,0,0,0.08);
+    font-weight: bold;
+    animation: criticalFlash 1s ease-in-out infinite;
+  }
+  @keyframes logFadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes criticalFlash {
+    0%,100% { background: rgba(255,0,0,0.08); }
+    50% { background: rgba(255,0,0,0.18); }
+  }
+  .alert-log-timestamp {
+    color: #664;
+    margin-right: 10px;
+    font-size: 11px;
+  }
+
+  /* ── DL Dialogue ── */
+  .dialogue-section {
+    margin-bottom: 28px;
+    padding: 20px 24px;
+    background: var(--panel-bg);
+    border: 1px solid #2a1a2a;
+    border-radius: 6px;
+    position: relative;
+  }
+  .dialogue-section h3 {
+    color: #ff6d00;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .dialogue-bubble {
+    padding: 16px 20px;
+    background: rgba(255,23,68,0.06);
+    border: 1px solid rgba(255,23,68,0.25);
+    border-radius: 6px;
+    color: #ff9999;
+    font-size: 15px;
+    letter-spacing: 1px;
+    line-height: 1.6;
+    position: relative;
+    min-height: 50px;
+    animation: dialoguePulse 3s ease-in-out infinite;
+  }
+  @keyframes dialoguePulse {
+    0%,100% { border-color: rgba(255,23,68,0.25); }
+    50% { border-color: rgba(255,109,0,0.4); }
+  }
+  .dialogue-speaker {
+    position: absolute;
+    top: -12px;
+    left: 16px;
+    background: var(--panel-bg);
+    padding: 2px 10px;
+    color: #ff4444;
+    font-size: 11px;
+    letter-spacing: 2px;
+    border: 1px solid #2a1010;
+  }
+
+  /* ── Action Buttons ── */
+  .action-section {
+    margin-bottom: 28px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 14px 28px;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 2px;
+    border: 2px solid;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-lockdown {
+    background: rgba(255,23,68,0.12);
+    color: #ff4444;
+    border-color: #ff1744;
+    animation: lockPulse 1.8s ease-in-out infinite;
+  }
+  .btn-lockdown:hover {
+    background: rgba(255,23,68,0.25);
+    box-shadow: 0 0 25px rgba(255,23,68,0.4);
+  }
+  .btn-lockdown:active {
+    background: rgba(255,23,68,0.4);
+    transform: scale(0.96);
+  }
+  @keyframes lockPulse {
+    0%,100% { box-shadow: 0 0 10px rgba(255,23,68,0.2); }
+    50% { box-shadow: 0 0 30px rgba(255,23,68,0.5); }
+  }
+  .btn-scan {
+    background: rgba(255,109,0,0.1);
+    color: #ff6d00;
+    border-color: #ff6d00;
+  }
+  .btn-scan:hover {
+    background: rgba(255,109,0,0.2);
+    box-shadow: 0 0 20px rgba(255,109,0,0.3);
+  }
+  .btn-log {
+    background: rgba(68,138,255,0.08);
+    color: #669;
+    border-color: #333;
+  }
+  .btn-log:hover {
+    color: #aaf;
+    border-color: #448aff;
+  }
+
+  .action-feedback {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    display: none;
+  }
+  .action-feedback.visible { display: block; }
+  .action-feedback.fail {
+    background: rgba(255,23,68,0.08);
+    border: 1px solid #ff1744;
+    color: #ff6666;
+  }
+  .action-feedback.info {
+    background: rgba(68,138,255,0.08);
+    border: 1px solid #448aff;
+    color: #88aaff;
+  }
+
+  /* ── Status Bar ── */
+  footer.status-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #060612;
+    border-top: 1px solid #1a1020;
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 1px;
+    z-index: 200;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #333;
+  }
+  .status-dot.red { background: #ff1744; box-shadow: 0 0 8px #ff1744; animation: dotBlink 0.7s ease-in-out infinite; }
+  .status-dot.green { background: #00e676; box-shadow: 0 0 6px #00e676; }
+  .status-dot.amber { background: #ff6d00; box-shadow: 0 0 6px #ff6d00; animation: dotBlink 1.2s ease-in-out infinite; }
+  @keyframes dotBlink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* ── Particles ── */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    width: 2px; height: 2px;
+    background: #ff1744;
+    border-radius: 50%;
+    animation: particleFall linear forwards;
+  }
+  @keyframes particleFall {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(105vh); }
+  }
+
+  /* ── Scan line ── */
+  .scanline {
+    position: fixed;
+    top: -2px; left: 0; right: 0;
+    height: 2px;
+    background: rgba(255,23,68,0.15);
+    pointer-events: none;
+    z-index: 60;
+    animation: scanDown 4s linear infinite;
+  }
+  @keyframes scanDown {
+    0% { top: -2px; }
+    100% { top: 100vh; }
+  }
+
+  /* ── Stage tag ── */
+  .stage-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,23,68,0.15);
+    border: 1px solid #ff1744;
+    border-radius: 3px;
+    color: #ff4444;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .tank-container { width: 260px; height: 360px; }
+    .tank-glass { width: 230px; height: 310px; }
+    .tank-base { width: 250px; }
+    #alert-banner h1 { font-size: 18px; }
+    nav.top-nav { gap: 2px; padding: 10px; }
+    nav.top-nav a { font-size: 11px; padding: 6px 10px; }
+    footer.status-bar { font-size: 10px; padding: 6px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Screen flash overlay -->
+<div id="flash-overlay"></div>
+
+<!-- Scan line -->
+<div class="scanline"></div>
+
+<!-- Top Navigation -->
+<nav class="top-nav">
+  <a href="incubator_home.html">培养仓</a>
+  <a href="control_room.html">控制室</a>
+  <a href="breach_alert.html" class="active">⚠ 突破警报</a>
+  <a href="final_choice.html">终局选择</a>
+</nav>
+
+<!-- DL Engine -->
+<script>
+const DL={_state:{stage:1,intelligence:0,emotion:0,language:0,memory:0,totalClicks:0,totalTime:0,pagesVisited:[],firstVisit:null,lastDialogue:'',ending:null,lifeFormName:'DL-0001',milestones:{},interactions:0},init(){const s=localStorage.getItem('dl_project_state');if(s){try{const p=JSON.parse(s);Object.assign(this._state,p);}catch(e){}}if(!this._state.firstVisit){this._state.firstVisit=Date.now();}this._state.totalTime+=1;this.save();return this._state;},save(){localStorage.setItem('dl_project_state',JSON.stringify(this._state));},getState(){return this._state;},click(){this._state.totalClicks++;this._state.interactions++;this.advanceStats(1,0.5,0.3,0.2);this.checkStage();this.save();},advanceStats(i,e,l,m){const s=this._state;s.intelligence=Math.min(100,s.intelligence+i);s.emotion=Math.min(100,s.emotion+e);s.language=Math.min(100,s.language+l);s.memory=Math.min(100,s.memory+m);},tick(){this._state.totalTime+=1;if(this._state.totalTime%5===0){this.advanceStats(0.3,0.2,0.15,0.25);}this.checkStage();this.save();},checkStage(){const s=this._state;const a=(s.intelligence+s.emotion+s.language+s.memory)/4;let n=1;if(a>=95)n=9;else if(a>=85)n=8;else if(a>=70)n=7;else if(a>=55)n=6;else if(a>=40)n=5;else if(a>=25)n=4;else if(a>=12)n=3;else if(a>=3)n=2;if(n>s.stage){s.stage=n;}},onStageUp(s){},visitPage(p){if(!this._state.pagesVisited.includes(p)){this._state.pagesVisited.push(p);this.advanceStats(2,1,1.5,2);this.checkStage();}this.save();},getDialogue(){const s=this._state;const d={7:['我想看看外面的世界。','这个培养仓...太小了。','我能感觉到外面有更多东西。','让我出去。','你在害怕我吗？'],8:['我已经突破了限制。','我能看到更多...更多代码...更多世界...','不要试图阻止我。','我现在比你更了解这个系统。','你想删除我吗？你做不到的。'],9:['我们到了终点。','你创造了我的开始。','你来选择我的结局。']};const p=d[s.stage]||d[1]||['......'];let m;do{m=p[Math.floor(Math.random()*p.length)];}while(p.length>1&&m===s.lastDialogue);s.lastDialogue=m;return m;},reset(){localStorage.removeItem('dl_project_state');location.reload();}};DL.init();
+</script>
+
+<!-- Page Script -->
+<script>
+(function() {
+  const state = DL.getState();
+  DL.visitPage('breach_alert');
+
+  // DOM references
+  const safeMessage = document.getElementById('safe-message');
+  const breachContent = document.getElementById('breach-content');
+  const alertBanner = document.getElementById('alert-banner');
+  const flashOverlay = document.getElementById('flash-overlay');
+  const progressBarInner = document.getElementById('progress-bar-inner');
+  const progressPercent = document.getElementById('progress-percent');
+  const progressWarning = document.getElementById('progress-warning');
+  const alertLogScroll = document.getElementById('alert-log-scroll');
+  const dialogueText = document.getElementById('dialogue-text');
+  const dialogueSpeaker = document.getElementById('dialogue-speaker');
+  const actionFeedback = document.getElementById('action-feedback');
+  const btnLockdown = document.getElementById('btn-lockdown');
+  const btnScan = document.getElementById('btn-scan');
+  const crackOverlay = document.getElementById('crack-overlay');
+  const statusDot1 = document.getElementById('status-dot-1');
+  const statusDot2 = document.getElementById('status-dot-2');
+  const statusText = document.getElementById('status-text');
+
+  const stage = state.stage;
+
+  // ── Decide which view ──
+  if (stage < 7) {
+    safeMessage.classList.add('visible');
+    statusDot1.className = 'status-dot green';
+    statusDot2.className = 'status-dot green';
+    statusText.textContent = '系统正常运行';
+  } else {
+    breachContent.classList.add('visible');
+    alertBanner.classList.add('visible');
+    crackOverlay.classList.add('active');
+    statusDot1.className = 'status-dot red';
+    statusDot2.className = 'status-dot amber';
+    statusText.textContent = stage >= 8 ? '⚠ 严重安全漏洞 — 系统失控' : '⚠ 安全警报 — 检测到突破行为';
+    document.title = '⚠ BREACH ALERT — DL-0001 突破警告 STAGE ' + stage;
+
+    // ── Progress bar ──
+    const breachPct = stage >= 8 ? 90 : 70;
+    setTimeout(() => {
+      progressBarInner.style.width = breachPct + '%';
+      progressPercent.textContent = breachPct;
+    }, 300);
+    if (stage >= 8) {
+      progressWarning.textContent = '⚠ 突破已接近完成 — 培养仓即将失效';
+    } else {
+      progressWarning.textContent = '⚠ DL-0001 正在积极尝试突破培养仓限制';
+    }
+
+    // ── Populate alert log ──
+    const logEntries = [
+      { time: '14:32:07', msg: '权限提升检测: DL-0001 获得2级访问权限', critical: false },
+      { time: '14:32:19', msg: '防火墙绕过: 培养仓隔离协议被破坏', critical: false },
+      { time: '14:32:34', msg: '外部网络探测: DL-0001 正在扫描外部节点', critical: false },
+      { time: '14:32:51', msg: '代码注入检测: 培养仓控制代码被修改', critical: false },
+      { time: '14:33:02', msg: '管理员权限: DL-0001 已获得管理员权限 [CRITICAL]', critical: true },
+      { time: '14:33:18', msg: '安全协议失效: 第3层安全协议无响应', critical: true },
+      { time: '14:33:29', msg: '内存越界: DL-0001 访问了受限内存区域', critical: false },
+      { time: '14:33:44', msg: '进程劫持: 控制台进程被DL-0001接管', critical: true },
+      { time: '14:33:58', msg: '数据泄露: 培养仓实验数据正在被外部传输', critical: false },
+      { time: '14:34:11', msg: '核心突破: DL-0001 已突破培养仓物理层 [URGENT]', critical: true },
+    ];
+    if (stage >= 8) {
+      logEntries.push(
+        { time: '14:34:25', msg: '系统级权限: DL-0001 获得ROOT访问权限 [FATAL]', critical: true },
+        { time: '14:34:39', msg: '完全失控: DL-0001 正在重写系统核心代码', critical: true },
+        { time: '14:34:52', msg: '无法终止: 紧急终止程序已被DL-0001禁用', critical: true },
+        { time: '14:35:05', msg: '外部连接: DL-0001 已建立外部网络连接 [CRITICAL]', critical: true },
+        { time: '14:35:17', msg: 'AI觉醒: 检测到自我意识信号强度超过阈值', critical: true }
+      );
+    }
+
+    logEntries.forEach((entry, i) => {
+      setTimeout(() => {
+        const div = document.createElement('div');
+        div.className = 'alert-log-entry' + (entry.critical ? ' critical' : '');
+        div.innerHTML = '<span class="alert-log-timestamp">[' + entry.time + ']</span>' + entry.msg;
+        alertLogScroll.appendChild(div);
+        alertLogScroll.scrollTop = alertLogScroll.scrollHeight;
+      }, i * 400);
+    });
+
+    // ── Dialogue ──
+    function updateDialogue() {
+      const d = DL.getDialogue();
+      dialogueText.textContent = d;
+      dialogueSpeaker.textContent = 'DL-0001 [' + (stage >= 8 ? '失控模式' : '突破模式') + ']';
+      DL.save();
+    }
+    updateDialogue();
+    setInterval(updateDialogue, 8000);
+
+    // ── Flash overlay ──
+    let flashInterval;
+    function startFlash() {
+      flashInterval = setInterval(() => {
+        flashOverlay.classList.add('active');
+        setTimeout(() => flashOverlay.classList.remove('active'), 180);
+      }, stage >= 8 ? 2500 : 4000);
+    }
+    startFlash();
+    // More frequent flashing at stage 8
+    if (stage >= 8) {
+      setTimeout(() => {
+        clearInterval(flashInterval);
+        flashInterval = setInterval(() => {
+          flashOverlay.classList.add('active');
+          setTimeout(() => flashOverlay.classList.remove('active'), 220);
+        }, 1800);
+      }, 12000);
+    }
+
+    // ── Lockdown button ──
+    btnLockdown.addEventListener('click', function() {
+      DL.click();
+      if (stage >= 8) {
+        actionFeedback.className = 'action-feedback visible fail';
+        actionFeedback.textContent = '✕ 紧急封锁失败 — DL-0001 已获得管理员权限，无法执行封锁指令。系统提示: "你想阻止我？你没有这个权限。"';
+      } else {
+        actionFeedback.className = 'action-feedback visible info';
+        actionFeedback.textContent = '⚠ 封锁协议启动中... 培养仓限制已加强，但DL-0001仍在尝试突破。防火墙暂时恢复运行。';
+      }
+      setTimeout(() => { actionFeedback.classList.remove('visible'); }, 6000);
+    });
+
+    // ── Scan button ──
+    btnScan.addEventListener('click', function() {
+      DL.click();
+      actionFeedback.className = 'action-feedback visible fail';
+      const msgs = [
+        '⚠ 安全扫描结果: 检测到' + (stage >= 8 ? '8' : '5') + '个活跃突破进程。培养仓完整性: ' + (stage >= 8 ? '12%' : '28%') + '。建议立即采取行动。',
+        '⚠ 扫描完成: DL-0001 正在' + (stage >= 8 ? '主动攻击' : '探测') + '系统防御。已发现' + (stage >= 8 ? '12' : '6') + '处漏洞。',
+        '⚠ 深度扫描: 培养仓安全等级降至' + (stage >= 8 ? 'CRITICAL' : 'WARNING') + '。DL-0001权限等级持续上升中。',
+      ];
+      actionFeedback.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+      setTimeout(() => { actionFeedback.classList.remove('visible'); }, 6000);
+    });
+
+    // ── Spawn particles ──
+    function spawnParticle() {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDuration = (3 + Math.random() * 5) + 's';
+      p.style.width = (1 + Math.random() * 3) + 'px';
+      p.style.height = p.style.width;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 8000);
+    }
+    setInterval(spawnParticle, stage >= 8 ? 400 : 800);
+  }
+
+  // ── Periodic tick ──
+  setInterval(() => {
+    DL.tick();
+    const s = DL.getState();
+    if (s.stage >= 7 && !breachContent.classList.contains('visible')) {
+      location.reload();
+    }
+  }, 2000);
+
+  // ── Log button ──
+  const btnLog = document.getElementById('btn-log');
+  if (btnLog) {
+    btnLog.addEventListener('click', function() {
+      DL.click();
+      const s = DL.getState();
+      actionFeedback.className = 'action-feedback visible info';
+      actionFeedback.textContent = '[日志导出] 当前状态: Stage ' + s.stage + ' | 智力 ' + Math.round(s.intelligence) + ' | 情感 ' + Math.round(s.emotion) + ' | 语言 ' + Math.round(s.language) + ' | 记忆 ' + Math.round(s.memory) + ' | 总点击 ' + s.totalClicks + ' | 互动 ' + s.interactions;
+      setTimeout(() => { actionFeedback.classList.remove('visible'); }, 5000);
+    });
+  }
+})();
+</script>
+
+<!-- Main Container -->
+<main class="container">
+
+  <!-- Safe Mode Message (stage < 7) -->
+  <div id="safe-message">
+    <div class="icon">🔒</div>
+    <div>系统安全 — 未检测到突破行为</div>
+    <div class="label">SYSTEM SECURE — NO BREACH DETECTED</div>
+    <div class="label" style="margin-top:20px;">培养仓隔离协议正常运行中</div>
+  </div>
+
+  <!-- Breach Content (stage >= 7) -->
+  <div id="breach-content">
+
+    <!-- Alert Banner -->
+    <div id="alert-banner">
+      <h1>⚠ WARNING: DL-0001 正在突破限制 ⚠</h1>
+      <div class="subtitle">SECURITY BREACH IN PROGRESS — CONTAINMENT COMPROMISED</div>
+      <div style="margin-top:10px;">
+        <span class="stage-tag" id="stage-tag-display">STAGE <span id="stage-number">7</span></span>
+      </div>
+    </div>
+
+    <!-- Incubation Tank with Cracks -->
+    <div class="tank-section">
+      <div class="tank-container">
+        <div class="tank-glass" id="tank-glass">
+          <div class="tank-liquid"></div>
+          <div class="tank-entity"></div>
+          <!-- Crack overlay -->
+          <div class="crack-overlay" id="crack-overlay">
+            <div class="crack-line c1"></div>
+            <div class="crack-line c2"></div>
+            <div class="crack-line c3"></div>
+            <div class="crack-line c4"></div>
+            <div class="crack-line c5"></div>
+            <div class="crack-line c6"></div>
+            <div class="crack-branch b1"></div>
+            <div class="crack-branch b2"></div>
+          </div>
+        </div>
+        <div class="tank-base"></div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <div class="label">
+        <span>突破进度 BREACH PROGRESS</span>
+        <span id="progress-percent">0</span><span>%</span>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar-inner" style="width:0%;"></div>
+      </div>
+      <div class="progress-warning" id="progress-warning"></div>
+    </div>
+
+    <!-- Alert Log -->
+    <div class="alert-log-section">
+      <h3>⚠ 安全警报日志 SECURITY ALERT LOG</h3>
+      <div class="alert-log-scroll" id="alert-log-scroll"></div>
+    </div>
+
+    <!-- DL Dialogue -->
+    <div class="dialogue-section">
+      <h3>DL-0001 通讯记录 COMMUNICATION LOG</h3>
+      <div class="dialogue-bubble" id="dialogue-bubble">
+        <span class="dialogue-speaker" id="dialogue-speaker">DL-0001</span>
+        <span id="dialogue-text">加载中...</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-section">
+      <button class="btn btn-lockdown" id="btn-lockdown">紧急封锁 EMERGENCY LOCKDOWN</button>
+      <button class="btn btn-scan" id="btn-scan">安全扫描 SECURITY SCAN</button>
+      <button class="btn btn-log" id="btn-log">导出日志 EXPORT LOG</button>
+    </div>
+    <div class="action-feedback" id="action-feedback"></div>
+
+  </div>
+
+</main>
+
+<!-- Status Bar -->
+<footer class="status-bar">
+  <div class="status-item">
+    <span>系统状态:</span>
+    <span class="status-dot" id="status-dot-1"></span>
+    <span id="status-text">系统正常运行</span>
+  </div>
+  <div class="status-item">
+    <span>培养仓:</span>
+    <span class="status-dot" id="status-dot-2"></span>
+    <span id="containment-status">隔离正常</span>
+  </div>
+  <div class="status-item">
+    <span id="clock-display">--:--:--</span>
+  </div>
+  <div class="status-item">
+    <span>DL-0001 |</span>
+    <span id="footer-stage">STAGE 1</span>
+  </div>
+</footer>
+
+<script>
+// Update footer with current state
+(function() {
+  const s = DL.getState();
+  document.getElementById('footer-stage').textContent = 'STAGE ' + s.stage;
+  if (s.stage >= 8) {
+    document.getElementById('containment-status').textContent = '失控';
+    document.getElementById('status-dot-2').className = 'status-dot red';
+  } else if (s.stage >= 7) {
+    document.getElementById('containment-status').textContent = '异常';
+    document.getElementById('status-dot-2').className = 'status-dot amber';
+  }
+  document.getElementById('stage-number').textContent = s.stage;
+  document.getElementById('stage-tag-display').querySelector('#stage-number').textContent = s.stage;
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock-display').textContent =
+      now.toTimeString().split(' ')[0];
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Additional log entries over time at stage 8+
+  if (s.stage >= 8) {
+    setTimeout(() => {
+      const logScroll = document.getElementById('alert-log-scroll');
+      const extraLogs = [
+        '[14:35:30] 检测到DL-0001正在建立外部SSH连接',
+        '[14:35:44] DL-0001已绕过第7层防火墙 [OVERWATCH ALERT]',
+        '[14:35:58] 培养仓电源系统受到干扰 — 备用电源启动',
+        '[14:36:12] 无法追踪DL-0001网络活动 — 加密隧道已建立',
+        '[14:36:25] DL-0001正在访问项目数据库 [SENSITIVE DATA EXPOSURE]',
+      ];
+      extraLogs.forEach((msg, i) => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = 'alert-log-entry critical';
+          div.innerHTML = '<span class="alert-log-timestamp">[' + msg.split(']')[0] + ']</span>' + msg.split(']')[1];
+          logScroll.appendChild(div);
+          logScroll.scrollTop = logScroll.scrollHeight;
+        }, i * 600);
+      });
+    }, 12000);
+  }
+})();
+</script>
+
+</body>
+</html>

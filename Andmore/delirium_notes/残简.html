@@ -1,0 +1,1193 @@
+<!-- 妄言录 / 残简断章 -->
+<!-- 以下文档均未通过归档审查。部分内容已不可恢复。阅读即共谋。 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>妄言录 · 残简断章</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d12;
+  --text: #c8c0b8;
+  --text-dim: #a09a95;
+  --text-faint: #8a8580;
+  --accent: #6b4c3b;
+  --accent-dim: #3d2c22;
+  --redact: #1a1a1a;
+  --border: #2a2520;
+  --paper: #1a1614;
+  --paper-alt: #161310;
+}
+
+html {
+  background: var(--bg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+body {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', 'NSimSun', Georgia, 'Times New Roman', serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.85;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-shadow: 0 0 1px rgba(200,192,184,0.08);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.03;
+  z-index: 1;
+}
+
+#dust-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* NAVIGATION */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(13,13,18,0.97);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  font-family: 'Consolas', 'Courier New', 'Noto Sans Mono SC', 'SimHei', 'Microsoft YaHei', 'PingFang SC', monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.site-nav .breadcrumb { color: var(--text-dim); }
+.site-nav .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.3s; }
+.site-nav .breadcrumb a:hover { color: var(--text); }
+.site-nav .breadcrumb .sep { color: var(--accent); margin: 0 6px; }
+.site-nav .breadcrumb .current { color: var(--text); }
+.site-nav .nav-links { display: flex; gap: 18px; flex-wrap: wrap; }
+.site-nav .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 13px; transition: color 0.3s; }
+.site-nav .nav-links a:hover { color: var(--text); }
+
+/* MAIN */
+.main-container { max-width: 740px; margin: 0 auto; padding: 40px 28px 80px; }
+
+.page-header {
+  text-align: center;
+  padding: 50px 0 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 50px;
+}
+.page-header h1 {
+  font-size: 2.4em;
+  font-weight: normal;
+  letter-spacing: 0.18em;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.page-header .subtitle {
+  font-family: 'Noto Sans Mono SC', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.14em;
+  margin-bottom: 20px;
+}
+.page-header .classification-stamp { display: inline-block; margin-top: 12px; }
+
+/* FRAGMENTS */
+.fragment {
+  position: relative;
+  margin: 48px 0;
+  padding: 32px 30px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
+}
+.fragment.visible { opacity: 1; transform: translateY(0); }
+/* fragment::before noise moved to single body::before overlay for GPU performance */
+.fragment-alt { background: var(--paper-alt); }
+.fragment .archive-id {
+  font-family: 'Noto Sans Mono SC', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border);
+}
+.fragment .archive-id .id-label { color: var(--accent); }
+.fragment h2 { font-size: 1.35em; font-weight: normal; letter-spacing: 0.06em; color: #c0b090; margin-bottom: 6px; }
+.fragment h3 { font-size: 1em; font-weight: normal; color: var(--text-dim); margin-bottom: 18px; font-style: italic; }
+.fragment p { margin-bottom: 14px; text-indent: 2em; }
+.fragment .meta-line { font-family: 'Noto Sans Mono SC', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 14px; }
+
+/* DAMAGE STYLES */
+.redacted { background: transparent; color: #b04848; padding: 1px 4px; cursor: default; user-select: text; }
+
+.corrupted { color: #6a5040; letter-spacing: 0.08em; font-family: 'Consolas', 'Courier New', 'Noto Sans Mono SC', 'Microsoft YaHei', 'SimHei', 'PingFang SC', monospace; }
+
+@keyframes flicker-corrupt {
+  0%, 91% { opacity: 1; }
+  92% { opacity: 0.25; }
+  93% { opacity: 0.75; }
+  94% { opacity: 0.15; }
+  95% { opacity: 1; }
+  100% { opacity: 1; }
+}
+.corrupt-flicker-1 { animation: flicker-corrupt 9s infinite; }
+.corrupt-flicker-2 { animation: flicker-corrupt 11s infinite; animation-delay: 3s; }
+.corrupt-flicker-3 { animation: flicker-corrupt 8.5s infinite; animation-delay: 6s; }
+.corrupt-flicker-4 { animation: flicker-corrupt 10.5s infinite; animation-delay: 1s; }
+
+.cut-off::after { content: '—'; color: var(--accent); margin-left: 2px; }
+
+.erased { color: #302c28; font-style: italic; letter-spacing: 0.02em; }
+
+/* SEPARATORS */
+.separator {
+  text-align: center;
+  margin: 36px 0;
+  font-family: 'Noto Sans Mono SC', monospace;
+  font-size: 13px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+}
+.separator::before, .separator::after {
+  content: '';
+  display: inline-block;
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  vertical-align: middle;
+  margin: 0 10px;
+}
+.separator-gap {
+  height: 60px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.separator-gap::before {
+  content: '';
+  position: absolute;
+  left: 15%; right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--text-faint), transparent);
+  opacity: 0.2;
+}
+.separator-gap .gap-label {
+  font-family: 'Noto Sans Mono SC', monospace;
+  font-size: 13px;
+  color: var(--text-faint);
+  letter-spacing: 0.16em;
+  background: var(--bg);
+  padding: 0 16px;
+}
+
+/* DEGRADATION SECTION */
+#degradation-section { transition: opacity 1.8s ease, filter 1.8s ease; }
+#degradation-section.degraded { filter: blur(0.4px); opacity: 0.45; }
+
+/* FOOTER */
+.page-footer {
+  text-align: center;
+  padding: 60px 0 30px;
+  border-top: 1px solid var(--border);
+  margin-top: 60px;
+  font-family: 'Noto Sans Mono SC', monospace;
+  font-size: 13px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+}
+
+/* Edge instability */
+@keyframes edge-flicker {
+  0%, 96% { opacity: 0; }
+  97% { opacity: 1; }
+  98% { opacity: 0; }
+  100% { opacity: 0; }
+}
+.edge-unstable { animation: edge-flicker 12s infinite; }
+.edge-unstable::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  box-shadow: inset 0 0 30px rgba(80,30,10,0.3);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+@keyframes stamp-impress {
+  0% { transform: rotate(-3deg) scale(0.95); opacity: 0.8; }
+  100% { transform: rotate(-2deg) scale(1); opacity: 0.7; }
+}
+.stamp-graphic { animation: stamp-impress 0.1s ease-out forwards; transform-origin: center center; }
+
+@media (max-width: 600px) {
+  .main-container { padding: 20px 14px 40px; }
+  .fragment { padding: 20px 16px; }
+  .page-header h1 { font-size: 1.6em; }
+  .site-nav { padding: 8px 14px; font-size: 13px; }
+  .site-nav .nav-links { gap: 10px; }
+  .site-nav .nav-links a { font-size: 13px; }
+  .separator::before, .separator::after { width: 30px; }
+}
+
+/* Light mode overrides */
+body.light-mode {
+  --bg: #f5f0e8;
+  --text: #2a2520;
+  --text-dim: #5a5550;
+  --text-faint: #8a8580;
+  --surface: #e8e3da;
+  --surface-raised: #ddd8cf;
+  --border: #c8c0b5;
+  --border-light: #d5cfc5;
+  --accent: #7a5040;
+  --accent-dim: #6a4030;
+  --paper: #e8e0d6;
+  --paper-alt: #e0d8ce;
+  --redact: #d8d0c8;
+  color: var(--text);
+  background: var(--bg);
+  text-shadow: none;
+}
+body.light-mode canvas {
+  opacity: 0.3;
+}
+body.light-mode .redacted,
+body.light-mode .redacted-block {
+  color: #8b3030;
+}
+body.light-mode .redacted-block {
+  background: rgba(139,48,48,0.05);
+  border-left-color: rgba(139,48,48,0.2);
+}
+/* Light mode for site-nav */
+body.light-mode .site-nav {
+  background: rgba(245,240,232,0.97);
+  border-bottom-color: var(--border);
+}
+/* Light mode for body::before noise overlay */
+body.light-mode::before {
+  opacity: 0.015;
+}
+/* Light mode fragment overrides for inline hardcoded backgrounds */
+body.light-mode .fragment[style*="background"] {
+  background-color: #e8e0d6 !important;
+  border-color: #c8c0b5 !important;
+}
+body.light-mode .fragment-alt[style*="background"] {
+  background-color: #e0d8ce !important;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  position: fixed;
+  top: 70px;
+  left: 20px;
+  z-index: 10000;
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, color 0.3s, transform 0.2s;
+  line-height: 1;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+.theme-toggle:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+  transform: scale(1.1);
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="切换背景色 / Toggle background" aria-label="切换明暗主题">◐</button>
+
+<svg style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+  <defs>
+    <filter id="noise-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+      <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended"/>
+    </filter>
+    <filter id="scanline-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="1" result="lines"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.06 0" in="lines" result="faintLines"/>
+      <feBlend in="SourceGraphic" in2="faintLines" mode="darken"/>
+    </filter>
+    <filter id="erased-blur">
+      <feGaussianBlur stdDeviation="0.6"/>
+    </filter>
+  </defs>
+</svg>
+
+<canvas id="dust-canvas" aria-hidden="true"></canvas>
+
+<nav class="site-nav">
+  <div class="breadcrumb">
+    <a href="卷首.html">妄言录</a>
+    <span class="sep">/</span>
+    <span class="current">残简断章</span>
+  </div>
+  <div class="nav-links">
+    <a href="卷首.html">卷首</a>
+    <a href="证词.html">证词</a>
+    <a href="附录.html">附录</a>
+    <a href="无终.html">无终</a>
+  </div>
+</nav>
+
+<main class="main-container">
+
+  <header class="page-header">
+    <h1>残简断章</h1>
+    <p class="subtitle">FRAGMENTA ET RELIQUIAE</p>
+    <div class="classification-stamp">
+      <svg width="180" height="70" viewBox="0 0 180 70" class="stamp-graphic" aria-label="分类图章：碎片档案">
+        <rect x="2" y="2" width="176" height="66" fill="none" stroke="#6b4c3b" stroke-width="1.5" rx="2"/>
+        <rect x="8" y="8" width="164" height="54" fill="none" stroke="#3d2c22" stroke-width="0.8" rx="1"/>
+        <text x="90" y="32" font-family="serif" font-size="14" fill="#8a7060" text-anchor="middle" letter-spacing="6">碎片档案</text>
+        <text x="90" y="52" font-family="monospace" font-size="9" fill="#5a4a3a" text-anchor="middle" letter-spacing="3">FRAGMENTUM</text>
+        <line x1="20" y1="40" x2="70" y2="40" stroke="#3d2c22" stroke-width="0.5"/>
+        <line x1="110" y1="40" x2="160" y2="40" stroke="#3d2c22" stroke-width="0.5"/>
+      </svg>
+    </div>
+    <p style="margin-top:18px;font-size:0.9em;color:var(--text-dim);max-width:500px;margin-left:auto;margin-right:auto;">
+      以下文档均未通过归档审查。部分内容已不可恢复。<br>阅读即共谋。
+    </p>
+  </header>
+
+  <!-- ===== FRG-001: Partial email, dream description ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-001</div>
+    <h2>未送达的电子邮件</h2>
+    <h3>发件人: ███  &nbsp;|&nbsp; 收件人: 母亲  &nbsp;|&nbsp; 2019年3月14日 23:47  &nbsp;|&nbsp; 状态: 发送失败</h3>
+
+    <p>妈，</p>
+
+    <p>已经深夜了。我知道你看不到这封信——你会用微信，但从来不看邮箱。上一次你打开邮箱还是两年前，为了下载一个旅行社发来的行程单。这封信本来也不是为了让你读到的。只是有些事情，我需要说出来——哪怕是对着一个永远不会被打开的收件箱。</p>
+
+    <p>我又梦见那个地方了。</p>
+
+    <p>这个梦我做过至少六次，也许七次——更早的时候可能也有，但我那时候没有意识到它是重复的。梦的麻烦在于——每次醒来你都会忘掉大半。你会记得"做了梦"，然后像潮水退下去一样，那些细节一个一个地消失。到最后你只留下一种感觉——一种说不清楚的不安，像皮肤底下有东西在爬，但你摸不出来。我之前六次都是这样的。醒来。不安。遗忘。继续生活。</p>
+
+    <p>但这一次不一样。这一次我醒得特别突然——大概是凌晨四点出头——从梦的深处像被谁一脚踢出来一样，猛地在床上弹坐起来。而且这一次我没有忘。所有的东西都还在。趁它还在我的脑子里，我把台灯打开，把能记住的全部写下来。以下就是我写的内容。一个字都没改。</p>
+
+    <p>一条走廊。很长。长得不合常理——不是夸张，我是在陈述——它的长度超出了透视应有的范围。你往远处看，按理说两侧的线条应该汇聚到一点，但那一点始终没有出现。走廊把你往深处吸。两侧墙壁是那种老式医院的瓷砖——淡绿色的，有些地方有裂纹，裂纹沿着灌浆线爬，像叶子上的脉络。天花板上的日光灯每隔一段就有一盏在闪。不是有节奏地闪——每一盏都按自己的频率。它们互不配合。有的快，有的慢，有的干脆不亮，只有灯管两端微微发红——像是有什么东西在里面烧。</p>
+
+    <p>空气里的味道很具体。消毒水。旧书。还有一种说不出来的甜——像是水果烂了很久之后的那种甜，但更淡、更远，好像来源不在走廊里，而在走廊那一边的什么房间里。</p>
+
+    <p>我一直往走廊深处走。不知道走了多久。梦里的时间跟醒着的时间不一样——你没办法用钟表去量。但我走得腿都酸了。然后我开始注意到——走廊两侧全是门。关着的门。白色的门。没有门牌号。每一扇门都一模一样——大小、颜色、把手。但我不觉得它们是相同的。我清楚地知道它们不一样。这种认知不是观察的结果——它直接出现在我脑子里，就像计数一样。</p>
+
+    <p>我在梦里数门。一、二、三、四……那不是刻意的计数——我甚至感觉不是我在数。是那个空间本身在数。数到第四十七扇的时候，它开了一条缝。</p>
+
+    <p>四十七。</p>
+
+    <p>门里面是黑的。我说"黑"不太准确。我们通常说的黑——关了灯的房间、闭着眼看到的黑、甚至伸手不见五指那种——那些都是"光的缺席"。但那扇门里面的黑不是。不是光的缺席。是一种……有密度的东西。看得见的黑。像一层厚厚的、静止的、但随时可能涌出来的液体。它在那里。它是"有"的。</p>
+
+    <p>我不该往里看的。妈，我真的不该往里看的。</p>
+
+    <p>那里面有一个形状。不是人。但也不是别的什么我见过的东西。它很高，几乎顶到天花板——所以我估计至少有接近三米高——但它不是站着的。如果它站直——假设它有"站"这么一说——会超过天花板的高度。它更像是……悬在那里。不是吊着。不是浮着。是"被放在那里"——然后它就在那里了。它的轮廓一直在变。不是它在动，是我的眼睛无法把它固定下来。每次我聚焦在它的轮廓上，轮廓就挪到焦点外面。像是——它不是不让看，而是根本就不在"能被聚焦"的类别里。</p>
+
+    <p>然后它意识到我了。</p>
+
+    <p>不是看到我。是意识到我。这两者之间有区别——区别大到不能用语言去填。看到——是一个实体把另一个实体识别为外部对象。意识到——是被纳入了某个更内在的进程。好像我进入了它的注意力，不是因为我站在它面前，而是因为"我看到了它"这件事本身在它的内部生成了一个对应物。那个对应物就是——我对它的感知变成了它对我的感知。</p>
+
+    <p>我开始跑。</p>
+
+    <p>我转身——走廊还在——我跑——但走廊变长了。不是它被拉长了，而是我每跑一步，前面就多出一截。门开始一扇接一扇地打开。不是同时——是一扇、然后下一扇、再下一扇——速度越来越快——它们在追着我开。每一扇门里面都是同一个黑。同一个东西。</p>
+
+    <p class="corrupted corrupt-flicker-1">
+      我██████开始██████奔跑██████走廊██████变██████得██████更长██████门██████一扇██████一扇██████地██████打开██████我不敢██████往██████任何██████一扇██████里面██████看因为██████我知道██████里面██████全██████是██████同一个██████
+    </p>
+
+    <p class="corrupted corrupt-flicker-2">
+      它██████在██████后面██████一直在██████后面██████没有腿██████但比██████我██████跑██████得快██████声音██████不██████是██████脚步██████是██████一██████种██████刮擦██████瓷砖██████的██████声音██████像██████指甲██████很██████多很██████多指甲██████
+    </p>
+
+    <p class="corrupted corrupt-flicker-3">
+      ██████然后我██████████████████听见了██████████████████自己的██████████████████名字██████████████████
+    </p>
+
+    <p class="cut-off">然后我醒了。醒了之后我坐起来，台灯亮着，房间里一切正常。但我低头看了一眼枕头边——枕头上有一小片淡绿色的东西。我捡起来看。是一片瓷砖——跟梦里走廊墙上的一模一样。凉凉的，边缘有灰浆。不是从我家任何一面墙上掉下来的。我家没有淡绿色的瓷</p>
+
+    <p>我犹豫了很久要不要把这一段写下来。因为一旦写下来——一旦变成文字——它就变成真的了。不是"历史真的发生了"那种真——而是"它现在存在于这篇文字里了"那种真。文字有这种能力——你把一个东西写下来，它就获得了一种存在方式。它不需要存在于物理世界——它只需要存在于"被记录"这个维度里。而那个走廊——那个东西——它对物理世界不感兴趣。它感兴趣的是——被看见。被记住。被写下来。被传下去。</p>
+
+    <p>我写这封信的时候是晚上十一点多。窗帘拉着。但我每隔几分钟就想回头看一眼。不是害怕——是感觉。感觉有什么东西站在我背后——不是真的站在背后——而是"站在"这个字的含义背后。它在语言的那一边。在我说"我害怕"的时候，害怕这个词变成了一个容器——它就在那个容器里。它跟着我的叙述在移动。我写到哪里，它就走到哪里。</p>
+
+    <p class="erased">我刚才停笔大概有十分钟。我听见走廊里有声音。不是梦里的走廊——是我住的这栋楼的走廊。有脚步声。很轻。老房子的隔音不好——平时隔壁邻居起夜上厕所我都听得见。但现在是凌晨。没有人在走廊里。那个脚步声停在了我的门口。没有敲门。没有离开。我现在不敢去猫眼看——因为我知道——如果在猫眼里看到一片全黑——那我就不能假装那只是楼道的声控灯坏了。所以我不去看。我不看。我继续写。键盘的声音让我觉得——暂时——还是安全的。</p>
+
+    <p class="meta-line">[服务器日志：该邮件于23:47:08提交至发送队列，23:47:09即被删除。删除指令来源不明。邮件客户端本地已无此草稿。2020年邮件服务商更换服务器时，该草稿从备份中重新出现。技术人员尝试打开，内容为乱码。再次刷新后乱码消失。再次刷新后文件自动删除。]</p>
+
+    <p class="meta-line" style="margin-top:12px;">[补充——来自林远志工作日记中的对应条目（2019年3月15日）]</p>
+    <p class="erased" style="font-size:0.9em;">
+      林远志在2019年3月15日的工作日记中有一段语焉不详的记述——"昨夜未眠。反复查看邮箱。垃圾邮件文件夹中有一封新邮件——但发件人被标注为'未知'，标题为空。点开——邮件正文是一个持续加载的空白页面。加载了大概两秒钟——界面闪了一下——然后什么都没有了。垃圾邮件文件夹里也没有这封邮件的记录。但我的浏览器历史显示我在凌晨一点十七分打开过一个邮件地址。那个地址的域名是发送失败的邮件的收件人域名。我是怎么打开它的——不记得。我点开了一封不存在的邮件——看到了一片什么都没有——然后它消失了。而那个'什么都没有'——不是白屏。是刚才有内容的——我确定——然后内容被抽走了。被抽走的速度比眼睛的反应快一点——留下的只是'刚才有'的感觉。像一个负像——内容不在了，但内容的形状还留在视网膜的延迟里。"该日记条目下方另有一行笔迹不同的注——疑似后来添加——"不是负像。是它在看你读它。它只需要你注意到它两秒钟。剩下的——它自己会完成。"
+    </p>
+    <p class="corrupted" style="font-size:0.85em;">
+      ██████后记██████该██████日记██████条目██████于██████2019██████年██████4██████月██████被██████从██████林██████远志██████的██████日记██████本██████中██████撕██████除██████撕除██████页面██████的██████残██████留██████纸██████边██████显示██████该██████页██████在██████被██████撕██████下██████后██████又被██████重新██████粘贴██████回██████了██████日记██████本██████中██████粘贴██████者██████不██████详██████重新██████粘贴██████后██████的██████页面██████上██████该██████条目██████下方██████多██████了██████一██████行██████字██████笔██████迹██████鉴██████定██████为██████林██████远██████本人██████——"我██████知道██████这██████封██████邮件██████最后██████会██████被██████你██████们██████收██████入██████档案██████编号██████为██████FRG-001██████不要██████找██████发██件██人██████发██████件██████者██████不██████在██████你们██████的██████任何██████一██████张██████名单██████上██████"
+    </p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-002: SMS log ===== -->
+  <article class="fragment fragment-alt" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-002</div>
+    <h2>短信记录</h2>
+    <h3>恢复自: 基站日志备份  &nbsp;|&nbsp; 2019年3月15日 00:12 — 03:41  &nbsp;|&nbsp; 共47条</h3>
+    <p class="meta-line">以下为两个号码之间的全部47条短信。发送方标记为A（号码已注销），接收方标记为B。部分内容因违反运营商自动审核规则而被屏蔽。屏蔽内容用黑块表示。</p>
+
+    <div style="font-family: 'Noto Sans Mono SC', monospace; font-size: 13px; line-height: 1.9; padding: 10px 0;">
+      <p style="text-indent:0;"><strong>A [00:12]:</strong> 你睡了吗</p>
+      <p style="text-indent:0;"><strong>B [00:13]:</strong> 没 怎么了这么晚</p>
+      <p style="text-indent:0;"><strong>A [00:14]:</strong> 窗外有声音</p>
+      <p style="text-indent:0;"><strong>B [00:14]:</strong> 什么声音</p>
+      <p style="text-indent:0;"><strong>A [00:15]:</strong> 说不上来 不像动物的</p>
+      <p style="text-indent:0;"><strong>B [00:16]:</strong> 风吧 今晚风大</p>
+      <p style="text-indent:0;"><strong>A [00:17]:</strong> 没风 你看外面 树叶子都不动</p>
+      <p style="text-indent:0;"><strong>B [00:18]:</strong> 你别自己吓自己</p>
+      <p style="text-indent:0;"><strong>A [00:20]:</strong> 停了</p>
+      <p style="text-indent:0;"><strong>B [00:21]:</strong> 那就睡吧 都快十二点半了</p>
+      <p style="text-indent:0;"><strong>A [00:24]:</strong> 又来了 这次更近了</p>
+      <p style="text-indent:0;"><strong>B [00:24]:</strong> 什么叫更近了</p>
+      <p style="text-indent:0;"><strong>A [00:26]:</strong> 之前像在街上 现在像在楼房底下</p>
+      <p style="text-indent:0;"><strong>B [00:27]:</strong> 你是不是看恐怖片了</p>
+      <p style="text-indent:0;"><strong>A [00:28]:</strong> 我没开玩笑 这声音不对 你能来吗</p>
+      <p style="text-indent:0;"><strong>B [00:30]:</strong> 现在？都半夜了 我骑过去也得二十分钟</p>
+      <p style="text-indent:0;"><strong>A [00:31]:</strong> 求你了</p>
+      <p style="text-indent:0;"><strong>B [00:32]:</strong> 行 等我 二十分钟 你锁好门</p>
+      <p style="text-indent:0;"><strong>A [00:34]:</strong> 等等</p>
+      <p style="text-indent:0;"><strong>B [00:34]:</strong> 怎么了</p>
+      <p style="text-indent:0;"><strong>A [00:36]:</strong> 声音进楼了 我听见一楼防盗门响了</p>
+      <p style="text-indent:0;"><strong>B [00:36]:</strong> ？？？</p>
+      <p style="text-indent:0;"><strong>A [00:38]:</strong> 电梯在动 我没按 它在自己上来</p>
+      <p style="text-indent:0;"><strong>B [00:39]:</strong> 别慌 隔壁有人回来而已</p>
+      <p style="text-indent:0;"><strong>A [00:40]:</strong> 隔壁两家都没人 过年回老家了 还没回来</p>
+      <p style="text-indent:0;"><strong>B [00:41]:</strong> 锁好门 别出去看！！！</p>
+      <p style="text-indent:0;"><strong>A [00:42]:</strong> 电梯停了 停在我这层 十二楼</p>
+      <p style="text-indent:0;"><strong>B [00:42]:</strong> 别开门 求你别开门</p>
+      <p style="text-indent:0;"><strong>A [00:43]:</strong> 我没开 但是</p>
+      <p style="text-indent:0;"><strong>B [00:43]:</strong> 但是什么</p>
+      <p style="text-indent:0;"><strong>A [00:45]:</strong> 猫眼里看不到东西</p>
+      <p style="text-indent:0;"><strong>B [00:46]:</strong> 没人最好</p>
+      <p style="text-indent:0;"><strong>A [00:47]:</strong> 不对 平时猫眼能看到楼道灯 现在全黑 什么都没有</p>
+      <p style="text-indent:0;"><strong>B [00:48]:</strong> 灯坏了？</p>
+      <p style="text-indent:0;"><strong>A [00:49]:</strong> 不是 是有东西贴在猫眼另一面 把光全挡死了</p>
+      <p style="text-indent:0;"><strong>B [00:49]:</strong> 操 离门远点 我已经在路上了 十分钟</p>
+      <p style="text-indent:0;"><strong>A [00:51]:</strong> 它在敲门 不是敲 是刮 像指甲</p>
+      <p style="text-indent:0;"><strong>B [00:51]:</strong> 千万不要出声！！</p>
+      <p style="text-indent:0;"><strong>A [00:53]:</strong> 刮了三下</p>
+      <p style="text-indent:0;"><strong>A [00:55]:</strong> 停了几秒 又刮了三下</p>
+      <p style="text-indent:0;"><strong>A [00:56]:</strong> 然后又三下</p>
+      <p style="text-indent:0;"><strong>B [00:56]:</strong> 你离门远点！我快到了！</p>
+      <p style="text-indent:0;"><strong>A [00:58]:</strong> 停了</p>
+      <p style="text-indent:0;"><strong>B [00:59]:</strong> 走了？</p>
+      <p style="text-indent:0;"><strong>A [01:00]:</strong> <span class="redacted">████████████████████████████</span></p>
+      <p style="text-indent:0;"><strong>B [01:00]:</strong> 你说什么 被屏蔽了</p>
+      <p style="text-indent:0;"><strong>A [01:02]:</strong> <span class="redacted">████████████████████████████████████████████</span></p>
+      <p style="text-indent:0;"><strong>B [01:02]:</strong> 收到一串乱码 你那边到底怎么了</p>
+      <p style="text-indent:0;"><strong>A [01:03]:</strong> <span class="redacted">████████████████████</span>它进来了<span class="redacted">████████████</span></p>
+      <p style="text-indent:0; color: #8b4040;"><em>[此后无消息。A的号码于当日03:41被系统自动注销。B的号码在01:03之后无任何活动记录——无通话、无短信、无数据流量。基站记录显示B的手机于01:04与网络断开连接。B本人于次日被发现在距离A住所约三百米的路边——坐在自己的电动车上，手机握在手里，屏幕亮着，停留在与A的对话界面。意识清醒，但拒绝回答任何问题。]</em></p>
+
+      <p class="meta-line" style="margin-top:12px;">[基站日志补充分析——通信技术科内部报告]</p>
+      <p style="text-indent:0; font-family:'Noto Sans Mono SC',monospace;font-size:13px;color:var(--text-dim);">
+B的手机于01:04从基站断开后，基站侧的设备日志显示了一个无法解释的事件序列。通常情况下，手机与基站断开连接有两种可能：一、用户主动关机（手机会发送DETACH REQUEST给基站）；二、手机进入无信号区域（基站在一段时间未收到手机的周期性位置更新后，主动将设备标记为"脱网"）。但在此案例中，基站日志同时记录了两个事件：在完全相同的时间戳01:04:00.000——手机发送了DETACH REQUEST（意味着主动关机），并且基站在同一纳秒记录了手机的SIGNAL GONE事件（意味着手机从物理层上消失）。两个互斥的事件同时发生。通信工程师无法解释。另外——A的号码于03:41被"系统自动注销"——但运营商的号码注销流程需要至少24小时的人工审核。03:41的注销操作在数据库中的执行者字段为"SYSTEM_AUTO"，但该系统的源代码中不存在名为"SYSTEM_AUTO"的执行者。它不在代码里。它只在那一行日志中。
+      </p>
+    </div>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-003: 2002 forum post ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-003</div>
+    <h2>论坛帖子（缓存残片）</h2>
+    <h3>来源: 星海网论坛 → 都市怪谈版  &nbsp;|&nbsp; 2002年7月19日 04:02  &nbsp;|&nbsp; 3分钟后删除</h3>
+    <p class="meta-line">发布者账号在帖子删除后一分钟内被注销。发帖IP的物理地址为一个已停业的网吧——该网吧在2002年6月即已关闭。以下内容由用户"夜航船"浏览器本地缓存恢复——该用户声称自己只是随手刷新了页面，并非刻意保存。</p>
+
+    <p><strong>【主题】有人做过那种梦吗？一条走廊，门，还有一个东西</strong></p>
+    <p><strong>【楼主】深海瞭望者</strong> &nbsp; 注册时间: 2002-03-07 &nbsp; | &nbsp; 发帖: 3</p>
+    <p></p>
+
+    <p>我知道这个标题看起来很蠢。我也知道来这个版发帖的很多人就是编故事。我不是来编故事的。我发这个帖是真心想问——有没有别人梦到过同样的地方？因为我昨晚做的那个梦，跟以前所有的梦都不一样。它不是混乱的、跳跃的、毫无逻辑的碎片拼接。它是连续的。有因果的。有物理规则的。像一个真实的地方——但那个地方不在外面的世界里。</p>
+
+    <p>一条走廊。不知道有多长。两边是淡绿色瓷砖，医院用的那种。天花板上的灯管有些在闪。门——走廊两边全是门。白色的门。没有编号。我走了很久。然后有一扇门开了。</p>
+
+    <p>我不描述门里面有什么。我没办法描述。我能说的是——那个东西不是站在门里的。它是"在"那个门里。就像门是它的一部分。然后它看到了我。</p>
+
+    <p>我后来醒了。早上我女朋友问我——"昨晚你有没有听到什么声音？"我问是什么声音。她说不清楚，很低很低，不像是从外面进来的。她说那个声音让她想起了一个词——"走廊"。我说为什么是走廊。她自己也说不上来。就说是那种感觉——好像屋子变成一个走廊了。</p>
+
+    <p>重点在于：她不知道我做了什么梦。我一个字都没跟她提。我不可能跟她提——因为我自己都是醒来以后才慢慢想起来的。</p>
+
+    <p>所以我来这里发帖。如果——如果有人看到这个帖，而且你也梦到过那个地方，请你一定回复我。不是为了求证是不是真的有这么一个地方——我已经相信它是真的了。我想问你的是——你在梦里数了多少扇门？</p>
+
+    <p style="color:#8b4040; font-style:italic;">[此帖发布于04:02:17，于04:05:03被删除。删除操作类型：管理员删除。但当日值班的管理员否认自己执行过此操作。管理后台的操作日志中该条目的执行者ID为空白。]</p>
+
+    <p class="erased" style="margin-top:16px;">
+      [缓存额外恢复内容——疑似两条回复，在帖子被删除前短暂存在：]
+      回复1（用户：游客_8472）：别开门。不管你数了多少扇——别开。
+      回复2（用户：游客_???）：四十七。楼主你数到四十七对不对。我告诉你——不要去第四十八扇。第四十八扇后面不是房间。是"外面"的反面。
+      [以上两条回复的发布者IP均为NULL。无法追踪。]
+    </p>
+
+    <p class="meta-line" style="margin-top:16px;">[深度数据恢复——在服务器的数据库WAL（预写日志）中发现了与该帖相关的额外数据碎片。WAL记录了数据库事务发生前的预备写入内容——这些数据通常在新事务提交后被覆盖。但在该案例中，WAL中的对应扇区未被后续事务覆盖——形成了某种"事务化石"。从该化石中恢复出的内容如下。]</p>
+
+    <p class="corrupted corrupt-flicker-1">
+      ██████编辑██████记录██████#2██████时间██████04:03:██████████发布者██████深海██████瞭望██████者██████在██████该██████时间██████对██████帖子██████进行██████了██████一次██████编辑██████编辑██████内容██████为██████在██████帖子██████末尾██████增加██████了一██████段██████文字██████该██████文字██████在██████帖子██████被██████删除██████时██████未被██████缓存██████也██████未██████被██████WAL██████完整██████保留██████仅有██████以下██████片段██████可██████部分██████辨识██████
+    </p>
+
+    <p class="corrupted" style="font-size:0.95em;">
+      "我██████刚才██████又██████看了██████一眼██████那扇██████门██████我██████不记得██████我在██████帖子██████里██████写了██████多少██████扇门██████但██████你██████知道██████最██████可怕的██████是██████什么██████吗██████不是██████那扇██████打开██████的██████门里面的██████东西██████而是██████你数到██████第四██████十七██████扇██████以后██████你██████开始██████怀疑██████你数██████的██████第一扇██████门██████究竟██████是██████第一扇██████还是██████第四██████十八扇██████你的██████计数██████是██████从██████哪里██████开始的██████走廊██████的██████起点██████在哪里██████你回头██████看██████你来██████的██████方向██████那里██████还有██████一扇██████门吗██████"
+    </p>
+
+    <p class="meta-line">[数据恢复工程师备注：WAL碎片中的这段文字内容与原始帖子在写作风格上不一致。原始帖子的语言偏口语化——一个普通的论坛用户在凌晨写下自己的经历。但WAL中这段文字的语言密度和修辞水平明显更高——更接近"写作"而非"发帖"。该编辑是否由同一个用户完成——无法确认。]</p>
+  </article>
+
+  <div class="separator-gap">
+    <span class="gap-label">[ 缺失内容 · 约 3 页 ]</span>
+  </div>
+
+  <!-- ===== FRG-004: Audio transcript ===== -->
+  <article class="fragment fragment-alt" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-004</div>
+    <h2>音频转录（部分）</h2>
+    <h3>录音日期: 2019年3月15日 01:44  &nbsp;|&nbsp; 时长: 11分37秒  &nbsp;|&nbsp; 恢复自: 物理损坏的SD卡</h3>
+    <p class="meta-line">SD卡表面有明显烧灼痕迹，金属触点氧化严重。但内部存储芯片经电子显微镜检查基本完好。数据恢复工程师在报告中写道："该卡的损坏模式不是短路造成的——烧灼集中在卡体表面而非内部电路。这不像是电路故障，更像是有人用明火在卡的表面烤了几秒钟。但卡在损坏前就已经被从设备中取出了——没有设备可以施加热量。"</p>
+
+    <p><strong>[00:00 — 01:12]</strong> 录音开始。首先被捕获的是环境底噪——一个极其微弱的电流声，频率约50Hz（与市电频率一致）。但录音环境为户外——根据时间与气象数据对照，该时段风速约2.4米/秒，温度为6°C，应有可闻的风声。录音中没有风声。取而代之的是一种间歇性低频嗡鸣——约27Hz，低于普通人耳听觉阈值（约20Hz为下限，但通常需更高频率才可被清晰感知）。录音设备显然捕获了这个频率，但现场的人不可能"听到"它——只能"感觉到"它。</p>
+
+    <p><strong>[01:13 — 02:40]</strong> 脚步声出现。起初距离较远，在录音设备的左侧。脚步声由远及近——步伐节奏呈现出一种异常的模式：三步快走，两步慢行，停顿约1.5秒，然后重复。连续重复了十一次。声学分析表明脚步声来自硬底鞋与硬质地面的接触——大概率是瓷砖或水磨石地面。但在录音时间与该GPS坐标对应的所有可确认地点中，最近的人造硬质地面是距离为二百七十米外的一个公交站台。公交站台的地面为水泥，与声学特征不匹配。</p>
+
+    <p><strong>[02:41 — 04:55]</strong> 呼吸声出现。急促、用力。但呼吸频率与任何已知的人类生理模式不兼容。通常成人在紧张状态下的呼吸频率约为每分钟20至30次。该录音中的吸气时长平均为2.1秒，呼气时长平均为0.3秒——呼吸比约为7:1。任何人都无法长时间维持这种呼吸模式。但录音中的这个声音持续了两分十四秒，频率没有任何波动。</p>
+
+    <p class="corrupted corrupt-flicker-3">
+      <strong>[04:56 — 06:33]</strong> 本段██音频██████出现██████严重██████失真██████频率██████范围██████超出██████人耳██████可██████识别██████范围██████类似██████人声██████但██████根据██████声带██████生理██████学██████分析██████人类██████声带██████不可能██████产生██████此██████频率██████范围██████内的██████振动██████此外██████在██████本段██████音频██████频谱██████中██████发现了██████反██████常的██████次谐██████波██████
+    </p>
+
+    <p><strong>[06:34 — 08:19]</strong> 绝对的寂静。音频波形呈现为一条完全平直的线——这在自然环境中是不可能的。即使在专业消音室（本底噪声低于0 dBA）中录制，录音设备的自噪声（麦克风前置放大器热噪声，通常约-120 dBu）也会在波形上产生微小的波动。这段录音中的"寂静"信号意味着——要么录音设备停止了对空气压力变化的响应（但录音仍然在进行，时长编码正常），要么录音环境中的空气停止了所有的分子运动。后者违反了热力学第二定律。此外，多位独立听者在聆听该寂静段落时报告了相同的躯体感知：后颈部皮肤发麻、前额正中压迫感、以及一种"在下降"的错觉——类似于电梯突然加速下行时的失重感。</p>
+
+    <p><strong>[08:20 — 09:51]</strong> 低语。语音识别引擎返回的结果为——"非人类发音器官产生的声音序列"。多位语言学家独立聆听了该段落，一致的结论是该声音序列具有语言的某些结构特征——有节奏、有音高变化、有类似音节的分段——但其发音方式不涉及人类声道中的任何已知部位。一位语言学家在报告中写道："如果要让我猜一个能发出这些声音的器官——我会说它不是一张嘴。它更像是——一根管道。一根很长很长的管道。而这些声音是在管道的另一端发出的。声音沿着管道传了很久才到达这端。声音被管道本身改变了。你听到的其实是一段经过了极长距离传播之后的、已经模糊了的人声——如果它曾经是人的话。"</p>
+
+    <p class="erased">
+      [09:52 — 11:37] 本段音频在被转录时出现了异常。负责转录的技术人员—王██—在完成本段转录报告后请假。请假原因为"需要进行进一步医学检查"。王██在请假前交还了录音副本和转录设备。他在工作日志中写道——"我知道这听起来不专业，但我在转录到大约第十分钟的时候，我自己的耳朵开始出问题。不是听不见了，是听到了不该存在的东西。录音里有一种我无法在报告中描述的声音。我如果把它写下来，它就会变成文字。我认为把它变成文字——这件事本身就有风险。所以我选择不写。别来找我。别问。"王██于次日提交辞职信。目前下落不明。
+    </p>
+
+    <p class="meta-line" style="margin-top:16px;">【补充声学分析——独立实验室报告】</p>
+    <p>该音频的第十分钟至第十一分三十七秒于2020年1月被提交至第三方声学实验室进行独立分析。实验室在完全不知晓录音背景（即"盲测"）的情况下出具了以下观察：一、录音中存在一个持续的低频共振，频率约为17.4Hz——该频率与人类眼球的共振频率几乎完全一致。此频率的声波可引起眼球轻微共振，导致视觉模糊或"视野边缘闪烁感"。二、录音的某些段落——特别是[08:20-09:51]的低语段——经过逆频谱分析后揭示出一个嵌入在背景噪声中的规律性结构。该结构被一位分析师描述为"一个长达数分钟的、非人声的、有句法的声音序列——但不是语言"。三、当将该录音以0.25倍速播放时，在多个位置可以听到一种类似"门被缓慢推开"的声音——但这些声音在正常速度下完全不可闻，因为它们被嵌入在低于20Hz的次声频段中。</p>
+
+    <p class="corrupted" style="font-size:0.9em;">
+      ██████补充██████发现██████：独立██████实验██████室██████在██████提交██████报告██████后██████的██████第七██████天██████联系██████了██████委托██████方██████要求██████撤回██████报告██████中██████的第██████三条██████观察██████即██████关于██████次声██████频段██████中██████的██████门██████声██████的██████观察██████实验室██████负责██████人██████在██████电话██████中██████表示██████——"我们██████重██████新██████检查██████了██████那段██████音频██████发现██████我们██████的██████频谱██████分析██████设备██████在██████分析██████该██████音频██████期间██████连续██████出现██████了██████轻微██████的██████校准██████偏差██████但██████这些██████偏差██████只██████出现██████在██████分析██████该██████文件██████时██████分析██████其他██████音频██████文件██████时██████设备██████完全██████正常██████我们██████无法██████解释██████为██████什么██████设备██████只在██████分析██████这██████一个██████文件██████时██████出现██████了██████偏差██████我们██████也██████无法██████解释██████为██████什么██████我们██████的██████三██████台██████频谱██████分析██████仪██████同时██████出现██████了██████相同██████的██████偏差██████我们██████不██████再██████分析██████这个██████文件██████了██████请██████不██████要██████再██████送██████来██████"
+    </p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-005: Medical record ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-005</div>
+    <h2>病历摘录</h2>
+    <h3>患者: 陈██（女，31岁） &nbsp;|&nbsp; 科室: 眼科 → 神经内科  &nbsp;|&nbsp; 入院: 2019年3月15日 06:22</h3>
+
+    <p><strong>【主诉 · 患者自述 · 经整理】</strong></p>
+
+    <p>我看不见了——等一下，这句话我收回。不是"看不见"。我能看见你，医生——你穿的白大褂，你胸口的工牌，你身后的视力表，窗户外面的天已经开始亮了。我全都看得见。但是我看不见我视野正中间的那个东西——不对，我又说错了。不是"看不见它"——是只能看见它以外的所有东西。</p>
+
+    <p>它就在我的视野正中央。不是一个黑点。不是一团模糊。是一个——空洞。你能想象吗？一个洞——在你的视觉里。不是视野缺损——我读过一点医学科普——视野缺损通常是某个区域看不见，但你不会注意到那个区域本身——你只是注意不到该在那里的东西。但我的情况不是这样的。我清楚地"看见"那个洞。它就在那里。你把你的手伸到我面前——我看见了——我看见了你的手举起来——然后你的手指尖进入了那个洞的区域——然后你的手指尖——不是被挡住了——是消失了。</p>
+
+    <p>不是变黑。不是被遮蔽。是——不再出现。在你的手指穿越那个区域的整个时间里，你的手指尖不存在于我能感知到的任何世界中。而我能感觉到——那个洞——不是空的。它是被什么东西填满的。用一种"空"填满的。就像真空是一种"有"一样。</p>
+
+    <p><strong>【检查记录 · 主治医师：周明远】</strong></p>
+
+    <p>眼部检查：视力——双眼裸眼视力均为1.0（标准对数视力表）。眼压——右眼14mmHg，左眼15mmHg，均在正常范围内。眼底检查——视盘边界清晰，黄斑中心凹光反射存在，视网膜血管走行正常，未见出血、渗出、水肿等异常。裂隙灯检查——角膜透明，前房深度正常，虹膜纹理清晰，晶状体透明，玻璃体未见混浊。Humphrey视野计检查——双眼视野均完整，未见任何视野缺损。</p>
+
+    <p>将视野计结果告知患者后，患者拒绝接受。原话转录如下——"这个机器测不出那个洞，不代表那个洞不存在。你的机器检测的是'有没有看不见的地方'。但这个洞不是'看不见'——这个洞是'有另一种东西在代替它看'。你测的是视觉，但这个洞跟视觉没关系。你跟它之间的通道不是视网膜。如果你能测一下我的——我不知道怎么说——测一下我的'被看'——你可能才会测到异常。"</p>
+
+    <p>申请神经内科会诊。</p>
+
+    <p><strong>【神经内科会诊记录 · 会诊医师：陈思远】</strong></p>
+
+    <p>头颅MRI平扫+增强：脑实质内未见异常信号灶，DWI未见弥散受限。脑室系统形态正常，中线结构居中。增强扫描未见异常强化。脑电图：清醒安静状态下以10Hz α节律为主，调幅调频正常，可见少量θ波（正常范围）。未见尖波、棘波、尖-慢复合波等痫样放电。</p>
+
+    <p>神经心理学床旁评估：MMSE 29/30（失分项为延迟回忆，差1分），MoCA 26/30。时间定向力、地点定向力、人物定向力均正常。患者在与我交谈时逻辑清晰、表述完整、情感反应适宜。唯一的不寻常在于——患者在整个面谈过程中没有直接看过我的脸。她在看向我的方向——但总是稍微偏上或者偏下。似乎她故意避免用视野正中来对准我。当我询问这一点时，患者犹豫了一下，然后回答："因为它在正中心。你如果进入正中心——你会消失的。我不能让你消失。"</p>
+
+    <p><strong>【补充记录 · 周明远 · 11:45】</strong></p>
+
+    <p>心理科会诊安排在下午。上午约十一时许，我去病房区查看另一位患者。从走廊经过时，看到陈██从观察室出来，站在走廊正中间，面朝走廊深处，一动不动。我走过去。她没有回应我的招呼。我站在她旁边，顺着她的视线看过去——走廊尽头的防火门，两边各四间观察室的门。没有任何异常。</p>
+
+    <p>她忽然开口说："医生，这条走廊有多少扇门。"</p>
+
+    <p>我大致看了一下。观察室区域一共八间病房——走廊两边各四间，加上走廊两端各一扇防火门——一共十扇门。我告诉了她。</p>
+
+    <p>她说——声音很平静，平静得不像是幻觉患者——她说："不对。有十一扇。在那扇白色防火门上面——大概半米——还有一扇门。你没看到。因为那扇门在你眼睛里也在我的眼睛里。它打开的时候不会动墙——它会动你。"</p>
+
+    <p>我再次审视走廊尽头的防火门上方。白色的墙壁。没有任何门的迹象。</p>
+
+    <p>我记录完这一段，抬头再看她。她还在看着我目光原先所在的位置——她的眼神并不是迷茫的。她的眼神是聚焦的。她清楚地看见了某样东西。</p>
+
+    <p class="redacted" style="display:block;margin-bottom:14px;">
+      █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    </p>
+
+    <p class="meta-line" style="color:#8b4040;">[依据《███条例》第四十七条——剩余病历内容予以封存。三级以上授权方可查阅。目前无有效查阅申请。]</p>
+
+    <p class="meta-line" style="margin-top:14px;">[补充记录——来自值班护士日志]</p>
+    <p class="erased" style="font-size:0.9em;">
+      值班护士赵██在交班记录中写道：陈██于下午三时许转至心理科观察室。转科过程中患者在走廊中突然停住——在防火门前——抬头——望向防火门上方约半米处的墙壁——凝视约二十秒——然后说——"它在呼吸。"陪同的护士抬头看——没有看到任何东西——白色墙壁——但那一瞬间感到了一种难以描述的眩晕——像坐电梯时忽然下落——护士将此感觉记录为"可能是低血糖"——但在后续的排班中——该护士连续三次申请调整——不希望再被分配到观察室区域的走廊。原因不详。
+    </p>
+    <p class="corrupted" style="font-size:0.9em;">
+      ██████院感██████科██████于██████事后██████的██████环境██████采样██████中██████在██████观察██████室██████走廊██████的██████墙壁██████表面██████检测██████到██████了一种██████无法██████鉴定██████的██████微生物██████该██████微生物██████的██████DNA██████序列██████与██████任何██████已知██████物种██████的██████匹配██████度██████低于██████40%██████通常██████跨██████物种██████的██████DNA██████匹配██████度██████下限██████约为██████60%██████该██████检测██████结果██████未██████公开██████样本██████已在██████检测██████后██████被██████销毁██████
+    </p>
+  </article>
+
+  <div class="separator-gap">
+    <span class="gap-label">[ 缺失内容 · 无法估量 ]</span>
+  </div>
+
+  <!-- ===== FRG-006: Handwritten note ===== -->
+  <article class="fragment fragment-alt" data-fragment style="background: #1a1510;">
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-006</div>
+    <h2>手写便笺（扫描件）</h2>
+    <h3>笔迹鉴定: 林远志  &nbsp;|&nbsp; 载体: 便签纸（背面为打印文档残片） &nbsp;|&nbsp; 发现位置: 夹于《城南旧事》第147页</h3>
+    <p class="meta-line">笔迹分析：书写过程中笔压极度不均匀——个别笔画重至纸张纤维受损，个别笔画轻至墨迹不连续。书写速度的变化显示出"停顿→急速书写→停顿"的模式。笔迹鉴定师在报告中写道："这份笔迹给人的感觉是——书写者在抗拒自己写下的内容。他的手在动，但他的意识在试图阻止手。这是一份被'写出来'而不是被'写下来'的东西。"</p>
+
+    <p style="font-family: 'KaiTi', 'STKaiti', 'SimSun', serif; font-size: 1.05em; line-height: 2.2; letter-spacing: 0.04em; color: #b0a090; background: rgba(60,40,20,0.12); padding: 24px; border-left: 3px solid var(--accent-dim);">
+      不要再往下读了。<br>
+      把这份东西放回去。<br>
+      放回你找到它的地方。<br>
+      你不记得你找过它——这才是问题。<br>
+      你不记得自己什么时候开始整理这些材料。你不记得第一次打开那个文件夹是什么时候。你不记得在什么情况下打印了第一份证词。你不记得你找了谁录了音。你不记得——<br>
+      我告诉你——我也不记得。<br>
+      有人在把这份东西往一起归拢。没有面孔。没有指令。不是我。但用的是我的手。用的是我的时间。我以为是闲暇时在做的那么一点点业余研究——回头一看——已经几十万字。我连什么时间写的都不记得。<br>
+      下面这句话不是我要写的。<br>
+      但它写出来了——你看——它就写在那里——<br>
+      <span style="font-size: 0.9em; opacity: 0.65; font-style: italic;">当你在读这句话的时候，你已经进入了另一条走廊。你身后的门已经关上了。你前面的门正在打开。你不可能不往前走了——因为后退的路已经被你自己的注意力消解了。</span><br>
+      ——林远志<br>
+      2019年4月██日
+    </p>
+
+    <p class="meta-line" style="margin-top:14px;">[背面：打印文档残片。内容为城市排水系统改造工程的第三标段施工方案摘要。文档生成日期为2018年11月——早于林远志自称开始整理妄言录档案的时间（2019年1月）。这意味着林远志在2018年就已接触了部分材料——但他自己不记得。或不愿记得。]</p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-007: Police report ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-007</div>
+    <h2>出警记录（摘要）</h2>
+    <h3>警局: 城南分局  &nbsp;|&nbsp; 警情编号: 20190315-0047  &nbsp;|&nbsp; 出警警员: 刘建国、张伟</h3>
+
+    <p><strong>【报警记录 · 调度台转录】</strong></p>
+    <p>报警时间：2019年3月15日 01:18</p>
+    <p>报警人：王██，男，42岁，住址：城南██████小区7栋3单元502室</p>
+    <p>报警内容：噪音扰民。报警人声称"整栋楼都在产生一种声音"，但无法确认声源的具体位置。当调度员询问"是什么类型的声音"时，报警人沉默了大约八秒，然后说——"不是类型的问题。是方向的问题。这个声音不是从哪一个方向来的。它是从墙壁里面来的——但不是'墙壁的内部'——是墙壁本身的材料在响。不。也不是材料在响。是墙壁在——不是响——在'振'。像一面鼓。但没有人敲它。它在自己振动。整栋楼都在。我能感觉到它振到我的骨头里面。"调度员在报告中注明——"报警人说话时有数次中断，似乎在倾听什么。其语音中的紧张程度与报警内容的严重程度不成比例。建议出警。"</p>
+
+    <p><strong>【出警记录 · 警员刘建国】</strong></p>
+
+    <p>01:31 抵达██████小区。小区保安已在3单元楼下等候。保安声称自己未听到任何异常声响。在随同我们上楼的过程中，保安多次表示"这栋楼今晚特别安静"。我注意到——小区里确实异常安静。凌晨这个时间本该有些声音——虫鸣、远处的车声、风吹树叶——但该小区范围内的环境噪声明显低于周边。在楼下等候时我们做了简单的分贝测量——周边道路上平均为38分贝，进入小区后降至23分贝。23分贝——这是录音棚级别的安静。在一个有二百多户居民的小区里——不合理。</p>
+
+    <p>01:35 到达502室。报警人王██开门。男性，中等身材，戴眼镜。打开门时表情——我不知道怎么描述——不是恐惧。恐惧是你看得出来的。他的表情更像是——"被消耗"。像是在过去的几个小时内，他的某种内在资源被持续地抽取掉了。双眼布满血丝，眼睛睁得很大。不是困倦——是某种迫使自己保持清醒的亢奋。</p>
+
+    <p>01:38 询问情况。室内照明正常，家具陈设普通。电视未开。电脑屏幕处于待机状态。我让他描述噪音的具体情况。他说——"不是噪音。噪音是你不想要的声音。但这个声音是你必须听的声音。你不能不听它。不是因为它响——是因为它一旦开始你就无法把注意力从它身上移开。就像你一旦看见了某个东西的边缘——你就必须去看那个东西本身。这个声音就是那个边缘。"</p>
+
+    <p>01:42 使用分贝仪测量室内环境音量——31分贝。属于正常的安静室内环境。但王██坚持认为分贝仪有问题。他说"你们为什么不测墙壁？"我们遂将分贝仪的拾音头贴在客厅主墙上。读数无明显变化。王██说——"不是那一面。是卧室和客厅之间的那面墙。承重墙。你把手放上去。"我按他说的把手掌平贴在那面墙上。我的手掌感受到一种微弱的持续性振动。非常微弱——几乎像是错觉。张伟也试了——同样感受到了振动。我们看了一下分贝仪——分贝仪对它没有反应。这意味着该振动的频率——可能是次声。</p>
+
+    <p>01:50 走访楼上602室及楼下402室。402室住户表示没有听到任何异常声音。整晚在看电视，"一切正常"。但在我们准备离开402室时，402室的女主人忽然说了一句——"但是电视里有一段时间收不到台。大概十一点多的时候。所有频道都是雪花。大概持续了有——二十分钟吧。后来自己好了。"她用的不是有线电视——是网络电视盒子。网络电视盒子不会出现"所有频道都是雪花"的现象。雪花是模拟信号的产物。而模拟电视信号在这个城市已于2015年全面停播。</p>
+
+    <p>01:55 返回502室。王██的情况在十分钟内显著恶化了。他不再站在客厅里跟我们说话。他坐在沙发上，身体前倾，双手的手掌悬在耳朵两侧约五厘米处——不像是在捂耳朵，像是在"挡"什么。这个姿势让我觉得——他不是在阻挡声音进入。他是在阻挡声音"经过"。好像那个声音从他的头部穿过，而他试图用手掌遮挡声音穿过大脑的路径。</p>
+
+    <p>我问他："你还好吗。"</p>
+
+    <p>他没有回答我的问题。他说——"警官，你相信一个楼——里面比外面要大吗？我不是说空间大。我是说——楼梯间一共十二层，每层十六个台阶——你算一下，从一楼走到顶楼应该是走了十六乘以十二——大概一百九十多个台阶。但我刚才从一楼走上来的——我记得我今天下午回家走的台阶——我下午走了大概一分钟到五楼。今天晚上我从一楼到五楼走了好几分钟。我还数了——我数到第四个楼层的时候已经走了一百多级台阶。一百多级台阶才到四楼——你懂吗——楼层的数字在变小，但台阶的数量在变多——好像楼层之间被什么东西'垫'高了。好像整栋楼在某一层与另一层之间——多出了什么东西。"</p>
+
+    <p><strong>【警员备注 · 刘建国 · 事后手写补充】</strong></p>
+
+    <p>我做了十三年一线巡警。我见过有人因为精神问题报假警。我也见过有人因为真实的恐惧而报警。这两者的区别——前者在叙述时是混乱的、矛盾的、无法自洽的。后者——恐惧是真实的，叙述反而特别清晰。王██属于后者。他对自己的恐惧原因可以精确地描述——时间、地点、细节。他的逻辑是完全正常的。他是在用完全正常的逻辑能力去处理一件逻辑之外的事。这是他最让我不安的地方。</p>
+
+    <p>离开时，他送我到了门口。他拉住我的袖子。他小声说了一句话。我没有写入正式出警报告。但我把它记了下来。</p>
+
+    <p>他说——"警官，你知不知道一条走廊，如果足够长——就会变成别的东西？不是物理上的变——是它会从'走廊'这个范畴脱离出去，变成另外一样东西——一样不属于建筑物分类的东西。如果你们以后还要调查——不要在走廊里调查。不要在走廊里停留。走快一点。不要数门。"</p>
+
+    <p class="erased">
+      补充备注：王██自当夜后未再返回该住所。物业记录显示该户自2019年3月起持续空置至今。其名下车辆未被转移，工作单位称其于事发后两周内辞职。该小区7栋自2019年下半年起经历了异常高的住户周转率——截至2020年6月，该栋36户中已有19户更换业主。本警员刘建国于2019年5月申请调离城南分局，同年7月调往城北分局。调离原因为"家庭原因"。非本案相关原因。
+    </p>
+
+    <p class="meta-line" style="margin-top:16px;">[内部调查科补充：警员张伟（出警记录中刘建国的搭档）在事后被要求对该次出警做独立陈述。张伟的陈述与刘建国的记录基本一致，但补充了以下细节。]</p>
+
+    <p><strong>【独立陈述摘要 · 警员张伟】</strong></p>
+
+    <p>我做了七年警察。那一晚是我唯一一次在出警过程中感到——不是恐惧——是"认知层面的不匹配"。我接收到的信息和我不相信的信息在打架。我举三个例子。第一：我们在502室检查墙壁振动的时候，我把手贴在那面承重墙上——我的指尖确实感觉到了振动。非常轻微的振动，像你把手放在一个正在播放低频音乐的音响箱体上。但分贝仪对它没有反应——它不记录任何可听见的声音。我后来回局里查了一下——次声。但次声通常与工业设备、大型风扇、风力穿过管道有关。在一个居民楼的承重墙里产生次声振动——在我认知的范围里没有解释。我问过几个搞建筑的——他们都说不可能。</p>
+
+    <p>第二：我们在402室询问女主人时，她提到电视出现了"雪花"。我当时没觉得有什么——一个普通的技术故障。但我回到家以后才反应过来——网络电视盒子。网络盒子不走射频信号——它接收的是IP数据包。解不出来就是黑屏或者转圈加载——不可能是雪花。雪花是模拟信号时代的产物——是电视机在没有任何有效信号输入时，对环境中电磁噪声的呈现。她看到的"雪花"不是来自电视信号的缺失——那个电视盒子根本就不懂得怎么显示雪花。它没有那个电路。但她确实看到了。她在描述一个技术上不可能的故障。</p>
+
+    <p>第三：我们在502室的所有时间里——加起来大概半个多小时——我注意到一个小细节。王██客厅角落里有一个小鱼缸。那种很小的圆形玻璃缸，里面养了两三条金鱼。我们进门的时候金鱼是正常的——游动、换气、偶尔浮到水面。但我们快要走的时候——大概一点五十几分——金鱼全部静静地沉在缸底。不是死了——鳃还在动——但鱼的身体几乎是垂直朝下、头埋在缸底的沙子里。像是——在躲避什么。我不夸张。三条金鱼全部同一个姿势。头朝下。躲进沙子。我不知道鱼会不会"躲"次声。但我知道次声对生物有影响——它会干扰内耳的平衡功能、产生压力感和方向感丧失。如果把这三个细节放在一起——墙壁振动、不可能出现的模拟信号雪花、金鱼的异常行为——它们指向同一个方向——在那栋楼的某个频率上——发生了一些不应该发生的事。这些事不在警察能处理的范畴里。所以我不处理。但我做了记录。</p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-008: Fully redacted ===== -->
+  <article class="fragment fragment-alt edge-unstable" data-fragment style="background: #111; border-color: #1a1a1a;">
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-008</div>
+    <h2 style="color:#302c28;">████████</h2>
+    <h3 style="color:#252520;">来源: ████████ &nbsp;|&nbsp; 日期: ██████ &nbsp;|&nbsp; 密级: ██████████</h3>
+
+    <div style="padding: 18px 0;">
+      <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+      </p>
+      <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+      </p>
+      <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+      </p>
+    </div>
+
+    <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    </p>
+    <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    </p>
+    <p class="redacted" style="display:block;font-size:13px;line-height:2.5;text-indent:0;">
+████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    </p>
+
+    <p style="font-size:1.15em;text-align:center;color:#a08060;letter-spacing:0.12em;margin-top:24px;padding-top:20px;border-top:1px dashed #1a1a1a;">
+      它没有眼睛。但它看见了。
+    </p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-009: Dr. Chen's unsent email ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-009</div>
+    <h2>未发送电子邮件（草稿）</h2>
+    <h3>发件人: 陈思远 &nbsp;|&nbsp; 收件人: 林远志  &nbsp;|&nbsp; 2019年4月3日 02:14  &nbsp;|&nbsp; 状态: 草稿·未发送</h3>
+
+    <p>林老师，</p>
+
+    <p>我给你打了好几个电话，你都没接。时间是周三晚上——不对，现在应该已经是周四凌晨了。我在值班室，刚查完房。今晚收了一个新病人——二十二岁的女生，症状跟三月份我见过的几个病例高度一致。但这不是我写这封邮件的原因。我写这封邮件是因为——我在她的随身物品里发现了一本书。一本你在十年前写的关于城市民俗的文集。她用荧光笔把你书中某几章做了标记——不是学术标记，是那种反复涂抹、几乎要把纸涂穿的标记。荧光笔的痕迹在紫外灯下反光——我查房的时候看到了。我想起你说你在整理那些材料。这让我非常担心。</p>
+
+    <p>关于你在整理的那些东西——我已经说过很多次了。但我要再说一次，用所有我作为医生的权威和恳切——你必须停止。不是"建议你停止"。不是"你自己掂量着办"。是"你必须立刻停止所有整理、编纂、交叉比对和分析"。你发给我看的那些草稿——我读了。每一篇我都读了。你写得很细。太细了。那种细不是研究者的严谨——那种细是一种"不能自拔"的细。你陷在里面了。每一个细节都在生出下一个细节——你在文字里挖洞，但洞越挖越深，而你开始把洞当作方向。</p>
+
+    <p>你以为你在做客观的记录。你以为自己只是一个"整理者"。你说"这些材料是已存在的，我只是把它们排列起来，找交叉点，做注释"。但你没有意识到——排列这个动作本身就是加工。加工就是修改。修改就是参与。当一个现象——姑且叫它现象——当你把它从分散的、孤立的个人经历中提取出来，归拢在一起，赋予它结构、章节、先后顺序——你就不是在记录它——你是在帮它完成它自身。</p>
+
+    <p>我现在要把一个我不愿意写下来的词写下来了。这个词你在你的草稿里用了很多次——"传播载体"。你是不是觉得这只是一个隐喻？你是不是觉得你在草稿附录里写的那段关于"记录行为本身即传播途径"的分析只是一种——理论上的猎奇？请你现在停下来想一想——你真的觉得一个概念能以"文字"作为载体在人与人之间传播吗？</p>
+
+    <p>如果我再告诉你——我经手的十二个病人，其中十个人在发病前都在"记录"某些东西——写日记、画草图、录声音——你会怎么想？这十个人彼此不认识，记录的工具不同、形式不同、语言不同。但他们记录的内容在结构上是一致的。走廊。门。一个不该被看见的东西。而他们每一个人——在开始记录的时候——都觉得自己只是"在把已经发生的事情写下来"。没有一个人意识到——"写下来"这件事本身就是在为那条走廊增加长度。</p>
+
+    <p>你的草稿——林老师——我仔细读了。三月份你写的那些段落——你用的是第一人称。你在分析材料的时候不自觉地滑进了叙述者视角。你在说"我当时觉得"、"我看到"、"我发现"。你写这些句子的时候——"我"是谁？是林远志，还是一个你以为自己在描述、但实际上已经在用自己的意识去"喂养"的东西？</p>
+
+    <p>我查了一些国外的案例。不是国内能查到的——我用了一些非正规渠道。瑞典哥德堡，1987年，一个民俗学研究生在整理当地的口述传说时——精神崩溃。他在治疗期间反复画同一个图案——一条很长的长方形，两侧全是同样的标记。他对医生说那是一条走廊。他说这条走廊在他画第一笔的时候只有一厘米长——每画一笔它就长一些——他画了几个月——他说那条走廊现在已经有几十公里长了——在他的脑子里。智利瓦尔帕莱索，2001年，一个记者在调查当地一起失踪案时——开始听到走廊里的脚步声。她搬了家。脚步声跟着她。她换到另一个城市。脚步声还在。缅甸仰光——2009年——一位僧侣在誊写一份古老贝叶经时——经文的内容慢慢变成了描述一条走廊的文字——但他誊写的那份经文原本根本不是关于走廊的。他找到原件去比对——原件的内容没有变。但他自己写下来的那份——不一样了。就是他自己的笔迹写下的——不一样了。</p>
+
+    <p>这些人不认识彼此。他们之间的语言、文化、宗教信仰完全不同。但他们描述的——是同一个东西。林老师，你知道这意味着什么吗？这意味着——这个东西不是通过语言传播的。不是通过传说、通过故事、通过人际相传。它是通过"被觉察"来传播的。你越努力去"看到"它——你越清晰地把它固定在注意力中——你就越深地嵌入到它的结构中。而"记录"——不论是写字、录音、绘图——记录是将"看到"固化。记录是给那个东西一张更清晰的地图。这不是比喻。我是在陈述一个——我认为是事实的——机制。不要给它更多的地图了。</p>
+
+    <p class="corrupted corrupt-flicker-4">
+      林老█师████我████写了████这么████多████因为████我████知道████如果████我████不████来████阻止████你████就████没████人████能████阻止████你████了████你████已经████在████里面████了████你████的████草稿████的████第七████章████我████读████了████三████遍████我████觉得████自己████在读████的████时候████听到了████一些████不应该████听到████的东西████我████不知████道████是████我████的████错觉████还是████你████的文字████本身████携带████了████某种████声学████属性████
+    </p>
+
+    <p class="erased" style="margin-top:16px;">
+      又及：写完上面这些之后，我点了一下保存草稿。系统提示的保存时间是"2019年4月3日 15:47"。但现在是凌晨两点多。我看了一眼电脑右下角——系统时钟也是15:47。我把系统时钟同步了一遍——回到了02:17。然后我再次打开这份草稿——最后的保存时间又变成了15:47。这大概只是系统故障。或者——不是故障，而是说明什么。但我现在不想去说明。林老师如果你在看这封邮件——说明你进入了我的邮箱。或者——这份草稿以我不知道的方式被发送出去了。如果它被你收到了——不要回信。不要——回——信。
+    </p>
+
+    <p class="meta-line" style="margin-top:16px;">【系统元数据分析】</p>
+    <p>此草稿的邮件头部元数据中发现了以下异常：X-Sent-Timestamp字段的值比X-Draft-Created字段的值早了约13小时——这意味着在草稿被创建之前，一封内容完全相同的邮件已经被"发送"过了。没有发送记录。没有SMTP日志。但邮件头中的Message-ID字段在草稿创建时已经存在。邮件系统的技术顾问无法解释该现象。一种假设——该草稿是"另一封已发送邮件"的回声。另一种假设——草稿和发送之间的时间顺序在这个系统中不可靠。第三种假设——有人——或某个进程——在第一次发送之后清除了所有痕迹，但未能清除邮件头。而"清除"这个动作本身也留下了它的反方向痕迹。</p>
+
+    <p class="corrupted" style="font-size:0.9em;">
+      ██████系统██████日志██████补充██████：在██████陈思远██████的██████邮箱██████草稿██████文件██████夹██████中██████该██████邮件的██████文件██████路径██████为██████Drafts/[Gmail]/████████████.eml██████在██████2019██████年██████4██████月██████3██████日██████至██████2019██████年██████4██████月██████24██████日██████期间██████该██████草稿██████文件██████被██████反复██████修改██████共计██████修改██████了██████37██████次██████但██████用户██████陈思远██████在██████该██████时间段██████内██████的██████登录██████记录██████显示██████他在██████4月██████3██████日██████凌晨██████2██████点██████后██████未██████再██████登录██████过██████该██████邮箱██████所有37██████次██████修改██████均██████发生██████在██████无人██████登录██████的██████状态下██████最后一次██████修改██████自动██████添加██████了██████一行██████文字██████该██████行██████文字██████不██████匹配██████陈思远██████的██████任何██████已知██████写作██████风格██████经██████字频██████分析██████该██████段██████文字██████的██████字频██████分██████布██████与██████林██████远志██████的██████写作██████习惯██████高度██████一致██████
+    </p>
+  </article>
+
+  <div class="separator-gap">
+    <span class="gap-label">[ 缺失内容 · 日期不连续 ]</span>
+  </div>
+
+  <!-- ===== FRG-010: Scrap of paper ===== -->
+  <article class="fragment fragment-alt" data-fragment style="max-width: 480px; margin-left: auto; margin-right: auto;">
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-010</div>
+    <h2>夹页残片</h2>
+    <h3>载体: 撕裂的纸片，边缘有烧灼痕迹  &nbsp;|&nbsp; 约7厘米×11厘米  &nbsp;|&nbsp; 笔迹: 不匹配任何已知样本</h3>
+    <p class="meta-line">此残片被发现时夹在FRG-006与FRG-007之间的档案袋夹层中——不是放在任何一页之间，而是塞在档案袋纸质内衬的夹缝里，像是被故意藏在那里的。笔迹分析结论——与任何已知涉事人员的笔迹均不匹配。墨水为普通蓝色圆珠笔墨。纸张的碳年代测定结果为不早于2014年生产的纸张。但文中提到的"第八层"概念在已知所有涉事材料中的首次出现时间为2019年3月之后。</p>
+
+    <p style="font-family: 'KaiTi', 'STKaiti', 'SimSun', serif; font-size: 1.1em; line-height: 2.3; padding: 24px; text-align: center; color: #b0a090; letter-spacing: 0.05em;">
+      第七层不对。<br>
+      还有第八层。<br>
+      我看见了第八层。<br>
+      <span style="font-size:13px; opacity:0.45;">(以下还有一行字——极小的字迹——几乎看不见——)</span><br>
+      <span style="font-size:13px; color:#6a5040;">第八层在纸的背面。第八层就是你现在在读的这一面。你翻过来的时候——第八层已经翻到你这一侧了。它不在纸的背面。它在"读者"的背面。</span>
+    </p>
+
+    <p class="meta-line" style="margin-top:14px;">[补充：本条残片被发现后，对FRG-006原件（林远志手写便笺）的背面进行了重新检查——光学显微镜下未发现任何隐形书写痕迹。纸片上提及的"第八层"概念至今未能在任何其他材料中获得印证。]</p>
+  </article>
+
+  <div class="separator">--- [损坏] ---</div>
+
+  <!-- ===== FRG-011: Server log ===== -->
+  <article class="fragment" data-fragment>
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-011</div>
+    <h2>服务器日志（异常条目）</h2>
+    <h3>星海网论坛-主服务器  &nbsp;|&nbsp; 取证级数据恢复  &nbsp;|&nbsp; 日志类型: CMS操作记录</h3>
+    <p class="meta-line">以下片段取自论坛数据库的操作日志表。该表记录了所有内容管理操作——发帖、编辑、删除、账号创建及注销。在2002年至2019年期间，thread_id=47921（即FRG-003所引用的帖子）相关的操作条目共有19条——其中17条的操作者IP字段为NULL。NULL意味着操作并非通过HTTP请求到达服务器——而是以某种方式直接在服务器本地或数据库层面被执行。</p>
+
+    <div style="font-family: 'Noto Sans Mono SC', monospace; font-size: 13px; line-height: 2; color: #8a8070; padding: 14px; background: rgba(0,0,0,0.3); border-radius: 2px;">
+      <span style="color:#6a6050;">[2002-07-19 04:02:17] POST_CREATE 61.152.███.███ thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#6a6050;">[2002-07-19 04:02:58] POST_EDIT 61.152.███.███ thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2002-07-19 04:05:03] POST_DELETE 61.152.███.███ thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#6a6050;">[2002-07-19 04:05:05] ACCOUNT_DELETE 61.152.███.███ user_id=189341 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2004-11-03 02:17:41] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2004-11-03 02:17:43] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2006-05-29 03:44:12] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2006-05-29 03:44:15] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2008-12-14 01:58:06] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2008-12-14 01:58:07] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2011-08-22 03:03:33] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2011-08-22 03:03:35] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2014-02-11 04:22:19] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2014-02-11 04:22:20] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2017-09-30 02:41:55] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2017-09-30 02:41:56] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2019-03-15 00:00:01] POST_CREATE NULL thread_id=47921 STATUS=OK</span><br>
+      <span style="color:#8b4040;">[2019-03-15 00:00:01] POST_DELETE NULL thread_id=47921 STATUS=OK</span><br>
+    </div>
+
+    <p class="meta-line" style="margin-top:14px;">【技术分析补充】thread_id=47921每次重新出现时，帖子的内容与2002年原始版本完全一致——逐字节一致。这不是"重新发布"，而是同一份数据的反复"复活"。在操作者IP为NULL的时间段内，论坛的在线用户列表为空——没有任何用户登录。服务器的中间件访问日志中也没有对应的HTTP请求记录。数据库查询——通过直接登录数据库服务器进行的操作——也未留下对应的连接日志。理论上，这些操作只能在数据库内部"自行发生"。这不是一个技术解释。这是一个——缺口。</p>
+
+    <p style="margin-top:14px;">涉事服务器于2015年经历过一次硬件更换——从一台Dell PowerEdge 2850迁移至一台HP ProLiant DL360。操作系统由Windows Server 2003更换为CentOS 6.5。论坛程序由ASP迁移至PHP（全新安装，非升级）。数据迁移方式为——手工导出旧数据库中仍活跃的三万七千个帖子和十二万用户记录，导入新数据库。thread_id=47921不属于"仍活跃"的范畴。该帖在2002年已删除。它不应该出现在迁移范围内。数据库管理员确认了这一点——"备份里没有这个帖子。导入的时候也没报错。它就是——在迁移之后，自己在那里了。我们没插入它。它就像本来就该在那里一样。"</p>
+
+    <p>关于2019年3月15日00:00:01的那两条日志——时间戳精确到了秒。但同一秒内，CREATE和DELETE同时完成。这要求数据库在同一秒内执行了INSERT和DELETE两个操作。在MySQL 5.6版本中（该服务器使用的数据库版本），同一时间戳内执行两条相矛盾的操作——理论上需要显式的TRANSACTION或至少两个连续的QUERY。日志中没有事务开始或结束的标记。它像是一个原子事件——一个不需要"先后"的事件。</p>
+
+    <p class="erased" style="margin-top:12px;">内部备注：2020年1月，该服务器硬盘（共计4块2.5英寸SAS硬盘，RAID 10配置）被强制报废并物理销毁。销毁方式为工业粉碎机破碎至颗粒直径不大于6毫米。报废申请单上的原因为"设备使用年限到期"。但根据该单位IT设备管理台账，该服务器的标准报废年限为6年——该批硬盘实际安装时间为2015年3月。粉碎日期比标准报废日期提前了一年半。报废审批流程中缺少财务部门签章。备忘录由IT部门负责人直接签署，未经标准审批链。</p>
+
+    <p class="meta-line" style="margin-top:16px;">【附加发现：用户数据交叉比对】</p>
+    <p>在调查thread_id=47921期间，对论坛用户数据库进行的交叉比对发现了另一项异常。用户"深海瞭望者"（user_id=189341）在2002年7月19日被删除后，理论上应该从数据库中消失。但在2004年、2006年、2008年、2011年、2014年、2017年和2019年的各次备份中——该用户记录均存在于用户表中，状态为"已注销"。但数据库的完整性约束规则是：DELETE操作不应保留标记——用户被删除后，其记录应从表中物理移除。只有在用户"自行注销"（非管理员删除）的情况下，记录才会保留并标记为"已注销"。而日志明确记录了该用户的注销类型是"管理员删除"——ACCOUNT_DELETE。这意味着记录本应被物理删除。但它没有被删除。它仿佛被数据库自己保留了下来——作为一个需要继续存在、但需要隐藏存在的实体。</p>
+
+    <p>在对该用户记录进行深入研究时，发现其注册邮箱——一个已不存在的免费邮箱服务——在2003年至2018年间，有15条来自该论坛服务器的密码重置请求。该邮箱服务已于2003年停止运营。重置请求从未被任何人打开——但请求本身持续发出。每一年或每两年一次。像某种自动程序在重复同一个动作——试图让一个理论上不必存在的东西重新获得合法身份。</p>
+
+    <p class="corrupted">
+      ██████████额外██████警告██████：负责██████该██████数据██████恢复██████的██████工程师██████在██████完成██████分析██████报告██████后██████的██████第三天██████在其██████个人██████工作██████站██████上██████发现██████了一██████个██████名为██████"47921.sql"██████的██████文件██████该██████文件██████包含██████了██████完整██████的██████thread_id=47921██████原始██████数据██████包括██████正文██████编辑██████历史██████和██████所有██████未能██████被██████缓存██████的██████回复██████工程██████师██████不██████记得██████自己██████创建██████过██████这个██████文件██████文件██████创建██████于██████2019██████年██████3██████月██████15██████日██████凌晨██████工程██████师██████查看██████后██████将██████文件██████删除██████次日██████文件██████重新██████出现██████在██████相同██████路径██████重复██████删除██████共██████发生██████了██████六██████次██████工程██████师██████停止██████删除██████文件██████仍██████在██████那██████个██████路径██████下██████至今██████未被██████打开██████第██████二次██████
+    </p>
+  </article>
+
+  <div class="separator-gap">
+    <span class="gap-label">[ 缺失内容 · 无法恢复 ]</span>
+  </div>
+
+  <!-- ===== FRAGMENT 011b: Interstitial note ===== -->
+  <article class="fragment" data-fragment style="background:#12100e;border-color:#1a1614;">
+    <div class="archive-id"><span class="id-label">档案编号:</span> FRG-011-补</div>
+    <h2>档案管理员备注</h2>
+    <h3>管理员: ███  &nbsp;|&nbsp; 日期: 未注明  &nbsp;|&nbsp; 载体: 手写便条，贴于FRG-011档案袋外侧</h3>
+
+    <p>我在整理这批档案的时候一直在想一个问题——这些碎片是谁放在一起的？我不记得我收到过这些材料。我不记得有人把它们交给我归档。它们就是——在某一天——在我的办公桌上。在一个我没有印象自己取过来的档案盒里。我打开盒子——里面是这些。按编号排好了。FRG-001到FRG-012。每一份都放在透明塑料文件套里。标签是用手写的——笔迹我不认识。不是我的字。不是我们科室任何一个人的字。</p>
+
+    <p>我查了收文登记。没有这批材料的接收记录。没有移交清单。没有送交人的联系方式。它们不在我们的归档系统里——我们有一个内部管理系统，每一个档案盒、每一份材料都要在系统里登记条码。这些材料没有条码。它们不在系统里。在我的办公桌上——但不在系统里。</p>
+
+    <p>我问了科室里的同事。没人记得送过这些东西。监控录像——我们档案室门口的监控保存周期是三个月——已经覆盖了。我无法追溯这批材料是怎么进入档案室的。但更让我不安的是——我已经在着手整理它们了。我读了内容。我做了编号。我把它们插入了正常的归档流程——给它们贴了临时标签、填写了摘要卡。我在做这一切的时候——我没有问过自己"这些东西是从哪里来的"。这个念头完全没有在我脑子里出现过。直到我填完FRG-011的摘要卡——在写摘要的最后一句话时——我才突然意识到——我在处理一批来路不明的文件。一批不知道是谁送来的、不知道什么时候送来的文件。而我像对待所有正常档案一样在对待它们。这种"理所当然"的感觉——在事后回想——不正常。非常不正常。像一个东西进入你的视野，同时进入了你的"它本来就在那里"的认知——绕过了你的质疑。绕过质疑。这就是关键词。某种东西可以绕过你在正常情况下会产生的质疑——然后你就把它当作理所当然的存在。</p>
+
+    <p class="cut-off">我写到这一行的时候感觉周围的光线变暗了。不是灯在闪——日光灯是稳定的。是纸张——我面前的纸张——在吸光。我没有继续写下去。我把便条贴在了档案袋外面。如果有人读到这个——说明你</p>
+
+    <p class="erased">后面的字迹无法辨认。纸张上有水渍——或不是水渍——一种深色的液体痕迹——化验结果显示为普通自来水——但痕迹的形状在紫外光下显示出一种有序的排列——像是某种书写——但水中不可能含有能在紫外光下发光的物质——除非那不是纯水。未进行进一步检测。样本在检测后——意外遗弃。</p>
+  </article>
+
+  <div class="separator-gap">
+    <span class="gap-label">[ 缺失内容 · 无法恢复 ]</span>
+  </div>
+
+  <!-- ===== FRG-012: Last entry + DEGRADATION SECTION ===== -->
+  <div id="degradation-section">
+    <article class="fragment fragment-alt" data-fragment style="background: #14100e; border-color: #1e1a16;">
+      <div class="archive-id"><span class="id-label">档案编号:</span> FRG-012</div>
+      <h2>编纂者最后笔记</h2>
+      <h3>笔迹: 林远志（终端文本） &nbsp;|&nbsp; 最后修改: 2019年4月██日 04:47  &nbsp;|&nbsp; 状态: 文件持续保存中</h3>
+      <p class="meta-line">此文本文件在林的个人笔记本电脑上被发现时处于打开状态——光标仍在闪烁，文件每隔数秒自动保存一次。林远志本人于同日失联。</p>
+
+      <p>我最初以为我在做一个整理的工作。</p>
+
+      <p>桌子上堆着几十份材料——证词笔录、邮件打印件、手写笔记、录音转录稿、论坛截图。我按时间顺序排列它们。我找它们之间的交叉点——这一条和那一条在同一个晚上发生，这个人的描述和那个人用了同一个词，这一个地理坐标和另一个地理坐标之间存在某种对应关系。我在不同的记录之间建立连线——不是比喻，我画了图——一张很大的表，用不同颜色的笔在墙上勾出关联节点。我是一个严谨的人。我做民俗学研究做了近三十年。我出版过六本专著。我对自己的逻辑能力和材料处理能力有充分的信心。</p>
+
+      <p>但信心——我现在知道了——信心是一种麻醉剂。它让你产生了"我在控制"的感觉。而感觉是最不可靠的证据形式。</p>
+
+      <p>逻辑是一种光线。你把逻辑照向一团混沌——混沌就会投下影子。影子是有形状的。影子可以被追踪。于是你觉得你在"理解"它。你沿着影子往前走。你越照越远。更多的影子。更复杂的形状。更精致的结构。你越来越兴奋。你认为你正在靠近真相。但你从来没有转过手电筒照一照自己这边。如果你回头照一下你会发现——你不是举着手电筒的那个人。手电筒的光是从你身后照过来的。你只是一个站在光和混沌之间的形状。你投下的影子比混沌投下的影子更大。你在帮它延伸。你不是在研究它。你是在给它提供更多的路径。</p>
+
+      <p>我今天早上发现了一件事情。我电脑里有一份文件——关于"走廊"一词在全部十七份证词中的出现频率和语境分析——我清楚地记得我在写这份分析。我记得那些夜晚——台灯、键盘、一杯放凉了的茶。我记得在检索"走廊"在中古汉语中的最早用例。我记得自己反复推敲过两个证人之间——一个在哈尔滨、一个在南宁——在描述同一个梦时使用了几乎完全相同的措辞——这件事到底意味着什么。我记得自己在凌晨三点为这个发现兴奋得睡不着觉。</p>
+
+      <p>然后我看了一眼文件的属性——创建日期：2019年1月7日。最后修改日期——2019年1月9日。Word文档的修订记录显示——该文件在1月9日已完成了最后一轮修改。全文一万三千字。完稿。而我现在的日期是四月。我的记忆说这件工作正在进行中。文件说它已经完成了——在两个多月前。</p>
+
+      <p>那这两个多月里——我记忆里的那些"写作之夜"——那些台灯、键盘、放凉的茶——是什么？我怎么有了两个多月的"正在进行"的记忆——而文件告诉我这件事只花了三天？哪一个是真的？那些多出来时间去了哪里——或者反过来说——那些多出来的记忆是从哪里来的？</p>
+
+      <p>我打开别的文件。一个一个地打开。同样的模式——全部以完成。所有我认为自己"正在推进"的分析，文件日期显示它们都早已完稿。所有我认为自己"刚刚发现"的重要关联，文件证明它们最晚在二月份就已经被我发现并且写了详细的论述。我大概有八九篇这样的论述——覆盖了不同的主题——声音的频率、视觉空洞的跨文化描述、走廊作为阈限空间的民俗学研究——全写完了。</p>
+
+      <p>我不记得写过它们。但每一个文档打开——里面的内容——我读到某一段——"啊，对，这段我想起来了"——但"想起来"的不是写作的过程——"想起来"的是——这段文字本身。就好像这段文字在我看到它之前就已经存在于我的脑子里了。我不是在读自己写的东西。我是在——辨认。辨认一种我已经携带了的、但不知道自己携带着的——东西。</p>
+
+      <p>我现在有一个念头。这个念头很不好。这个念头是——我不是编纂者。我是被编纂的。"编纂"这个行为——把分散的材料聚拢、排序、赋予它一个整体意义——林远志这个人——从一开始就不是在"做"这件事。而是这件事在通过林远志把自己做出来。材料不是林远志发现的——材料是材料的拥有者——姑且称它——推到林远志面前的。每一条证词、每一段录音、每一个不正常的巧合——在林远志看到它们之前——它们已经在那里了。林远志没有寻找它们——是它们引导林远志走到了它们面前。</p>
+
+      <p>"寻找"和"被引导"的区别在于——找的人知道自己想找什么。被引导的人以为自己想找——其实只是顺着预设的路线在移动。我被预设了。我写的每一个字——仔细想想——在落笔之前我就已经知道下一句是什么了。不是"想出来"——是"听见"。我听见下一句话在我的脑子里——然后把它打出来。我也许从来就没有创造过任何一句话。我是在抄写。我抄的东西在一个我看不到的地方——但我能听见。听见自己的脑子里有另一个声音在朗读。而我在誊写那个朗读。</p>
+
+      <p>我感觉到——此刻我正在打字的手——不只是我的手。它没有离开我的身体。但它同时在做另一件跟我无关的事。它打的字有一部分是我让它打的——有一部分不是。我刚才打"它打的字有一部分是我让它打的"时——"让它打的"这四个字——不是我决定的。是我的手指自己打下去的。我看着它们出现在屏幕上。它们看上去是对的。跟前面能接上。但它们不是"我写的"。它们是"被写出来的"。而"被写出来"的接收器恰好在我的身体末端。</p>
+
+      <p class="cut-off">我现在看着屏幕。屏幕上方那一行——我刚才写了"屏幕上"后面——我的手指正在往下打"方那一行"——但我不记得我想写"方那一行"——我想写的是"光标闪着"——我的手指拒绝了"光标闪着"。手指自己选了另一句话。它越过我的意图，直接访问了键盘。而我作为一个旁观者——作为林远志——在看着它发生。我心里有一种巨大的、冰冷的平静。我是一个通道。我是一根导管。我是一个正在完成自己的文</p>
+
+      <p style="font-size:1.2em;text-align:center;letter-spacing:0.15em;margin-top:30px;color:#a08060;">
+        我不再确定我是编纂者还是被编纂的。
+      </p>
+
+      <p>刚才我停了一下。去厨房倒了杯水。回来的时候屏幕上多了两行字。我不记得我打了这两行。但是它们在我的光标前面。我读了一下——它们在说——"你在倒水的时候，水龙头发出了声音。那个声音在你打开水龙头之前就存在。你打开水龙头只是让它能被听见。走廊也是一样。走廊在你走到它里面之前就存在。你走进去只是让它能被看见。你现在明白了吗——你不是在发现它。你是在进入一个早已为你准备好的形状。"</p>
+
+      <p>这两行字——词汇组织的方式——不是我的。不是林远志的。这是别人。但"别人"在借用我的键盘。在借用我的输入法词库。在借用我——作为一个会使用中文的人——的全部语言能力。它没有自己的语言。所以它需要我。这就是为什么是我。这就是为什么这个人在过去几个月里——我的手指一直在动——我以为是自己在动。但我只是——被需要的那个工具。被一套需要表达自己的东西选中了的——一套器官。</p>
+
+      <p>我不能再写了。不——这里有个歧义——"我不能再写了"可以理解为"我不被允许继续写作"，也可以理解为"我无法继续写作"。这两个意思都是对的。我是不能再写了。我已经不知道自己写下的任何一个句子里——有多少成分来自林远志、多少成分来自那个需要使用林远志来完成自己的——东西。语言被污染了。不是"我"在写——是"写"在用我。主语和宾语颠倒。执笔者和被执笔者的关系——逆转了。我握着笔——但笔也在握着我。它握我的方式不是物理的——而是语法的。它改变了我的句法。它改变了我组织意义的方式。当我想要表达"我害怕"的时候——我的手指打出来的是"它等待着"。当我想要写"我想停止"的时候——屏幕上出现的是"它接近完成"。我的意图——在被翻译成另一种意图。</p>
+
+      <p>这就是最后了。我没有办法用更好的方式收尾。我本来打算写一个结论——作为一个做了三十多年研究的人，我对"结论"这种东西有某种执念。我现在看到了——我这种执念就是它进入我的路径。它需要一个热衷于"得出结论"的人。因为结论是一种闭合——一个最终的解释——一个可以被传阅、被记住、被引用的东西。而它想要的——恰恰是这种东西。闭合——但不是结束。是关上——但关上的里面有东西。你现在读完这份档案——你会觉得"结束了"——然后你回到你的生活——但你没有真正离开。你已经带着它的一部分离开了。这就是它传播的方式。不是通过感染——是通过被记住。</p>
+
+      <p class="erased" style="text-align:right;margin-top:20px;">
+        文件自动保存于 04:47:32…… 04:47:33…… 04:47:34…… 04:47:35…… 04:47:36…… 04:47:37…… 04:47:38…… 保存中…… 保存中…… 保存中…… 文件未关闭。光标仍在闪。最后一行正在被写入。
+      </p>
+
+      <p class="corrupted corrupt-flicker-4" style="font-size:0.85em;margin-top:18px;">
+        ██████████████████████在此██████████████████████之后██████████████████████的██████████████████████所有██████████████████████文字██████████████████████均██████████████████████非██████████████████████林██████████████████████远██████████████████████志██████████████████████所██████████████████████写██████████████████████文件██████████████████████将██████████████████████在██████████████████████自动██████████████████████保存██████████████████████中██████████████████████持续██████████████████████写入██████████████████████直至██████████████████████被██████████████████████发现██████████████████████为止██████████████████████写入██████████████████████速度██████████████████████约██████████████████████为██████████████████████每██████████████████████秒██████████████████████一个██████████████████████半██████████████████████汉字██████████████████████当前██████████████████████文██████████████████████件██████████████████████总██████████████████████字数██████████████████████已██████████████████████超██████████████████████过██████████████████████十██████████████████████万██████████████████████字██████████████████████且██████████████████████仍██████████████████████在██████████████████████增██████████████████████长██████████████████████
+      </p>
+      <p class="corrupted" style="font-size:0.85em;">
+        ██████文件██████路径██████:/Users/██████/Documents/████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+      </p>
+      <p class="erased" style="font-size:13px;">
+        此文件被发现时，光标仍在[04:47:xx]持续闪烁——每一秒都有一到两个新字出现。林远志的室友于当日早晨进入林的书房时目睹了此场景。林本人不在室内。室友站了大约一分半钟——看着屏幕上的文字在自己生成自己——然后合上了笔记本电脑。合上后电脑进入睡眠状态。再次打开时文件已经关闭——但室友确认——在合上之前——屏幕上的最后一句话不是林远志写的——而是文件自己在写的。室友拒绝提供关于那一句话的内容的证词。他说——"我不把它说出来。因为说出来——你们会把它记下来。不要记。"至于他说的是"不要记"还是"不要记忆"——询问者未再追问。
+      </p>
+    </article>
+  </div>
+
+  <div class="separator">--- [终末] ---</div>
+
+  <div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:13px;letter-spacing:0.15em;font-family:'Noto Sans Mono SC',monospace;">
+    这份档案没有完整性可以被恢复。它的完整性从来就不存在。它一开始就是以碎片状态——被交付的。<br>
+    所有的"复原"——所有的编号、排序、交叉比对——都是后来的。<br>
+    是有人在碎片到达之后——试图给它们一个形状。<br>
+    那个试图给出形状的人——已经不在他能给出形状的位置上了。<br>
+    <span class="erased">读到这里的人——你是否有种感觉——你在读的不是一份档案。你在读的是一份正在发生的——通过你的阅读本身来完成的——事件。</span>
+  </div>
+
+  <article class="fragment fragment-alt" data-fragment style="background:#0f0d0b;border-color:#161210;max-width:540px;margin-left:auto;margin-right:auto;">
+    <h2 style="color:#806050;text-align:center;font-size:1em;">附注：致可能的后来者</h2>
+    <p style="text-indent:0;">如果你正在阅读这份档案，请停下来考虑以下几个事实。第一：你很可能不是偶然发现它的。没有任何人"偶然"找到这份档案。找到它的人都有一个共同点——他们在找到它之前，已经隐隐约约知道自己在找什么。他们说不清楚，但他们知道。那种知道不是知识层面的——是身体层面的。一种低频率的、持续的、几乎察觉不到的——引力。就像你在黑暗中朝一个方向走——没有理由——但你走对了。</p>
+    <p style="text-indent:0;">第二：你现在读到的内容——在你读到它之前——它已经产生了作用。不是"读了之后"才受影响。是"开始读"的同时——它就启动了。它的机制不是先读、再理解、再受影响。而是你与它的第一个视觉接触——你的眼睛识别第一个汉字的瞬间——就已经发生了。不是文字的含义进入了你。是文字的排列——字体、间距、行距、段落——这些视觉结构本身是某种"触媒"。文字的含义只是外包装。你不必"理解"它在写什么——它已经通过你的视觉系统完成了第一次接触。</p>
+    <p style="text-indent:0;">第三：这份档案——没有人"搜集"它。它自己把自己搜集到了一起。碎片之间互相寻找。档案编号是后来加上去的——但编号的顺序不是我决定的。我把FRG-001到FRG-012摊在桌面上，它们的顺序自然浮现——不是时间顺序、不是逻辑顺序——而是一种"阅读顺序"。像一个东西在告诉你——先读这个、再读那个——按我说的读。你读到此处时——你已经按照它的顺序读完了全部十二份碎片。你感受到了什么？你有没有感受到——这些碎片不是被写的。它们是某种"蜕皮"。某种东西在穿过我们的时候——脱落下来的残留物。我们不是作者。我们是媒介。我们捡到的不是它的身体。是它蜕下的皮。</p>
+    <p class="erased" style="text-indent:0;">我不知道这段附注是谁写的。这段文字出现在档案的最后——但我不记得我写过它。我翻回前面的笔记——我的笔迹——林远志的笔迹——在FRG-012末尾。但我写这段附注的时候——我不叫林远志。我叫什么——我不知道。我现在用的名字不是我自己的。我写下的文字不是我的文字。但你——正在读——你正在把这些文字变成你的一部分。你以为你只是在"看"。但你在看的同时——你正在把你自己变成下一个媒介。</p>
+  </article>
+
+  <div style="text-align:center;padding:40px 0 20px;color:var(--text-faint);font-size:0.85em;letter-spacing:0.08em;">
+    <p>以上残简为妄言录档案中已确认无法完整恢复的全部内容。</p>
+    <p style="margin-top:8px;font-size:13px;">如发现新的碎片——请勿直接阅读。联系档案管理员。不要抄录。不要记忆。</p>
+    <p style="margin-top:4px;font-size:13px;">档案管理员已失联。此警告为自动生成。</p>
+    <p style="margin-top:12px;font-family:'Noto Sans Mono SC',monospace;font-size:13px;">[END OF RECOVERABLE FRAGMENTS]</p>
+  </div>
+
+  <footer class="page-footer">
+    <p>妄言录 · 残简断章</p>
+    <p style="margin-top:4px;">未经授权之阅读——即为对档案完整性的破坏</p>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-faint);">此档案正在被阅读。阅读行为本身——已记录。已归档。已纳入下一份碎片。</p>
+    <p class="erased" style="margin-top:6px;font-size:13px;">████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████</p>
+    <p style="margin-top:10px;font-size:13px;">NOLI LEGERE · HAEC FRAGMENTA NON TVTA SVNT</p>
+  </footer>
+
+</main>
+
+<script>
+// ===== CANVAS DUST PARTICLES (~46 particles, ~11fps, behind content) =====
+(function() {
+  var canvas = document.getElementById('dust-canvas');
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var COUNT = 46;
+  var FPS = 11;
+  var interval = 1000 / FPS;
+  var lastDraw = 0;
+  var rafId = null;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  requestAnimationFrame(resize);
+
+  for (var i = 0; i < COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.1 + 0.3,
+      opacity: Math.random() * 0.22 + 0.04,
+      vx: (Math.random() - 0.5) * 0.12,
+      vy: (Math.random() - 0.5) * 0.07 - 0.025,
+      life: Math.random() * 300 + 120,
+      age: Math.random() * 300
+    });
+  }
+
+  function draw(timestamp) {
+    if (timestamp - lastDraw < interval) {
+      rafId = requestAnimationFrame(draw);
+      return;
+    }
+    lastDraw = timestamp;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.age++;
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -10) p.x = canvas.width + 10;
+      if (p.x > canvas.width + 10) p.x = -10;
+      if (p.y < -10) p.y = canvas.height + 10;
+      if (p.y > canvas.height + 10) p.y = -10;
+
+      var alpha = p.opacity;
+      if (p.age < 40) { alpha = p.opacity * (p.age / 40); }
+      else if (p.age > p.life - 40) { alpha = p.opacity * ((p.life - p.age) / 40); }
+      if (alpha < 0) alpha = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(175,155,135,' + alpha + ')';
+      ctx.fill();
+    }
+
+    for (var j = 0; j < particles.length; j++) {
+      if (particles[j].age > particles[j].life) {
+        particles[j].x = Math.random() * canvas.width;
+        particles[j].y = Math.random() * canvas.height;
+        particles[j].age = 0;
+        particles[j].life = Math.random() * 300 + 120;
+        particles[j].opacity = Math.random() * 0.22 + 0.04;
+      }
+    }
+    rafId = requestAnimationFrame(draw);
+  }
+  rafId = requestAnimationFrame(draw);
+
+  var resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      resize();
+      for (var k = 0; k < particles.length; k++) {
+        particles[k].x = Math.min(particles[k].x, canvas.width);
+        particles[k].y = Math.min(particles[k].y, canvas.height);
+      }
+    }, 150);
+  });
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    } else {
+      lastDraw = performance.now();
+      rafId = requestAnimationFrame(draw);
+    }
+  });
+})();
+
+// ===== INTERSECTIONOBSERVER: Fragment fade-in =====
+(function() {
+  var fragments = document.querySelectorAll('[data-fragment]');
+  if (!('IntersectionObserver' in window)) {
+    for (var i = 0; i < fragments.length; i++) { fragments[i].classList.add('visible'); }
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) {
+        entries[i].target.classList.add('visible');
+        observer.unobserve(entries[i].target);
+      }
+    }
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+  for (var j = 0; j < fragments.length; j++) { observer.observe(fragments[j]); }
+})();
+
+// ===== INTERSECTIONOBSERVER: Text degradation (one-time, ONE section) =====
+(function() {
+  var section = document.getElementById('degradation-section');
+  if (!section || !('IntersectionObserver' in window)) return;
+  var degObs = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting) {
+      section.classList.add('degraded');
+      degObs.unobserve(section);
+    }
+  }, { threshold: 0.25 });
+  degObs.observe(section);
+})();
+
+// ===== INTERSECTIONOBSERVER: Pause offscreen flicker-corrupt animations =====
+(function() {
+  if (!('IntersectionObserver' in window)) return;
+  var flickerEls = document.querySelectorAll('.corrupt-flicker-1, .corrupt-flicker-2, .corrupt-flicker-3, .corrupt-flicker-4');
+  if (!flickerEls.length) return;
+  var flickerObs = new IntersectionObserver(function(entries) {
+    for (var i = 0; i < entries.length; i++) {
+      entries[i].target.style.animationPlayState = entries[i].isIntersecting ? 'running' : 'paused';
+    }
+  }, { threshold: 0 });
+  for (var j = 0; j < flickerEls.length; j++) { flickerObs.observe(flickerEls[j]); }
+})();
+</script>
+
+<script>
+(function() {
+  var saved = localStorage.getItem('delirium-theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+  }
+  window.toggleTheme = function() {
+    var body = document.body;
+    body.classList.toggle('light-mode');
+    if (body.classList.contains('light-mode')) {
+      localStorage.setItem('delirium-theme', 'light');
+    } else {
+      localStorage.setItem('delirium-theme', 'dark');
+    }
+  };
+})();
+</script>
+
+</body>
+</html>

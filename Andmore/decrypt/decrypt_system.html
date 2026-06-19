@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SYS_MONITOR://STATUS | CRYPT_BREAKER</title>
+    <style>
+        :root{--bg-terminal:#0b0f14;--bg-terminal-deep:#070a0e;--bg-panel:#0d1117;--text-green:#00ff88;--text-green-dim:#00cc66;--text-green-dark:#008844;--text-white:#d6d6d6;--text-gray:#6b7280;--accent-red:#ff3b3b;--accent-amber:#ffaa00;--accent-blue:#3aa0ff;--accent-blue-dim:#1a80dd;--accent-purple:#a855f7;--accent-cyan:#22d3ee;--border-terminal:#1a2a1a;--radius-sm:4px;--radius-md:6px;--font-mono:'Courier New','Consolas','SF Mono','Monaco','Menlo',monospace;}
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:var(--font-mono);background:var(--bg-terminal);background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(58,160,255,0.008) 2px,rgba(58,160,255,0.008) 3px),radial-gradient(ellipse at 50% 0%,rgba(58,160,255,0.025) 0%,transparent 60%);color:var(--text-green);min-height:100vh;cursor:crosshair;}
+        body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.02) 2px,rgba(0,0,0,0.02) 4px);pointer-events:none;z-index:9999;}
+        ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg-terminal);}::-webkit-scrollbar-thumb{background:var(--accent-blue-dim);}
+        .top-bar{background:var(--bg-terminal-deep);border-bottom:1px solid var(--border-terminal);padding:0.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:0.7rem;color:var(--accent-blue-dim);}
+        .status-bar{background:var(--bg-panel);border-bottom:1px solid var(--border-terminal);padding:0.35rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:0.75rem;color:var(--accent-blue);}
+        .navbar{background:var(--bg-panel);border-bottom:2px solid var(--border-terminal);padding:0.5rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+        .sys-title{font-weight:700;font-size:0.95rem;color:var(--accent-blue);letter-spacing:1.2px;text-transform:uppercase;}
+        .nav-links{display:flex;gap:1.3rem;list-style:none;flex-wrap:wrap;}
+        .nav-links a{color:var(--text-green-dim);text-decoration:none;font-size:0.75rem;transition:all 0.2s;border-bottom:1px solid transparent;}
+        .nav-links a:hover{color:var(--accent-blue);border-bottom-color:var(--accent-blue);}
+        .nav-links a.active{color:var(--accent-blue);border-bottom-color:var(--accent-blue);font-weight:700;}
+        .container{max-width:1200px;margin:0 auto;padding:1.5rem;}
+        .monitor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.5rem;}
+        .monitor-card{background:var(--bg-panel);border:1px solid var(--border-terminal);border-radius:var(--radius-md);overflow:hidden;}
+        .monitor-card .card-header{background:#0a0f15;border-bottom:1px solid var(--border-terminal);padding:0.8rem 1.2rem;font-weight:700;color:var(--accent-blue);font-size:0.85rem;display:flex;align-items:center;gap:0.5rem;}
+        .monitor-card .card-body{padding:1.2rem;}
+        .meter-row{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;}
+        .meter-label{width:80px;font-size:0.68rem;color:var(--text-gray);text-align:right;flex-shrink:0;}
+        .meter-bar{flex:1;height:8px;background:var(--bg-terminal);border-radius:4px;overflow:hidden;border:1px solid var(--border-terminal);}
+        .meter-fill{height:100%;border-radius:4px;transition:width 0.6s ease;}
+        .meter-fill.green{background:linear-gradient(90deg,var(--text-green-dark),var(--text-green));}
+        .meter-fill.amber{background:linear-gradient(90deg,#664400,var(--accent-amber));}
+        .meter-fill.red{background:linear-gradient(90deg,#550000,var(--accent-red));}
+        .meter-fill.blue{background:linear-gradient(90deg,#002244,var(--accent-blue));}
+        .meter-fill.purple{background:linear-gradient(90deg,#330044,var(--accent-purple));}
+        .meter-val{font-size:0.68rem;color:var(--text-green-dim);width:40px;text-align:right;}
+        .signal-wave{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-green-dim);line-height:1.6;word-break:break-all;background:var(--bg-terminal);padding:0.8rem;border-radius:var(--radius-sm);border:1px solid var(--border-terminal);}
+        .log-mini{max-height:200px;overflow-y:auto;}
+        .log-line{font-size:0.68rem;margin-bottom:0.15rem;color:var(--text-green-dim);}.log-line .ts{color:var(--text-gray);}.log-line.warn{color:var(--accent-amber);}.log-line.err{color:var(--accent-red);}
+        .freq-visual{display:flex;align-items:flex-end;gap:2px;height:60px;margin:0.5rem 0;}
+        .freq-bar{flex:1;background:var(--accent-blue);border-radius:1px 1px 0 0;transition:height 0.5s ease;min-width:4px;}
+        .network-node{display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border-terminal);font-size:0.72rem;}
+        .network-node .node-dot{width:8px;height:8px;border-radius:50%;}
+        .network-node .node-dot.online{background:var(--text-green);box-shadow:0 0 6px var(--text-green);}
+        .network-node .node-dot.offline{background:var(--accent-red);}
+        @media(max-width:768px){.monitor-grid{grid-template-columns:1fr;}}
+    </style>
+</head>
+<body>
+    <div class="top-bar"><span>HOST://MONITOR-NODE</span><span>SNMP:ACTIVE</span><span>NETFLOW:ENABLED</span><span>SYSLOG:STREAMING</span></div>
+    <div class="status-bar"><span>MONITOR://SYSTEM_STATUS</span><span>UPTIME:128d 04h 33m 17s</span><span>CPU:34%</span><span>MEM:58%</span><span>NET:1.2Gbps</span></div>
+    <nav class="navbar"><div class="sys-title">[ SYS_MONITOR ]</div><ul class="nav-links"><li><a href="decrypt_main.html">> 主控台</a></li><li><a href="decrypt_archive.html">> 档案库</a></li><li><a href="decrypt_deep.html">> 深度破解</a></li><li><a href="decrypt_system.html" class="active">> 系统状态</a></li></ul></nav>
+    <div class="container"><div class="monitor-grid" id="monitorGrid"></div></div>
+    <script>
+        const monitorCards=[{title:'📊 CPU 负载',icon:'💻',content:`
+            <div class="meter-row"><span class="meter-label">CORE 1</span><div class="meter-bar"><div class="meter-fill green" style="width:34%;"></div></div><span class="meter-val">34%</span></div>
+            <div class="meter-row"><span class="meter-label">CORE 2</span><div class="meter-bar"><div class="meter-fill amber" style="width:67%;"></div></div><span class="meter-val">67%</span></div>
+            <div class="meter-row"><span class="meter-label">CORE 3</span><div class="meter-bar"><div class="meter-fill green" style="width:22%;"></div></div><span class="meter-val">22%</span></div>
+            <div class="meter-row"><span class="meter-label">CORE 4</span><div class="meter-bar"><div class="meter-fill green" style="width:41%;"></div></div><span class="meter-val">41%</span></div>
+            <div class="meter-row"><span class="meter-label">CRYPTO</span><div class="meter-bar"><div class="meter-fill red" style="width:92%;"></div></div><span class="meter-val">92%</span></div>
+            <div class="meter-row"><span class="meter-label">QUANTUM</span><div class="meter-bar"><div class="meter-fill purple" style="width:78%;"></div></div><span class="meter-val">78%</span></div>
+          `},{title:'📡 信号追踪',icon:'📡',content:`
+            <div class="signal-wave">FREQ: 7.832Hz | AMP: ████████░░ | SNR: 23.4dB | MODE: SCHUMANN</div>
+            <div class="freq-visual" id="freqVisual"></div>
+            <div class="meter-row" style="margin-top:0.8rem;"><span class="meter-label">信号强度</span><div class="meter-bar"><div class="meter-fill blue" style="width:78%;"></div></div><span class="meter-val">78%</span></div>
+            <p style="font-size:0.68rem;color:var(--accent-amber);margin-top:0.5rem;">⚠ 检测到7.832Hz异常波动</p>
+          `},{title:'💾 内存使用',icon:'💾',content:`
+            <div class="meter-row"><span class="meter-label">RAM</span><div class="meter-bar"><div class="meter-fill green" style="width:58%;"></div></div><span class="meter-val">58%</span></div>
+            <div class="meter-row"><span class="meter-label">VRAM</span><div class="meter-bar"><div class="meter-fill amber" style="width:72%;"></div></div><span class="meter-val">72%</span></div>
+            <div class="meter-row"><span class="meter-label">SWAP</span><div class="meter-bar"><div class="meter-fill green" style="width:12%;"></div></div><span class="meter-val">12%</span></div>
+            <div class="meter-row"><span class="meter-label">CACHE</span><div class="meter-bar"><div class="meter-fill blue" style="width:45%;"></div></div><span class="meter-val">45%</span></div>
+          `},{title:'🌐 网络状态',icon:'🌐',content:`
+            <div class="network-node"><span class="node-dot online"></span><span>NODE-7742</span><span style="color:var(--text-gray);">192.168.77.42</span><span style="color:var(--text-green);">ONLINE</span></div>
+            <div class="network-node"><span class="node-dot online"></span><span>ARCHIVE-NODE</span><span style="color:var(--text-gray);">192.168.77.43</span><span style="color:var(--text-green);">ONLINE</span></div>
+            <div class="network-node"><span class="node-dot offline"></span><span>LAB4-NODE</span><span style="color:var(--text-gray);">192.168.77.44</span><span style="color:var(--accent-red);">OFFLINE</span></div>
+            <div class="network-node"><span class="node-dot online"></span><span>QUANTUM-NODE</span><span style="color:var(--text-gray);">192.168.77.45</span><span style="color:var(--accent-amber);">DEGRADED</span></div>
+          `},{title:'📋 系统日志',icon:'📋',content:`
+            <div class="log-mini">
+              <div class="log-line"><span class="ts">[03:47:22.001]</span> System initialized</div>
+              <div class="log-line"><span class="ts">[03:47:22.045]</span> Crypto module loaded</div>
+              <div class="log-line warn"><span class="ts">[03:47:22.178]</span> WARNING: QKD emulation active</div>
+              <div class="log-line"><span class="ts">[03:47:23.002]</span> Signal detected at 7.832Hz</div>
+              <div class="log-line warn"><span class="ts">[03:48:15.000]</span> WARNING: Anomaly detected</div>
+              <div class="log-line"><span class="ts">[03:49:00.000]</span> Decryption initiated</div>
+              <div class="log-line" style="color:var(--text-green);"><span class="ts">[03:49:30.000]</span> ACCESS GRANTED</div>
+            </div>
+          `},{title:'🔐 加密模块状态',icon:'🔐',content:`
+            <div class="meter-row"><span class="meter-label">AES-256</span><div class="meter-bar"><div class="meter-fill green" style="width:100%;"></div></div><span class="meter-val">OK</span></div>
+            <div class="meter-row"><span class="meter-label">RSA-4096</span><div class="meter-bar"><div class="meter-fill green" style="width:100%;"></div></div><span class="meter-val">OK</span></div>
+            <div class="meter-row"><span class="meter-label">ECC-521</span><div class="meter-bar"><div class="meter-fill amber" style="width:85%;"></div></div><span class="meter-val">85%</span></div>
+            <div class="meter-row"><span class="meter-label">QKD-BB84</span><div class="meter-bar"><div class="meter-fill red" style="width:45%;"></div></div><span class="meter-val">EMU</span></div>
+            <div class="meter-row"><span class="meter-label">OTP</span><div class="meter-bar"><div class="meter-fill red" style="width:5%;"></div></div><span class="meter-val">N/A</span></div>
+          `}];
+        document.getElementById('monitorGrid').innerHTML=monitorCards.map(c=>`<div class="monitor-card"><div class="card-header"><span>${c.icon}</span> ${c.title}</div><div class="card-body">${c.content}</div></div>`).join('');
+        setInterval(()=>{document.querySelectorAll('.meter-fill').forEach(el=>{const w=parseInt(el.style.width);el.style.width=Math.max(3,Math.min(98,w+(Math.random()-0.5)*8))+'%';});const freqBars=document.getElementById('freqVisual');if(freqBars){freqBars.innerHTML=Array.from({length:40},()=>`<div class="freq-bar" style="height:${10+Math.random()*50}px;"></div>`).join('');}},2500);
+        setInterval(()=>{const freqBars=document.getElementById('freqVisual');if(freqBars){freqBars.innerHTML=Array.from({length:40},()=>`<div class="freq-bar" style="height:${10+Math.random()*50}px;"></div>`).join('');}},2500);
+    </script>
+</body>
+</html>
