@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康风险分析 · BodyAtlas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <style>
+        :root {
+            --bg-deep: #0a1628;
+            --bg-card: rgba(15, 29, 53, 0.85);
+            --glass-bg: rgba(10, 22, 40, 0.75);
+            --glass-border: rgba(0, 180, 220, 0.18);
+            --accent-medical: #00b4d8;
+            --accent-health: #2ecc71;
+            --accent-warning: #f39c12;
+            --accent-danger: #e74c3c;
+            --accent-neural: #7b2ff7;
+            --text-primary: #e0e8f0;
+            --text-secondary: #a0b8d0;
+            --text-muted: #607890;
+            --text-bright: #ffffff;
+            --border-radius-xl: 1.8rem;
+            --border-radius-lg: 1.2rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.5);
+            --shadow-glow-danger: 0 0 35px rgba(231, 76, 60, 0.3);
+            --shadow-glow-health: 0 0 25px rgba(46, 204, 113, 0.2);
+            --shadow-glow-warning: 0 0 25px rgba(243, 156, 18, 0.2);
+            --shadow-glow-neural: 0 0 25px rgba(123, 47, 247, 0.2);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Inter', 'Segoe UI', sans-serif;
+            --font-heading: 'Outfit', 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 40% 8%, rgba(231, 76, 60, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 30%, rgba(0, 180, 220, 0.03) 0%, transparent 45%),
+                radial-gradient(ellipse at 15% 70%, rgba(46, 204, 113, 0.03) 0%, transparent 45%),
+                radial-gradient(ellipse at 70% 85%, rgba(123, 47, 247, 0.03) 0%, transparent 40%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(243, 156, 18, 0.004) 2px, rgba(243, 156, 18, 0.004) 4px);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        /* Hero section */
+        .hero-section {
+            text-align: center;
+            padding: 3rem 1rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -20%;
+            width: 140%;
+            height: 200%;
+            background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-section .hero-badge {
+            display: inline-block;
+            padding: 0.35rem 1.2rem;
+            border: 1px solid var(--accent-danger);
+            border-radius: 3rem;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-danger);
+            background: rgba(231, 76, 60, 0.08);
+            margin-bottom: 1rem;
+        }
+        .hero-section h1 {
+            font-family: var(--font-heading);
+            font-size: 3rem;
+            color: var(--text-bright);
+            position: relative;
+        }
+        .hero-section .hero-subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin-top: 0.6rem;
+        }
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 1.8rem;
+            flex-wrap: wrap;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat .stat-number {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-danger);
+        }
+        .hero-stat .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-danger);
+        }
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-bright);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--text-bright);
+            text-align: center;
+            margin: 2.5rem 0 1.5rem;
+        }
+        .section-divider {
+            width: 60px;
+            height: 3px;
+            background: var(--accent-danger);
+            margin: 0 auto 2rem;
+            border-radius: 2px;
+        }
+
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+        .risk-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .risk-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            border-radius: var(--border-radius-xl);
+        }
+        .risk-card.risk-high::after {
+            background: radial-gradient(circle at 90% 10%, rgba(231, 76, 60, 0.12) 0%, transparent 50%);
+        }
+        .risk-card.risk-medium::after {
+            background: radial-gradient(circle at 90% 10%, rgba(243, 156, 18, 0.10) 0%, transparent 50%);
+        }
+        .risk-card.risk-low::after {
+            background: radial-gradient(circle at 90% 10%, rgba(46, 204, 113, 0.10) 0%, transparent 50%);
+        }
+        .risk-card:hover::after {
+            opacity: 1;
+        }
+        .risk-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-warning);
+            box-shadow: var(--shadow-glow-danger);
+        }
+        .risk-card .risk-level-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin: 0.8rem 0;
+        }
+        .risk-card .risk-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .risk-card h3 {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .risk-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .risk-card .risk-level-label {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+        .risk-high {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        .risk-medium {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--accent-warning);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+        }
+        .risk-low {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--accent-health);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        /* Pulse animation for high-risk cards */
+        @keyframes riskPulse {
+            0%, 100% { box-shadow: 0 8px 35px rgba(0,0,0,0.5), 0 0 0 rgba(231,76,60,0); }
+            50% { box-shadow: 0 8px 35px rgba(0,0,0,0.5), 0 0 18px rgba(231,76,60,0.25); }
+        }
+        .risk-card.risk-high {
+            animation: riskPulse 3s ease-in-out infinite;
+        }
+        .risk-card.risk-high:hover {
+            animation: none;
+        }
+
+        /* Health metric background pattern */
+        .bg-pattern-medical {
+            position: relative;
+        }
+        .bg-pattern-medical::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(0,180,220,0.03) 0%, transparent 30%),
+                radial-gradient(circle at 80% 80%, rgba(46,204,113,0.03) 0%, transparent 30%);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        .prevention-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .prevention-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-health);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .prevention-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.2rem;
+        }
+        .prevention-card {
+            background: rgba(46, 204, 113, 0.03);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all var(--transition-smooth);
+        }
+        .prevention-card:hover {
+            border-color: var(--accent-health);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.15);
+        }
+        .prevention-card .prev-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .prevention-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+        }
+        .prevention-card p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+        .chart-box {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.8rem;
+            box-shadow: var(--shadow-card);
+        }
+        .chart-box h3 {
+            font-family: var(--font-heading);
+            text-align: center;
+            color: var(--accent-warning);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .chart-box-full {
+            grid-column: 1 / -1;
+        }
+
+        /* Quiz section */
+        .quiz-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .quiz-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-neural);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .quiz-section .quiz-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        .quiz-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .quiz-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-neural), var(--accent-medical));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .quiz-question {
+            margin-bottom: 1.8rem;
+        }
+        .quiz-question h3 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--text-bright);
+        }
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.7rem;
+        }
+        .quiz-option {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+        .quiz-option:hover {
+            border-color: var(--accent-neural);
+            background: rgba(123, 47, 247, 0.08);
+            color: var(--text-bright);
+        }
+        .quiz-option.selected {
+            border-color: var(--accent-neural);
+            background: rgba(123, 47, 247, 0.15);
+            color: var(--text-bright);
+            font-weight: 600;
+        }
+        .quiz-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.65rem 1.6rem;
+            border-radius: 3rem;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--accent-neural);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 25px rgba(123, 47, 247, 0.4);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover {
+            border-color: var(--accent-neural);
+            color: var(--text-bright);
+        }
+        .btn-danger {
+            background: var(--accent-danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            box-shadow: 0 0 25px rgba(231, 76, 60, 0.4);
+        }
+        .quiz-result {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        .quiz-result .result-score {
+            font-family: var(--font-mono);
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-neural), var(--accent-danger));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .quiz-result .result-level {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0.5rem 0 1rem;
+        }
+
+        /* Timeline */
+        .timeline-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+            overflow-x: auto;
+        }
+        .timeline-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-medical);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .timeline-track {
+            display: flex;
+            gap: 0;
+            min-width: 700px;
+            position: relative;
+        }
+        .timeline-card {
+            flex: 1;
+            text-align: center;
+            padding: 1rem 0.5rem;
+            border-top: 3px solid var(--glass-border);
+            position: relative;
+            min-width: 80px;
+        }
+        .timeline-card::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--glass-border);
+        }
+        .timeline-card.highlight::before {
+            background: var(--accent-danger);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+        .timeline-card .timeline-age {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        .timeline-card .timeline-risks {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            line-height: 1.5;
+        }
+
+        /* Warning signs section */
+        .warnings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.3rem;
+            margin-bottom: 2.5rem;
+        }
+        .warning-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+        }
+        .warning-card:hover {
+            border-color: var(--accent-warning);
+            box-shadow: var(--shadow-glow-warning);
+        }
+        .warning-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            margin-bottom: 0.6rem;
+            color: var(--accent-warning);
+        }
+        .warning-card ul {
+            list-style: none;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .warning-card ul li::before {
+            content: '⚠ ';
+            color: var(--accent-warning);
+        }
+
+        /* Screening schedule table */
+        .screening-table-wrap {
+            overflow-x: auto;
+            margin-bottom: 2.5rem;
+        }
+        .screening-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+        .screening-table thead {
+            background: rgba(0, 180, 220, 0.12);
+        }
+        .screening-table th {
+            padding: 0.9rem 0.8rem;
+            text-align: left;
+            font-family: var(--font-heading);
+            color: var(--accent-medical);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        .screening-table td {
+            padding: 0.7rem 0.8rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .screening-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* Family history tracker */
+        .family-tracker {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .family-tracker h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .family-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .family-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .family-form-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .family-form-group select,
+        .family-form-group input {
+            padding: 0.65rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .family-form-group select:focus,
+        .family-form-group input:focus {
+            border-color: var(--accent-warning);
+        }
+        .family-entries {
+            margin-top: 1.5rem;
+        }
+        .family-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.7rem 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.82rem;
+        }
+        .family-entry .entry-remove {
+            cursor: pointer;
+            color: var(--accent-danger);
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 0 0.4rem;
+        }
+
+        /* Mitigation plan */
+        .mitigation-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .mitigation-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-health);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .mitigation-list {
+            list-style: none;
+        }
+        .mitigation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .mitigation-item .miti-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .mitigation-item .miti-content h4 {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            color: var(--text-bright);
+            margin-bottom: 0.25rem;
+        }
+        .mitigation-item .miti-content p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Vaccination schedule */
+        .vaccine-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+        .vaccine-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 180, 220, 0.2);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+        }
+        .vaccine-card:hover {
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 20px rgba(0, 180, 220, 0.12);
+        }
+        .vaccine-card .vac-icon {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .vaccine-card h4 {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+        .vaccine-card .vac-age {
+            font-size: 0.72rem;
+            color: var(--accent-medical);
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        .vaccine-card p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @media (max-width: 768px) {
+            .risk-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-row {
+                grid-template-columns: 1fr;
+            }
+            .hero-stats {
+                gap: 1.5rem;
+            }
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            .timeline-track {
+                flex-wrap: nowrap;
+                overflow-x: scroll;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='body_home.html'">BODY<span style="color:var(--accent-danger);">ATLAS</span></div>
+        <ul class="nav-links">
+            <li><a href="body_home.html">首页</a></li>
+            <li><a href="body_systems.html">人体系统</a></li>
+            <li><a href="body_health.html">健康数据</a></li>
+            <li><a href="body_nutrition.html">营养代谢</a></li>
+            <li><a href="body_risk.html" class="active">风险分析</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-badge">Risk Analysis Dashboard</div>
+        <h1>健康风险分析</h1>
+        <p class="hero-subtitle">了解常见健康风险因素，评估个人风险等级，制定科学预防计划</p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="stat-number">12+</div>
+                <div class="stat-label">风险维度</div>
+            </div>
+            <div class="hero-stat">
+                <div class="stat-number">80%</div>
+                <div class="stat-label">可预防疾病</div>
+            </div>
+            <div class="hero-stat">
+                <div class="stat-number">5M+</div>
+                <div class="stat-label">数据样本</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Risk Grid -->
+        <h2 class="section-title">风险因素总览</h2>
+        <div class="section-divider"></div>
+        <div class="risk-grid" id="riskGrid"></div>
+
+        <!-- Chart Row -->
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>各系统风险等级分布</h3>
+                <canvas id="riskRadar" height="280"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>风险因素影响权重</h3>
+                <canvas id="riskBar" height="280"></canvas>
+            </div>
+        </div>
+
+        <!-- Genetic vs Lifestyle Chart -->
+        <div class="chart-row">
+            <div class="chart-box chart-box-full">
+                <h3>基因遗传 vs 生活方式 风险对比</h3>
+                <canvas id="geneticLifestyleChart" height="160"></canvas>
+            </div>
+        </div>
+
+        <!-- Personal Risk Assessment Quiz -->
+        <div class="quiz-section" id="quizSection">
+            <h2>个人风险评估问卷</h2>
+            <p class="quiz-subtitle">回答以下问题，获取您的个性化风险评估报告</p>
+            <div class="quiz-progress">
+                <div class="quiz-progress-fill" id="quizProgress" style="width:0%"></div>
+            </div>
+            <div id="quizBody"></div>
+            <div class="quiz-nav" id="quizNav"></div>
+            <div class="quiz-result" id="quizResult">
+                <div class="result-score" id="resultScore">--</div>
+                <div class="result-level" id="resultLevel"></div>
+                <p style="color:var(--text-muted); margin-bottom:1.5rem;" id="resultSummary"></p>
+                <button class="btn btn-primary" onclick="resetQuiz()">重新评估</button>
+                <button class="btn btn-outline" style="margin-left:0.5rem;" onclick="scrollToMitigation()">查看缓解计划</button>
+            </div>
+        </div>
+
+        <!-- Age-Based Risk Timeline -->
+        <div class="timeline-section">
+            <h2>年龄风险时间线</h2>
+            <div class="timeline-track" id="timelineTrack"></div>
+        </div>
+
+        <!-- Early Warning Signs -->
+        <h2 class="section-title">身体各系统早期预警信号</h2>
+        <div class="section-divider"></div>
+        <div class="warnings-grid" id="warningsGrid"></div>
+
+        <!-- Screening Schedule -->
+        <h2 class="section-title">推荐筛查时间表</h2>
+        <div class="section-divider"></div>
+        <div class="screening-table-wrap">
+            <table class="screening-table" id="screeningTable">
+                <thead>
+                    <tr>
+                        <th>年龄段</th>
+                        <th>检查项目</th>
+                        <th>频率</th>
+                        <th>适用人群</th>
+                    </tr>
+                </thead>
+                <tbody id="screeningBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Family History Tracker -->
+        <div class="family-tracker">
+            <h2>家族病史记录</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">记录直系亲属的健康状况，帮助评估遗传风险</p>
+            <div class="family-form-grid">
+                <div class="family-form-group">
+                    <label>亲属关系</label>
+                    <select id="famRelation">
+                        <option value="">请选择...</option>
+                        <option value="父亲">父亲</option>
+                        <option value="母亲">母亲</option>
+                        <option value="兄弟">兄弟</option>
+                        <option value="姐妹">姐妹</option>
+                        <option value="祖父">祖父(父系)</option>
+                        <option value="祖母">祖母(父系)</option>
+                        <option value="外祖父">外祖父(母系)</option>
+                        <option value="外祖母">外祖母(母系)</option>
+                    </select>
+                </div>
+                <div class="family-form-group">
+                    <label>疾病/状况</label>
+                    <select id="famCondition">
+                        <option value="">请选择...</option>
+                        <option value="高血压">高血压</option>
+                        <option value="糖尿病">糖尿病</option>
+                        <option value="冠心病">冠心病</option>
+                        <option value="中风">中风</option>
+                        <option value="癌症">癌症</option>
+                        <option value="阿尔茨海默">阿尔茨海默病</option>
+                        <option value="骨质疏松">骨质疏松</option>
+                        <option value="自身免疫疾病">自身免疫疾病</option>
+                        <option value="精神疾病">精神疾病</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="family-form-group">
+                    <label>确诊年龄</label>
+                    <input type="number" id="famAge" placeholder="例如: 55" min="0" max="120">
+                </div>
+                <div class="family-form-group" style="justify-content:flex-end;">
+                    <button class="btn btn-primary" onclick="addFamilyEntry()" style="align-self:flex-end;">+ 添加记录</button>
+                </div>
+            </div>
+            <div class="family-entries" id="familyEntries">
+                <p style="color:var(--text-muted);font-size:0.82rem;text-align:center;">暂无记录，请添加家族病史</p>
+            </div>
+        </div>
+
+        <!-- Risk Mitigation Plan -->
+        <div class="mitigation-section" id="mitigationSection">
+            <h2>风险缓解行动计划</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">基于您的风险评估结果，推荐以下个性化缓解措施</p>
+            <ul class="mitigation-list" id="mitigationList"></ul>
+        </div>
+
+        <!-- Vaccination Schedule -->
+        <h2 class="section-title">疫苗接种推荐时间表</h2>
+        <div class="section-divider"></div>
+        <div class="vaccine-grid" id="vaccineGrid"></div>
+
+        <!-- Prevention Section -->
+        <div class="prevention-section">
+            <h2>健康预防指南</h2>
+            <div class="prevention-grid" id="preventionGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // ── Expanded risks array (12 entries) ──
+        const risks = [
+            {
+                name: '心血管疾病风险', icon: '❤️', level: 'medium', riskScore: 45,
+                desc: '心血管疾病是全球首要死因。高血压、高胆固醇、吸烟和缺乏运动是主要风险因素。定期检查血压和血脂至关重要。',
+                factors: '高血压 · 高胆固醇 · 吸烟 · 肥胖 · 缺乏运动 · 家族史',
+                prevention: '每周150分钟中等强度运动，控制盐摄入，戒烟限酒'
+            },
+            {
+                name: '代谢综合征', icon: '⚖️', level: 'medium', riskScore: 40,
+                desc: '代谢综合征是多种代谢异常同时存在的状态，包括腹部肥胖、高血糖、高血脂和高血压。显著增加糖尿病和心脏病风险。',
+                factors: '腹部肥胖 · 胰岛素抵抗 · 高甘油三酯 · 低HDL胆固醇',
+                prevention: '控制体重，均衡饮食，增加膳食纤维摄入'
+            },
+            {
+                name: '久坐相关风险', icon: '🪑', level: 'high', riskScore: 65,
+                desc: '长时间久坐与多种健康问题相关，包括深静脉血栓、肌肉萎缩、脊柱问题和代谢率下降。即使定期运动，久坐仍有独立风险。',
+                factors: '每天久坐>8小时 · 缺乏间断活动 · 不良坐姿',
+                prevention: '每30-60分钟起身活动，使用站立式办公桌，保持正确坐姿'
+            },
+            {
+                name: '睡眠不足风险', icon: '😴', level: 'high', riskScore: 60,
+                desc: '长期睡眠不足(少于7小时)与免疫功能下降、认知障碍、情绪问题和心血管疾病风险增加相关。睡眠是身体修复的关键时期。',
+                factors: '睡眠<6小时 · 睡眠质量差 · 作息不规律 · 蓝光暴露',
+                prevention: '保持规律作息，睡前远离电子设备，创造舒适睡眠环境'
+            },
+            {
+                name: '营养不良风险', icon: '🍽️', level: 'medium', riskScore: 38,
+                desc: '营养不均衡可导致多种健康问题。过度摄入加工食品和糖分与肥胖、糖尿病相关。微量元素缺乏同样危害健康。',
+                factors: '高糖饮食 · 加工食品 · 蔬果摄入不足 · 水分摄入不足',
+                prevention: '每天5份蔬果，选择全谷物，限制加工食品和含糖饮料'
+            },
+            {
+                name: '精神压力风险', icon: '🧘', level: 'high', riskScore: 55,
+                desc: '慢性压力导致皮质醇持续升高，影响免疫系统、消化功能和心血管健康。长期压力与抑郁、焦虑和 burnout 相关。',
+                factors: '工作压力 · 情绪压抑 · 社交孤立 · 经济压力',
+                prevention: '正念冥想，规律运动，保持社交联系，寻求专业帮助'
+            },
+            {
+                name: '癌症风险', icon: '🎗️', level: 'medium', riskScore: 48,
+                desc: '癌症是全球第二大死因。约30-50%的癌症可通过健康生活方式预防。早期筛查可显著提高治愈率。肺癌、肝癌、胃癌在中国发病率居前。',
+                factors: '吸烟 · 饮酒 · 不健康饮食 · 环境污染 · 病毒感染(HPV/HBV) · 家族史',
+                prevention: '戒烟限酒，接种HPV和HBV疫苗，定期癌症筛查，健康饮食'
+            },
+            {
+                name: '糖尿病风险', icon: '🩸', level: 'medium', riskScore: 42,
+                desc: '2型糖尿病发病率持续上升，与肥胖、久坐和不良饮食密切相关。早期胰岛素抵抗是可逆的。中国成人糖尿病患病率已超11%。',
+                factors: '肥胖 · 家族史 · 缺乏运动 · 高糖饮食 · 年龄>45 · 妊娠糖尿病史',
+                prevention: '维持健康体重，每周运动150分钟以上，控制碳水化合物摄入'
+            },
+            {
+                name: '骨质疏松', icon: '🦴', level: 'low', riskScore: 28,
+                desc: '骨质疏松被称为"沉默的疾病"，常在骨折后才被发现。女性绝经后风险显著增加。钙和维生素D摄入不足加速骨量流失。',
+                factors: '年龄增长 · 女性 · 低钙饮食 · 缺乏运动 · 吸烟 · 家族史',
+                prevention: '补充钙和维生素D，负重运动，避免吸烟，定期骨密度检测'
+            },
+            {
+                name: '视力衰退', icon: '👁️', level: 'low', riskScore: 25,
+                desc: '长时间屏幕使用导致视疲劳和近视加深。年龄相关性黄斑变性和白内障是老年人视力丧失的主要原因。糖尿病视网膜病变是可预防的致盲原因。',
+                factors: '长时间屏幕使用 · 年龄>50 · 糖尿病 · 紫外线暴露 · 家族史',
+                prevention: '20-20-20法则(每20分钟看20英尺外20秒)，定期眼科检查，佩戴防紫外线眼镜'
+            },
+            {
+                name: '听力损伤', icon: '👂', level: 'low', riskScore: 22,
+                desc: '噪声性听力损伤是永久性且不可逆的。年轻人中因耳机使用导致的听力下降日益普遍。老年性耳聋影响社交和认知功能。',
+                factors: '长期高音量耳机 · 职业噪声 · 年龄增长 · 耳毒性药物 · 遗传因素',
+                prevention: '遵循60-60耳机使用原则(音量<60%，每次<60分钟)，使用降噪耳机，避免噪声环境'
+            },
+            {
+                name: '呼吸系统疾病', icon: '🫁', level: 'medium', riskScore: 36,
+                desc: '慢性阻塞性肺疾病(COPD)是全球第三大死因。空气污染、吸烟和职业粉尘暴露是主要风险因素。哮喘影响各年龄段人群。',
+                factors: '吸烟 · 空气污染 · 职业粉尘 · 反复呼吸道感染 · 家族史',
+                prevention: '戒烟，佩戴口罩防空气污染，接种流感/肺炎疫苗，定期肺功能检查'
+            },
+            {
+                name: '自身免疫疾病', icon: '🛡️', level: 'low', riskScore: 20,
+                desc: '自身免疫疾病是免疫系统攻击自身组织的疾病群，包括类风湿关节炎、红斑狼疮、桥本甲状腺炎等。女性发病率显著高于男性。',
+                factors: '女性 · 遗传易感性 · 感染触发 · 环境毒素 · 维生素D缺乏',
+                prevention: '维持健康肠道菌群，避免环境毒素，补充维生素D，管理压力'
+            },
+            {
+                name: '传染病风险', icon: '🦠', level: 'medium', riskScore: 32,
+                desc: '新发传染病和季节性流行病持续威胁公共健康。免疫功能低下者、老年人和慢性病患者是高风险群体。疫苗是预防传染病最有效的手段。',
+                factors: '免疫功能低下 · 慢性疾病 · 未接种疫苗 · 密集场所 · 国际旅行',
+                prevention: '按时接种疫苗，勤洗手，保持社交距离，增强免疫力'
+            },
+        ];
+
+        // ── Render risk grid ──
+        document.getElementById('riskGrid').innerHTML = risks.map((r, i) => {
+            const levelClass = r.level === 'high' ? 'risk-high' : r.level === 'medium' ? 'risk-medium' : 'risk-low';
+            const barColor = r.level === 'high' ? 'var(--accent-danger)' : r.level === 'medium' ? 'var(--accent-warning)' : 'var(--accent-health)';
+            return `
+            <div class="risk-card risk-${r.level} animate-in" style="animation-delay:${i * 0.05}s">
+              <span class="risk-icon">${r.icon}</span>
+              <h3>${r.name}</h3>
+              <div class="risk-level-bar" style="background:linear-gradient(90deg,${barColor} ${r.riskScore}%, transparent ${r.riskScore}%);"></div>
+              <span class="risk-level-label ${levelClass}">${r.level==='high'?'⚠ 高风险':r.level==='medium'?'⚡ 中等风险':'✅ 低风险'}</span>
+              <p style="margin-top:0.8rem;">${r.desc}</p>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;"><strong>风险因素：</strong>${r.factors}</p>
+              <p style="font-size:0.8rem; color:var(--accent-health);"><strong>预防：</strong>${r.prevention}</p>
+            </div>
+          `;
+        }).join('');
+
+        // ── Radar chart ──
+        const riskRadarCtx = document.getElementById('riskRadar').getContext('2d');
+        const radarLabels = risks.map(r => r.name.replace('风险', '').replace('疾病', ''));
+        const radarData = risks.map(r => r.riskScore);
+        new Chart(riskRadarCtx, {
+            type: 'radar',
+            data: {
+                labels: radarLabels,
+                datasets: [{
+                    label: '风险等级',
+                    data: radarData,
+                    borderColor: '#f39c12',
+                    backgroundColor: 'rgba(243,156,18,0.12)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                scales: {
+                    r: {
+                        max: 100,
+                        ticks: { color: '#607890', stepSize: 20 },
+                        grid: { color: 'rgba(255,255,255,0.04)' },
+                        pointLabels: { color: '#e0e8f0', font: { size: 9 } }
+                    }
+                }
+            }
+        });
+
+        // ── Bar chart ──
+        const riskBarCtx = document.getElementById('riskBar').getContext('2d');
+        new Chart(riskBarCtx, {
+            type: 'bar',
+            data: {
+                labels: ['缺乏运动', '不良饮食', '睡眠不足', '精神压力', '吸烟', '过量饮酒', '环境污染', '遗传因素', '职业危害', '社交孤立'],
+                datasets: [{
+                    label: '影响权重(%)',
+                    data: [30, 25, 15, 15, 10, 8, 7, 12, 5, 4],
+                    backgroundColor: [
+                        '#e74c3c', '#f39c12', '#7b2ff7', '#e74c3c', '#607890',
+                        '#607890', '#00b4d8', '#f39c12', '#607890', '#7b2ff7'
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                scales: {
+                    y: { max: 40, ticks: { color: '#607890' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                    x: { ticks: { color: '#e0e8f0', font: { size: 9 } } }
+                }
+            }
+        });
+
+        // ── Genetic vs Lifestyle doughnut chart ──
+        const glCtx = document.getElementById('geneticLifestyleChart').getContext('2d');
+        new Chart(glCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['可改变因素(生活方式)', '不可改变因素(遗传/年龄)', '部分可控因素(环境/职业)'],
+                datasets: [{
+                    data: [55, 30, 15],
+                    backgroundColor: [
+                        'rgba(46, 204, 113, 0.7)',
+                        'rgba(231, 76, 60, 0.5)',
+                        'rgba(243, 156, 18, 0.5)'
+                    ],
+                    borderColor: [
+                        'var(--accent-health)',
+                        'var(--accent-danger)',
+                        'var(--accent-warning)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#a0b8d0', font: { size: 11 }, padding: 20 }
+                    }
+                }
+            }
+        });
+
+        // ── Prevention cards (8 entries) ──
+        const preventions = [
+            { icon: '🏃', title: '定期运动', desc: '每周至少150分钟中等强度有氧运动，如快走、游泳或骑自行车。加上力量训练2次/周。' },
+            { icon: '🥗', title: '均衡饮食', desc: '遵循地中海饮食模式，多蔬果、全谷物、健康脂肪。限制红肉和加工食品。' },
+            { icon: '😴', title: '充足睡眠', desc: '成人每晚7-9小时睡眠。保持固定作息，睡前1小时远离屏幕。' },
+            { icon: '💧', title: '充分饮水', desc: '每天1.5-2升水。晨起一杯水，餐前饮水有助消化。' },
+            { icon: '🧘', title: '压力管理', desc: '每天10-15分钟冥想或深呼吸练习。培养兴趣爱好，保持工作生活平衡。' },
+            { icon: '🩺', title: '定期体检', desc: '每年一次全面体检。监测血压、血糖、血脂等关键指标。' },
+            { icon: '🚭', title: '戒烟限酒', desc: '烟草是多种疾病的可预防首要原因。男性每日酒精不超过25g，女性不超过15g。' },
+            { icon: '🤝', title: '社交健康', desc: '维持积极社交关系有助于心理健康。孤独感与早逝风险增加26%相关。' },
+        ];
+
+        document.getElementById('preventionGrid').innerHTML = preventions.map(p => `
+        <div class="prevention-card">
+          <span class="prev-icon">${p.icon}</span>
+          <h4>${p.title}</h4>
+          <p>${p.desc}</p>
+        </div>
+      `).join('');
+
+        // ── Age-Based Risk Timeline ──
+        const timelineData = [
+            { age: '20s', risks: '久坐风险<br>视疲劳<br>噪声性听力损伤', highlight: false },
+            { age: '30s', risks: '精神压力<br>代谢开始下降<br>颈椎/腰椎问题', highlight: false },
+            { age: '40s', risks: '高血压前期<br>糖尿病前期<br>骨量开始流失', highlight: true },
+            { age: '50s', risks: '心血管疾病<br>癌症风险上升<br>骨质疏松加速', highlight: true },
+            { age: '60s', risks: 'COPD<br>阿尔茨海默风险<br>视力/听力衰退', highlight: true },
+            { age: '70s', risks: '多重慢性病<br>跌倒/骨折<br>免疫功能下降', highlight: true },
+            { age: '80s+', risks: '失能风险<br>多重用药<br>认知障碍', highlight: true },
+        ];
+
+        document.getElementById('timelineTrack').innerHTML = timelineData.map(t => `
+            <div class="timeline-card ${t.highlight ? 'highlight' : ''}">
+                <div class="timeline-age">${t.age}</div>
+                <div class="timeline-risks">${t.risks}</div>
+            </div>
+        `).join('');
+
+        // ── Early Warning Signs ──
+        const warnings = [
+            {
+                system: '心血管系统',
+                signs: ['不明原因的胸痛或胸闷', '活动后心悸、气短', '下肢水肿', '头晕或短暂意识丧失', '夜间阵发性呼吸困难']
+            },
+            {
+                system: '消化系统',
+                signs: ['持续消化不良或胃灼热', '大便习惯改变(腹泻/便秘交替)', '便血或黑便', '不明原因体重下降', '吞咽困难']
+            },
+            {
+                system: '神经系统',
+                signs: ['持续性头痛模式改变', '肢体麻木或无力', '言语困难或口齿不清', '记忆显著减退', '平衡障碍或眩晕']
+            },
+            {
+                system: '内分泌系统',
+                signs: ['异常口渴和多尿', '不明原因体重变化', '极度疲劳', '伤口愈合缓慢', '视力模糊']
+            },
+            {
+                system: '骨骼肌肉系统',
+                signs: ['持续性关节疼痛或肿胀', '晨僵超过30分钟', '身高明显缩短', '非外伤性骨折', '肌肉无力或萎缩']
+            },
+            {
+                system: '免疫系统',
+                signs: ['反复感染(一年超过4次)', '伤口愈合异常缓慢', '不明原因发热', '淋巴结持续肿大', '极度疲劳持续超过2周']
+            },
+        ];
+
+        document.getElementById('warningsGrid').innerHTML = warnings.map(w => `
+            <div class="warning-card">
+                <h4>${w.system}</h4>
+                <ul>
+                    ${w.signs.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+
+        // ── Screening Schedule ──
+        const screenings = [
+            { age: '18-29岁', item: '血压测量', freq: '每2年', population: '所有人' },
+            { age: '18-29岁', item: '视力检查', freq: '每2年', population: '所有人' },
+            { age: '18-29岁', item: '性传播疾病筛查', freq: '每年(性活跃者)', population: '有风险因素者' },
+            { age: '18-29岁', item: '宫颈癌筛查(Pap)', freq: '每3年', population: '21岁以上女性' },
+            { age: '30-39岁', item: '血压+血脂+血糖', freq: '每年', population: '所有人' },
+            { age: '30-39岁', item: 'BMI及腰围测量', freq: '每年', population: '所有人' },
+            { age: '30-39岁', item: '宫颈癌筛查(Pap+HPV)', freq: '每3-5年', population: '女性' },
+            { age: '40-49岁', item: '乳腺X线摄影', freq: '每1-2年', population: '40岁以上女性' },
+            { age: '40-49岁', item: '结直肠癌筛查', freq: '每1-3年(粪便潜血)', population: '45岁以上所有人' },
+            { age: '40-49岁', item: '糖尿病筛查(HbA1c)', freq: '每1-3年', population: '有风险因素者' },
+            { age: '50-59岁', item: '低剂量肺CT(吸烟者)', freq: '每年', population: '50-80岁、有吸烟史' },
+            { age: '50-59岁', item: '骨密度检测', freq: '每2-5年', population: '女性(绝经后)/65岁以上男性' },
+            { age: '50-59岁', item: '结肠镜检查', freq: '每10年', population: '50岁以上所有人' },
+            { age: '60岁以上', item: '腹主动脉瘤超声', freq: '一次性', population: '65-75岁吸烟男性' },
+            { age: '60岁以上', item: '认知功能评估', freq: '每年', population: '所有人' },
+            { age: '60岁以上', item: '听力测试', freq: '每1-2年', population: '所有人' },
+        ];
+
+        document.getElementById('screeningBody').innerHTML = screenings.map(s => `
+            <tr>
+                <td>${s.age}</td>
+                <td>${s.item}</td>
+                <td>${s.freq}</td>
+                <td>${s.population}</td>
+            </tr>
+        `).join('');
+
+        // ── Vaccination Schedule ──
+        const vaccines = [
+            { icon: '💉', name: '流感疫苗', age: '每年一次(6个月以上)', desc: '流感季节前接种。老年人、慢性病患者、孕妇和医务人员优先。' },
+            { icon: '🦠', name: '肺炎球菌疫苗', age: '65岁以上/高风险人群', desc: 'PPSV23和PCV13两种。预防肺炎、脑膜炎和菌血症。' },
+            { icon: '🛡️', name: '带状疱疹疫苗', age: '50岁以上', desc: '重组带状疱疹疫苗(Shingrix)，2剂接种，预防带状疱疹和神经痛。' },
+            { icon: '💪', name: 'Tdap(百白破)', age: '每10年加强一次', desc: '破伤风、白喉和百日咳联合疫苗。孕妇每次孕期应接种。' },
+            { icon: '🧬', name: 'HBV(乙肝)疫苗', age: '未接种过的成人', desc: '3剂接种方案。医护人员、糖尿病患者和慢性肝病患者推荐。' },
+            { icon: '👩', name: 'HPV(人乳头瘤病毒)疫苗', age: '9-45岁(最佳11-12岁)', desc: '预防宫颈癌、肛门癌和生殖器疣。男女均可接种。' },
+            { icon: '🦟', name: 'COVID-19疫苗', age: '根据当地指南', desc: '基础免疫+加强针。老年人、免疫低下者和慢性病患者优先。' },
+            { icon: '🏥', name: '甲肝疫苗', age: '有风险因素的成人', desc: '旅行者、慢性肝病患者、男男性行为者推荐。' },
+        ];
+
+        document.getElementById('vaccineGrid').innerHTML = vaccines.map(v => `
+            <div class="vaccine-card">
+                <span class="vac-icon">${v.icon}</span>
+                <h4>${v.name}</h4>
+                <div class="vac-age">${v.age}</div>
+                <p>${v.desc}</p>
+            </div>
+        `).join('');
+
+        // ── Family History Tracker ──
+        let familyEntries = [];
+
+        function addFamilyEntry() {
+            const relation = document.getElementById('famRelation').value;
+            const condition = document.getElementById('famCondition').value;
+            const age = document.getElementById('famAge').value;
+            if (!relation || !condition) { alert('请选择亲属关系和疾病状况'); return; }
+            familyEntries.push({ relation, condition, age: age || '未知' });
+            renderFamilyEntries();
+            document.getElementById('famRelation').value = '';
+            document.getElementById('famCondition').value = '';
+            document.getElementById('famAge').value = '';
+        }
+
+        function removeFamilyEntry(index) {
+            familyEntries.splice(index, 1);
+            renderFamilyEntries();
+        }
+
+        function renderFamilyEntries() {
+            const container = document.getElementById('familyEntries');
+            if (familyEntries.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;text-align:center;">暂无记录，请添加家族病史</p>';
+                return;
+            }
+            container.innerHTML = familyEntries.map((e, i) => `
+                <div class="family-entry">
+                    <span><strong>${e.relation}</strong> — ${e.condition} (确诊年龄: ${e.age})</span>
+                    <span class="entry-remove" onclick="removeFamilyEntry(${i})" title="删除">✕</span>
+                </div>
+            `).join('');
+        }
+
+        // ── Personal Risk Assessment Quiz ──
+        const quizQuestions = [
+            {
+                q: '您的年龄段是？',
+                options: [
+                    { text: '18-29岁', score: 5 },
+                    { text: '30-39岁', score: 10 },
+                    { text: '40-49岁', score: 18 },
+                    { text: '50-59岁', score: 28 },
+                    { text: '60岁以上', score: 35 },
+                ]
+            },
+            {
+                q: '您每周进行多少次中等强度运动(每次30分钟以上)？',
+                options: [
+                    { text: '几乎不运动', score: 25 },
+                    { text: '1-2次', score: 15 },
+                    { text: '3-4次', score: 8 },
+                    { text: '5次以上', score: 0 },
+                ]
+            },
+            {
+                q: '您的吸烟状况？',
+                options: [
+                    { text: '每天吸烟', score: 30 },
+                    { text: '偶尔吸烟', score: 15 },
+                    { text: '已戒烟(>1年)', score: 8 },
+                    { text: '从未吸烟', score: 0 },
+                ]
+            },
+            {
+                q: '您的饮酒频率？',
+                options: [
+                    { text: '每天饮酒', score: 20 },
+                    { text: '每周数次', score: 12 },
+                    { text: '偶尔社交饮酒', score: 5 },
+                    { text: '从不饮酒', score: 0 },
+                ]
+            },
+            {
+                q: '您的直系亲属(父母/兄弟姐妹)是否有慢性病史？',
+                options: [
+                    { text: '有多种(3种以上)', score: 30 },
+                    { text: '有1-2种', score: 18 },
+                    { text: '不清楚', score: 10 },
+                    { text: '无', score: 0 },
+                ]
+            },
+            {
+                q: '您每天的睡眠时长？',
+                options: [
+                    { text: '少于5小时', score: 25 },
+                    { text: '5-6小时', score: 15 },
+                    { text: '7-8小时', score: 3 },
+                    { text: '超过9小时', score: 8 },
+                ]
+            },
+            {
+                q: '您的饮食习惯？',
+                options: [
+                    { text: '常吃快餐/加工食品', score: 22 },
+                    { text: '一般(无特别注意)', score: 14 },
+                    { text: '比较均衡', score: 6 },
+                    { text: '严格健康饮食', score: 0 },
+                ]
+            },
+            {
+                q: '您感到压力或焦虑的频率？',
+                options: [
+                    { text: '几乎每天', score: 25 },
+                    { text: '每周数次', score: 16 },
+                    { text: '偶尔', score: 8 },
+                    { text: '几乎从不', score: 0 },
+                ]
+            },
+            {
+                q: '您每天静坐时间(工作+通勤+休闲)？',
+                options: [
+                    { text: '超过10小时', score: 25 },
+                    { text: '8-10小时', score: 18 },
+                    { text: '5-8小时', score: 10 },
+                    { text: '少于5小时', score: 3 },
+                ]
+            },
+            {
+                q: '您的体重状况(BMI参考)？',
+                options: [
+                    { text: '肥胖(BMI≥28)', score: 28 },
+                    { text: '超重(BMI 24-28)', score: 18 },
+                    { text: '正常(BMI 18.5-24)', score: 5 },
+                    { text: '偏瘦(BMI<18.5)', score: 10 },
+                ]
+            },
+        ];
+
+        let quizState = { current: 0, answers: [], totalScore: 0 };
+
+        function renderQuiz() {
+            if (quizState.current >= quizQuestions.length) {
+                showQuizResult();
+                return;
+            }
+            const q = quizQuestions[quizState.current];
+            const progress = ((quizState.current) / quizQuestions.length) * 100;
+            document.getElementById('quizProgress').style.width = progress + '%';
+
+            let html = `<div class="quiz-question"><h3>${quizState.current + 1}. ${q.q}</h3><div class="quiz-options">`;
+            q.options.forEach((opt, i) => {
+                const selClass = quizState.answers[quizState.current] === i ? ' selected' : '';
+                html += `<div class="quiz-option${selClass}" onclick="selectOption(${i})">${opt.text}</div>`;
+            });
+            html += '</div></div>';
+            document.getElementById('quizBody').innerHTML = html;
+
+            let navHtml = '';
+            if (quizState.current > 0) {
+                navHtml += '<button class="btn btn-outline" onclick="prevQuestion()">上一步</button>';
+            } else {
+                navHtml += '<span></span>';
+            }
+            navHtml += `<button class="btn btn-primary" onclick="nextQuestion()" ${quizState.answers[quizState.current] === undefined ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>${quizState.current === quizQuestions.length - 1 ? '查看结果' : '下一步'}</button>`;
+            document.getElementById('quizNav').innerHTML = navHtml;
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function selectOption(index) {
+            quizState.answers[quizState.current] = index;
+            renderQuiz();
+        }
+
+        function nextQuestion() {
+            if (quizState.answers[quizState.current] === undefined) return;
+            quizState.current++;
+            renderQuiz();
+        }
+
+        function prevQuestion() {
+            if (quizState.current > 0) {
+                quizState.current--;
+                renderQuiz();
+            }
+        }
+
+        function showQuizResult() {
+            quizState.totalScore = 0;
+            quizState.answers.forEach((ans, i) => {
+                quizState.totalScore += quizQuestions[i].options[ans].score;
+            });
+            document.getElementById('quizProgress').style.width = '100%';
+            document.getElementById('quizBody').innerHTML = '';
+            document.getElementById('quizNav').innerHTML = '';
+            document.getElementById('quizResult').style.display = 'block';
+
+            let level, color, summary;
+            if (quizState.totalScore < 60) {
+                level = '低风险';
+                color = 'var(--accent-health)';
+                summary = '您的健康风险较低。请继续保持良好的生活习惯，并定期体检。';
+            } else if (quizState.totalScore < 120) {
+                level = '中等风险';
+                color = 'var(--accent-warning)';
+                summary = '您存在一定的健康风险因素。建议关注生活方式改善，并咨询医生进行针对性检查。';
+            } else if (quizState.totalScore < 180) {
+                level = '高风险';
+                color = 'var(--accent-danger)';
+                summary = '您的健康风险较高，多项风险因素叠加。强烈建议尽快进行健康检查，并在医生指导下制定改善计划。';
+            } else {
+                level = '极高风险';
+                color = '#ff4444';
+                summary = '您的健康风险非常显著，需要立即采取行动。请尽快预约全身体检，并咨询医生制定全面健康管理方案。';
+            }
+
+            document.getElementById('resultScore').textContent = quizState.totalScore;
+            document.getElementById('resultScore').style.background = `linear-gradient(135deg, ${color}, ${color})`;
+            document.getElementById('resultScore').style.webkitBackgroundClip = 'text';
+            document.getElementById('resultScore').style.webkitTextFillColor = 'transparent';
+            document.getElementById('resultScore').style.backgroundClip = 'text';
+            document.getElementById('resultLevel').innerHTML = `风险等级：<span style="color:${color}; font-weight:700;">${level}</span>`;
+            document.getElementById('resultSummary').textContent = summary;
+
+            generateMitigationPlan(quizState.totalScore, level);
+        }
+
+        function resetQuiz() {
+            quizState = { current: 0, answers: [], totalScore: 0 };
+            document.getElementById('quizProgress').style.width = '0%';
+            document.getElementById('quizResult').style.display = 'none';
+            document.getElementById('quizNav').innerHTML = '';
+            renderQuiz();
+        }
+
+        function scrollToMitigation() {
+            document.getElementById('mitigationSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ── Risk Mitigation Plan Generator ──
+        function generateMitigationPlan(score, level) {
+            const plans = [];
+
+            if (score >= 0) {
+                plans.push({
+                    icon: '🏃',
+                    title: '建立规律运动习惯',
+                    desc: '从每天15分钟快走开始，逐步增加到每周150分钟中等强度运动。加入力量训练可提高基础代谢率。'
+                });
+                plans.push({
+                    icon: '🥗',
+                    title: '改善饮食结构',
+                    desc: '增加蔬菜和水果摄入至每天5份，用全谷物替代精制碳水，减少加工食品和含糖饮料。'
+                });
+                plans.push({
+                    icon: '😴',
+                    title: '优化睡眠卫生',
+                    desc: '设定固定就寝时间，睡前1小时停止使用电子设备。如果持续失眠，考虑进行睡眠评估。'
+                });
+            }
+
+            if (score >= 60) {
+                plans.push({
+                    icon: '🩺',
+                    title: '进行基础体检',
+                    desc: '检查血压、空腹血糖、血脂全套、肝肾功能。了解您的基线健康数据。'
+                });
+                plans.push({
+                    icon: '🧘',
+                    title: '建立压力管理方案',
+                    desc: '尝试正念冥想App，每天10分钟。培养一项放松爱好，必要时寻求心理咨询。'
+                });
+                plans.push({
+                    icon: '⚖️',
+                    title: '体重管理计划',
+                    desc: '设定3-6个月内减重5-10%的目标。每周称重1次，记录饮食日记。'
+                });
+            }
+
+            if (score >= 120) {
+                plans.push({
+                    icon: '🚭',
+                    title: '戒烟与限酒行动计划',
+                    desc: '咨询戒烟门诊，考虑尼古丁替代疗法。设定明确的戒烟日期，寻求家人支持。'
+                });
+                plans.push({
+                    icon: '🫀',
+                    title: '心血管专项评估',
+                    desc: '进行心电图、颈动脉超声和冠脉钙化评分(如适用)。咨询心内科医生。'
+                });
+                plans.push({
+                    icon: '🎗️',
+                    title: '癌症筛查计划',
+                    desc: '根据年龄和家族史，安排结直肠癌、乳腺癌、宫颈癌或肺癌筛查。'
+                });
+            }
+
+            if (score >= 180) {
+                plans.push({
+                    icon: '🏥',
+                    title: '全面健康管理方案',
+                    desc: '在医生指导下制定包括药物干预(如需要)、生活方式改变和定期随访的综合方案。'
+                });
+                plans.push({
+                    icon: '📋',
+                    title: '建立个人健康档案',
+                    desc: '记录所有检查结果、用药情况和家族病史。定期与家庭医生复诊评估进展。'
+                });
+            }
+
+            document.getElementById('mitigationList').innerHTML = plans.map(p => `
+                <li class="mitigation-item">
+                    <span class="miti-icon">${p.icon}</span>
+                    <div class="miti-content">
+                        <h4>${p.title}</h4>
+                        <p>${p.desc}</p>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        // ── Initialize ──
+        renderQuiz();
+        generateMitigationPlan(0, '低风险');
+
+        console.log('健康风险分析页面已加载 - 12个风险维度 · 10题评估问卷 · 完整筛查时间表');
+    </script>
+</body>
+</html>

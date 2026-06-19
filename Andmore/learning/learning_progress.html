@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习进度 · 学习打卡 | 可视化学习轨迹追踪</title>
+    <meta name="description" content="学习打卡进度追踪，记录每个课程的学习轨迹，可视化展示学习成果与成长曲线。">
+    <style>
+        :root {
+            --white-pure: #ffffff;
+            --gray-50: #f8f9fa;
+            --gray-100: #f0f2f4;
+            --gray-200: #e2e6ea;
+            --gray-300: #cdd3d9;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --secondary-light: #f472b6;
+            --accent-orange: #f97316;
+            --accent-green: #22c55e;
+            --accent-teal: #14b8a6;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --accent-cyan: #06b6d4;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --text-light: #9ca3af;
+            --border-light: #e2e6ea;
+            --shadow-xs: 0 1px 3px rgba(0,0,0,0.04);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.10);
+            --shadow-xl: 0 12px 40px rgba(0,0,0,0.12);
+            --radius-xs: 4px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 9999px;
+            --transition-fast: 0.15s ease;
+            --transition-smooth: 0.25s ease;
+            --font-sans: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            --font-mono: 'SF Mono', 'Consolas', 'Courier New', monospace;
+            --font-heading: 'Noto Serif SC', 'Georgia', serif;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;font-size:16px;}
+        body{
+            font-family:var(--font-sans);
+            background:var(--gray-50);
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(236,72,153,0.04) 0%, transparent 50%);
+            color:var(--text-primary);
+            line-height:1.6;
+            min-height:100vh;
+        }
+        ::-webkit-scrollbar{width:8px;}
+        ::-webkit-scrollbar-track{background:var(--gray-100);border-radius:10px;}
+        ::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:10px;}
+        ::-webkit-scrollbar-thumb:hover{background:var(--gray-400);}
+
+        .navbar{
+            position:sticky;top:0;z-index:1000;
+            background:rgba(255,255,255,0.95);
+            backdrop-filter:blur(16px);
+            border-bottom:1px solid var(--border-light);
+            padding:0.75rem 2rem;
+            display:flex;align-items:center;justify-content:space-between;
+            flex-wrap:wrap;gap:1rem;
+        }
+        .logo{
+            display:flex;align-items:center;gap:0.5rem;
+            font-family:var(--font-heading);
+            font-size:1.25rem;
+            font-weight:700;
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+        }
+        .nav-links{display:flex;gap:0.25rem;flex-wrap:wrap;}
+        .nav-link{
+            padding:0.5rem 1rem;
+            border-radius:var(--radius-md);
+            color:var(--text-secondary);
+            text-decoration:none;
+            font-size:0.9rem;
+            font-weight:500;
+            transition:var(--transition-fast);
+        }
+        .nav-link:hover{background:var(--gray-100);color:var(--primary);}
+        .nav-link.active{background:var(--primary);color:white;}
+        .container{max-width:1200px;margin:0 auto;padding:0 1.5rem;}
+
+        .page-header{
+            background:linear-gradient(135deg,var(--secondary) 0%,var(--primary) 100%);
+            color:white;
+            padding:3rem 0;
+            text-align:center;
+        }
+        .page-header h1{
+            font-family:var(--font-heading);
+            font-size:2rem;
+            margin-bottom:0.5rem;
+        }
+        .page-header p{opacity:0.9;}
+
+        /* 概览卡片 */
+        .overview-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:1rem;
+            margin:2rem 0;
+        }
+        .overview-card{
+            background:white;
+            border-radius:var(--radius-xl);
+            padding:1.5rem;
+            box-shadow:var(--shadow-sm);
+            border:1px solid var(--border-light);
+            text-align:center;
+        }
+        .overview-icon{
+            width:56px;height:56px;
+            margin:0 auto 1rem;
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:1.75rem;
+        }
+        .overview-icon.purple{background:rgba(168,85,247,0.1);color:var(--accent-purple);}
+        .overview-icon.cyan{background:rgba(6,182,212,0.1);color:var(--accent-cyan);}
+        .overview-icon.orange{background:rgba(249,115,22,0.1);color:var(--accent-orange);}
+        .overview-icon.green{background:rgba(34,197,94,0.1);color:var(--accent-green);}
+        .overview-value{
+            font-size:2rem;
+            font-weight:700;
+            font-family:var(--font-mono);
+            color:var(--text-primary);
+        }
+        .overview-label{
+            font-size:0.85rem;
+            color:var(--text-muted);
+            margin-top:0.25rem;
+        }
+        .overview-change{
+            font-size:0.75rem;
+            margin-top:0.5rem;
+            padding:0.2rem 0.5rem;
+            border-radius:var(--radius-full);
+            display:inline-block;
+        }
+        .overview-change.up{
+            background:rgba(34,197,94,0.1);
+            color:var(--accent-green);
+        }
+        .overview-change.down{
+            background:rgba(239,68,68,0.1);
+            color:var(--accent-red);
+        }
+
+        /* 进度区块 */
+        .progress-section{
+            background:white;
+            border-radius:var(--radius-xl);
+            padding:2rem;
+            margin-bottom:2rem;
+            box-shadow:var(--shadow-sm);
+            border:1px solid var(--border-light);
+        }
+        .section-title{
+            font-size:1.1rem;
+            font-weight:600;
+            margin-bottom:1.5rem;
+            display:flex;align-items:center;gap:0.5rem;
+        }
+        .course-progress-list{
+            display:flex;flex-direction:column;gap:1.25rem;
+        }
+        .course-progress-item{
+            padding:1.25rem;
+            background:var(--gray-50);
+            border-radius:var(--radius-lg);
+            border:1px solid var(--border-light);
+        }
+        .course-progress-header{
+            display:flex;justify-content:space-between;align-items:center;
+            margin-bottom:1rem;
+        }
+        .course-progress-info{
+            display:flex;align-items:center;gap:0.75rem;
+        }
+        .course-progress-icon{
+            width:40px;height:40px;
+            border-radius:var(--radius-md);
+            display:flex;align-items:center;justify-content:center;
+            font-size:1.25rem;
+        }
+        .course-progress-icon.math{background:linear-gradient(135deg,#6366f1,#818cf8);color:white;}
+        .course-progress-icon.english{background:linear-gradient(135deg,#ec4899,#f472b6);color:white;}
+        .course-progress-icon.code{background:linear-gradient(135deg,#14b8a6,#2dd4bf);color:white;}
+        .course-progress-icon.stats{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:white;}
+        .course-progress-name{
+            font-weight:600;
+            font-size:0.95rem;
+        }
+        .course-progress-meta{
+            font-size:0.75rem;
+            color:var(--text-muted);
+        }
+        .course-progress-percent{
+            font-weight:600;
+            font-size:1.1rem;
+            color:var(--primary);
+        }
+        .course-progress-bar-wrap{
+            margin-bottom:0.75rem;
+        }
+        .course-progress-bar{
+            height:10px;
+            background:var(--gray-200);
+            border-radius:5px;
+            overflow:hidden;
+        }
+        .course-progress-fill{
+            height:100%;
+            border-radius:5px;
+            transition:width 0.5s ease;
+        }
+        .course-progress-fill.purple{background:linear-gradient(90deg,var(--accent-purple),#c084fc);}
+        .course-progress-fill.pink{background:linear-gradient(90deg,var(--secondary),var(--secondary-light));}
+        .course-progress-fill.teal{background:linear-gradient(90deg,var(--accent-teal),#2dd4bf);}
+        .course-progress-fill.orange{background:linear-gradient(90deg,var(--accent-orange),#fb923c);}
+        .course-progress-details{
+            display:flex;justify-content:space-between;
+            font-size:0.8rem;
+            color:var(--text-muted);
+        }
+
+        /* 学习日历 */
+        .calendar-grid{
+            display:grid;
+            grid-template-columns:repeat(7,1fr);
+            gap:4px;
+            margin-top:1rem;
+        }
+        .calendar-header{
+            text-align:center;
+            font-size:0.75rem;
+            font-weight:500;
+            color:var(--text-muted);
+            padding:0.5rem 0;
+        }
+        .calendar-day{
+            aspect-ratio:1;
+            border-radius:var(--radius-sm);
+            display:flex;align-items:center;justify-content:center;
+            font-size:0.75rem;
+            background:var(--gray-100);
+            color:var(--text-muted);
+        }
+        .calendar-day.active{
+            background:var(--accent-green);
+            color:white;
+            font-weight:600;
+        }
+        .calendar-day.partial{
+            background:rgba(34,197,94,0.3);
+            color:var(--accent-green);
+        }
+        .calendar-day.today{
+            border:2px solid var(--primary);
+        }
+
+        /* 连续打卡记录 */
+        .streak-section{
+            background:linear-gradient(135deg,var(--accent-orange),#ea580c);
+            border-radius:var(--radius-xl);
+            padding:2rem;
+            color:white;
+            margin-bottom:2rem;
+            text-align:center;
+        }
+        .streak-title{
+            font-size:1.1rem;
+            opacity:0.9;
+            margin-bottom:0.5rem;
+        }
+        .streak-value{
+            font-size:4rem;
+            font-weight:700;
+            font-family:var(--font-mono);
+            line-height:1;
+        }
+        .streak-label{
+            font-size:1rem;
+            opacity:0.9;
+            margin-top:0.5rem;
+        }
+        .streak-encourage{
+            margin-top:1rem;
+            font-size:0.9rem;
+            opacity:0.8;
+        }
+
+        /* 学习趋势 */
+        .trend-chart{
+            height:200px;
+            display:flex;align-items:flex-end;justify-content:space-between;
+            padding:1rem;
+            gap:0.5rem;
+            background:repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(99,102,241,0.02) 10px,
+                rgba(99,102,241,0.02) 20px
+            );
+            border-radius:var(--radius-md);
+        }
+        .trend-bar{
+            flex:1;
+            max-width:30px;
+            background:linear-gradient(180deg,var(--primary),var(--primary-light));
+            border-radius:var(--radius-sm) var(--radius-sm) 0 0;
+            position:relative;
+            transition:height 0.5s ease;
+        }
+        .trend-bar:hover{opacity:0.8;}
+        .trend-bar-value{
+            position:absolute;
+            top:-1.5rem;
+            left:50%;
+            transform:translateX(-50%);
+            font-size:0.65rem;
+            font-weight:600;
+            color:var(--text-secondary);
+        }
+        .trend-bar-label{
+            position:absolute;
+            bottom:-1.5rem;
+            left:50%;
+            transform:translateX(-50%);
+            font-size:0.65rem;
+            color:var(--text-muted);
+            white-space:nowrap;
+        }
+
+        /* 周目标进度 */
+        .weekly-goals{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+            gap:1rem;
+            margin-top:1.5rem;
+        }
+        .weekly-goal{
+            padding:1rem;
+            background:var(--gray-50);
+            border-radius:var(--radius-md);
+            border:1px solid var(--border-light);
+        }
+        .weekly-goal-header{
+            display:flex;justify-content:space-between;
+            margin-bottom:0.75rem;
+        }
+        .weekly-goal-name{
+            font-weight:500;
+            font-size:0.9rem;
+        }
+        .weekly-goal-percent{
+            font-size:0.85rem;
+            font-weight:600;
+            color:var(--primary);
+        }
+        .weekly-goal-bar{
+            height:8px;
+            background:var(--gray-200);
+            border-radius:4px;
+            overflow:hidden;
+        }
+        .weekly-goal-fill{
+            height:100%;
+            border-radius:4px;
+            background:linear-gradient(90deg,var(--primary),var(--secondary));
+        }
+
+        .footer{
+            background:var(--gray-900);
+            color:white;
+            padding:2rem 0;
+            text-align:center;
+            margin-top:3rem;
+        }
+        .footer p{font-size:0.85rem;opacity:0.7;}
+
+        @media(max-width:768px){
+            .overview-grid{grid-template-columns:repeat(2,1fr);}
+            .nav-links .nav-link{display:none;}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <span>📚</span>
+            <span>学习打卡</span>
+        </div>
+        <div class="nav-links">
+            <a href="learning_home.html" class="nav-link">首页</a>
+            <a href="learning_courses.html" class="nav-link">课程库</a>
+            <a href="learning_progress.html" class="nav-link active">学习进度</a>
+            <a href="learning_achievements.html" class="nav-link">成就勋章</a>
+            <a href="learning_stats.html" class="nav-link">数据统计</a>
+            <a href="learning_goals.html" class="nav-link">目标设定</a>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1>📈 学习进度</h1>
+        <p>记录成长轨迹，见证每一次进步</p>
+    </div>
+
+    <div class="container">
+        <!-- 连续打卡 -->
+        <div class="streak-section">
+            <div class="streak-title">当前连续学习</div>
+            <div class="streak-value">15</div>
+            <div class="streak-label">天</div>
+            <div class="streak-encourage">🔥 再坚持5天即可解锁"半月达人"成就！</div>
+        </div>
+
+        <!-- 概览卡片 -->
+        <div class="overview-grid">
+            <div class="overview-card">
+                <div class="overview-icon purple">📚</div>
+                <div class="overview-value">12</div>
+                <div class="overview-label">进行中课程</div>
+                <span class="overview-change up">↑ 3 本月新增</span>
+            </div>
+            <div class="overview-card">
+                <div class="overview-icon cyan">⏱️</div>
+                <div class="overview-value">42.5</div>
+                <div class="overview-label">本周学习(小时)</div>
+                <span class="overview-change up">↑ 比上周多 8.5h</span>
+            </div>
+            <div class="overview-card">
+                <div class="overview-icon orange">✅</div>
+                <div class="overview-value">156</div>
+                <div class="overview-label">已完成任务</div>
+                <span class="overview-change up">↑ 12 本周完成</span>
+            </div>
+            <div class="overview-card">
+                <div class="overview-icon green">🎯</div>
+                <div class="overview-value">78%</div>
+                <div class="overview-label">本周目标完成率</div>
+                <span class="overview-change down">↓ 还差2个任务</span>
+            </div>
+        </div>
+
+        <!-- 课程进度 -->
+        <div class="progress-section">
+            <h2 class="section-title">📖 课程学习进度</h2>
+            <div class="course-progress-list">
+                <div class="course-progress-item">
+                    <div class="course-progress-header">
+                        <div class="course-progress-info">
+                            <div class="course-progress-icon math">📐</div>
+                            <div>
+                                <div class="course-progress-name">高等数学·积分学</div>
+                                <div class="course-progress-meta">第3章 · 30节课 · 已学习18节</div>
+                            </div>
+                        </div>
+                        <div class="course-progress-percent">100%</div>
+                    </div>
+                    <div class="course-progress-bar-wrap">
+                        <div class="course-progress-bar">
+                            <div class="course-progress-fill purple" style="width:100%;"></div>
+                        </div>
+                    </div>
+                    <div class="course-progress-details">
+                        <span>已完成全部课时</span>
+                        <span>用时 18小时</span>
+                    </div>
+                </div>
+
+                <div class="course-progress-item">
+                    <div class="course-progress-header">
+                        <div class="course-progress-info">
+                            <div class="course-progress-icon code">💻</div>
+                            <div>
+                                <div class="course-progress-name">Python数据结构与算法</div>
+                                <div class="course-progress-meta">第4章 · 45节课 · 已学习18节</div>
+                            </div>
+                        </div>
+                        <div class="course-progress-percent">40%</div>
+                    </div>
+                    <div class="course-progress-bar-wrap">
+                        <div class="course-progress-bar">
+                            <div class="course-progress-fill teal" style="width:40%;"></div>
+                        </div>
+                    </div>
+                    <div class="course-progress-details">
+                        <span>还需 27 节课</span>
+                        <span>已用 10小时 · 预计还需 15小时</span>
+                    </div>
+                </div>
+
+                <div class="course-progress-item">
+                    <div class="course-progress-header">
+                        <div class="course-progress-info">
+                            <div class="course-progress-icon english">🇬🇧</div>
+                            <div>
+                                <div class="course-progress-name">英语·日常口语进阶</div>
+                                <div class="course-progress-meta">第2章 · 28节课 · 已学习8节</div>
+                            </div>
+                        </div>
+                        <div class="course-progress-percent">29%</div>
+                    </div>
+                    <div class="course-progress-bar-wrap">
+                        <div class="course-progress-bar">
+                            <div class="course-progress-fill pink" style="width:29%;"></div>
+                        </div>
+                    </div>
+                    <div class="course-progress-details">
+                        <span>还需 20 节课</span>
+                        <span>已用 3小时 · 预计还需 7小时</span>
+                    </div>
+                </div>
+
+                <div class="course-progress-item">
+                    <div class="course-progress-header">
+                        <div class="course-progress-info">
+                            <div class="course-progress-icon stats">📊</div>
+                            <div>
+                                <div class="course-progress-name">统计学·假设检验</div>
+                                <div class="course-progress-meta">第4章 · 25节课 · 已学习0节</div>
+                            </div>
+                        </div>
+                        <div class="course-progress-percent">0%</div>
+                    </div>
+                    <div class="course-progress-bar-wrap">
+                        <div class="course-progress-bar">
+                            <div class="course-progress-fill orange" style="width:0%;"></div>
+                        </div>
+                    </div>
+                    <div class="course-progress-details">
+                        <span>尚未开始</span>
+                        <span>预计需要 15小时</span>
+                    </div>
+                </div>
+
+                <div class="course-progress-item">
+                    <div class="course-progress-header">
+                        <div class="course-progress-info">
+                            <div class="course-progress-icon math">📐</div>
+                            <div>
+                                <div class="course-progress-name">线性代数·矩阵运算</div>
+                                <div class="course-progress-meta">第5章 · 18节课 · 已学习18节</div>
+                            </div>
+                        </div>
+                        <div class="course-progress-percent">100%</div>
+                    </div>
+                    <div class="course-progress-bar-wrap">
+                        <div class="course-progress-bar">
+                            <div class="course-progress-fill purple" style="width:100%;"></div>
+                        </div>
+                    </div>
+                    <div class="course-progress-details">
+                        <span>已完成全部课时</span>
+                        <span>用时 10小时</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 本月打卡日历 -->
+        <div class="progress-section">
+            <h2 class="section-title">📅 本月打卡日历</h2>
+            <div class="calendar-grid">
+                <div class="calendar-header">一</div>
+                <div class="calendar-header">二</div>
+                <div class="calendar-header">三</div>
+                <div class="calendar-header">四</div>
+                <div class="calendar-header">五</div>
+                <div class="calendar-header">六</div>
+                <div class="calendar-header">日</div>
+                <!-- 第一周 -->
+                <div class="calendar-day"></div>
+                <div class="calendar-day"></div>
+                <div class="calendar-day active">1</div>
+                <div class="calendar-day active">2</div>
+                <div class="calendar-day active">3</div>
+                <div class="calendar-day active">4</div>
+                <div class="calendar-day active">5</div>
+                <!-- 第二周 -->
+                <div class="calendar-day active">6</div>
+                <div class="calendar-day active">7</div>
+                <div class="calendar-day active">8</div>
+                <div class="calendar-day active">9</div>
+                <div class="calendar-day active">10</div>
+                <div class="calendar-day active">11</div>
+                <div class="calendar-day active">12</div>
+                <!-- 第三周 -->
+                <div class="calendar-day active">13</div>
+                <div class="calendar-day active">14</div>
+                <div class="calendar-day active">15</div>
+                <div class="calendar-day active today">16</div>
+                <div class="calendar-day">17</div>
+                <div class="calendar-day">18</div>
+                <div class="calendar-day">19</div>
+                <!-- 第四周 -->
+                <div class="calendar-day">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day">22</div>
+                <div class="calendar-day">23</div>
+                <div class="calendar-day">24</div>
+                <div class="calendar-day">25</div>
+                <div class="calendar-day">26</div>
+                <!-- 第五周 -->
+                <div class="calendar-day">27</div>
+                <div class="calendar-day">28</div>
+                <div class="calendar-day">29</div>
+                <div class="calendar-day">30</div>
+                <div class="calendar-day"></div>
+                <div class="calendar-day"></div>
+                <div class="calendar-day"></div>
+            </div>
+            <div style="display:flex;gap:1.5rem;margin-top:1.5rem;justify-content:center;">
+                <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--text-muted);">
+                    <div style="width:12px;height:12px;border-radius:3px;background:var(--accent-green);"></div>
+                    完整打卡
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--text-muted);">
+                    <div style="width:12px;height:12px;border-radius:3px;background:rgba(34,197,94,0.3);"></div>
+                    部分完成
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--text-muted);">
+                    <div style="width:12px;height:12px;border-radius:3px;background:var(--gray-200);"></div>
+                    未打卡
+                </div>
+            </div>
+        </div>
+
+        <!-- 周学习趋势 -->
+        <div class="progress-section">
+            <h2 class="section-title">📊 本月学习趋势</h2>
+            <div class="trend-chart">
+                <div class="trend-bar" style="height:60px;">
+                    <span class="trend-bar-value">3h</span>
+                    <span class="trend-bar-label">6/1</span>
+                </div>
+                <div class="trend-bar" style="height:80px;">
+                    <span class="trend-bar-value">4h</span>
+                    <span class="trend-bar-label">6/2</span>
+                </div>
+                <div class="trend-bar" style="height:100px;">
+                    <span class="trend-bar-value">5h</span>
+                    <span class="trend-bar-label">6/3</span>
+                </div>
+                <div class="trend-bar" style="height:40px;">
+                    <span class="trend-bar-value">2h</span>
+                    <span class="trend-bar-label">6/4</span>
+                </div>
+                <div class="trend-bar" style="height:120px;">
+                    <span class="trend-bar-value">6h</span>
+                    <span class="trend-bar-label">6/5</span>
+                </div>
+                <div class="trend-bar" style="height:160px;">
+                    <span class="trend-bar-value">8h</span>
+                    <span class="trend-bar-label">6/6</span>
+                </div>
+                <div class="trend-bar" style="height:180px;">
+                    <span class="trend-bar-value">9h</span>
+                    <span class="trend-bar-label">6/7</span>
+                </div>
+                <div class="trend-bar" style="height:100px;">
+                    <span class="trend-bar-value">5h</span>
+                    <span class="trend-bar-label">6/8</span>
+                </div>
+                <div class="trend-bar" style="height:140px;">
+                    <span class="trend-bar-value">7h</span>
+                    <span class="trend-bar-label">6/9</span>
+                </div>
+                <div class="trend-bar" style="height:80px;">
+                    <span class="trend-bar-value">4h</span>
+                    <span class="trend-bar-label">6/10</span>
+                </div>
+                <div class="trend-bar" style="height:120px;">
+                    <span class="trend-bar-value">6h</span>
+                    <span class="trend-bar-label">6/11</span>
+                </div>
+                <div class="trend-bar" style="height:100px;">
+                    <span class="trend-bar-value">5h</span>
+                    <span class="trend-bar-label">6/12</span>
+                </div>
+                <div class="trend-bar" style="height:60px;">
+                    <span class="trend-bar-value">3h</span>
+                    <span class="trend-bar-label">6/13</span>
+                </div>
+                <div class="trend-bar" style="height:140px;">
+                    <span class="trend-bar-value">7h</span>
+                    <span class="trend-bar-label">6/14</span>
+                </div>
+                <div class="trend-bar" style="height:160px;">
+                    <span class="trend-bar-value">8h</span>
+                    <span class="trend-bar-label">6/15</span>
+                </div>
+                <div class="trend-bar" style="height:80px;">
+                    <span class="trend-bar-value">4h</span>
+                    <span class="trend-bar-label">6/16</span>
+                </div>
+            </div>
+            <p style="text-align:center;font-size:0.8rem;color:var(--text-muted);margin-top:2rem;">本月累计学习 85 小时，日均 5.3 小时，学习效率较高</p>
+        </div>
+
+        <!-- 周目标进度 -->
+        <div class="progress-section">
+            <h2 class="section-title">🎯 本周目标完成情况</h2>
+            <div class="weekly-goals">
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">📚 完成高数第三章</span>
+                        <span class="weekly-goal-percent">100%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:100%;"></div>
+                    </div>
+                </div>
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">💻 Python数据结构10节</span>
+                        <span class="weekly-goal-percent">80%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:80%;"></div>
+                    </div>
+                </div>
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">🇬🇧 英语听力5节</span>
+                        <span class="weekly-goal-percent">60%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:60%;"></div>
+                    </div>
+                </div>
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">📝 整理学习笔记3篇</span>
+                        <span class="weekly-goal-percent">67%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:67%;"></div>
+                    </div>
+                </div>
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">⏱️ 周学习时长≥35小时</span>
+                        <span class="weekly-goal-percent">85%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:85%;"></div>
+                    </div>
+                </div>
+                <div class="weekly-goal">
+                    <div class="weekly-goal-header">
+                        <span class="weekly-goal-name">🔥 连续打卡7天</span>
+                        <span class="weekly-goal-percent">100%</span>
+                    </div>
+                    <div class="weekly-goal-bar">
+                        <div class="weekly-goal-fill" style="width:100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习状态追踪 -->
+        <div class="section-header">
+            <h2>📊 学习状态追踪</h2>
+            <div class="divider"></div>
+            <p class="subtitle">全面了解你的学习状态变化</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div class="stat-card">
+                <div class="stat-icon blue">📈</div>
+                <div class="stat-info">
+                    <div class="stat-value">78%</div>
+                    <div class="stat-label">学习专注度</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pink">⏱️</div>
+                <div class="stat-info">
+                    <div class="stat-value">45min</div>
+                    <div class="stat-label">平均单次时长</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">🔥</div>
+                <div class="stat-info">
+                    <div class="stat-value">5.2h</div>
+                    <div class="stat-label">日均学习时长</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🎯</div>
+                <div class="stat-info">
+                    <div class="stat-value">92%</div>
+                    <div class="stat-label">目标达成率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习健康指南 -->
+        <div class="section-header">
+            <h2>🏃 学习与健康</h2>
+            <div class="divider"></div>
+            <p class="subtitle">健康的身体是学习的保障</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+                <div>
+                    <h4 style="font-size:1rem;margin-bottom:1rem;color:var(--primary);display:flex;align-items:center;gap:0.5rem;">
+                        <span>😴</span> 睡眠与学习
+                    </h4>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;margin-bottom:0.75rem;">睡眠对学习至关重要。大脑在睡眠期间会整理和巩固白天学到的知识。</p>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                        <li>保持7-8小时的充足睡眠</li>
+                        <li>固定的作息时间</li>
+                        <li>睡前避免使用电子设备</li>
+                        <li>午睡20-30分钟为宜</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:1rem;margin-bottom:1rem;color:var(--accent-green);display:flex;align-items:center;gap:0.5rem;">
+                        <span>🏃</span> 运动与学习
+                    </h4>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;margin-bottom:0.75rem;">适度运动可以提高学习时的专注度和记忆力。</p>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                        <li>每周至少运动3次</li>
+                        <li>每次30分钟以上</li>
+                        <li>学习间隙做伸展运动</li>
+                        <li>户外运动效果更佳</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:1rem;margin-bottom:1rem;color:var(--accent-orange);display:flex;align-items:center;gap:0.5rem;">
+                        <span>🍎</span> 饮食与学习
+                    </h4>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;margin-bottom:0.75rem;">合理的饮食为大脑提供充足的能量和营养。</p>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                        <li>均衡饮食，荤素搭配</li>
+                        <li>多吃鱼类和坚果</li>
+                        <li>避免高糖高脂食物</li>
+                        <li>保持充足的水分摄入</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习技巧分享 -->
+        <div class="section-header">
+            <h2>💡 高效学习技巧</h2>
+            <div class="divider"></div>
+            <p class="subtitle">这些学习方法帮你事半功倍</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span>🧠</span> 批判性思维
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;">学习知识时不要盲目接受，要学会质疑和思考。多问为什么，理解知识的底层逻辑。</p>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span>🔗</span> 知识关联
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;">将新知识与已有知识建立联系，形成知识网络。跨学科的联想往往能产生创新。</p>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span>✍️</span> 主动笔记
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;">不要抄写，而是用自己的语言总结。康奈尔笔记法、三色笔记法都是很好的选择。</p>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span>🗣️</span> 教学相长
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;">尝试向他人讲解所学内容。教是最好的学，能讲清楚才算真正掌握。</p>
+            </div>
+        </div>
+
+        <!-- 学习进度分析 -->
+        <div class="section-header">
+            <h2>📊 学习进度分析报告</h2>
+            <div class="divider"></div>
+            <p class="subtitle">深入了解你的学习状态</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;">
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:1rem;color:var(--primary);">📈 学习效率趋势</h4>
+                    <div style="font-size:0.85rem;color:var(--text-secondary);line-height:2;">
+                        <p>本周学习效率评分：<strong style="color:var(--accent-green);">85分</strong></p>
+                        <p>较上周提升：<strong style="color:var(--accent-green);">+8分</strong></p>
+                        <p>学习专注度：<strong style="color:var(--primary);">78%</strong></p>
+                        <p>目标达成率：<strong style="color:var(--accent-green);">92%</strong></p>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:1rem;color:var(--secondary);">⏱️ 时间分配分析</h4>
+                    <div style="font-size:0.85rem;color:var(--text-secondary);line-height:2;">
+                        <p>高效学习时段：晚上 20:00-22:00</p>
+                        <p>平均单次学习时长：<strong>45分钟</strong></p>
+                        <p>休息间隔正确率：<strong>82%</strong></p>
+                        <p>碎片时间利用率：<strong>68%</strong></p>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:1rem;color:var(--accent-orange);">🎯 学科均衡度</h4>
+                    <div style="font-size:0.85rem;color:var(--text-secondary);line-height:2;">
+                        <p>数学：<strong>35%</strong> ⬅ 偏重</p>
+                        <p>编程：<strong>28%</strong> ⬅ 正常</p>
+                        <p>英语：<strong>22%</strong> ⬅ 正常</p>
+                        <p>其他：<strong>15%</strong> ⬅ 可增加</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习问题诊断 -->
+        <div class="section-header">
+            <h2>🔍 学习问题诊断</h2>
+            <div class="divider"></div>
+            <p class="subtitle">发现并解决学习中的问题</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);border-left:4px solid var(--accent-green);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;color:var(--accent-green);">✅ 表现良好</h4>
+                <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.9;padding-left:1rem;">
+                    <li>连续打卡保持良好</li>
+                    <li>目标设定合理可行</li>
+                    <li>笔记整理及时规范</li>
+                    <li>课后复习习惯良好</li>
+                </ul>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);border-left:4px solid var(--accent-orange);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;color:var(--accent-orange);">⚠️ 需要改进</h4>
+                <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.9;padding-left:1rem;">
+                    <li>英语口语练习偏少</li>
+                    <li>周末学习时间不足</li>
+                    <li>课后习题完成率偏低</li>
+                    <li>知识回顾频率不够</li>
+                </ul>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);border-left:4px solid var(--accent-red);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;color:var(--accent-red);">❌ 需要关注</h4>
+                <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.9;padding-left:1rem;">
+                    <li>部分课程进度滞后</li>
+                    <li>有时会拖延完成任务</li>
+                    <li>睡眠时间不够充足</li>
+                    <li>运动锻炼时间偏少</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 改进建议 -->
+        <div class="section-header">
+            <h2>📋 个性化改进建议</h2>
+            <div class="divider"></div>
+            <p class="subtitle">根据你的学习情况生成的专属建议</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="font-size:0.9rem;color:var(--text-secondary);line-height:2;">
+                <p style="margin-bottom:1rem;"><strong>亲爱的林同学，根据你近期的学习数据分析，我们给出以下建议：</strong></p>
+                <ol style="padding-left:1.5rem;">
+                    <li style="margin-bottom:0.75rem;">
+                        <strong>增加英语口语练习时间：</strong>目前英语学习以阅读和听力为主，口语输出较少。建议每天至少进行15分钟的英语口语练习，可以使用HelloTalk等语言交换App。
+                    </li>
+                    <li style="margin-bottom:0.75rem;">
+                        <strong>优化周末学习安排：</strong>周末的学习时间明显少于工作日。建议将一些需要整块时间的任务（如项目实战、深入研究）安排在周末。
+                    </li>
+                    <li style="margin-bottom:0.75rem;">
+                        <strong>提高课后习题完成率：</strong>部分章节的课后习题完成率偏低。习题是检验学习效果的重要手段，建议每学完一节课程后立即完成相关练习。
+                    </li>
+                    <li style="margin-bottom:0.75rem;">
+                        <strong>增加知识回顾频率：</strong>根据遗忘曲线规律，建议增加对旧知识的回顾频率。可以使用Anki等间隔重复工具，每天花15分钟复习之前学过的内容。
+                    </li>
+                    <li style="margin-bottom:0.75rem;">
+                        <strong>保证充足睡眠：</strong>学习效率与睡眠质量密切相关。建议每天保持7-8小时的睡眠时间，避免熬夜学习。
+                    </li>
+                    <li style="margin-bottom:0;">
+                        <strong>适度增加运动：</strong>适当的运动可以提高学习时的专注度和记忆力。建议每周至少进行3次、每次30分钟以上的运动。
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 学习障碍克服 -->
+        <div class="section-header">
+            <h2>🧗 学习障碍克服指南</h2>
+            <div class="divider"></div>
+            <p class="subtitle">常见学习困难及解决方案</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-size:1.25rem;">😴</span> 学习疲劳
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;margin-bottom:0.75rem;">长时间学习后感到疲惫、注意力下降。</p>
+                <ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                    <li>每学习45-60分钟休息10分钟</li>
+                    <li>休息时离开座位活动身体</li>
+                    <li>保证充足的睡眠时间</li>
+                    <li>适当补充水分和健康零食</li>
+                </ul>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-size:1.25rem;">😰</span> 考试焦虑
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;margin-bottom:0.75rem;">考试前紧张、焦虑，影响正常发挥。</p>
+                <ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                    <li>提前制定复习计划，充分准备</li>
+                    <li>进行模拟考试，熟悉考试流程</li>
+                    <li>学习深呼吸等放松技巧</li>
+                    <li>保持积极心态，相信自己的能力</li>
+                </ul>
+            </div>
+            <div style="background:white;border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);">
+                <h4 style="font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-size:1.25rem;">🤔</span> 知识遗忘
+                </h4>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.7;margin-bottom:0.75rem;">学过的知识很快忘记，需要反复学习。</p>
+                <ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;padding-left:1.2rem;">
+                    <li>使用间隔重复法复习</li>
+                    <li>将知识与实际应用结合</li>
+                    <li>用自己的话复述知识点</li>
+                    <li>制作思维导图建立知识网络</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 学习时间规划 -->
+        <div class="section-header">
+            <h2>⏰ 学习时间规划</h2>
+            <div class="divider"></div>
+            <p class="subtitle">科学安排学习时间</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--primary);">🌅 早晨时段</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>6:00-7:00</strong>：晨读、背单词</li>
+                        <li><strong>7:00-8:00</strong>：运动、早餐</li>
+                        <li><strong>8:00-9:00</strong>：复习昨日内容</li>
+                        <li><strong>9:00-11:30</strong>：深度学习新知识</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-green);">🌞 下午时段</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>14:00-16:00</strong>：做题、实践练习</li>
+                        <li><strong>16:00-17:00</strong>：整理笔记</li>
+                        <li><strong>17:00-18:00</strong>：运动、休息</li>
+                        <li><strong>18:00-19:00</strong>：晚餐、放松</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-orange);">🌙 晚间时段</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>19:00-20:30</strong>：复习巩固</li>
+                        <li><strong>20:30-21:30</strong>：预习明日内容</li>
+                        <li><strong>21:30-22:00</strong>：总结反思</li>
+                        <li><strong>22:00</strong>：准备休息</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习资源管理 -->
+        <div class="section-header">
+            <h2>📚 学习资源管理</h2>
+            <div class="divider"></div>
+            <p class="subtitle">高效管理和利用学习资源</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--primary);">📁 资料整理技巧</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>分类存储</strong>：按科目/类型分类存放</li>
+                        <li><strong>命名规范</strong>：使用统一的文件命名规则</li>
+                        <li><strong>定期清理</strong>：删除过时或重复的资料</li>
+                        <li><strong>云端备份</strong>：重要资料同步到云端</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-green);">📝 笔记管理方法</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>康奈尔笔记法</strong>：分区记录、提问、总结</li>
+                        <li><strong>思维导图</strong>：可视化知识结构</li>
+                        <li><strong>卡片笔记</strong>：便于复习和检索</li>
+                        <li><strong>电子笔记</strong>：支持搜索和同步</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-orange);">🔍 资源获取渠道</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>在线课程</strong>：Coursera、B站、MOOC</li>
+                        <li><strong>电子书籍</strong>：微信读书、Kindle</li>
+                        <li><strong>学术论文</strong>：知网、Google Scholar</li>
+                        <li><strong>社区问答</strong>：知乎、Stack Overflow</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习效率提升 -->
+        <div class="section-header">
+            <h2>🚀 学习效率提升方法</h2>
+            <div class="divider"></div>
+            <p class="subtitle">科学方法让学习事半功倍</p>
+        </div>
+        <div style="background:white;border-radius:var(--radius-xl);padding:2rem;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--primary);">🧠 认知策略</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>主动学习</strong>：提问、讨论、实践</li>
+                        <li><strong>深度加工</strong>：理解而非死记硬背</li>
+                        <li><strong>知识迁移</strong>：将知识应用到新情境</li>
+                        <li><strong>元认知</strong>：监控和调整学习过程</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-green);">⏰ 时间策略</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>黄金时段</strong>：在精力最旺盛时学习</li>
+                        <li><strong>番茄工作</strong>：25分钟专注+5分钟休息</li>
+                        <li><strong>任务切块</strong>：大任务分解为小块</li>
+                        <li><strong>优先级排序</strong>：先做重要紧急的事</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--accent-orange);">📝 记忆策略</h4>
+                    <ul style="font-size:0.85rem;color:var(--text-secondary);line-height:2;padding-left:1rem;">
+                        <li><strong>间隔重复</strong>：按遗忘曲线复习</li>
+                        <li><strong>联想记忆</strong>：建立知识间的联系</li>
+                        <li><strong>图像记忆</strong>：将抽象概念可视化</li>
+                        <li><strong>故事记忆</strong>：用故事串联知识点</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 学习打卡 · 学习进度 | 记录每一次成长</p>
+    </footer>
+</body>
+</html>

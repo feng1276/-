@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>栖息地 · CritterPedia</title>
+    <style>
+        :root {
+            --bg-sky: #e8f4fd;
+            --bg-card: #ffffff;
+            --accent-coral: #ff6b6b;
+            --accent-sunny: #ffd93d;
+            --accent-mint: #6bcb77;
+            --accent-lavender: #a66cff;
+            --accent-skyblue: #4d96ff;
+            --accent-peach: #ffb27f;
+            --text-dark: #3d2c2c;
+            --text-medium: #5c4a4a;
+            --text-light: #8a7a7a;
+            --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.08);
+            --shadow-bouncy: 0 6px 0 rgba(0, 0, 0, 0.12);
+            --radius-xl: 2rem;
+            --radius-lg: 1.5rem;
+            --radius-md: 0.8rem;
+            --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            --font-title: 'Fredoka One', 'Comic Sans MS', cursive, sans-serif;
+            --font-body: 'Nunito', 'Segoe UI', sans-serif;
+            --font-fun: 'Bubblegum Sans', 'Comic Sans MS', cursive;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-sky);
+            background-image: url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1.5' fill='%23ffffff' opacity='0.4'/%3E%3C/svg%3E");
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+        /* Floating ambient emojis */
+        .ambient-emoji {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            animation: ambientFloat 12s ease-in-out infinite;
+            opacity: 0.12;
+            font-size: 3rem;
+        }
+        @keyframes ambientFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            20% { transform: translateY(-30px) rotate(5deg); }
+            40% { transform: translateY(-15px) rotate(-3deg); }
+            60% { transform: translateY(-40px) rotate(8deg); }
+            80% { transform: translateY(-10px) rotate(-5deg); }
+        }
+        /* Canvas layer */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 18px;
+            padding: 0.7rem 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border: 3px solid #e0e8f0;
+            border-radius: 3.5rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-title);
+            font-size: 1.4rem;
+            color: var(--accent-coral);
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-medium);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 2rem;
+            transition: all var(--transition-bounce);
+        }
+        .nav-links a:hover {
+            background: var(--accent-sunny);
+            transform: scale(1.06);
+        }
+        .nav-links a.active {
+            background: var(--accent-mint);
+            color: #fff;
+            box-shadow: var(--shadow-bouncy);
+        }
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        .page-header h1 {
+            font-family: var(--font-title);
+            font-size: 2.5rem;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .section-title {
+            font-family: var(--font-title);
+            font-size: 1.8rem;
+            text-align: center;
+            margin: 3rem 0 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--accent-sunny);
+            border-radius: 2px;
+            margin: 0.5rem auto 0;
+        }
+        .habitat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .habitat-card {
+            background: #fff;
+            border: 4px solid #e8eef5;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+        }
+        .habitat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        .habitat-scene {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .habitat-scene .scene-emoji {
+            position: absolute;
+            animation: floatAround 4s ease-in-out infinite;
+        }
+        .habitat-scene .scene-emoji:nth-child(1) {
+            font-size: 5rem;
+            animation-delay: 0s;
+        }
+        .habitat-scene .scene-emoji:nth-child(2) {
+            font-size: 2rem;
+            top: 20%;
+            left: 20%;
+            animation-delay: 0.5s;
+        }
+        .habitat-scene .scene-emoji:nth-child(3) {
+            font-size: 1.5rem;
+            top: 60%;
+            right: 25%;
+            animation-delay: 1s;
+        }
+        @keyframes floatAround {
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+            25% {
+                transform: translate(8px, -6px);
+            }
+            50% {
+                transform: translate(-5px, -12px);
+            }
+            75% {
+                transform: translate(-8px, 5px);
+            }
+        }
+        .habitat-body {
+            padding: 1.5rem;
+        }
+        .habitat-body h3 {
+            font-family: var(--font-title);
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .habitat-body p {
+            color: var(--text-medium);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .animal-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.8rem;
+        }
+        .animal-chip {
+            padding: 0.3rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #f5f5f5;
+            border: 2px solid #e0e8f0;
+            transition: all var(--transition-bounce);
+        }
+        .animal-chip:hover {
+            background: var(--accent-sunny);
+            border-color: var(--accent-sunny);
+            transform: scale(1.1);
+        }
+        .climate-bar {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            margin: 0.8rem 0;
+            overflow: hidden;
+        }
+        .climate-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+        .habitat-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            margin: 0.8rem 0;
+            font-size: 0.78rem;
+            color: var(--text-light);
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: #fafcfe;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+        }
+        .eco-detail {
+            margin: 0.8rem 0;
+            background: #fafcfe;
+            border-radius: var(--radius-md);
+            padding: 0.6rem 1rem;
+            border: 2px dashed #e0e8f0;
+        }
+        .eco-detail summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--accent-lavender);
+            font-family: var(--font-title);
+        }
+        .eco-detail p {
+            font-size: 0.85rem;
+            color: var(--text-medium);
+            line-height: 1.6;
+        }
+        .habitat-flora {
+            margin: 0.6rem 0;
+            font-size: 0.8rem;
+            color: var(--text-medium);
+            background: #f1f8e9;
+            padding: 0.5rem 0.7rem;
+            border-radius: 0.5rem;
+            line-height: 1.5;
+        }
+        .flora-label {
+            font-weight: 700;
+            color: var(--accent-mint);
+        }
+        .conservation-note {
+            margin-top: 0.8rem;
+            padding: 0.5rem 0.7rem;
+            background: #fff8e1;
+            border-left: 4px solid var(--accent-coral);
+            border-radius: 0 0.5rem 0.5rem 0;
+            font-size: 0.78rem;
+            color: var(--text-medium);
+            line-height: 1.5;
+        }
+        /* ===== NEW FEATURE STYLES ===== */
+        /* Habitat of the Day */
+        .hotd-banner {
+            background: linear-gradient(135deg, var(--accent-sunny), var(--accent-peach));
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            z-index: 1;
+        }
+        .hotd-banner:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        .hotd-banner h2 {
+            font-family: var(--font-title);
+            font-size: 1.6rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+        .hotd-banner .hotd-emoji {
+            font-size: 4rem;
+            animation: hotdBounce 2s ease-in-out infinite;
+        }
+        @keyframes hotdBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .hotd-badge {
+            display: inline-block;
+            background: #fff;
+            color: var(--accent-coral);
+            font-family: var(--font-fun);
+            font-size: 0.8rem;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            margin-bottom: 0.8rem;
+        }
+        /* Habitat Explorer Map */
+        .explorer-map {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+            z-index: 1;
+        }
+        .map-regions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .map-region {
+            background: #fafcfe;
+            border: 3px solid #e0e8f0;
+            border-radius: var(--radius-lg);
+            padding: 1.2rem 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            text-align: center;
+        }
+        .map-region:hover {
+            transform: translateY(-5px) scale(1.03);
+            border-color: var(--accent-skyblue);
+            box-shadow: 0 8px 20px rgba(77,150,255,0.2);
+        }
+        .map-region .region-emoji {
+            font-size: 2.5rem;
+            display: block;
+        }
+        .map-region .region-name {
+            font-family: var(--font-title);
+            font-size: 0.9rem;
+            margin-top: 0.4rem;
+        }
+        .map-region .region-animal {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.2rem;
+        }
+        .explorer-result {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #f0f8ff;
+            border-radius: var(--radius-lg);
+            border: 3px dashed var(--accent-skyblue);
+            display: none;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .explorer-result.show { display: block; }
+        .explorer-result h4 {
+            font-family: var(--font-title);
+            color: var(--accent-skyblue);
+        }
+        .explorer-animal-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+            justify-content: center;
+        }
+        .explorer-animal-tag {
+            background: #fff;
+            border: 2px solid #e0e8f0;
+            border-radius: 2rem;
+            padding: 0.4rem 0.9rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+        }
+        .explorer-animal-tag:hover {
+            background: var(--accent-sunny);
+            border-color: var(--accent-sunny);
+            transform: scale(1.08);
+        }
+        /* Habitat Comparison Tool */
+        .compare-container {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            margin: 1.5rem 0;
+            position: relative;
+            z-index: 1;
+        }
+        .compare-selects {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        .compare-selects select {
+            padding: 0.7rem 1.2rem;
+            border-radius: 2rem;
+            border: 3px solid #e0e8f0;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 700;
+            background: #fafcfe;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            min-width: 180px;
+        }
+        .compare-selects select:focus {
+            border-color: var(--accent-lavender);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(166,108,255,0.12);
+        }
+        .compare-vs {
+            font-family: var(--font-title);
+            font-size: 1.4rem;
+            color: var(--accent-coral);
+        }
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .compare-table.show { display: table; }
+        .compare-table th {
+            background: var(--accent-lavender);
+            color: #fff;
+            padding: 0.7rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-family: var(--font-title);
+        }
+        .compare-table td {
+            padding: 0.7rem;
+            text-align: center;
+            border-bottom: 2px solid #f0f0f0;
+            background: #fafcfe;
+        }
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+        .compare-label {
+            font-weight: 700;
+            color: var(--text-medium);
+            text-align: left !important;
+            background: #fff !important;
+        }
+        /* Animal Sound Quiz */
+        .quiz-container {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            margin: 1.5rem 0;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        .quiz-question {
+            font-family: var(--font-title);
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+        .quiz-option {
+            padding: 0.8rem 1rem;
+            border: 3px solid #e0e8f0;
+            border-radius: 2rem;
+            background: #fafcfe;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all var(--transition-bounce);
+            font-family: var(--font-body);
+        }
+        .quiz-option:hover {
+            border-color: var(--accent-mint);
+            background: #f1f8e9;
+            transform: scale(1.04);
+        }
+        .quiz-option.correct {
+            background: var(--accent-mint) !important;
+            color: #fff !important;
+            border-color: var(--accent-mint) !important;
+            animation: correctBounce 0.5s ease;
+        }
+        .quiz-option.wrong {
+            background: var(--accent-coral) !important;
+            color: #fff !important;
+            border-color: var(--accent-coral) !important;
+        }
+        @keyframes correctBounce {
+            0%, 100% { transform: scale(1); }
+            30% { transform: scale(1.1); }
+        }
+        .quiz-score {
+            font-family: var(--font-title);
+            font-size: 1.2rem;
+            color: var(--accent-mint);
+        }
+        .quiz-btn {
+            padding: 0.7rem 2rem;
+            border-radius: 2rem;
+            border: none;
+            background: var(--accent-skyblue);
+            color: #fff;
+            font-family: var(--font-title);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            box-shadow: var(--shadow-bouncy);
+        }
+        .quiz-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.12);
+        }
+        .quiz-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.12);
+        }
+        /* Climate Change Impact */
+        .climate-impact {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            margin: 1.5rem 0;
+            position: relative;
+            z-index: 1;
+        }
+        .climate-impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+        .climate-impact-card {
+            background: linear-gradient(135deg, #fff5f5, #fff0f0);
+            border: 3px solid #ffcdd2;
+            border-radius: var(--radius-lg);
+            padding: 1.2rem;
+            transition: all var(--transition-bounce);
+        }
+        .climate-impact-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255,107,107,0.15);
+        }
+        .climate-impact-card h4 {
+            font-family: var(--font-title);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .climate-impact-card p {
+            font-size: 0.82rem;
+            color: var(--text-medium);
+            line-height: 1.5;
+        }
+        .climate-impact-card .impact-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .climate-impact-card .threat-meter {
+            height: 6px;
+            background: #ffcdd2;
+            border-radius: 3px;
+            margin-top: 0.6rem;
+            overflow: hidden;
+        }
+        .threat-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent-coral);
+        }
+        /* Modal / Expanded View */
+        .habitat-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .habitat-modal-overlay.show {
+            display: flex;
+        }
+        .habitat-modal {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 2rem;
+            position: relative;
+            animation: modalSlideIn 0.4s ease;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            border: none;
+            background: #f0f0f0;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            background: var(--accent-coral);
+            color: #fff;
+            transform: rotate(90deg);
+        }
+        .modal-habitat-emoji {
+            font-size: 5rem;
+            text-align: center;
+            display: block;
+            animation: hotdBounce 2s ease-in-out infinite;
+        }
+        .modal-foodchain {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #fafcfe;
+            border-radius: var(--radius-lg);
+            font-size: 0.85rem;
+        }
+        .foodchain-node {
+            background: #fff;
+            border: 2px solid #e0e8f0;
+            border-radius: 1rem;
+            padding: 0.4rem 0.8rem;
+            font-weight: 700;
+        }
+        .foodchain-arrow {
+            color: var(--accent-coral);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .climate-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.3rem;
+            height: 120px;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: #fafcfe;
+            border-radius: var(--radius-lg);
+        }
+        .climate-chart-bar {
+            flex: 1;
+            border-radius: 0.3rem 0.3rem 0 0;
+            background: linear-gradient(to top, var(--accent-skyblue), var(--accent-sunny));
+            position: relative;
+            min-width: 20px;
+            transition: height 0.5s ease;
+        }
+        .climate-chart-bar span {
+            position: absolute;
+            bottom: -1.3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: var(--text-light);
+            white-space: nowrap;
+        }
+        /* Fun Fact Ticker */
+        .fun-fact-ticker {
+            background: linear-gradient(90deg, var(--accent-lavender), var(--accent-skyblue));
+            color: #fff;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            margin: 1rem 0;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .fun-fact-ticker span {
+            display: inline-block;
+            animation: tickerScroll 0.5s ease;
+        }
+        @keyframes tickerScroll {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Scroll-to-top */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent-coral);
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 150;
+            box-shadow: var(--shadow-bouncy);
+            transition: all var(--transition-bounce);
+            display: none;
+        }
+        .scroll-top-btn.show { display: block; }
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.12);
+        }
+        /* New habitat badge */
+        .new-badge {
+            display: inline-block;
+            background: var(--accent-coral);
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 1rem;
+            margin-left: 0.4rem;
+            animation: pulseBadge 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseBadge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        /* Seasonal shift */
+        .habitat-card[data-season="spring"] .habitat-scene { filter: hue-rotate(30deg) saturate(1.1); }
+        .habitat-card[data-season="summer"] .habitat-scene { filter: brightness(1.1) saturate(1.2); }
+        .habitat-card[data-season="autumn"] .habitat-scene { filter: hue-rotate(15deg) saturate(1.3); }
+        .habitat-card[data-season="winter"] .habitat-scene { filter: brightness(0.9) saturate(0.8); }
+        @media (max-width: 768px) {
+            .habitat-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-header h1 { font-size: 1.8rem; }
+            .section-title { font-size: 1.4rem; }
+            .habitat-modal { padding: 1.5rem; }
+            .climate-chart { height: 80px; }
+            .compare-selects { flex-direction: column; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Fredoka+One&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Floating ambient emojis -->
+    <div id="ambientEmojis"></div>
+    <!-- Particle canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='critter_home.html'">🐾 CritterPedia</div>
+        <ul class="nav-links">
+            <li><a href="critter_home.html">🏠 首页</a></li>
+            <li><a href="critter_library.html">📖 图鉴库</a></li>
+            <li><a href="critter_detail.html">🔍 动物详情</a></li>
+            <li><a href="critter_habitat.html" class="active">🌍 栖息地</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>🌍 栖息地探索</h1>
+        <p style="color:var(--text-light);">点击栖息地卡片发现当地的神奇动物</p>
+    </div>
+
+    <!-- Fun Fact Ticker -->
+    <div class="container">
+        <div class="fun-fact-ticker" id="funFactTicker">
+            <span>🐾 你知道吗？地球上已知的动物物种超过200万种！</span>
+        </div>
+    </div>
+
+    <!-- Habitat of the Day -->
+    <div class="container">
+        <div class="hotd-banner" id="hotdBanner" onclick="scrollToHabitat()">
+            <div class="hotd-badge">🌟 每日栖息地</div>
+            <div class="hotd-emoji" id="hotdEmoji">🌴</div>
+            <h2 id="hotdName">热带雨林</h2>
+            <p style="color:#fff;margin-top:0.3rem;" id="hotdSlogan">点击查看今天的推荐栖息地！</p>
+        </div>
+    </div>
+
+    <!-- ORIGINAL HABITAT GRID (preserved) -->
+    <div class="container">
+        <h2 class="section-title">🌿 主要栖息地</h2>
+        <div class="habitat-grid" id="habitatGrid"></div>
+    </div>
+
+    <!-- NEW HABITATS -->
+    <div class="container">
+        <h2 class="section-title">🏔️ 更多奇妙栖息地 <span class="new-badge">NEW</span></h2>
+        <div class="habitat-grid" id="newHabitatGrid"></div>
+    </div>
+
+    <!-- Habitat Explorer Interactive Map -->
+    <div class="container">
+        <h2 class="section-title">🗺️ 栖息地探险家</h2>
+        <div class="explorer-map">
+            <p style="color:var(--text-light);margin-bottom:0.5rem;">点击世界区域，发现那里生活着什么动物！</p>
+            <div class="map-regions" id="mapRegions"></div>
+            <div class="explorer-result" id="explorerResult"></div>
+        </div>
+    </div>
+
+    <!-- Habitat Comparison Tool -->
+    <div class="container">
+        <h2 class="section-title">⚖️ 栖息地对比</h2>
+        <div class="compare-container">
+            <p style="text-align:center;color:var(--text-light);margin-bottom:1rem;">选择两个栖息地，看看它们有什么不同！</p>
+            <div class="compare-selects">
+                <select id="compareHabitatA"></select>
+                <span class="compare-vs">VS</span>
+                <select id="compareHabitatB"></select>
+            </div>
+            <table class="compare-table" id="compareTable">
+                <thead>
+                    <tr>
+                        <th>对比项目</th>
+                        <th id="compareHeaderA">栖息地A</th>
+                        <th id="compareHeaderB">栖息地B</th>
+                    </tr>
+                </thead>
+                <tbody id="compareBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Animal Sound Quiz -->
+    <div class="container">
+        <h2 class="section-title">🎵 动物猜谜大挑战</h2>
+        <div class="quiz-container" id="quizContainer">
+            <div class="quiz-score" id="quizScoreDisplay">🏆 得分: 0 / 0</div>
+            <div class="quiz-question" id="quizQuestion">准备开始挑战了吗？</div>
+            <div class="quiz-options" id="quizOptions"></div>
+            <button class="quiz-btn" id="quizNextBtn" onclick="nextQuizQuestion()" style="display:none;">下一题 ➡️</button>
+            <button class="quiz-btn" id="quizStartBtn" onclick="startQuiz()">开始挑战！🎮</button>
+        </div>
+    </div>
+
+    <!-- Climate Change Impact -->
+    <div class="container">
+        <h2 class="section-title">🌡️ 气候变化的影响</h2>
+        <p style="text-align:center;color:var(--text-light);margin-bottom:1rem;">全球变暖正在如何影响每个栖息地？</p>
+        <div class="climate-impact">
+            <div class="climate-impact-grid" id="climateImpactGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="habitat-modal-overlay" id="habitatModalOverlay" onclick="closeModal(event)">
+        <div class="habitat-modal" id="habitatModal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModalDirect()">✕</button>
+            <span class="modal-habitat-emoji" id="modalEmoji"></span>
+            <h2 style="font-family:var(--font-title);text-align:center;margin:0.5rem 0;" id="modalTitle"></h2>
+            <p style="color:var(--text-medium);line-height:1.6;margin-bottom:1rem;" id="modalDesc"></p>
+            <div class="modal-foodchain" id="modalFoodChain"></div>
+            <h4 style="font-family:var(--font-title);color:var(--accent-mint);">📊 月气温变化</h4>
+            <div class="climate-chart" id="modalClimateChart"></div>
+            <h4 style="font-family:var(--font-title);color:var(--accent-lavender);">🗺️ 分布地区</h4>
+            <p style="color:var(--text-medium);font-size:0.85rem;" id="modalDistribution"></p>
+            <h4 style="font-family:var(--font-title);color:var(--accent-coral);">🌿 完整植物列表</h4>
+            <div class="habitat-flora" id="modalFlora"></div>
+            <h4 style="font-family:var(--font-title);color:var(--accent-skyblue);">🦁 完整动物列表</h4>
+            <div class="animal-chips" id="modalAnimals"></div>
+            <div class="conservation-note" id="modalConservation" style="margin-top:1rem;"></div>
+        </div>
+    </div>
+
+    <!-- Scroll-to-top button -->
+    <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆</button>
+
+    <script>
+        // ===================================================================
+        // ORIGINAL 6 HABITATS (fully preserved)
+        // ===================================================================
+        const habitats = [
+            { id: 'jungle', name: '🌴 热带雨林', emoji: '🌴', bg: '#e8f5e9', temp: '25-30°C', humidity: '80-95%',
+                tempVal: 85, rainfall: '2000-4000mm/年', area: '覆盖地球陆地约6%',
+                flora: '望天树、榕树、兰花、蕨类、藤本植物',
+                animals: ['🦥 树懒', '🦜 金刚鹦鹉', '🦋 兰花螳螂', '🐒 蜘蛛猴', '🐸 箭毒蛙', '🐆 美洲豹', '🦜 巨嘴鸟'],
+                desc: '热带雨林是地球上生物多样性最丰富的生态系统，虽然仅覆盖陆地约6%的面积，却孕育着全球超过一半的动植物物种。雨林的树冠层分为多个层次——露出层高达50-70米，林冠层浓密如盖，林下层幽暗潮湿。这里每公顷土地上可能生长着超过200种不同树木，一棵大树上可能栖息着超过1000种昆虫。亚马逊雨林被称为"地球之肺"，产生全球约20%的氧气，是全球碳循环和水循环的关键调节器。',
+                ecosystem: '热带雨林是地球上最古老、最复杂的生态系统，其形成可追溯至上亿年前。雨林的养分循环极为高效——大量落叶在高温高湿条件下迅速分解，营养物质被植物根系立即吸收，几乎不储存在土壤中。这使得雨林土壤实际上相当贫瘠，一旦森林被砍伐，土地很快就会荒漠化。雨林还是全球最大的"药房"——约25%的现代药物原料来自雨林植物，包括抗癌药物长春新碱和疟疾特效药奎宁。然而，每分钟约有40个足球场大小的雨林在消失。',
+                conservation: '⚠️ 极度脆弱：每分钟40个足球场消失。支持雨林保护组织（如Rainforest Trust），减少棕榈油消费，购买FSC认证木制品。' },
+            { id: 'ocean', name: '🌊 深海世界', emoji: '🌊', bg: '#e3f2fd', temp: '2-25°C', humidity: '100%',
+                tempVal: 60, rainfall: '—（水下环境）', area: '覆盖地球表面71%',
+                flora: '海藻森林、珊瑚礁、海草床、浮游植物、红树林',
+                animals: ['🐙 章鱼', '🐴 海马', '🦎 美西螈', '🐋 蓝鲸', '🦈 鲸鲨', '🐬 海豚', '🪼 水母'],
+                desc: '海洋覆盖地球表面71%，容纳了地球上97%的水资源。从阳光普照的浅海珊瑚礁到永世黑暗的深海热泉，从极地冰下到赤道暖流，海洋生态系统展现出令人叹为观止的多样性。珊瑚礁常被称为"海洋热带雨林"——虽然仅覆盖不到1%的海底，却养育了约25%的海洋物种。深海热泉生态系统完全依赖化学合成（而非光合作用），颠覆了人类对生命存在条件的认知。',
+                ecosystem: '海洋生态系统的垂直分层极为显著：透光层（0-200米）是光合作用的舞台，浮游植物在此产生地球上50%以上的氧气；中层带（200-1000米）光线渐暗，生物开始依赖生物发光进行交流；深海层（1000米以下）水压巨大、温度接近冰点、完全黑暗，却演化出了令人难以置信的生命形式。海洋还是全球最大的碳汇——吸收了人类排放的约30%的二氧化碳和90%的额外热量。然而，海洋酸化正威胁着珊瑚礁和贝类生物的生存，塑料污染已渗透到最深的马里亚纳海沟。',
+                conservation: '⚠️ 海洋酸化+塑料污染双重威胁。减少一次性塑料使用，选择可持续海产品（MSC认证），支持海洋保护区扩张。' },
+            { id: 'desert', name: '🏜️ 沙漠地带', emoji: '🏜️', bg: '#fff8e1', temp: '5-45°C', humidity: '10-30%',
+                tempVal: 70, rainfall: '<250mm/年', area: '覆盖地球陆地约20%',
+                flora: '仙人掌、龙舌兰、椰枣树、骆驼刺、沙漠玫瑰',
+                animals: ['🦊 耳廓狐', '🐪 骆驼', '🦎 角蜥', '🐍 响尾蛇', '🦂 蝎子', '🦝 狐獴', '🐢 沙漠龟'],
+                desc: '沙漠是地球上最极端的陆地环境之一，昼夜温差可达50°C，年降雨量通常不足250毫米，蒸发量却远超降雨量的数十倍。然而，沙漠并非生命荒漠——这里的每一种生物都演化出了精妙的生存策略：有的夜行避热，有的储水节流，有的蛰伏数年等待一场暴雨后疯狂繁衍。撒哈拉沙漠是世界上最大的热沙漠，面积超过900万平方公里，相当于整个中国的国土面积。',
+                ecosystem: '沙漠生态系统的核心特征是水资源极度稀缺，这催生了自然界最精妙的适应机制。植物方面：仙人掌的根系广布于地表浅层以便快速吸收稀有的雨水，叶片退化为刺以减少水分蒸发，茎部储存大量水分；动物方面：骆驼能在体温升高6°C后才开始出汗，一次饮水量可达100升；沙漠甲虫用身体收集晨雾的水珠，让其滑入口中。许多沙漠植物种子能在土壤中休眠数十年，只在足够强度的降雨后才发芽——这导致沙漠在罕见的大雨后"一夜变绿"，成为地球上最壮观的生态奇景之一。',
+                conservation: '⚠️ 沙漠化威胁：每年1200万公顷土地沙漠化。支持植树造林和可持续农业，减少过度放牧。' },
+            { id: 'arctic', name: '❄️ 极地冰原', emoji: '❄️', bg: '#e8eaf6', temp: '-40~-10°C', humidity: '60-80%',
+                tempVal: 15, rainfall: '<200mm/年（以降雪为主）', area: '南极洲1400万km²+北极圈',
+                flora: '苔藓、地衣、北极柳、极地罂粟、矮桦',
+                animals: ['🐧 帝企鹅', '🦉 雪鸮', '🐻‍❄️ 北极熊', '🦊 北极狐', '🐋 白鲸', '🐋 独角鲸', '🦭 环斑海豹'],
+                desc: '极地是地球上最寒冷、最严酷的环境，冬季气温可降至-60°C以下，一年中有数月完全处于极夜黑暗之中。但正是在这样极端的环境中，演化出了一些地球上最坚韧、最令人惊叹的生命。南极洲是地球上最大的沙漠（冷沙漠），年降水量极低。而北极冰盖之下是液态海洋，冰层边缘是地球上最富生产力的海域之一。极地生态系统对全球气候调节至关重要——冰雪反射大量太阳辐射（反照率效应），帮助地球保持凉爽。',
+                ecosystem: '极地生态系统的基石是海冰。海冰不仅是北极熊和海豹的狩猎平台，更是冰藻生长的基底——这些微小的藻类是极地食物链的起点，喂养磷虾，磷虾喂养鱼类、鲸类和企鹅。南极磷虾的总生物量估计达5亿吨，是所有动物物种中最大的单一生物量。极地生物有着令人难以置信的适应能力：南极冰鱼的血液中含有天然抗冻蛋白；北极地松鼠能让体温降至-2.9°C而不结冰；帝企鹅挤在一起形成的保温团能将体内温度维持在37°C。然而，全球变暖正以前所未有的速度消融极地海冰——北极夏季海冰面积在过去40年减少了约40%。',
+                conservation: '🔴 气候前线：北极海冰40年减少40%。减少碳排放、支持可再生能源、关注极地保护组织是最直接有效的帮助。' },
+            { id: 'grassland', name: '🌾 草原旷野', emoji: '🌾', bg: '#f1f8e9', temp: '15-35°C', humidity: '40-60%',
+                tempVal: 65, rainfall: '500-1500mm/年', area: '覆盖地球陆地约25%',
+                flora: '禾本科草类、金合欢树、猴面包树、乳香树',
+                animals: ['🦘 短尾矮袋鼠', '🦫 水豚', '🦒 长颈鹿', '🦁 狮子', '🦓 斑马', '🐘 非洲象', '🐆 猎豹'],
+                desc: '草原和稀树草原覆盖了地球约四分之一的陆地面积，是地球上最壮观的野生动物舞台。东非的塞伦盖蒂草原每年上演着地球上最大规模的哺乳动物迁徙——超过200万只角马、斑马和羚羊跟随雨水的节奏，跋涉超过800公里的环线旅程。草原上的禾草是地球上最成功的植物类群之一，它们的生长点位于地下（根茎），即使被啃食或火烧，仍能迅速再生。',
+                ecosystem: '草原是一个"火与草"共舞的生态系统。周期性野火是草原生态的必要组成部分——火焰清除了入侵的灌木和树木，为禾草的再生创造了空间。许多草原植物的种子需要在火烧后才能萌发。草原食物链结构清晰：禾草→大型食草动物（角马、斑马）→顶级捕食者（狮子、鬣狗）→分解者。草原土壤是地球上最肥沃的之一——数千年积累的草根腐殖质形成了深厚的黑土层（如乌克兰的黑钙土和北美的大平原），是全世界最重要的粮食产区，也因此承受着巨大的农业开发压力。',
+                conservation: '⚠️ 农业扩张威胁：全球草原一半以上已转为农田。支持可持续牧业、保护现存草原生态走廊。' },
+            { id: 'forest', name: '🌳 温带森林', emoji: '🌳', bg: '#e8f5e9', temp: '5-25°C', humidity: '50-70%',
+                tempVal: 50, rainfall: '750-2000mm/年', area: '覆盖地球陆地约15%',
+                flora: '橡树、枫树、山毛榉、松树、杜鹃、蘑菇、蕨类',
+                animals: ['🐨 考拉', '🦎 变色龙', '🦉 猫头鹰', '🦊 红狐', '🐿️ 松鼠', '🦌 梅花鹿', '🐻 棕熊'],
+                desc: '温带森林分布于北半球中纬度地区，包括落叶阔叶林和针叶林（泰加林）两大类型。四季分明的气候造就了温带森林独特的生态节律——春季万物复苏，夏季繁盛葱郁，秋季层林尽染，冬季寂静休眠。秋季落叶在地面形成厚达数十厘米的腐殖层，为无数微生物、真菌和昆虫提供了栖息环境。温带森林是人类文明的重要发源地之一，也是地球上面积最大的森林带。',
+                ecosystem: '温带森林的垂直结构分为四层：树冠层（高大乔木如橡树、枫树，高度20-40米）、林下层（小型乔木和大型灌木）、灌木层（杜鹃、忍冬等）和地被层（草本植物、蕨类、苔藓和真菌）。每一层都支持着不同的动物群落。真菌在温带森林生态中扮演着至关重要的角色——地下的菌根网络连接着森林中的不同树木，形成"木联网"（Wood Wide Web），树木通过这个网络交换养分和化学信号。秋季坚果（橡子、山毛榉坚果）的大规模产出称为"结实年"现象，对森林动物的种群周期有着决定性影响。加拿大和俄罗斯的泰加林（北方针叶林）是全球最大的陆地碳库之一。',
+                conservation: '⚠️ 森林砍伐：全球原始温带森林大量丧失。支持FSC认证木材、保护古老森林、参与植树造林活动。' },
+        ];
+
+        // ===================================================================
+        // EXPANDED ANIMAL DATABASES (15-25 animals per habitat)
+        // ===================================================================
+        const animalDatabases = {
+            jungle: [
+                { emoji:'🦥', name:'树懒', fact:'每天移动不到40米，每周只下树排便一次！' },
+                { emoji:'🦜', name:'金刚鹦鹉', fact:'寿命可达80年，是鸟类中的"长寿明星"。' },
+                { emoji:'🦋', name:'兰花螳螂', fact:'伪装成兰花捕食，是大自然最美丽的猎手。' },
+                { emoji:'🐒', name:'蜘蛛猴', fact:'尾巴可以像第五只手一样抓握树枝。' },
+                { emoji:'🐸', name:'箭毒蛙', fact:'一只箭毒蛙的毒液可以杀死10个成年人。' },
+                { emoji:'🐆', name:'美洲豹', fact:'咬合力是狮子的两倍，能一口咬穿龟壳！' },
+                { emoji:'🦜', name:'巨嘴鸟', fact:'嘴巴虽大却很轻，内部是蜂窝状结构。' },
+                { emoji:'🐍', name:'绿树蟒', fact:'全身翠绿，盘在树枝上几乎完全看不见。' },
+                { emoji:'🦎', name:'变色龙', fact:'舌头长度可达身体的2倍，弹射速度惊人。' },
+                { emoji:'🐜', name:'切叶蚁', fact:'不直接吃叶子，而是用叶子种植真菌作为食物。' },
+                { emoji:'🦇', name:'果蝠', fact:'是热带雨林最重要的种子传播者之一。' },
+                { emoji:'🐒', name:'吼猴', fact:'叫声可以传到5公里之外，是雨林的"大喇叭"。' },
+                { emoji:'🦋', name:'蓝闪蝶', fact:'翅膀的蓝色不是色素，而是光的折射产生的。' },
+                { emoji:'🐊', name:'凯门鳄', fact:'能够数月不进食，靠储存的脂肪生存。' },
+                { emoji:'🐝', name:'兰花蜂', fact:'用香味吸引雌性，是昆虫界的"香水大师"。' },
+                { emoji:'🦉', name:'眼镜鸮', fact:'头部可以旋转270度，夜视能力极强。' },
+                { emoji:'🐗', name:'貘', fact:'被称为"活化石"，外形数百万年几乎没变。' },
+                { emoji:'🦜', name:'凤头鹦鹉', fact:'拥有极高的智商，能使用工具获取食物。' },
+            ],
+            ocean: [
+                { emoji:'🐙', name:'章鱼', fact:'有三颗心脏，血液是蓝色的，智商堪比猫狗。' },
+                { emoji:'🐴', name:'海马', fact:'唯一由爸爸"怀孕"生宝宝的动物。' },
+                { emoji:'🦎', name:'美西螈', fact:'终生保持幼体形态，拥有超强的再生能力。' },
+                { emoji:'🐋', name:'蓝鲸', fact:'地球上最大的动物，心脏有汽车那么大！' },
+                { emoji:'🦈', name:'鲸鲨', fact:'世界上最大的鱼类，但只吃浮游生物。' },
+                { emoji:'🐬', name:'海豚', fact:'睡觉时一半大脑保持清醒，轮流休息。' },
+                { emoji:'🪼', name:'水母', fact:'有些水母可以永生，不断循环生命周期。' },
+                { emoji:'🐠', name:'小丑鱼', fact:'与海葵共生，天生对海葵的毒素免疫。' },
+                { emoji:'🦀', name:'寄居蟹', fact:'没有自己的壳，需要寻找空螺壳作为房子。' },
+                { emoji:'🦈', name:'锤头鲨', fact:'头部形状像锤子，可以扫描更广阔的海底区域。' },
+                { emoji:'🐢', name:'海龟', fact:'会回到自己出生的海滩产卵，从不迷路。' },
+                { emoji:'🐡', name:'河豚', fact:'受到威胁时会膨胀成球，全身布满尖刺。' },
+                { emoji:'🦞', name:'龙虾', fact:'理论上可以永生，因为它们不会因衰老死亡。' },
+                { emoji:'🐳', name:'抹香鲸', fact:'能潜入3000米深的海底，憋气超过2小时。' },
+                { emoji:'🦑', name:'大王乌贼', fact:'眼睛有篮球那么大，是动物界最大的眼睛。' },
+                { emoji:'🐟', name:'鮟鱇鱼', fact:'头顶有一个发光的"钓竿"来吸引猎物。' },
+                { emoji:'🪸', name:'海葵', fact:'看起来像植物，其实是吃肉的动物！' },
+                { emoji:'🐚', name:'鹦鹉螺', fact:'活化石，已经在地球上存在了5亿年。' },
+            ],
+            desert: [
+                { emoji:'🦊', name:'耳廓狐', fact:'巨大的耳朵不仅听力好，还能散热降温。' },
+                { emoji:'🐪', name:'骆驼', fact:'驼峰里储存的不是水，而是脂肪！' },
+                { emoji:'🦎', name:'角蜥', fact:'遇到危险时，能从眼角喷出血液击退敌人。' },
+                { emoji:'🐍', name:'响尾蛇', fact:'尾巴末端的角质环每秒可振动50次发出警告声。' },
+                { emoji:'🦂', name:'蝎子', fact:'在紫外线下会发出蓝绿色的荧光。' },
+                { emoji:'🦝', name:'狐獴', fact:'群体生活，总是有"哨兵"站在高处警戒。' },
+                { emoji:'🐢', name:'沙漠龟', fact:'能用膀胱储存水分，在干旱时循环使用。' },
+                { emoji:'🐹', name:'跳鼠', fact:'能跳出3米远，是身长的20倍！' },
+                { emoji:'🦅', name:'秃鹫', fact:'胃酸极强，能消化腐肉中的病菌。' },
+                { emoji:'🐜', name:'银蚁', fact:'能在70°C的沙面上活动，是地球上最耐热的动物之一。' },
+                { emoji:'🦎', name:'壁虎', fact:'脚底有数百万根纳米级绒毛，能倒挂在天花板上。' },
+                { emoji:'🐍', name:'角蝰蛇', fact:'通过侧向移动在沙地上快速滑行。' },
+                { emoji:'🐦', name:'走鹃', fact:'奔跑速度可达30公里/小时，比人类还快。' },
+                { emoji:'🦇', name:'沙漠蝙蝠', fact:'是沙漠中重要的传粉者，为龙舌兰等植物传粉。' },
+                { emoji:'🐞', name:'拟步甲', fact:'通过头朝下倒立的姿势收集晨雾中的水滴。' },
+            ],
+            arctic: [
+                { emoji:'🐧', name:'帝企鹅', fact:'能在-60°C的严寒中挤在一起保持温暖。' },
+                { emoji:'🦉', name:'雪鸮', fact:'白天活动，是少数在极昼中捕猎的猫头鹰。' },
+                { emoji:'🐻‍❄️', name:'北极熊', fact:'皮肤其实是黑色的，毛发是透明的中空管。' },
+                { emoji:'🦊', name:'北极狐', fact:'冬天毛发变白，夏天变棕色，是天然的伪装大师。' },
+                { emoji:'🐋', name:'白鲸', fact:'被称为"海洋金丝雀"，能发出各种复杂的声音。' },
+                { emoji:'🐋', name:'独角鲸', fact:'头上的"角"其实是一颗长到3米的长牙！' },
+                { emoji:'🦭', name:'环斑海豹', fact:'用爪子在冰面上挖洞，保持呼吸通道。' },
+                { emoji:'🦭', name:'象海豹', fact:'能潜水到1500米深，憋气长达2小时。' },
+                { emoji:'🐧', name:'阿德利企鹅', fact:'用石子筑巢，有时会偷邻居的石子。' },
+                { emoji:'🦉', name:'北极燕鸥', fact:'每年往返南北极，迁徙距离超过7万公里。' },
+                { emoji:'🐟', name:'南极冰鱼', fact:'血液中含有天然抗冻蛋白，在零下水中不结冰。' },
+                { emoji:'🐋', name:'弓头鲸', fact:'寿命可达200岁以上，是地球上最长寿的哺乳动物。' },
+                { emoji:'🦐', name:'磷虾', fact:'南极磷虾总量达5亿吨，是地球上最大的单一物种生物量。' },
+                { emoji:'🦭', name:'威德尔海豹', fact:'用牙齿啃咬冰层，维持呼吸洞口。' },
+                { emoji:'🐺', name:'北极狼', fact:'能在数月黑暗的极夜中生存，嗅觉极为灵敏。' },
+            ],
+            grassland: [
+                { emoji:'🦘', name:'短尾矮袋鼠', fact:'被称为"世界上最快乐的动物"，总是面带微笑。' },
+                { emoji:'🦫', name:'水豚', fact:'世界上最大的啮齿动物，几乎所有动物都喜欢和它做朋友。' },
+                { emoji:'🦒', name:'长颈鹿', fact:'脖子有2米长，但颈椎骨数量和人类一样都是7块。' },
+                { emoji:'🦁', name:'狮子', fact:'唯一群居的猫科动物，狮群由姐妹和母女组成。' },
+                { emoji:'🦓', name:'斑马', fact:'每一匹斑马的条纹都是独一无二的，像人类指纹。' },
+                { emoji:'🐘', name:'非洲象', fact:'耳朵形状像非洲地图，每天能吃300公斤食物。' },
+                { emoji:'🐆', name:'猎豹', fact:'0到100公里/小时加速仅需3秒，比跑车还快！' },
+                { emoji:'🐃', name:'角马', fact:'每年迁徙超过800公里，是地球上最大的陆地迁徙。' },
+                { emoji:'🦅', name:'非洲鱼雕', fact:'俯冲速度惊人，能用利爪从水面抓鱼。' },
+                { emoji:'🦏', name:'犀牛', fact:'角是由角蛋白构成的，和人类指甲的成分一样。' },
+                { emoji:'🐕', name:'非洲野犬', fact:'捕猎成功率高达80%，是非洲最高效的猎手。' },
+                { emoji:'🦡', name:'蜜獾', fact:'被称为"世界上最无畏的动物"，敢挑战狮子和毒蛇。' },
+                { emoji:'🐦', name:'鸵鸟', fact:'世界上最大的鸟类，蛋重达1.5公斤。' },
+                { emoji:'🦩', name:'火烈鸟', fact:'粉红色来自食物中的类胡萝卜素。' },
+                { emoji:'🐍', name:'非洲岩蟒', fact:'能吞下整只羚羊，消化过程持续数周。' },
+                { emoji:'🦎', name:'巨蜥', fact:'奔跑速度极快，是草原上敏捷的捕食者。' },
+                { emoji:'🐗', name:'疣猪', fact:'跪着吃草，膝盖上有厚厚的茧保护。' },
+            ],
+            forest: [
+                { emoji:'🐨', name:'考拉', fact:'每天睡18-22小时，醒来就是吃桉树叶。' },
+                { emoji:'🦎', name:'变色龙', fact:'眼睛能独立转动，同时看两个方向。' },
+                { emoji:'🦉', name:'猫头鹰', fact:'飞行时完全无声，猎物听不到它靠近。' },
+                { emoji:'🦊', name:'红狐', fact:'能用地球磁场辅助捕猎，精准定位雪下的老鼠。' },
+                { emoji:'🐿️', name:'松鼠', fact:'每年埋藏上千颗坚果，却只找回一小部分。' },
+                { emoji:'🦌', name:'梅花鹿', fact:'鹿角每年脱落再生，生长速度是动物组织中最快的。' },
+                { emoji:'🐻', name:'棕熊', fact:'冬眠期间心跳降到每分钟8次，半年不吃不喝。' },
+                { emoji:'🐺', name:'灰狼', fact:'狼群有严格的社会等级，由头狼夫妇统领。' },
+                { emoji:'🦡', name:'獾', fact:'能挖掘复杂的地下洞穴系统，绵延数百米。' },
+                { emoji:'🦔', name:'刺猬', fact:'全身约有5000根刺，遇到危险就缩成球。' },
+                { emoji:'🐦', name:'啄木鸟', fact:'每秒啄树20次，头部有特殊的减震结构。' },
+                { emoji:'🦋', name:'帝王蝶', fact:'每年迁徙数千公里，要经过3-4代才能完成一次完整的迁徙。' },
+                { emoji:'🐇', name:'雪兔', fact:'夏天棕色冬天白色，能随季节变换毛色。' },
+                { emoji:'🦆', name:'鸳鸯', fact:'中国传统文化中象征爱情和忠贞的鸟类。' },
+                { emoji:'🐍', name:'草蛇', fact:'无毒蛇，遇到危险会装死翻身露出肚皮。' },
+                { emoji:'🦇', name:'棕蝠', fact:'使用回声定位，一晚上能吃掉上千只蚊子。' },
+                { emoji:'🐝', name:'大黄蜂', fact:'理论上不应该能飞，但翅膀每秒振动200次以上。' },
+            ]
+        };
+
+        // ===================================================================
+        // EXPANDED PLANT DATABASES (8-12 plants per habitat)
+        // ===================================================================
+        const plantDatabases = {
+            jungle: ['望天树（高可达80米）', '榕树（绞杀现象）', '兰花（超过25000种）', '蕨类植物', '藤本植物', '猪笼草（食虫植物）', '大王花（世界最大花）', '桃花心木', '巴西坚果', '可可树', '咖啡树', '橡胶树'],
+            ocean: ['海藻森林（巨藻长达60米）', '珊瑚（动物还是植物？其实是动物!）', '海草床', '浮游植物', '红树林', '海带', '石莼（海白菜）', '麒麟菜', '裙带菜', '大海带（太平洋巨藻）'],
+            desert: ['仙人掌（2000+品种）', '龙舌兰（一生只开一次花）', '椰枣树', '骆驼刺（根深达30米）', '沙漠玫瑰', '生石花（伪装成石头）', '巨人柱（可活200年）', '芦荟', '仙人球', '沙漠柳'],
+            arctic: ['苔藓', '地衣（真菌和藻类的共生体）', '北极柳（高仅2-3厘米）', '极地罂粟', '矮桦', '北极棉', '雪藻（让雪地变红）', '北极虎耳草'],
+            grassland: ['禾本科草类（10000+种）', '金合欢树（长颈鹿的美食）', '猴面包树（能储水12万升）', '乳香树', '象草（高达4米）', '三叶草', '蒲公英', '野燕麦', '草原鼠尾粟', '紫花苜蓿'],
+            forest: ['橡树（寿命可达1000年）', '枫树（秋天的颜色来自糖分）', '山毛榉', '松树（常绿针叶）', '杜鹃', '蘑菇（真菌不是植物!）', '蕨类', '蓝铃花', '金银花', '桦树', '云杉', '冷杉'],
+        };
+
+        // ===================================================================
+        // MONTHLY TEMPERATURE DATA (approximate averages)
+        // ===================================================================
+        const monthlyTempData = {
+            jungle:  [26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 26],
+            ocean:   [15, 15, 16, 17, 19, 21, 23, 24, 23, 21, 18, 16],
+            desert:  [18, 20, 24, 29, 34, 38, 40, 39, 35, 29, 23, 19],
+            arctic:  [-25, -28, -22, -12, -2, 3, 5, 3, -2, -10, -18, -22],
+            grassland:[22, 23, 24, 25, 26, 25, 24, 24, 25, 25, 24, 22],
+            forest:  [2, 3, 8, 13, 18, 22, 24, 23, 19, 13, 7, 3],
+            mountain:[-5, -4, 0, 5, 10, 14, 16, 15, 11, 6, 0, -4],
+            freshwater:[10, 11, 14, 17, 21, 24, 26, 25, 22, 17, 13, 10],
+            coastal: [14, 14, 15, 17, 19, 22, 24, 24, 23, 20, 17, 15],
+            cave:    [12, 12, 13, 14, 15, 16, 17, 17, 16, 14, 13, 12],
+            urban:   [8, 9, 13, 17, 22, 26, 28, 27, 23, 18, 12, 9],
+            mangrove:[25, 26, 27, 28, 29, 29, 29, 29, 28, 27, 26, 25],
+        };
+
+        // ===================================================================
+        // FOOD CHAIN DESCRIPTIONS
+        // ===================================================================
+        const foodChains = {
+            jungle:     ['🌞 阳光', '🌿 植物/果实', '🦋 昆虫', '🐸 箭毒蛙', '🐍 蛇', '🐆 美洲豹'],
+            ocean:      ['🌞 阳光', '🦠 浮游植物', '🦐 磷虾', '🐟 小鱼', '🐙 章鱼', '🦈 鲨鱼'],
+            desert:     ['🌞 阳光', '🌵 仙人掌', '🐜 蚂蚁', '🦎 蜥蜴', '🐍 响尾蛇', '🦅 秃鹫'],
+            arctic:     ['🌞 阳光', '🦠 冰藻', '🦐 磷虾', '🐟 北极鳕鱼', '🦭 海豹', '🐻‍❄️ 北极熊'],
+            grassland:  ['🌞 阳光', '🌾 禾草', '🦓 斑马', '🦁 狮子', '🦠 分解者'],
+            forest:     ['🌞 阳光', '🌳 橡果/树叶', '🐿️ 松鼠', '🦊 红狐', '🐻 棕熊'],
+            mountain:   ['🌞 阳光', '🌱 高山草甸', '🦫 旱獭', '🦅 金雕', '🐺 灰狼'],
+            freshwater: ['🌞 阳光', '🌿 水草/藻类', '🦐 小虾', '🐟 鳟鱼', '🦦 水獭'],
+            coastal:    ['🌞 阳光', '🌿 海藻', '🦀 蟹类', '🐟 小鱼', '🦭 海狮'],
+            cave:       ['💩 蝙蝠粪便（鸟粪）', '🦗 洞穴蟋蟀', '🦎 洞穴蝾螈', '🦇 蝙蝠'],
+            urban:      ['🗑️ 人类废弃物', '🐀 老鼠', '🕊️ 鸽子', '🦅 游隼'],
+            mangrove:   ['🌞 阳光', '🍂 落叶分解', '🦀 招潮蟹', '🐟 弹涂鱼', '🐊 鳄鱼'],
+        };
+
+        // ===================================================================
+        // GEOGRAPHIC DISTRIBUTION
+        // ===================================================================
+        const distributionData = {
+            jungle:     '南美洲（亚马逊）、非洲中部（刚果盆地）、东南亚（印度尼西亚、马来西亚）、中美洲、澳大利亚昆士兰',
+            ocean:      '全球所有海洋——太平洋、大西洋、印度洋、北冰洋、南大洋。珊瑚礁主要分布于南北回归线之间的温暖浅海。',
+            desert:     '非洲（撒哈拉、纳米布）、亚洲（戈壁、阿拉伯）、北美洲（索诺兰、莫哈韦）、南美洲（阿塔卡马）、澳大利亚（大沙沙漠）',
+            arctic:     '北极圈（加拿大北部、格陵兰、俄罗斯西伯利亚、斯瓦尔巴群岛）和南极洲大陆及周边岛屿',
+            grassland:  '非洲（塞伦盖蒂、马赛马拉）、南美洲（潘帕斯草原）、北美洲（大平原）、欧亚大陆（蒙古草原、乌克兰草原）、澳大利亚',
+            forest:     '北美洲东部、欧洲大部分地区、东亚（中国、日本、韩国）、智利南部、新西兰、澳大利亚东南部。泰加林（北方针叶林）横跨加拿大、俄罗斯、斯堪的纳维亚。',
+            mountain:   '喜马拉雅山脉、阿尔卑斯山脉、落基山脉、安第斯山脉、高加索山脉、乞力马扎罗山',
+            freshwater: '全球各大河流（亚马逊河、尼罗河、长江、密西西比河）、湖泊（贝加尔湖、五大湖、维多利亚湖）、湿地',
+            coastal:    '全球海岸线——澳大利亚大堡礁、加利福尼亚海岸、地中海沿岸、加勒比海、东南亚海岸',
+            cave:       '全球喀斯特地貌区域——中国桂林、斯洛文尼亚、美国肯塔基猛犸洞、越南韩松洞、墨西哥尤卡坦半岛',
+            urban:      '全球各大城市——纽约、伦敦、东京、上海、新加坡、柏林，以及所有人类聚居区',
+            mangrove:   '东南亚（印度尼西亚、泰国）、南亚（孟加拉国孙德尔本斯）、非洲东部、加勒比海、澳大利亚北部、佛罗里达',
+        };
+
+        // ===================================================================
+        // CLIMATE CHANGE IMPACT DATA
+        // ===================================================================
+        const climateImpactData = {
+            jungle:     { icon:'🔥', title:'森林砍伐 + 干旱', desc:'全球变暖导致雨林边缘干旱化，增加野火风险。亚马逊雨林可能从碳汇变成碳排放源。预计到2100年，全球雨林面积可能减少40%。', threat:90 },
+            ocean:      { icon:'🌡️', title:'海洋酸化和升温', desc:'海洋吸收过多CO₂导致酸化，珊瑚白化事件频率增加5倍。海平面上升威胁沿海海洋生态系统。到2050年，90%以上的珊瑚礁可能面临严重威胁。', threat:95 },
+            desert:     { icon:'🏜️', title:'沙漠扩张加速', desc:'全球变暖加剧了干旱地区的沙漠化进程。每年1200万公顷土地沙漠化，到2050年撒哈拉沙漠可能扩大10%。极端热浪更加频繁。', threat:75 },
+            arctic:     { icon:'🧊', title:'海冰消融', desc:'北极夏季海冰可能在2040年前完全消失，北极熊栖息地锐减，永久冻土融化释放大量甲烷，形成恶性循环。', threat:98 },
+            grassland:  { icon:'🌡️', title:'干旱和过度放牧', desc:'气候变化导致降雨模式改变，草原面临更频繁的干旱。超过一半的天然草原已经消失，转为农田或荒漠化。', threat:70 },
+            forest:     { icon:'🔥', title:'野火和病虫害', desc:'气温升高导致野火季节延长，树皮甲虫等害虫活动范围北扩，温带森林分布向北移动。', threat:65 },
+            mountain:   { icon:'🏔️', title:'冰川退缩', desc:'高山冰川正在以史无前例的速度融化，影响下游数亿人的水源供应。高海拔物种被迫向上迁移，无处可去时将灭绝。', threat:85 },
+            freshwater: { icon:'💧', title:'干旱与污染', desc:'河流流量减少，湖泊水位下降。水温升高导致鱼类栖息地缩小，有害藻华增加。湿地大面积消失。', threat:80 },
+            coastal:    { icon:'🌊', title:'海平面上升', desc:'海平面上升侵蚀海滩和海岸栖息地，风暴潮加剧。预计到2100年，全球50%的沿海湿地可能消失。', threat:88 },
+            cave:       { icon:'🦇', title:'温度变化干扰', desc:'洞穴生态系统极为敏感，外部温度微小变化会破坏内部稳定环境。洞穴特有物种面临栖息地微气候改变风险。', threat:55 },
+            urban:      { icon:'🏙️', title:'城市热岛效应', desc:'城市比周边温度高3-5°C，极端高温日增加，城市野生动物面临热应激和栖息地碎片化双重压力。', threat:45 },
+            mangrove:   { icon:'🌊', title:'海平面上升与开发', desc:'红树林被夹在上升的海平面和内陆开发之间，无处退缩。全球红树林面积已经减少了35%以上。', threat:82 },
+        };
+
+        // ===================================================================
+        // 6 NEW HABITATS
+        // ===================================================================
+        const newHabitats = [
+            { id: 'mountain', name: '🏔️ 高山地带', emoji: '🏔️', bg: '#e8eaf6', temp: '-10~16°C', humidity: '30-50%',
+                tempVal: 25, rainfall: '500-2000mm/年', area: '覆盖地球陆地约12%',
+                flora: '高山杜鹃、雪莲、火绒草、矮松、苔藓地衣',
+                animals: ['🐐 山羊', '🐆 雪豹', '🦅 神鹫', '🦫 旱獭', '🐂 牦牛', '🦅 金雕', '🐑 岩羊'],
+                desc: '高山生态系统分布于地球各大山脉，海拔每升高1000米气温下降6°C，高海拔上的生命必须适应稀薄的空气、强烈的紫外线和酷寒的冬季。高山地带是地球上最壮丽也最脆弱的生态系统之一——山峰像岛屿一样耸立，每个山脉都有独特的动植物群落。高山植物往往紧贴地面生长以躲避强风，并演化出鲜艳的花朵来吸引稀少的传粉昆虫。',
+                ecosystem: '高山生态系统按海拔垂直分层：低山阔叶林→中山针叶林→亚高山灌木林→高山草甸→高山苔原→永久积雪。每个层带支持完全不同的生物群落。高海拔动物展现出惊人的适应力：雪豹的大鼻腔温暖吸入的冷空气；牦牛的血红蛋白特别高效，能在低氧环境中运输更多氧气。高山生态系统还是天然的水塔——喜马拉雅山脉的冰川为亚洲10条主要河流提供水源，养活了超过10亿人口。',
+                conservation: '⚠️ 冰川加速消融威胁水源。支持气候变化行动，保护高山走廊完整性。' },
+            { id: 'freshwater', name: '💧 河流与湖泊', emoji: '💧', bg: '#e3f2fd', temp: '5-26°C', humidity: '80-100%',
+                tempVal: 45, rainfall: '变化多样', area: '淡水仅占地球水资源2.5%',
+                flora: '荷花、芦苇、水葫芦、浮萍、香蒲、菱角',
+                animals: ['🦫 河狸', '🦦 水獭', '🦩 苍鹭', '🐟 鳟鱼', '🐸 青蛙', '🪰 蜻蜓', '🦆 绿头鸭'],
+                desc: '淡水生态系统虽然仅占地球水资源的2.5%，却支撑着极为丰富的生物多样性——全球约40%的鱼类物种生活在淡水中。河流从山间源头奔流到海，沿途雕刻出峡谷、泛滥平原和三角洲，每一种地貌都创造着独特的微型栖息地。湖泊则像陆地上的海洋，但更加封闭而敏感。',
+                ecosystem: '淡水生态系统有三种主要类型：静水系统（湖泊、池塘）、流水系统（河流、溪流）和湿地。河流纵向分为上游（急流、冷水、多氧）、中游（缓流、水温适中）和下游（慢流、温暖、富营养）。河狸是淡水生态中的"生态系统工程师"——它们筑坝创造湿地，为无数其他物种提供栖息地。淡水还是人类社会最重要的水源——全球70%的淡水用于农业灌溉。',
+                conservation: '⚠️ 全球淡水物种数量下降83%（1970年以来）。减少水污染、节约用水、保护湿地。' },
+            { id: 'coastal', name: '🏖️ 海岸沙滩', emoji: '🏖️', bg: '#fff8e1', temp: '12-28°C', humidity: '60-85%',
+                tempVal: 55, rainfall: '500-1500mm/年', area: '海岸线全球约62万公里',
+                flora: '海草、海藻、椰子树、海滩牵牛、海蓬子',
+                animals: ['🕊️ 海鸥', '🦀 寄居蟹', '🦭 海狮', '🦩 鹈鹕', '⭐ 海星', '🪙 沙钱', '🐚 蛤蜊'],
+                desc: '海岸带是海洋和陆地交汇的过渡区域，波浪日夜不停地雕刻着这里的地貌。潮汐的涨落创造了潮间带——一个每日两次被海水淹没又被暴露在空气中的神奇地带。沙滩上的沙子每一粒都讲述着千百万年的地质故事，它们来自被风化的岩石、被碾碎的贝壳和珊瑚碎片。海岸栖息地是许多海洋生物繁衍后代的关键场所。',
+                ecosystem: '海岸生态系统包括多种类型：岩岸（附着着藤壶、贻贝和海藻）、沙滩（埋藏着蛤蜊、沙蟹）、泥滩（富含有机碎屑，是候鸟的加油站）、海蚀洞穴和海崖（海鸟筑巢的绝佳场所）。潮汐池是海岸上最迷人的微型生态系统——一个只有几平方米的小水坑里可能生活着海星、海胆、小螃蟹和海葵。海草床是许多鱼类幼鱼的庇护所，也是儒艮和海龟的重要食物来源。',
+                conservation: '⚠️ 海平面上升和海岸开发威胁。支持海岸保护区，减少海滩塑料污染，抵制过度捕捞。' },
+            { id: 'cave', name: '🕳️ 洞穴王国', emoji: '🕳️', bg: '#eceff1', temp: '10-18°C', humidity: '80-100%',
+                tempVal: 30, rainfall: '不受地面降雨直接影响', area: '全球已知洞穴超百万个',
+                flora: '洞穴苔藓、真菌、洞穴细菌、盲藻',
+                animals: ['🦇 蝙蝠', '🦎 洞穴蝾螈', '✨ 萤火虫', '🦗 洞穴蟋蟀', '🐟 盲鱼', '🕷️ 洞穴蜘蛛', '🦂 洞穴伪蝎'],
+                desc: '洞穴是地球上最后的黑暗疆域。在永恒的黑暗中，没有光合作用，没有昼夜交替，气温常年恒定——这是一个由时间而非阳光主导的世界。洞穴中的生命演化出了一系列令人惊叹的适应特征：许多洞穴动物失去了眼睛和体色，却发展出了超乎想象的触觉和嗅觉。洞穴是天然的时间胶囊，保存着地球历史的秘密。',
+                ecosystem: '洞穴生态系统完全依赖外部有机物输入——蝙蝠粪便（鸟粪）、腐烂的木头碎片、地下河流带入的有机物碎屑是洞穴食物链的基础。洞穴生物分为三类：偶入洞穴生物（误入洞穴但不在其中繁殖）、喜洞生物（能在洞穴内外生活，如蝙蝠）和真洞穴生物（终生生活在洞穴中，如盲鱼和洞穴蝾螈）。洞穴还拥有世界上最独特的景观——钟乳石从顶部垂下，石笋从地面升起，每厘米需要数百年才能形成。',
+                conservation: '⚠️ 洞穴环境极度脆弱敏感。限制洞穴旅游，保护蝙蝠栖息地，防止地下水污染。' },
+            { id: 'urban', name: '🏙️ 城市野生', emoji: '🏙️', bg: '#f3e5f5', temp: '5-35°C', humidity: '30-70%',
+                tempVal: 60, rainfall: '变化多样', area: '全球城市覆盖陆地约3%',
+                flora: '行道树、公园草坪、壁缝野草、屋顶花园植物',
+                animals: ['🕊️ 鸽子', '🦝 浣熊', '🦊 狐狸', '🐦 麻雀', '🐀 褐家鼠', '🦅 游隼', '🐿️ 灰松鼠'],
+                desc: '城市是人类建造的世界，但野生动物从未真正离开。从公园的松鼠到摩天大楼上的游隼，从下水道的老鼠到运河边的苍鹭——城市已经成为一个全新的生态系统。城市野生动物比其乡村同类展现出更强的适应力和智慧：城市浣熊能打开复杂的垃圾桶锁，城市狐狸学会了过马路看红绿灯（其实是在学习车流规律）。',
+                ecosystem: '城市生态系统由人造结构和残留自然混合而成。公园是城市的"绿肺"，为野生动物提供核心栖息地；绿色廊道（河岸、铁路线、林荫道）连接着这些斑块；而建筑物的屋顶、阳台、通风管道则成为了岩鸽和游隼的"人工悬崖"。城市的"城市热岛"效应让冬季变得更容易度过，但也让夏季更加酷热。城市垃圾为许多动物提供了全年稳定的食物来源，彻底改变了它们的冬眠和迁徙节律。',
+                conservation: '⚠️ 栖息地碎片化+污染+车辆撞击。创建城市绿色走廊、保护城市湿地、减少农药使用。' },
+            { id: 'mangrove', name: '🌿 红树林沼泽', emoji: '🌿', bg: '#e8f5e9', temp: '24-30°C', humidity: '75-90%',
+                tempVal: 75, rainfall: '1500-4000mm/年', area: '全球约15万km²',
+                flora: '红树、海桑、桐花树、白骨壤、卤蕨',
+                animals: ['🐟 弹涂鱼', '🦀 招潮蟹', '🐒 长鼻猴', '🐊 咸水鳄', '🦩 火烈鸟', '🐅 孟加拉虎', '🦎 巨蜥'],
+                desc: '红树林是地球上唯一能在咸水中生长的森林——它们生长在热带和亚热带的潮间带，每日被海水淹没两次。红树的根系错综复杂地露出水面，像无数根呼吸管，既能固定淤泥，又能过滤盐分。红树林是地球上最富生产力的生态系统之一——每公顷红树林每年产生的有机物远超热带雨林。',
+                ecosystem: '红树林生态系统连接着陆地、淡水河流和海洋——是三者的"生态纽带"。红树的落叶被螃蟹和微生物分解，释放出的营养物质喂养着幼鱼和虾类，这些幼鱼长大后游向海洋珊瑚礁。这使得红树林成为全世界最重要的海洋育苗场之一。红树林还是天然的"海啸屏障"和"碳汇冠军"——每公顷红树林储存的碳是热带雨林的4-10倍。孙德尔本斯（孟加拉国和印度之间的红树林）是世界上最大的红树林，也是孟加拉虎最后的栖息地之一。',
+                conservation: '🔴 全球35%的红树林已消失。支持红树林复育项目，保护沿海湿地，抵制沿海开发填海。' },
+        ];
+
+        // Merge all habitats for unified access
+        const allHabitats = [...habitats, ...newHabitats];
+
+        // ===================================================================
+        // QUIZ DATA
+        // ===================================================================
+        const quizQuestions = [
+            { q:'哪种动物有三颗心脏，血液是蓝色的？', options:['🐙 章鱼','🐬 海豚','🐢 海龟','🐠 小丑鱼'], correct:0, habitatId:'ocean' },
+            { q:'哪里的树懒每天移动不到40米？', options:['🏜️ 沙漠地带','🌴 热带雨林','❄️ 极地冰原','🌾 草原旷野'], correct:1, habitatId:'jungle' },
+            { q:'哪种动物能在70°C的沙面上活动？', options:['🦊 耳廓狐','🐪 骆驼','🐜 银蚁','🦎 角蜥'], correct:2, habitatId:'desert' },
+            { q:'帝企鹅住在哪里？', options:['🌴 热带雨林','🏜️ 沙漠地带','❄️ 极地冰原','🌳 温带森林'], correct:2, habitatId:'arctic' },
+            { q:'谁是动物界的"生态系统工程师"，会筑坝？', options:['🦦 水獭','🦫 河狸','🐸 青蛙','🦩 苍鹭'], correct:1, habitatId:'freshwater' },
+            { q:'哪种猴子有大长鼻子，生活在红树林里？', options:['🐒 蜘蛛猴','🦧 猩猩','🐒 长鼻猴','🐵 狒狒'], correct:2, habitatId:'mangrove' },
+            { q:'游隼（最快的鸟）在城市里把什么当悬崖？', options:['🌳 公园树木','🏢 摩天大楼','🚗 汽车','🗑️ 垃圾桶'], correct:1, habitatId:'urban' },
+            { q:'哪种动物理论上可以永生？', options:['🐘 大象','🐢 海龟','🪼 灯塔水母','🐋 蓝鲸'], correct:2, habitatId:'ocean' },
+            { q:'沙漠里的骆驼驼峰里储存的是什么？', options:['💧 水','🫕 脂肪','🍯 蜂蜜','🥛 奶'], correct:1, habitatId:'desert' },
+            { q:'长颈鹿的脖子有多少块颈椎骨？', options:['5块','7块','12块','20块'], correct:1, habitatId:'grassland' },
+            { q:'北极熊的皮肤是什么颜色？', options:['⚪ 白色','⚫ 黑色','🟤 棕色','🩷 粉色'], correct:1, habitatId:'arctic' },
+            { q:'考拉每天睡多少小时？', options:['8-10小时','12-14小时','18-22小时','从来不睡'], correct:2, habitatId:'forest' },
+            { q:'雪豹生活在哪种栖息地？', options:['🏜️ 沙漠','🏔️ 高山','🌊 海洋','🏙️ 城市'], correct:1, habitatId:'mountain' },
+            { q:'弹涂鱼有什么特殊本领？', options:['🪽 会飞','🏃 能在陆地上行走','🎵 会唱歌','💡 会发光'], correct:1, habitatId:'mangrove' },
+            { q:'洞穴生态系统的能量来源主要是什么？', options:['☀️ 阳光','💩 蝙蝠粪便','🌿 植物','💨 风'], correct:1, habitatId:'cave' },
+        ];
+
+        // ===================================================================
+        // FUN FACTS FOR TICKER
+        // ===================================================================
+        const funFacts = [
+            '🐾 你知道吗？地球上已知的动物物种超过200万种！',
+            '🐘 一头成年非洲象每天能吃300公斤食物，相当于500个汉堡！',
+            '🐙 章鱼有三个心脏，血液是蓝色的！',
+            '🦋 帝王蝶每年迁徙超过4000公里，但一生只走四分之一的路程！',
+            '🐳 蓝鲸的心脏有小型汽车那么大，血管粗到人可以游过去！',
+            '🐜 蚂蚁能举起自己体重50倍的物体——相当于你举起一辆卡车！',
+            '🦜 有些鹦鹉的智商相当于3-5岁的人类儿童！',
+            '🐧 帝企鹅是唯一在冬季繁殖的企鹅，能忍受-60°C的严寒！',
+            '🦥 树懒的毛发里住着藻类、甲虫和飞蛾，是一个微型生态系统！',
+            '🦈 鲨鱼比恐龙还要古老，在地球上存在了4亿多年！',
+            '🐝 一只蜜蜂一生采集的蜂蜜只有一茶匙的十二分之一！',
+            '🐪 骆驼可以一次喝下100升水，相当于200瓶矿泉水！',
+            '🦒 长颈鹿的舌头是蓝黑色的，长度可达50厘米！',
+            '🦉 猫头鹰是唯一能看到蓝色的鸟类！',
+            '🐬 海豚睡觉时只让一半大脑休息，另一半保持清醒！',
+        ];
+
+        // ===================================================================
+        // RENDER: FAQ TICKER
+        // ===================================================================
+        let factIndex = 0;
+        function rotateFunFact() {
+            factIndex = (factIndex + 1) % funFacts.length;
+            const el = document.querySelector('#funFactTicker span');
+            if (el) {
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.textContent = funFacts[factIndex];
+                el.style.animation = 'tickerScroll 0.5s ease';
+            }
+        }
+        setInterval(rotateFunFact, 5000);
+
+        // ===================================================================
+        // RENDER: AMBIENT FLOATING EMOJIS
+        // ===================================================================
+        (function renderAmbient() {
+            const emojis = ['🌴','🌊','🏜️','❄️','🌾','🌳','🏔️','💧','🏖️','🕳️','🏙️','🌿','🦋','🐠','🦅','🐘'];
+            const container = document.getElementById('ambientEmojis');
+            for (let i = 0; i < 8; i++) {
+                const span = document.createElement('span');
+                span.className = 'ambient-emoji';
+                span.textContent = emojis[i % emojis.length];
+                span.style.left = Math.random() * 90 + '%';
+                span.style.top = Math.random() * 90 + '%';
+                span.style.animationDelay = Math.random() * 10 + 's';
+                span.style.animationDuration = (10 + Math.random() * 15) + 's';
+                container.appendChild(span);
+            }
+        })();
+
+        // ===================================================================
+        // RENDER: PARTICLE CANVAS
+        // ===================================================================
+        (function initCanvas() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let activeHabitat = 'jungle';
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particleTypes = {
+                jungle:  { emoji:'🌿', color:'#6bcb77', speed:0.4, size:14, count:25 },
+                ocean:   { emoji:'🫧', color:'#4d96ff', speed:0.3, size:10, count:30 },
+                desert:  { emoji:'💨', color:'#ffb27f', speed:0.5, size:8, count:20 },
+                arctic:  { emoji:'❄️', color:'#e8eaf6', speed:0.3, size:8, count:35 },
+                grassland:{ emoji:'🌾', color:'#6bcb77', speed:0.5, size:12, count:22 },
+                forest:  { emoji:'🍂', color:'#ffb27f', speed:0.6, size:14, count:28 },
+                mountain:{ emoji:'❄️', color:'#e8eaf6', speed:0.35, size:9, count:30 },
+                freshwater:{ emoji:'💧', color:'#4d96ff', speed:0.25, size:8, count:25 },
+                coastal: { emoji:'🏖️', color:'#ffd93d', speed:0.45, size:10, count:22 },
+                cave:    { emoji:'🦇', color:'#5c4a4a', speed:0.3, size:12, count:18 },
+                urban:   { emoji:'🍃', color:'#a66cff', speed:0.5, size:10, count:20 },
+                mangrove:{ emoji:'🍂', color:'#6bcb77', speed:0.4, size:11, count:24 },
+            };
+
+            function spawnParticles() {
+                const config = particleTypes[activeHabitat] || particleTypes.jungle;
+                particles = [];
+                for (let i = 0; i < config.count; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: config.size * (0.5 + Math.random()),
+                        speed: config.speed * (0.5 + Math.random()),
+                        wobble: Math.random() * Math.PI * 2,
+                        wobbleSpeed: (Math.random() - 0.5) * 0.02,
+                    });
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const config = particleTypes[activeHabitat] || particleTypes.jungle;
+                ctx.fillStyle = config.color;
+                ctx.globalAlpha = 0.18;
+                ctx.font = '14px serif';
+                for (const p of particles) {
+                    p.y += p.speed;
+                    p.wobble += p.wobbleSpeed;
+                    p.x += Math.sin(p.wobble) * 0.3;
+                    if (p.y > canvas.height + 30) { p.y = -30; p.x = Math.random() * canvas.width; }
+                    if (p.x < -30) p.x = canvas.width + 30;
+                    if (p.x > canvas.width + 30) p.x = -30;
+                    ctx.fillText(config.emoji, p.x, p.y);
+                }
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(animate);
+            }
+
+            spawnParticles();
+            animate();
+
+            window.setCanvasHabitat = function(habitatId) {
+                activeHabitat = habitatId;
+                const config = particleTypes[habitatId] || particleTypes.jungle;
+                particles = [];
+                for (let i = 0; i < config.count; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: config.size * (0.5 + Math.random()),
+                        speed: config.speed * (0.5 + Math.random()),
+                        wobble: Math.random() * Math.PI * 2,
+                        wobbleSpeed: (Math.random() - 0.5) * 0.02,
+                    });
+                }
+            };
+        })();
+
+        // ===================================================================
+        // RENDER: ORIGINAL HABITAT GRID (preserved)
+        // ===================================================================
+        document.getElementById('habitatGrid').innerHTML = habitats.map((h, i) => `
+        <div class="habitat-card" style="animation: cardPop 0.5s ease ${i*0.08}s both;" onclick="openHabitatModal('${h.id}')">
+          <div class="habitat-scene" style="background:${h.bg};">
+            <span class="scene-emoji">${h.emoji}</span>
+            <span class="scene-emoji">${h.animals[0].split(' ')[0]}</span>
+            <span class="scene-emoji">${h.animals[1].split(' ')[0]}</span>
+          </div>
+          <div class="habitat-body">
+            <h3>${h.name}</h3>
+            <p style="line-height:1.7;">${h.desc}</p>
+            <div class="habitat-meta">
+              <div class="meta-item" title="温度范围"><span>🌡️</span> ${h.temp}</div>
+              <div class="meta-item" title="湿度范围"><span>💧</span> ${h.humidity}</div>
+              <div class="meta-item" title="年降雨量"><span>🌧️</span> ${h.rainfall}</div>
+              <div class="meta-item" title="覆盖面积"><span>📏</span> ${h.area}</div>
+            </div>
+            <div class="climate-bar">
+              <div class="climate-fill" style="width:0%;background:${h.tempVal>70?'var(--accent-coral)':h.tempVal>40?'var(--accent-sunny)':'var(--accent-skyblue)'};" data-width="${h.tempVal}%"></div>
+            </div>
+            <div class="eco-detail" onclick="event.stopPropagation();">
+              <details>
+                <summary>🔬 生态详情</summary>
+                <p style="margin-top:0.5rem;line-height:1.6;">${h.ecosystem}</p>
+              </details>
+            </div>
+            <div class="habitat-flora">
+              <span class="flora-label">🌿 代表性植物：</span>${h.flora}
+            </div>
+            <div class="animal-chips">
+              ${h.animals.map(a => `<span class="animal-chip" onclick="event.stopPropagation();window.location.href='critter_library.html?search=${encodeURIComponent(a.split(' ').slice(1).join(' '))}'">${a}</span>`).join('')}
+            </div>
+            <div class="conservation-note">
+              <span>🛡️</span> ${h.conservation}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+        // ===================================================================
+        // RENDER: NEW HABITATS GRID
+        // ===================================================================
+        document.getElementById('newHabitatGrid').innerHTML = newHabitats.map((h, i) => `
+        <div class="habitat-card" style="animation: cardPop 0.5s ease ${(i+6)*0.08}s both;" onclick="openHabitatModal('${h.id}')">
+          <div class="habitat-scene" style="background:${h.bg};">
+            <span class="scene-emoji">${h.emoji}</span>
+            <span class="scene-emoji">${h.animals[0].split(' ')[0]}</span>
+            <span class="scene-emoji">${h.animals[1].split(' ')[0]}</span>
+          </div>
+          <div class="habitat-body">
+            <h3>${h.name} <span class="new-badge">NEW</span></h3>
+            <p style="line-height:1.7;">${h.desc}</p>
+            <div class="habitat-meta">
+              <div class="meta-item" title="温度范围"><span>🌡️</span> ${h.temp}</div>
+              <div class="meta-item" title="湿度范围"><span>💧</span> ${h.humidity}</div>
+              <div class="meta-item" title="年降雨量"><span>🌧️</span> ${h.rainfall}</div>
+              <div class="meta-item" title="覆盖面积"><span>📏</span> ${h.area}</div>
+            </div>
+            <div class="climate-bar">
+              <div class="climate-fill" style="width:0%;background:${h.tempVal>70?'var(--accent-coral)':h.tempVal>40?'var(--accent-sunny)':'var(--accent-skyblue)'};" data-width="${h.tempVal}%"></div>
+            </div>
+            <div class="eco-detail" onclick="event.stopPropagation();">
+              <details>
+                <summary>🔬 生态详情</summary>
+                <p style="margin-top:0.5rem;line-height:1.6;">${h.ecosystem}</p>
+              </details>
+            </div>
+            <div class="habitat-flora">
+              <span class="flora-label">🌿 代表性植物：</span>${h.flora}
+            </div>
+            <div class="animal-chips">
+              ${h.animals.map(a => `<span class="animal-chip" onclick="event.stopPropagation();window.location.href='critter_library.html?search=${encodeURIComponent(a.split(' ').slice(1).join(' '))}'">${a}</span>`).join('')}
+            </div>
+            <div class="conservation-note">
+              <span>🛡️</span> ${h.conservation}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+        // ===================================================================
+        // RENDER: HABITAT OF THE DAY
+        // ===================================================================
+        function setHabitatOfDay() {
+            const today = new Date();
+            const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+            const hotd = allHabitats[dayOfYear % allHabitats.length];
+            document.getElementById('hotdEmoji').textContent = hotd.emoji;
+            document.getElementById('hotdName').textContent = hotd.name;
+            document.getElementById('hotdSlogan').textContent = '🌍 点击查看今天的推荐栖息地！';
+            window._hotdId = hotd.id;
+            setCanvasHabitat(hotd.id);
+        }
+        setHabitatOfDay();
+
+        function scrollToHabitat() {
+            openHabitatModal(window._hotdId || 'jungle');
+        }
+
+        // ===================================================================
+        // RENDER: HABITAT EXPLORER MAP
+        // ===================================================================
+        const explorerRegions = [
+            { id:'jungle', emoji:'🌴', name:'热带雨林', animal:'美洲豹 🐆' },
+            { id:'ocean', emoji:'🌊', name:'深海世界', animal:'蓝鲸 🐋' },
+            { id:'desert', emoji:'🏜️', name:'沙漠地带', animal:'骆驼 🐪' },
+            { id:'arctic', emoji:'❄️', name:'极地冰原', animal:'北极熊 🐻‍❄️' },
+            { id:'grassland', emoji:'🌾', name:'草原旷野', animal:'狮子 🦁' },
+            { id:'forest', emoji:'🌳', name:'温带森林', animal:'猫头鹰 🦉' },
+            { id:'mountain', emoji:'🏔️', name:'高山地带', animal:'雪豹 🐆' },
+            { id:'freshwater', emoji:'💧', name:'河流湖泊', animal:'河狸 🦫' },
+            { id:'coastal', emoji:'🏖️', name:'海岸沙滩', animal:'海星 ⭐' },
+            { id:'cave', emoji:'🕳️', name:'洞穴王国', animal:'蝙蝠 🦇' },
+            { id:'urban', emoji:'🏙️', name:'城市野生', animal:'游隼 🦅' },
+            { id:'mangrove', emoji:'🌿', name:'红树林', animal:'弹涂鱼 🐟' },
+        ];
+
+        document.getElementById('mapRegions').innerHTML = explorerRegions.map(r => `
+            <div class="map-region" onclick="exploreRegion('${r.id}')">
+                <span class="region-emoji">${r.emoji}</span>
+                <div class="region-name">${r.name}</div>
+                <div class="region-animal">${r.animal}</div>
+            </div>
+        `).join('');
+
+        function exploreRegion(habitatId) {
+            const h = allHabitats.find(x => x.id === habitatId);
+            if (!h) return;
+            const db = animalDatabases[habitatId];
+            const animalTags = db ? db.map(a => `<span class="explorer-animal-tag" onclick="event.stopPropagation();">${a.emoji} ${a.name}</span>`).join('') : '';
+            const facts = db ? `<p style="font-size:0.8rem;color:var(--text-medium);margin-top:0.5rem;">💡 <strong>趣味知识：</strong>${db[Math.floor(Math.random()*db.length)].fact}</p>` : '';
+            const resultEl = document.getElementById('explorerResult');
+            resultEl.innerHTML = `
+                <h4>${h.emoji} ${h.name}</h4>
+                <p style="color:var(--text-medium);font-size:0.85rem;margin-top:0.3rem;">${h.desc.substring(0, 120)}...</p>
+                <div class="explorer-animal-list">${animalTags}</div>
+                ${facts}
+                <button class="quiz-btn" style="margin-top:0.8rem;font-size:0.8rem;" onclick="openHabitatModal('${habitatId}')">🔍 查看详情</button>
+            `;
+            resultEl.classList.add('show');
+            resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setCanvasHabitat(habitatId);
+        }
+
+        // ===================================================================
+        // RENDER: HABITAT COMPARISON TOOL
+        // ===================================================================
+        function populateCompareSelects() {
+            const selectA = document.getElementById('compareHabitatA');
+            const selectB = document.getElementById('compareHabitatB');
+            const options = allHabitats.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+            selectA.innerHTML = options;
+            selectB.innerHTML = options;
+            selectB.selectedIndex = 1;
+            selectA.addEventListener('change', runComparison);
+            selectB.addEventListener('change', runComparison);
+            runComparison();
+        }
+
+        function runComparison() {
+            const idA = document.getElementById('compareHabitatA').value;
+            const idB = document.getElementById('compareHabitatB').value;
+            const hA = allHabitats.find(x => x.id === idA);
+            const hB = allHabitats.find(x => x.id === idB);
+            if (!hA || !hB) return;
+            document.getElementById('compareHeaderA').textContent = hA.name;
+            document.getElementById('compareHeaderB').textContent = hB.name;
+            const rows = [
+                ['🌡️ 温度', hA.temp, hB.temp],
+                ['💧 湿度', hA.humidity, hB.humidity],
+                ['🌧️ 年降雨量', hA.rainfall, hB.rainfall],
+                ['📏 覆盖面积', hA.area, hB.area],
+                ['🦁 代表性动物', hA.animals.slice(0,3).map(a=>a.split(' ')[0]).join(' '), hB.animals.slice(0,3).map(a=>a.split(' ')[0]).join(' ')],
+                ['🌿 植物类型', hA.flora.split('、')[0]+'等', hB.flora.split('、')[0]+'等'],
+            ];
+            document.getElementById('compareBody').innerHTML = rows.map(r => `
+                <tr><td class="compare-label">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>
+            `).join('');
+            document.getElementById('compareTable').classList.add('show');
+        }
+
+        populateCompareSelects();
+
+        // ===================================================================
+        // ANIMAL SOUND QUIZ
+        // ===================================================================
+        let quizState = { current: 0, score: 0, questions: [], answered: false };
+
+        function startQuiz() {
+            const shuffled = [...quizQuestions].sort(() => Math.random() - 0.5);
+            quizState = { current: 0, score: 0, questions: shuffled.slice(0, 8), answered: false };
+            document.getElementById('quizStartBtn').style.display = 'none';
+            document.getElementById('quizNextBtn').style.display = 'none';
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const q = quizState.questions[quizState.current];
+            if (!q) return;
+            quizState.answered = false;
+            document.getElementById('quizQuestion').textContent = '🤔 ' + q.q;
+            document.getElementById('quizOptions').innerHTML = q.options.map((opt, i) => `
+                <button class="quiz-option" onclick="answerQuiz(${i})">${opt}</button>
+            `).join('');
+            document.getElementById('quizScoreDisplay').textContent = `🏆 得分: ${quizState.score} / ${quizState.current}`;
+            document.getElementById('quizNextBtn').style.display = 'none';
+        }
+
+        function answerQuiz(index) {
+            if (quizState.answered) return;
+            quizState.answered = true;
+            const q = quizState.questions[quizState.current];
+            const buttons = document.querySelectorAll('.quiz-option');
+            buttons.forEach((btn, i) => {
+                btn.style.pointerEvents = 'none';
+                if (i === q.correct) btn.classList.add('correct');
+                if (i === index && i !== q.correct) btn.classList.add('wrong');
+            });
+            if (index === q.correct) {
+                quizState.score++;
+                document.getElementById('quizQuestion').textContent = '🎉 答对了！太棒了！';
+                setCanvasHabitat(q.habitatId);
+            } else {
+                document.getElementById('quizQuestion').textContent = '😅 答错了！正确答案是 ' + q.options[q.correct];
+            }
+            document.getElementById('quizScoreDisplay').textContent = `🏆 得分: ${quizState.score} / ${quizState.current + 1}`;
+            if (quizState.current < quizState.questions.length - 1) {
+                document.getElementById('quizNextBtn').style.display = 'inline-block';
+                document.getElementById('quizNextBtn').textContent = '下一题 ➡️';
+            } else {
+                document.getElementById('quizNextBtn').style.display = 'inline-block';
+                document.getElementById('quizNextBtn').textContent = '查看成绩 🏆';
+            }
+        }
+
+        function nextQuizQuestion() {
+            if (quizState.current < quizState.questions.length - 1) {
+                quizState.current++;
+                renderQuizQuestion();
+            } else {
+                const pct = Math.round((quizState.score / quizState.questions.length) * 100);
+                let msg = '';
+                if (pct === 100) msg = '🏆 满分！你是真正的栖息地专家！';
+                else if (pct >= 75) msg = '🌟 很棒！你对动物世界非常了解！';
+                else if (pct >= 50) msg = '👍 不错！继续探索你会发现更多！';
+                else msg = '📚 多多学习，很快你就会成为专家！';
+                document.getElementById('quizQuestion').textContent = msg;
+                document.getElementById('quizOptions').innerHTML = '';
+                document.getElementById('quizScoreDisplay').textContent = `🏆 最终得分: ${quizState.score} / ${quizState.questions.length} (${pct}%)`;
+                document.getElementById('quizNextBtn').style.display = 'none';
+                document.getElementById('quizStartBtn').style.display = 'inline-block';
+                document.getElementById('quizStartBtn').textContent = '再来一次！🔄';
+            }
+        }
+
+        // ===================================================================
+        // CLIMATE CHANGE IMPACT GRID
+        // ===================================================================
+        document.getElementById('climateImpactGrid').innerHTML = allHabitats.map(h => {
+            const impact = climateImpactData[h.id] || { icon:'🌍', title:'数据收集中', desc:'关于此栖息地的气候变化影响数据正在整理中。', threat:50 };
+            return `
+            <div class="climate-impact-card">
+                <span class="impact-icon">${impact.icon}</span>
+                <h4>${h.name}</h4>
+                <p>${impact.desc}</p>
+                <div class="threat-meter"><div class="threat-fill" style="width:${impact.threat}%;"></div></div>
+                <p style="font-size:0.7rem;color:var(--accent-coral);margin-top:0.3rem;">威胁等级: ${impact.threat}%</p>
+            </div>`;
+        }).join('');
+
+        // ===================================================================
+        // HABITAT MODAL (Detailed View)
+        // ===================================================================
+        function openHabitatModal(habitatId) {
+            const h = allHabitats.find(x => x.id === habitatId);
+            if (!h) return;
+
+            document.getElementById('modalEmoji').textContent = h.emoji;
+            document.getElementById('modalTitle').textContent = h.name;
+            document.getElementById('modalDesc').textContent = h.ecosystem || h.desc;
+
+            // Food chain
+            const chain = foodChains[habitatId] || ['数据收集中'];
+            document.getElementById('modalFoodChain').innerHTML = chain.map((node, i) => {
+                if (i < chain.length - 1) {
+                    return `<span class="foodchain-node">${node}</span><span class="foodchain-arrow">→</span>`;
+                }
+                return `<span class="foodchain-node">${node}</span>`;
+            }).join('');
+
+            // Monthly temperature chart
+            const tempData = monthlyTempData[habitatId] || monthlyTempData.jungle;
+            const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+            const maxTemp = Math.max(...tempData);
+            const minTemp = Math.min(...tempData);
+            const absMax = Math.max(Math.abs(maxTemp), Math.abs(minTemp), 1);
+            document.getElementById('modalClimateChart').innerHTML = tempData.map((t, i) => {
+                const height = Math.max(8, (Math.abs(t) / absMax) * 100);
+                const color = t > 20 ? 'var(--accent-coral)' : t > 5 ? 'var(--accent-sunny)' : 'var(--accent-skyblue)';
+                return `<div class="climate-chart-bar" style="height:${height}px;background:linear-gradient(to top, ${color}, ${color}88);" title="${t}°C"><span>${months[i]}</span></div>`;
+            }).join('');
+
+            // Distribution
+            document.getElementById('modalDistribution').textContent = distributionData[habitatId] || '全球分布';
+
+            // Full plant list
+            const fullFlora = plantDatabases[habitatId] || h.flora.split('、');
+            document.getElementById('modalFlora').innerHTML = `<span class="flora-label">🌿 完整植物列表：</span>${Array.isArray(fullFlora) ? fullFlora.join('、') : fullFlora}`;
+
+            // Full animal list
+            const db = animalDatabases[habitatId];
+            if (db) {
+                document.getElementById('modalAnimals').innerHTML = db.map(a => `
+                    <span class="animal-chip" title="${a.fact}">${a.emoji} ${a.name}</span>
+                `).join('');
+            } else {
+                document.getElementById('modalAnimals').innerHTML = h.animals.map(a => `
+                    <span class="animal-chip">${a}</span>
+                `).join('');
+            }
+
+            // Conservation
+            document.getElementById('modalConservation').innerHTML = `<span>🛡️</span> ${h.conservation}`;
+
+            // Show modal
+            document.getElementById('habitatModalOverlay').classList.add('show');
+            document.getElementById('habitatModal').scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+
+            // Set canvas particles
+            setCanvasHabitat(habitatId);
+        }
+
+        function closeModal(e) {
+            if (e.target === document.getElementById('habitatModalOverlay')) {
+                document.getElementById('habitatModalOverlay').classList.remove('show');
+                document.body.style.overflow = '';
+                setCanvasHabitat(window._hotdId || 'jungle');
+            }
+        }
+
+        function closeModalDirect() {
+            document.getElementById('habitatModalOverlay').classList.remove('show');
+            document.body.style.overflow = '';
+            setCanvasHabitat(window._hotdId || 'jungle');
+        }
+
+        // ===================================================================
+        // CLIMATE BAR ANIMATION
+        // ===================================================================
+        setTimeout(() => {
+            document.querySelectorAll('.climate-fill').forEach(el => {
+                el.style.width = el.dataset.width;
+            });
+        }, 300);
+
+        // ===================================================================
+        // CARD POP ANIMATION
+        // ===================================================================
+        const st = document.createElement('style');
+        st.textContent =
+            '@keyframes cardPop{from{opacity:0;transform:scale(0.9) translateY(15px)}to{opacity:1;transform:scale(1) translateY(0)}}';
+        document.head.appendChild(st);
+
+        // ===================================================================
+        // SCROLL TO TOP BUTTON
+        // ===================================================================
+        const scrollBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 400) scrollBtn.classList.add('show');
+            else scrollBtn.classList.remove('show');
+        });
+
+        // ===================================================================
+        // SEASONAL COLOR SHIFT FOR HABITAT CARDS
+        // ===================================================================
+        (function applySeasonalShift() {
+            const month = new Date().getMonth();
+            let season;
+            if (month >= 2 && month <= 4) season = 'spring';
+            else if (month >= 5 && month <= 7) season = 'summer';
+            else if (month >= 8 && month <= 10) season = 'autumn';
+            else season = 'winter';
+            document.querySelectorAll('.habitat-card').forEach(card => {
+                card.setAttribute('data-season', season);
+            });
+        })();
+    </script>
+</body>
+</html>

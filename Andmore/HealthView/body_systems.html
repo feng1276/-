@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人体系统总览 · BodyAtlas</title>
+    <style>
+        :root {
+            --bg-deep: #0a1628;
+            --bg-card: rgba(15, 29, 53, 0.85);
+            --glass-bg: rgba(10, 22, 40, 0.75);
+            --glass-border: rgba(0, 180, 220, 0.18);
+            --accent-medical: #00b4d8;
+            --accent-heart: #e63946;
+            --accent-neural: #7b2ff7;
+            --accent-health: #2ecc71;
+            --accent-warning: #f39c12;
+            --accent-glow-medical: rgba(0, 180, 220, 0.45);
+            --text-primary: #e0e8f0;
+            --text-secondary: #a0b8d0;
+            --text-muted: #607890;
+            --text-bright: #ffffff;
+            --border-radius-xl: 1.8rem;
+            --border-radius-lg: 1.2rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(0, 180, 220, 0.25);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Inter', 'Segoe UI', sans-serif;
+            --font-heading: 'Outfit', 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 25% 10%, rgba(0, 180, 220, 0.05) 0%, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 180, 220, 0.006) 2px, rgba(0, 180, 220, 0.006) 4px);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            overflow-x: hidden;
+        }
+
+        /* ────────────  MEDICAL SCANNER ANIMATION  ──────────── */
+        .scanner-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-medical), transparent);
+            opacity: 0.12;
+            z-index: 9999;
+            pointer-events: none;
+            animation: scannerSweep 4s ease-in-out infinite;
+        }
+        @keyframes scannerSweep {
+            0%   { top: 0%; opacity: 0.12; }
+            50%  { top: 100%; opacity: 0.28; }
+            100% { top: 0%; opacity: 0.12; }
+        }
+
+        /* ────────────  ORGAN PULSE EFFECTS  ──────────── */
+        @keyframes organPulse {
+            0%, 100% { transform: scale(1);   box-shadow: 0 0 8px rgba(0,180,220,0.3); }
+            50%      { transform: scale(1.08); box-shadow: 0 0 24px rgba(0,180,220,0.7); }
+        }
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            15%      { transform: scale(1.12); }
+            30%      { transform: scale(1); }
+            45%      { transform: scale(1.08); }
+            60%      { transform: scale(1); }
+        }
+        @keyframes neuralFire {
+            0%, 100% { box-shadow: 0 0 4px var(--accent-neural); }
+            50%      { box-shadow: 0 0 20px var(--accent-neural), 0 0 40px rgba(123,47,247,0.4); }
+        }
+        @keyframes breathCycle {
+            0%, 100% { transform: scaleY(1); }
+            50%      { transform: scaleY(1.06); }
+        }
+        .organ-pulse { animation: organPulse 2.5s ease-in-out infinite; }
+        .organ-heart  { animation: heartBeat 0.8s ease-in-out infinite; }
+        .organ-neural { animation: neuralFire 2s ease-in-out infinite; }
+        .organ-breath { animation: breathCycle 4s ease-in-out infinite; transform-origin: center; }
+
+        /* ────────────  ANIMATED SVG-LIKE BORDERS  ──────────── */
+        .border-scan {
+            position: relative;
+            overflow: hidden;
+        }
+        .border-scan::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,180,220,0.06), transparent);
+            animation: borderSweep 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes borderSweep {
+            0%   { left: -100%; }
+            100% { left: 100%; }
+        }
+        .card-glow-animated {
+            position: relative;
+        }
+        .card-glow-animated::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-neural), var(--accent-health), var(--accent-medical));
+            background-size: 300% 300%;
+            z-index: -1;
+            opacity: 0;
+            animation: glowBorder 4s linear infinite;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        @keyframes glowBorder {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .card-glow-animated:hover::after { opacity: 0.8; }
+
+        /* ────────────  NAVBAR (PRESERVED)  ──────────── */
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            cursor: pointer;
+        }
+        .logo .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-health);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.3rem;
+            animation: pulseDot 2s infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.8); opacity: 0.5; }
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-medical);
+        }
+
+        /* ────────────  HERO SECTION  ──────────── */
+        .hero-section {
+            text-align: center;
+            padding: 3.5rem 1.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 600px; height: 600px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(0,180,220,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: 3rem;
+            color: var(--text-bright);
+            margin-bottom: 0.6rem;
+            position: relative;
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-health), var(--accent-neural));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 650px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.7;
+            position: relative;
+        }
+        .hero-stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat-value {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-medical);
+        }
+        .hero-stat-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ────────────  PAGE HEADER  ──────────── */
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-bright);
+        }
+
+        /* ────────────  CONTAINERS  ──────────── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .container-wide {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ────────────  BODY MAP INTERACTIVE (PRESERVED + EXPANDED)  ──────────── */
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            color: var(--text-bright);
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .body-map-interactive {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+        .body-silhouette {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .body-zone {
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            border: 2px solid transparent;
+            background: rgba(0, 180, 220, 0.04);
+            text-align: center;
+            min-width: 150px;
+            font-weight: 600;
+        }
+        .body-zone:hover {
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 25px var(--accent-glow-medical);
+            background: rgba(0, 180, 220, 0.1);
+            transform: scale(1.04);
+        }
+        .body-zone.active-zone {
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 30px var(--accent-glow-medical);
+            background: rgba(0, 180, 220, 0.15);
+        }
+
+        /* ────────────  CSS BODY SILHOUETTE  ──────────── */
+        .css-body-figure {
+            position: relative;
+            width: 220px;
+            height: 420px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .css-body-head {
+            width: 70px;
+            height: 78px;
+            border-radius: 50%;
+            background: rgba(0,180,220,0.08);
+            border: 2px solid rgba(0,180,220,0.3);
+            position: relative;
+            margin-bottom: -2px;
+            transition: all 0.4s;
+            cursor: pointer;
+        }
+        .css-body-head:hover { border-color: var(--accent-neural); box-shadow: 0 0 18px rgba(123,47,247,0.4); }
+        .css-body-neck {
+            width: 22px;
+            height: 18px;
+            background: rgba(0,180,220,0.05);
+            border-left: 2px solid rgba(0,180,220,0.2);
+            border-right: 2px solid rgba(0,180,220,0.2);
+        }
+        .css-body-torso {
+            width: 120px;
+            height: 180px;
+            background: rgba(0,180,220,0.05);
+            border: 2px solid rgba(0,180,220,0.25);
+            border-radius: 30px 30px 12px 12px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+        .css-body-torso:hover { border-color: var(--accent-medical); box-shadow: 0 0 20px var(--accent-glow-medical); }
+        .css-body-lower {
+            width: 100px;
+            height: 110px;
+            background: rgba(0,180,220,0.04);
+            border: 2px solid rgba(0,180,220,0.2);
+            border-radius: 10px 10px 20px 20px;
+            margin-top: -2px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+        .css-body-lower:hover { border-color: var(--accent-warning); box-shadow: 0 0 18px rgba(243,156,18,0.35); }
+        .css-arms-row {
+            display: flex;
+            justify-content: space-between;
+            width: 200px;
+            margin-top: -160px;
+            position: relative;
+            z-index: -1;
+        }
+        .css-arm {
+            width: 35px;
+            height: 140px;
+            background: rgba(0,180,220,0.04);
+            border: 2px solid rgba(0,180,220,0.2);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+        .css-arm:hover { border-color: #e63946; box-shadow: 0 0 16px rgba(230,57,70,0.35); }
+        .css-legs-row {
+            display: flex;
+            justify-content: center;
+            width: 100px;
+            margin-top: -2px;
+            gap: 16px;
+        }
+        .css-leg {
+            width: 36px;
+            height: 120px;
+            background: rgba(0,180,220,0.04);
+            border: 2px solid rgba(0,180,220,0.2);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+        .css-leg:hover { border-color: #a0b8d0; box-shadow: 0 0 16px rgba(160,184,208,0.35); }
+
+        /* organ indicators on silhouette */
+        .organ-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.35s;
+            pointer-events: auto;
+            background: var(--bg-card);
+            border: 1.5px solid rgba(0,180,220,0.5);
+            color: var(--accent-medical);
+            z-index: 2;
+        }
+        .organ-indicator:hover {
+            transform: scale(1.5);
+            border-color: var(--accent-health);
+            color: var(--accent-health);
+            box-shadow: 0 0 16px rgba(46,204,113,0.5);
+            z-index: 5;
+        }
+        .organ-ind-heart  { top: 22px; left: 44px; }
+        .organ-ind-lungs  { top: 26px; left: 18px; }
+        .organ-ind-lungs-r { top: 26px; left: 82px; }
+        .organ-ind-stomach { top: 68px; left: 42px; }
+        .organ-ind-liver  { top: 52px; left: 78px; }
+        .organ-ind-kidney-l { top: 90px; left: 28px; }
+        .organ-ind-kidney-r { top: 90px; left: 72px; }
+        .organ-ind-intestine { top: 110px; left: 44px; }
+        .organ-ind-bladder { top: 40px; left: 38px; }
+
+        /* ────────────  SYSTEMS GRID (PRESERVED + EXPANDED)  ──────────── */
+        .systems-grid-detail {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.8rem;
+            margin-top: 2rem;
+        }
+        .system-detail-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+            position: relative;
+        }
+        .system-detail-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-medical);
+            box-shadow: var(--shadow-glow);
+        }
+        .system-detail-card.expanded {
+            grid-column: 1 / -1;
+            max-width: 900px;
+            margin: 0 auto;
+            border-color: var(--accent-medical);
+            box-shadow: var(--shadow-glow);
+        }
+        .system-detail-card h3 {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .system-detail-card .organ-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin: 0.8rem 0;
+        }
+        .organ-tag {
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.72rem;
+            background: rgba(0, 180, 220, 0.08);
+            border: 1px solid rgba(0, 180, 220, 0.25);
+            color: var(--accent-medical);
+            font-family: var(--font-mono);
+            cursor: pointer;
+        }
+        .organ-tag:hover { background: rgba(0,180,220,0.2); }
+        .system-detail-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .fun-fact-box {
+            background: rgba(123, 47, 247, 0.06);
+            border-left: 3px solid var(--accent-neural);
+            padding: 0.8rem 1.2rem;
+            border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* ────────────  HEALTH SCORE GAUGE  ──────────── */
+        .health-score-ring {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.6rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .score-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 3px solid;
+            position: relative;
+        }
+        .score-high  { border-color: var(--accent-health); color: var(--accent-health); background: rgba(46,204,113,0.08); }
+        .score-mid   { border-color: var(--accent-warning); color: var(--accent-warning); background: rgba(243,156,18,0.08); }
+        .score-low   { border-color: var(--accent-heart); color: var(--accent-heart); background: rgba(230,57,70,0.08); }
+
+        /* ────────────  DISEASE TAGS  ──────────── */
+        .disease-tag {
+            display: inline-block;
+            padding: 0.18rem 0.65rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            margin: 0.15rem;
+            background: rgba(230,57,70,0.08);
+            border: 1px solid rgba(230,57,70,0.25);
+            color: var(--accent-heart);
+            font-family: var(--font-mono);
+        }
+
+        /* ────────────  HEALTHY VS UNHEALTHY  ──────────── */
+        .comparison-row {
+            display: flex;
+            gap: 0.8rem;
+            margin: 0.6rem 0;
+            flex-wrap: wrap;
+        }
+        .comparison-item {
+            flex: 1;
+            min-width: 130px;
+            padding: 0.7rem 1rem;
+            border-radius: var(--border-radius-lg);
+            font-size: 0.78rem;
+        }
+        .comparison-healthy {
+            background: rgba(46,204,113,0.06);
+            border: 1px solid rgba(46,204,113,0.25);
+            color: var(--accent-health);
+        }
+        .comparison-unhealthy {
+            background: rgba(230,57,70,0.06);
+            border: 1px solid rgba(230,57,70,0.25);
+            color: var(--accent-heart);
+        }
+
+        /* ────────────  PREVENTION TIP  ──────────── */
+        .prevention-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.45rem 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(0,180,220,0.06);
+        }
+        .prevention-tip .tip-icon { color: var(--accent-health); font-weight: 700; }
+
+        /* ────────────  ORGAN DEEP-DIVE PANEL  ──────────── */
+        .organ-deepdive {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-card);
+            animation: fadeSlideIn 0.35s ease;
+        }
+        .organ-deepdive.visible { display: block; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .organ-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+        .organ-detail-card {
+            background: rgba(15,29,53,0.55);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.2rem;
+            transition: all 0.3s;
+        }
+        .organ-detail-card:hover {
+            border-color: var(--accent-medical);
+            transform: translateY(-2px);
+        }
+        .organ-detail-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            color: var(--accent-medical);
+            margin-bottom: 0.4rem;
+        }
+        .organ-detail-card p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ────────────  SYSTEM INTERCONNECTIONS MAP  ──────────── */
+        .interconnections-map {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-card);
+        }
+        .interconnection-pair {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            margin: 0.5rem 0;
+            background: rgba(0,180,220,0.03);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid transparent;
+            transition: all 0.3s;
+            flex-wrap: wrap;
+        }
+        .interconnection-pair:hover {
+            border-color: var(--glass-border);
+            background: rgba(0,180,220,0.06);
+        }
+        .interconnect-sys {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .interconnect-arrow {
+            color: var(--accent-medical);
+            font-weight: 700;
+        }
+        .interconnect-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            flex: 1;
+            min-width: 180px;
+        }
+        .interconnect-line {
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-medical), var(--accent-neural), var(--accent-health));
+            border-radius: 1px;
+            opacity: 0.4;
+            min-width: 40px;
+        }
+
+        /* ────────────  FUN FACTS CAROUSEL  ──────────── */
+        .carousel-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .carousel-slide {
+            display: none;
+            animation: carouselFade 0.5s ease;
+        }
+        .carousel-slide.active { display: block; }
+        @keyframes carouselFade {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .carousel-fact-icon {
+            font-size: 3rem;
+            margin-bottom: 0.8rem;
+        }
+        .carousel-fact-text {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--text-bright);
+            max-width: 600px;
+            margin: 0 auto 0.5rem;
+            line-height: 1.6;
+        }
+        .carousel-fact-source {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.2rem;
+        }
+        .carousel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(0,180,220,0.25);
+            cursor: pointer;
+            transition: 0.3s;
+            border: none;
+        }
+        .carousel-dot.active { background: var(--accent-medical); transform: scale(1.3); }
+        .carousel-nav-btn {
+            background: rgba(0,180,220,0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--accent-medical);
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            transition: 0.3s;
+            margin: 0 0.3rem;
+        }
+        .carousel-nav-btn:hover { background: rgba(0,180,220,0.2); }
+
+        /* ────────────  QUICK REFERENCE PANEL  ──────────── */
+        .quick-reference {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-card);
+        }
+        .quick-ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .quick-ref-table th {
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            color: var(--accent-medical);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            border-bottom: 2px solid var(--glass-border);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .quick-ref-table td {
+            padding: 0.55rem 0.8rem;
+            border-bottom: 1px solid rgba(0,180,220,0.06);
+            color: var(--text-secondary);
+        }
+        .quick-ref-table tr:hover td {
+            background: rgba(0,180,220,0.03);
+            color: var(--text-primary);
+        }
+        .quick-ref-table .qr-score {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* ────────────  BODY SYSTEM AGE  ──────────── */
+        .system-age-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-card);
+        }
+        .age-bar-container {
+            margin: 0.7rem 0;
+        }
+        .age-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            margin-bottom: 0.2rem;
+            color: var(--text-secondary);
+        }
+        .age-bar-label .system-age-name { font-weight: 600; }
+        .age-bar-label .system-age-value { font-family: var(--font-mono); color: var(--accent-medical); }
+        .age-bar-track {
+            height: 8px;
+            background: rgba(0,180,220,0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .age-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        .age-bar-fill.good   { background: linear-gradient(90deg, var(--accent-health), var(--accent-medical)); }
+        .age-bar-fill.okay   { background: linear-gradient(90deg, var(--accent-warning), var(--accent-health)); }
+        .age-bar-fill.poor   { background: linear-gradient(90deg, var(--accent-heart), var(--accent-warning)); }
+        .age-factors {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+            padding-left: 0.5rem;
+            border-left: 2px solid var(--glass-border);
+        }
+
+        /* ────────────  CLOSE BUTTON  ──────────── */
+        .close-deepdive {
+            float: right;
+            background: none;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            transition: 0.3s;
+        }
+        .close-deepdive:hover { color: var(--text-bright); border-color: var(--accent-heart); }
+
+        /* ────────────  RESPONSIVE  ──────────── */
+        @media (max-width: 768px) {
+            .systems-grid-detail {
+                grid-template-columns: 1fr;
+            }
+            .body-map-interactive {
+                flex-direction: column;
+                align-items: center;
+            }
+            .hero-title { font-size: 2rem; }
+            .hero-stats-row { gap: 1.2rem; }
+            .hero-stat-value { font-size: 1.5rem; }
+            .system-detail-card.expanded { max-width: 100%; }
+            .organ-detail-grid { grid-template-columns: 1fr; }
+            .interconnection-pair { flex-direction: column; align-items: flex-start; }
+            .interconnect-line { display: none; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- MEDICAL SCANNER LINE -->
+    <div class="scanner-line"></div>
+
+    <!-- NAVBAR (PRESERVED) -->
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='body_home.html'"><span class="pulse-dot"></span>BODYATLAS</div>
+        <ul class="nav-links">
+            <li><a href="body_home.html">首页</a></li>
+            <li><a href="body_systems.html" class="active">人体系统</a></li>
+            <li><a href="body_health.html">健康数据</a></li>
+            <li><a href="body_nutrition.html">营养代谢</a></li>
+            <li><a href="body_risk.html">风险分析</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+        <h1 class="hero-title">人体系统总览</h1>
+        <p class="hero-subtitle">
+            探索人体的十大精密系统——从神经网络的电信号到心脏的永动节律，
+            每一个系统都是一个微观宇宙，协同维持着生命的奇迹。
+        </p>
+        <div class="hero-stats-row">
+            <div class="hero-stat">
+                <div class="hero-stat-value">10</div>
+                <div class="hero-stat-label">主要系统</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">78+</div>
+                <div class="hero-stat-label">核心器官</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">~37万亿</div>
+                <div class="hero-stat-label">人体细胞</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">100%</div>
+                <div class="hero-stat-label">系统互连</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <p style="color:var(--text-muted);">点击人体区域或下方卡片探索各系统 · 点击器官标签查看详细信息</p>
+    </div>
+
+    <div class="container-wide">
+        <!-- BODY MAP INTERACTIVE (PRESERVED + EXPANDED WITH CSS SILHOUETTE) -->
+        <div class="body-map-interactive" id="bodyMap">
+            <div class="body-silhouette">
+                <div class="body-zone" data-system="nervous" style="font-size:1.5rem;">🧠 头部/神经系统</div>
+                <div class="body-zone" data-system="cardio" style="font-size:1.3rem;">❤️ 胸部/心肺系统</div>
+                <div class="body-zone" data-system="digestive" style="font-size:1.2rem;">🍽️ 腹部/消化系统</div>
+                <div class="body-zone" data-system="muscular" style="font-size:1.1rem;">💪 四肢/肌肉骨骼</div>
+            </div>
+
+            <!-- CSS BODY SILHOUETTE WITH ORGAN INDICATORS -->
+            <div class="css-body-figure" style="margin-top:1rem;">
+                <div class="css-body-head" data-system="nervous" title="神经系统 - 大脑"></div>
+                <div class="css-body-neck"></div>
+                <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+                    <div class="css-arms-row">
+                        <div class="css-arm" data-system="muscular" title="肌肉系统 - 上肢"></div>
+                        <div class="css-arm" data-system="muscular" title="肌肉系统 - 上肢"></div>
+                    </div>
+                    <div class="css-body-torso" data-system="cardio" title="心肺系统">
+                        <div class="organ-indicator organ-ind-heart organ-heart" title="心脏" data-organ="heart">❤️</div>
+                        <div class="organ-indicator organ-ind-lungs organ-breath" title="左肺" data-organ="lungs">🫁</div>
+                        <div class="organ-indicator organ-ind-lungs-r organ-breath" title="右肺" data-organ="lungs">🫁</div>
+                        <div class="organ-indicator organ-ind-stomach" title="胃" data-organ="stomach">🫗</div>
+                        <div class="organ-indicator organ-ind-liver" title="肝脏" data-organ="liver">🧬</div>
+                    </div>
+                    <div class="css-body-lower" data-system="digestive" title="消化/泌尿系统">
+                        <div class="organ-indicator organ-ind-kidney-l" title="左肾" data-organ="kidney">🫘</div>
+                        <div class="organ-indicator organ-ind-kidney-r" title="右肾" data-organ="kidney">🫘</div>
+                        <div class="organ-indicator organ-ind-intestine" title="肠道" data-organ="intestine">🌀</div>
+                        <div class="organ-indicator organ-ind-bladder" title="膀胱" data-organ="bladder">💧</div>
+                    </div>
+                    <div class="css-legs-row">
+                        <div class="css-leg" data-system="skeletal" title="骨骼系统 - 下肢"></div>
+                        <div class="css-leg" data-system="skeletal" title="骨骼系统 - 下肢"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORGAN DEEP-DIVE PANEL -->
+        <div class="organ-deepdive" id="organDeepDive">
+            <button class="close-deepdive" onclick="closeOrganDeepDive()">✕ 关闭</button>
+            <h3 class="section-title" id="deepDiveTitle">🔍 器官深度探索</h3>
+            <div class="organ-detail-grid" id="organDetailGrid"></div>
+        </div>
+
+        <!-- SYSTEMS GRID (PRESERVED STRUCTURE + EXPANDED) -->
+        <div class="systems-grid-detail" id="systemsGrid"></div>
+
+        <!-- SYSTEM INTERCONNECTIONS MAP -->
+        <div class="interconnections-map" id="interconnectionsMap">
+            <h3 class="section-title">🔗 系统互连图谱</h3>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
+                人体各系统高度协同——探索它们如何配合完成生命活动
+            </p>
+            <div id="interconnectionsContent"></div>
+        </div>
+
+        <!-- FUN FACTS CAROUSEL -->
+        <div class="carousel-section" id="funFactsCarousel">
+            <h3 class="section-title" style="justify-content:center;">💡 人体趣味知识</h3>
+            <div id="carouselSlides"></div>
+            <div class="carousel-controls" id="carouselDots"></div>
+            <div style="margin-top:0.8rem;">
+                <button class="carousel-nav-btn" onclick="prevFact()">◀ 上一个</button>
+                <button class="carousel-nav-btn" onclick="nextFact()">下一个 ▶</button>
+            </div>
+        </div>
+
+        <!-- BODY SYSTEM AGE ESTIMATION -->
+        <div class="system-age-section">
+            <h3 class="section-title">🕰️ 身体系统年龄评估</h3>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
+                生活方式如何影响各系统的生物学年龄（基于典型健康行为模拟）
+            </p>
+            <div id="systemAgeBars"></div>
+        </div>
+
+        <!-- QUICK REFERENCE PANEL -->
+        <div class="quick-reference">
+            <h3 class="section-title">📋 快速参考</h3>
+            <div style="overflow-x:auto;">
+                <table class="quick-ref-table" id="quickRefTable">
+                    <thead>
+                        <tr>
+                            <th>系统</th>
+                            <th>核心器官</th>
+                            <th>健康评分</th>
+                            <th>主要风险</th>
+                            <th>预防要点</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quickRefBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════
+        //  EXPANDED systemsData WITH ALL EXPANSIONS
+        // ═══════════════════════════════════════════
+        const systemsData = [
+            {
+                id: 'nervous', name: '神经系统', icon: '🧠', color: '#7b2ff7',
+                organs: ['大脑', '小脑', '脑干', '脊髓', '周围神经', '自主神经系统'],
+                description: '神经系统是人体的控制中心，负责接收、处理和传递信息。大脑包含约860亿个神经元，通过电化学信号在毫秒级时间内传递信息。中枢神经系统由大脑和脊髓组成，周围神经系统遍布全身。',
+                funFact: '人脑的处理能力约为每秒1亿亿次运算，相当于一台超级计算机，但功耗仅约20瓦。',
+                functions: ['感觉信息处理', '运动控制', '记忆与学习', '情感调节', '自主神经调控'],
+                healthScore: 88,
+                diseases: ['阿尔茨海默病', '帕金森病', '癫痫', '多发性硬化', '偏头痛', '脑卒中', '周围神经病变', '脊髓损伤'],
+                healthyIndicators: '思维清晰、反应敏捷、记忆力良好、睡眠规律、情绪稳定',
+                unhealthyIndicators: '记忆力减退、反应迟钝、失眠多梦、情绪波动、头痛频繁',
+                preventionTips: [
+                    '每日保证7-9小时充足睡眠，维持大脑清除代谢废物的 glymphatic 系统功能',
+                    '每周进行150分钟以上有氧运动，促进脑源性神经营养因子（BDNF）分泌',
+                    '坚持学习新技能或语言，刺激神经可塑性，建立认知储备',
+                    '控制血压和血糖，避免脑血管损伤——高血压是认知衰退的首要可干预风险因素',
+                    '保持社交活动，孤独感会使痴呆风险增加约50%',
+                    '避免长期酗酒——酒精是直接的神经毒素，可导致脑萎缩'
+                ],
+                systemAgeFactors: {
+                    baseAge: 35,
+                    lifestyleImpact: [
+                        { factor: '充足睡眠', effect: -5 },
+                        { factor: '长期压力', effect: +8 },
+                        { factor: '规律运动', effect: -4 },
+                        { factor: '吸烟', effect: +6 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'endocrine', desc: '下丘脑-垂体轴连接神经与内分泌系统，调控激素分泌' },
+                    { with: 'muscular', desc: '运动神经元控制肌肉收缩，实现所有随意运动' },
+                    { with: 'cardio', desc: '自主神经系统调节心率和血压，维持循环稳定' }
+                ],
+                organDetails: [
+                    { name: '大脑', desc: '人体最复杂的器官，重约1.4kg，分为左右半球。大脑皮层是高级认知功能的所在地，包含约160亿个神经元。前额叶负责决策和人格，海马体主管记忆形成，杏仁核处理情绪反应。', funFact: '大脑的存储容量估计约为2.5PB（拍字节），相当于300万小时的电视剧。' },
+                    { name: '小脑', desc: '位于脑干后方，仅占脑体积的10%，却包含大脑中约80%的神经元。主要负责运动协调、平衡和精细动作的时序控制。', funFact: '小脑虽然体积小，但其神经元密度极高——约690亿个神经元，超过大脑皮层的160亿。' },
+                    { name: '脑干', desc: '连接大脑与脊髓的生命中枢，调控呼吸、心跳、血压和意识水平。包括中脑、脑桥和延髓，是12对脑神经中10对的起源地。', funFact: '脑干受损哪怕数毫米都可能导致昏迷或死亡——因此被称为"生命之结"。' },
+                    { name: '脊髓', desc: '长约45cm的中枢神经通路，从脑干延伸至第一腰椎水平。31对脊神经从脊髓发出，传递感觉和运动信号。脊髓反射可实现毫秒级的快速保护反应。', funFact: '脊髓的粗细仅约1-1.5cm（拇指粗细），却承载着全身与大脑之间的所有信号传输。' },
+                    { name: '周围神经', desc: '遍布全身的神经网络，包括12对脑神经和31对脊神经。感觉神经将外界信息传入中枢，运动神经将指令传至效应器。', funFact: '最长的神经是坐骨神经，从下背部延伸至足部，长约1米。' },
+                    { name: '自主神经系统', desc: '分为交感神经和副交感神经两大分支，无意识地调控内脏功能。交感神经主导"战斗或逃跑"反应，副交感神经主导"休息与消化"状态。', funFact: '交感神经激活时，瞳孔放大、心率加快、消化停止——这一切在不到1秒内完成。' }
+                ]
+            },
+            {
+                id: 'cardio', name: '心血管系统', icon: '❤️', color: '#e63946',
+                organs: ['心脏', '动脉', '静脉', '毛细血管', '血液', '主动脉'],
+                description: '心血管系统是人体运输网络，负责输送氧气、营养物质和激素到全身各处。心脏每天跳动约10万次，泵送约7570升血液。血管总长度约10万公里，可绕地球2.5圈。',
+                funFact: '心脏是人体最勤奋的器官，从胚胎发育第3周开始跳动，一生不停歇。',
+                functions: ['氧气运输', '营养物质输送', '废物清除', '体温调节', '免疫细胞运输'],
+                healthScore: 82,
+                diseases: ['冠心病', '高血压', '心力衰竭', '心律失常', '心肌梗死', '动脉粥样硬化', '先天性心脏病', '深静脉血栓'],
+                healthyIndicators: '血压正常、心率平稳、运动耐力好、面色红润、手脚温暖',
+                unhealthyIndicators: '血压偏高或偏低、心悸胸闷、易疲劳、面色苍白、手脚冰冷',
+                preventionTips: [
+                    '坚持每周至少150分钟中等强度有氧运动，维持心脏泵血效率',
+                    '遵循DASH饮食或地中海饮食模式，减少饱和脂肪和反式脂肪摄入',
+                    '将每日钠摄入控制在5g以下（约一啤酒瓶盖的盐），降低血压负荷',
+                    '戒烟——吸烟者心血管疾病风险是非吸烟者的2-4倍',
+                    '定期监测血压和血脂，35岁以上每年至少检查一次',
+                    '管理心理压力——长期压力导致皮质醇升高，直接损伤血管内皮'
+                ],
+                systemAgeFactors: {
+                    baseAge: 38,
+                    lifestyleImpact: [
+                        { factor: '有氧运动', effect: -6 },
+                        { factor: '高盐饮食', effect: +7 },
+                        { factor: '理想体重', effect: -4 },
+                        { factor: '长期久坐', effect: +5 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'respiratory', desc: '心肺循环：心脏泵血至肺部进行气体交换，完成氧合' },
+                    { with: 'urinary', desc: '肾脏过滤血液，调节血容量和血压，维持心血管稳态' },
+                    { with: 'endocrine', desc: '肾上腺素和去甲肾上腺素调控心率和血管收缩' }
+                ],
+                organDetails: [
+                    { name: '心脏', desc: '拳头大小的肌肉泵，重约250-350g。分为四个腔室：左右心房和左右心室。心脏拥有独立的电传导系统（SA结、AV结、希氏束），使其在离体后仍可短暂自主搏动。', funFact: '心脏每天产生的能量足以驱动一辆卡车行驶32公里。' },
+                    { name: '动脉', desc: '厚壁血管，将含氧血液从心脏输送到全身。最大的动脉——主动脉直径约2.5cm。动脉壁的三层结构（内膜、中膜、外膜）使其能承受高压血流。', funFact: '主动脉是人体最粗的血管，血流速度可达每秒40cm。' },
+                    { name: '静脉', desc: '将缺氧血液送回心脏的血管，内含单向瓣膜防止血液倒流。静脉壁比动脉薄，容量更大——约65-70%的循环血量储存在静脉系统中。', funFact: '如果将所有静脉展开，其总表面积约为800-1000平方米。' },
+                    { name: '毛细血管', desc: '直径仅5-10微米的最细血管，是物质交换的实际场所。全身约有400亿根毛细血管，总表面积约1000平方米。', funFact: '红细胞需要变形才能通过毛细血管——有些毛细血管比红细胞还细。' },
+                    { name: '血液', desc: '占体重约7-8%的液体组织，由血浆（55%）和血细胞（45%）组成。成年人体内约有5-6升血液，每分钟全部循环一次。', funFact: '一滴血中含有约2.5亿个红细胞和37.5万个血小板。' },
+                    { name: '主动脉', desc: '人体最大的动脉，从心脏左心室发出，呈弓形弯曲后沿脊柱下行。其弹性纤维使其在每次心跳时膨胀并回缩，维持连续血流。', funFact: '主动脉的弹性使其像一个"第二心脏"，在心脏舒张期继续推动血液前进。' }
+                ]
+            },
+            {
+                id: 'respiratory', name: '呼吸系统', icon: '🫁', color: '#00b4d8',
+                organs: ['肺', '气管', '支气管', '肺泡', '横膈膜', '鼻腔'],
+                description: '呼吸系统负责气体交换，吸入氧气并排出二氧化碳。成年人每天呼吸约2万次，肺泡总面积约70平方米。气体交换发生在肺泡-毛细血管膜上。',
+                funFact: '如果将所有肺泡铺平，面积大约相当于一个网球场的大小。',
+                functions: ['氧气吸入', '二氧化碳排出', '酸碱平衡', '声音产生', '嗅觉'],
+                healthScore: 86,
+                diseases: ['哮喘', '慢性阻塞性肺病（COPD）', '肺炎', '肺癌', '肺结核', '肺纤维化', '睡眠呼吸暂停', '支气管炎'],
+                healthyIndicators: '呼吸平稳深长、不气喘、肺活量大、血氧饱和度>96%',
+                unhealthyIndicators: '呼吸短促、易气喘、慢性咳嗽、血氧偏低、痰多',
+                preventionTips: [
+                    '戒烟并避免二手烟——吸烟是肺癌和COPD的首要病因',
+                    '练习腹式深呼吸，增强横膈膜功能，提高肺活量',
+                    '避免长期暴露于空气污染和职业粉尘环境中，必要时佩戴防护口罩',
+                    '定期进行有氧运动，增强呼吸肌力量和肺通气效率',
+                    '接种流感和肺炎球菌疫苗，减少呼吸道感染风险',
+                    '保持室内空气流通和适宜湿度（40-60%），保护呼吸道黏膜'
+                ],
+                systemAgeFactors: {
+                    baseAge: 36,
+                    lifestyleImpact: [
+                        { factor: '不吸烟', effect: -7 },
+                        { factor: '长期吸烟', effect: +12 },
+                        { factor: '有氧运动', effect: -3 },
+                        { factor: '空气污染暴露', effect: +5 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'cardio', desc: '肺泡-毛细血管膜完成O₂/CO₂交换，心肺一体化运作' },
+                    { with: 'muscular', desc: '横膈膜和肋间肌驱动呼吸运动，是最重要的呼吸肌' },
+                    { with: 'immune', desc: '呼吸道黏膜纤毛系统和肺泡巨噬细胞构成肺部免疫防线' }
+                ],
+                organDetails: [
+                    { name: '肺', desc: '一对锥形器官，右肺分为3叶，左肺分为2叶（为心脏留出空间）。肺内约有3亿个肺泡，展开面积约70m²。肺是唯一能浮在水面上的器官——因为它充满了空气。', funFact: '左肺比右肺小约10%，以便容纳心脏——因此左肺只有两叶而右肺有三叶。' },
+                    { name: '气管', desc: '长约10-12cm的弹性管道，由16-20个C形软骨环支撑。内衬纤毛上皮，纤毛以每分钟约1000次的频率向上摆动，将黏液和异物排出。', funFact: '气管的C形软骨环确保气管在任何姿势下都不会塌陷——即使是低头时。' },
+                    { name: '支气管', desc: '气管分为左右主支气管进入肺门，在肺内反复分支形成支气管树。经过约23次分级分支后，最终到达肺泡囊。最细的细支气管直径不足1mm。', funFact: '支气管树的分支模式与树木惊人地相似——这被称为"分形几何"在人体中的完美体现。' },
+                    { name: '肺泡', desc: '直径约200-300微米的微小气囊，是气体交换的终极场所。每个肺泡被密集的毛细血管网包裹，气体扩散距离仅0.5-1微米。', funFact: '如果所有肺泡排列成单层，可以覆盖一个标准网球场（约260平方米）。' },
+                    { name: '横膈膜', desc: '分隔胸腔和腹腔的穹顶状肌肉，是最主要的呼吸肌。吸气时横膈膜下降1-10cm，增加胸腔容积。平静呼吸时横膈膜贡献约75%的呼吸动力。', funFact: '打嗝是横膈膜的不自主痉挛引起的——每次痉挛使声门突然关闭，产生"呃"的声音。' },
+                    { name: '鼻腔', desc: '呼吸道的入口和第一道防线。鼻毛过滤大颗粒，鼻黏膜加温加湿吸入空气。鼻窦（四对空腔）减轻颅骨重量并作为声音共振腔。', funFact: '鼻腔每天产生约1升黏液，大部分在不知不觉中被吞咽到胃里。' }
+                ]
+            },
+            {
+                id: 'digestive', name: '消化系统', icon: '🍽️', color: '#f39c12',
+                organs: ['口腔', '食道', '胃', '小肠', '大肠', '肝脏', '胰腺', '胆囊'],
+                description: '消化系统将食物分解为可吸收的营养物质。食物在消化道中经历约24-72小时的旅程。胃酸pH值约为1.5-3.5，足以溶解金属。小肠是营养吸收的主要场所。',
+                funFact: '人体肠道内生活着约100万亿个微生物，数量是人体细胞的10倍，被称为"第二大脑"。',
+                functions: ['食物消化', '营养吸收', '废物排泄', '免疫功能', '激素分泌'],
+                healthScore: 80,
+                diseases: ['胃食管反流病', '消化性溃疡', '肠易激综合征', '炎症性肠病', '肝硬化', '胰腺炎', '胆结石', '结肠癌'],
+                healthyIndicators: '食欲正常、大便规律成形、不腹胀、消化良好、体重稳定',
+                unhealthyIndicators: '食欲不振或过旺、便秘或腹泻、腹胀嗳气、反酸烧心、体重异常波动',
+                preventionTips: [
+                    '增加膳食纤维摄入（每日25-35g），促进肠道蠕动和有益菌群生长',
+                    '细嚼慢咽，每口食物咀嚼20-30次，减轻胃的机械消化负担',
+                    '限制加工食品和红肉摄入——加工肉类被WHO列为1类致癌物',
+                    '每日饮水1.5-2升，保证消化液分泌和肠道内容物顺利通过',
+                    '定期摄入发酵食品（酸奶、泡菜等），补充益生菌维持肠道微生态平衡',
+                    '避免长期使用NSAID类止痛药（如布洛芬），它们会损伤胃黏膜屏障'
+                ],
+                systemAgeFactors: {
+                    baseAge: 39,
+                    lifestyleImpact: [
+                        { factor: '高纤维饮食', effect: -5 },
+                        { factor: '经常饮酒', effect: +8 },
+                        { factor: '规律进餐', effect: -3 },
+                        { factor: '高脂饮食', effect: +6 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'endocrine', desc: '肠道是最大的内分泌器官，分泌多种胃肠激素调控消化和食欲' },
+                    { with: 'immune', desc: '肠道相关淋巴组织（GALT）是最大的免疫器官，含70%以上的免疫细胞' },
+                    { with: 'nervous', desc: '肠神经系统含约5亿个神经元，通过迷走神经与大脑双向沟通（脑-肠轴）' }
+                ],
+                organDetails: [
+                    { name: '肝脏', desc: '人体最大的内脏器官，重约1.5kg，执行超过500种功能。包括解毒、蛋白质合成、胆汁生成、糖原储存和维生素代谢。肝脏具有惊人的再生能力——即使切除75%也能再生至原大小。', funFact: '肝脏是唯一可以再生的内脏器官，古希腊神话中普罗米修斯的故事可能就源于对肝脏再生能力的观察。' },
+                    { name: '胃', desc: 'J形的肌肉囊袋，容量约1-1.5升。胃壁的胃腺每天分泌约1.5升胃液，其中盐酸使胃内pH低至1.5-3.5。胃通过三层肌肉层的蠕动将食物与胃液混合成食糜。', funFact: '胃为了保护自己不被盐酸消化，每3-4天就会更换一层新的黏膜细胞。' },
+                    { name: '小肠', desc: '全长约6-7米（活体状态下因肌张力约为3-4米），是营养吸收的主战场。内壁布满绒毛和微绒毛，展开面积约250平方米，相当于一个网球场。', funFact: '食物在小肠中停留约4-6小时，这段时间内约95%的营养物质被吸收。' },
+                    { name: '大肠', desc: '长约1.5米，主要负责水分吸收和粪便形成。肠道菌群以数以万亿计的密度在此栖息，参与维生素合成、纤维素发酵和免疫功能调节。', funFact: '肠道菌群的基因组（微生物组）包含约330万个基因，是人类基因组（约2万个基因）的150倍以上。' },
+                    { name: '胰腺', desc: '兼具外分泌（消化酶）和内分泌（胰岛素/胰高血糖素）功能的腺体。每天分泌约1.5升胰液，其中包含强大的蛋白水解酶、脂肪酶和淀粉酶。', funFact: '胰腺每天产生的消化酶量足以消化掉胰腺自身——它通过以不活跃的前体形式分泌酶来保护自己。' },
+                    { name: '口腔', desc: '消化道的起点。牙齿（成人32颗）进行机械消化，唾液腺每天分泌约1-1.5升唾液，其中的淀粉酶开始初步分解碳水化合物。味蕾检测五种基本味道。', funFact: '唾液中含有微量的钙和磷酸盐，可以在早期龋齿阶段修复牙釉质——前提是口腔pH值不低于5.5。' }
+                ]
+            },
+            {
+                id: 'muscular', name: '肌肉系统', icon: '💪', color: '#e63946',
+                organs: ['骨骼肌', '平滑肌', '心肌', '肌腱', '筋膜'],
+                description: '人体有超过600块骨骼肌，占体重的40%。肌肉通过收缩产生力量和运动。面部有43块肌肉，可以做出超过1万种表情。最强的肌肉是咬肌。',
+                funFact: '微笑需要17块肌肉，皱眉需要43块肌肉——所以微笑比皱眉更省力。',
+                functions: ['运动产生', '姿势维持', '热量产生', '保护内脏', '血液循环辅助'],
+                healthScore: 84,
+                diseases: ['肌营养不良症', '重症肌无力', '肌肉萎缩', '肌腱炎', '肌筋膜疼痛综合征', '横纹肌溶解症', '纤维肌痛', '肌炎'],
+                healthyIndicators: '肌肉力量充足、耐力好、柔韧性佳、无慢性酸痛、体态端正',
+                unhealthyIndicators: '肌肉无力、易疲劳、僵硬酸痛、体态不良、肌肉量减少',
+                preventionTips: [
+                    '每周进行2-3次抗阻训练，维持肌肉质量和骨密度',
+                    '确保每日蛋白质摄入充足（每公斤体重约1.2-1.6g）',
+                    '运动前后充分热身和拉伸，预防肌肉拉伤',
+                    '避免长时间保持同一姿势，每小时起身活动3-5分钟',
+                    '补充足够的维生素D和钙，维持肌肉收缩功能',
+                    '保证充足睡眠——生长激素在深睡眠期间分泌，负责肌肉修复'
+                ],
+                systemAgeFactors: {
+                    baseAge: 40,
+                    lifestyleImpact: [
+                        { factor: '力量训练', effect: -8 },
+                        { factor: '缺乏运动', effect: +10 },
+                        { factor: '充足蛋白质', effect: -4 },
+                        { factor: '长期卧床', effect: +15 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'skeletal', desc: '骨骼肌通过肌腱附着在骨骼上，以关节为支点产生杠杆运动' },
+                    { with: 'nervous', desc: '运动终板实现神经-肌肉信号转换，每个运动单位可支配数条至上千条肌纤维' },
+                    { with: 'cardio', desc: '骨骼肌收缩辅助静脉血液回流——"肌肉泵"效应防止下肢血液淤积' }
+                ],
+                organDetails: [
+                    { name: '骨骼肌', desc: '横纹肌，受意识控制，占体重约40%。肌纤维分为I型（慢缩肌，耐力好）和II型（快缩肌，爆发力强）。通过肌球蛋白与肌动蛋白丝的相对滑动产生收缩力。', funFact: '人体最强的肌肉按单位面积计算是咬肌——可产生高达90kg的咬合力。' },
+                    { name: '平滑肌', desc: '非随意肌，分布于内脏器官壁（血管、肠道、膀胱等）。梭形单核细胞，收缩缓慢但持久，不易疲劳。受自主神经系统和激素调控。', funFact: '子宫的平滑肌是人体最强的平滑肌，在分娩时可以产生超过50kg的推力。' },
+                    { name: '心肌', desc: '仅存在于心脏壁的肌肉组织，兼具骨骼肌的横纹结构和平滑肌的不自主特性。心肌细胞通过闰盘上的缝隙连接同步收缩，形成功能合胞体。', funFact: '心肌细胞是人体最耐缺氧的肌肉细胞之一——它们能利用乳酸作为能量来源。' },
+                    { name: '肌腱', desc: '致密结缔组织，连接肌肉和骨骼。主要由平行的I型胶原纤维束构成，抗拉强度极高（约50-100MPa）。跟腱是人体最强壮的肌腱。', funFact: '跟腱可以承受约3-4倍体重的拉力——走路时每次脚跟着地，跟腱就承受约2倍体重的力。' },
+                    { name: '筋膜', desc: '包裹和分隔肌肉、器官和骨骼的结缔组织网络。从表层的浅筋膜到深层的深筋膜，形成全身连续张力网络。近年研究发现筋膜具有感觉和收缩能力。', funFact: '如果完全去除一个人的皮肤，剩下的筋膜网络仍然可以清晰显示人体的完整外形。' }
+                ]
+            },
+            {
+                id: 'skeletal', name: '骨骼系统', icon: '🦴', color: '#a0b8d0',
+                organs: ['颅骨', '脊柱', '肋骨', '骨盆', '四肢骨骼', '关节'],
+                description: '成人人体有206块骨骼，新生儿约有270块。骨骼不仅支撑身体，还参与造血和矿物质储存。股骨是人体最长最坚固的骨骼，可承受约1吨的压力。',
+                funFact: '人体最小的骨骼是镫骨，位于中耳，长度仅约3毫米，是声音传导的关键。',
+                functions: ['身体支撑', '保护器官', '运动杠杆', '造血功能', '矿物质储存'],
+                healthScore: 90,
+                diseases: ['骨质疏松症', '骨关节炎', '骨折', '脊柱侧弯', '类风湿性关节炎', '骨髓炎', '骨癌', '椎间盘突出'],
+                healthyIndicators: '骨骼密度正常、关节灵活无痛、姿态挺拔、无脆性骨折史',
+                unhealthyIndicators: '骨密度降低、关节疼痛僵硬、驼背、身高缩短、易骨折',
+                preventionTips: [
+                    '每日摄入足量钙（成人约800-1000mg）和维生素D（约600-800IU）',
+                    '进行负重运动（步行、跑步、跳跃等），机械应力刺激成骨细胞活性',
+                    '避免过度饮酒和吸烟——两者均加速骨质流失',
+                    '保持健康体重，过轻增加骨质疏松风险，过重增加关节负荷',
+                    '注意防跌倒——家中消除绊倒隐患，老年人进行平衡训练',
+                    '女性绝经后关注骨密度变化，必要时在医生指导下进行激素替代评估'
+                ],
+                systemAgeFactors: {
+                    baseAge: 33,
+                    lifestyleImpact: [
+                        { factor: '负重运动', effect: -6 },
+                        { factor: '钙摄入不足', effect: +7 },
+                        { factor: '维生素D充足', effect: -4 },
+                        { factor: '长期久坐', effect: +5 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'muscular', desc: '骨骼提供杠杆支点，肌肉提供动力，二者协作完成所有运动' },
+                    { with: 'endocrine', desc: '骨骼分泌骨钙素调控糖代谢和男性生育能力——骨骼也是内分泌器官' },
+                    { with: 'immune', desc: '骨骼中的骨髓是所有血细胞（包括免疫细胞）的诞生地' }
+                ],
+                organDetails: [
+                    { name: '颅骨', desc: '由22块骨骼（8块脑颅骨+14块面颅骨）组成，通过骨缝紧密连接。保护大脑和感觉器官。新生儿颅骨间存在未闭合的囟门，便于分娩和大脑生长。', funFact: '颅骨是人类最坚硬的骨骼之一，可以承受约200-500kg的冲击力。' },
+                    { name: '脊柱', desc: '由33块椎骨（7颈+12胸+5腰+5骶融合+4尾融合）组成。四个生理弯曲（颈、胸、腰、骶）构成弹簧减震系统。椎间盘占脊柱高度的约25%。', funFact: '宇航员在太空中的身高可以增加3-5cm，因为椎间盘在没有重力压迫的情况下会膨胀。' },
+                    { name: '肋骨', desc: '12对肋骨组成胸廓，保护心肺和大血管。上7对为真肋（直接连接胸骨），下5对为假肋或浮肋。肋骨具有弹性——可以弯曲而不折断。', funFact: '肋骨骨折是最常见的胸部创伤——但肋骨的愈合能力很强，通常在6-8周内即可愈合。' },
+                    { name: '骨盆', desc: '由髂骨、坐骨、耻骨（融合为髋骨）和骶骨、尾骨组成的盆状结构。传递上半身体重至下肢，保护盆腔脏器。女性骨盆比男性宽而浅，适应分娩需要。', funFact: '骨盆是人类直立行走的关键适应性结构——没有骨盆的独特形态，两足行走是不可能的。' },
+                    { name: '关节', desc: '两块或多块骨骼的连接处。分为纤维关节（不动）、软骨关节（微动）和滑膜关节（自由活动）。滑液为关节软骨提供营养和润滑。人体约有360个关节。', funFact: '关节软骨是人体最光滑的表面之一——摩擦系数比冰面还要低5倍以上。' }
+                ]
+            },
+            {
+                id: 'endocrine', name: '内分泌系统', icon: '🔮', color: '#7b2ff7',
+                organs: ['脑垂体', '甲状腺', '肾上腺', '胰腺', '性腺', '松果体'],
+                description: '内分泌系统通过激素调节身体功能。激素在极低浓度下就能发挥强大作用。脑垂体被称为"主腺体"，控制多个其他内分泌腺。',
+                funFact: '人体每天分泌的激素总量不到一茶匙，但它们精确调控着生长、代谢和情绪。',
+                functions: ['代谢调节', '生长发育', '生殖调控', '应激反应', '昼夜节律'],
+                healthScore: 85,
+                diseases: ['糖尿病', '甲状腺功能亢进/减退', '库欣综合征', '艾迪生病', '多囊卵巢综合征', '生长激素缺乏', '甲状旁腺功能异常', '垂体瘤'],
+                healthyIndicators: '血糖稳定、体重正常、精力充沛、情绪平稳、生长发育正常',
+                unhealthyIndicators: '血糖波动、体重异常变化、疲劳乏力、情绪波动、发育异常',
+                preventionTips: [
+                    '定期体检监测血糖、甲状腺功能和激素水平',
+                    '保持规律作息——昼夜节律紊乱是内分泌失调的重要诱因',
+                    '管理压力——慢性应激导致皮质醇持续升高，抑制免疫和代谢功能',
+                    '均衡饮食，避免血糖剧烈波动——选择低GI食物和定时进餐',
+                    '限制环境内分泌干扰物（EDC）暴露——如双酚A（BPA）、邻苯二甲酸酯等',
+                    '保持健康体重——脂肪组织是活跃的内分泌器官，过多脂肪破坏激素平衡'
+                ],
+                systemAgeFactors: {
+                    baseAge: 34,
+                    lifestyleImpact: [
+                        { factor: '规律作息', effect: -5 },
+                        { factor: '慢性压力', effect: +9 },
+                        { factor: '均衡饮食', effect: -4 },
+                        { factor: '睡眠不足', effect: +7 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'nervous', desc: '下丘脑是神经与内分泌的桥梁，分泌释放/抑制激素调控垂体' },
+                    { with: 'reproductive', desc: '性腺分泌性激素，调控生殖器官发育和第二性征维持' },
+                    { with: 'digestive', desc: '肠促胰素（GLP-1/GIP）调控胰岛素分泌——这是GLP-1受体激动剂减肥药的机制基础' }
+                ],
+                organDetails: [
+                    { name: '脑垂体', desc: '豌豆大小的"主腺体"，位于颅底蝶鞍窝内，重约0.5g。前叶分泌7种激素（GH、TSH、ACTH、FSH、LH、PRL、MSH），后叶储存下丘脑产生的催产素和抗利尿激素。', funFact: '脑垂体每天分泌的激素总量仅约几微克，但它控制着甲状腺、肾上腺皮质和性腺的全部功能。' },
+                    { name: '甲状腺', desc: '蝴蝶形的颈部腺体，重约20-25g。分泌T3和T4激素，调节全身细胞的新陈代谢速率。甲状腺是人体唯一能储存大量激素（胶质中）的内分泌腺。', funFact: '甲状腺激素影响除大脑、脾脏、睾丸和子宫外的几乎所有人体组织——它是真正的全身代谢调节器。' },
+                    { name: '肾上腺', desc: '位于两肾上方的三角形腺体，重约4-5g。皮质分泌皮质醇和醛固酮（维持应激和电解质平衡），髓质分泌肾上腺素和去甲肾上腺素（启动应急反应）。', funFact: '肾上腺髓质的嗜铬细胞本质上是改造后的交感神经节后神经元——是神经和内分泌系统融合的活证据。' },
+                    { name: '松果体', desc: '米粒大小的松果形腺体，深藏于大脑中央。分泌褪黑素，调控昼夜节律（生物钟）。笛卡尔曾错误地认为松果体是"灵魂的居所"。', funFact: '松果体是唯一不受血脑屏障保护的脑内内分泌器官——这使它能够直接感知血液中的昼夜信号。' }
+                ]
+            },
+            {
+                id: 'immune', name: '免疫系统', icon: '🛡️', color: '#2ecc71',
+                organs: ['骨髓', '胸腺', '淋巴结', '脾脏', '扁桃体', '白细胞'],
+                description: '免疫系统是人体防御网络，识别和清除病原体。先天免疫是第一道防线，获得性免疫提供特异性保护。免疫记忆可维持数十年。',
+                funFact: '人体每天产生约1000亿个白细胞，它们不断巡逻，寻找并消灭入侵者。',
+                functions: ['病原体防御', '肿瘤监视', '组织修复', '炎症反应', '免疫记忆'],
+                healthScore: 87,
+                diseases: ['自身免疫性疾病（如红斑狼疮）', '过敏性疾病', '免疫缺陷病', 'HIV/AIDS', '慢性炎症', '类风湿性关节炎', '多发性硬化', '炎症性肠病'],
+                healthyIndicators: '不易感染、伤口愈合快、炎症反应正常、无慢性炎症、精力充沛',
+                unhealthyIndicators: '反复感染、伤口愈合慢、慢性炎症、易过敏、长期疲劳',
+                preventionTips: [
+                    '保证充足的睡眠——睡眠不足可将免疫细胞活性降低高达50%',
+                    '均衡营养，特别关注维生素C、D、锌和硒的摄入',
+                    '规律运动——中等强度运动可增强免疫监视，但过度训练反而抑制免疫',
+                    '管理压力——慢性压力通过皮质醇抑制淋巴细胞功能',
+                    '避免滥用抗生素——抗生素不能治疗病毒感染且会破坏肠道菌群-免疫轴',
+                    '接种疫苗，建立特异性免疫记忆——这是预防医学最伟大的成就之一'
+                ],
+                systemAgeFactors: {
+                    baseAge: 32,
+                    lifestyleImpact: [
+                        { factor: '充足睡眠', effect: -6 },
+                        { factor: '慢性压力', effect: +10 },
+                        { factor: '均衡营养', effect: -5 },
+                        { factor: '吸烟', effect: +8 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'skeletal', desc: '骨髓是所有血细胞（包括免疫细胞）的造血源泉' },
+                    { with: 'digestive', desc: '肠道相关淋巴组织是最大的免疫器官——肠道微生态直接塑造免疫应答' },
+                    { with: 'urinary', desc: '肾脏通过清除循环免疫复合物和调节细胞因子参与免疫稳态' }
+                ],
+                organDetails: [
+                    { name: '骨髓', desc: '位于骨骼髓腔内的柔软组织，是造血干细胞的家园。每天产生约5000亿个血细胞，包括红细胞、白细胞和血小板。红骨髓随年龄增长逐渐被黄骨髓（脂肪）替代。', funFact: '人体每秒约有200万个红细胞从骨髓中释放进入血液循环。' },
+                    { name: '胸腺', desc: '位于胸骨后方、心脏前方的两叶器官。是T淋巴细胞成熟的"军校"——在这里，未成熟的前体T细胞学习识别"自我"与"非我"。青春期后胸腺逐渐萎缩。', funFact: '胸腺在出生时重约15g，青春期达最大约35g，到70岁时萎缩至约5g——但它的功能终身持续。' },
+                    { name: '淋巴结', desc: '遍布全身的豆形免疫哨站（约600个），过滤淋巴液中的病原体和异物。淋巴结内B细胞和T细胞密集驻留，是适应性免疫应答启动的关键节点。', funFact: '当淋巴结肿大时，它实际上是在"加班工作"——内部B细胞正在快速增殖以产生抗体。' },
+                    { name: '脾脏', desc: '左上腹的拳头大小器官，重约150g。负责过滤血液中的衰老红细胞和病原体，储存血小板，并充当免疫细胞的兵营。白髓是免疫功能区，红髓是血液滤过区。', funFact: '脾脏储存约1/3的血小板——在大量出血时快速释放，帮助凝血。' },
+                    { name: '白细胞', desc: '免疫系统的"作战部队"，包括中性粒细胞（快速反应）、淋巴细胞（特异性免疫）、单核/巨噬细胞（吞噬清道夫）、嗜酸性粒细胞（抗寄生虫）和嗜碱性粒细胞（过敏反应）。', funFact: '中性粒细胞是免疫系统的"神风特攻队"——它们在吞噬病原体后会释放DNA形成胞外陷阱（NET），然后自我牺牲。' }
+                ]
+            },
+            {
+                id: 'urinary', name: '泌尿系统', icon: '💧', color: '#00b4d8',
+                organs: ['肾脏', '输尿管', '膀胱', '尿道', '肾单位'],
+                description: '泌尿系统过滤血液，排出代谢废物。每个肾脏约有100万个肾单位。成年人每天过滤约180升血液，产生约1-2升尿液。',
+                funFact: '肾脏是人体最高效的过滤器，每分钟过滤约1.2升血液，但只排出其中约1毫升的废物。',
+                functions: ['血液过滤', '废物排泄', '水分平衡', '电解质调节', '血压调控'],
+                healthScore: 83,
+                diseases: ['慢性肾病', '肾结石', '尿路感染', '肾小球肾炎', '肾衰竭', '膀胱炎', '肾病综合征', '多囊肾'],
+                healthyIndicators: '尿液清亮淡黄、排尿顺畅、无水肿、血压正常、电解质平衡',
+                unhealthyIndicators: '尿液浑浊或颜色异常、排尿困难、眼睑或下肢水肿、血压偏高',
+                preventionTips: [
+                    '每日饮水1.5-2升，保持尿液淡黄色——充足的水分稀释废物，防止结石形成',
+                    '控制盐摄入——高钠饮食增加肾脏滤过负担和肾结石风险',
+                    '避免长期过量使用止痛药（如布洛芬、对乙酰氨基酚），它们是药物性肾损伤的主因',
+                    '控制血糖和血压——糖尿病和高血压是终末期肾病的前两大病因',
+                    '定期检查尿常规和血肌酐——慢性肾病早期通常无症状',
+                    '避免憋尿——长期憋尿增加尿路感染和膀胱功能障碍风险'
+                ],
+                systemAgeFactors: {
+                    baseAge: 37,
+                    lifestyleImpact: [
+                        { factor: '充足饮水', effect: -6 },
+                        { factor: '高盐饮食', effect: +7 },
+                        { factor: '控制血压', effect: -5 },
+                        { factor: '糖尿病', effect: +12 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'cardio', desc: '肾脏通过肾素-血管紧张素-醛固酮系统（RAAS）调节血压和血容量' },
+                    { with: 'endocrine', desc: '肾脏分泌促红细胞生成素（EPO）刺激红细胞生成，并活化维生素D' },
+                    { with: 'skeletal', desc: '肾脏调节钙磷平衡，其功能衰竭可导致肾性骨营养不良' }
+                ],
+                organDetails: [
+                    { name: '肾脏', desc: '两个拳头大小的豆形器官，位于腹膜后脊柱两侧。每个约重150g。肾皮质含肾小球（滤过单位），髓质含肾小管（重吸收和分泌）。肾脏接收约20-25%的心输出量。', funFact: '虽然肾脏仅占体重的0.5%，但它们接受约20-25%的心输出量——比大脑还多。' },
+                    { name: '肾单位', desc: '每个肾脏约有100万个肾单位，是尿液形成的微观功能单位。血液在肾小球中经滤过产生原尿（180L/天），在肾小管中经重吸收和分泌形成终尿（1-2L/天）。', funFact: '如果将一侧肾脏的所有肾单位首尾相连，长度可达约45公里。' },
+                    { name: '输尿管', desc: '两条长约25-30cm的肌肉管道，通过蠕动将尿液从肾盂输送至膀胱。输尿管进入膀胱的角度具有防反流瓣膜功能。', funFact: '输尿管结石引起的疼痛（肾绞痛）被认为是人类最剧烈的疼痛之一——疼痛沿着输尿管的路径从腰部放射至腹股沟。' },
+                    { name: '膀胱', desc: '中空的肌性储尿器官，最大容量约400-600ml。膀胱壁的逼尿肌在排尿时收缩，由副交感神经支配。排尿反射是脊髓反射，但在发育后被大脑皮层抑制性控制。', funFact: '膀胱上皮（urothelium）是人体最不具渗透性的上皮之一——它必须在极度酸性的尿液和中性体液之间维持完美屏障。' },
+                    { name: '尿道', desc: '从膀胱通往体外的管道。女性尿道长约4cm，男性尿道长约20cm。尿道括约肌在排尿前保持闭合状态。', funFact: '女性尿道较短是尿路感染发病率远高于男性的主要原因——细菌从外部到达膀胱的距离更短。' }
+                ]
+            },
+            {
+                id: 'reproductive', name: '生殖系统', icon: '🌱', color: '#e63946',
+                organs: ['卵巢', '子宫', '睾丸', '输卵管', '前列腺'],
+                description: '生殖系统负责繁衍后代。女性出生时约有200万个卵母细胞。男性每天产生约1亿个精子。受精过程是生命奇迹的开始。',
+                funFact: '人类是唯一有更年期的灵长类动物，这让人类女性在生育后还有很长时间抚养后代。',
+                functions: ['配子产生', '受精过程', '胚胎发育', '激素分泌', '性特征维持'],
+                healthScore: 81,
+                diseases: ['多囊卵巢综合征', '子宫内膜异位症', '子宫肌瘤', '前列腺增生', '不孕不育', '性传播感染', '乳腺癌', '宫颈癌'],
+                healthyIndicators: '周期规律、激素水平正常、生殖功能正常、无异常出血或疼痛',
+                unhealthyIndicators: '周期紊乱、激素失衡、异常出血或分泌物、慢性盆腔疼痛',
+                preventionTips: [
+                    '定期进行妇科/男科检查，包括宫颈癌筛查（Pap涂片）和乳腺检查',
+                    '接种HPV疫苗——预防宫颈癌、肛门癌等多种HPV相关癌症',
+                    '保持安全的性行为，使用避孕措施预防性传播感染',
+                    '维持健康体重——肥胖是PCOS和不孕症的重要风险因素',
+                    '女性关注围绝经期健康，在医生指导下评估激素替代治疗的利弊',
+                    '避免吸烟和过度饮酒——两者均损害生育能力和性激素平衡'
+                ],
+                systemAgeFactors: {
+                    baseAge: 36,
+                    lifestyleImpact: [
+                        { factor: '健康体重', effect: -4 },
+                        { factor: '吸烟', effect: +8 },
+                        { factor: '规律运动', effect: -3 },
+                        { factor: '长期压力', effect: +6 }
+                    ]
+                },
+                interconnections: [
+                    { with: 'endocrine', desc: '下丘脑-垂体-性腺轴精密调控性激素分泌和生殖周期' },
+                    { with: 'urinary', desc: '胚胎发育中生殖和泌尿系统共享起源——男性尿道兼有排尿和排精功能' },
+                    { with: 'nervous', desc: '自主神经系统调控性唤起和性高潮反应' }
+                ],
+                organDetails: [
+                    { name: '卵巢', desc: '一对杏形器官，长约3-4cm。产生卵子和女性激素（雌激素和孕酮）。出生时有约200万个初级卵泡，青春期约40万个，一生排卵约400-500个。排卵由FSH和LH的精确脉冲式分泌触发。', funFact: '卵子是人体最大的细胞——直径约0.1mm，肉眼可见。而精子是最小的细胞之一。' },
+                    { name: '子宫', desc: '梨形的厚壁肌肉器官，长约7-8cm。内膜每月周期性增殖和脱落（月经）。妊娠期间子宫从拳头大小扩张至容纳足月胎儿——体积增加约500倍。', funFact: '子宫是人体唯一能从约70g（非孕期）生长到约1100g（足月妊娠）然后回复到接近原重的器官。' },
+                    { name: '睾丸', desc: '位于阴囊中的一对椭圆形器官，长约4-5cm。产生精子和睾酮。为维持最适合精子发生的温度（约34-35°C），睾丸悬挂于体外——比核心体温低约2-3°C。', funFact: '男性一生中产生约5000亿至1万亿个精子——但只有极少数有机会与卵子相遇。' },
+                    { name: '前列腺', desc: '核桃大小的男性特有腺体，位于膀胱下方包围尿道。分泌前列腺液（占精液体积的约20-30%），提供精子营养和保护。50岁以上男性前列腺常出现良性增生。', funFact: '前列腺特异性抗原（PSA）是目前最广泛使用的癌症筛查标志物之一——尽管其作为筛查工具的价值仍存在争议。' }
+                ]
+            },
+        ];
+
+        // ═══════════════════════════════════════════
+        //  RENDER SYSTEMS GRID (PRESERVED + EXPANDED)
+        // ═══════════════════════════════════════════
+        const grid = document.getElementById('systemsGrid');
+
+        function getScoreClass(score) {
+            if (score >= 85) return 'score-high';
+            if (score >= 75) return 'score-mid';
+            return 'score-low';
+        }
+
+        function renderAllCards() {
+            grid.innerHTML = systemsData.map(s => `
+            <div class="system-detail-card card-glow-animated border-scan" id="card-${s.id}" onclick="expandSystemCard('${s.id}')">
+              <h3><span>${s.icon}</span> ${s.name}
+                <span style="font-size:0.7rem;color:${s.color};margin-left:auto;font-family:var(--font-mono);">${s.organs.length}个器官</span>
+              </h3>
+              <div class="organ-list">${s.organs.map(o => `<span class="organ-tag" onclick="event.stopPropagation();openOrganDeepDive('${s.id}')">${o}</span>`).join('')}</div>
+              <p>${s.description}</p>
+              <div class="health-score-ring">
+                <span class="score-circle ${getScoreClass(s.healthScore)}">${s.healthScore}</span>
+                <span>系统健康评分</span>
+              </div>
+              <div class="fun-fact-box">💡 ${s.funFact}</div>
+              <p style="font-size:0.8rem; color:var(--text-muted);">核心功能：${s.functions.join(' · ')}</p>
+              <!-- Expanded content (hidden by default, shown on expand) -->
+              <div class="expanded-content" id="expanded-${s.id}" style="display:none; margin-top:1.2rem;">
+                <h4 style="font-family:var(--font-heading);color:var(--accent-medical);margin-bottom:0.6rem;">🩺 常见疾病</h4>
+                <div style="margin-bottom:1rem;">${s.diseases.map(d => `<span class="disease-tag">${d}</span>`).join(' ')}</div>
+                <h4 style="font-family:var(--font-heading);color:var(--accent-health);margin-bottom:0.6rem;">✅ vs ⚠️ 健康对比</h4>
+                <div class="comparison-row">
+                  <div class="comparison-item comparison-healthy"><strong>健康指标：</strong>${s.healthyIndicators}</div>
+                  <div class="comparison-item comparison-unhealthy"><strong>异常指标：</strong>${s.unhealthyIndicators}</div>
+                </div>
+                <h4 style="font-family:var(--font-heading);color:var(--accent-warning);margin-bottom:0.6rem;margin-top:1rem;">🛡️ 预防建议</h4>
+                ${s.preventionTips.map(t => `<div class="prevention-tip"><span class="tip-icon">›</span> ${t}</div>`).join('')}
+                <h4 style="font-family:var(--font-heading);color:var(--accent-neural);margin-bottom:0.6rem;margin-top:1rem;">🔗 与其他系统的连接</h4>
+                ${s.interconnections.map(i => `<div class="prevention-tip"><span class="tip-icon">↗</span> <strong>${i.with}</strong>: ${i.desc}</div>`).join('')}
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.6rem;">系统生物学年龄基础值: ${s.systemAgeFactors.baseAge}岁 · <span style="color:var(--accent-health);">正向影响最多-${Math.max(...s.systemAgeFactors.lifestyleImpact.filter(x=>x.effect<0).map(x=>Math.abs(x.effect)))}岁</span> · <span style="color:var(--accent-heart);">负向影响最多+${Math.max(...s.systemAgeFactors.lifestyleImpact.filter(x=>x.effect>0).map(x=>x.effect))}岁</span></p>
+                <button onclick="event.stopPropagation();openOrganDeepDive('${s.id}')" style="margin-top:0.8rem;background:rgba(0,180,220,0.12);border:1px solid var(--glass-border);color:var(--accent-medical);padding:0.5rem 1.2rem;border-radius:2rem;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;">🔍 查看器官详情</button>
+                <button onclick="event.stopPropagation();collapseSystemCard('${s.id}')" style="margin-top:0.8rem;margin-left:0.5rem;background:rgba(0,180,220,0.05);border:1px solid var(--glass-border);color:var(--text-muted);padding:0.5rem 1.2rem;border-radius:2rem;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;">收起详情</button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        renderAllCards();
+
+        // ═══════════════════════════════════════════
+        //  EXPAND/COLLAPSE SYSTEM CARDS
+        // ═══════════════════════════════════════════
+        function expandSystemCard(systemId) {
+            const card = document.getElementById(`card-${systemId}`);
+            const expanded = document.getElementById(`expanded-${systemId}`);
+            if (!card || !expanded) return;
+            const isExpanded = expanded.style.display === 'block';
+            if (isExpanded) {
+                collapseSystemCard(systemId);
+                return;
+            }
+            // Collapse all others first
+            document.querySelectorAll('.expanded-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.system-detail-card').forEach(c => c.classList.remove('expanded'));
+            expanded.style.display = 'block';
+            card.classList.add('expanded');
+            highlightSystem(systemId);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function collapseSystemCard(systemId) {
+            const expanded = document.getElementById(`expanded-${systemId}`);
+            const card = document.getElementById(`card-${systemId}`);
+            if (expanded) expanded.style.display = 'none';
+            if (card) card.classList.remove('expanded');
+        }
+
+        // ═══════════════════════════════════════════
+        //  HIGHLIGHT SYSTEM (PRESERVED)
+        // ═══════════════════════════════════════════
+        function highlightSystem(systemId) {
+            document.querySelectorAll('.body-zone').forEach(z => z.classList.remove('active-zone'));
+            document.querySelectorAll('.system-detail-card').forEach(c => c.style.borderColor = 'var(--glass-border)');
+            const zone = document.querySelector(`.body-zone[data-system="${systemId}"]`);
+            const card = document.getElementById(`card-${systemId}`);
+            if (zone) zone.classList.add('active-zone');
+            if (card) {
+                card.style.borderColor = 'var(--accent-medical)';
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  BODY ZONE CLICK HANDLERS (PRESERVED)
+        // ═══════════════════════════════════════════
+        document.querySelectorAll('.body-zone').forEach(zone => {
+            zone.addEventListener('click', function() {
+                highlightSystem(this.dataset.system);
+            });
+        });
+
+        // CSS silhouette body part click handlers
+        document.querySelectorAll('.css-body-head, .css-body-torso, .css-body-lower, .css-arm, .css-leg').forEach(part => {
+            part.addEventListener('click', function() {
+                const sys = this.dataset.system;
+                if (sys) highlightSystem(sys);
+            });
+        });
+
+        // CSS silhouette organ indicator click handlers
+        document.querySelectorAll('.organ-indicator').forEach(ind => {
+            ind.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const organName = this.dataset.organ;
+                if (organName) {
+                    // Find which system contains this organ
+                    for (const sys of systemsData) {
+                        const found = sys.organDetails && sys.organDetails.some(od => od.name.includes(organName) || organName.includes(od.name));
+                        if (found || sys.organs.some(o => o.includes(organName) || organName.includes(o))) {
+                            openOrganDeepDive(sys.id);
+                            return;
+                        }
+                    }
+                }
+            });
+        });
+
+        // ═══════════════════════════════════════════
+        //  URL PARAMETER HANDLING (PRESERVED)
+        // ═══════════════════════════════════════════
+        const urlP = new URLSearchParams(window.location.search);
+        if (urlP.get('system')) {
+            setTimeout(() => highlightSystem(urlP.get('system')), 400);
+        }
+
+        // ═══════════════════════════════════════════
+        //  ORGAN DEEP-DIVE
+        // ═══════════════════════════════════════════
+        function openOrganDeepDive(systemId) {
+            const sys = systemsData.find(s => s.id === systemId);
+            if (!sys || !sys.organDetails) return;
+            const panel = document.getElementById('organDeepDive');
+            const title = document.getElementById('deepDiveTitle');
+            const gridEl = document.getElementById('organDetailGrid');
+            title.innerHTML = `${sys.icon} ${sys.name} · 器官深度探索`;
+            gridEl.innerHTML = sys.organDetails.map(od => `
+            <div class="organ-detail-card">
+              <h4>${od.name}</h4>
+              <p>${od.desc}</p>
+              <div class="fun-fact-box" style="margin-top:0.6rem;">💡 ${od.funFact}</div>
+            </div>
+          `).join('');
+            panel.classList.add('visible');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function closeOrganDeepDive() {
+            document.getElementById('organDeepDive').classList.remove('visible');
+        }
+
+        // ═══════════════════════════════════════════
+        //  SYSTEM INTERCONNECTIONS RENDER
+        // ═══════════════════════════════════════════
+        function renderInterconnections() {
+            const pairs = [];
+            const seen = new Set();
+            for (const sys of systemsData) {
+                for (const conn of sys.interconnections) {
+                    const key = [sys.id, conn.with].sort().join('-');
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        const sys2 = systemsData.find(s => s.id === conn.with);
+                        pairs.push({
+                            sys1: { name: sys.name, icon: sys.icon, color: sys.color },
+                            sys2: { name: sys2 ? sys2.name : conn.with, icon: sys2 ? sys2.icon : '🔗', color: sys2 ? sys2.color : '#888' },
+                            desc: conn.desc
+                        });
+                    }
+                }
+            }
+            document.getElementById('interconnectionsContent').innerHTML = pairs.map(p => `
+            <div class="interconnection-pair">
+              <span class="interconnect-sys" style="color:${p.sys1.color};">${p.sys1.icon} ${p.sys1.name}</span>
+              <span class="interconnect-arrow">⟷</span>
+              <span class="interconnect-sys" style="color:${p.sys2.color};">${p.sys2.icon} ${p.sys2.name}</span>
+              <span class="interconnect-line"></span>
+              <span class="interconnect-desc">${p.desc}</span>
+            </div>
+          `).join('');
+        }
+        renderInterconnections();
+
+        // ═══════════════════════════════════════════
+        //  FUN FACTS CAROUSEL
+        // ═══════════════════════════════════════════
+        const allFunFacts = systemsData.map(s => ({ icon: s.icon, fact: s.funFact, source: s.name }));
+        // Add extra standalone fun facts
+        const extraFacts = [
+            { icon: '🦴', fact: '婴儿出生时有约270块骨骼，但成长期中许多骨骼融合，最终成人只有206块骨骼。这是因为软骨逐渐骨化并融合——这一过程持续到25岁左右。', source: '骨骼系统' },
+            { icon: '🧬', fact: '如果将人体内所有的DNA分子首尾相连展开，长度可达约1600亿公里——这大约是地球到太阳距离的1000倍，或者说可以从地球往返冥王星约30次。', source: '遗传学' },
+            { icon: '⚡', fact: '人体每天产生约300亿个新细胞，同时清除等量的旧细胞——每7-10年你基本上是一个"全新"的人，尽管大脑神经元大部分终身陪伴你。', source: '细胞生物学' },
+            { icon: '🌡️', fact: '人体核心温度维持在约37°C——这是数百万个生化反应最优化的温度。仅1°C的偏差就意味着身体正处于战斗状态（发热或失温）。', source: '生理学' },
+            { icon: '💧', fact: '水约占成人体重的55-60%——新生儿则高达约75%。大脑含水量约73%，骨骼看似干燥却含有约31%的水分。', source: '生物化学' },
+            { icon: '👁️', fact: '人眼可以分辨约1000万种颜色，但在黑暗环境中，只需要约5-9个光子就能触发觉察——人眼是单光子敏感度的探测器。', source: '感官系统' },
+            { icon: '🫀', fact: '在整个生命过程中，心脏大约跳动了25-30亿次。蓝鲸的心跳每分钟仅约8次，蜂鸟的约1200次——而人类的心跳数在所有哺乳动物中恰好处于中间。', source: '心血管系统' },
+        ];
+        const allFacts = [...allFunFacts, ...extraFacts];
+
+        const slidesContainer = document.getElementById('carouselSlides');
+        const dotsContainer = document.getElementById('carouselDots');
+        let currentFactIndex = 0;
+
+        function renderCarousel() {
+            slidesContainer.innerHTML = allFacts.map((f, i) => `
+            <div class="carousel-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
+              <div class="carousel-fact-icon">${f.icon}</div>
+              <p class="carousel-fact-text">${f.fact}</p>
+              <p class="carousel-fact-source">—— 来源: ${f.source}</p>
+            </div>
+          `).join('');
+            dotsContainer.innerHTML = allFacts.map((_, i) => `
+            <button class="carousel-dot ${i === 0 ? 'active' : ''}" onclick="goToFact(${i})" aria-label="事实 ${i + 1}"></button>
+          `).join('');
+        }
+
+        function goToFact(index) {
+            document.querySelectorAll('.carousel-slide').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.carousel-dot').forEach(d => d.classList.remove('active'));
+            const slide = document.querySelector(`.carousel-slide[data-index="${index}"]`);
+            const dot = dotsContainer.children[index];
+            if (slide) slide.classList.add('active');
+            if (dot) dot.classList.add('active');
+            currentFactIndex = index;
+        }
+
+        function nextFact() {
+            goToFact((currentFactIndex + 1) % allFacts.length);
+        }
+
+        function prevFact() {
+            goToFact((currentFactIndex - 1 + allFacts.length) % allFacts.length);
+        }
+
+        // Auto-advance every 5 seconds
+        setInterval(nextFact, 5000);
+        renderCarousel();
+
+        // ═══════════════════════════════════════════
+        //  BODY SYSTEM AGE BARS
+        // ═══════════════════════════════════════════
+        function renderSystemAgeBars() {
+            const container = document.getElementById('systemAgeBars');
+            const chronologicalAge = 35; // hypothetical user age
+            container.innerHTML = systemsData.map(s => {
+                const baseAge = s.systemAgeFactors.baseAge;
+                const netImpact = s.systemAgeFactors.lifestyleImpact.reduce((sum, li) => sum + li.effect, 0);
+                const bioAge = baseAge + netImpact;
+                const diff = bioAge - chronologicalAge;
+                let barClass = 'good';
+                if (diff > 5) barClass = 'poor';
+                else if (diff > 0) barClass = 'okay';
+                const pct = Math.min(100, Math.max(5, (bioAge / 70) * 100));
+                return `
+              <div class="age-bar-container">
+                <div class="age-bar-label">
+                  <span class="system-age-name">${s.icon} ${s.name}</span>
+                  <span class="system-age-value">生物年龄: ${bioAge}岁 ${diff > 0 ? '(+' + diff + ')' : (diff < 0 ? '(' + diff + ')' : '(与实际年龄一致)')}</span>
+                </div>
+                <div class="age-bar-track">
+                  <div class="age-bar-fill ${barClass}" style="width:${pct}%;"></div>
+                </div>
+                <div class="age-factors">
+                  ${s.systemAgeFactors.lifestyleImpact.map(li => {
+                    const sign = li.effect > 0 ? '+' : '';
+                    const color = li.effect > 0 ? 'var(--accent-heart)' : 'var(--accent-health)';
+                    return `<span style="margin-right:0.8rem;">${li.factor}: <span style="color:${color};font-weight:600;">${sign}${li.effect}岁</span></span>`;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+            }).join('');
+        }
+        renderSystemAgeBars();
+
+        // ═══════════════════════════════════════════
+        //  QUICK REFERENCE TABLE
+        // ═══════════════════════════════════════════
+        function renderQuickRefTable() {
+            document.getElementById('quickRefBody').innerHTML = systemsData.map(s => {
+                const sc = getScoreClass(s.healthScore);
+                return `
+              <tr onclick="highlightSystem('${s.id}')" style="cursor:pointer;">
+                <td style="font-weight:600;">${s.icon} ${s.name}</td>
+                <td>${s.organs.slice(0, 3).join('、')}${s.organs.length > 3 ? '等' : ''}</td>
+                <td class="qr-score"><span class="score-circle ${sc}" style="width:36px;height:36px;font-size:0.75rem;margin:0 auto;">${s.healthScore}</span></td>
+                <td>${s.diseases.slice(0, 2).join('、')}${s.diseases.length > 2 ? '等' : ''}</td>
+                <td style="font-size:0.75rem;">${s.preventionTips[0].substring(0, 35)}...</td>
+              </tr>
+            `;
+            }).join('');
+        }
+        renderQuickRefTable();
+    </script>
+</body>
+</html>

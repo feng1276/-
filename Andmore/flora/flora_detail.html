@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植物详情 · FloraMundi</title>
+    <meta name="description" content="FloraMundi植物详情页，提供植物的完整学名、形态特征、生长习性、地理分布、栽培要点和药用价值。">
+    <style>
+        :root {
+            --green-deep:#1a3c2a;--green-primary:#2d6a4f;--green-medium:#40916c;--green-light:#52b788;--green-pale:#d8f3dc;--green-bg:#f0f7f2;
+            --text-primary:#1a1a1a;--text-secondary:#3d3d3d;--text-muted:#6b6b6b;--bg-white:#ffffff;--border-light:#dde8e0;--shadow-soft:0 4px 20px rgba(26,60,42,0.06);--shadow-medium:0 8px 30px rgba(26,60,42,0.10);
+            --radius-sm:8px;--radius-md:14px;--radius-lg:20px;--radius-xl:28px;--radius-full:50px;--transition-bounce:0.4s cubic-bezier(0.34,1.56,0.64,1);
+            --font-heading:'Georgia','Noto Serif SC',serif;--font-body:'Segoe UI','PingFang SC',sans-serif;--font-mono:'SF Mono','Consolas',monospace;
+            --wood-brown:#6b4226;--wood-light:#8b6914;--cream:#fefae0;--accent-gold:#c9a84c;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:var(--font-body);background:var(--green-bg);color:var(--text-primary);min-height:100vh;padding-bottom:4rem;line-height:1.6;overflow-x:hidden;}
+        /* === Floating leaf particles === */
+        .leaf-particle{position:fixed;pointer-events:none;z-index:0;opacity:0.12;animation:leafFloat linear infinite;}
+        @keyframes leafFloat{0%{transform:translateY(100vh) rotate(0deg) translateX(0);opacity:0;}10%{opacity:0.15;}90%{opacity:0.12;}100%{transform:translateY(-10vh) rotate(360deg) translateX(60px);opacity:0;}}
+        @keyframes gentleSway{0%,100%{transform:rotate(-0.5deg);}50%{transform:rotate(0.5deg);}}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 8px rgba(45,106,79,0.2);}50%{box-shadow:0 0 20px rgba(45,106,79,0.4);}}
+        @keyframes growUp{from{transform:scaleY(0);opacity:0;}to{transform:scaleY(1);opacity:1;}}
+        /* === Navbar === */
+        .navbar{position:sticky;top:0;z-index:100;background:rgba(245,250,246,0.94);backdrop-filter:blur(16px);border-bottom:2px solid var(--border-light);padding:0.8rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+        .logo{display:flex;align-items:center;gap:0.5rem;cursor:pointer;text-decoration:none;}
+        .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--green-medium),var(--green-deep));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+        .logo-text{font-family:var(--font-heading);font-size:1.3rem;font-weight:700;color:var(--green-deep);}
+        .nav-links{display:flex;gap:1.3rem;list-style:none;flex-wrap:wrap;}
+        .nav-links a{color:var(--text-secondary);text-decoration:none;font-weight:500;font-size:0.88rem;transition:color 0.2s;border-bottom:2px solid transparent;}
+        .nav-links a:hover,.nav-links a.active{color:var(--green-primary);border-bottom-color:var(--green-medium);}
+        /* === Breadcrumb === */
+        .breadcrumb{max-width:1000px;margin:1.5rem auto 0;padding:0 1.5rem;font-size:0.85rem;color:var(--text-muted);}
+        .breadcrumb a{color:var(--green-primary);text-decoration:none;}
+        /* === Canvas hero === */
+        .hero-canvas-wrap{position:relative;max-width:1000px;margin:0 auto;padding:0 1.5rem;}
+        #heroCanvas{position:absolute;top:0;left:50%;transform:translateX(-50%);pointer-events:none;z-index:1;border-radius:var(--radius-xl);}
+        /* === Detail container === */
+        .detail-container{max-width:1000px;margin:2rem auto;padding:0 1.5rem;position:relative;z-index:2;}
+        .detail-hero{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-bottom:2.5rem;animation:fadeInUp 0.6s ease-out;}
+        .detail-img{border-radius:var(--radius-xl);background-size:cover;background-position:center;aspect-ratio:1;box-shadow:var(--shadow-medium);border:1px solid var(--border-light);animation:gentleSway 6s ease-in-out infinite;}
+        .detail-img:hover{animation:pulseGlow 2s ease-in-out infinite;}
+        .detail-info h1{font-family:var(--font-heading);font-size:2.2rem;color:var(--green-deep);margin-bottom:0.3rem;}
+        .detail-info .sci-name{font-family:var(--font-mono);font-size:0.95rem;color:var(--text-muted);font-style:italic;display:block;margin-bottom:1rem;}
+        .detail-info .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;}
+        .detail-info .info-item{background:var(--bg-white);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:1rem;text-align:center;transition:transform 0.3s,box-shadow 0.3s;}
+        .detail-info .info-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-medium);}
+        .detail-info .info-item .info-label{font-size:0.72rem;color:var(--text-muted);letter-spacing:0.5px;text-transform:uppercase;}
+        .detail-info .info-item .info-value{font-weight:700;color:var(--green-primary);font-size:1rem;}
+        /* === Anchor navigation === */
+        .anchor-nav{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;padding:1rem;background:var(--bg-white);border:1px solid var(--border-light);border-radius:var(--radius-lg);box-shadow:var(--shadow-soft);position:sticky;top:80px;z-index:10;}
+        .anchor-nav a{display:inline-block;padding:0.4rem 1rem;font-size:0.82rem;color:var(--green-primary);text-decoration:none;border:1px solid var(--green-pale);border-radius:var(--radius-full);background:var(--green-bg);transition:all 0.3s;white-space:nowrap;}
+        .anchor-nav a:hover,.anchor-nav a:focus{background:var(--green-primary);color:#fff;border-color:var(--green-primary);}
+        /* === Section cards === */
+        .section-card{background:var(--bg-white);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:2rem;margin-bottom:1.5rem;box-shadow:var(--shadow-soft);animation:fadeInUp 0.5s ease-out;animation-fill-mode:both;}
+        .section-card:nth-child(1){animation-delay:0.05s;}.section-card:nth-child(2){animation-delay:0.1s;}.section-card:nth-child(3){animation-delay:0.15s;}
+        .section-card:nth-child(4){animation-delay:0.2s;}.section-card:nth-child(5){animation-delay:0.25s;}.section-card:nth-child(6){animation-delay:0.3s;}
+        .section-card:nth-child(7){animation-delay:0.35s;}.section-card:nth-child(8){animation-delay:0.4s;}.section-card:nth-child(9){animation-delay:0.45s;}
+        .section-card h2{font-family:var(--font-heading);color:var(--green-deep);margin-bottom:1rem;font-size:1.4rem;display:flex;align-items:center;gap:0.5rem;}
+        .section-card p{color:var(--text-secondary);line-height:1.9;font-size:0.95rem;text-indent:2em;margin-bottom:0.8rem;}
+        .section-card .tag-row{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.8rem;}
+        .section-card .tag{display:inline-block;padding:0.25rem 0.75rem;font-size:0.8rem;border-radius:var(--radius-full);background:var(--green-pale);color:var(--green-deep);font-weight:500;}
+        .section-card .tag.season-spring{background:#fce4ec;color:#880e4f;}
+        .section-card .tag.season-summer{background:#fff3e0;color:#e65100;}
+        .section-card .tag.season-autumn{background:#fff8e1;color:#f57f17;}
+        .section-card .tag.season-winter{background:#e3f2fd;color:#0d47a1;}
+        .section-card .tag.conservation{background:#fce4ec;color:#b71c1c;font-weight:700;}
+        .conservation-badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 1rem;border-radius:var(--radius-full);font-weight:700;font-size:0.85rem;}
+        .conservation-badge.lc{background:#c8e6c9;color:#1b5e20;}.conservation-badge.nt{background:#fff9c4;color:#827717;}
+        .conservation-badge.vu{background:#ffe0b2;color:#e65100;}.conservation-badge.en{background:#ffcdd2;color:#b71c1c;}
+        .conservation-badge.cr{background:#d50000;color:#fff;}.conservation-badge.dd{background:#e0e0e0;color:#424242;}
+        /* === Related plants === */
+        .related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:1rem;}
+        .related-card{background:var(--green-bg);border:1px solid var(--border-light);border-radius:var(--radius-md);overflow:hidden;cursor:pointer;transition:transform 0.3s,box-shadow 0.3s;text-decoration:none;color:inherit;}
+        .related-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-medium);}
+        .related-card .related-img{height:120px;background-size:cover;background-position:center;}
+        .related-card .related-name{padding:0.6rem;text-align:center;font-weight:600;font-size:0.85rem;color:var(--green-deep);}
+        .related-card .related-sci{padding:0 0.6rem 0.6rem;text-align:center;font-size:0.7rem;color:var(--text-muted);font-style:italic;}
+        /* === Identification key === */
+        .id-key-panel{background:var(--bg-white);border:2px solid var(--green-medium);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:2rem;box-shadow:var(--shadow-medium);}
+        .id-key-panel h2{font-family:var(--font-heading);color:var(--green-deep);margin-bottom:1rem;font-size:1.3rem;}
+        .id-key-panel .id-step{margin-bottom:1rem;}
+        .id-key-panel label{display:block;font-weight:600;color:var(--text-secondary);margin-bottom:0.3rem;font-size:0.9rem;}
+        .id-key-panel select{width:100%;padding:0.6rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.9rem;font-family:var(--font-body);background:var(--green-bg);color:var(--text-primary);cursor:pointer;}
+        .id-key-panel select:focus{outline:none;border-color:var(--green-medium);box-shadow:0 0 0 3px rgba(45,106,79,0.15);}
+        .id-key-panel .id-result{margin-top:1rem;padding:1rem;background:var(--green-pale);border-radius:var(--radius-md);display:none;}
+        .id-key-panel .id-result.show{display:block;animation:fadeInUp 0.4s ease-out;}
+        .id-key-panel .id-result h3{color:var(--green-deep);margin-bottom:0.3rem;}
+        .id-key-panel .id-result .result-link{cursor:pointer;color:var(--green-primary);text-decoration:underline;font-weight:600;}
+        .id-key-panel .reset-btn{display:inline-block;margin-top:0.8rem;padding:0.4rem 1.2rem;background:var(--green-primary);color:#fff;border:none;border-radius:var(--radius-full);cursor:pointer;font-size:0.85rem;transition:background 0.3s;}
+        .id-key-panel .reset-btn:hover{background:var(--green-deep);}
+        /* === Footer === */
+        .page-footer{text-align:center;padding:2rem;color:var(--text-muted);font-size:0.8rem;border-top:1px solid var(--border-light);margin-top:2rem;}
+        /* === Print styles === */
+        @media print{
+            body{background:#fff;color:#000;font-size:12pt;}
+            .navbar,.breadcrumb,.anchor-nav,.id-key-panel,.page-footer,.leaf-particle,#heroCanvas{display:none!important;}
+            .detail-container{max-width:100%;margin:0;padding:0;}
+            .detail-hero{grid-template-columns:1fr 1fr;gap:1rem;page-break-inside:avoid;}
+            .detail-img{box-shadow:none;border:1px solid #ccc;}
+            .section-card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;padding:1rem;margin-bottom:0.8rem;}
+            .section-card h2{font-size:1.1rem;}
+            .section-card p{line-height:1.6;font-size:0.9rem;}
+            .related-grid{grid-template-columns:repeat(3,1fr);}
+        }
+        @media(max-width:768px){
+            .detail-hero{grid-template-columns:1fr;}.detail-img{aspect-ratio:16/10;}
+            .anchor-nav{position:static;flex-wrap:nowrap;overflow-x:auto;}
+            .related-grid{grid-template-columns:repeat(2,1fr);}
+            .id-key-panel select{font-size:0.85rem;}
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Floating leaf particles (CSS) -->
+    <div class="leaf-particle" style="left:5%;width:30px;height:30px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%232d6a4f%22 d=%22M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17 1.05.3 1.69.3C13 20 22 14 22 7.5 22 3.36 18.64 0 14.5 0 8.36 0 9.56 5.47 17 8z%22/></svg>') center/contain no-repeat;animation-duration:18s;animation-delay:0s;"></div>
+    <div class="leaf-particle" style="left:15%;width:22px;height:22px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%2340916c%22 d=%22M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17 1.05.3 1.69.3C13 20 22 14 22 7.5 22 3.36 18.64 0 14.5 0 8.36 0 9.56 5.47 17 8z%22/></svg>') center/contain no-repeat;animation-duration:22s;animation-delay:3s;"></div>
+    <div class="leaf-particle" style="left:75%;width:26px;height:26px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%2352b788%22 d=%22M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17 1.05.3 1.69.3C13 20 22 14 22 7.5 22 3.36 18.64 0 14.5 0 8.36 0 9.56 5.47 17 8z%22/></svg>') center/contain no-repeat;animation-duration:20s;animation-delay:7s;"></div>
+    <div class="leaf-particle" style="left:88%;width:18px;height:18px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%232d6a4f%22 d=%22M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17 1.05.3 1.69.3C13 20 22 14 22 7.5 22 3.36 18.64 0 14.5 0 8.36 0 9.56 5.47 17 8z%22/></svg>') center/contain no-repeat;animation-duration:25s;animation-delay:12s;"></div>
+
+    <nav class="navbar">
+        <a href="flora_home.html" class="logo"><span class="logo-icon">🌿</span><span class="logo-text">FloraMundi</span></a>
+        <ul class="nav-links">
+            <li><a href="flora_home.html">首页</a></li>
+            <li><a href="flora_library.html">植物图鉴</a></li>
+            <li><a href="flora_detail.html" class="active">植物详情</a></li>
+            <li><a href="flora_medicinal.html">药用植物</a></li>
+            <li><a href="flora_rare.html">珍稀植物</a></li>
+        </ul>
+    </nav>
+
+    <div class="breadcrumb">
+        <a href="flora_home.html">首页</a> › <a href="flora_library.html">植物图鉴</a> › <span id="breadcrumbPlant">银杏</span>
+    </div>
+
+    <!-- Hero Canvas for growing plant animation -->
+    <div class="hero-canvas-wrap">
+        <canvas id="heroCanvas" width="1000" height="400"></canvas>
+    </div>
+
+    <!-- Plant Identification Key Tool -->
+    <div class="detail-container" style="margin-top:0;">
+        <div class="id-key-panel" id="idKeyPanel">
+            <h2>🔍 植物识别检索</h2>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">通过选择植物特征，快速识别可能的植物种类</p>
+            <div class="id-step">
+                <label for="idType">植物类型</label>
+                <select id="idType"><option value="">-- 请选择 --</option><option value="tree">乔木</option><option value="shrub">灌木</option><option value="herb">草本</option><option value="vine">藤本</option><option value="succulent">多肉</option><option value="aquatic">水生</option></select>
+            </div>
+            <div class="id-step">
+                <label for="idFlowerColor">花色</label>
+                <select id="idFlowerColor"><option value="">-- 请选择 --</option><option value="white">白色</option><option value="pink">粉色/红色</option><option value="yellow">黄色</option><option value="purple">紫色/蓝色</option><option value="green">绿色</option><option value="multi">多色/复色</option></select>
+            </div>
+            <div class="id-step">
+                <label for="idHeight">植株高度</label>
+                <select id="idHeight"><option value="">-- 请选择 --</option><option value="low">低矮 (< 0.5m)</option><option value="medium">中等 (0.5-3m)</option><option value="tall">高大 (> 3m)</option></select>
+            </div>
+            <div class="id-step">
+                <label for="idRegion">原产地</label>
+                <select id="idRegion"><option value="">-- 请选择 --</option><option value="china">中国</option><option value="east_asia">东亚</option><option value="europe">欧洲</option><option value="africa">非洲</option><option value="americas">美洲</option><option value="global">全球分布</option></select>
+            </div>
+            <button class="reset-btn" onclick="identifyPlant()">开始识别</button>
+            <button class="reset-btn" style="background:var(--text-muted);margin-left:0.5rem;" onclick="resetIdKey()">重置</button>
+            <div class="id-result" id="idResult"></div>
+        </div>
+    </div>
+
+    <!-- Main detail content -->
+    <div class="detail-container" id="detailContent"></div>
+
+    <!-- Footer -->
+    <div class="page-footer">
+        <p>🌿 FloraMundi · 全球植物图解指南 · 探索自然之美</p>
+        <p style="margin-top:0.3rem;">植物学数据仅供参考 · 部分图片来自 Unsplash</p>
+    </div>
+
+    <script>
+        // ==================== PLANT DATABASE ====================
+        const detailDB = {
+            '银杏':{
+                name:'银杏',scientific:'Ginkgo biloba',family:'银杏科 Ginkgoaceae',genus:'银杏属 Ginkgo',type:'落叶乔木',
+                height:'20-40米',lifespan:'1000-3000年',region:'中国(原生)',habitat:'温带气候区',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期3-4月，果期9-10月',conservation:'EN (濒危，野生种群)',etymology:'"银杏"因其种子形似小杏且外被白粉而得名。属名Ginkgo源自日语"銀杏"(ぎんきょう)的音译，biloba意为"二裂的"，指其独特的二裂扇形叶片。',
+                cultural:'银杏在中国传统文化中象征长寿与坚韧。佛教寺院常植银杏，视为"圣树"。其秋叶金黄成为诗词绘画常见题材。郭沫若曾赞银杏为"东方的圣者"。银杏还是中国许多城市的市树。',
+                description:'银杏是现存最古老的裸子植物之一，其演化历史可追溯至2.7亿年前的二叠纪。在恐龙时代，银杏类植物曾广泛分布于全球，但经历第四纪冰期后，野生银杏仅在中国境内幸存下来。因此银杏被称为"活化石"，是植物界的"大熊猫"。银杏树形优美，树干挺拔，叶片呈独特的扇形，秋季变为金黄色，是世界著名的观赏树种。银杏的种子俗称"白果"，既可食用也可入药，但含有微量氢氰酸，不宜过量食用。银杏叶提取物被广泛用于改善记忆和血液循环。',
+                morphology:'银杏为落叶大乔木，树冠呈圆锥形或广卵形。树皮灰褐色，纵裂粗糙。叶片扇形，具长柄，叶脉平行二分叉，这种叶脉结构在现存种子植物中独一无二。雌雄异株，雄球花为柔荑花序状，雌球花具长柄。种子核果状，外种皮肉质有臭味，中种皮骨质白色，内种皮膜质。',
+                growth:'银杏喜光，耐寒，适应性强。对土壤要求不严，在酸性土、中性土和钙质土中均能生长。深根性，抗风力强。生长速度中等，实生苗约20年开花结果。银杏对城市环境污染有较强抗性，是优良的行道树和园林绿化树种。',
+                value:'银杏具有极高的科研价值、观赏价值和经济价值。科研上，银杏是研究植物进化的重要材料。观赏上，银杏秋叶金黄，是世界著名的彩叶树种。经济上，银杏木材优良，种子可食用和药用。银杏叶提取物(EGb761)是重要的药物原料。',
+                care:'银杏栽培需选择阳光充足、排水良好的位置。幼树需适当浇水，成年树耐旱。春季施有机肥，秋季施磷钾肥。修剪宜在冬季休眠期进行，去除枯枝和过密枝条。病虫害较少，偶有银杏超小卷叶蛾危害。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'china'
+            },
+            '樱花':{
+                name:'樱花',scientific:'Prunus serrulata',family:'蔷薇科 Rosaceae',genus:'樱属 Prunus',type:'落叶乔木',
+                height:'4-16米',lifespan:'30-100年',region:'东亚',habitat:'温带地区',
+                img:'https://images.unsplash.com/photo-1522383225653-ed111a181951?w=600&h=600&fit=crop',
+                season:'花期3-4月，果期5-6月',conservation:'LC (无危)',etymology:'"樱"字本义为"樱桃"，后泛指樱属植物。日语中"さくら"(sakura)的语源有多种说法：一说来自"咲く"(开花)，一说来自农耕神"サ神"的住所"クラ"。属名Prunus为李属的拉丁名。',
+                cultural:'樱花是日本国花，象征生命之美的短暂与绚烂。每年春季的"花见"赏樱传统已有千年历史。樱花文化深刻影响了日本文学(如《古今和歌集》)、艺术和哲学中的"物哀"美学。在中国，樱花也象征爱情与希望。',
+                description:'樱花是蔷薇科樱属多种植物的统称，狭义上指日本樱花(Prunus serrulata)。樱花是日本国花，象征着生命之美的短暂与绚烂。每年春季，日本各地举行"花见"赏樱活动，吸引全球游客。樱花花期极短，从开花到凋谢仅约7天，这种转瞬即逝的美深深影响了日本文化中的物哀美学。樱花品种繁多，包括染井吉野樱、八重樱、垂枝樱等，花色有白、粉、红等多种。',
+                morphology:'樱花为落叶乔木，树皮灰褐色具横纹。叶互生，椭圆形或倒卵形，边缘有锯齿。花序伞形或伞房状，每花序3-5朵花。花先叶开放或与叶同放。花瓣5枚(重瓣品种更多)，白色至深粉色。雄蕊多数，花柱基部有毛。果实为核果，近球形，成熟时黑色或红色。',
+                growth:'樱花喜阳光充足、排水良好的环境。适宜生长在微酸性至中性的肥沃土壤中。不耐水湿，积水易导致根系腐烂。生长速度中等，嫁接苗3-4年开花。樱花对大气污染较敏感，在污染严重地区生长不良。',
+                value:'樱花是世界最重要的观赏花木之一，每年吸引数亿游客。日本樱花季是重要的旅游经济活动。樱花文化深刻影响了日本文学、艺术和哲学。樱叶和樱花瓣可用于制作樱饼等传统食品。',
+                care:'樱花栽培需选择通风良好的高地，避免低洼积水。春季花前施磷钾肥促进开花。修剪在花后进行，去除病弱枝和交叉枝。常见病害有褐斑病和穿孔病。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'east_asia'
+            },
+            '荷花':{
+                name:'荷花',scientific:'Nelumbo nucifera',family:'莲科 Nelumbonaceae',genus:'莲属 Nelumbo',type:'多年生水生草本',
+                height:'0.5-1.5米(水面以上)',lifespan:'多年生',region:'亚洲、澳大利亚',habitat:'池塘、湖泊静水区',
+                img:'https://images.unsplash.com/photo-1502809737437-1d4c4b0e0eb8?w=600&h=600&fit=crop',
+                season:'花期6-9月，果期8-10月',conservation:'LC (无危)',etymology:'"荷"字从"艹"从"何"，"何"意为"负荷"，指其叶大如盖可负荷。属名Nelumbo来自僧伽罗语"nelum"。种加词nucifera意为"具坚果的"，指其莲蓬。英文名Lotus源自希腊语"lotos"。',
+                cultural:'荷花在中国文化中象征高洁，"出淤泥而不染，濯清涟而不妖"(周敦颐《爱莲说》)。佛教以莲花象征纯净与觉悟，佛陀常坐于莲台。荷花是印度和越南的国花，在中国十大名花中列第七。',
+                description:'荷花是世界上最古老的开花植物之一，化石记录可追溯至1.35亿年前。荷花全身是宝，根茎(莲藕)可食用，种子(莲子)可食用和药用，叶片可包装食品，花朵可供观赏。荷花具有独特的"荷叶效应"——叶片表面超疏水，水滴在叶面滚落时可带走灰尘，这一现象启发了纳米材料的研发。荷花花朵硕大，直径可达20厘米以上，花瓣多为粉红色或白色，有浓郁香气。荷花的地下茎(莲藕)在淤泥中横向生长，形成发达的通气组织以适应水生环境。',
+                morphology:'多年生水生草本，地下茎(藕)肥厚多节，节间有纵孔。叶圆形盾状，直径30-90厘米，表面粉绿色被蜡质，叶柄长1-2米具刺。花单生花梗顶端，直径10-30厘米；花瓣多数，粉红色至白色；雄蕊多数；花托(莲蓬)倒圆锥形海绵质。坚果椭圆形，种皮坚硬。',
+                growth:'荷花喜温暖湿润、阳光充足的环境。适宜生长在水深0.3-1.2米的静水中。对水质要求不严，但以富含有机质的肥沃粘土为佳。生长适温22-30℃。冬季地上部分枯死，以地下茎越冬。繁殖以分藕为主。',
+                value:'荷花具有观赏、食用、药用和科研价值。观赏上，"接天莲叶无穷碧，映日荷花别样红"的景观令人叹为观止。食用上，莲藕和莲子是重要食材。药用上，莲须、莲房、荷叶均可入药。科研上，荷叶效应启发了超疏水材料研发。',
+                care:'盆栽荷花需大盆(直径40cm以上)，装肥沃塘泥。栽植深度以顶芽入泥5-8cm为宜。生长期保持充足水分，每半月施薄肥。入冬后保持盆泥湿润即可。常见虫害有蚜虫和斜纹夜蛾。',
+                category:'aquatic',flowerColor:'pink',heightClass:'medium',regionClass:'china'
+            },
+            '梅花':{
+                name:'梅花',scientific:'Prunus mume',family:'蔷薇科 Rosaceae',genus:'樱属 Prunus',type:'落叶小乔木',
+                height:'4-10米',lifespan:'100-1000年',region:'中国',habitat:'温带至亚热带',
+                img:'https://images.unsplash.com/photo-1547519969-0b7a5e18e9b1?w=600&h=600&fit=crop',
+                season:'花期1-3月(冬末春初)，果期5-6月',conservation:'LC (无危)',etymology:'"梅"字从"木"从"每"，上古音与"某"近，指梅子。英文名Japanese apricot(日本杏)源自其传入日本的路径。属名Prunus是拉丁语中对李属植物的称呼。',
+                cultural:'梅花在中国文化中地位崇高，与松、竹并称"岁寒三友"，与兰、竹、菊合称"四君子"。梅花在严寒中绽放，象征坚贞不屈的品格。历代咏梅诗词数以万计，以林逋"疏影横斜水清浅，暗香浮动月黄昏"最为著名。梅花是中华民国的国花，也是南京、武汉等城市的市花。',
+                description:'梅花是原产于中国的传统名花，已有三千多年的栽培历史。梅花最独特的特性是花期极早，常在冬末春初、冰雪未消之际盛开，因此被誉为"报春花"。梅花品种超过300个，分为真梅系、杏梅系和樱李梅系三大系统。花色以白色和粉红色为主，也有红色和淡绿色品种。梅花香气清幽，被誉为"暗香"。梅果可食用，是制作乌梅、话梅的原料，具有生津止渴的功效。梅花盆景是中国盆景艺术的重要流派之一。',
+                morphology:'落叶小乔木，树冠开张。树皮褐紫色纵裂。叶互生宽卵形至卵形，先端尾尖，边缘细锯齿。花1-2朵腋生，先叶开放，直径2-2.5厘米；花瓣5枚，白色至深粉色，近圆形；雄蕊多数；子房密被柔毛。核果近球形，黄色被柔毛，味酸。',
+                growth:'梅花喜温暖稍湿润气候，较耐寒。喜阳光充足、通风良好的环境。对土壤要求不严，耐瘠薄，但以排水良好的微酸性壤土为佳。忌水湿。梅花生长速度中等，实生苗5-6年开花。寿命较长，中国现存多株千年古梅。',
+                value:'梅花以观赏价值为主，兼有食用和药用价值。赏梅是中国传统园林文化的重要组成部分。梅果加工制品(乌梅、话梅)是传统休闲食品和中药材。梅花提取物在化妆品中有应用。',
+                care:'梅花地栽需选择背风向阳处。盆栽需每年花后换盆。修剪在花后进行，短截开花枝。夏季适当控水促进花芽分化。常见病害有炭疽病和褐斑病，虫害有蚜虫和介壳虫。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'china'
+            },
+            '牡丹':{
+                name:'牡丹',scientific:'Paeonia suffruticosa',family:'芍药科 Paeoniaceae',genus:'芍药属 Paeonia',type:'落叶灌木',
+                height:'0.5-2米',lifespan:'50-100年',region:'中国',habitat:'温带至暖温带',
+                img:'https://images.unsplash.com/photo-1562690868-7bb7e5d6b2a5?w=600&h=600&fit=crop',
+                season:'花期4-5月，果期8-9月',conservation:'LC (无危)',etymology:'"牡"意为雄性、大，"丹"指红色，合称"大红花"。"牡丹"之名始见于《神农本草经》。属名Paeonia源自希腊医神Paeon，种加词suffruticosa意为"亚灌木的"。英文名Tree peony(木本芍药)强调其灌木特性。',
+                cultural:'牡丹在中国被誉为"花中之王"、"国色天香"，是繁荣昌盛、富贵吉祥的象征。唐代洛阳牡丹甲天下，刘禹锡"唯有牡丹真国色，花开时节动京城"描绘了赏牡丹盛况。牡丹在中国十大名花中列第二，是洛阳市市花。',
+                description:'牡丹是原产于中国的著名观赏花木，栽培历史超过1600年。牡丹花朵硕大，直径可达15-30厘米，花瓣层次丰富，有单瓣、重瓣、千瓣之分。花色极为丰富，包括白、粉、红、紫、黄、绿、黑(深紫)和复色等九大色系。中国牡丹以洛阳牡丹和菏泽牡丹最为著名。牡丹根皮(丹皮)是重要的中药材。牡丹品种繁多，约有500多个品种，如"姚黄"、"魏紫"、"赵粉"、"豆绿"等传统名品。',
+                morphology:'落叶灌木，茎高达2米。根肉质圆柱形。二回三出复叶互生，小叶宽卵形至卵状长圆形，先端3-5裂，背面有白粉。花单生枝顶，大型；萼片5枚绿色；花瓣5-15枚(栽培品种更多)，白色至深紫红色；雄蕊多数，花药黄色；心皮5枚被绒毛。蓇葖果密生黄褐色毛。',
+                growth:'牡丹喜凉爽干燥气候，较耐寒忌炎热。喜光但怕暴晒，以半阴环境为佳。要求深厚肥沃、排水良好的中性至微碱性沙质壤土。春季萌动早，花后有一段休眠期。牡丹"春发枝，夏打盹，秋生根，冬休眠"。',
+                value:'牡丹以观赏价值为主，兼有药用价值。牡丹花会是重要的文化旅游活动。丹皮(牡丹根皮)具有清热凉血、活血化瘀的功效。牡丹提取物用于高端化妆品。牡丹籽油是新型保健食用油。',
+                care:'牡丹栽培有"七宜四怕"：宜凉怕冻，宜暖怕热，宜光怕晒，宜干怕湿。栽植时间以秋季(9-10月)为最佳。施肥掌握"薄肥勤施、冬施足、春追花"原则。修剪去除萌蘖枝和病弱枝。常见病害有灰霉病和根腐病。',
+                category:'shrub',flowerColor:'pink',heightClass:'medium',regionClass:'china'
+            },
+            '玫瑰':{
+                name:'玫瑰',scientific:'Rosa rugosa',family:'蔷薇科 Rosaceae',genus:'蔷薇属 Rosa',type:'落叶灌木',
+                height:'1-2米',lifespan:'20-50年',region:'东亚',habitat:'海岸沙地、山坡',
+                img:'https://images.unsplash.com/photo-1494972308805-463bc619d34e?w=600&h=600&fit=crop',
+                season:'花期5-8月，果期8-10月',conservation:'LC (无危)',etymology:'"玫"指美玉，"瑰"指珍奇，合称指珍贵美丽之花。属名Rosa为拉丁语玫瑰。种加词rugosa意为"多皱的"，指其叶面褶皱。英文rose源自拉丁语rosa，经古法语传入英语。',
+                cultural:'玫瑰是世界通用的爱情象征。希腊神话中，玫瑰由爱神阿佛洛狄忒的鲜血染红。中国古人将玫瑰与月季区分，玫瑰在《诗经》中已有记载。玫瑰是保加利亚国花，保加利亚玫瑰谷的大马士革玫瑰是世界香料工业的重要原料。',
+                description:'玫瑰(Rosa rugosa)是蔷薇科蔷薇属的典型代表，原产于东亚沿海地区，具有极强的耐盐碱和耐寒能力。与广泛栽培的切花"玫瑰"(实为现代月季)不同，真正的玫瑰叶面有明显的深皱褶纹理，茎干密被刚毛和皮刺。玫瑰花香气浓郁，是提取玫瑰精油和制作玫瑰花茶的重要原料。玫瑰果实(蔷薇果)富含维生素C，是北欧国家传统冬季维生素来源。玫瑰精油"液体黄金"之称，约3000-5000公斤花瓣才能提取1公斤精油。',
+                morphology:'落叶灌木，高1-2米。茎粗壮丛生，密被绒毛、刚毛和皮刺。奇数羽状复叶，小叶5-9枚，椭圆形至倒卵形，叶面深绿色具明显褶皱。花单生或3-6朵簇生，直径6-8厘米；花瓣紫红色至白色，单瓣或半重瓣；芳香浓郁。蔷薇果扁球形，成熟时砖红色，萼片宿存。',
+                growth:'玫瑰喜阳光充足、凉爽通风的环境。极耐寒，可耐-30℃低温。对土壤适应性强，耐盐碱，在pH值5.5-8.5的土壤中均能生长。根系发达，萌蘖力强，易形成灌丛。花期长，花后修剪可促进二次开花。',
+                value:'玫瑰花可提取精油(玫瑰油)，是香料工业的顶级原料。玫瑰干花蕾可泡茶；玫瑰果富含维生素C。玫瑰在园林绿化中广泛使用，也是重要的切花材料。玫瑰精油在芳香疗法中用于缓解焦虑和抑郁。',
+                care:'玫瑰栽培需充足阳光(每日6小时以上)。喜肥沃、排水良好的壤土。春季重剪促进新枝萌发。花后及时剪除残花以促进复花。注意防治黑斑病、白粉病和蚜虫。冬季根部培土防寒。',
+                category:'shrub',flowerColor:'pink',heightClass:'medium',regionClass:'east_asia'
+            },
+            '兰花':{
+                name:'兰花(春兰)',scientific:'Cymbidium goeringii',family:'兰科 Orchidaceae',genus:'兰属 Cymbidium',type:'多年生草本',
+                height:'20-40厘米',lifespan:'多年生',region:'东亚',habitat:'林下阴湿处',
+                img:'https://images.unsplash.com/photo-1524594152209-ecf01afdc411?w=600&h=600&fit=crop',
+                season:'花期1-3月',conservation:'VU (易危，野生)',etymology:'"兰"字本义指佩兰(Eupatorium)，后转指兰花。属名Cymbidium源自希腊语"kymbe"(船形)，指唇瓣形状。种加词goeringii纪念德国植物学家Goering。',
+                cultural:'兰花在中国文化中被誉为"花中君子"，象征高洁、清雅。孔子赞兰："芝兰生于深林，不以无人而不芳"。兰花与梅、竹、菊合称"四君子"。兰花在中国十大名花中列第四。',
+                description:'春兰是中国兰花中最具代表性的种类，栽培历史超过2000年。兰花是世界第二大植物科(兰科)，约有28000种。兰花花朵结构极其特化：三枚萼片、三枚花瓣(其中一枚特化为唇瓣)，雄蕊与雌蕊合并为合蕊柱。许多兰花进化出复杂的欺骗性传粉机制，如模仿雌蜂吸引雄蜂传粉。中国兰花讲究"香、姿、色、韵"四美，以素心兰最为名贵。兰花种子极细小，一个蒴果可含数百万粒种子，但自然萌发率极低，需与特定真菌共生。',
+                morphology:'地生兰，假鳞茎较小。叶4-7枚丛生，带形，长20-40厘米，宽0.6-1厘米。花葶直立高于叶面，花单生(春兰)或数朵(蕙兰)；萼片狭长圆状披针形；花瓣较短宽；唇瓣三裂具斑点；合蕊柱长1-1.5厘米；花粉块4个。蒴果狭椭圆形。',
+                growth:'春兰喜半阴湿润环境，忌强光直射和干燥。生长适温15-25℃。要求疏松透气、富含腐殖质的微酸性培养土(pH5.5-6.5)。夏季需遮荫70-80%，冬季可全光照。空气湿度以60-80%为宜。花芽分化需一定昼夜温差。',
+                value:'兰花以观赏价值为主，中国兰花文化是世界园艺的独特遗产。兰花在国际花卉贸易中占有重要地位。部分兰花种类可药用，如铁皮石斛。兰花杂交育种产业发达，每年有大量新品种登记。',
+                care:'养兰讲究"春不出(防寒风)，夏不日(遮强光)，秋不干(保持湿润)，冬不湿(控制浇水)"。浇水以"见干见湿"为原则。施肥宜淡，以"薄肥勤施"为法。每年春季花后换盆分株。防治软腐病和介壳虫。',
+                category:'herb',flowerColor:'green',heightClass:'medium',regionClass:'east_asia'
+            },
+            '菊花':{
+                name:'菊花',scientific:'Chrysanthemum morifolium',family:'菊科 Asteraceae',genus:'菊属 Chrysanthemum',type:'多年生草本',
+                height:'30-100厘米',lifespan:'多年生',region:'中国',habitat:'温带地区',
+                img:'https://images.unsplash.com/photo-1496065187959-7b8a6ef2c9ca?w=600&h=600&fit=crop',
+                season:'花期9-11月',conservation:'LC (无危)',etymology:'"菊"字本义为"圆形的花序"，后转指菊花。属名Chrysanthemum源自希腊语"chrysos"(金色)和"anthemon"(花)，指其金黄色花序。种加词morifolium意为"桑叶的"，指叶形似桑叶。',
+                cultural:'菊花在中国十大名花中列第三，与梅、兰、竹合称"四君子"。陶渊明"采菊东篱下，悠然见南山"使菊花成为隐逸高士的象征。重阳节赏菊、饮菊花酒的习俗已有千年。菊花是日本皇室的象征(十六瓣菊花纹章)。',
+                description:'菊花是原产于中国的传统名花，栽培历史超过3000年，是世界四大切花之一。菊花品种极其丰富，全球约有20000个园艺品种。花型变化万千，有单瓣型、重瓣型、球型、管瓣型、丝发型、龙爪型等。花色涵盖白、黄、橙、红、紫、绿及各种复色。菊花是典型的短日照植物，日照时间短于12小时才诱导花芽分化，这也是菊花在秋季开放的原因。菊花不仅供观赏，还可制茶(菊花茶)、入药(杭白菊、滁菊)、食用(菊花火锅)。',
+                morphology:'多年生草本，茎直立多分枝，被柔毛。叶互生，卵形至披针形，羽状浅裂或半裂，背面被白色短柔毛。头状花序单生或数个集生于枝端，直径2.5-20厘米；总苞片多层；舌状花多层，颜色多样；管状花黄色。瘦果不发育(高度不育)。',
+                growth:'菊花喜阳光充足、凉爽通风的环境。生长适温15-25℃。要求肥沃、排水良好的沙质壤土。菊花为短日照植物，通过控制日照时数可实现周年开花。生长旺盛期需充足水肥，花芽分化期适当控水。耐轻霜，不耐严寒。',
+                value:'菊花是世界四大切花之一，具有极高的观赏价值。药用菊花(杭白菊、贡菊、滁菊)具有清热明目功效。菊花茶是世界流行的保健饮品。菊花在园林绿化中广泛用于花坛、花境布置。',
+                care:'菊花栽培需摘心促进分枝(正常栽培摘心2-3次)。多本菊每盆留3-5枝，独本菊不留侧枝。生长期每10天追施液肥，花蕾期增施磷钾肥。花后修剪地上部分，根部覆土越冬。防治蚜虫和叶斑病。',
+                category:'herb',flowerColor:'yellow',heightClass:'medium',regionClass:'china'
+            },
+            '郁金香':{
+                name:'郁金香',scientific:'Tulipa gesneriana',family:'百合科 Liliaceae',genus:'郁金香属 Tulipa',type:'多年生球根草本',
+                height:'20-60厘米',lifespan:'多年生(球根)',region:'中亚至地中海',habitat:'温带草原',
+                img:'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
+                season:'花期3-5月',conservation:'LC (无危)',etymology:'"郁金香"一名源自其花形似中国古代的"郁金"酒器，且花有香气。属名Tulipa源自波斯语"tulipan"(头巾)，形容花形。英文tulip同源。',
+                cultural:'郁金香是荷兰的国花，17世纪荷兰"郁金香狂热"是人类历史上首次有记载的投机泡沫。在土耳其奥斯曼帝国时期，郁金香是皇室的象征，被誉为"东方之花"。郁金香也是荷兰与土耳其文化交流的重要纽带。',
+                description:'郁金香是世界最著名的球根花卉之一，原产于中亚天山山脉至地中海沿岸。虽然荷兰以郁金香闻名，但郁金香的野生种主要分布在中亚地区。郁金香品种超过8000个，按花型分为单瓣早花型、重瓣早花型、凯旋型、达尔文杂交型、单瓣晚花型、百合花型、流苏型、绿花型、伦勃朗型、鹦鹉型、重瓣晚花型等15个大类。花色除纯蓝色外几乎涵盖所有颜色，以"夜皇后"(深紫近乎黑)最为名贵。郁金香花朵对温度敏感，温暖时开放，凉爽时闭合。',
+                morphology:'多年生草本，鳞茎圆锥形，外被淡黄色至棕褐色皮膜。叶3-5枚，条状披针形至卵状披针形，光滑被白粉。花单生茎顶，大型直立；花被6枚离生，倒卵状长圆形；雄蕊6枚等长，花药基部着生；柱头三裂反卷。蒴果室背开裂，种子扁平。',
+                growth:'郁金香喜冬季温暖湿润、夏季凉爽干燥的气候。鳞茎需经低温(5-9℃)6-8周才能正常开花。喜光，要求排水良好的沙质壤土。荷兰因其独特的气候和土壤条件成为世界郁金香生产中心。花后叶片营养回输至新鳞茎，需保留叶片至自然枯黄。',
+                value:'郁金香是世界最重要的球根花卉，荷兰每年出口数十亿颗郁金香种球。郁金香花展(如荷兰库肯霍夫公园)吸引了全球游客。郁金香在切花、盆栽和园林绿化中广泛应用。',
+                care:'秋季(10-11月)种植种球，深度为种球高度的2-3倍。保持土壤湿润但不积水。春季出芽后施磷钾肥。花后剪除花茎，保留叶片，待叶片枯黄后挖取鳞茎贮藏于阴凉通风处。防治灰霉病和蛴螬。',
+                category:'herb',flowerColor:'multi',heightClass:'medium',regionClass:'europe'
+            },
+            '向日葵':{
+                name:'向日葵',scientific:'Helianthus annuus',family:'菊科 Asteraceae',genus:'向日葵属 Helianthus',type:'一年生草本',
+                height:'1-3.5米',lifespan:'一年生',region:'北美洲',habitat:'开阔田野',
+                img:'https://images.unsplash.com/photo-1597848212624-a533ebc40e69?w=600&h=600&fit=crop',
+                season:'花期7-9月，果期8-10月',conservation:'LC (无危)',etymology:'"向日葵"因其花序随太阳转动而得名。属名Helianthus源自希腊语"helios"(太阳)和"anthos"(花)。种加词annuus意为"一年生的"。英文名sunflower直译自属名。',
+                cultural:'向日葵原产于北美，被印第安人驯化已有4000年。梵高以向日葵为主题的系列画作是世界最著名的静物画。向日葵是乌克兰的国花，象征阳光和生命力。在中国文化中，向日葵象征忠诚和积极向上。',
+                description:'向日葵是世界上最重要的油料作物之一，与大豆、油菜、花生并称世界四大油料。向日葵具有独特的向光性：在花蕾期，花盘随太阳由东向西转动，这种现象称为"向日性"——由生长素在茎的阴面分布较多导致阴面生长更快、茎弯向太阳。开花后，花盘主要朝向东方，有利于早晨快速升温吸引传粉昆虫。向日葵的"花"实际上是一个头状花序，由数百至数千朵小花组成：外围的舌状花(不育)负责吸引传粉者，中央的管状花负责结实。',
+                morphology:'一年生草本，茎直立粗壮被糙毛。叶互生，心状卵形或宽卵形，边缘有锯齿，三出脉。头状花序极大，直径10-40厘米，单生茎顶或分枝顶端；总苞多层叶质；舌状花金黄色1-3层，管状花棕色或紫色多数。瘦果倒卵形(葵花籽)，木质化果皮有条纹。',
+                growth:'向日葵喜温暖、阳光充足的环境。耐旱不耐涝，对土壤要求不严，但以肥沃的壤土产量最高。生长适温20-30℃。为短日照植物，但多数栽培品种对日照不敏感。根系发达，入土深达2米，吸收能力强。',
+                value:'向日葵籽含油率40-50%，葵花籽油是优质食用油。葵花籽是受欢迎的休闲食品。向日葵花蜜丰富，是重要的蜜源植物。观赏向日葵品种在园林和切花中应用广泛。向日葵还可用于修复重金属污染的土壤(植物修复)。',
+                care:'直播或育苗移栽均可。种子点播深度2-3厘米。苗期保持土壤湿润但不积水。生长旺盛期追施磷钾肥。高秆品种需设支柱防倒伏。花后及时采收种子，防止鸟啄。',
+                category:'herb',flowerColor:'yellow',heightClass:'tall',regionClass:'americas'
+            },
+            '橡树':{
+                name:'橡树(夏栎)',scientific:'Quercus robur',family:'壳斗科 Fagaceae',genus:'栎属 Quercus',type:'落叶大乔木',
+                height:'25-40米',lifespan:'200-1000年',region:'欧洲、西亚',habitat:'温带阔叶林',
+                img:'https://images.unsplash.com/photo-1486912500284-6f2462f4a8e6?w=600&h=600&fit=crop',
+                season:'花期4-5月，果期9-10月',conservation:'LC (无危)',etymology:'"橡"字指橡树的果实(橡子)。属名Quercus为拉丁语栎树。种加词robur在拉丁语中意为"力量、坚固"，亦指心材。英文名oak源自古英语"ac"。',
+                cultural:'橡树是力量和长寿的象征，是许多欧洲国家的国树(英国、德国、拉脱维亚等)。在希腊神话中，橡树是宙斯的神树。德鲁伊教在橡树林中举行仪式。橡树叶出现在许多军队的勋章和徽章上。',
+                description:'橡树(栎树)是北半球温带森林的优势树种，壳斗科栎属植物约有600种。橡树木材坚硬致密，是世界最优良的硬木之一，广泛用于家具制造、建筑和酿酒业(橡木桶)。橡树果实(橡子)富含淀粉和单宁，是森林中许多野生动物(松鼠、鹿、野猪)的重要食物来源。橡树与多种真菌形成菌根共生关系，树下的松露(尤其是黑松露和白松露)是世界最昂贵的食材。一棵成熟的橡树可支持多达500种其他生物的生存，是生态系统的重要支柱。',
+                morphology:'落叶大乔木，树冠广展球形。树皮深灰色纵裂。叶互生倒卵形至倒卵状长椭圆形，边缘波状浅裂(4-7对圆裂片)，叶柄极短。花单性同株；雄花为下垂柔荑花序，雌花单生或数朵集生。坚果(橡子)卵圆形1/3包于壳斗(橡碗)中。',
+                growth:'橡树喜光，幼苗期耐半阴。对气候适应性强，耐寒耐热。对土壤要求不严，在酸性至中性土壤中均生长良好。深根性，主根发达，抗风力强。生长速度中等偏慢，寿命极长。实生苗约20-30年开始结实。',
+                value:'橡树木材具有极高经济价值，用于高档家具、地板、造船、制桶。橡子可用于饲料和提取栲胶。栓皮栎的树皮是软木来源。橡树是优良的园林绿化树种和碳汇树种。橡树林在生态系统中具有不可替代的价值。',
+                care:'橡树适合地栽于开阔地带。幼苗期间需除草和适量浇水。成年树几乎无需管理。秋季收集橡子可直播育苗。注意防治栎树猝死病(Phytophthora ramorum)和橡树天牛。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'europe'
+            },
+            '枫树':{
+                name:'枫树(鸡爪槭)',scientific:'Acer palmatum',family:'无患子科 Sapindaceae',genus:'槭属 Acer',type:'落叶小乔木或灌木',
+                height:'5-10米',lifespan:'50-100年',region:'东亚',habitat:'山地森林',
+                img:'https://images.unsplash.com/photo-1506797603090-9cda65a34e62?w=600&h=600&fit=crop',
+                season:'花期4-5月，秋叶10-11月',conservation:'LC (无危)',etymology:'"枫"字意为"风中之木"，指其叶遇风即响。属名Acer在拉丁语中意为"尖锐的"，指其叶尖。种加词palmatum意为"掌状的"，指其叶掌状分裂。英文名Japanese maple因多在日本园艺化得名。',
+                cultural:'枫叶是加拿大国旗上的图案，象征加拿大。在日本，"红叶狩"(赏红叶)与"花见"(赏樱)并称两大自然审美传统。中国古诗中"停车坐爱枫林晚，霜叶红于二月花"千古传诵。枫树在东方园林中是必不可少的造景元素。',
+                description:'鸡爪槭是世界最著名的观赏枫树之一，原产于日本、韩国和中国。其秋叶变色极其绚丽，从金黄、橙红到深紫红色，被誉为"秋天的宝石"。鸡爪槭园艺品种超过1000个，按叶形分为掌叶类、羽叶类、线叶类、卷叶类等。枫叶的秋色形成机制是：秋季日照变短、温度下降，叶绿素分解，类胡萝卜素(黄色)和花青素(红色)显现。槭树属约有200种，遍布北半球温带地区。枫糖(Maple syrup)则主要来自北美的糖槭(Acer saccharum)。',
+                morphology:'落叶小乔木或灌木。树皮灰色光滑。叶对生掌状5-9深裂，裂片披针形边缘重锯齿，叶面深绿色秋季变红或黄。伞房花序顶生；花小紫红色；萼片5枚；花瓣5枚；雄蕊8枚。翅果(双翅果)小坚果球形，果翅开展成钝角，成熟时黄褐色。',
+                growth:'鸡爪槭喜半阴湿润环境，忌强光暴晒和干燥风。喜肥沃、排水良好的微酸性土壤。耐寒但新梢怕晚霜。生长速度中等。秋季叶色与光照、温度和土壤pH值有关：充足光照和较大温差有利于红色花青素的形成。',
+                value:'鸡爪槭是世界最重要的观赏树木之一，在东方园林、盆景和庭院绿化中应用广泛。槭树木材纹理美观，可用于高级家具和乐器制造。糖槭的树汁可制枫糖浆。槭树是重要的蜜源植物。',
+                care:'栽培于半阴避风处。生长期保持土壤湿润。春季施缓释肥。秋季落叶后修剪去除交叉枝和病弱枝。盆栽每年春季换盆。防治天牛和叶斑病。',
+                category:'tree',flowerColor:'purple',heightClass:'tall',regionClass:'east_asia'
+            },
+            '松树':{
+                name:'松树(油松)',scientific:'Pinus tabuliformis',family:'松科 Pinaceae',genus:'松属 Pinus',type:'常绿乔木',
+                height:'15-25米',lifespan:'100-500年',region:'中国北方',habitat:'温带山地',
+                img:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=600&fit=crop',
+                season:'花期4-5月，球果次年9-10月成熟',conservation:'LC (无危)',etymology:'"松"字从"木"从"公"，木中之公，代表树木之长。属名Pinus为拉丁语松树。种加词tabuliformis意为"平台形的"，指其树冠平顶如台。',
+                cultural:'松树在中国文化中象征长寿、坚贞和君子之德，与竹、梅合称"岁寒三友"。"松鹤延年"是传统祝寿图案。泰山松、黄山松是中国山水画的重要主题。在日本，松树是新年和喜庆场合的装饰物(门松)。',
+                description:'松树是松科松属植物的统称，全球约有120种，是北半球森林的主要树种。油松是中国华北地区的代表性针叶树。松树的叶子特化为针形叶，通常2-5针一束，叶表面有厚角质层和气孔下陷，这些适应性特征使松树能在干旱、寒冷和贫瘠的环境中生存。松树的经济价值极高：木材用于建筑和造纸，松脂可提取松香和松节油，松花粉是健康食品。松树与某些真菌形成外生菌根，林下的松茸是世界顶级食材。松树是典型的"先锋树种"，能在裸岩和废弃矿山上生长，是生态修复的重要树种。',
+                morphology:'常绿乔木，树冠平顶状。树皮灰褐色鳞片状开裂。冬芽红褐色。针叶2针一束，粗硬长10-15厘米，叶鞘宿存。雄球花圆柱形聚生新枝基部，雌球花圆球形单生或数个集生新枝顶端。球果卵球形，成熟时黄褐色，种鳞盾形有横脊，鳞脐具短刺。种子有翅。',
+                growth:'松树极喜光，幼苗亦不耐庇荫。耐寒、耐旱、耐瘠薄，对土壤要求不严，在花岗岩风化母质上亦能生长。深根性主根发达。生长速度中等。松树对大气SO2污染敏感，可作为大气污染指示植物。',
+                value:'松树是世界上最重要的用材树种之一。松木广泛用于建筑、家具和造纸。松脂是松香和松节油的原料。松花粉被用作保健食品。松树是重要的水源涵养和水土保持树种。松树盆景是中国传统艺术。',
+                care:'松树适合地栽于阳光充足的坡地。苗期需除草。成年树基本无需管理。移植需带土球并修剪针叶减少蒸腾。注意防治松材线虫病(松树癌症)和松毛虫。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'china'
+            },
+            '竹子':{
+                name:'毛竹',scientific:'Phyllostachys edulis',family:'禾本科 Poaceae',genus:'刚竹属 Phyllostachys',type:'常绿乔木状竹类',
+                height:'10-25米',lifespan:'单株约10年(地下茎长存)',region:'中国南方',habitat:'亚热带山地',
+                img:'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
+                season:'花期罕见(60-100年一次)',conservation:'LC (无危)',etymology:'"竹"字象形，描绘竹枝竹叶之形。属名Phyllostachys意为"叶穗"，指其花序生于叶状苞片腋内。种加词edulis意为"可食用的"，指其竹笋。',
+                cultural:'竹在中国文化中居"岁寒三友"和"四君子"之列，象征虚心有节、坚韧挺拔。苏轼"宁可食无肉，不可居无竹"道出了竹在文人生活中的地位。竹简是中国古代最重要的书写载体之一。竹在东方园林中不可或缺。',
+                description:'毛竹是世界上最重要的经济竹种，原产于中国，占中国竹林面积的70%以上。竹子属于禾本科植物，是"草"而非"树"，但其木质化茎干可达25米高。竹子具有独特的"爆发式生长"方式：竹笋破土后，60天内可生长到最大高度(最快每天生长1米以上)，之后不再增粗和增高。竹子开花极为罕见，多数竹种60-120年才开花一次，且开花后竹林大面积枯死(竹类植物的"集体自杀"现象)。竹材强度高、韧性好，抗拉强度堪比钢材，被称为"植物钢铁"。',
+                morphology:'地下茎(竹鞭)单轴型横走。秆散生直立，高10-25米，直径8-20厘米。秆环平，箨环隆起。箨鞘背面密被黑褐色斑点。每节2分枝。叶片披针形，有小横脉。穗状花序组成圆锥花序；小穗含2-3小花。颖果。开花后植株枯死。',
+                growth:'毛竹喜温暖湿润气候，在年均温15-20℃、年降水1200-1800毫米地区生长最佳。喜肥沃、排水良好的酸性土壤(pH4.5-7.0)。出笋期3-4月。竹笋-幼竹高生长期约60天。换叶期2-3年一次。',
+                value:'竹材用途极为广泛：建筑(竹脚手架、竹屋)、家具、造纸、编织、工艺品。竹笋是高营养蔬菜。竹子生长快、固碳能力强，碳汇潜力大。竹林在保持水土、调节水源方面作用显著。竹子在园林中的应用极为丰富。',
+                care:'竹林经营需每年伐除4年生以上老竹。出笋期保护壮笋，去除弱笋。春夏季施肥以氮肥为主。防治竹蝗、竹螟和竹丛枝病。新植竹林注意保持土壤湿润。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'china'
+            },
+            '猴面包树':{
+                name:'猴面包树',scientific:'Adansonia digitata',family:'锦葵科 Malvaceae',genus:'猴面包树属 Adansonia',type:'落叶乔木',
+                height:'5-25米',lifespan:'1000-2500年',region:'非洲',habitat:'热带草原',
+                img:'https://images.unsplash.com/photo-1506797603090-9cda65a34e62?w=600&h=600&fit=crop',
+                season:'花期5-8月，果期9-11月',conservation:'LC (无危)',etymology:'"猴面包树"因其果实为猴子所喜爱而得名。属名Adansonia纪念法国植物学家Adanson。英文名baobab可能源自阿拉伯语"bu hibab"(多籽果实)。种加词digitata意为"指状的"，指其复叶形。',
+                cultural:'猴面包树被称为"非洲生命之树"，在非洲传说中，它是被神倒栽的树，所以树枝像根一样伸向天空。猴面包树是马达加斯加的国树，出现在许多非洲国家的徽章上。它是非洲村落聚集的中心和重要的文化象征。',
+                description:'猴面包树是非洲热带草原的标志性树种，以其异常粗大的树干著称——直径可达10米以上，树干中储存有大量水分(多达12万升)以度过旱季。猴面包树木质松软多孔，像海绵一样。其果实(猴面包果)富含维生素C(是橙子的6倍)、钙(是菠菜的2倍)和抗氧化物质，被誉为"超级水果"。猴面包树的树皮被大象剥食以获取水分，但树皮能再生。老树树干中空，曾被用作监狱、酒馆和墓穴。猴面包树的花在夜间开放，由狐蝠传粉。全属共8种，其中6种为马达加斯加特有。',
+                morphology:'落叶乔木，树干极粗大圆柱形。树皮灰褐色光滑。掌状复叶互生，小叶5-7枚长圆状倒卵形。花大下垂，直径15-20厘米；花萼5裂；花瓣5枚白色，后变黄至褐色；雄蕊多数合生成柱。果长椭圆形木质，长20-35厘米，密被绒毛，果肉干粉质包裹种子。',
+                growth:'猴面包树喜炎热干旱气候，极耐旱。要求排水良好的沙质土壤。生长速度极慢，头几年几乎不长，但寿命极长。旱季落叶以节水，雨季快速长叶。实生苗10-15年开始开花。对霜冻敏感。',
+                value:'猴面包树提供食物(果肉、种子、嫩叶)、水源(树干储水)、纤维(树皮制绳)、药材(治疗发烧和炎症)和栖息地。猴面包果粉是国际超级食品。树干可作天然蓄水库。是生态旅游的重要吸引物。',
+                care:'仅适合热带和亚热带干旱地区露天栽培。需充足阳光和极好排水。幼苗怕涝。容器栽培需深盆以适应直根。温带地区可温室栽培但生长极为缓慢。',
+                category:'tree',flowerColor:'white',heightClass:'tall',regionClass:'africa'
+            },
+            '薰衣草':{
+                name:'薰衣草',scientific:'Lavandula angustifolia',family:'唇形科 Lamiaceae',genus:'薰衣草属 Lavandula',type:'常绿亚灌木',
+                height:'30-60厘米',lifespan:'10-15年',region:'地中海地区',habitat:'干燥石灰质山坡',
+                img:'https://images.unsplash.com/photo-1490750967868-88aa4a5ed8db?w=600&h=600&fit=crop',
+                season:'花期6-8月',conservation:'LC (无危)',etymology:'"薰衣草"因其常用于薰香衣物得名。属名Lavandula源自拉丁语"lavare"(洗涤)，罗马人用其泡澡。种加词angustifolia意为"窄叶的"。英文名lavender同源。',
+                cultural:'薰衣草是法国普罗旺斯的象征，紫色薰衣草田是世界最著名的农业景观之一。薰衣草自古用于宗教仪式(薰香)和个人护理。在芳香疗法中，薰衣草是使用最广泛的精油之一，以镇静安神著称。',
+                description:'薰衣草是唇形科薰衣草属植物，原产地中海沿岸干燥石灰质山地。薰衣草以其令人放松的芳香闻名于世，其精油产量占全球精油市场的重要份额。薰衣草精油的主要成分是乙酸芳樟酯和芳樟醇，具有镇静、抗菌、抗炎等药理作用。法国普罗旺斯地区以薰衣草田景观闻名，每年夏季紫色花海吸引了数百万游客。薰衣草品种很多，包括英国薰衣草(L. angustifolia，品质最高)、法国薰衣草(L. dentata)和宽叶薰衣草(L. latifolia)等，其中英国薰衣草精油品质最佳。薰衣草还是一种优良的蜜源植物。',
+                morphology:'常绿亚灌木，多分枝丛生。叶对生线形至披针形，全缘反卷，幼时密被灰白色星状绒毛。轮伞花序聚生枝顶成穗状花序；花蓝紫色，花萼管状具15脉，花冠二唇形上唇2裂下唇3裂，雄蕊4枚二强。小坚果光滑。',
+                growth:'薰衣草喜阳光充足、干燥凉爽的环境。极耐旱，忌高温多湿。要求排水良好的中性至碱性沙质或砾质土壤(pH6.5-8.0)。耐寒(可耐-20℃)，但怕涝。夏季修剪促进二次开花和株形紧凑。全株芳香。',
+                value:'薰衣草精油是最重要的芳香精油之一，用于香水、化妆品、芳香疗法和日化产品。薰衣草干花用于香包和花茶。薰衣草是重要的蜜源植物。薰衣草田是重要的旅游资源。',
+                care:'选择阳光充足、排水良好处栽培。春季修剪枯枝，花后剪去花穗。浇水宁干勿湿。冬季覆砾石保护根颈。每3-4年更新植株(扦插或分株)。注意防治根腐病(浇水过多引起)。',
+                category:'shrub',flowerColor:'purple',heightClass:'medium',regionClass:'europe'
+            },
+            '薄荷':{
+                name:'薄荷',scientific:'Mentha canadensis',family:'唇形科 Lamiaceae',genus:'薄荷属 Mentha',type:'多年生草本',
+                height:'30-60厘米',lifespan:'多年生',region:'北温带广布',habitat:'湿润沟谷',
+                img:'https://images.unsplash.com/photo-1627483165650-20b8423e5b3b?w=600&h=600&fit=crop',
+                season:'花期7-9月',conservation:'LC (无危)',etymology:'"薄"通"薜"，一种香草；"荷"指其叶似荷(大叶)。属名Mentha源自希腊神话中的仙女Minthe，被冥后变成薄荷。英文名mint同源。',
+                cultural:'薄荷在世界各地文化中广泛使用。古希腊罗马人宴会上佩戴薄荷花环，用薄荷擦桌子以示欢迎。中东地区以薄荷茶待客是传统礼仪。薄荷在中药中应用历史悠久(《唐本草》记载)。薄荷糖是世界上最受欢迎的糖果品类之一。',
+                description:'薄荷是唇形科薄荷属植物的统称，全球约有25种，但杂交现象极为普遍，自然和人工杂交种众多。薄荷以其独特的清凉感闻名，这源于其含有的薄荷醇(menthol)——薄荷醇能激活皮肤和口腔黏膜中的冷感受器(TRPM8通道)，产生清凉感而不降低实际温度。薄荷是世界上最重要的香料植物之一，广泛应用于食品、日化、医药行业。主要的薄荷种类有胡椒薄荷(M. x piperita)、留兰香(M. spicata，俗称绿薄荷)和田野薄荷(M. canadensis)等。薄荷的挥发油含量因气候、土壤和品种而异。',
+                morphology:'多年生草本，有匍匐根状茎。茎四棱形，直立被微柔毛。叶对生，卵形至长圆形，边缘锯齿，两面有腺点。轮伞花序腋生；花淡紫或白色；花萼管状钟形5齿；花冠近辐射对称4裂；雄蕊4枚近等长。小坚果卵球形。',
+                growth:'薄荷适应性极强，喜温暖湿润环境。对土壤要求不严，以肥沃的沙质壤土为佳。喜光但也耐半阴。生长极为旺盛，地下根茎蔓延迅速，常侵入其他植物区域，建议容器种植控制蔓延。耐寒，地上部冬季枯死，根茎越冬。',
+                value:'薄荷油(薄荷醇)是食品、牙膏、化妆品和药品的重要原料。薄荷叶用于茶饮、烹饪和调酒(如莫吉托)。薄荷具有疏散风热、清利咽喉的功效。薄荷脑是重要的医药中间体。',
+                care:'薄荷极易栽培。盆栽或地栽均可(地栽建议用阻挡板控制蔓延)。充足水分促进茎叶茂盛。多次采收嫩梢促进分枝。每年春季换盆或分株更新。防治白粉病和红蜘蛛。',
+                category:'herb',flowerColor:'purple',heightClass:'medium',regionClass:'global'
+            },
+            '芦荟':{
+                name:'库拉索芦荟',scientific:'Aloe vera',family:'阿福花科 Asphodelaceae',genus:'芦荟属 Aloe',type:'多年生肉质草本',
+                height:'30-60厘米',lifespan:'5-25年',region:'阿拉伯半岛',habitat:'干旱热带地区',
+                img:'https://images.unsplash.com/photo-1627483165650-20b8423e5b3b?w=600&h=600&fit=crop',
+                season:'花期夏季(成熟植株)',conservation:'LC (无危)',etymology:'"芦"意为黑色，"荟"意为聚集，指其叶汁干燥后呈黑色块状。属名Aloe源自阿拉伯语"alloeh"(苦味物质)。种加词vera意为"真正的"。英文名aloe直接借用属名。',
+                cultural:'芦荟自古埃及时代就被称为"不朽植物"，用于制作木乃伊的防腐剂。埃及艳后克娄巴特拉以芦荟汁护肤。在中国，芦荟是"平民草药"，广泛用于家庭烫伤和晒伤的应急处理。',
+                description:'库拉索芦荟是真芦荟(Aloe vera)的商业化栽培品种，是世界最重要的药用多肉植物。其肥厚的叶片中含有透明的凝胶状物质(芦荟胶)，含有超过200种生物活性物质，包括多糖、氨基酸、维生素、矿物质和蒽醌类化合物。芦荟胶具有保湿、抗炎、促进伤口愈合和保护皮肤屏障的功效，是化妆品和个人护理产品的明星成分。芦荟的苦味黄色汁液(芦荟大黄素)是一种强力泻药。全球芦荟产业规模巨大，从农场种植到终端产品形成了完整的产业链。芦荟属植物约有500种，但具有显著药用价值的仅有少数几种。',
+                morphology:'多年生肉质草本，茎短或无。叶丛生呈莲座状排列，肥厚多汁，披针形，叶缘有锯齿状刺，叶面灰绿色有时具白色斑点。总状花序腋生，高达90厘米；花管状下垂，黄色至橙红色；雄蕊6枚。蒴果三角形。根系浅但范围广。',
+                growth:'芦荟喜温暖干燥、阳光充足的环境。生长适温20-30℃，不耐寒(低于5℃受冻)。极耐旱，宁可干燥不可过湿。要求排水极佳的沙质土壤。室内可在明亮散射光下生长。生长速度中等，每年可繁殖多个仔株。',
+                value:'芦荟胶广泛用于护肤品、防晒品、洗护用品和医药产品。芦荟汁被用于保健饮品。芦荟大黄素是天然药物成分。芦荟盆栽是受欢迎的室内观赏植物。芦荟在烧伤科和皮肤科中用于辅助治疗。',
+                care:'盆栽使用沙质多肉专用土，盆底加排水层。浇水遵循"干透浇透"原则。冬季控水停肥。春季可施稀薄多肉液肥。夏季适当遮荫防止叶片灼伤。繁殖用分株或扦插。',
+                category:'succulent',flowerColor:'yellow',heightClass:'medium',regionClass:'africa'
+            },
+            '大王花':{
+                name:'大王花',scientific:'Rafflesia arnoldii',family:'大花草科 Rafflesiaceae',genus:'大花草属 Rafflesia',type:'寄生草本',
+                height:'花直径可达1米',lifespan:'不定(宿主依赖)',region:'东南亚热带雨林',habitat:'低地热带雨林',
+                img:'https://images.unsplash.com/photo-1494972308805-463bc619d34e?w=600&h=600&fit=crop',
+                season:'无固定花期',conservation:'EN (濒危)',etymology:'"大王花"因其花巨大为"花中之王"得名。属名Rafflesia纪念英国殖民官员Stamford Raffles。种加词arnoldii纪念发现者之一Arnold。英文名corpse flower(尸花)源自其腐肉般的臭味。',
+                cultural:'大王花是东南亚热带雨林的象征，出现在许多生态旅游的宣传中。在印度尼西亚，大王花被视为国家自然遗产。原住民传统中用大王花花蕾的汁液作为产后恢复的药物。',
+                description:'大王花(Rafflesia arnoldii)是公认的世界上最大的单朵花，直径可达1米以上，重达11公斤。大王花是一种全寄生植物——没有根、茎、叶，没有叶绿素，完全依赖寄主植物(岩藤属藤本植物)获取营养和水分。其绝大部分生命周期都在寄主体内以细胞丝的形式度过，仅在繁殖时才冒出花蕾。花朵散发腐肉般的恶臭以吸引苍蝇传粉。花蕾发育期约9个月，但花朵开放仅持续5-7天。大王花属约有28种，全部分布于东南亚热带雨林。其生存面临栖息地破坏和过度采集的严重威胁。',
+                morphology:'全寄生植物，营养体丝状细胞在寄主组织中。仅花器官可见。花蕾从寄主藤蔓上冒出，发育缓慢。花开放后呈5瓣状(花被5裂)，肉质肥厚，红棕色具白色斑点。花中央有巨大的盘状结构，周围雄花有雄蕊，雌花有子房下位。果实浆果状，由小型哺乳动物和蚂蚁传播种子。',
+                growth:'大王花完全依赖特定的寄主植物(岩藤属Tetrastigma藤本)。种子需侵入寄主根部组织才能萌发。生长极为缓慢，花蕾需9个月发育。花开放仅5-7天。人工繁殖极其困难，目前仅少数植物园成功。生境要求原始热带雨林。',
+                value:'大王花是东南亚热带雨林生态旅游的标志性物种。对研究植物演化(寄生植物的基因组退化)具有重要科研价值。是热带雨林保护的"旗舰物种"——保护大王花意味着保护整个热带雨林生态系统。',
+                care:'人工栽培极为困难，仅限于专业植物园和研究机构。需要提供特定的寄主植物和模拟热带雨林的高温高湿环境。不建议作为家庭栽培植物。',
+                category:'shrub',flowerColor:'pink',heightClass:'low',regionClass:'east_asia'
+            },
+            '百岁兰':{
+                name:'百岁兰',scientific:'Welwitschia mirabilis',family:'百岁兰科 Welwitschiaceae',genus:'百岁兰属 Welwitschia',type:'裸子植物(特化)',
+                height:'0.5-2米(叶展开宽度)',lifespan:'500-2000年',region:'非洲西南部(纳米布沙漠)',habitat:'极端干旱沙漠',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'雌雄球花全年可产生',conservation:'NT (近危)',etymology:'"百岁兰"意为能活百年之兰(实非兰)。属名Welwitschia纪念奥地利植物学家Welwitsch。种加词mirabilis意为"奇异的"。英文名同用属名。',
+                cultural:'百岁兰是纳米比亚的国家象征，其形象出现在纳米比亚国徽上。由于形态极为奇特难以归类，达尔文称其为"植物界的鸭嘴兽"。原住民桑人用其茎髓作为食物和水源。',
+                description:'百岁兰(Welwitschia mirabilis)是世界上最奇特、最古老的植物之一，属于买麻藤类裸子植物，是百岁兰目、百岁兰科、百岁兰属的唯一现存物种。百岁兰仅分布于非洲纳米布沙漠——世界上最古老的沙漠之一。其最独特的特征是终生只有两片叶子：种子萌发时长出两片子叶后，只生长两片真叶，这两片叶子持续生长，终生不脱落，叶尖不断枯萎，叶基不断生长，可长达数米，缠绕纠结于沙漠地面。百岁兰主要通过叶片吸收雾水(纳米布沙漠每年有60-200个雾天)来获取水分，是自然界适应性进化的奇迹。其寿命极长，最老的个体碳定年超过2000年。',
+                morphology:'茎干短而粗壮木质化，大部分埋于地下，顶部碟状。终生两片叶，带状革质，基部持续生长、尖端逐渐枯萎分裂，展开宽度可达8米。雌雄异株。雄球花和雌球花均为球果状花序，生于叶腋分枝顶端。种子具翅由风传播。',
+                growth:'百岁兰生长于年降水不足50毫米的极端沙漠中。主要依赖夜间雾水生存，叶面有特殊气孔结构高效吸收雾水。生长极为缓慢，寿命极长。幼苗期需连续湿润条件才能成活，成活率极低。不耐移植。',
+                value:'百岁兰是植物适应性进化的研究模式物种。其在极端干旱条件下的生存策略对耐旱作物育种有参考价值。是纳米比亚生态旅游的重要吸引物。具有不可替代的科学研究和自然遗产价值。',
+                care:'人工栽培仅限于世界少数植物园。需模拟纳米布沙漠的特定光照、温度和雾水条件。温室栽培需极高光照和极低湿度，同时提供雾水。种子发芽率低且幼苗死亡率极高。',
+                category:'succulent',flowerColor:'green',heightClass:'low',regionClass:'africa'
+            },
+            '柳树':{
+                name:'垂柳',scientific:'Salix babylonica',family:'杨柳科 Salicaceae',genus:'柳属 Salix',type:'落叶乔木',
+                height:'10-18米',lifespan:'50-150年',region:'中国',habitat:'河岸湿地',
+                img:'https://images.unsplash.com/photo-1522383225653-ed111a181951?w=600&h=600&fit=crop',
+                season:'花期3-4月，果期4-5月',conservation:'LC (无危)',etymology:'"柳"与"留"谐音，古人折柳送别，"柳"因此象征惜别。属名Salix为拉丁语柳树。种加词babylonica源自"巴比伦之柳"(误以为来自巴比伦)。英文名weeping willow(哭泣的柳树)形容其下垂枝条。',
+                cultural:'柳树在中国文化中象征离别与思念，"折柳送别"是古人的传统礼仪。《诗经》"昔我往矣，杨柳依依"为千古名句。柳树在诗词中的出现频率居所有植物之首。在西方文化中，垂柳常象征哀悼。柳树还是多个城市的市树。',
+                description:'垂柳是原产于中国的优美庭园树木，以其柔长下垂的枝条而著称。柳树是"报春"的先驱——在大多数树木刚苏醒时，柳树已披上新绿，"不知细叶谁裁出，二月春风似剪刀"。柳树根系极其发达，耐水湿，是理想的护岸固堤树种。柳树皮含有水杨苷——阿司匹林(乙酰水杨酸)的前体物质，古代人们用柳树皮煮水退烧。柳絮是春季常见的过敏原和城市景观问题。柳树木材柔软，可用于制作板材和包装箱；柳条可用于编织。',
+                morphology:'落叶乔木，树冠广卵形。枝条细长下垂，绿色至黄褐色光滑。叶互生狭披针形，边缘有细锯齿，叶背灰绿色。花单性异株，柔荑花序；雄花雄蕊2枚；雌花子房无柄。蒴果2裂，种子极细小具白色绢毛(柳絮)。花期早于发叶或与叶同放。',
+                growth:'垂柳极喜光，不耐庇荫。喜水湿，极耐水淹，可在水边生长良好。对土壤要求不严。根系极为发达，扩展范围远超树冠。生长速度极快，为速生树种之一。枝条柔韧，抗风能力强。',
+                value:'垂柳是优美的庭园观赏树和护岸树种。柳树木材用于造纸和火柴梗。柳条编织品是传统工艺品。柳树皮含水杨苷具有药用价值。开花早，是早春重要蜜源。柳树在水土保持和湿地修复中作用显著。',
+                care:'最佳栽植位置为水边或湿润地。生长极快需定期修剪整形。老龄树注意检查枝干腐朽。常见虫害有柳毒蛾和光肩星天牛。柳絮问题可通过选植雄株(不飞絮)解决。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'china'
+            },
+            '茉莉':{
+                name:'茉莉花',scientific:'Jasminum sambac',family:'木犀科 Oleaceae',genus:'素馨属 Jasminum',type:'常绿灌木或藤本',
+                height:'0.5-2米',lifespan:'10-30年',region:'南亚(印度)',habitat:'热带至亚热带',
+                img:'https://images.unsplash.com/photo-1518707399472-6f1e1e0e6b0a?w=600&h=600&fit=crop',
+                season:'花期5-10月(多次开花)',conservation:'LC (无危)',etymology:'"茉莉"是梵语"mallika"的音译，意为"花环"。属名Jasminum源自波斯语"yasmin"(来自阿拉伯语)。英文名jasmine同源。种加词sambac源自阿拉伯语"zanbaq"。',
+                cultural:'茉莉花是菲律宾和印度尼西亚的国花。在中国，"好一朵美丽的茉莉花"是世界最著名的中国民歌之一。茉莉花茶是花茶中的极品，历史可追溯至宋代。在东南亚，茉莉花环用于婚礼和宗教仪式。',
+                description:'茉莉花是世界最著名的芳香植物之一，其香气被誉为"花中之王"。茉莉花原产于南亚，现在全球热带和亚热带地区广泛栽培。茉莉花是著名的"夜来香"——花朵在夜间开放并释放最浓郁的香气，这是由于香气物质(挥发性萜类)的合成和释放在夜间达到高峰。一个惊人的数据：约1000万朵茉莉花才能提取1公斤茉莉精油(净油)，茉莉精油是香水工业的"国王"，主要用于高级香水的定香。茉莉花茶是将茉莉花香窨制到茶叶中，是花茶的代表。',
+                morphology:'常绿灌木或藤本。小枝圆柱形有棱角。叶对生或轮生，宽卵形至椭圆形，全缘有光泽。聚伞花序顶生，3-12朵花；花白色芳香；花萼裂片8-9枚线形；花冠高脚碟状，裂片多数(栽培品种重瓣)。浆果球形，成熟时紫黑色，但栽培品种少结果。',
+                growth:'茉莉喜温暖湿润、阳光充足的环境。生长适温25-30℃。不耐寒，冬季需保持10℃以上。喜肥沃微酸性沙质壤土。光照越充足，开花越多，香气越浓。多次开花(夏季为盛花)。',
+                value:'茉莉精油是香水工业的顶级原料。茉莉花茶是中国传统花茶代表。茉莉鲜花供佩戴和装饰。茉莉花在芳香疗法中用于抗抑郁和提振情绪。茉莉提取物在护肤品中使用。',
+                care:'盆栽茉莉春季换盆并修剪。生长期充足光照和水分。每半个月施液肥。冬季入室保温控水。花后剪去残花促进复花。注意防治介壳虫和红蜘蛛。',
+                category:'shrub',flowerColor:'white',heightClass:'medium',regionClass:'east_asia'
+            },
+            '人参':{
+                name:'人参',scientific:'Panax ginseng',family:'五加科 Araliaceae',genus:'人参属 Panax',type:'多年生草本',
+                height:'30-60厘米',lifespan:'数十年至百年',region:'中国东北、朝鲜半岛',habitat:'温带阔叶林下',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期6-7月，果期7-9月',conservation:'CR (极危，野生)',etymology:'"人参"因其根形似人而得名。属名Panax源自希腊语"pan"(全部)和"akos"(治愈)，意为"万灵药"。种加词ginseng为中文"人参"的音译。英文名ginseng同源。',
+                cultural:'人参在中医药中被称为"百草之王"、"补药之首"，使用历史超过2000年(《神农本草经》列为上品)。在韩国，人参是国家象征，高丽参世界闻名。人参采集是东北长白山地区的传统生计，形成了独特的人参文化(放山习俗)。',
+                description:'人参是世界最著名的药用植物之一，与人参属的其他种类(西洋参Panax quinquefolius、三七Panax notoginseng)同属五加科。人参的主要活性成分是人参皂苷(ginsenosides)，目前已分离鉴定出超过150种不同的人参皂苷。野生人参(俗称"野山参")因过度采集已成为极度濒危物种，市面流通的人参几乎全部为人工栽培(园参)。人参生长极为缓慢，一年只长一片复叶。栽培人参通常需5-6年才能采收。人参对生长环境要求苛刻：喜阴(需70-80%遮荫)、怕强光、怕积水、怕病害，有"竭地性"(连作障碍)。',
+                morphology:'多年生草本，主根肥大肉质圆柱形或纺锤形，根基部有细密环纹。茎单一直立。掌状复叶3-6枚轮生茎顶，小叶3-5枚椭圆形。伞形花序顶生；花小淡黄绿色；萼5齿；花瓣5枚；雄蕊5枚。浆果状核果扁球形，成熟时鲜红色。',
+                growth:'人参喜阴凉湿润环境，忌强光直射。生长适温15-25℃。要求富含腐殖质、排水良好的微酸性森林棕壤。生长极为缓慢：一年生仅有三小叶，二年生有五小叶，三年生始有复叶，五年生方始开花。栽培人参需搭建遮荫棚。',
+                value:'人参是中药中最重要的补气药，用于大补元气、复脉固脱。现代研究证实人参皂苷具有抗疲劳、增强免疫、改善认知、抗肿瘤等多种药理活性。高丽参和长白山人参是国际知名品牌。人参在保健品和化妆品中广泛使用。',
+                care:'人参栽培需选择林下或搭建遮荫棚(透光率20-30%)。播种前种子需层积处理(打破休眠)。生长期保持土壤湿润不积水。施肥以腐熟有机肥为主。连作障碍严重，需轮作10年以上。防治立枯病、疫病和金针虫。',
+                category:'herb',flowerColor:'green',heightClass:'medium',regionClass:'china'
+            },
+            '枸杞':{
+                name:'枸杞',scientific:'Lycium barbarum',family:'茄科 Solanaceae',genus:'枸杞属 Lycium',type:'落叶灌木',
+                height:'1-2米',lifespan:'20-30年',region:'中国',habitat:'温带干旱至半干旱地区',
+                img:'https://images.unsplash.com/photo-1490750967868-88aa4a5ed8db?w=600&h=600&fit=crop',
+                season:'花期5-10月，果期6-11月',conservation:'LC (无危)',etymology:'"枸"为弯曲的枝条，"杞"为灌木，合称指枝弯的灌木。属名Lycium源自古代小亚细亚地名Lycia。种加词barbarum意为"外来的"。英文名goji berry源自中文"枸杞"之音。',
+                cultural:'枸杞在中医药中应用已有2000多年历史，《神农本草经》列为上品。在中国，"人到中年不得已，保温杯里泡枸杞"的网络流行语反映了枸杞的养生地位。宁夏枸杞是中国国家地理标志产品。',
+                description:'枸杞是世界著名的功能性食品(超级食品)之一，尤其以宁夏枸杞最为知名。枸杞果实(枸杞子)富含枸杞多糖、类胡萝卜素(尤其是玉米黄质)、甜菜碱和多种维生素。长期食用枸杞被认为具有明目、抗衰老、增强免疫力的功效。枸杞适应性极强，耐旱、耐寒、耐盐碱，是西北干旱地区的重要经济作物和生态恢复树种。枸杞的嫩叶(枸杞头)可作蔬菜食用。枸杞的花期和果期很长(几乎从春到秋)，同一植株上可见花和不同成熟度的果实并存。',
+                morphology:'落叶灌木，枝条细长弓形弯曲，常有刺。叶互生或簇生，卵状披针形，全缘，灰绿色。花1-2朵生于短枝叶腋；花萼钟状3-5裂；花冠漏斗状5裂，淡紫色；雄蕊5枚伸出花冠。浆果椭圆形，成熟时鲜红色至橙红色，有光泽。种子多数黄色。',
+                growth:'枸杞喜阳光充足、凉爽干燥环境。极耐旱、耐寒、耐盐碱。对土壤要求不严，在pH7.5-8.5的碱性土中生长良好。喜光照，光照不足影响开花结果。生长旺盛，一年可多次摘果。扦插极易成活。',
+                value:'枸杞子是国际公认的超级食品(goji berry)。枸杞多糖是研究最多的植物多糖之一，具有免疫调节和抗氧化活性。枸杞在中医中用于滋补肝肾、益精明目。枸杞提取物在食品和保健品中广泛使用。宁夏枸杞产业产值数百亿。',
+                care:'选择阳光充足处栽培。幼苗期需适量浇水，成年树极耐旱。每年春季重剪促进新枝萌发(新枝结果能力最强)。施肥以有机肥为主。采收期分批采摘成熟果实。防治蚜虫和瘿螨。',
+                category:'shrub',flowerColor:'purple',heightClass:'medium',regionClass:'china'
+            },
+            '睡莲':{
+                name:'睡莲',scientific:'Nymphaea tetragona',family:'睡莲科 Nymphaeaceae',genus:'睡莲属 Nymphaea',type:'多年生水生草本',
+                height:'叶/花浮于水面',lifespan:'多年生(根茎)',region:'北温带广布',habitat:'池塘湖泊静水',
+                img:'https://images.unsplash.com/photo-1502809737437-1d4c4b0e0eb8?w=600&h=600&fit=crop',
+                season:'花期5-9月',conservation:'LC (无危)',etymology:'"睡莲"因花朵在夜晚闭合似入睡而得名。属名Nymphaea源自希腊神话中的水仙女(Nymph)。英文名water lily(水中百合)形容其优雅。种加词tetragona意为"四棱的"。',
+                cultural:'睡莲在古埃及被视为神圣之花，象征复活与重生(花朵昼开夜合如日出日落)。莫奈在吉维尼花园的水池中种植睡莲，创作了约250幅睡莲画作，是印象派最著名的主题之一。在佛教艺术中，睡莲常与荷花共同出现。',
+                description:'睡莲是最古老的被子植物类群之一，化石记录可追溯至1.3亿年前的白垩纪早期。与荷花(莲)不同，睡莲的叶和花直接浮在水面上(而非挺出水面)。睡莲的花和叶有长长的柄连接水下的根茎。其花朵具有"昼开夜合"或"夜开昼合"的节律，由花瓣基部细胞的生长素变化驱动。睡莲有耐寒睡莲和热带睡莲两大类，热带睡莲花色更艳丽(含蓝色)。睡莲在园林水景中必不可少。睡莲的根茎和种子在一些文化中被食用。叶片表面的微观结构也表现出"荷叶效应"般的自清洁特性。',
+                morphology:'多年生水生草本。根茎横卧或直立。叶基生，浮于水面，近圆形或卵圆形，基部深心形，全缘光滑，叶面绿色背面常紫红色。花单生浮于水面，直径3-15厘米；萼片4枚绿色；花瓣多数，白色至粉色(热带种类有蓝、紫、黄色)；雄蕊多数；子房半下位。浆果海绵质在水下成熟。',
+                growth:'睡莲喜阳光充足、温暖的静水环境。适宜水深30-80厘米。生长适温20-30℃。耐寒睡莲冬季根茎在水下休眠可耐冰封。热带睡莲需终年温暖。繁殖以分株为主。每天开花一般持续3-4天，每朵花约开放8小时(热带睡莲)。',
+                value:'睡莲是水景园林的必备植物。莫奈的睡莲系列是艺术史上最昂贵的画作。睡莲花可提取精油。睡莲在水生态系统中提供栖息地和净化水质。是重要的水上花园和湿地公园造景材料。',
+                care:'盆栽或池塘种植。容器直径50cm以上，装肥沃粘土。根茎种植深度以芽略高于土面为宜。生长期每半月施水生植物专用肥。保持充足光照(每日6小时以上)。冬季剪除枯叶。每2-3年分株。',
+                category:'aquatic',flowerColor:'pink',heightClass:'low',regionClass:'global'
+            },
+            '杜鹃':{
+                name:'杜鹃',scientific:'Rhododendron simsii',family:'杜鹃花科 Ericaceae',genus:'杜鹃花属 Rhododendron',type:'常绿或半常绿灌木',
+                height:'0.5-3米',lifespan:'10-50年',region:'东亚',habitat:'山地酸性土壤',
+                img:'https://images.unsplash.com/photo-1486912500284-6f2462f4a8e6?w=600&h=600&fit=crop',
+                season:'花期4-6月',conservation:'LC (无危)',etymology:'"杜鹃"花名源自其开花时节正值杜鹃鸟啼叫。民间又称"映山红"，因花开时漫山红遍。属名Rhododendron源自希腊语"rhodon"(玫瑰)和"dendron"(树)。',
+                cultural:'杜鹃花是中国十大名花之一，多个城市(长沙、无锡等)的市花。白居易赞杜鹃"花中此物是西施"。在喜马拉雅地区，杜鹃花是不丹的国花。杜鹃花节在四川、云南等地是重要的春季旅游活动。',
+                description:'杜鹃花是世界上最大的木本花卉属之一，杜鹃花属(Rhododendron)约有1000种，广泛分布于北温带和东南亚高山地区。中国是杜鹃花属的分布中心，拥有超过570种野生杜鹃，占全球一半以上。杜鹃花多数种类喜酸性土壤，对石灰质土壤敏感(嫌钙植物)。部分杜鹃花种类的花蜜和叶片含有毒素(木藜芦烷毒素Grayanotoxin)，古罗马军队曾在黑海沿岸因食用杜鹃花蜜(疯蜜)而中毒。云南的杜鹃花海景观举世闻名，高山杜鹃在海拔3000-4000米形成壮丽的天然花海。',
+                morphology:'灌木，多分枝。叶互生，椭圆形至披针形，全缘，叶面深绿被糙伏毛，叶背淡绿色。花2-6朵簇生枝顶；花萼5深裂；花冠漏斗状5裂，鲜红色至粉红色，上方裂片有深色斑点；雄蕊10枚伸出花冠；花柱长于雄蕊。蒴果卵球形有糙伏毛。',
+                growth:'杜鹃花喜凉爽湿润的半阴环境。要求酸性(pH4.5-6.0)、疏松肥沃、富含腐殖质的土壤。怕强光暴晒和高温干燥。喜湿润空气(空气湿度60%以上)。耐寒性因种类而异：高山杜鹃极耐寒，热带杜鹃怕霜冻。',
+                value:'杜鹃是世界最重要的观赏花木之一，种类繁多花色丰富。杜鹃花花期长开花壮观，是春季园林的焦点。杜鹃盆景是东方园林艺术的瑰宝。部分种类可提取芳香油(如烈香杜鹃)。',
+                care:'栽培杜鹃需酸性基质(泥炭土+松针土)。避免使用石灰和草木灰。生长期保持土壤湿润但不积水。花后及时剪残花。定期施用酸性植物专用肥。防治杜鹃网蝽和褐斑病。',
+                category:'shrub',flowerColor:'pink',heightClass:'medium',regionClass:'east_asia'
+            },
+            '榕树':{
+                name:'榕树',scientific:'Ficus microcarpa',family:'桑科 Moraceae',genus:'榕属 Ficus',type:'常绿大乔木',
+                height:'15-25米(冠幅可达数百平方米)',lifespan:'100-500年',region:'亚洲热带、亚热带',habitat:'低海拔地区',
+                img:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=600&fit=crop',
+                season:'花期全年不定期',conservation:'LC (无危)',etymology:'"榕"本义为"宽松、包容"，指其树冠宽大包容。属名Ficus为拉丁语无花果。种加词microcarpa意为"小果的"。英文名Chinese banyan。',
+                cultural:'榕树在闽粤地区被视为风水树和社树，"前榕后竹"是福建传统民居的风水格局。独木成林的巨大榕树常是村落的中心和精神象征。巴金《鸟的天堂》描写了广东新会的巨大榕树。',
+                description:'榕树是热带和亚热带地区的标志性树种。其最独特的特征是发育出大量的气生根——从枝干垂下的气生根入土后增粗成为支柱根，形成"独木成林"的壮观景象。孟加拉国的一棵榕树(Ficus benghalensis)冠幅达1.9公顷，是有记录树冠面积最大的树木。榕树与榕小蜂之间存在地球上最精密的传粉共生关系：每种榕树只由一种特定的榕小蜂传粉，而榕小蜂也只能在它所对应的榕树隐头花序内繁殖。榕树的隐头花序(隐花果)是一个内卷的肉质壶状结构，花不外露。榕树的种子可在其他树木的分叉处萌发，气生根逐渐缠绕寄主，最终杀死寄主成为独立的大树，这种现象称为"绞杀"。',
+                morphology:'常绿大乔木，有丰富气生根。叶革质互生，椭圆形至倒卵形，全缘光滑。隐头花序成对腋生，近球形；花雌雄同序，雄花、瘿花和雌花混生。榕果(无花果)近球形，直径约1厘米，成熟时紫红色。花序口部有覆瓦状苞片。',
+                growth:'榕树喜高温多湿的热带气候。喜光也耐半阴。对土壤要求不严，但以湿润肥沃的酸性土生长最旺盛。生长速度极快，气生根发达。极耐修剪造型。耐潮风，可作海岸防护林树种。',
+                value:'榕树是热带和亚热带最重要的绿化树种之一。巨大古榕是重要的文化遗产和旅游资源。榕树盆景是中国传统艺术。榕树木材可用于制作器具。榕树叶和根可药用，具有清热解毒功效。',
+                care:'榕树适合热带至暖亚热带地栽。北方需温室栽培。生长旺盛需定期修剪控制冠幅。盆栽注意给予充足光照。生长期保持土壤湿润。扦插极易成活。防治榕管蓟马。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'east_asia'
+            },
+            '山茶':{
+                name:'山茶花',scientific:'Camellia japonica',family:'山茶科 Theaceae',genus:'山茶属 Camellia',type:'常绿灌木或小乔木',
+                height:'2-10米',lifespan:'50-200年',region:'东亚',habitat:'温暖湿润丘陵',
+                img:'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
+                season:'花期1-4月(冬春)，果期9-10月',conservation:'LC (无危)',etymology:'"山茶"因其生于山中，叶可泡茶得名。属名Camellia纪念捷克传教士植物学家Kamel。种加词japonica意为"日本的"(因Thunberg在日本采集模式标本)。',
+                cultural:'山茶花是中国十大名花之一，云南山茶的"恨天高"、"童子面"等名品名扬中外。在日本，山茶花(ツバキ)是武士道的象征——花谢时整朵凋落如武士断头。法国作家小仲马《茶花女》使山茶花成为19世纪欧洲的时尚符号。',
+                description:'山茶花是世界最美丽的常绿花木之一，被誉为"花中妃子"。其花瓣质地如蜡，花色从纯白、粉红到深红，部分品种花瓣有规则的金黄色雄蕊，极具观赏价值。山茶花在冬春少花时节绽放，花期可长达半年，是冬季花园的主角。茶树(Camellia sinensis)与山茶花是同属植物，山茶花的种子也可榨油(山茶油)，是高级食用油和化妆品原料。中国是山茶属植物的分布中心，拥有约200种，占全球的80%以上。云南山茶(C. reticulata)和金花茶(C. nitidissima)是极为珍贵的种类，金花茶是茶花中唯一具有金黄色花朵的物种。',
+                morphology:'常绿灌木或小乔木。叶革质互生，椭圆形至倒卵形，边缘锯齿，叶面深绿光亮。花单生枝顶或叶腋；花萼多层覆瓦状排列；花瓣5-7枚(单瓣)至多数(重瓣)，圆形肉质；雄蕊多数，部分瓣化；子房上位。蒴果球形，室背开裂。种子含油丰富。',
+                growth:'山茶花喜半阴湿润、温暖环境。怕强光直射和高温干燥。要求酸性(pH5.0-6.5)、富含腐殖质的疏松土壤。生长缓慢但寿命长。花芽分化在夏季。耐轻霜但不耐严寒(低于-10℃需保护)。',
+                value:'山茶花是世界重要的观赏花木，品种超过3000个。山茶油是优质食用油和化妆品原料。茶叶是世界三大饮料之一。山茶花在冬春时节提供稀缺的花卉观赏资源。山茶花提取物在化妆品中广泛使用。',
+                care:'选择半阴避风处栽培。保持土壤湿润但不积水(肉质根怕涝)。花后追施磷钾肥。修剪宜在花后进行。防治茶黄毒蛾和炭疽病。盆栽需酸性介质，每2年换盆。',
+                category:'shrub',flowerColor:'pink',heightClass:'tall',regionClass:'east_asia'
+            },
+            '甘草':{
+                name:'甘草',scientific:'Glycyrrhiza uralensis',family:'豆科 Fabaceae',genus:'甘草属 Glycyrrhiza',type:'多年生草本',
+                height:'30-100厘米',lifespan:'多年生',region:'中亚至中国北方',habitat:'干旱草原、沙地',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期6-8月，果期7-10月',conservation:'NT (近危，野生资源)',etymology:'"甘"为甜，"草"为草本，直指其根味道极甜。属名Glycyrrhiza源自希腊语"glykys"(甜)和"rhiza"(根)。英文名licorice源自希腊语。种加词uralensis意为"乌拉尔地区的"。',
+                cultural:'甘草在中医药中被称为"国老"(药中之王佐)，因其能调和百药。中东地区将甘草根用于制作传统的甘草糖和甘草饮料。古埃及人将甘草根放在墓穴中作为陪葬品。甘草是中药方剂中使用频率最高的药材之一。',
+                description:'甘草是世界上最重要的药用和调味植物之一。其根和根茎中的甘草酸(glycyrrhizic acid)的甜度是蔗糖的50-100倍，是食品工业中重要的天然甜味剂和矫味剂。甘草广泛应用于止咳露、消化药和抗炎药中。过度采集已导致野生甘草资源严重衰退，中国已将野生甘草列入保护名录，大规模人工种植甘草已经展开。人工种植的甘草通常需3-4年才能采收。甘草还是固沙植物，其深根系可固定沙丘。甘草提取物(甘草甜素)在制药和食品工业中有多种用途。',
+                morphology:'多年生草本，根和根状茎粗壮，皮红棕色至暗棕色，断面黄色有甜味。茎直立多分枝被短毛和腺体。奇数羽状复叶互生，小叶7-17枚卵形至椭圆形，两面有腺点。总状花序腋生密集；花淡紫红色；花萼钟形5齿；蝶形花冠，旗瓣大，翼瓣和龙骨瓣小。荚果线状长圆形弯曲成镰刀形，密被腺刺。',
+                growth:'甘草喜干旱、阳光充足、昼夜温差大的大陆性气候。耐寒、耐旱、耐盐碱。要求排水良好的沙质壤土，尤以钙质土为佳。根系极深，主根可深入地下3-4米获取水分。生长缓慢，栽培品3-4年方可采收。',
+                value:'甘草是中药中使用频率最高的药材，号称"十方九草"。甘草酸是天然甜味剂和药物中间体。甘草浸膏广泛用于烟草、食品和医药工业。甘草是干旱地区生态恢复和固沙的重要植物。',
+                care:'种植选择沙质或沙壤质地。播种前种子需用浓硫酸或机械处理打破硬实。生长期控制杂草。栽培3-4年后秋季采收根部。采收后将根洗净切段晒干。注意轮作。',
+                category:'herb',flowerColor:'purple',heightClass:'medium',regionClass:'china'
+            },
+            '芍药':{
+                name:'芍药',scientific:'Paeonia lactiflora',family:'芍药科 Paeoniaceae',genus:'芍药属 Paeonia',type:'多年生草本',
+                height:'40-100厘米',lifespan:'多年生',region:'东亚',habitat:'温带草原林缘',
+                img:'https://images.unsplash.com/photo-1562690868-7bb7e5d6b2a5?w=600&h=600&fit=crop',
+                season:'花期5-6月，果期8-9月',conservation:'LC (无危)',etymology:'"芍药"一名源自"绰约"(姿态柔美)。古称"将离"，因常赠别离之人。属名Paeonia源自希腊医神Paeon。种加词lactiflora意为"乳白色花的"。英文名Chinese peony。',
+                cultural:'芍药在中国文化中象征离别与爱情。《诗经》"维士与女，伊其相谑，赠之以勺药"是最早的记载。芍药是中国传统"情人节"(上巳节)的定情花。芍药居中国十大名花第五，扬州芍药名扬天下。',
+                description:'芍药与牡丹并称"花中二绝"——牡丹为"花王"，芍药为"花相"。芍药是多年生草本，冬季地上部枯死，以肉质根越冬；而牡丹是木本灌木。芍药花朵硕大(直径10-20厘米)，花瓣层叠如绸缎，被誉为"花仙"。芍药品种繁多，超过1000个，花色涵盖白、粉、红、紫、黄等。芍药根(白芍)是重要的中药材，具有养血调经、柔肝止痛的功效。芍药在切花市场占有重要地位，是高端花艺和婚礼花束的常用花材。',
+                morphology:'多年生草本，根粗壮肉质圆柱形。茎直立无毛。二回三出复叶互生，小叶狭卵形至披针形。花数朵生茎顶或叶腋，大型；萼片4枚；花瓣9-13枚(栽培品种更多)，白色至紫红色；雄蕊多数金黄色；心皮3-5枚无毛。蓇葖果。根入药(白芍/赤芍)。',
+                growth:'芍药喜凉爽湿润、阳光充足环境。耐寒性强(可耐-30℃)。要求深厚肥沃、排水良好的中性至微碱性土壤。春季萌发早，花后进入营养生长期。芍药需经低温春化才能正常开花，华南低海拔地区栽培困难。分株繁殖为主，秋季是最佳分株时间。',
+                value:'芍药是世界重要的切花和庭园花卉。白芍是常用中药材，用于养血柔肝。芍药花展是重要文化旅游活动。芍药种子含油可制皂。芍药在香料和化妆品中有应用。',
+                care:'秋季(9-10月)分株栽植，栽植深度以芽入土3-5cm为宜(过深不开花)。春季花前施磷钾肥。花后及时剪除残花。冬季地上部枯死后清理并培土。每3-4年分株更新。防治灰霉病和蛴螬。',
+                category:'herb',flowerColor:'pink',heightClass:'medium',regionClass:'east_asia'
+            },
+            '水仙':{
+                name:'水仙',scientific:'Narcissus tazetta var. chinensis',family:'石蒜科 Amaryllidaceae',genus:'水仙属 Narcissus',type:'多年生球根草本',
+                height:'20-50厘米',lifespan:'多年生(球根)',region:'地中海至东亚',habitat:'湿润草地',
+                img:'https://images.unsplash.com/photo-1518707399472-6f1e1e0e6b0a?w=600&h=600&fit=crop',
+                season:'花期1-3月(冬春)',conservation:'LC (无危)',etymology:'"水仙"因其在水中生长、花姿似仙得名。属名Narcissus源自希腊神话中的美少年Narcissus(自恋水仙)。英文名daffodil源自拉丁语asphodelus。中国水仙(var. chinensis)是漳州三宝之一。',
+                cultural:'水仙在中国农历新年期间开花，是春节必备的年花，象征吉祥如意。水仙雕刻是中国独特的园艺艺术。希腊神话中，水仙是美少年纳西索斯死后所化。英国诗人华兹华斯的《水仙》是英语文学最著名的自然诗之一。',
+                description:'水仙是中国传统名花，与春兰、梅花、山茶并称"雪中四友"——均在冬末春初开花。水仙鳞茎含有石蒜碱等多种生物碱，全株有毒(尤其是鳞茎)，不可食用——每年都有将水仙误认为蒜苗食用导致中毒的报道。水仙花香浓郁清雅，是冬季室内重要的香花来源。中国漳州水仙以鳞茎肥大、花多香浓闻名世界，出口全球。水仙品种分为单瓣(金盏银台)和重瓣(玉玲珑)两大类。水仙属植物全球约有50种，以地中海地区为分布中心。',
+                morphology:'鳞茎卵球形，外被褐色皮膜。叶基生宽线形扁平，粉绿色。花葶直立中空与叶等长。伞形花序顶生，4-8朵花；花被6裂白色，副花冠杯状金黄色；雄蕊6枚；子房下位。蒴果。栽培品种多为三倍体，不结实。',
+                growth:'水仙喜冷凉湿润、阳光充足的环境。鳞茎需经低温(8-12℃)处理才能开花。水培法是水仙特有的栽培方式(清供水仙)，仅靠清水和阳光即可开花。土培亦可。花后鳞茎养分耗尽，次年难复花(在中国南方地区可复花)。水仙为"秋植球根"，秋季种植，冬春开花，夏季休眠。',
+                value:'水仙是世界重要的春季花卉。漳州水仙出口历史悠久，是国家地理标志产品。水仙花可提取香精。水仙雕刻艺术是中国非物质文化遗产。水仙碱在医学研究中有抗肿瘤潜力。',
+                care:'水培水仙选择饱满大鳞茎。雕刻后浸泡去粘液，置于浅水盆中，保持根部有水。充足光照(每天6小时以上)防止叶片徒长。水温不宜过高(以12-18℃为佳)。夜间可将水倒掉防止徒长。水仙花后即可丢弃(或地栽复壮)。',
+                category:'herb',flowerColor:'white',heightClass:'medium',regionClass:'europe'
+            },
+            '百合':{
+                name:'百合',scientific:'Lilium brownii',family:'百合科 Liliaceae',genus:'百合属 Lilium',type:'多年生球根草本',
+                height:'60-150厘米',lifespan:'多年生(球根)',region:'中国',habitat:'山地林缘',
+                img:'https://images.unsplash.com/photo-1524594152209-ecf01afdc411?w=600&h=600&fit=crop',
+                season:'花期6-8月',conservation:'LC (无危)',etymology:'"百合"取"百片合抱"之意，指其鳞茎由多枚鳞片抱合而成。属名Lilium为拉丁语百合。英文名lily源自拉丁语。中国自古视百合为吉祥花，寓意"百年好合"。',
+                cultural:'百合在中国象征纯洁和婚姻美满。在西方，白百合是圣母玛利亚的象征，代表纯洁与美德。百合是法国王室的象征(百合花徽章fleur-de-lis)。香水百合是世界婚礼花束的主角。',
+                description:'百合是世界最重要的球根花卉之一，全球百合属约有110种。百合花朵大而美丽，有的种类(如香水百合)具有浓郁持久的甜香，是世界切花市场的重要品类。百合鳞茎(百合干)在中国是传统食材和药材，具有润肺止咳、清心安神的功效。麝香百合(Lilium longiflorum)是复活节的象征花。现代百合品种多由荷兰和美国育成，Oriental杂交型和Asiatic杂交型是两大主流品系。百合的繁殖方式多样：分球、扦插鳞片、播种和组织培养。',
+                morphology:'鳞茎球形或扁球形，由多数肉质鳞片组成，无皮膜。茎直立，有时有珠芽(小鳞茎)。叶互生或轮生，披针形至椭圆形。花单生或总状花序；花大型喇叭状，花被6枚离生，白色、粉色、黄色或复色，常具芳香；雄蕊6枚花药丁字形着生；柱头3裂。蒴果长椭圆形。',
+                growth:'百合喜凉爽、阳光充足环境。要求深厚肥沃、排水良好的微酸性沙质壤土。忌连作。耐寒不耐热。球根秋植或春植(根据种类)。生长期保持土壤湿润，花后逐渐减少浇水。地下球根夏季休眠。',
+                value:'百合是世界四大切花之一。百合鳞茎可食用(百合干)和药用。百合花提取物用于香水和化妆品。百合是重要的庭园花卉和盆栽植物。百合种球国际贸易额巨大。',
+                care:'选择疏松肥沃、排水良好的土壤。种植深度为种球高度的2-3倍。保持土壤湿润但忌积水。花前施磷钾肥。花后剪除花茎留叶片。每2-3年分球重植。防治百合灰霉病和蚜虫。',
+                category:'herb',flowerColor:'white',heightClass:'medium',regionClass:'china'
+            },
+            '鸢尾':{
+                name:'鸢尾',scientific:'Iris tectorum',family:'鸢尾科 Iridaceae',genus:'鸢尾属 Iris',type:'多年生草本',
+                height:'30-80厘米',lifespan:'多年生',region:'中国、日本',habitat:'山坡林缘湿地',
+                img:'https://images.unsplash.com/photo-1485968579580-6e15f1f001bd?w=600&h=600&fit=crop',
+                season:'花期4-6月',conservation:'LC (无危)',etymology:'"鸢尾"因其花瓣形似鸢鸟(鹰)尾羽而得名。属名Iris源自希腊彩虹女神Iris，暗指其花色丰富如彩虹。英文名同Iris。种加词tectorum意为"屋顶的"(在亚洲有植于屋顶的传统)。',
+                cultural:'鸢尾是法国王室的象征(鸢尾花徽章fleur-de-lis)。梵高的《鸢尾花》以5390万美元拍卖，是世界最昂贵画作之一。在中国，鸢尾象征好消息和思念。日本将鸢尾(花菖蒲)作为男孩节的象征。',
+                description:'鸢尾属植物全球约300种，是种类最丰富的观赏花卉属之一。鸢尾花的结构极为独特：三枚下垂的外轮花被(垂瓣)和三枚直立的内轮花被(旗瓣)，花柱特化为花瓣状覆盖雄蕊。这种精巧的结构确保了高效的昆虫传粉。鸢尾根茎(根状茎)含有鸢尾酮(irone)，干燥3-5年后产生紫罗兰般的幽雅香气，用于高级香水和化妆品定香(鸢尾根净油)。鸢尾花以丰富的花色闻名——几乎涵盖所有颜色(故以彩虹女神命名)。水生鸢尾(I. pseudacorus)是湿地绿化的重要植物。',
+                morphology:'多年生草本，根状茎粗壮匍匐。叶剑形基生套叠成两列。花葶单一或分枝。花大型蓝紫色(也有白、黄色品种)；花被6枚，外轮3枚较大反折(垂瓣)，内轮3枚较小直立(旗瓣)；花柱3裂花瓣状；雄蕊3枚。蒴果长椭圆形具棱。',
+                growth:'鸢尾喜阳光充足、排水良好的环境。适应性强，耐寒、耐旱。对土壤要求不严，但以微碱性石灰质土壤为佳(部分种类喜酸性土)。根茎浅植(根茎顶部略露土面)有利于开花。生长旺盛，每2-3年分株可防拥挤。',
+                value:'鸢尾根茎提取物是高端香水定香剂(鸢尾净油，价格堪比黄金)。鸢尾花是重要的庭园花卉和水景植物。鸢尾花蕾的素描和油画在艺术史上占有重要地位。部分种类可药用(如射干I. domestica)。',
+                care:'夏季末或秋季分株繁殖。栽植时根茎顶部微露地面或浅埋。避免深植(太深不开花)。花后剪除残花茎。秋季清理枯叶。每3-4年分株更新。防治鸢尾蛀虫和软腐病。',
+                category:'herb',flowerColor:'purple',heightClass:'medium',regionClass:'east_asia'
+            },
+            '紫藤':{
+                name:'紫藤',scientific:'Wisteria sinensis',family:'豆科 Fabaceae',genus:'紫藤属 Wisteria',type:'落叶木质藤本',
+                height:'攀援可达20米',lifespan:'50-200年',region:'中国',habitat:'温带至亚热带',
+                img:'https://images.unsplash.com/photo-1584716122750-6bc8e25d1c22?w=600&h=600&fit=crop',
+                season:'花期4-5月，果期8-10月',conservation:'LC (无危)',etymology:'"紫藤"因花色紫、藤本得名。属名Wisteria纪念美国解剖学家Wistar。英文名同用属名。在中国又称"朱藤"。种加词sinensis意为"中国的"。',
+                cultural:'紫藤是中国传统园林"四藤"之一(紫藤、凌霄、忍冬、葡萄)。李白"紫藤挂云木，花蔓宜阳春"为千古名句。日本足利花卉公园的144年紫藤大树冠幅超过1000平方米，是世界上最美的紫藤景观之一。',
+                description:'紫藤是世界上最美的大型藤本植物之一，春季繁花垂挂如紫色瀑布，极为壮观。紫藤属约有10种，分布于东亚和北美。中国紫藤(W. sinensis)的花序较短(15-30厘米)，多花紫藤(W. floribunda)的花序可长达50-100厘米以上。紫藤属于豆科植物，根部的根瘤菌能固定大气中的氮。紫藤茎干具有极强的缠绕力，可绞死支撑树木，因此需要坚实的人工支架。世界上最老的紫藤(日本)已超过1200年。紫藤花可食用(紫藤花饼、紫藤花粥)。紫藤种子和豆荚有毒，含紫藤苷(Wistarin)，不可食用。',
+                morphology:'落叶木质大藤本，茎左旋缠绕。奇数羽状复叶互生，小叶7-13枚卵状披针形。总状花序下垂长15-30厘米(多花紫藤可达1米)；蝶形花冠，花密集，紫色至蓝紫色(稀白色)，芳香；先叶开花。荚果扁平长条形密被绒毛，木质化开裂。',
+                growth:'紫藤喜光，极喜阳光充足环境(光照不足不开花)。耐寒、耐旱。对土壤要求不严，但以排水良好的肥沃壤土为佳。主根深，不耐移植。生长极为旺盛，年生长量可达数米。实生苗需5-7年开花，嫁接苗2-3年即可开花。',
+                value:'紫藤是世界最重要的观赏藤本植物之一。紫藤隧道和紫藤花架是著名园林景观。紫藤花可食用(需焯水去除毒素)。紫藤根瘤菌改良土壤。紫藤盆景是传统艺术。紫藤花是蜜源植物。',
+                care:'搭建坚固棚架(紫藤重量巨大)。冬季重度修剪(短截侧枝)促进花芽形成。夏季修剪控制生长。施肥以磷钾肥为主(少施氮肥，氮多叶茂花少)。花后追肥。防治紫藤蚜虫。',
+                category:'vine',flowerColor:'purple',heightClass:'tall',regionClass:'china'
+            },
+            '白桦':{
+                name:'白桦',scientific:'Betula platyphylla',family:'桦木科 Betulaceae',genus:'桦木属 Betula',type:'落叶乔木',
+                height:'15-25米',lifespan:'50-120年',region:'北温带',habitat:'山地至寒温带',
+                img:'https://images.unsplash.com/photo-1486912500284-6f2462f4a8e6?w=600&h=600&fit=crop',
+                season:'花期4-5月，果期8-9月',conservation:'LC (无危)',etymology:'"白桦"因其白色树皮得名。属名Betula为拉丁语桦树。种加词platyphylla意为"宽叶的"。英文名birch源自古英语。白桦是俄罗斯国树。',
+                cultural:'白桦是俄罗斯的精神象征，出现在无数诗歌和文学作品中。白桦树皮在古代是书写材料(桦树皮文献)。白桦汁(春季采集)是北欧和俄罗斯的传统春季饮品。白桦林是北欧和西伯利亚最典型的景观。',
+                description:'白桦是北温带最具代表性的树种之一，以其纯白如纸的树皮而著称。白桦树皮中含有桦木醇(betulin)，是树皮呈白色的原因，同时赋予树皮防水防腐的特性。白桦是"先锋树种"——能在采伐迹地、火烧迹地等裸地上最先定居，为其他树种的生长创造条件。但它也是"短命树种"，寿命远短于同林的橡树和松树。白桦的树叶轻薄透光，秋季变为金黄色，白干金叶的景观极为优美。白桦汁(树液)在春季采集，富含糖分和矿物质，可发酵酿制桦树酒。',
+                morphology:'落叶乔木，树皮白色纸质光滑横向剥裂。小枝红褐色有皮孔。叶互生三角状卵形，先端渐尖，边缘重锯齿。花单性同株；雄花序2-4枚簇生枝顶(前一年秋季形成)，雌花序单生。果序圆柱形下垂；果苞3裂，中裂片短小。小坚果具膜质翅。',
+                growth:'白桦极喜光，不耐庇荫。耐寒性极强，是分布最北的阔叶树之一。对土壤要求不严，耐瘠薄，但以湿润肥沃的酸性土生长最佳。生长速度快(为速生树种)。根系较浅，不耐干旱。',
+                value:'白桦木材用于胶合板、家具和造纸。桦树汁是北欧传统健康饮品。桦树皮提取物(桦木醇)在化妆品和医药中有应用。白桦林景观是重要的生态旅游资源。白桦在园林中用作观赏树。',
+                care:'适合温带至寒温带地栽。幼苗期需充足光照。保持土壤湿润，不耐干旱。不宜在南方炎热地区栽培。防治桦树天牛和白粉病。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'europe'
+            },
+            '巨杉':{
+                name:'巨杉',scientific:'Sequoiadendron giganteum',family:'柏科 Cupressaceae',genus:'巨杉属 Sequoiadendron',type:'常绿大乔木',
+                height:'50-95米',lifespan:'2000-3200年',region:'美国加州(内华达山脉)',habitat:'山地温带森林',
+                img:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=600&fit=crop',
+                season:'球果两年成熟',conservation:'EN (濒危)',etymology:'"巨杉"意为巨大的杉树。属名Sequoiadendron意为"Sequoia之树"(纪念印第安切罗基族领袖Sequoyah)。种加词giganteum意为"巨大的"。英文名giant sequoia(巨红杉)。',
+                cultural:'巨杉是世界自然遗产和美国的国家象征。巨杉国家公园每年吸引百万游客。许多巨杉被命名为著名人物(如General Sherman/"谢尔曼将军树"——世界体积最大的树)。巨杉的发现打破了人们对树木寿命的认知极限。',
+                description:'巨杉(Giant Sequoia)是地球上体积最大的单体生物——谢尔曼将军树(Giant Sherman Tree)高83.8米，胸径11.1米，树皮厚达90厘米，体积约1487立方米，重量约2100吨。巨杉仅分布于美国加利福尼亚州内华达山脉西坡约75个天然群落中。巨杉耐火性极强：其树皮厚而富含单宁和水分，野火不仅不能杀死大树，反而能清理林下竞争者、释放种子(球果需火烤开裂)。巨杉被伐倒时，需先修月台，然后多人拉锯数日乃至数周。19世纪末的伐木潮几乎使巨杉灭绝，现在所有原生林已受严格保护。',
+                morphology:'常绿巨乔木。树冠圆锥形至不规则。树皮极厚(30-90厘米)红褐色海绵质纤维状深纵裂。叶鳞片状螺旋排列，钻形贴生。雌雄同株。球果卵球形长5-8厘米，木质化，种鳞多数盾形，内包种子多数。种子极小(长仅5mm)有宽翅。球果可在树上宿存多年不脱落。',
+                growth:'巨杉喜温和湿润的地中海型气候。要求深厚肥沃的花岗岩风化土壤。极喜光，幼苗需充足光照才能生长。生长速度中等偏快(年径生长可达2.5厘米)。种子需矿质裸土或火烧迹地才能萌发。极长寿。',
+                value:'巨杉是世界自然遗产，具有不可替代性。巨杉木材耐腐但不适合作木材(易碎)，19世纪砍伐多被浪费。巨杉是碳储存之王——单棵树可储存上千吨碳。巨杉是生态旅游的核心资源。',
+                care:'仅适合温带大型园林和植物园栽培。需充足空间(成熟树木需要>100平方米)。幼苗期需充足浇水和保护。寒冷地区幼苗需防寒。栽培多用于研究和保育目的。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'americas'
+            },
+            '檀香':{
+                name:'檀香',scientific:'Santalum album',family:'檀香科 Santalaceae',genus:'檀香属 Santalum',type:'常绿半寄生小乔木',
+                height:'5-10米',lifespan:'30-80年',region:'南亚(印度)',habitat:'热带干旱森林',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期4-6月，果期7-10月',conservation:'VU (易危)',etymology:'"檀"字本义为一种香木。梵语chandana(檀香)音译为"栴檀"。属名Santalum源自梵语。英文名sandalwood源自拉丁语santalum。种加词album意为"白色的"。',
+                cultural:'檀香在印度文化中地位尊崇，用于宗教仪式(焚香敬神)已有4000年。檀香在佛教中被誉为"香木之王"。檀香木雕是印度传统手工艺的代表。檀香精油是最古老的香水原料之一。中国古诗"宝马雕车香满路"即指檀香木料。',
+                description:'檀香是世界最珍贵的香木之一，以其独特持久的香气闻名。檀香是一种半寄生植物——其根系通过吸器附着于邻近植物的根部获取部分水分和养分。檀香的芳香心材中的檀香醇(santalol)具有镇定安神、抗炎的生理活性。檀香木生长缓慢，通常需30年以上心材才会形成芳香物质，品质最佳需60-80年。由于过度采伐和非法贸易，野生檀香已极为稀少。印度卡纳塔卡邦的檀香林由邦政府严格管控，每棵树都有编号。全球檀香油年产量远小于市场需求，推动人工种植兴起(澳大利亚是新兴的檀香产地)。',
+                morphology:'常绿小乔木。树干通直，树皮灰色光滑。叶对生，椭圆形至卵状披针形，薄革质。圆锥花序腋生或顶生；花小，初黄色后变红褐色；花被管钟形4-5裂。核果球形，成熟时紫黑色。种子球形。半寄生植物，根有吸器。',
+                growth:'檀香为半寄生植物，需与寄主植物(如金合欢、木豆等)伴生。喜热带强光、干旱环境。要求排水良好的沙质或砾质红色壤土。幼龄期需中等遮荫和充足寄主(提供养分)。生长极为缓慢，心材形成需30年以上。',
+                value:'檀香油是世界最重要的天然香料之一，用于高级香水、化妆品和芳香疗法。檀香木用于雕刻、家具和宗教用品。檀香油在阿育吠陀医学中用于治疗皮肤和泌尿系统疾病。檀香木的国际市场价格高昂。',
+                care:'仅适合热带干旱地区栽培。种植时需同时栽种寄主植物。幼苗期提供遮荫。定期修剪寄主防止压倒檀香树。防护动物啃食。收获需30年以上的耐心等待。',
+                category:'tree',flowerColor:'yellow',heightClass:'tall',regionClass:'east_asia'
+            },
+            '迷迭香':{
+                name:'迷迭香',scientific:'Salvia rosmarinus (syn. Rosmarinus officinalis)',family:'唇形科 Lamiaceae',genus:'鼠尾草属 Salvia',type:'常绿灌木',
+                height:'0.5-1.5米',lifespan:'10-20年',region:'地中海沿岸',habitat:'干燥石灰质海岸',
+                img:'https://images.unsplash.com/photo-1490750967868-88aa4a5ed8db?w=600&h=600&fit=crop',
+                season:'花期12月-次年5月(冬春)',conservation:'LC (无危)',etymology:'"迷迭香"可能为拉丁语rosmarinus(海之露)的音译加"香"。属名原为Rosmarinus(现已并入Salvia)。英文名rosemary源自拉丁语。',
+                cultural:'迷迭香在中世纪欧洲象征记忆与忠诚——婚礼、葬礼上均有使用。莎士比亚《哈姆雷特》中奥菲利亚说："这是迷迭香，是为了记忆。"迷迭香是地中海饮食文化的灵魂香料之一，用于烤肉、烤土豆和橄榄油调味。',
+                description:'迷迭香是地中海地区最具代表性的香草植物之一。其针形叶中富含迷迭香酸(rosmarinic acid)和精油(主要含1,8-桉叶素、α-蒎烯和樟脑)，具有抗氧化、抗菌、提神醒脑的作用。研究表明，迷迭香的香气可以提升记忆力和专注力。迷迭香耐旱、耐盐雾、耐贫瘠，是地中海型气候区的理想园林植物。迷迭香花在冬季和早春开放(地中海气候冬季温和多雨)，是蜜蜂重要的冬季蜜源。迷迭香在烹饪中与羊肉是"天作之合"——其强烈香气能中和羊肉的膻味。',
+                morphology:'常绿灌木，全株具浓烈芳香。茎多分枝直立，老枝灰色树皮片状剥落。叶对生无柄，线形革质，全缘反卷，叶面深绿有光泽，叶背密被灰白色星状毛。轮伞花序腋生于枝上部；花淡蓝紫色至白色；花冠二唇形。小坚果光滑。',
+                growth:'迷迭香喜阳光充足、温暖干燥环境。极耐旱、耐盐碱、耐贫瘠。怕积水(湿则烂根)。要求排水极佳的沙质微碱性土壤。耐轻霜(可耐-10℃)，但严寒地区需保护越冬。全日照条件下精油含量最高。',
+                value:'迷迭香精油广泛用于芳香疗法、化妆品和食品调味。迷迭香叶是地中海烹饪的必备香料。迷迭香提取物用作天然抗氧化剂(食品保鲜)。迷迭香是干旱地区理想的园林地被植物。',
+                care:'选择全日照、排水良好处栽植。浇水宜少不宜多。春季修剪老枝促进新枝。采收嫩梢作为香料。严寒地区盆栽冬季入室。扦插繁殖极易成活。防治白粉病。',
+                category:'shrub',flowerColor:'purple',heightClass:'medium',regionClass:'europe'
+            },
+            '当归':{
+                name:'当归',scientific:'Angelica sinensis',family:'伞形科 Apiaceae',genus:'当归属 Angelica',type:'多年生草本',
+                height:'0.5-1.5米',lifespan:'2-3年(栽培)',region:'中国西部',habitat:'高寒山区',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期6-7月，果期7-9月',conservation:'NT (近危，野生)',etymology:'"当归"之名有三说：一说为"应当归来"之意，古时妇女用以调经盼夫归；二说因能使气血各有所归；三说古人以此为思妻寄赠之物。属名Angelica意为"天使般的"。英文名Chinese angelica。',
+                cultural:'当归在中医药中被称为"妇科圣药"、"血中要药"，使用历史超过2000年。当归是四物汤的核心药材。在民间故事中，当归是"盼归"的象征。甘肃岷县"中国当归之乡"出产的当归品质最优。',
+                description:'当归是最重要的妇科中药材之一，与人参、黄芪并称中药三大补气补血药。当归的主要活性成分包括阿魏酸、藁本内酯和当归多糖等，具有补血活血、调经止痛的功效。当归喜高寒冷凉气候，栽培于海拔2000-3000米的高山地区。当归为一次性开花结实植物(二年生)，第一年进行营养生长(长根长叶)，第二年抽薹开花后根部木质化失去药用价值——因此商品当归在生长第二年春季抽薹前采收。当归种植对土壤和气候要求极为特殊，以甘肃岷县的道地药材"岷归"品质最佳(地名+药名的"道地药材"是中药质量的核心概念)。',
+                morphology:'多年生草本，全株有特异香气。根圆柱状分枝，黄棕色有浓郁香气。茎直立带紫红色。叶互生二至三回三出羽状分裂，叶柄基部膨大成鞘状。复伞形花序顶生；花小白色；萼齿不明显；花瓣5枚；雄蕊5枚。双悬果椭圆形侧棱有宽翅。',
+                growth:'当归喜高寒冷凉湿润气候。生长适温10-18℃。要求富含有机质、排水良好的微酸性至中性沙质壤土。为长日照植物。种子发芽需较低温度(15-20℃)。第一年为营养生长期，第二年抽薹开花(开花后根失去药用价值)。种植于海拔2000米以上高山。',
+                value:'当归是中药中最重要的补血药。当归在保健品、药膳和化妆品中广泛使用。当归提取物具有抗氧化和美白活性，用于护肤品中。当归是中国西部山区的重要经济作物。',
+                care:'种植需选择海拔较高(>1800m)的冷凉地区。育苗移栽(春季育苗，秋季移栽)。生长期间注意排水防涝。第二年初春抽薹前采收根部。忌连作。防治根腐病和蚜虫。',
+                category:'herb',flowerColor:'white',heightClass:'medium',regionClass:'china'
+            },
+            '仙人掌':{
+                name:'仙人掌',scientific:'Opuntia ficus-indica',family:'仙人掌科 Cactaceae',genus:'仙人掌属 Opuntia',type:'多年生肉质灌木',
+                height:'1-5米',lifespan:'20-80年',region:'中美洲(墨西哥)',habitat:'干旱半干旱地区',
+                img:'https://images.unsplash.com/photo-1627483165650-20b8423e5b3b?w=600&h=600&fit=crop',
+                season:'花期4-8月，果期7-10月',conservation:'LC (无危)',etymology:'"仙人掌"因其形态似人手掌，且有耐旱"仙"性得名。属名Opuntia源自古希腊地名Opus。种加词ficus-indica意为"印度无花果"(哥伦布以为到了印度)。英文名prickly pear(刺梨)。',
+                cultural:'仙人掌是墨西哥的国花，出现在墨西哥国旗和国徽上(鹰叼蛇立于仙人掌之上)。仙人掌果(刺梨)在墨西哥有数千年的食用历史。在阿兹特克传说中，仙人掌上的鹰引导先民找到建城之地——特诺奇蒂特兰(今墨西哥城)。',
+                description:'仙人掌科植物全球约有1750种，几乎全是美洲原产。仙人掌是适应干旱环境的极致代表：叶片退化为刺以减少蒸腾；茎干肉质化储存水分并进行光合作用(CAM光合途径——夜间吸收CO₂储存为苹果酸，白天在气孔关闭条件下释放CO₂进行光合作用，比普通光合途径节水90%以上)。仙人掌果(刺梨tuna)富含维生素C和抗氧化物质，是一种超级水果。胭脂虫寄生在仙人掌上，其体内提取的胭脂红是天然红色素。仙人掌在干旱地区的食用、饲料和生态价值日益受到国际关注。',
+                morphology:'肉质灌木。茎(仙人掌"掌片")扁平椭圆形，绿色肉质，无叶片。刺座螺旋排列，具数枚大针刺和多数细倒钩毛(易刺入皮肤极难取出)。叶完全退化为小锥形早期脱落。花单生刺座上；花被多数，黄色至橙红色；雄蕊多数；柱头多裂。浆果梨形或球形，成熟时黄至紫红色，表面有刺座。',
+                growth:'仙人掌喜炎热干燥、阳光极充足环境。耐旱(数月无降水亦可存活)，不耐水湿。生长适温25-35℃。耐轻霜(部分种类可耐-10℃)。对土壤要求极低，排水好即可。生长速度中等。CAM光合途径使其极端节水。',
+                value:'仙人掌果是国际超级食品，富含抗氧化物质。嫩茎片(去刺)是墨西哥传统蔬菜(nopales)。仙人掌是干旱地区的优良饲料作物。胭脂虫红色素是天然食品色素。仙人掌盆栽是受欢迎的观赏植物。',
+                care:'栽培需充足阳光和排水极佳的介质。浇水宜少不宜多(干透浇透)。冬季保持干燥并防寒(低于5℃需室内越冬)。繁殖以扦插掌片为主(切下晾干伤口2-3天后插入干燥介质)。防治介壳虫。',
+                category:'succulent',flowerColor:'yellow',heightClass:'medium',regionClass:'americas'
+            },
+            '金银花':{
+                name:'金银花',scientific:'Lonicera japonica',family:'忍冬科 Caprifoliaceae',genus:'忍冬属 Lonicera',type:'半常绿缠绕藤本',
+                height:'攀援可达10米',lifespan:'10-30年',region:'东亚',habitat:'山坡灌丛',
+                img:'https://images.unsplash.com/photo-1518707399472-6f1e1e0e6b0a?w=600&h=600&fit=crop',
+                season:'花期4-6月(夏季可二次开花)，果期8-10月',conservation:'LC (无危)',etymology:'"金银花"因其花色初开为白色(银)，后变黄色(金)而得名。又称"忍冬"——因其凌冬不凋。属名Lonicera纪念德国植物学家Lonitzer。英文名Japanese honeysuckle。',
+                cultural:'金银花在中国传统文化中象征爱情和友谊(金银相依)。金银花是著名的清热解毒中药。2003年非典期间，金银花的抗病毒作用备受关注。金银花是河南新密的"花魁"。',
+                description:'金银花是中国传统医学中使用最广泛的清热解毒药之一，用于治疗风热感冒、咽喉肿痛和皮肤感染。金银花的活性成分包括绿原酸(chlorogenic acid)和木犀草苷(luteolin-7-glucoside)等，现代研究证实其具有广谱抗菌、抗病毒和抗炎作用。金银花花朵变色现象(白变黄)是由花瓣中黄酮类物质氧化聚合导致的。金银花是藤本植物，在园林中用于棚架、围栏和地被绿化，具有良好的水土保持效果。同时它也被列为世界最严重的外来入侵植物之一(在新西兰、澳大利亚和美国部分地区)——一旦逸生，其旺盛的缠绕生长会绞杀原生植被。',
+                morphology:'半常绿缠绕藤本。茎中空，幼枝密被黄褐色柔毛。叶对生，卵形至长圆状卵形，全缘。花成对腋生；花冠二唇形，长3-5厘米，初白色后变黄色，芳香；雄蕊5枚伸出；花柱与雄蕊等长。浆果球形，成熟时蓝黑色。苞片叶状大。',
+                growth:'金银花喜阳光充足、温暖湿润的环境。适应性强，耐寒、耐旱、耐瘠薄。对土壤要求不严，在微酸性至微碱性土壤中均能生长。生长旺盛，年生长量数米。春秋两季生长迅速。充足光照有利于开花。',
+                value:'金银花是最常用的清热解毒中药之一(含有双黄连口服液等)。金银花露是夏季消暑饮品。金银花提取物用于化妆品和日化产品。金银花是优良的垂直绿化和蜜源植物。金银花盆景是传统艺术。',
+                care:'栽培需搭建棚架或围墙供攀爬。春季重剪促进新枝萌发。花后及时采收花蕾(药用品以将开未开为佳)。生长期保持土壤湿润。施有机肥促进枝叶和花蕾发育。防治蚜虫和白粉病。',
+                category:'vine',flowerColor:'multi',heightClass:'tall',regionClass:'east_asia'
+            },
+            '捕蝇草':{
+                name:'捕蝇草',scientific:'Dionaea muscipula',family:'茅膏菜科 Droseraceae',genus:'捕蝇草属 Dionaea',type:'多年生食虫草本',
+                height:'10-20厘米',lifespan:'5-20年',region:'美国东南部(北卡罗来纳)',habitat:'酸性沼泽湿地',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期5-6月',conservation:'VU (易危，野生)',etymology:'"捕蝇草"直译自英文Venus flytrap(维纳斯的捕蝇器)。属名Dionaea源自希腊爱神Dione(维纳斯之母)。种加词muscipula意为"捕鼠器"。',
+                cultural:'捕蝇草是达尔文最着迷的植物之一，他称之为"世界最奇妙的植物之一"。捕蝇草激发了科幻和恐怖题材中"食人植物"的灵感。捕蝇草是全球最受欢迎的食虫植物盆栽之一，其快速的捕虫动作引人入胜。',
+                description:'捕蝇草是自然界最著名的食虫植物，也是世界上运动速度最快的植物之一——其捕虫夹在0.1秒内即可闭合，与猎豹冲刺速度相当。捕虫机制极其精妙：夹子内表面有3-4根触发纤毛(每瓣)，猎物在约20秒内连续触碰两根纤毛(或同一根两次)才会触发闭合——这能避免雨水或落叶误触发。闭合后猎物挣扎会刺激夹子完全密封形成"胃腔"，分泌消化酶分解猎物(约需7-10天)，吸收养分后重新张开。捕蝇草是湿地植物，原生地土壤极为贫瘠，捕虫是其获取氮素的重要补充策略。野生捕蝇草仅分布于美国北卡罗来纳州和南卡罗来纳州沿海约160公里范围的酸性沼泽中。',
+                morphology:'小草本。根状茎短。叶基生莲座状排列，叶柄宽扁，叶片特化为捕虫夹——两瓣半圆形贝壳状，边缘有梳状长齿，内表面红色(诱虫)有3-4根触发纤毛。伞形花序顶生花葶高15-30厘米；花小白色。蒴果。冬季休眠时叶片缩小。',
+                growth:'捕蝇草喜强光(每日>6小时直射光)、高湿度和酸性贫瘠基质。要求无肥料的纯泥炭或水苔介质。捕虫非必需(可靠光合作用存活)，但捕虫能使植株更健壮。冬季需2-3个月低温休眠(0-10℃)。忌用自来水浇灌(需雨水或蒸馏水)。喜光但根部喜凉(盆底可浸水保持凉爽)。',
+                value:'捕蝇草是研究植物电信号传导和快速运动的模式植物。捕蝇草提取物含有新型抗菌肽。是最受欢迎的食虫植物盆栽之一。对保护湿地生态系统有旗舰物种意义。',
+                care:'用无肥泥炭土或水苔。盆底浅水盘保持湿润。用蒸馏水或雨水浇灌。全日照或强散射光。冬季休眠期(3个月)保持凉爽和稍干燥。忌施肥。勿频繁触发捕虫夹(每夹仅能闭合3-5次)。防治蚜虫和灰霉病。',
+                category:'herb',flowerColor:'white',heightClass:'low',regionClass:'americas'
+            },
+            '常春藤':{
+                name:'常春藤',scientific:'Hedera helix',family:'五加科 Araliaceae',genus:'常春藤属 Hedera',type:'常绿攀援藤本',
+                height:'攀援可达30米',lifespan:'50-200年',region:'欧洲、西亚',habitat:'温带森林',
+                img:'https://images.unsplash.com/photo-1485968579580-6e15f1f001bd?w=600&h=600&fit=crop',
+                season:'花期9-11月(秋季少见)',conservation:'LC (无危)',etymology:'"常春藤"因其四季常绿得名。属名Hedera为拉丁语常春藤。种加词helix意为"螺旋的"。英文名ivy源自古英语ifig。',
+                cultural:'常春藤在古代希腊罗马象征忠诚和永恒，常装饰于婚礼。大学"常春藤联盟"(Ivy League)因校园古老建筑墙上爬满常春藤得名。常春藤是圣诞花环的常用材料。在英国，常春藤被视为有灵性的保护植物。',
+                description:'常春藤是世界最广泛使用的垂直绿化植物之一。它以两种不同的生长形态闻名：幼年期为攀援藤本，叶片3-5裂，茎上有气生根(吸附根)可附着于墙面和树干攀爬；成年期变为灌木状，叶片不裂，方可开花结果。这种"叶形二型性"在不同光照条件下由植物激素调控。常春藤在生态上对建筑有双重效应：一方面夏季叶幕遮挡烈日降温节能(绿色空调)，冬季落叶(不是真的落叶，但落叶情况视气候)可透光取暖；另一方面，其气生根可能侵入墙壁裂缝和砂浆造成损坏。常春藤的花在秋季开放，是蜜蜂越冬前的重要最后蜜源。果实为鸟类冬季食物。',
+                morphology:'常绿攀援藤本，茎有气生根。叶二型：不育枝(幼枝)叶掌状3-5裂；可育枝(老枝)叶菱形至披针形全缘。伞形花序组成圆锥花序；花小淡黄绿色；花瓣5枚；雄蕊5枚；花柱合生。浆果球形，成熟时黑色(对人剧毒)。全株含常春藤苷。',
+                growth:'常春藤极耐阴(是耐阴能力最强的藤本植物之一)，也能在全日照下生长。适应性强，对土壤要求不严。耐寒(可耐-15℃)。生长速度中等，幼龄期较慢，定植后加速。极耐修剪，可控制方向和范围。',
+                value:'常春藤是城市垂直绿化最重要的植物之一。NASA研究将常春藤列为高效净化室内空气(吸收甲醛、苯等)的植物之一。常春藤提取物用于护肤品中(抗炎)。常春藤是优良的地被植物和室内垂吊盆栽。',
+                care:'选择半阴至全阴处栽培(北方可全日照)。保持土壤湿润。春季修剪控制范围。气生根勿强制剥离墙面(会损伤墙面)。常春藤对人体有毒，远离幼儿和宠物。防治红蜘蛛和介壳虫。',
+                category:'vine',flowerColor:'green',heightClass:'tall',regionClass:'europe'
+            },
+            '猪笼草':{
+                name:'猪笼草',scientific:'Nepenthes mirabilis',family:'猪笼草科 Nepenthaceae',genus:'猪笼草属 Nepenthes',type:'多年生食虫藤本或亚灌木',
+                height:'藤蔓可达10米',lifespan:'5-20年',region:'东南亚至澳大利亚',habitat:'热带雨林至沼泽',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'全年可产生捕虫笼',conservation:'VU (多种易危)',etymology:'"猪笼草"因其捕虫笼形似猪笼(装猪的竹笼)得名。属名Nepenthes源自希腊语"ne"(不)和"penthos"(悲伤)——古代认为其汁液能消除忧愁。英文名tropical pitcher plant(热带瓶子草)。',
+                cultural:'猪笼草在东南亚热带雨林民间传说中具有神秘色彩。在马来西亚和印度尼西亚，猪笼草常作为传统药物的成分。捕虫笼的惊人形态使其成为维多利亚时代植物猎人的狂热收集对象。',
+                description:'猪笼草是食虫植物中形态最多样、最引人注目的一类——全球猪笼草属约有170种。其捕虫笼是叶尖特化而成的精密陷阱：笼盖分泌蜜液引诱昆虫，笼口内壁极为光滑(蜡质区)，昆虫滑落入笼底的消化液中无法爬出。消化液含有多种酶(蛋白酶、几丁质酶等)，能分解昆虫获取氮素。有些大型猪笼草的捕虫笼可长达40厘米以上，不仅捕虫，甚至曾记录捕食小型老鼠和蜥蜴——但这类"食鼠"事件极为罕见。不同种类的猪笼草适应不同的生境，从低地沼泽到高山云雾林(海拔3000米以上)。许多猪笼草与蚂蚁、树蛙等其他生物形成特殊共生关系。',
+                morphology:'食虫藤本或亚灌木。叶互生，分为叶片部、卷须部和捕虫笼三部：叶片披针形；卷须由叶尖延伸而出；捕虫笼(囊状体)生于卷须末端。捕虫笼有笼盖、笼口(唇部)、笼体和消化液。花单性异株，总状花序；花小无花瓣，花被4枚。蒴果。根状茎可形成地下贮藏器官。',
+                growth:'猪笼草喜高温高湿、明亮散射光环境(忌暴晒)。要求贫瘠、酸性、排水良好的介质(如水苔、泥炭、珍珠岩混合)。湿度要求极高(>70%)。低地种需终年温暖(>20℃)，高地种需昼夜温差(白天<25℃，夜晚<15℃)。捕虫笼的形成依赖高湿度。',
+                value:'猪笼草是研究和科普食虫植物的模式物种。捕虫笼结构的仿生学研究(超滑表面)具有应用前景。猪笼草是最受欢迎的食虫植物收藏对象之一。在东南亚，猪笼草用于草药和传统手工艺(编织)。',
+                care:'保持高湿度(>70%，可通过透明罩或加湿器实现)。用无肥酸性介质。充足散射光。用蒸馏水或雨水浇灌。保持温暖(或根据种类需求提供适宜温度)。忌施肥(根系不耐肥)。勿喂食肉类(烂在笼中会腐坏)。',
+                category:'vine',flowerColor:'green',heightClass:'tall',regionClass:'east_asia'
+            },
+            '何首乌':{
+                name:'何首乌',scientific:'Fallopia multiflora (syn. Polygonum multiflorum)',family:'蓼科 Polygonaceae',genus:'何首乌属 Fallopia',type:'多年生缠绕草本',
+                height:'藤蔓可达4米',lifespan:'多年生(块根可多年)',region:'中国',habitat:'山坡灌丛',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期8-10月，果期10-11月',conservation:'LC (无危)',etymology:'"何首乌"一名源自唐代传说：何姓老人服用此药后白发变黑、返老还童。属名Fallopia纪念意大利植物学家Fallopio。种加词multiflora意为"多花的"。英文名Chinese knotweed。',
+                cultural:'何首乌在中国民间传说中被誉为"长生不老药"，《本草纲目》记载"此物能乌须发、益精血"。武侠小说中常将"千年人形何首乌"描绘为起死回生神药。鲁迅《从百草园到三味书屋》提到过何首乌。',
+                description:'何首乌是著名的传统补血、乌发中药。其药用部位是肥大的块根，含有卵磷脂和大黄素等成分，具有补肝肾、益精血、乌须发的功效。然而近年来发现何首乌存在潜在的肝毒性风险，某些个体服用后会导致严重的药物性肝损伤，这引发了对其安全性的重新评估。何首乌块根有时会形成人类形态(人形何首乌)，民间视为珍宝。何首乌是蓼科植物，与大黄、荞麦为近亲。其藤茎(即"夜交藤")也可药用，用于安神。',
+                morphology:'多年生缠绕草本。块根肥大纺锤形或不规则形，外表黑褐色，断面黄棕色有云锦花纹。茎缠绕中空多分枝。叶互生卵形先端渐尖，叶柄基部具膜质托叶鞘。圆锥花序顶生或腋生大型；花小白色；花被5深裂，外3片背部有翅。瘦果卵形三棱包裹于宿存花被内。',
+                growth:'何首乌喜温暖湿润、阳光充足环境。要求肥沃疏松的沙质壤土。耐寒性中等(可耐-15℃)。藤蔓生长旺盛需攀附物。块根生长缓慢，需3-4年才能长成药用规格(直径3厘米以上)。对土壤排水要求高。',
+                value:'何首乌是传统补血乌发中药。何首乌提取物用于生发和抗衰老产品。红斑何首乌(F. multiflora var.)是观赏地被植物。何首乌藤(夜交藤)安神。但需注意其肝毒性风险，不宜长期大量服用。',
+                care:'种植选择疏松肥沃土壤。搭建支架供藤蔓攀爬。生长旺盛期保持充足水肥。栽培3-4年后秋季采收块根。采后洗净切片晒干或炮制(制首乌)。病虫害较少。',
+                category:'vine',flowerColor:'white',heightClass:'tall',regionClass:'china'
+            },
+            '珙桐':{
+                name:'珙桐',scientific:'Davidia involucrata',family:'蓝果树科 Nyssaceae',genus:'珙桐属 Davidia',type:'落叶乔木',
+                height:'15-25米',lifespan:'50-200年',region:'中国(华中、西南)',habitat:'山地常绿落叶阔叶混交林',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期4-5月，果期10月',conservation:'EN (濒危)',etymology:'"珙桐"因其果实似玉珙得名。属名Davidia纪念法国传教士植物学家Armand David(他也是大熊猫的发现者)。英文名dove tree(鸽子树)因花开如白鸽栖息。种加词involucrata意为"具总苞的"。',
+                cultural:'珙桐被称为"中国鸽子树"，是1869年由法国传教士David在四川穆坪(今宝兴)首次发现并引入西方。珙桐是新生代第三纪孑遗植物，被誉为"植物活化石"。珙桐在欧洲园林中引发轰动，成为最受欢迎的中国观赏树木之一。',
+                description:'珙桐是世界最美丽的观赏树木之一，春季开花时，两片大型白色苞片(不是花瓣)在微风中飘扬，宛如满树白鸽振翅欲飞，因此被称为"鸽子树"。珙桐是第三纪古热带植物区系的孑遗植物，现仅零星分布于中国四川、湖北、湖南、云南和贵州的偏远山区。真正吸引人的不是珙桐的小花(多数雄花和一两朵两性花组成的球形头状花序)，而是花序基部两片(偶三片)巨大的白色苞片，长可达15厘米。珙桐在西方园林中极为珍贵，是最富盛名的中国观赏树木出口之一。其野生种群因栖息地破坏而濒危，已列为中国国家一级保护植物。',
+                morphology:'落叶乔木，树冠圆锥形。树皮灰褐色不规则片状剥落。叶互生宽卵形至近圆形，先端锐尖，边缘有粗锯齿，叶背密被丝状绒毛。花杂性同株，多数雄花和一两朵两性花组成球形头状花序；花序基部有2枚大型白色叶状苞片(有时3枚)。核果长卵形，紫绿色被白粉，果核坚硬具纵沟。',
+                growth:'珙桐喜凉爽湿润的山地气候。喜半阴，幼苗需遮荫。要求深厚肥沃、排水良好的微酸性至中性土壤。生长速度中等偏慢。实生苗约15-20年开花。不耐干旱和高温。对大气SO2敏感。',
+                value:'珙桐是世界顶级观赏树木，在西方园林中深受珍视。珙桐是研究植物地理学和进化的重要材料。珙桐的发现促进了19世纪西方对中国植物的关注。是生态旅游和科普教育的重要资源。',
+                care:'仅适合温带凉爽湿润地区栽植。选择半阴避风处，避免夏季高温灼伤。保持土壤湿润和疏松。幼苗期需遮荫保护。移植需带土球。多用于植物园和大型庭园。',
+                category:'tree',flowerColor:'white',heightClass:'tall',regionClass:'china'
+            },
+            '玉兰':{
+                name:'玉兰',scientific:'Magnolia denudata',family:'木兰科 Magnoliaceae',genus:'木兰属 Magnolia',type:'落叶乔木',
+                height:'10-20米',lifespan:'50-300年',region:'中国',habitat:'温带至亚热带',
+                img:'https://images.unsplash.com/photo-1522383225653-ed111a181951?w=600&h=600&fit=crop',
+                season:'花期2-4月(先叶开花)，果期8-9月',conservation:'LC (无危)',etymology:'"玉兰"因其花白如玉、香若兰而得名。属名Magnolia纪念法国植物学家Magnol。种加词denudata意为"裸露的"，指其先叶开花。英文名yulan magnolia。',
+                cultural:'玉兰在中国文化中象征高洁、报恩和吉祥。唐代宫苑中广泛种植。"玉堂富贵"(玉兰、海棠、牡丹、桂花)是传统花鸟画主题。玉兰是上海市市花。玉兰花蕾(辛夷)是传统芳香中药。',
+                description:'玉兰是世界最古老的开花植物谱系之一——木兰科植物在被子植物演化史上处于基部位置，其花结构保留了原始特征(花被片不分化为萼片和花瓣，雄蕊和雌蕊多数螺旋排列)。玉兰的花先叶开放，花开时满树洁白，清香四溢，是"先叶开花"类植物的典型代表。玉兰花被片9枚，白色厚肉质，直径可达15厘米。玉兰花期短暂(约10-15天)，一场春雨便可将花瓣打落。玉兰的花蕾(辛夷/木笔)被绒毛包裹如毛笔头，可入药治疗鼻炎和鼻塞。白玉兰、紫玉兰和二乔玉兰是城市绿化中最常见的玉兰种类。',
+                morphology:'落叶乔木，树冠宽卵形。小枝灰褐色有皮孔。冬芽大型密被淡黄灰色长柔毛。叶互生倒卵形至倒卵状长圆形，先端宽圆具短急尖。花单生枝顶，先叶开放，直径12-15厘米；花被9枚白色厚肉质近等大；雄蕊多数螺旋着生；雌蕊群无柄。聚合蓇葖果圆柱形，成熟时开裂露出红色种子。',
+                growth:'玉兰喜光，稍耐阴。喜温暖湿润气候，较耐寒(可耐-20℃)。要求肥沃、排水良好的微酸性至中性土壤。怕涝。根系肉质不耐移植。生长速度中等偏慢。幼树期需5-8年开花(嫁接苗3-4年)。花芽在前一年秋季形成并越冬。',
+                value:'玉兰是世界重要的观赏树木。玉兰花蕾(辛夷)用于治疗鼻炎和鼻窦炎。玉兰花香精用于香水和化妆品。玉兰木材细致用于工艺品。玉兰是早春重要的蜜源植物。玉兰杂交育种丰富(已育出黄色和深紫色品种)。',
+                care:'栽植选择避风向阳处。移植需带土球(肉质根易损)。保持土壤湿润但不积水。早春花前施磷钾肥。花后修剪去除病弱枝。防治木兰炭疽病和介壳虫。',
+                category:'tree',flowerColor:'white',heightClass:'tall',regionClass:'china'
+            },
+            '桂花':{
+                name:'桂花',scientific:'Osmanthus fragrans',family:'木犀科 Oleaceae',genus:'木犀属 Osmanthus',type:'常绿灌木或小乔木',
+                height:'3-12米',lifespan:'50-200年',region:'东亚(中国)',habitat:'亚热带山地',
+                img:'https://images.unsplash.com/photo-1518707399472-6f1e1e0e6b0a?w=600&h=600&fit=crop',
+                season:'花期9-10月(秋季)，果期次年3-4月',conservation:'LC (无危)',etymology:'"桂"字从"木"从"圭"(玉器，指珍贵)，意为珍贵之树。属名Osmanthus源自希腊语"osme"(香气)和"anthos"(花)。种加词fragrans意为"芳香的"。英文名sweet olive(甜橄榄)。',
+                cultural:'桂花是中国十大名花之一，与中秋文化紧密相连——"八月十五桂花香"。吴刚伐桂的传说流传千年。桂花是杭州的市花，满陇桂雨是杭州新十景。桂花在"蟾宫折桂"中象征科举高中。',
+                description:'桂花是世界最著名的芳香花木之一，其甜香被誉为"十里飘香"。桂花品种主要分为四大品系：金桂(花色金黄、香气最浓)、银桂(花色乳白、香气清雅)、丹桂(花色橙红、香气较淡)和四季桂(一年多次开花、香气淡)。桂花浸膏是高级香水和化妆品的重要原料。桂花可制作桂花糕、桂花酒、桂花糖和桂花茶等传统美食。桂花是典型的短日照植物，在秋季日照缩短到约12小时以下时诱导开花——这也是桂花总在中秋前后飘香的生物学基础。',
+                morphology:'常绿灌木或小乔木。叶对生革质，椭圆形至长椭圆形，边缘有细锯齿或全缘，叶面深绿光亮。聚伞花序簇生叶腋；花小密集，花冠4深裂，银白色、金黄色或橙红色，芳香浓郁；雄蕊2枚。核果椭圆形，成熟时紫黑色。',
+                growth:'桂花喜温暖湿润、阳光充足环境。耐半阴(在南方可耐半阴)。适宜生长在亚热带气候区。要求肥沃、排水良好的微酸性土壤。不耐烟尘和干旱。生长速度中等。寿命长，百年以上古桂常见。桂花在北方需盆栽冬季入室。',
+                value:'桂花浸膏和净油是高级香水和化妆品原料。桂花可用于茶、酒和食品调味。桂花树是"玉堂富贵"园林配置的重要组成。桂花是重要的蜜源植物。桂花盆景是传统艺术。',
+                care:'选择阳光充足或半阴处栽培。保持土壤湿润但避免积水。秋季花前施磷钾肥促进开花香气。花后轻剪整形。北方需盆栽入室越冬(不低于5℃)。防治桂花炭疽病和介壳虫。',
+                category:'tree',flowerColor:'yellow',heightClass:'tall',regionClass:'east_asia'
+            },
+            '合欢':{
+                name:'合欢',scientific:'Albizia julibrissin',family:'豆科 Fabaceae',genus:'合欢属 Albizia',type:'落叶乔木',
+                height:'5-16米',lifespan:'30-100年',region:'亚洲(伊朗至日本)',habitat:'温带至亚热带',
+                img:'https://images.unsplash.com/photo-1486912500284-6f2462f4a8e6?w=600&h=600&fit=crop',
+                season:'花期6-7月，果期8-10月',conservation:'LC (无危)',etymology:'"合欢"因小叶昼开夜合(睡眠运动)象征夫妻和睦得名。属名Albizia纪念意大利贵族植物学家Albizzi。种加词julibrissin源自波斯语"gul-i abrisham"(丝绸之花)。英文名silk tree(丝绸树)指其花丝如丝。',
+                cultural:'合欢在中国文化中象征夫妻和睦、爱情忠贞。"合欢被"、"合欢扇"等词汇反映其美好寓意。杜甫"合欢尚知时，鸳鸯不独宿"以合欢起兴。合欢树在《聊斋志异》中有浪漫传说。',
+                description:'合欢是最优美的庭园树木之一，夏季开放粉红色丝绒般的花朵，如满树飘浮的粉红羽毛。合欢的花没有花瓣——吸引人的是其雄蕊(花丝)，众多粉红色花丝细长伸出，组成直径可达5厘米的球形花序。合欢叶片具有"睡眠运动"：白天小叶展开进行光合作用，夜晚小叶成对闭合"睡眠"(由叶枕细胞膨压变化驱动)。这种运动在含羞草中最为著名，但合欢的敏感度较弱(需碰触不会闭合)。合欢木材致密带美丽纹理，是制作家具和乐器的好材料。合欢根部的根瘤菌能固定大气氮素，具有改善土壤肥力的作用。',
+                morphology:'落叶乔木，树冠伞形扁平。二回羽状复叶，总叶柄有腺体；羽片4-12对；小叶10-30对镰刀形昼开夜合。头状花序多数排成伞房状圆锥花序；花萼管状5齿；花冠漏斗状5裂，花冠小；雄蕊多数，花丝细长粉红色，伸出花冠外3-4厘米。荚果扁平带状，成熟时褐色，种子间隔排列。',
+                growth:'合欢喜光，不耐庇荫。喜温暖气候，较耐寒。对土壤要求不严，耐干旱瘠薄，但以排水良好的沙质壤土最佳。生长速度极快(速生树种)。浅根性。不耐水湿。萌芽力强，耐修剪。',
+                value:'合欢是优美的夏季观花庭园树种。合欢皮(树皮)是传统中药，用于安神解郁。合欢树冠扁平伞形，提供夏季遮荫的同时不影响冬季采光。合欢根瘤菌固氮改良土壤。合欢花是优良蜜源。',
+                care:'选择阳光充足、排水良好处栽植。保持土壤湿润但忌积水。春季施肥促进枝叶和花。冬季修剪维持树冠伞形。防治合欢枯萎病(萎蔫病)和天牛。繁殖以播种为主。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'east_asia'
+            },
+            '木棉':{
+                name:'木棉',scientific:'Bombax ceiba',family:'锦葵科 Malvaceae',genus:'木棉属 Bombax',type:'落叶大乔木',
+                height:'10-25米',lifespan:'50-200年',region:'亚洲热带、亚热带',habitat:'低海拔热带季雨林',
+                img:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=600&fit=crop',
+                season:'花期2-4月(先叶开放)，果期4-6月',conservation:'LC (无危)',etymology:'"木棉"因其果实产棉絮得名(棉来自木而非草)。属名Bombax源自希腊语"bombyx"(丝绸)，指种子纤维。种加词ceiba为南美土著语。英文名red silk-cotton tree(红色丝棉树)。',
+                cultural:'木棉被称为"英雄树"(红色花朵如英雄鲜血)，是广州市花和攀枝花市的标志。木棉在中国南方象征豪迈和热情。清代诗人陈恭尹《木棉花歌》"浓须大面好英雄，壮气高冠何落落"为千古名句。',
+                description:'木棉是亚洲热带最具标志性的开花大树之一。每年冬末春初，木棉在落尽叶片的秃枝上绽放出大量鲜红色硕大的花朵(直径可达12厘米)，如火如荼，极为壮观，因此得名"英雄树"和"烽火树"。花后结果，蒴果开裂后露出大量白色棉絮状纤维包裹的种子，随风飘散，形成"棉絮纷飞"的独特景象。木棉纤维(木棉絮)是最轻的天然纤维之一(比重仅0.05)，浮力极好，传统用于填充枕头、救生圈和浮具。木棉花(攀枝花)在华南被用作祛湿利尿的药材和靓汤材料。',
+                morphology:'落叶大乔木。树干通直，幼树干和枝条上密生圆锥状硬刺(防动物攀爬)。掌状复叶互生，小叶5-7枚长圆形至长圆状披针形。花单生或簇生枝顶叶腋，先叶开放，直径10-12厘米；花瓣5枚肉质鲜红色(稀橙黄色)；雄蕊多数合生成5束。蒴果长椭圆形木质，成熟5裂，内壁有白色棉状纤维包裹种子。种子多数黑色光滑。',
+                growth:'木棉喜高温多湿的热带、亚热带气候。喜光不耐阴。对土壤要求不严，但以深厚肥沃的冲积土为佳。耐旱不耐涝。生长速度中等偏快。深根性，抗风力较强。不耐寒(低于5℃受害)。',
+                value:'木棉是热带和亚热带地区最壮观的观花大乔木之一。木棉絮是天然浮力材料(制作救生圈和浮标)。木棉花入药可清热祛湿。木棉树干可用于制作独木舟。木棉是重要的生态园林树种。',
+                care:'适合热带和亚热带地栽。需充足空间保证树冠发展。幼龄期保持土壤湿润。注意避开人行道(硬刺和落花)。热带以外地区不适合栽培。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'east_asia'
+            },
+            '龙舌兰':{
+                name:'龙舌兰',scientific:'Agave americana',family:'天门冬科 Asparagaceae',genus:'龙舌兰属 Agave',type:'多年生大型肉质草本',
+                height:'花葶可达8米(叶丛1-2米)',lifespan:'10-30年(一次开花后死亡)',region:'墨西哥',habitat:'干旱半干旱高原',
+                img:'https://images.unsplash.com/photo-1627483165650-20b8423e5b3b?w=600&h=600&fit=crop',
+                season:'花期限于生命末期(10-30年一次)',conservation:'LC (无危)',etymology:'"龙舌兰"因其叶片似龙舌而得名。属名Agave源自希腊语"agavos"(高贵的)。英文名century plant(世纪植物)因误以为100年才开花。种加词americana意为"美洲的"。',
+                cultural:'龙舌兰在墨西哥文化中神圣崇高——龙舌兰女神Mayahuel是阿兹特克神话中的生育之神。龙舌兰酒(特基拉Tequila和梅斯卡尔Mezcal)是世界六大烈酒之一，是墨西哥的国家象征。龙舌兰纤维(剑麻)是传统制绳材料。',
+                description:'龙舌兰是美洲大陆最具代表性的多肉植物之一。其最传奇的特性是"一次性生殖"(单稔植物semelparous)：植株经过10-30年的营养生长后，在生命的最后一年，仅用数周时间抽出高达6-8米的巨大花葶(世界最高的花序之一)开花结实，然后母株耗尽营养枯死。龙舌兰的心(piña)经蒸煮、发酵和蒸馏制成龙舌兰酒(Tequila使用的蓝色龙舌兰A. tequilana是另一种)。龙舌兰采用CAM光合途径，极端耐旱。剑麻(A. sisalana)是重要的纤维作物。龙舌兰叶片边缘有钩刺，叶尖有坚硬的针刺。',
+                morphology:'大型肉质草本。叶丛生成莲座状，叶剑形肥厚，长1-2.5米，灰绿色被白粉，边缘有钩刺或锯齿，叶尖有暗褐色长针刺。花葶(花序轴)高6-8米，从叶丛中心抽出；大型圆锥花序；花漏斗状黄绿色；雄蕊6枚。蒴果。花后母株枯死，但可产生大量珠芽和分株延续后代。',
+                growth:'龙舌兰喜炎热干燥、阳光极充足的环境。极耐旱，数月不浇水可存活。怕积水和寒冷。要求排水极佳的沙质或砾质土壤。生长速度慢。经10-30年累积足够营养后才开花。CAM光合途径使其极端节水。',
+                value:'蓝色龙舌兰是特基拉酒的原料(墨西哥国家文化遗产)。剑麻是世界重要的硬质纤维。龙舌兰糖浆是天然甜味剂。龙舌兰提取物具有抗炎作用。龙舌兰是干旱地区优良的园林植物。某些种类作为生物燃料原料。',
+                care:'选择全日照、排水极佳处栽培。使用沙质多肉介质。浇水遵循干透浇透原则。大型植株容器栽培需选择大而重的盆。注意防刺伤(叶片边缘和尖端极锋利)。耐轻霜但不耐严寒。',
+                category:'succulent',flowerColor:'yellow',heightClass:'tall',regionClass:'americas'
+            },
+            '铁线蕨':{
+                name:'铁线蕨',scientific:'Adiantum capillus-veneris',family:'凤尾蕨科 Pteridaceae',genus:'铁线蕨属 Adiantum',type:'多年生草本蕨类',
+                height:'15-40厘米',lifespan:'多年生',region:'全球温带至热带',habitat:'阴湿石灰岩岩缝、水边',
+                img:'https://images.unsplash.com/photo-1485968579580-6e15f1f001bd?w=600&h=600&fit=crop',
+                season:'孢子成熟期5-8月',conservation:'LC (无危)',etymology:'"铁线蕨"因其叶柄细长黑色如铁丝而得名。属名Adiantum源自希腊语"adiantos"(不被沾湿的)——指其叶片拒水特性。种加词capillus-veneris意为"维纳斯之发"。英文名maidenhair fern(少女发蕨)。',
+                cultural:'铁线蕨在古希腊时期就被用作治疗呼吸系统疾病的草药。维多利亚时代英国掀起"蕨类狂热"(pteridomania)，铁线蕨是最受追捧的室内蕨类之一。在中国，铁线蕨常作为假山和盆景的配景植物。',
+                description:'铁线蕨是被子植物之外最优雅的绿色植物之一——作为蕨类植物，它没有花和种子，以孢子繁殖，其生活史包括绿色自养配子体(原叶体)和孢子体两个独立阶段。铁线蕨的叶片具有神奇的拒水特性：水滴落在叶片上，水珠圆滚而不沾湿叶面(与荷叶效应类似但机制不同)。铁线蕨喜钙质环境(石灰岩岩缝)，是钙质土的指示植物。叶片(复叶)薄而翠绿，小叶扇状边缘反卷形成假囊群盖，孢子囊着生其下。铁线蕨在室内可增加空气湿度并吸附微粒。铁线蕨不耐干旱，对水分变化极为敏感，是养护最具挑战性的室内蕨类之一。',
+                morphology:'多年生草本蕨类，根状茎细长横走被鳞片。叶远生；叶柄长，细瘦黑色光亮，基部有鳞片。叶片卵状三角形薄膜质，二至三回羽状复叶，末回小羽片扇形至斜方形，边缘浅裂至深裂，叶脉扇状二分叉。孢子囊群生于反卷的叶缘(假囊群盖)下，假囊群盖长圆形或肾形。孢子四面体型。',
+                growth:'铁线蕨喜阴湿温暖环境，忌强光直射和干燥。喜富含有机质、排水良好但保持湿润的石灰性(pH7-8)基质。空气湿度要求高(>70%)。生长适温18-25℃，不耐寒。对水分极度敏感，稍有干旱即叶片褐枯，但水分恢复后能重新萌发新叶。',
+                value:'铁线蕨是世界最受欢迎的室内蕨类植物之一。在传统医学中用于治疗咳嗽和呼吸道疾病。铁线蕨是假山和盆景的重要配景。其优美的叶形在花艺和植物艺术中备受青睐。科研上用于研究叶片拒水机制。',
+                care:'保持高湿度(频繁喷雾或使用加湿器)。基质保持湿润但不可积水。使用明亮散射光(勿直射)。喜钙性——可在基质中添加石灰石粉末。冬季保持温暖(>12℃)。修剪枯叶促进新叶萌发。',
+                category:'herb',flowerColor:'green',heightClass:'low',regionClass:'global'
+            },
+            '石斛':{
+                name:'铁皮石斛',scientific:'Dendrobium officinale',family:'兰科 Orchidaceae',genus:'石斛属 Dendrobium',type:'多年生附生草本',
+                height:'10-50厘米',lifespan:'多年生',region:'中国南方',habitat:'亚热带山地岩石或树干上',
+                img:'https://images.unsplash.com/photo-1524594152209-ecf01afdc411?w=600&h=600&fit=crop',
+                season:'花期4-6月',conservation:'CR (极危，野生)',etymology:'"石斛"因其生于石上、古时作量器"斛"使用得名。属名Dendrobium源自希腊语"dendron"(树)和"bios"(生命)，指其附生树上。种加词officinale意为"药用的"。英文名同用Dendrobium。',
+                cultural:'铁皮石斛在中医药中被誉为"九大仙草之首"(唐《道藏》)。历代视为延年益寿的珍品。因过度采集，"野石斛如金贵"。铁皮石斛文化是中医养生文化的重要组成，近年来大规模人工栽培使其重获普及。',
+                description:'铁皮石斛是兰科植物中最著名的药用种类之一，也是中国九大仙草之首。它是一种附生兰(非寄生)，在自然条件下生长在湿润的岩石表面或树干上，通过气生根从大气中吸收水分和养分。铁皮石斛的主要活性成分是石斛多糖(含量高达30-40%)和石斛碱，具有增强免疫、生津养胃、滋阴清热的作用。由于大量采集，野生铁皮石斛已极度濒危。近20年来，人工组织培养和设施栽培技术的突破使铁皮石斛实现了规模化生产，价格从"千金难求"降至大众可及。石斛属是兰科最大的属之一，全球约1500种，多数具有观赏价值。',
+                morphology:'附生草本。茎丛生圆柱形肉质，多节。叶互生2列，长圆状披针形，叶鞘抱茎。总状花序生于落叶茎节上，2-5朵花；花被片黄绿色，唇瓣白色有紫色斑，唇盘有胼胝体；合蕊柱短。蒴果。茎干可加工为"铁皮枫斗"(螺旋状加工品)。气生根发达从茎节长出。',
+                growth:'石斛喜温暖湿润、半阴环境。适宜附生于树皮粗糙的乔木或湿润岩石上。要求高空气湿度(>70%)。生长适温20-30℃。冬季需8-12℃的温度刺激促进花芽分化。忌积水和强光直射。组织培养苗移栽成活率是技术关键。',
+                value:'铁皮石斛是最名贵的中药材之一，用于增强免疫、抗疲劳。石斛多糖是重要的保健食品原料。石斛属植物具有重要的观赏价值(蝴蝶石斛是世界切花)。石斛的附生特性为植物学和生态学研究提供素材。',
+                care:'附生栽培于树皮或石板，用苔藓和水苔包裹根部。保持高湿度(每日喷雾)。用极淡的兰花专用肥。冬季控水控温(8-12℃)。家庭推荐用多孔盆+碎树皮+水苔基质。防治蜗牛和介壳虫。',
+                category:'herb',flowerColor:'green',heightClass:'medium',regionClass:'china'
+            },
+            '牵牛花':{
+                name:'牵牛花',scientific:'Ipomoea nil',family:'旋花科 Convolvulaceae',genus:'番薯属 Ipomoea',type:'一年生缠绕草本',
+                height:'藤蔓可达3米',lifespan:'一年生',region:'热带美洲',habitat:'开阔地、灌丛',
+                img:'https://images.unsplash.com/photo-1518707399472-6f1e1e0e6b0a?w=600&h=600&fit=crop',
+                season:'花期6-10月(每日清晨开放)',conservation:'LC (无危)',etymology:'"牵牛花"因其花开时正值牵牛星(牛郎星)升起的黎明时分而得名。属名Ipomoea源自希腊语"ips"(蠕虫)和"homoios"(相似)，指其藤蔓如虫爬行。英文名morning glory(早晨的荣耀)描述其清晨开花。',
+                cultural:'牵牛花在日本文化中地位崇高，江户时代形成了"朝颜"(牵牛花)的观赏热潮，培育出众多珍奇品种。牵牛花在中国文学中象征勤劳和早晨。日本七夕节(7月7日)前后正是牵牛花盛开期，与牛郎织女传说暗合。',
+                description:'牵牛花是夏季最令人愉悦的草花之一。其最迷人的特性是花期极其规律：每朵花在凌晨开放，花瓣展开仅需约30分钟，在上午阳光强烈前盛开，午后即闭合并凋萎，寿命仅一天。这种"朝开午谢"的习性是由于花朵开放后强烈的蒸腾作用导致花瓣迅速失水枯萎。但植株每天能连续产生新花蕾，整个夏季维持不断开花。牵牛花花色极为丰富：蓝色、紫色、粉色、红色、白色及各种条纹、镶边复色。日本培育的牵牛花品种形态极为多样——有轮型、切瓣型、狮子型、桔梗型等变化。番薯(红薯)与牵牛花为同属植物，番薯的花也是典型的喇叭形，但极少开花。',
+                morphology:'一年生缠绕草本，全株被硬毛。茎细长左旋缠绕。叶互生宽卵形至近圆形，常3裂。花1-3朵腋生；花萼5深裂；花冠漏斗状(喇叭形)大型，蓝色至紫红色；雄蕊5枚不等长；子房3室。蒴果球形3裂。种子卵状三棱形黑色(中药"牵牛子"/"黑丑""白丑")。',
+                growth:'牵牛花喜阳光充足、温暖环境。对土壤要求不严。怕霜冻(一年生夏秋季开花植物)。生长极为迅速，播种后约8-10周开花。每日新花开放在凌晨到清晨。花后结籽数量多，自播能力强。',
+                value:'牵牛花是世界最受欢迎的夏季藤本花卉。牵牛花种子(牵牛子)是传统泻下逐水中药(含牵牛子苷，有毒)。牵牛花是阳台和围栏绿化的理想快生植物。日本牵牛花品种是园艺育种的瑰宝。',
+                care:'春季直播或育苗移栽。搭建支架供藤蔓攀爬。充足光照促进开花。保持土壤湿润。花后收集种子或任其自播(明年自生)。盆栽注意支架高度。注意种子有毒。',
+                category:'vine',flowerColor:'purple',heightClass:'tall',regionClass:'americas'
+            },
+            '丁香':{
+                name:'丁香',scientific:'Syringa vulgaris',family:'木犀科 Oleaceae',genus:'丁香属 Syringa',type:'落叶灌木或小乔木',
+                height:'2-7米',lifespan:'20-100年',region:'欧洲东南部(巴尔干)',habitat:'温带丘陵',
+                img:'https://images.unsplash.com/photo-1490750967868-88aa4a5ed8db?w=600&h=600&fit=crop',
+                season:'花期4-5月',conservation:'LC (无危)',etymology:'"丁香"因花蕾干后形似钉子且有香气得名(与香料丁香/鸡舌香是不同的植物)。属名Syringa源自希腊语"syrinx"(空管)，指其茎中空可做笛。英文名lilac源自波斯语"nilak"(蓝色的)。',
+                cultural:'丁香是春末夏初的象征之花。惠特曼在《当紫丁香最近在庭院中开放时》中以丁香悼念林肯。在中国文学中，丁香象征细腻的哀愁——戴望舒《雨巷》描写"丁香一样的结着愁怨的姑娘"。丁香是哈尔滨的市花。',
+                description:'丁香是世界最芬芳的春季花木之一，其甜香浓郁的花簇是五月花园的标志性香气。丁香的"花"实际上由数百朵小管状花组成的大型圆锥花序(长可达20厘米)，每朵小花花冠4裂。丁香花以紫色调最为经典，也有白、粉、蓝紫乃至深紫红色品种。丁香花蕾蒸馏可得丁香花精油(与香料丁香油不同)。普通丁香(S. vulgaris)是欧洲东南部原产，传入欧洲其他地区和北美后成为最受欢迎的庭园花木。中国的紫丁香(Syringa oblata)同样美丽，花更密集。丁香耐寒性极强(可耐-35℃)，是北方寒冷地区不可或缺的春花树种。',
+                morphology:'落叶灌木或小乔木。叶对生卵形至宽卵形，全缘，叶面光滑。花两性，大型圆锥花序顶生或腋生；花萼小钟形4齿；花冠高脚碟状，花冠管细长，檐部4裂，紫色至白色，芳香；雄蕊2枚。蒴果长椭圆形2裂。茎干中空。',
+                growth:'丁香喜阳光充足、冷凉气候(需冬季低温满足休眠需求)。极耐寒。对土壤要求不严，但以排水良好的中性至微碱性壤土最佳。忌积水。生长速度中等。花芽在前一年夏季形成，冬季低温(约7℃以下)积累足够冷量后方可春季正常开花(华南低海拔因冷量不足难开花)。',
+                value:'丁香是北方温带最重要的春季花木之一。丁香花可提取香精。丁香蜜是优质花蜜(紫丁香蜜)。丁香木材坚硬细致可制工艺品。丁香是重要的城市绿化树种(耐寒、抗污染)。哈尔滨丁香节是重要城市文化活动。',
+                care:'选择阳光充足处栽培。花后及时剪除残花穗(促进次年开花)。冬季休眠期修剪去除病弱枝和萌蘖。每2-3年施一次有机肥。盆栽需冬季室外低温处理(万不可入暖室)。防治白粉病和丁香叶枯病。',
+                category:'shrub',flowerColor:'purple',heightClass:'tall',regionClass:'europe'
+            },
+            '桃树':{
+                name:'桃',scientific:'Prunus persica',family:'蔷薇科 Rosaceae',genus:'樱属 Prunus',type:'落叶小乔木',
+                height:'3-8米',lifespan:'15-50年',region:'中国',habitat:'温带地区',
+                img:'https://images.unsplash.com/photo-1522383225653-ed111a181951?w=600&h=600&fit=crop',
+                season:'花期3-4月，果期6-9月',conservation:'LC (无危)',etymology:'"桃"字古老象形，最早的栽培果树之一。《诗经》"桃之夭夭，灼灼其华"为最早的文学描述。属名Prunus为李属拉丁名。种加词persica意为"波斯的"(因桃经波斯传入西方)。英文名peach源自拉丁语persica。',
+                cultural:'桃花在中国文化中象征春天、爱情和长寿。陶渊明的《桃花源记》描绘了理想世界(世外桃源)。王安石的"千门万户曈曈日，总把新桃换旧符"描述春节贴桃符的习俗，桃木被视为辟邪之物。桃花运喻指爱情运势。',
+                description:'桃是世界上最重要的温带果树之一，原产于中国，已有4000多年的栽培历史，驯化始于中国黄河流域。现代蜜桃品种的糖度可达15-20度。桃与梅、李、杏、樱桃同为蔷薇科樱属植物，可互相嫁接。桃花通常先叶开放(或与叶同放)，花色以粉色最为经典，也有白、红和深红色品种。碧桃是观赏桃花品种，花瓣重瓣多达数十枚，不结实。桃树寿命比一些长寿树较短(一般15-50年)，但"桃李满天下"的比喻说明其繁殖容易。桃木质地细密，传统用于制作桃符和法器辟邪。桃胶(树干分泌物)在中医和中国烹饪中使用。',
+                morphology:'落叶小乔木，树冠开张。树皮灰褐色横裂。叶互生披针形至椭圆状披针形，边缘有锯齿。花通常单生，先叶开放，直径3-4厘米；花瓣5枚(或重瓣)，粉红色；雄蕊多数，子房被柔毛。核果(桃子)近球形，被绒毛，果肉多汁；核坚硬有沟纹，含种子1枚(苦杏仁苷，有毒)。',
+                growth:'桃喜光，极不耐阴。喜温暖气候，耐寒。要求排水良好、肥沃的沙质壤土。怕涝(积水24小时可导致死树)。生长旺盛(速生)，但寿命较短。核果类连作障碍严重(老桃园重植幼树生长不良——"再植病")。实生苗3-4年结果，嫁接苗次年可结果。',
+                value:'桃是世界最重要的温带水果之一。桃花观赏价值高——碧桃是春季重要观花树种。桃仁可榨油和药用(含苦杏仁苷)。桃胶用于食品和中药。桃木用于工艺品。桃花蜜是优质春蜜。',
+                care:'选择阳光充足、排水良好处栽培。冬季修剪(桃树需重度修剪维持树形和结果)。开花前后施追肥。疏果(过密影响品质)。防治桃穿孔病、桃缩叶病和桃蛀螟。注意防治流胶病。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'china'
+            },
+            '石榴':{
+                name:'石榴',scientific:'Punica granatum',family:'千屈菜科 Lythraceae',genus:'石榴属 Punica',type:'落叶灌木或小乔木',
+                height:'2-6米',lifespan:'50-200年',region:'中亚至地中海',habitat:'干燥亚热带',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期5-7月，果期8-10月',conservation:'LC (无危)',etymology:'"石榴"一名源自其原产地古代安石国(今伊朗地区)，"榴"为音译。属名Punica源自拉丁语"Punicus"(迦太基的)。种加词granatum意为"多粒的"。英文名pomegranate源自拉丁语"pomum granatum"(多粒苹果)。',
+                cultural:'石榴在世界多种文化中象征生命、丰饶和多子多福。在希腊神话中，石榴是冥后珀耳塞福涅的食物(因此每年一半时间留在冥界)。在中国民俗中，石榴、桃子、佛手并称"三多"(多子、多寿、多福)。石榴是西班牙国花(石榴花)。',
+                description:'石榴是世界上栽培历史最悠久的果树之一，可追溯至5000多年前的中东和地中海地区。石榴果实独特——外部是一层坚硬的果皮(果皮厚约4-6毫米)，内部被白色海绵质隔膜分为数室，每室密布晶莹剔透的红宝石状假种皮(种子外被肉质多汁的外种皮)，这就是可食用的"石榴籽"。一个石榴通常含有200-1400颗籽粒。石榴汁富含多酚类抗氧化物质(主要是石榴苷和鞣花酸)，其抗氧化能力是红葡萄酒和绿茶的两倍以上。石榴花鲜红如火，重瓣石榴花(牡丹石榴)是不结果实的观赏品种。石榴耐旱、耐盐碱、耐修剪，是温带至亚热带地区理想的果树和观赏树。',
+                morphology:'落叶灌木或小乔木。枝常有刺。叶对生或簇生，倒卵形至长圆形，全缘光滑。花单生或数朵簇生枝顶或叶腋；花萼钟形肉质5-7裂宿存；花瓣5-7枚，鲜红色(或白色、杂色)皱褶状；雄蕊多数。浆果球形(石榴)，果皮革质，宿存花萼。种子多数，外包肉质多汁外种皮。',
+                growth:'石榴喜炎热干燥、阳光充足气候。耐旱性极强，耐轻寒(-15℃)。对土壤要求不严，耐盐碱、耐贫瘠，但以排水良好的石灰性沙壤土果实品质最佳。生长速度快(速生)。结果早，扦插苗2-3年结果。极耐修剪，可造型为单干树或灌木丛。',
+                value:'石榴是重要的温带至亚热带水果。石榴汁是国际超级食品饮料。石榴皮含大量鞣质用于鞣革和染料。石榴花是优良观赏花木。石榴提取物在护肤品中有抗氧化应用。石榴是盆景和园林造型的优良材料。',
+                care:'选择阳光充足、排水良好处栽培。冬季轻剪维持树形。春季施有机肥促进开花结果。耐旱不用频繁浇水。果实套袋防虫。北方寒冷地区(低于-15℃)需冬季防寒。防治石榴蚜虫和干腐病。',
+                category:'shrub',flowerColor:'pink',heightClass:'tall',regionClass:'europe'
+            },
+            '紫薇':{
+                name:'紫薇',scientific:'Lagerstroemia indica',family:'千屈菜科 Lythraceae',genus:'紫薇属 Lagerstroemia',type:'落叶灌木或小乔木',
+                height:'3-7米',lifespan:'20-100年',region:'东亚至东南亚',habitat:'亚热带至温带',
+                img:'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
+                season:'花期6-9月(夏秋百日红)',conservation:'LC (无危)',etymology:'"紫薇"因其花色紫红、"薇"为美花之意得名。又称"百日红"(花期长达百日)。属名Lagerstroemia纪念瑞典商人植物学家Lagerström。英文名crape myrtle(绉纱桃金娘)指花瓣如绉纱。',
+                cultural:'紫薇在中国文化中象征官运亨通(紫薇星为帝星，唐代中书省因植紫薇称"紫薇省")。杜牧曾任中书舍人，世称"杜紫薇"。紫薇是"盛夏之花"，在百花凋零的盛夏绽放百日。紫薇是安阳、徐州等城市的市花。',
+                description:'紫薇是夏季和初秋最可靠的观花树木之一，在盛夏高温少花的季节，紫薇绽放出大量粉色至紫色的花朵，花期持续60-100天——因此得名"百日红"。紫薇花瓣极其独特：花瓣6枚，形如绉纱(皱缩卷曲)，触感丝滑，不像花瓣更像纸花。紫薇树干光滑如镜，树皮片状剥落后露出光滑的灰白色或淡褐色新树皮，触摸凉爽——因此也称"无皮树"、"痒痒树"(据说搔树干植株会"发痒"摇动，实为风吹所致)。紫薇花色有紫红、粉、白及各种中间色。紫薇木材坚硬耐腐，传统用于制秤杆。紫薇对大气污染抗性强，是城市绿化的优良树种。',
+                morphology:'落叶灌木或小乔木。树皮灰白色光滑片状剥落。叶对生或近对生，椭圆形至倒卵形，全缘。圆锥花序顶生大型；花密集；花萼陀螺形6裂；花瓣6枚具长爪，瓣片皱缩波状，紫红色至白色；雄蕊多数(约36-42枚)。蒴果近球形，室背开裂，花柱和花萼宿存。种子有翅。',
+                growth:'紫薇喜光，极喜阳光(光照不足花少)。喜温暖气候，耐轻寒。对土壤要求不严，耐旱、耐瘠薄。生长速度中等偏快。花期长(夏至秋)。耐修剪，冬季可重剪(促进次年新枝萌发和新枝开花)。抗污染能力强。',
+                value:'紫薇是夏季最重要的观花树木之一。紫薇古桩盆景造型奇特(可嫁接多色)。紫薇木材可制秤杆和工艺品。紫薇在城市绿化中抗污应用广泛。紫薇花是夏秋季蜜源。紫薇提取物有降血糖研究。',
+                care:'冬季重度修剪(紫薇在新枝上开花)。春季施肥促进新枝萌发。花后剪残花穗可促进二次开花。保持充足光照。防治紫薇蚜虫和白粉病。紫薇蚜虫分泌蜜露诱发煤污病。',
+                category:'tree',flowerColor:'pink',heightClass:'tall',regionClass:'east_asia'
+            },
+            '黄芪':{
+                name:'黄芪',scientific:'Astragalus mongholicus',family:'豆科 Fabaceae',genus:'黄芪属 Astragalus',type:'多年生草本',
+                height:'30-80厘米',lifespan:'多年生',region:'中国北方、蒙古',habitat:'干旱草原、沙地',
+                img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+                season:'花期6-8月，果期7-9月',conservation:'NT (近危，野生)',etymology:'"黄"指根色黄，"芪"为"耆"的简化，意为"长、老"，指其药为补药之长。属名Astragalus源自希腊语"astragalos"(骰子)，形容种子形状。英文名milkvetch(奶野豌豆)。',
+                cultural:'黄芪在中医药中与人参齐名，《神农本草经》列为上品。李时珍赞其"补药之长"，善补一身之气。黄芪是中医扶正固本的核心药材。在西北地区，黄芪炖鸡是传统滋补膳食。',
+                description:'黄芪是世界最重要的补气药之一，与人参、当归并称三大补药。黄芪的主要活性成分包括黄芪多糖(免疫调节)、黄芪甲苷(抗炎、保护心肾)和异黄酮类(抗氧化)。黄芪多糖能够激活巨噬细胞和T细胞，增强机体免疫力，在抗肿瘤和抗HIV研究中显示出辅助治疗潜力。中国黄芪以山西浑源的"北芪"和甘肃的"红芪"品质最佳(道地药材)。野生黄芪因过度采挖已近危，种植黄芪需2-4年才能采收。黄芪属植物种类极多(全球约3000种)，是豆科植物中最大的属，但药用种类仅限少数几种。',
+                morphology:'多年生草本，主根粗壮长圆柱形，外表黄棕色断面黄白色具粉性。茎直立多分枝被白色柔毛。奇数羽状复叶互生，小叶15-31枚椭圆形至卵状长圆形。总状花序腋生；花淡黄色；蝶形花冠，旗瓣较大。荚果膜质膨胀，被短毛，成熟时黑色。种子肾形。',
+                growth:'黄芪喜阳光充足、凉爽干燥的大陆性气候。极耐旱、耐寒。要求排水良好的沙质或沙壤质钙质土壤。深根性主根入土可达1米以上。生长较缓慢，栽培品需2-4年才能采收(年限越长品质越好)。忌连作。',
+                value:'黄芪是中药最重要的补气药之一。黄芪多糖用于免疫调节保健品。黄芪提取物在护肤品中有抗衰老应用。黄芪是草原生态修复和固沙植物。黄芪在兽医中广泛使用。国际保健品市场对黄芪提取物需求逐年增长。',
+                care:'选择沙质疏松、排水良好土壤。播种前种子需处理(砂磨打破硬实)。生长期间控制杂草。栽培2-4年后秋季采收根部。采收后洗净切片晒干。注意防治白粉病和蚜虫。',
+                category:'herb',flowerColor:'purple',heightClass:'medium',regionClass:'china'
+            },
+            '雪松':{
+                name:'雪松',scientific:'Cedrus deodara',family:'松科 Pinaceae',genus:'雪松属 Cedrus',type:'常绿大乔木',
+                height:'20-50米',lifespan:'100-1000年',region:'喜马拉雅山脉',habitat:'山地(海拔1500-3200米)',
+                img:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=600&fit=crop',
+                season:'花期10-11月(秋季)，球果次年成熟',conservation:'LC (无危)',etymology:'"雪松"因其耐寒、松针在雪中仍苍翠得名。属名Cedrus源自拉丁语"cedrus"(雪松)。种加词deodara源自梵语"deva-daru"(神之木)。英文名Himalayan cedar/deodar。',
+                cultural:'雪松在印度被视为神树，"deodar"在梵语中意为"神的木材"，喜马拉雅山麓的印度教寺庙常用雪松木建造。雪松是黎巴嫩的国树，黎巴嫩国旗中央为雪松图案(圣经中雪松象征力量和永恒)。雪松木材在古埃及用于建造神庙和制作棺椁。',
+                description:'雪松是世界最美丽的高山针叶树之一，原产于喜马拉雅山脉西段(阿富汗至印度北部)的雪松(Cedrus deodara)，与黎巴嫩雪松(C. libani)、阿特拉斯雪松(C. atlantica)和塞浦路斯雪松(C. brevifolia)共同组成雪松属的四个物种。雪松的树冠是辨识的关键特征：幼树为金字塔形(塔形/尖塔形)，随年龄增加顶端逐渐变平(平顶形)。雪松的枝条优雅平展，大枝呈"台级"状分层，末端细枝柔软下垂。雪松的针叶三棱形坚硬锐尖，生于短枝上成簇。其球果直立枝顶，成熟时种鳞从顶部向下逐片脱落(与松属球果不同)，球形果轴宿存枝上。雪松木材富含芳香树脂(雪松醇)，天然防虫防腐，是古印度和古埃及的建筑和造船材料。雪松还是重要的园林观赏树，世界温带地区广泛栽培。',
+                morphology:'常绿大乔木，树冠幼时尖塔形、老时平顶。树皮深灰色鳞片状。枝分长短枝，长枝上叶螺旋排列，短枝上叶簇生。针叶三棱形刚硬，长2.5-5厘米。球果直立卵球形长7-12厘米，种鳞宽扇形木质，苞鳞短小不露。种子有宽大的膜质翅。雌雄同株，雄球花圆柱形黄色。球果两年成熟。',
+                growth:'雪松喜阳光充足、凉爽湿润气候。喜深厚肥沃、排水良好的微酸性至中性土壤。耐寒(可耐-20℃)。不耐空气污染(SO2敏感)。生长速度中等(年均生长量30-50厘米)。寿命可达千年。幼苗期需适当遮荫，成年树需全光照。',
+                value:'雪松木材芳香耐腐，是优质建材和家具用材。雪松精油(雪松醇)广泛用于香水和芳香疗法。雪松是世界最重要的园林观赏针叶树之一。雪松树脂在古埃及用于木乃伊防腐。雪松林是喜马拉雅山区重要的生态系统。',
+                care:'选择阳光充足、空间开阔处栽培(需大空间)。保持土壤排水良好但不干旱。幼苗期需防风。春季施肥促进生长。夏季干旱时适量浇水。防治雪松叶枯病和松毛虫。不宜在城市污染严重区域种植。',
+                category:'tree',flowerColor:'green',heightClass:'tall',regionClass:'east_asia'
+            },
+            '腊梅':{
+                name:'腊梅',scientific:'Chimonanthus praecox',family:'蜡梅科 Calycanthaceae',genus:'蜡梅属 Chimonanthus',type:'落叶灌木',
+                height:'2-5米',lifespan:'30-100年',region:'中国',habitat:'温带山地灌丛',
+                img:'https://images.unsplash.com/photo-1547519969-0b7a5e18e9b1?w=600&h=600&fit=crop',
+                season:'花期12月-次年3月(腊月寒冬)，果期6-8月',conservation:'LC (无危)',etymology:'"腊梅"因其在腊月(农历十二月)开花而得名(非"蜡"梅，花非蜡质)。属名Chimonanthus源自希腊语"cheimon"(冬季)和"anthos"(花)。种加词praecox意为"早的"(早花)。英文名wintersweet(冬之甜)。',
+                cultural:'腊梅是中国唯一在寒冬蜡月开花的香花，与梅花并称"寒香二友"。腊梅香气甜沁，是冬末最珍贵的户外香花来源。中国古人以"踏雪寻梅"为雅事(所说之"梅"常实指腊梅)。腊梅是传统插花和年宵花的重要材料。',
+                description:'腊梅是寒冬和早春最珍贵的香花灌木之一，在大多数植物休眠的严寒中，腊梅的黄色蜡质小花在光秃的枝条上开放，散发出清甜可人的香气——这是冬季最令人惊喜的自然馈赠。腊梅与梅花虽有"梅"字的联系，但两者亲缘关系很远：梅花是蔷薇科植物，腊梅则为蜡梅科(Calycanthaceae)的成员。腊梅花的外轮花被片(12-16枚)黄色蜡质透明，内轮花被片较小深紫红色，这种独特的黄紫对比使得腊梅花极具辨识度。腊梅的花期可持续1-2个月，单朵花可维持10-15天，香气在温暖的中午最浓。腊梅不仅供观赏，其花蕾在中药中用于治疗咳嗽和咽喉不适。腊梅品种有素心腊梅(内轮花被片全黄)、磬口腊梅(花较大)和狗牙腊梅(较小)等。',
+                morphology:'落叶灌木，多分枝丛生。树皮灰褐色。叶对生，椭圆形至卵状披针形，全缘，表面粗糙。花单生叶腋，先叶开放于前年枝上(腊月至次年早春)；花被片多数螺旋排列，外轮黄色蜡质12-16枚，内轮较短深紫红色；雄蕊5-6枚短；心皮多数离生着生于壶状花托内。聚合瘦果包于坛状花托内，成熟时褐色。',
+                growth:'腊梅喜阳光充足，也耐半阴。喜温暖湿润气候，较耐寒(可耐-15℃)。对土壤要求不严，但以排水良好的微酸性至中性壤土最佳。忌水湿。生长速度中等偏慢。花芽在前一年夏季形成，冬季低温后开放。实生苗需3-5年开花，嫁接苗次年可开花。',
+                value:'腊梅是冬季最重要的香花灌木。腊梅花可窨制腊梅花茶和提取腊梅香精。腊梅花蕾在中医中用于治疗咳嗽和咽喉炎。腊梅是传统年宵切花。腊梅盆景是中国传统艺术。腊梅花是冬季罕见的花蜜来源。',
+                care:'选择阳光充足或半阴避风处栽培。花后(早春)修剪，去除病弱枝和过密枝。夏末施磷钾肥促进花芽形成。秋季保持稍干燥促进花芽成熟。防治叶斑病和介壳虫。嫁接苗的花更大更香。',
+                category:'shrub',flowerColor:'yellow',heightClass:'medium',regionClass:'china'
+            },
+            '鹅掌楸':{
+                name:'鹅掌楸',scientific:'Liriodendron chinense',family:'木兰科 Magnoliaceae',genus:'鹅掌楸属 Liriodendron',type:'落叶大乔木',
+                height:'20-40米',lifespan:'50-300年',region:'中国(长江以南)、越南',habitat:'山地常绿落叶阔叶混交林',
+                img:'https://images.unsplash.com/photo-1486912500284-6f2462f4a8e6?w=600&h=600&fit=crop',
+                season:'花期5-6月，果期9-10月',conservation:'NT (近危)',etymology:'"鹅掌楸"因其叶形如鹅掌、树似楸树而得名。又称"马褂木"(叶形似马褂)。属名Liriodendron源自希腊语"leirion"(百合)和"dendron"(树)——指其花似百合。英文名Chinese tulip tree(中国郁金香树)。',
+                cultural:'鹅掌楸是第三纪孑遗植物，与北美鹅掌楸(L. tulipifera)构成东亚-北美间断分布的经典例证。鹅掌楸在西方园林中极为珍视(郁金香形的花和独特的叶形)。其"活化石"身份使得鹅掌楸在植物地理学和进化研究中占有重要地位。',
+                description:'鹅掌楸是木兰科植物中最独特、最美丽的种类之一，与北美鹅掌楸(Liriodendron tulipifera)是世界仅有的两种鹅掌楸属植物——这是东亚-北美洲际间断分布的经典范例。鹅掌楸的叶片形状独一无二：叶片4-6裂，先端平截或微凹，形如中国旧式马褂，因此得名"马褂木"。北美鹅掌楸是美国的东部森林重要用材树种(Tulip poplar/yellow poplar，虽然与杨树无关)，也是田纳西和印第安纳等州的州树。鹅掌楸的花呈杯状如郁金香：花被9枚，外3枚绿色萼片状反卷，内6枚黄绿色直立，基部有橙色蜜腺带。杂交鹅掌楸(L. chinense x L. tulipifera)兼具双亲的优势，在园林中广泛栽培。',
+                morphology:'落叶大乔木，树干通直，树皮灰白色纵裂。叶互生，叶片4-6裂，先端平截或微凹，叶片长宽近等，形如马褂。花单生枝顶，直径5-6厘米；花被9枚，外3枚绿色反卷，内6枚黄绿色直立，基部有橙色带；雄蕊多数；雌蕊群有柄。聚合翅果纺锤形，小坚果有狭长翅，成熟时从果轴脱落。与北美鹅掌楸的区别在于中国种的花被片绿色，北美种花被片橙黄色。',
+                growth:'鹅掌楸喜温暖湿润气候。喜光，幼苗稍耐阴。要求深厚肥沃、排水良好的酸性至中性土壤。生长速度中等偏快(速生)。不耐干旱和水涝。对SO2敏感。寿命长。种子发芽率因授粉不良偏低(自然结实率仅约10-15%)。',
+                value:'鹅掌楸是世界著名的园林观赏树木(叶形奇特、花如郁金香)。鹅掌楸木材(美国鹅掌楸)是重要的细工用材和黄杨木替代品。鹅掌楸是研究植物地理学(东亚-北美间断分布)的模式物种。鹅掌楸花是重要的蜜源。杂交鹅掌楸在园林绿化中应用广泛。',
+                care:'选择阳光充足、土壤深厚肥沃处栽培。幼苗期保持土壤湿润。移植需带土球。春季施有机肥。花后修剪去除枯枝。防治鹅掌楸褐斑病和天牛。杂交鹅掌楸适应性更广，是城市绿化的优良选择。',
+                category:'tree',flowerColor:'multi',heightClass:'tall',regionClass:'china'
+            }
+        };
+
+        // ==================== MAIN RENDER ====================
+        const urlP = new URLSearchParams(window.location.search);
+        const plantName = urlP.get('plant') || '银杏';
+        const data = detailDB[plantName] || detailDB['银杏'];
+        document.getElementById('breadcrumbPlant').textContent = data.name;
+        document.title = data.name + ' · FloraMundi';
+
+        // Related plants (same category, random shuffle)
+        function getRelatedPlants(data, count) {
+            const sameCategory = Object.entries(detailDB)
+                .filter(([name, d]) => d.category === data.category && name !== data.name);
+            for (let i = sameCategory.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [sameCategory[i], sameCategory[j]] = [sameCategory[j], sameCategory[i]];
+            }
+            return sameCategory.slice(0, count);
+        }
+        const relatedPlants = getRelatedPlants(data, 6);
+
+        function buildRelatedHTML(plants) {
+            if (plants.length === 0) return '';
+            let html = '<div class="related-grid">';
+            plants.forEach(([name, d]) => {
+                html += `
+                <a class="related-card" href="flora_detail.html?plant=${encodeURIComponent(name)}" title="${d.scientific}">
+                  <div class="related-img" style="background-image:url('${d.img}');background-color:#e8f5e9;"></div>
+                  <div class="related-name">${d.name}</div>
+                  <div class="related-sci">${d.scientific}</div>
+                </a>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function buildAnchorNav() {
+            return `
+            <div class="anchor-nav">
+              <a href="#section-overview">📖 概述</a>
+              <a href="#section-morphology">🔬 形态</a>
+              <a href="#section-season">🌸 物候</a>
+              <a href="#section-etymology">📚 语源</a>
+              <a href="#section-cultural">🎭 文化</a>
+              <a href="#section-growth">🌱 习性</a>
+              <a href="#section-value">💎 价值</a>
+              <a href="#section-conservation">🛡️ 保护</a>
+              <a href="#section-care">🪴 栽培</a>
+              <a href="#section-related">🔗 相关</a>
+            </div>`;
+        }
+
+        function getConservationBadge(status) {
+            if (!status) return '<span class="tag">未评估</span>';
+            const code = status.split(' ')[0].toLowerCase();
+            const cls = ['lc','nt','vu','en','cr','dd'].includes(code) ? code : 'dd';
+            const labels = {lc:'无危',nt:'近危',vu:'易危',en:'濒危',cr:'极危',dd:'数据缺乏'};
+            return `<span class="conservation-badge ${cls}">${labels[cls]||status}</span>`;
+        }
+
+        document.getElementById('detailContent').innerHTML = `
+        ${buildAnchorNav()}
+        <div class="detail-hero" id="section-overview">
+          <div class="detail-img" style="background-image:url('${data.img}');background-color:#e8f5e9;"></div>
+          <div class="detail-info">
+            <h1>${data.name}</h1>
+            <span class="sci-name">${data.scientific}</span>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">科</span><div class="info-value">${data.family}</div></div>
+              <div class="info-item"><span class="info-label">属</span><div class="info-value">${data.genus}</div></div>
+              <div class="info-item"><span class="info-label">类型</span><div class="info-value">${data.type}</div></div>
+              <div class="info-item"><span class="info-label">高度</span><div class="info-value">${data.height}</div></div>
+              <div class="info-item"><span class="info-label">寿命</span><div class="info-value">${data.lifespan}</div></div>
+              <div class="info-item"><span class="info-label">分布</span><div class="info-value">${data.region}</div></div>
+            </div>
+            <div class="tag-row">
+              ${data.conservation ? getConservationBadge(data.conservation) : ''}
+              ${data.habitat ? '<span class="tag">'+data.habitat+'</span>' : ''}
+            </div>
+          </div>
+        </div>
+        <div class="section-card" id="section-overview-text"><h2>📖 植物概述</h2><p>${data.description}</p></div>
+        <div class="section-card" id="section-morphology"><h2>🔬 形态特征</h2><p>${data.morphology}</p></div>
+        ${data.season ? `<div class="section-card" id="section-season"><h2>🌸 物候与季节</h2><p>${data.season}</p></div>` : ''}
+        ${data.etymology ? `<div class="section-card" id="section-etymology"><h2>📚 名称语源</h2><p>${data.etymology}</p></div>` : ''}
+        ${data.cultural ? `<div class="section-card" id="section-cultural"><h2>🎭 文化意义</h2><p>${data.cultural}</p></div>` : ''}
+        <div class="section-card" id="section-growth"><h2>🌱 生长习性</h2><p>${data.growth}</p></div>
+        <div class="section-card" id="section-value"><h2>💎 价值与用途</h2><p>${data.value}</p></div>
+        ${data.conservation ? `<div class="section-card" id="section-conservation"><h2>🛡️ 保护状况</h2><p>IUCN保护等级：<strong>${data.conservation}</strong></p><p>保护植物就是保护地球的生命多样性。请勿采集野生植株，支持人工种植的可持续利用方式。</p></div>` : ''}
+        <div class="section-card" id="section-care"><h2>🪴 栽培要点</h2><p>${data.care}</p></div>
+        <div class="section-card" id="section-related"><h2>🔗 相关植物</h2>${buildRelatedHTML(relatedPlants)}</div>
+      `;
+
+        // ==================== CANVAS ANIMATION ====================
+        const canvas = document.getElementById('heroCanvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = Math.min(1000, window.innerWidth - 30);
+            canvas.height = 300;
+            const particles = [];
+            const maxParticles = 35;
+
+            function createParticle() {
+                return {
+                    x: Math.random() * canvas.width,
+                    y: canvas.height + 10,
+                    r: Math.random() * 3 + 1.5,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: -(Math.random() * 1.5 + 0.8),
+                    life: 1,
+                    decay: Math.random() * 0.003 + 0.002,
+                    color: `rgba(${45+Math.random()*40},${106+Math.random()*50},${79+Math.random()*40},`,
+                };
+            }
+
+            function drawPollen(p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = p.color + (p.life * 0.5) + ')';
+                ctx.fill();
+                // Glow effect
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = p.color + (p.life * 0.1) + ')';
+                ctx.fill();
+            }
+
+            function drawStem() {
+                const cx = canvas.width / 2;
+                const baseY = canvas.height;
+                const stemHeight = 180 + Math.sin(Date.now() / 3000) * 15;
+                const topY = baseY - stemHeight;
+
+                // Main stem
+                ctx.strokeStyle = '#2d6a4f';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(cx, baseY);
+                ctx.quadraticCurveTo(cx - 10, baseY - stemHeight * 0.6, cx, topY);
+                ctx.stroke();
+
+                // Leaves
+                const leaves = [
+                    { y: baseY - 40, dx: -60, angle: -0.4 },
+                    { y: baseY - 80, dx: 55, angle: 0.5 },
+                    { y: baseY - 120, dx: -50, angle: -0.35 },
+                    { y: baseY - 150, dx: 40, angle: 0.45 },
+                ];
+                leaves.forEach(leaf => {
+                    const sway = Math.sin(Date.now() / 2000 + leaf.y) * 3;
+                    const lx = cx + sway;
+                    const ly = leaf.y;
+                    ctx.save();
+                    ctx.translate(lx, ly);
+                    ctx.rotate(leaf.angle);
+                    ctx.fillStyle = '#40916c';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 22, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#52b788';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 16, 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Bud at top
+                const budY = topY;
+                ctx.fillStyle = '#52b788';
+                ctx.beginPath();
+                ctx.arc(cx, budY, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#d8f3dc';
+                ctx.beginPath();
+                ctx.arc(cx - 2, budY - 2, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawStem();
+
+                // Update and draw particles
+                if (particles.length < maxParticles && Math.random() < 0.4) {
+                    particles.push(createParticle());
+                }
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx + Math.sin(Date.now() / 3000 + i) * 0.3;
+                    p.y += p.vy;
+                    p.life -= p.decay;
+                    if (p.life <= 0 || p.y < -20) {
+                        particles.splice(i, 1);
+                    } else {
+                        drawPollen(p);
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ==================== PLANT IDENTIFICATION KEY ====================
+        function identifyPlant() {
+            const type = document.getElementById('idType').value;
+            const flowerColor = document.getElementById('idFlowerColor').value;
+            const height = document.getElementById('idHeight').value;
+            const region = document.getElementById('idRegion').value;
+
+            let candidates = Object.entries(detailDB);
+
+            if (type) candidates = candidates.filter(([n, d]) => d.category === type);
+            if (flowerColor) candidates = candidates.filter(([n, d]) => d.flowerColor === flowerColor);
+            if (height) candidates = candidates.filter(([n, d]) => d.heightClass === height);
+            if (region) candidates = candidates.filter(([n, d]) => d.regionClass === region);
+
+            const resultDiv = document.getElementById('idResult');
+            if (candidates.length === 0) {
+                resultDiv.className = 'id-result show';
+                resultDiv.innerHTML = '<h3>未找到匹配的植物</h3><p>请尝试减少筛选条件或更换特征组合。</p>';
+            } else {
+                resultDiv.className = 'id-result show';
+                let html = `<h3>找到 ${candidates.length} 种可能的植物</h3><div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem;">`;
+                candidates.slice(0, 12).forEach(([name, d]) => {
+                    html += `<span class="result-link" onclick="window.location.href='flora_detail.html?plant=${encodeURIComponent(name)}'" title="${d.scientific}">${d.name}</span>`;
+                });
+                if (candidates.length > 12) html += `<span style="font-size:0.8rem;color:var(--text-muted);">...及其他 ${candidates.length - 12} 种</span>`;
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            }
+        }
+
+        function resetIdKey() {
+            document.getElementById('idType').value = '';
+            document.getElementById('idFlowerColor').value = '';
+            document.getElementById('idHeight').value = '';
+            document.getElementById('idRegion').value = '';
+            document.getElementById('idResult').className = 'id-result';
+        }
+    </script>
+</body>
+</html>

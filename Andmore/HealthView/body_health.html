@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康数据中心 · BodyAtlas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <style>
+        :root {
+            --bg-deep: #0a1628;
+            --bg-card: rgba(15, 29, 53, 0.85);
+            --bg-card-solid: #132240;
+            --glass-bg: rgba(10, 22, 40, 0.75);
+            --glass-border: rgba(0, 180, 220, 0.18);
+            --glass-border-bright: rgba(0, 200, 240, 0.35);
+            --accent-medical: #00b4d8;
+            --accent-heart: #e63946;
+            --accent-neural: #7b2ff7;
+            --accent-health: #2ecc71;
+            --accent-warning: #f39c12;
+            --accent-danger: #e74c3c;
+            --accent-glow-medical: rgba(0, 180, 220, 0.45);
+            --accent-glow-heart: rgba(230, 57, 70, 0.4);
+            --text-primary: #e0e8f0;
+            --text-secondary: #a0b8d0;
+            --text-muted: #607890;
+            --text-bright: #ffffff;
+            --border-radius-xl: 1.8rem;
+            --border-radius-lg: 1.2rem;
+            --border-radius-md: 0.8rem;
+            --shadow-card: 0 8px 35px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(0, 180, 220, 0.25);
+            --transition-smooth: 0.4s ease;
+            --font-body: 'Inter', 'Segoe UI', sans-serif;
+            --font-heading: 'Outfit', 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+        }
+
+        /* ===== Keyframes ===== */
+        @keyframes ecgLine {
+            0% { stroke-dashoffset: 1000; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+        @keyframes vitalsBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes scannerLine {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        @keyframes organPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        @keyframes dataStream {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes waveform {
+            0% { transform: scaleY(0.3); }
+            25% { transform: scaleY(1); }
+            50% { transform: scaleY(0.5); }
+            75% { transform: scaleY(0.9); }
+            100% { transform: scaleY(0.3); }
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 180, 220, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(0, 180, 220, 0.8); }
+        }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heartbeatPulse {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.15); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.15); }
+            56% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes numberRoll {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes breathGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(46, 204, 113, 0.2); }
+            50% { box-shadow: 0 0 35px rgba(46, 204, 113, 0.5); }
+        }
+        @keyframes rotateSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 rgba(0, 180, 220, 0.4); }
+            100% { box-shadow: 0 0 0 20px rgba(0, 180, 220, 0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scalePop {
+            0% { transform: scale(0.8); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes borderGlow {
+            0%, 100% { border-color: rgba(0, 180, 220, 0.18); }
+            50% { border-color: rgba(0, 180, 220, 0.6); }
+        }
+        @keyframes textGlowPulse {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 180, 220, 0.3); }
+            50% { text-shadow: 0 0 25px rgba(0, 180, 220, 0.7), 0 0 50px rgba(0, 180, 220, 0.3); }
+        }
+        @keyframes progressFill {
+            from { width: 0%; }
+        }
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(0.7); opacity: 0.4; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+        @keyframes cardFloatUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 30% 8%, rgba(0, 180, 220, 0.05) 0%, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(46, 204, 113, 0.005) 2px, rgba(46, 204, 113, 0.005) 4px);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+        .navbar {
+            position: sticky;
+            top: 10px;
+            margin: 10px 20px;
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 3rem;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-health);
+        }
+
+        /* ===== Page Header ===== */
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .page-header::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-medical), var(--accent-health), var(--accent-medical), transparent);
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.8rem;
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-health), var(--accent-neural));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite, fadeSlideUp 0.8s ease-out;
+            letter-spacing: 2px;
+        }
+        .page-header .subtitle {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+
+        /* ===== Medical Grid Background ===== */
+        .medical-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.03;
+            background-image:
+                linear-gradient(rgba(0, 180, 220, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 180, 220, 0.5) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: var(--text-bright);
+            text-align: center;
+            margin: 2.5rem 0 1.5rem;
+            letter-spacing: 1px;
+        }
+        .section-title span {
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-neural));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ===== Vitals Panel ===== */
+        .vitals-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+        .vital-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.5rem 1.2rem;
+            text-align: center;
+            transition: all var(--transition-smooth);
+            box-shadow: var(--shadow-card);
+            animation: cardFloatUp 0.6s ease-out forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .vital-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-medical), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .vital-card:hover::after {
+            opacity: 1;
+        }
+        .vital-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-medical);
+            box-shadow: var(--shadow-glow);
+        }
+        .vital-card:nth-child(1) { animation-delay: 0.05s; }
+        .vital-card:nth-child(2) { animation-delay: 0.1s; }
+        .vital-card:nth-child(3) { animation-delay: 0.15s; }
+        .vital-card:nth-child(4) { animation-delay: 0.2s; }
+        .vital-card:nth-child(5) { animation-delay: 0.25s; }
+        .vital-card:nth-child(6) { animation-delay: 0.3s; }
+        .vital-card:nth-child(7) { animation-delay: 0.35s; }
+        .vital-card:nth-child(8) { animation-delay: 0.4s; }
+        .vital-card:nth-child(9) { animation-delay: 0.45s; }
+        .vital-card:nth-child(10) { animation-delay: 0.5s; }
+        .vital-card:nth-child(11) { animation-delay: 0.55s; }
+        .vital-card:nth-child(12) { animation-delay: 0.6s; }
+        .vital-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.4rem;
+            animation: organPulse 3s ease-in-out infinite;
+        }
+        .vital-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-medical);
+            text-shadow: 0 0 15px var(--accent-glow-medical);
+            animation: numberRoll 0.5s ease-out;
+        }
+        .vital-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-top: 0.2rem;
+        }
+        .vital-unit {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .vital-status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-top: 0.4rem;
+        }
+
+        /* ===== Charts Grid ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+        .chart-box {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 1.8rem;
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+        .chart-box:hover {
+            border-color: var(--glass-border-bright);
+            box-shadow: var(--shadow-glow);
+        }
+        .chart-box h3 {
+            font-family: var(--font-heading);
+            text-align: center;
+            color: var(--accent-medical);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== Simulator Section ===== */
+        .simulator-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+        .simulator-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-health), var(--accent-medical), transparent);
+            animation: shimmer 4s linear infinite;
+        }
+        .simulator-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-health);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .sim-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .sim-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 2.5rem;
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            border: 2px solid var(--glass-border);
+            background: var(--bg-card-solid);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .sim-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 2.5rem;
+            background: radial-gradient(circle at center, rgba(0,180,220,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .sim-btn:hover::after {
+            opacity: 1;
+        }
+        .sim-btn:hover {
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 20px var(--accent-glow-medical);
+            transform: translateY(-2px);
+        }
+        .sim-btn.active-action {
+            background: var(--accent-medical);
+            border-color: var(--accent-medical);
+            color: #fff;
+            animation: ripple 0.6s ease-out;
+        }
+        .health-score-display {
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+        .health-score-circle {
+            display: inline-block;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 6px solid var(--accent-health);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-health);
+            text-shadow: 0 0 25px rgba(46, 204, 113, 0.5);
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.2);
+            transition: all 1s ease;
+            animation: breathGlow 3s ease-in-out infinite;
+        }
+        .health-message {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+            min-height: 1.5rem;
+            animation: fadeSlideUp 0.4s ease-out;
+        }
+
+        /* ===== BMI Calculator ===== */
+        .bmi-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .bmi-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-medical);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .bmi-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .bmi-slider-group {
+            background: var(--bg-card-solid);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        .bmi-slider-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+        .bmi-slider-group label .val {
+            font-family: var(--font-mono);
+            color: var(--accent-medical);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .bmi-slider-group input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent-medical), var(--accent-health));
+            outline: none;
+        }
+        .bmi-slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-medical);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px var(--accent-glow-medical);
+        }
+        .bmi-result {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(0,180,220,0.08), rgba(46,204,113,0.08));
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--glass-border-bright);
+        }
+        .bmi-value-display {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-health));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textGlowPulse 3s ease-in-out infinite;
+        }
+        .bmi-category {
+            display: inline-block;
+            padding: 0.4rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+        .bmi-scale {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 1rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            height: 14px;
+        }
+        .bmi-scale span {
+            font-size: 0.55rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .bmi-scale .under { background: #3498db; flex: 18.5; }
+        .bmi-scale .normal { background: #2ecc71; flex: 6.4; }
+        .bmi-scale .over { background: #f39c12; flex: 5; }
+        .bmi-scale .obese { background: #e74c3c; flex: 10; }
+
+        /* ===== Heart Rate Zones ===== */
+        .hrz-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .hrz-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-heart);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+        .hrz-input {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .hrz-input input {
+            width: 80px;
+            background: var(--bg-card-solid);
+            border: 2px solid var(--glass-border);
+            border-radius: 0.8rem;
+            color: var(--text-bright);
+            padding: 0.5rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            outline: none;
+        }
+        .hrz-input input:focus {
+            border-color: var(--accent-heart);
+            box-shadow: 0 0 15px var(--accent-glow-heart);
+        }
+        .hrz-zones {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .hrz-zone {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .hrz-zone-label {
+            width: 120px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+        .hrz-zone-bar-wrap {
+            flex: 1;
+            height: 28px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hrz-zone-bar {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            padding-left: 1rem;
+            font-size: 0.7rem;
+            font-family: var(--font-mono);
+            color: #fff;
+            font-weight: 600;
+        }
+        .hrz-zone:nth-child(1) .hrz-zone-bar { background: linear-gradient(90deg, #3498db, #2ecc71); }
+        .hrz-zone:nth-child(2) .hrz-zone-bar { background: linear-gradient(90deg, #2ecc71, #f1c40f); }
+        .hrz-zone:nth-child(3) .hrz-zone-bar { background: linear-gradient(90deg, #f39c12, #e67e22); }
+        .hrz-zone:nth-child(4) .hrz-zone-bar { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+        /* ===== Body Composition ===== */
+        .bodycomp-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .bodycomp-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-neural);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .bodycomp-bar-wrap {
+            height: 40px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 1.2rem;
+        }
+        .bodycomp-seg {
+            height: 100%;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #fff;
+            font-family: var(--font-mono);
+        }
+        .bodycomp-legend {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .bodycomp-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .bodycomp-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        .bodycomp-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .bodycomp-detail-card {
+            background: var(--bg-card-solid);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .bodycomp-detail-card .val {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-medical);
+        }
+        .bodycomp-detail-card .lbl {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 0.2rem;
+        }
+
+        /* ===== ECG Canvas ===== */
+        .ecg-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+        }
+        .ecg-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-heart);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .ecg-section canvas {
+            width: 100%;
+            max-width: 700px;
+            height: 180px;
+            border-radius: var(--border-radius-lg);
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+        }
+        .ecg-bpm {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            color: var(--accent-heart);
+            margin-top: 0.5rem;
+            animation: heartbeatPulse 1.2s ease-in-out infinite;
+        }
+        .ecg-bpm .unit {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== Health Timeline ===== */
+        .timeline-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .timeline-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-warning);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .circadian-ring {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .circadian-clock {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            border: 3px solid var(--glass-border-bright);
+            background: radial-gradient(circle, rgba(0,180,220,0.04), transparent 70%);
+            animation: rotateSlow 60s linear infinite;
+        }
+        .circadian-clock .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: var(--accent-medical);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-glow-medical);
+            z-index: 2;
+        }
+        .circadian-marker {
+            position: absolute;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            transform: translate(-50%, -50%);
+        }
+        .timeline-events {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .timeline-event {
+            background: var(--bg-card-solid);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            border-left: 3px solid var(--accent-medical);
+            transition: all 0.3s;
+        }
+        .timeline-event:hover {
+            border-left-color: var(--accent-health);
+            background: rgba(0,180,220,0.06);
+            transform: translateX(4px);
+        }
+        .timeline-event .time {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--accent-medical);
+            font-weight: 700;
+        }
+        .timeline-event .desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+        .timeline-event .rec {
+            font-size: 0.7rem;
+            color: var(--accent-health);
+            margin-top: 0.2rem;
+        }
+
+        /* ===== Exercise Recommendations ===== */
+        .exercise-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .exercise-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-health);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .exercise-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.2rem;
+        }
+        .exercise-card {
+            background: var(--bg-card-solid);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            transition: all var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+        .exercise-card:hover {
+            border-color: var(--accent-health);
+            box-shadow: 0 0 25px rgba(46,204,113,0.15);
+            transform: translateY(-3px);
+        }
+        .exercise-card .ex-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .exercise-card h4 {
+            color: var(--text-bright);
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+        .exercise-card .ex-intensity {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .ex-intensity.low { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .ex-intensity.med { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .ex-intensity.high { background: rgba(230,57,70,0.15); color: #e63946; }
+        .exercise-card .ex-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        /* ===== Health Log ===== */
+        .log-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .log-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-neural);
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .log-quick-input {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .log-quick-input input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            background: var(--bg-card-solid);
+            border: 2px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 0.7rem 1.3rem;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .log-quick-input input:focus {
+            border-color: var(--accent-neural);
+            box-shadow: 0 0 20px rgba(123,47,247,0.3);
+        }
+        .log-quick-input button {
+            padding: 0.7rem 1.8rem;
+            border-radius: 2rem;
+            background: var(--accent-neural);
+            color: #fff;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .log-quick-input button:hover {
+            box-shadow: 0 0 25px rgba(123,47,247,0.5);
+            transform: translateY(-2px);
+        }
+        .log-entries {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .log-entries::-webkit-scrollbar {
+            width: 4px;
+        }
+        .log-entries::-webkit-scrollbar-thumb {
+            background: var(--accent-neural);
+            border-radius: 2px;
+        }
+        .log-entry {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.7rem 1rem;
+            background: var(--bg-card-solid);
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--glass-border);
+            animation: slideInRight 0.3s ease-out;
+        }
+        .log-entry .log-time {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent-medical);
+            min-width: 50px;
+        }
+        .log-entry .log-text {
+            flex: 1;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .log-entry .log-del {
+            cursor: pointer;
+            color: var(--accent-danger);
+            font-size: 0.8rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .log-entry .log-del:hover {
+            opacity: 1;
+        }
+        .log-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        /* ===== Health Trends ===== */
+        .trends-section {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .trends-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-medical);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .trends-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .trends-table th {
+            background: rgba(0,180,220,0.1);
+            padding: 0.8rem;
+            text-align: center;
+            color: var(--accent-medical);
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--glass-border-bright);
+        }
+        .trends-table td {
+            padding: 0.7rem;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+        .trends-table tr:hover td {
+            background: rgba(0,180,220,0.04);
+        }
+        .trends-table .trend-up {
+            color: var(--accent-health);
+        }
+        .trends-table .trend-down {
+            color: var(--accent-danger);
+        }
+        .trends-table .trend-stable {
+            color: var(--accent-warning);
+        }
+
+        /* ===== Animated Gradient Borders ===== */
+        .gradient-border-box {
+            position: relative;
+            border-radius: var(--border-radius-xl);
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-neural), var(--accent-health), var(--accent-heart));
+            background-size: 400% 400%;
+            animation: gradientShift 6s ease infinite;
+            margin-bottom: 2.5rem;
+        }
+        .gradient-border-box > * {
+            background: var(--bg-card);
+            border-radius: calc(var(--border-radius-xl) - 2px);
+            padding: 2rem;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .vitals-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .page-header h1 {
+                font-size: 1.8rem;
+            }
+            .bmi-inputs {
+                grid-template-columns: 1fr;
+            }
+            .exercise-cards {
+                grid-template-columns: 1fr;
+            }
+            .bodycomp-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .circadian-clock {
+                width: 180px;
+                height: 180px;
+            }
+            .timeline-events {
+                grid-template-columns: 1fr;
+            }
+            .log-quick-input {
+                flex-direction: column;
+                align-items: center;
+            }
+            .log-quick-input input {
+                max-width: 100%;
+            }
+            .navbar {
+                border-radius: 2rem;
+                padding: 0.75rem 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .vitals-panel {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+            .vital-card {
+                padding: 1rem 0.6rem;
+            }
+            .vital-value {
+                font-size: 1.4rem;
+            }
+            .sim-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="medical-grid"></div>
+
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='body_home.html'">BODY<span style="color:var(--accent-health);">ATLAS</span></div>
+        <ul class="nav-links">
+            <li><a href="body_home.html">首页</a></li>
+            <li><a href="body_systems.html">人体系统</a></li>
+            <li><a href="body_health.html" class="active">健康数据</a></li>
+            <li><a href="body_nutrition.html">营养代谢</a></li>
+            <li><a href="body_risk.html">风险分析</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>健康数据中心</h1>
+        <p class="subtitle">实时监测 · 趋势分析 · 状态模拟 · 全面洞察</p>
+    </div>
+
+    <div class="container">
+        <!-- ===== Vitals Panel (12 cards) ===== -->
+        <div class="vitals-panel" id="vitalsPanel"></div>
+
+        <!-- ===== Health Simulator ===== -->
+        <div class="simulator-section">
+            <h2>健康状态模拟器</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1rem;">点击按钮模拟不同生活方式对健康的影响</p>
+            <div class="sim-controls">
+                <button class="sim-btn" data-action="exercise">运动锻炼</button>
+                <button class="sim-btn" data-action="sleep">充足睡眠</button>
+                <button class="sim-btn" data-action="water">充分饮水</button>
+                <button class="sim-btn" data-action="stress">压力增加</button>
+                <button class="sim-btn" data-action="junk">不健康饮食</button>
+                <button class="sim-btn" data-action="meditation">冥想放松</button>
+                <button class="sim-btn" data-action="alcohol">饮酒</button>
+                <button class="sim-btn" data-action="smoking">吸烟</button>
+                <button class="sim-btn" data-action="vitamins">补充维生素</button>
+                <button class="sim-btn" data-action="reset">重置状态</button>
+            </div>
+            <div class="health-score-display">
+                <div class="health-score-circle" id="healthScore">85</div>
+            </div>
+            <div class="health-message" id="healthMessage">当前状态：良好 · 继续保持健康生活方式</div>
+        </div>
+
+        <!-- ===== Charts Grid (4 charts) ===== -->
+        <div class="charts-grid">
+            <div class="chart-box">
+                <h3>健康综合评分 (雷达图)</h3>
+                <canvas id="radarChart" height="280"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>各系统健康度</h3>
+                <canvas id="barChart" height="280"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>心率趋势 (24小时)</h3>
+                <canvas id="heartChart" height="280"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>周健康变化</h3>
+                <canvas id="weeklyChart" height="280"></canvas>
+            </div>
+        </div>
+
+        <!-- ===== ECG / Heartbeat Animation ===== -->
+        <div class="ecg-section">
+            <h2>实时心电图模拟</h2>
+            <canvas id="ecgCanvas" width="700" height="180"></canvas>
+            <div class="ecg-bpm">
+                <span id="ecgBpmValue">72</span> <span class="unit">BPM</span>
+            </div>
+        </div>
+
+        <!-- ===== BMI Calculator ===== -->
+        <div class="bmi-section">
+            <h2>BMI 身体质量指数计算器</h2>
+            <div class="bmi-inputs">
+                <div class="bmi-slider-group">
+                    <label>身高 <span class="val" id="bmiHeightVal">170 cm</span></label>
+                    <input type="range" id="bmiHeight" min="100" max="250" value="170" step="1">
+                </div>
+                <div class="bmi-slider-group">
+                    <label>体重 <span class="val" id="bmiWeightVal">65 kg</span></label>
+                    <input type="range" id="bmiWeight" min="30" max="200" value="65" step="0.5">
+                </div>
+            </div>
+            <div class="bmi-result">
+                <div>您的 BMI</div>
+                <div class="bmi-value-display" id="bmiValue">22.5</div>
+                <div class="bmi-category" id="bmiCategory" style="background:rgba(46,204,113,0.15);color:#2ecc71;">健康体重</div>
+                <div class="bmi-scale">
+                    <span class="under">偏瘦</span>
+                    <span class="normal">健康</span>
+                    <span class="over">超重</span>
+                    <span class="obese">肥胖</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Heart Rate Zones ===== -->
+        <div class="hrz-section">
+            <h2>心率区间计算器</h2>
+            <div class="hrz-input">
+                <label style="color:var(--text-muted);font-size:0.85rem;">输入年龄：</label>
+                <input type="number" id="hrzAge" value="30" min="10" max="100">
+                <span style="color:var(--text-muted);font-size:0.8rem;margin-left:0.5rem;">最大心率 ≈ <strong style="color:var(--accent-heart);" id="hrzMaxHR">190</strong> bpm</span>
+            </div>
+            <div class="hrz-zones">
+                <div class="hrz-zone">
+                    <div class="hrz-zone-label">恢复/休息</div>
+                    <div class="hrz-zone-bar-wrap"><div class="hrz-zone-bar" id="hrzBar1" style="width:60%">60%</div></div>
+                </div>
+                <div class="hrz-zone">
+                    <div class="hrz-zone-label">燃脂区间</div>
+                    <div class="hrz-zone-bar-wrap"><div class="hrz-zone-bar" id="hrzBar2" style="width:70%">70%</div></div>
+                </div>
+                <div class="hrz-zone">
+                    <div class="hrz-zone-label">有氧/心肺</div>
+                    <div class="hrz-zone-bar-wrap"><div class="hrz-zone-bar" id="hrzBar3" style="width:85%">85%</div></div>
+                </div>
+                <div class="hrz-zone">
+                    <div class="hrz-zone-label">极限/峰值</div>
+                    <div class="hrz-zone-bar-wrap"><div class="hrz-zone-bar" id="hrzBar4" style="width:100%">100%</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Body Composition ===== -->
+        <div class="bodycomp-section">
+            <h2>身体成分分析</h2>
+            <div class="bodycomp-bar-wrap">
+                <div class="bodycomp-seg" style="background:#7b2ff7;width:42%;" id="bcMuscle">肌肉 42%</div>
+                <div class="bodycomp-seg" style="background:#f39c12;width:18%;" id="bcFat">脂肪 18%</div>
+                <div class="bodycomp-seg" style="background:#e0e8f0;width:14%;color:#0a1628;" id="bcBone">骨骼 14%</div>
+                <div class="bodycomp-seg" style="background:#00b4d8;width:26%;" id="bcWater">水分 26%</div>
+            </div>
+            <div class="bodycomp-legend">
+                <div class="bodycomp-legend-item"><div class="bodycomp-dot" style="background:#7b2ff7;"></div> 肌肉质量</div>
+                <div class="bodycomp-legend-item"><div class="bodycomp-dot" style="background:#f39c12;"></div> 脂肪质量</div>
+                <div class="bodycomp-legend-item"><div class="bodycomp-dot" style="background:#e0e8f0;"></div> 骨骼质量</div>
+                <div class="bodycomp-legend-item"><div class="bodycomp-dot" style="background:#00b4d8;"></div> 水分</div>
+            </div>
+            <div class="bodycomp-details">
+                <div class="bodycomp-detail-card">
+                    <div class="val">42.0<span style="font-size:0.7rem;">%</span></div>
+                    <div class="lbl">肌肉质量</div>
+                </div>
+                <div class="bodycomp-detail-card">
+                    <div class="val">18.0<span style="font-size:0.7rem;">%</span></div>
+                    <div class="lbl">体脂率</div>
+                </div>
+                <div class="bodycomp-detail-card">
+                    <div class="val">14.0<span style="font-size:0.7rem;">%</span></div>
+                    <div class="lbl">骨骼质量</div>
+                </div>
+                <div class="bodycomp-detail-card">
+                    <div class="val">58.5<span style="font-size:0.7rem;">%</span></div>
+                    <div class="lbl">总水分</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Health Timeline / Circadian Rhythm ===== -->
+        <div class="timeline-section">
+            <h2>24小时健康时钟</h2>
+            <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2rem;">
+                <div class="circadian-ring">
+                    <div class="circadian-clock">
+                        <div class="center-dot"></div>
+                        <div class="circadian-marker" style="top:5%;left:50%;">12:00</div>
+                        <div class="circadian-marker" style="top:15%;left:75%;">9:00</div>
+                        <div class="circadian-marker" style="top:50%;left:92%;">6:00</div>
+                        <div class="circadian-marker" style="top:85%;left:75%;">3:00</div>
+                        <div class="circadian-marker" style="top:92%;left:50%;">0:00</div>
+                        <div class="circadian-marker" style="top:85%;left:25%;">21:00</div>
+                        <div class="circadian-marker" style="top:50%;left:8%;">18:00</div>
+                        <div class="circadian-marker" style="top:15%;left:25%;">15:00</div>
+                        <div style="position:absolute;top:28%;left:28%;font-size:0.5rem;color:var(--accent-warning);">皮质醇峰值</div>
+                        <div style="position:absolute;top:70%;left:60%;font-size:0.5rem;color:var(--accent-neural);">褪黑素上升</div>
+                    </div>
+                </div>
+                <div class="timeline-events" style="flex:1;min-width:280px;">
+                    <div class="timeline-event">
+                        <div class="time">06:00 - 08:00</div>
+                        <div class="desc">最佳起床时间，皮质醇自然升高</div>
+                        <div class="rec">适合：轻度拉伸、晨跑</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">08:00 - 10:00</div>
+                        <div class="desc">注意力峰值，适合高强度脑力工作</div>
+                        <div class="rec">适合：复杂决策、学习</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">12:00 - 13:30</div>
+                        <div class="desc">最佳午餐消化窗口</div>
+                        <div class="rec">建议：均衡营养午餐</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">14:00 - 16:00</div>
+                        <div class="desc">体能和协调性最佳时段</div>
+                        <div class="rec">适合：力量训练、高强度运动</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">17:00 - 19:00</div>
+                        <div class="desc">心肺效率最高，肌肉温度最高</div>
+                        <div class="rec">适合：有氧运动、游泳</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">19:00 - 20:00</div>
+                        <div class="desc">最佳晚餐时间，代谢仍活跃</div>
+                        <div class="rec">建议：清淡晚餐，易消化</div>
+                    </div>
+                    <div class="timeline-event">
+                        <div class="time">21:00 - 22:00</div>
+                        <div class="desc">褪黑素开始分泌，体温下降</div>
+                        <div class="rec">建议：放松、阅读、冥想</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Exercise Recommendations ===== -->
+        <div class="exercise-section">
+            <h2>个性化运动推荐</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1.2rem;" id="exRecommendationNote">基于当前健康评分 85 分</p>
+            <div class="exercise-cards" id="exerciseCards"></div>
+        </div>
+
+        <!-- ===== Health Trends ===== -->
+        <div class="trends-section">
+            <h2>7天健康趋势</h2>
+            <table class="trends-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>综合评分</th>
+                        <th>心率</th>
+                        <th>睡眠</th>
+                        <th>步数</th>
+                        <th>水分</th>
+                        <th>趋势</th>
+                    </tr>
+                </thead>
+                <tbody id="trendsTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- ===== Daily Health Log ===== -->
+        <div class="log-section">
+            <h2>每日健康日志</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1rem;">快速记录你的健康活动</p>
+            <div class="log-quick-input">
+                <input type="text" id="logInput" placeholder="例如：晨跑30分钟、吃了沙拉、冥想15分钟...">
+                <button id="logSubmitBtn">记录</button>
+            </div>
+            <div class="log-entries" id="logEntries">
+                <div class="log-empty">还没有记录，开始记录你的健康日志吧！</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Vitals Data (expanded to 12 cards) =====
+        const vitalsData = [
+            { icon: '❤️', label: '心率', value: '72', unit: 'bpm', status: 'normal', statusText: '正常' },
+            { icon: '🩸', label: '血压', value: '120/80', unit: 'mmHg', status: 'normal', statusText: '理想' },
+            { icon: '🌡️', label: '体温', value: '36.5', unit: '°C', status: 'normal', statusText: '正常' },
+            { icon: '🫁', label: '血氧', value: '98', unit: '%', status: 'normal', statusText: '优秀' },
+            { icon: '😴', label: '睡眠', value: '85', unit: '分', status: 'normal', statusText: '良好' },
+            { icon: '🧘', label: '压力', value: '35', unit: '%', status: 'normal', statusText: '低压力' },
+            { icon: '⚖️', label: 'BMI', value: '22.5', unit: 'kg/m²', status: 'normal', statusText: '健康' },
+            { icon: '💧', label: '水分', value: '65', unit: '%', status: 'normal', statusText: '充足' },
+            { icon: '🧃', label: '血糖', value: '5.2', unit: 'mmol/L', status: 'normal', statusText: '正常' },
+            { icon: '🫀', label: '胆固醇', value: '4.8', unit: 'mmol/L', status: 'normal', statusText: '理想' },
+            { icon: '🪓', label: 'VO₂ max', value: '42', unit: 'mL/kg/min', status: 'normal', statusText: '良好' },
+            { icon: '👣', label: '步数', value: '8,432', unit: '步/天', status: 'normal', statusText: '达标' },
+        ];
+
+        document.getElementById('vitalsPanel').innerHTML = vitalsData.map(v => `
+        <div class="vital-card">
+          <span class="vital-icon">${v.icon}</span>
+          <div class="vital-value">${v.value}</div>
+          <div class="vital-label">${v.label}</div>
+          <span class="vital-unit">${v.unit}</span>
+          <br>
+          <span class="vital-status" style="background:rgba(46,204,113,0.15);color:#2ecc71;border:1px solid rgba(46,204,113,0.3);">● ${v.statusText}</span>
+        </div>
+      `).join('');
+
+        // ===== Health State =====
+        let healthState = { heart: 85, lungs: 90, muscles: 80, bones: 88, digestion: 75, immunity: 82, mental: 78,
+            overall: 85, glucose: 85, cholesterol: 80, sleep: 85, hydration: 75, stress: 35, steps: 72 };
+        let charts = {};
+        let healthHistory = [];
+
+        // ===== Charts =====
+        function createCharts() {
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            charts.radar = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['心血管', '呼吸', '肌肉', '骨骼', '消化', '免疫', '精神'],
+                    datasets: [{ label: '健康评分', data: [85, 90, 80, 88, 75, 82, 78],
+                        borderColor: '#00b4d8', backgroundColor: 'rgba(0,180,220,0.15)',
+                    borderWidth: 2 }]
+                },
+                options: { responsive: true, plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                    scales: { r: { min: 0, max: 100, ticks: { color: '#607890' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }, pointLabels: { color: '#e0e8f0' } } } }
+            });
+
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            charts.bar = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['心血管', '呼吸', '肌肉', '骨骼', '消化', '免疫', '精神'],
+                    datasets: [{ label: '健康度', data: [85, 90, 80, 88, 75, 82, 78],
+                        backgroundColor: 'rgba(0,180,220,0.5)', borderRadius: 8 }]
+                },
+                options: { responsive: true, plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                    scales: { y: { max: 100, ticks: { color: '#607890' } }, x: { ticks: { color: '#e0e8f0' } } } }
+            });
+
+            const heartCtx = document.getElementById('heartChart').getContext('2d');
+            const hours = ['00', '03', '06', '09', '12', '15', '18', '21'];
+            const heartData = [62, 58, 60, 72, 78, 75, 70, 65];
+            charts.heart = new Chart(heartCtx, {
+                type: 'line',
+                data: { labels: hours, datasets: [{ label: '心率(bpm)', data: heartData,
+                        borderColor: '#e63946', tension: 0.4, fill: true,
+                        backgroundColor: 'rgba(230,57,70,0.1)' }] },
+                options: { responsive: true, plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                    scales: { y: { ticks: { color: '#607890' } }, x: { ticks: { color: '#e0e8f0' } } } }
+            });
+
+            const weekCtx = document.getElementById('weeklyChart').getContext('2d');
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            charts.weekly = new Chart(weekCtx, {
+                type: 'bar',
+                data: { labels: days, datasets: [{ label: '健康评分', data: [82, 84, 83, 80, 85, 88, 86],
+                        backgroundColor: 'rgba(46,204,113,0.5)', borderRadius: 8 }] },
+                options: { responsive: true, plugins: { legend: { labels: { color: '#a0b8d0' } } },
+                    scales: { y: { max: 100, ticks: { color: '#607890' } }, x: { ticks: { color: '#e0e8f0' } } } }
+            });
+        }
+
+        function updateCharts() {
+            const data = [healthState.heart, healthState.lungs, healthState.muscles, healthState.bones, healthState
+                .digestion, healthState.immunity, healthState.mental
+            ];
+            if (charts.radar) charts.radar.data.datasets[0].data = data;
+            if (charts.radar) charts.radar.update();
+            if (charts.bar) charts.bar.data.datasets[0].data = data;
+            if (charts.bar) charts.bar.update();
+            document.getElementById('healthScore').textContent = healthState.overall;
+            const circle = document.getElementById('healthScore');
+            if (healthState.overall >= 80) {
+                circle.style.borderColor = '#2ecc71';
+                circle.style.color = '#2ecc71';
+            } else if (healthState.overall >= 60) {
+                circle.style.borderColor = '#f39c12';
+                circle.style.color = '#f39c12';
+            } else {
+                circle.style.borderColor = '#e74c3c';
+                circle.style.color = '#e74c3c';
+            }
+            updateExerciseRecommendations();
+        }
+
+        // ===== Apply Action (expanded simulator) =====
+        function applyAction(action) {
+            const msg = document.getElementById('healthMessage');
+            switch (action) {
+                case 'exercise':
+                    healthState.heart = Math.min(100, healthState.heart + 5);
+                    healthState.muscles = Math.min(100, healthState.muscles + 4);
+                    healthState.lungs = Math.min(100, healthState.lungs + 3);
+                    healthState.overall = Math.min(100, healthState.overall + 3);
+                    healthState.stress = Math.max(10, healthState.stress - 5);
+                    msg.textContent = '🏃 运动效果：心血管和肌肉健康提升！压力水平下降。';
+                    break;
+                case 'sleep':
+                    healthState.mental = Math.min(100, healthState.mental + 6);
+                    healthState.immunity = Math.min(100, healthState.immunity + 3);
+                    healthState.sleep = Math.min(100, healthState.sleep + 8);
+                    healthState.overall = Math.min(100, healthState.overall + 4);
+                    healthState.stress = Math.max(10, healthState.stress - 8);
+                    msg.textContent = '😴 充足睡眠：精神状态和免疫力恢复！睡眠质量提升。';
+                    break;
+                case 'water':
+                    healthState.digestion = Math.min(100, healthState.digestion + 3);
+                    healthState.hydration = Math.min(100, healthState.hydration + 5);
+                    healthState.overall = Math.min(100, healthState.overall + 1);
+                    msg.textContent = '💧 充分饮水：消化系统功能改善！身体水合水平提升。';
+                    break;
+                case 'stress':
+                    healthState.mental = Math.max(20, healthState.mental - 8);
+                    healthState.heart = Math.max(30, healthState.heart - 5);
+                    healthState.overall = Math.max(20, healthState.overall - 6);
+                    healthState.stress = Math.min(100, healthState.stress + 15);
+                    healthState.sleep = Math.max(20, healthState.sleep - 6);
+                    msg.textContent = '😰 压力增加：心理和心血管健康下降！睡眠质量受影响。';
+                    break;
+                case 'junk':
+                    healthState.digestion = Math.max(20, healthState.digestion - 6);
+                    healthState.overall = Math.max(20, healthState.overall - 4);
+                    healthState.cholesterol = Math.max(30, healthState.cholesterol - 5);
+                    healthState.glucose = Math.max(30, healthState.glucose - 4);
+                    msg.textContent = '🍔 不健康饮食：消化系统负担加重！血糖和胆固醇受影响。';
+                    break;
+                case 'meditation':
+                    healthState.mental = Math.min(100, healthState.mental + 7);
+                    healthState.stress = Math.max(10, healthState.stress - 12);
+                    healthState.heart = Math.min(100, healthState.heart + 2);
+                    healthState.overall = Math.min(100, healthState.overall + 2);
+                    msg.textContent = '🧘 冐想放松：精神健康显著提升！压力水平大幅下降。';
+                    break;
+                case 'alcohol':
+                    healthState.digestion = Math.max(15, healthState.digestion - 8);
+                    healthState.mental = Math.max(20, healthState.mental - 6);
+                    healthState.sleep = Math.max(20, healthState.sleep - 7);
+                    healthState.overall = Math.max(20, healthState.overall - 5);
+                    msg.textContent = '🍺 饮酒：肝脏负担加重，睡眠质量和精神状态下降。';
+                    break;
+                case 'smoking':
+                    healthState.lungs = Math.max(10, healthState.lungs - 7);
+                    healthState.heart = Math.max(20, healthState.heart - 4);
+                    healthState.overall = Math.max(20, healthState.overall - 5);
+                    healthState.immunity = Math.max(25, healthState.immunity - 4);
+                    msg.textContent = '🚬 吸烟：肺部健康严重受损！心血管和免疫系统受到负面影响。';
+                    break;
+                case 'vitamins':
+                    healthState.immunity = Math.min(100, healthState.immunity + 6);
+                    healthState.bones = Math.min(100, healthState.bones + 3);
+                    healthState.overall = Math.min(100, healthState.overall + 2);
+                    healthState.mental = Math.min(100, healthState.mental + 2);
+                    msg.textContent = '💊 补充维生素：免疫力增强！骨骼健康和精神状态改善。';
+                    break;
+                case 'reset':
+                    healthState = { heart: 85, lungs: 90, muscles: 80, bones: 88, digestion: 75, immunity: 82,
+                        mental: 78, overall: 85, glucose: 85, cholesterol: 80, sleep: 85, hydration: 75,
+                        stress: 35, steps: 72 };
+                    msg.textContent = '🔄 状态已重置 · 当前健康评分：85';
+                    break;
+            }
+            addHistoryEntry(action);
+            updateCharts();
+        }
+
+        // ===== Health History =====
+        function addHistoryEntry(action) {
+            const now = new Date();
+            const entry = {
+                time: now.toLocaleString('zh-CN'),
+                action: action,
+                overall: healthState.overall,
+                heart: healthState.heart,
+                mental: healthState.mental
+            };
+            healthHistory.push(entry);
+            if (healthHistory.length > 50) healthHistory.shift();
+        }
+
+        document.querySelectorAll('.sim-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove(
+                    'active-action'));
+                this.classList.add('active-action');
+                applyAction(this.dataset.action);
+                setTimeout(() => this.classList.remove('active-action'), 600);
+            });
+        });
+
+        // ===== ECG Animation =====
+        function initECG() {
+            const canvas = document.getElementById('ecgCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const midY = height / 2;
+            let offset = 0;
+            let bpm = 72;
+            const bpmEl = document.getElementById('ecgBpmValue');
+
+            function drawGrid() {
+                ctx.strokeStyle = 'rgba(0,180,220,0.06)';
+                ctx.lineWidth = 0.5;
+                for (let y = 20; y < height; y += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+                for (let x = 0; x < width; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+            }
+
+            function drawECG() {
+                ctx.clearRect(0, 0, width, height);
+                drawGrid();
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#e63946';
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = 'rgba(230,57,70,0.7)';
+                ctx.shadowBlur = 10;
+
+                for (let x = 0; x < width; x++) {
+                    const t = (x + offset) % width;
+                    let y = midY;
+
+                    // QRS complex simulation
+                    const phase = t / width;
+                    const qrsPos = 0.4;
+                    const qrsWidth = 0.02;
+
+                    if (phase > qrsPos - qrsWidth && phase < qrsPos) {
+                        y = midY + 8;
+                    } else if (phase >= qrsPos && phase < qrsPos + qrsWidth * 0.5) {
+                        y = midY - 55;
+                    } else if (phase >= qrsPos + qrsWidth * 0.5 && phase < qrsPos + qrsWidth) {
+                        y = midY + 15;
+                    } else if (phase > 0.45 && phase < 0.52) {
+                        y = midY + 20;
+                    } else {
+                        y = midY + Math.sin(phase * Math.PI * 7) * 4;
+                    }
+
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            function animate() {
+                offset = (offset + 2.5) % width;
+                drawECG();
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+
+            // Heartbeat pulse effect on BPM text
+            setInterval(() => {
+                const variation = Math.floor(Math.random() * 6) - 3;
+                const currentBpm = bpm + variation;
+                bpmEl.textContent = currentBpm;
+            }, 1200);
+        }
+
+        // ===== BMI Calculator =====
+        function initBMICalculator() {
+            const heightSlider = document.getElementById('bmiHeight');
+            const weightSlider = document.getElementById('bmiWeight');
+            const heightVal = document.getElementById('bmiHeightVal');
+            const weightVal = document.getElementById('bmiWeightVal');
+            const bmiValue = document.getElementById('bmiValue');
+            const bmiCategory = document.getElementById('bmiCategory');
+
+            function calcBMI() {
+                const h = parseInt(heightSlider.value) / 100;
+                const w = parseFloat(weightSlider.value);
+                heightVal.textContent = heightSlider.value + ' cm';
+                weightVal.textContent = weightSlider.value + ' kg';
+
+                const bmi = (w / (h * h)).toFixed(1);
+                bmiValue.textContent = bmi;
+
+                let category, bg, color;
+                if (bmi < 18.5) {
+                    category = '偏瘦';
+                    bg = 'rgba(52,152,219,0.15)';
+                    color = '#3498db';
+                } else if (bmi < 24.9) {
+                    category = '健康体重';
+                    bg = 'rgba(46,204,113,0.15)';
+                    color = '#2ecc71';
+                } else if (bmi < 29.9) {
+                    category = '超重';
+                    bg = 'rgba(243,156,18,0.15)';
+                    color = '#f39c12';
+                } else {
+                    category = '肥胖';
+                    bg = 'rgba(231,76,60,0.15)';
+                    color = '#e74c3c';
+                }
+                bmiCategory.textContent = category;
+                bmiCategory.style.background = bg;
+                bmiCategory.style.color = color;
+            }
+
+            heightSlider.addEventListener('input', calcBMI);
+            weightSlider.addEventListener('input', calcBMI);
+            calcBMI();
+        }
+
+        // ===== Heart Rate Zones =====
+        function initHeartRateZones() {
+            const ageInput = document.getElementById('hrzAge');
+            const maxHREl = document.getElementById('hrzMaxHR');
+
+            function updateZones() {
+                const age = parseInt(ageInput.value) || 30;
+                const maxHR = 220 - age;
+                maxHREl.textContent = maxHR;
+
+                const zones = [
+                    { bar: 'hrzBar1', pct: 0.60, label: Math.round(maxHR * 0.60) },
+                    { bar: 'hrzBar2', pct: 0.70, label: Math.round(maxHR * 0.70) },
+                    { bar: 'hrzBar3', pct: 0.85, label: Math.round(maxHR * 0.85) },
+                    { bar: 'hrzBar4', pct: 1.0, label: maxHR },
+                ];
+
+                zones.forEach(z => {
+                    const el = document.getElementById(z.bar);
+                    el.style.width = (z.pct * 100) + '%';
+                    el.textContent = Math.round(z.pct * 100) + '%  (' + z.label + ' bpm)';
+                });
+            }
+
+            ageInput.addEventListener('input', updateZones);
+            updateZones();
+        }
+
+        // ===== Exercise Recommendations =====
+        const exerciseLibrary = [
+            { icon: '🏃‍♂️', name: '慢跑 / 快走', intensity: 'med', desc: '提升心肺功能，燃烧脂肪，每次·30-45分钟。适合大多数人群。', condition: 'heart>60' },
+            { icon: '🏊', name: '游泳', intensity: 'med', desc: '全身运动，低冲击，改善心肺和肌肉耐力。每次°30分钟。', condition: 'lungs>60' },
+            { icon: '🫘', name: '睸伽 / 柔韧', intensity: 'low', desc: '缓解压力，提升柔韧性和精神健康。每日·15-20分钟。', condition: 'mental<90' },
+            { icon: '🏋️', name: '力量训练', intensity: 'high', desc: '增强肌肉和骨骼强度，提升代谢率。每周·3-4次。', condition: 'muscles>60&&bones>60' },
+            { icon: '🚴', name: '骑行', intensity: 'med', desc: '心肺耐力训练，低关节冲击。每次·45-60分钟。', condition: 'heart>50' },
+            { icon: '🧘‍♂️', name: '正念冥想', intensity: 'low', desc: '降低压力水平，改善睡眠质量和情绪。每日·10-15分钟。', condition: 'stress>25||sleep<80' },
+            { icon: '⛹️', name: '间歇高强度', intensity: 'high', desc: 'HIIT训练，高效燃脂和心肺提升。每次·20分钟，每周·2-3次。', condition: 'heart>70&&overall>75' },
+            { icon: '🪱', name: '快步通勤', intensity: 'low', desc: '日常低强度活动，改善心血管和情绪。每日·30分钟以上。', condition: 'true' },
+        ];
+
+        function updateExerciseRecommendations() {
+            const container = document.getElementById('exerciseCards');
+            const note = document.getElementById('exRecommendationNote');
+            note.textContent = '基于当前健康评分 ' + healthState.overall + ' 分';
+
+            const suitable = exerciseLibrary.filter(ex => {
+                try {
+                    const cond = ex.condition.replace(/heart/g, healthState.heart)
+                        .replace(/lungs/g, healthState.lungs)
+                        .replace(/muscles/g, healthState.muscles)
+                        .replace(/bones/g, healthState.bones)
+                        .replace(/mental/g, healthState.mental)
+                        .replace(/stress/g, healthState.stress)
+                        .replace(/sleep/g, healthState.sleep)
+                        .replace(/overall/g, healthState.overall);
+                    return eval(cond);
+                } catch (e) { return false; }
+            });
+
+            const recs = suitable.slice(0, 6);
+
+            container.innerHTML = recs.map(ex => `
+                <div class="exercise-card">
+                    <span class="ex-icon">${ex.icon}</span>
+                    <h4>${ex.name}</h4>
+                    <span class="ex-intensity ${ex.intensity}">${
+                        ex.intensity === 'low' ? '低强度' : ex.intensity === 'med' ? '中强度' : '高强度'
+                    }</span>
+                    <p class="ex-desc">${ex.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        // ===== Health Trends Table =====
+        function initHealthTrends() {
+            const tbody = document.getElementById('trendsTableBody');
+            const days = ['今天', '昨天', '3天前', '4天前', '5天前', '6天前', '7天前'];
+            const data = [
+                { score: 85, hr: 72, sleep: 85, steps: 8432, water: 65, trend: '↑' },
+                { score: 83, hr: 74, sleep: 82, steps: 7650, water: 62, trend: '↑' },
+                { score: 81, hr: 70, sleep: 80, steps: 9100, water: 68, trend: '↓' },
+                { score: 84, hr: 71, sleep: 84, steps: 7200, water: 60, trend: '↑' },
+                { score: 80, hr: 75, sleep: 78, steps: 6800, water: 58, trend: '↓' },
+                { score: 82, hr: 69, sleep: 83, steps: 8900, water: 64, trend: '→' },
+                { score: 79, hr: 76, sleep: 76, steps: 5500, water: 55, trend: '↓' },
+            ];
+
+            tbody.innerHTML = data.map((d, i) => {
+                const trendClass = d.trend === '↑' ? 'trend-up' : d.trend === '↓' ? 'trend-down' : 'trend-stable';
+                return `
+                <tr>
+                    <td>${days[i]}</td>
+                    <td><strong>${d.score}</strong></td>
+                    <td>${d.hr} bpm</td>
+                    <td>${d.sleep}分</td>
+                    <td>${d.steps.toLocaleString()}</td>
+                    <td>${d.water}%</td>
+                    <td class="${trendClass}">${d.trend}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ===== Daily Health Log =====
+        let logEntries = [];
+
+        function initHealthLog() {
+            const input = document.getElementById('logInput');
+            const submitBtn = document.getElementById('logSubmitBtn');
+            const container = document.getElementById('logEntries');
+
+            function renderLog() {
+                if (logEntries.length === 0) {
+                    container.innerHTML = '<div class="log-empty">还没有记录，开始记录你的健康日志吧！</div>';
+                    return;
+                }
+                container.innerHTML = logEntries.map((entry, i) => `
+                    <div class="log-entry">
+                        <span class="log-time">${entry.time}</span>
+                        <span class="log-text">${entry.text}</span>
+                        <span class="log-del" data-index="${i}">✕</span>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.log-del').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.index);
+                        logEntries.splice(idx, 1);
+                        renderLog();
+                    });
+                });
+            }
+
+            function addEntry() {
+                const text = input.value.trim();
+                if (!text) return;
+                const now = new Date();
+                const time = now.getHours().toString().padStart(2, '0') + ':' +
+                    now.getMinutes().toString().padStart(2, '0');
+                logEntries.unshift({ time, text });
+                if (logEntries.length > 100) logEntries.pop();
+                input.value = '';
+                renderLog();
+            }
+
+            submitBtn.addEventListener('click', addEntry);
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addEntry();
+            });
+            renderLog();
+        }
+
+        // ===== Initialize All =====
+        createCharts();
+        initECG();
+        initBMICalculator();
+        initHeartRateZones();
+        initHealthTrends();
+        initHealthLog();
+        updateExerciseRecommendations();
+
+        console.log('📊 健康数据中心已加载 (v2.0 扩展版)');
+        console.log('  - 12项生命体征监测');
+        console.log('  - 实时心电图动画');
+        console.log('  - BMI计算器 + 心率区间');
+        console.log('  - 身体成分分析');
+        console.log('  - 24小时健康时钟');
+        console.log('  - 个性化运动推荐');
+        console.log('  - 健康日志 + 7天趋势');
+        console.log('  - 10种健康模拟器操作');
+    </script>
+</body>
+</html>

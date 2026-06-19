@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语言对比 · LinguaMundi</title>
+    <style>
+        :root {
+            --bg-parchment: #f5e6c8;
+            --bg-parchment-dark: #e8d5a8;
+            --bg-card: #faf3e0;
+            --bg-ink: #1a1008;
+            --text-primary: #1a1008;
+            --text-secondary: #3d2b14;
+            --text-muted: #6b5d3e;
+            --text-on-dark: #f0e6d0;
+            --accent-vermillion: #c13a2b;
+            --accent-indigo: #3b2f80;
+            --accent-gold: #b8860b;
+            --accent-teal: #1a6b5a;
+            --border-ink: #2a1f14;
+            --border-light: #d4c4a0;
+            --shadow-ink: 0 6px 0 rgba(26, 16, 8, 0.25);
+            --shadow-soft: 0 4px 20px rgba(26, 16, 8, 0.1);
+            --radius-sm: 0.3rem;
+            --radius-lg: 1rem;
+            --transition-bounce: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-heading: 'Playfair Display', 'Georgia', serif;
+            --font-body: 'Crimson Text', 'Georgia', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+            --font-script: 'Noto Sans Arabic', 'Noto Sans Devanagari', 'Noto Sans SC', sans-serif;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-parchment);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            line-height: 1.7;
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(245, 230, 200, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 3px solid var(--border-ink);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.3rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-vermillion);
+            border-bottom-color: var(--accent-vermillion);
+        }
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-primary);
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .selector-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        select {
+            padding: 0.7rem 1.5rem;
+            border-radius: 2px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.2);
+            transition: all var(--transition-bounce);
+        }
+        select:focus {
+            outline: none;
+            border-color: var(--accent-vermillion);
+            box-shadow: 0 3px 0 rgba(193, 58, 43, 0.3);
+        }
+        .vs-badge {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent-vermillion);
+        }
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: var(--shadow-ink);
+            margin-bottom: 2.5rem;
+        }
+        .compare-table th,
+        .compare-table td {
+            padding: 1rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+        }
+        .compare-table th {
+            background: var(--bg-ink);
+            color: var(--text-on-dark);
+            font-family: var(--font-heading);
+            letter-spacing: 1px;
+            font-size: 1rem;
+        }
+        .compare-table td:first-child {
+            text-align: left;
+            font-weight: 700;
+            background: rgba(26, 16, 8, 0.03);
+        }
+        .compare-table .diff-cell {
+            background: rgba(193, 58, 43, 0.05);
+        }
+        .phrase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .phrase-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.06);
+            transition: all var(--transition-bounce);
+        }
+        .phrase-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-ink);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.12);
+        }
+        .phrase-card .phrase-native {
+            font-family: var(--font-script);
+            font-size: 1.5rem;
+            color: var(--accent-indigo);
+            margin-bottom: 0.5rem;
+            display: block;
+            line-height: 1.5;
+        }
+        .phrase-card .phrase-latin {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+        .phrase-card .phrase-meaning {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .phrase-card .phrase-language {
+            font-size: 0.75rem;
+            color: var(--accent-teal);
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+        }
+        /* ============ NEW: 数字对比表 ============ */
+        .numbers-section {
+            margin: 2.5rem 0;
+        }
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1.2rem;
+        }
+        .number-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 1.3rem;
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.06);
+            transition: all var(--transition-bounce);
+            text-align: center;
+        }
+        .number-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-ink);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.12);
+        }
+        .number-card .num-digit {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-vermillion);
+        }
+        .number-card .num-native {
+            font-family: var(--font-script);
+            font-size: 1.4rem;
+            color: var(--accent-indigo);
+            display: block;
+            margin: 0.4rem 0;
+        }
+        .number-card .num-language {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        /* ============ NEW: 语法对比区 ============ */
+        .grammar-compare {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: var(--shadow-ink);
+        }
+        .grammar-compare h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .grammar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .grammar-table th, .grammar-table td {
+            padding: 0.7rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.88rem;
+        }
+        .grammar-table th {
+            font-family: var(--font-heading);
+            background: rgba(26, 16, 8, 0.04);
+            font-weight: 700;
+        }
+        .grammar-table td:first-child {
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        /* ============ NEW: 词源追溯区 ============ */
+        .etymology-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: var(--shadow-soft);
+        }
+        .etymology-section h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .etymology-chain {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+        .etymology-chain .ety-node {
+            background: var(--bg-parchment);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 1rem;
+            box-shadow: 0 2px 0 rgba(26, 16, 8, 0.1);
+            text-align: center;
+            transition: all var(--transition-bounce);
+            cursor: default;
+        }
+        .etymology-chain .ety-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 rgba(26, 16, 8, 0.15);
+        }
+        .etymology-chain .ety-arrow {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+        .etymology-chain .ety-proto {
+            border-color: var(--accent-vermillion);
+            background: rgba(193, 58, 43, 0.05);
+        }
+        /* ============ NEW: 发音指南 ============ */
+        .pronounce-section {
+            margin: 2.5rem 0;
+        }
+        .pronounce-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 1.8rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.06);
+            transition: all var(--transition-bounce);
+            border-left: 4px solid var(--accent-teal);
+        }
+        .pronounce-card:hover {
+            transform: translateX(4px);
+            border-color: var(--border-ink);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.12);
+        }
+        .pronounce-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-teal);
+        }
+        .pronounce-card .ipa {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: var(--accent-indigo);
+            margin-bottom: 0.4rem;
+        }
+        .pronounce-card .desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+        /* footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 3px solid var(--border-ink);
+            margin-top: 3rem;
+            background: var(--bg-ink);
+            color: var(--text-on-dark);
+        }
+        .footer p { font-size: 0.85rem; }
+        .footer a { color: var(--accent-gold); text-decoration: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes inkSpread {
+            0% { clip-path: circle(0% at 50% 50%); opacity: 0; }
+            100% { clip-path: circle(100% at 50% 50%); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .compare-table th,
+            .compare-table td {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            .phrase-grid {
+                grid-template-columns: 1fr;
+            }
+            .etymology-chain { flex-direction: column; }
+            .etymology-chain .ety-arrow { transform: rotate(90deg); }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+Arabic:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='lingua_home.html'">📜 LinguaMundi</div>
+        <ul class="nav-links">
+            <li><a href="lingua_home.html">首页</a></li>
+            <li><a href="lingua_families.html">语言谱系</a></li>
+            <li><a href="lingua_scripts.html">文字系统</a></li>
+            <li><a href="lingua_compare.html" class="active">语言对比</a></li>
+            <li><a href="lingua_endangered.html">濒危语言</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>⚖️ 语言对比分析</h1>
+        <p style="color:var(--text-muted); font-style:italic;">"比较是理解语言本质的最佳途径"</p>
+    </div>
+
+    <div class="container">
+        <div class="selector-row">
+            <select id="langASelect">
+                <option value="mandarin">🇨🇳 中文(普通话)</option>
+                <option value="english">🇬🇧 英语</option>
+                <option value="arabic">🇸🇦 阿拉伯语</option>
+                <option value="hindi">🇮🇳 印地语</option>
+                <option value="japanese">🇯🇵 日语</option>
+                <option value="spanish">🇪🇸 西班牙语</option>
+                <option value="french">🇫🇷 法语</option>
+                <option value="german">🇩🇪 德语</option>
+                <option value="russian">🇷🇺 俄语</option>
+                <option value="korean">🇰🇷 韩语</option>
+                <option value="portuguese">🇵🇹 葡萄牙语</option>
+                <option value="swahili">🇹🇿 斯瓦希里语</option>
+            </select>
+            <span class="vs-badge">VS</span>
+            <select id="langBSelect">
+                <option value="english">🇬🇧 英语</option>
+                <option value="mandarin">🇨🇳 中文(普通话)</option>
+                <option value="arabic">🇸🇦 阿拉伯语</option>
+                <option value="hindi">🇮🇳 印地语</option>
+                <option value="japanese">🇯🇵 日语</option>
+                <option value="spanish">🇪🇸 西班牙语</option>
+                <option value="french">🇫🇷 法语</option>
+                <option value="german">🇩🇪 德语</option>
+                <option value="russian">🇷🇺 俄语</option>
+                <option value="korean">🇰🇷 韩语</option>
+                <option value="portuguese">🇵🇹 葡萄牙语</option>
+                <option value="swahili">🇹🇿 斯瓦希里语</option>
+            </select>
+        </div>
+
+        <table class="compare-table" id="compareTable">
+            <thead>
+                <tr><th>对比维度</th><th id="headerA">语言A</th><th id="headerB">语言B</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+        <!-- NEW: 语法结构对比表 -->
+        <div class="grammar-compare" id="grammarCompare">
+            <h3>📐 语法结构多维对比</h3>
+            <div style="overflow-x:auto;">
+                <table class="grammar-table">
+                    <thead>
+                        <tr><th>特性</th><th id="gramHeaderA">语言A</th><th id="gramHeaderB">语言B</th></tr>
+                    </thead>
+                    <tbody id="grammarBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- NEW: 词源追溯 -->
+        <div class="etymology-section">
+            <h3>🔍 词源追溯 · Word Origins</h3>
+            <p style="text-align:center;color:var(--text-muted);font-style:italic;">探索词汇在不同语言间的旅行</p>
+            <div class="etymology-chain" id="etymologyChain1">
+                <span class="ety-node ety-proto">原始印欧语 *méh₂tēr (母亲)</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">拉丁语 māter</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">法语 mère</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">英语 mother</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">德语 Mutter</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">梵语 मातृ (mātṛ)</span>
+            </div>
+            <div class="etymology-chain" id="etymologyChain2">
+                <span class="ety-node ety-proto">原始汉藏语 *(b)ra (鱼)</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">上古汉语 *ŋa</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">中古汉语 ngjo</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">普通话 yú (鱼)</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">粤语 jyu4 (魚)</span>
+                <span class="ety-arrow">→</span>
+                <span class="ety-node">藏语 ཉ (nya)</span>
+            </div>
+        </div>
+
+        <div class="page-header" style="padding-top:1rem;">
+            <h2>💬 日常用语对比</h2>
+            <p style="color:var(--text-muted);">"你好"在不同语言中的表达</p>
+        </div>
+        <div class="phrase-grid" id="phraseGrid"></div>
+
+        <!-- NEW: 数字1-10对比 -->
+        <div class="page-header" style="padding-top:1rem;">
+            <h2>🔢 数字系统对比</h2>
+            <p style="color:var(--text-muted);">1到10在不同语言中的表达</p>
+        </div>
+        <div class="numbers-grid" id="numbersGrid"></div>
+
+        <!-- NEW: 发音难点指南 -->
+        <div class="page-header" style="padding-top:1rem;">
+            <h2>🔊 独特发音指南</h2>
+            <p style="color:var(--text-muted);">各语言中对外语学习者最具挑战性的发音</p>
+        </div>
+        <div class="pronounce-section" id="pronounceSection"></div>
+    </div>
+
+    <!-- footer -->
+    <footer class="footer">
+        <p>© 2025 LinguaMundi · 世界语言与文字系统</p>
+        <p style="font-size:0.75rem; opacity:0.7;">"学习另一种语言不仅是学习不同的词汇，更是学习另一种思维方式"</p>
+        <p style="margin-top:0.5rem;">
+            <a href="lingua_home.html">首页</a> ·
+            <a href="lingua_families.html">语言谱系</a> ·
+            <a href="lingua_scripts.html">文字系统</a> ·
+            <a href="lingua_endangered.html">濒危语言</a>
+        </p>
+    </footer>
+
+    <script>
+        const langDB = {
+            mandarin: {
+                name: '中文(普通话)',
+                family: '汉藏语系',
+                speakers: '11亿(第一语言)',
+                wordOrder: 'SVO(主-动-宾)',
+                morphology: '孤立语(分析语)',
+                tones: '4个声调+轻声',
+                writing: '汉字(语素文字)',
+                gender: '无语法性别',
+                cases: '无格变化',
+                difficulty: '★★★★★(极难)',
+                features: '声调语言，量词丰富，缺乏屈折变化，语序固定'
+            },
+            english: {
+                name: '英语',
+                family: '印欧语系(日耳曼语族)',
+                speakers: '3.8亿(第一语言)，15亿(含第二语言)',
+                wordOrder: 'SVO(主-动-宾)',
+                morphology: '分析语(弱屈折)',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '无语法性别',
+                cases: '仅代词有格残留',
+                difficulty: '★★★☆☆(中等)',
+                features: '词汇量极大(源于法语和拉丁语借词)，拼写不规则，国际通用语'
+            },
+            arabic: {
+                name: '阿拉伯语',
+                family: '亚非语系(闪米特语族)',
+                speakers: '3.1亿(第一语言)',
+                wordOrder: 'VSO(动-主-宾)',
+                morphology: '屈折语(三辅音词根)',
+                tones: '无声调',
+                writing: '阿拉伯字母(从右向左)',
+                gender: '阳性和阴性',
+                cases: '3个格(主格、宾格、属格)',
+                difficulty: '★★★★★(极难)',
+                features: '三辅音词根系统，从右向左书写，标准语与方言差异大'
+            },
+            hindi: {
+                name: '印地语',
+                family: '印欧语系(印度-伊朗语族)',
+                speakers: '3.4亿(第一语言)',
+                wordOrder: 'SOV(主-宾-动)',
+                morphology: '屈折语(中等)',
+                tones: '无声调',
+                writing: '天城文',
+                gender: '阳性和阴性',
+                cases: '3个格',
+                difficulty: '★★★★☆(困难)',
+                features: '动词置于句末，后置词代替前置词，与乌尔都语互通'
+            },
+            japanese: {
+                name: '日语',
+                family: '日本语系',
+                speakers: '1.25亿',
+                wordOrder: 'SOV(主-宾-动)',
+                morphology: '黏着语',
+                tones: '高低音调(非声调)',
+                writing: '汉字+平假名+片假名',
+                gender: '无语法性别',
+                cases: '格助词标记',
+                difficulty: '★★★★★(极难)',
+                features: '三体书写系统，敬语体系复杂，大量汉语借词'
+            },
+            spanish: {
+                name: '西班牙语',
+                family: '印欧语系(罗曼语族)',
+                speakers: '4.8亿(第一语言)',
+                wordOrder: 'SVO(灵活)',
+                morphology: '屈折语(动词变化丰富)',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '阳性和阴性',
+                cases: '无格变化(代词除外)',
+                difficulty: '★★☆☆☆(较易)',
+                features: '动词变位复杂(时态+人称)，发音规则，全球20国官方语言'
+            },
+            french: {
+                name: '法语',
+                family: '印欧语系(罗曼语族)',
+                speakers: '8,000万(第一语言)，3.2亿(含第二语言)',
+                wordOrder: 'SVO(主-动-宾)',
+                morphology: '屈折语(中等)',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '阳性和阴性',
+                cases: '无格变化(代词除外)',
+                difficulty: '★★★☆☆(中等)',
+                features: '鼻化元音丰富，连诵和连音现象，拼写与发音不对应较多'
+            },
+            german: {
+                name: '德语',
+                family: '印欧语系(日耳曼语族)',
+                speakers: '9,500万(第一语言)',
+                wordOrder: 'SVO/V2语序(动词第二位置)',
+                morphology: '屈折语(较强)',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '阳性、阴性、中性',
+                cases: '4个格(主格、宾格、与格、属格)',
+                difficulty: '★★★★☆(困难)',
+                features: '复合词可非常长，格系统保留完整，框架结构(动词置于句末)'
+            },
+            russian: {
+                name: '俄语',
+                family: '印欧语系(斯拉夫语族)',
+                speakers: '1.5亿(第一语言)',
+                wordOrder: 'SVO(灵活，受格系统影响)',
+                morphology: '屈折语(高度屈折)',
+                tones: '无声调',
+                writing: '西里尔字母',
+                gender: '阳性、阴性、中性',
+                cases: '6个格',
+                difficulty: '★★★★★(极难)',
+                features: '动词有完成体和未完成体之分，软硬辅音对立，移动重音系统'
+            },
+            korean: {
+                name: '韩语',
+                family: '朝鲜语系',
+                speakers: '7,700万',
+                wordOrder: 'SOV(主-宾-动)',
+                morphology: '黏着语',
+                tones: '无声调(现代首尔韩语)',
+                writing: '韩文(训民正音)',
+                gender: '无语法性别',
+                cases: '格助词标记',
+                difficulty: '★★★★★(极难)',
+                features: '世宗大王创造的字母系统，敬语体系分7级，大量汉字词'
+            },
+            portuguese: {
+                name: '葡萄牙语',
+                family: '印欧语系(罗曼语族)',
+                speakers: '2.6亿(第一语言)',
+                wordOrder: 'SVO(主-动-宾)',
+                morphology: '屈折语(动词变化丰富)',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '阳性和阴性',
+                cases: '无格变化(代词除外)',
+                difficulty: '★★★☆☆(中等)',
+                features: '鼻化双元音丰富，欧洲葡语与巴西葡语差异显著，人称不定式独特'
+            },
+            swahili: {
+                name: '斯瓦希里语',
+                family: '尼日尔-刚果语系(班图语支)',
+                speakers: '1,800万(第一语言)，1亿(含第二语言)',
+                wordOrder: 'SVO(主-动-宾)',
+                morphology: '黏着语',
+                tones: '无声调',
+                writing: '拉丁字母',
+                gender: '18个名词类别(非性别)',
+                cases: '无格变化',
+                difficulty: '★★★☆☆(中等)',
+                features: '名词类别系统取代性别，前缀标记语法，东非通用语，阿拉伯语借词丰富'
+            },
+        };
+
+        function updateComparison() {
+            const aKey = document.getElementById('langASelect').value;
+            const bKey = document.getElementById('langBSelect').value;
+            const a = langDB[aKey];
+            const b = langDB[bKey];
+            document.getElementById('headerA').textContent = a.name;
+            document.getElementById('headerB').textContent = b.name;
+            document.getElementById('gramHeaderA').textContent = a.name;
+            document.getElementById('gramHeaderB').textContent = b.name;
+            const rows = [
+                ['语系归属', a.family, b.family],
+                ['使用者数量', a.speakers, b.speakers],
+                ['基本语序', a.wordOrder, b.wordOrder],
+                ['形态类型', a.morphology, b.morphology],
+                ['声调系统', a.tones, b.tones],
+                ['书写系统', a.writing, b.writing],
+                ['语法性别', a.gender, b.gender],
+                ['格系统', a.cases, b.cases],
+                ['学习难度', a.difficulty, b.difficulty],
+                ['显著特征', a.features, b.features],
+            ];
+            document.getElementById('tableBody').innerHTML = rows.map(r => {
+                const isDiff = r[1] !== r[2];
+                return `<tr>
+              <td>${r[0]}</td>
+              <td class="${isDiff ? 'diff-cell' : ''}">${r[1]}</td>
+              <td class="${isDiff ? 'diff-cell' : ''}">${r[2]}</td>
+            </tr>`;
+            }).join('');
+
+            // 语法表格
+            const gramRows = [
+                ['语序类型(S=主语,O=宾语,V=动词)', a.wordOrder, b.wordOrder],
+                ['形态类型', a.morphology, b.morphology],
+                ['语法性别系统', a.gender, b.gender],
+                ['语法格数量', a.cases, b.cases],
+                ['冠词系统', aKey === 'english' || aKey === 'french' || aKey === 'spanish' || aKey === 'german' || aKey === 'portuguese' ? '有定冠词/不定冠词' : (aKey === 'arabic' ? '有定冠词(无不定冠词)' : '无冠词'), bKey === 'english' || bKey === 'french' || bKey === 'spanish' || bKey === 'german' || bKey === 'portuguese' ? '有定冠词/不定冠词' : (bKey === 'arabic' ? '有定冠词(无不定冠词)' : '无冠词')],
+                ['复数标记', a.morphology === '孤立语(分析语)' ? '无屈折复数(用量词)' : '屈折/黏着复数形式', b.morphology === '孤立语(分析语)' ? '无屈折复数(用量词)' : '屈折/黏着复数形式'],
+                ['时态数量', aKey === 'mandarin' ? '无语法时态(用时间词)' : '多个语法时态', bKey === 'mandarin' ? '无语法时态(用时间词)' : '多个语法时态'],
+            ];
+            document.getElementById('grammarBody').innerHTML = gramRows.map(r => {
+                const diff = r[1] !== r[2];
+                return `<tr>
+              <td>${r[0]}</td>
+              <td style="${diff?'background:rgba(193,58,43,0.05);':''}">${r[1]}</td>
+              <td style="${diff?'background:rgba(193,58,43,0.05);':''}">${r[2]}</td>
+            </tr>`;
+            }).join('');
+        }
+
+        document.getElementById('langASelect').addEventListener('change', updateComparison);
+        document.getElementById('langBSelect').addEventListener('change', updateComparison);
+        updateComparison();
+
+        const phrases = [
+            { native: '你好', latin: 'Nǐ hǎo', meaning: 'Hello', language: '中文(普通话)' },
+            { native: 'Hello', latin: 'Hello', meaning: 'Hello', language: '英语' },
+            { native: 'مرحباً', latin: 'Marhaban', meaning: 'Hello', language: '阿拉伯语' },
+            { native: 'नमस्ते', latin: 'Namaste', meaning: 'Hello', language: '印地语' },
+            { native: 'こんにちは', latin: 'Konnichiwa', meaning: 'Hello', language: '日语' },
+            { native: 'Hola', latin: 'Hola', meaning: 'Hello', language: '西班牙语' },
+            { native: 'Bonjour', latin: 'Bonjour', meaning: 'Hello', language: '法语' },
+            { native: 'Guten Tag', latin: 'Guten Tag', meaning: 'Good day', language: '德语' },
+            { native: 'Ciao', latin: 'Ciao', meaning: 'Hello/Goodbye', language: '意大利语' },
+            { native: '안녕하세요', latin: 'Annyeonghaseyo', meaning: 'Hello', language: '韩语' },
+            { native: 'Olá', latin: 'Olá', meaning: 'Hello', language: '葡萄牙语' },
+            { native: 'Здравствуйте', latin: 'Zdravstvuyte', meaning: 'Hello(formal)', language: '俄语' },
+            { native: 'Habari', latin: 'Habari', meaning: 'Hello/News', language: '斯瓦希里语' },
+            { native: 'Γεια σας', latin: 'Yia sas', meaning: 'Hello(formal)', language: '希腊语' },
+            { native: 'Merhaba', latin: 'Merhaba', meaning: 'Hello', language: '土耳其语' },
+            { native: 'សួស្តី', latin: 'Soursdey', meaning: 'Hello', language: '高棉语(柬埔寨)' },
+            { native: 'สวัสดี', latin: 'Sawasdee', meaning: 'Hello', language: '泰语' },
+            { native: 'Xin chào', latin: 'Xin chào', meaning: 'Hello', language: '越南语' },
+            { native: 'வணக்கம்', latin: 'Vanakkam', meaning: 'Hello', language: '泰米尔语' },
+            { native: 'שלום', latin: 'Shalom', meaning: 'Peace/Hello', language: '希伯来语' },
+        ];
+
+        document.getElementById('phraseGrid').innerHTML = phrases.map(p => `
+        <div class="phrase-card" style="animation: fadeIn 0.5s ease both;">
+          <span class="phrase-language">${p.language}</span>
+          <span class="phrase-native">${p.native}</span>
+          <span class="phrase-latin">${p.latin}</span>
+          <span class="phrase-meaning">${p.meaning}</span>
+        </div>
+      `).join('');
+
+        // ============ 数字1-10 ============
+        const numbersData = [
+            { digit:'1', native:'一', lang:'中文', romanization:'yī' },
+            { digit:'1', native:'one', lang:'英语', romanization:'wʌn' },
+            { digit:'1', native:'واحد', lang:'阿拉伯语', romanization:'wāḥid' },
+            { digit:'1', native:'एक', lang:'印地语', romanization:'ek' },
+            { digit:'1', native:'一/いち', lang:'日语', romanization:'ichi' },
+            { digit:'1', native:'uno', lang:'西班牙语', romanization:'uno' },
+            { digit:'1', native:'un', lang:'法语', romanization:'un/ɛ̃' },
+            { digit:'1', native:'eins', lang:'德语', romanization:'ains' },
+            { digit:'1', native:'один', lang:'俄语', romanization:'odin' },
+            { digit:'1', native:'하나', lang:'韩语', romanization:'hana' },
+            { digit:'1', native:'moja', lang:'斯瓦希里语', romanization:'moja' },
+            { digit:'1', native:'um', lang:'葡萄牙语', romanization:'um' },
+            { digit:'5', native:'五', lang:'中文', romanization:'wǔ' },
+            { digit:'5', native:'five', lang:'英语', romanization:'faɪv' },
+            { digit:'5', native:'خمسة', lang:'阿拉伯语', romanization:'khamsa' },
+            { digit:'5', native:'पाँच', lang:'印地语', romanization:'pāñc' },
+            { digit:'5', native:'五/ご', lang:'日语', romanization:'go' },
+            { digit:'5', native:'cinco', lang:'西班牙语', romanization:'θinko' },
+            { digit:'10', native:'十', lang:'中文', romanization:'shí' },
+            { digit:'10', native:'ten', lang:'英语', romanization:'tɛn' },
+            { digit:'10', native:'عشرة', lang:'阿拉伯语', romanization:'ʿashara' },
+            { digit:'10', native:'दस', lang:'印地语', romanization:'das' },
+            { digit:'10', native:'十/じゅう', lang:'日语', romanization:'jū' },
+            { digit:'10', native:'diez', lang:'西班牙语', romanization:'djeθ' },
+            { digit:'3', native:'三', lang:'中文', romanization:'sān' },
+            { digit:'3', native:'three', lang:'英语', romanization:'θriː' },
+            { digit:'3', native:'trois', lang:'法语', romanization:'tʁwa' },
+            { digit:'3', native:'drei', lang:'德语', romanization:'dʁai' },
+            { digit:'3', native:'три', lang:'俄语', romanization:'tri' },
+            { digit:'7', native:'七', lang:'中文', romanization:'qī' },
+            { digit:'7', native:'seven', lang:'英语', romanization:'sɛvən' },
+            { digit:'7', native:'sept', lang:'法语', romanization:'sɛt' },
+            { digit:'7', native:'sieben', lang:'德语', romanization:'ziːbən' },
+            { digit:'7', native:'семь', lang:'俄语', romanization:'syem' },
+        ];
+
+        document.getElementById('numbersGrid').innerHTML = numbersData.map(n => `
+        <div class="number-card" style="animation: fadeIn 0.5s ease both;">
+          <span class="num-language">${n.lang}</span>
+          <span class="num-digit">${n.digit}</span>
+          <span class="num-native">${n.native}</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">${n.romanization}</span>
+        </div>
+      `).join('');
+
+        // ============ 发音指南 ============
+        const pronounceData = [
+            { lang:'中文(普通话)', ipa:'/ʈʂ/, /tɕ/, /ɕ/', desc:'卷舌音(zh, ch, sh)和舌面音(j, q, x)对非母语者极具挑战。声调系统要求每个音节有固定音高轮廓。' },
+            { lang:'英语', ipa:'/θ/, /ð/', desc:'咬舌音th(如"think"和"this")是英语的标志性发音，世界上多数语言缺乏这两个音位。' },
+            { lang:'阿拉伯语', ipa:'/ʕ/, /ħ/, /q/', desc:'咽音(ayn)和小舌音(qaf)需要咽喉深处的肌肉控制。强调辅音与普通辅音形成对立。' },
+            { lang:'法语', ipa:'/ʁ/, /y/, /œ̃/', desc:'小舌颤音R和圆唇前元音(u, eu)让学习者"撅起嘴巴"。鼻化元音区分四组对立。' },
+            { lang:'德语', ipa:'/ç/, /x/, /pf/', desc:'ich-Laut和ach-Laut的区分，以及像Pferd中/pf/这样的辅音群。元音变音(umlaut)改变词义。' },
+            { lang:'日语', ipa:'/tsɯ/, /ɸɯ/', desc:'"つ"(tsu)和"ふ"(fu/hu混合音)的发音位置介于多个已知发音之间。音拍节奏而非重音节奏。' },
+            { lang:'韩语', ipa:'/ʌ/, /ɯ/, /t͈/', desc:'松紧辅音三级对立(平音、紧音、送气音)是世界语言中罕见的音系特征。' },
+            { lang:'斯瓦希里语', ipa:'/mb/, /nd/, /ŋg/', desc:'前鼻化辅音(mb, nd, ng)需要将鼻音和爆破音几乎同时发出，在词首位置尤其困难。' },
+        ];
+
+        document.getElementById('pronounceSection').innerHTML = pronounceData.map(p => `
+        <div class="pronounce-card" style="animation: fadeIn 0.5s ease both;">
+          <h4>🗣️ ${p.lang}</h4>
+          <div class="ipa">IPA: ${p.ipa}</div>
+          <div class="desc">${p.desc}</div>
+        </div>
+      `).join('');
+
+        // ============ NEW: 谢谢对比 ============
+        const thanksData = [
+            { native:'谢谢', latin:'Xièxiè', meaning:'Thank you', language:'中文(普通话)' },
+            { native:'Thank you', latin:'Thank you', meaning:'Thank you', language:'英语' },
+            { native:'شكراً', latin:'Shukran', meaning:'Thank you', language:'阿拉伯语' },
+            { native:'धन्यवाद', latin:'Dhanyavād', meaning:'Thank you', language:'印地语' },
+            { native:'ありがとう', latin:'Arigatō', meaning:'Thank you', language:'日语' },
+            { native:'Gracias', latin:'Gracias', meaning:'Thank you', language:'西班牙语' },
+            { native:'Merci', latin:'Merci', meaning:'Thank you', language:'法语' },
+            { native:'Danke', latin:'Danke', meaning:'Thank you', language:'德语' },
+            { native:'Grazie', latin:'Grazie', meaning:'Thank you', language:'意大利语' },
+            { native:'감사합니다', latin:'Gamsahamnida', meaning:'Thank you(formal)', language:'韩语' },
+            { native:'Obrigado', latin:'Obrigado', meaning:'Thank you', language:'葡萄牙语' },
+            { native:'Спасибо', latin:'Spasibo', meaning:'Thank you', language:'俄语' },
+            { native:'Asante', latin:'Asante', meaning:'Thank you', language:'斯瓦希里语' },
+            { native:'Ευχαριστώ', latin:'Efcharistó', meaning:'Thank you', language:'希腊语' },
+            { native:'Teşekkürler', latin:'Teşekkürler', meaning:'Thank you', language:'土耳其语' },
+            { native:'Cảm ơn', latin:'Cảm ơn', meaning:'Thank you', language:'越南语' },
+            { native:'תודה', latin:'Todah', meaning:'Thank you', language:'希伯来语' },
+            { native:'Dank je', latin:'Dank je', meaning:'Thank you', language:'荷兰语' },
+            { native:'Tack', latin:'Tack', meaning:'Thank you', language:'瑞典语' },
+            { native:'Köszönöm', latin:'Köszönöm', meaning:'Thank you', language:'匈牙利语' },
+        ];
+
+        // Insert Thanks section before pronounceSection
+        const thanksSection = document.createElement('div');
+        thanksSection.innerHTML = `
+        <div class="page-header" style="padding-top:1rem;">
+          <h2>🙏 谢谢 · 世界感恩表达</h2>
+          <p style="color:var(--text-muted);">跨文化的感恩之声</p>
+        </div>
+        <div class="phrase-grid" id="thanksGrid"></div>`;
+        const pronounceSec = document.getElementById('pronounceSection');
+        pronounceSec.parentNode.insertBefore(thanksSection, pronounceSec);
+        document.getElementById('thanksGrid').innerHTML = thanksData.map(p => `
+        <div class="phrase-card" style="animation: fadeIn 0.5s ease both;">
+          <span class="phrase-language">${p.language}</span>
+          <span class="phrase-native">${p.native}</span>
+          <span class="phrase-latin">${p.latin}</span>
+          <span class="phrase-meaning">${p.meaning}</span>
+        </div>
+      `).join('');
+
+        console.log('⚖️ LinguaMundi 语言对比已加载 · 12种语言对比系统');
+        console.log('📊 对比维度: 语系/语序/形态/声调/书写/性别/格/难度');
+        console.log('💬 短语库: 20种语言 | 🔢 数字对比: 1-10 | 🔊 发音指南: 8种语言');
+        console.log('🙏 谢谢对比: 20种语言');
+    </script>
+</body>
+</html>

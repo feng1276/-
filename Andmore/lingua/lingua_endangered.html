@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>濒危语言 · LinguaMundi</title>
+    <style>
+        :root {
+            --bg-parchment: #f5e6c8;
+            --bg-parchment-dark: #e8d5a8;
+            --bg-card: #faf3e0;
+            --bg-ink: #1a1008;
+            --text-primary: #1a1008;
+            --text-secondary: #3d2b14;
+            --text-muted: #6b5d3e;
+            --text-on-dark: #f0e6d0;
+            --accent-vermillion: #c13a2b;
+            --accent-indigo: #3b2f80;
+            --accent-gold: #b8860b;
+            --accent-teal: #1a6b5a;
+            --accent-rust: #8b4513;
+            --border-ink: #2a1f14;
+            --border-light: #d4c4a0;
+            --shadow-ink: 0 6px 0 rgba(26, 16, 8, 0.25);
+            --shadow-soft: 0 4px 20px rgba(26, 16, 8, 0.1);
+            --radius-sm: 0.3rem;
+            --radius-lg: 1rem;
+            --transition-bounce: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-heading: 'Playfair Display', 'Georgia', serif;
+            --font-body: 'Crimson Text', 'Georgia', serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-parchment);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            line-height: 1.7;
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(245, 230, 200, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 3px solid var(--border-ink);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.3rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-vermillion);
+            border-bottom-color: var(--accent-vermillion);
+        }
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-primary);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .alert-banner {
+            background: rgba(193, 58, 43, 0.08);
+            border: 2px solid var(--accent-vermillion);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+            text-align: center;
+            box-shadow: 0 4px 0 rgba(193, 58, 43, 0.2);
+        }
+        .alert-banner h3 {
+            color: var(--accent-vermillion);
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .alert-banner p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        /* ============ NEW: 统计仪表盘 ============ */
+        .stats-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+        .stats-dash-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.1);
+            transition: all var(--transition-bounce);
+        }
+        .stats-dash-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.15);
+        }
+        .stats-dash-card .dash-number {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent-vermillion);
+        }
+        .stats-dash-card .dash-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        /* ============ NEW: 灭绝时间线 ============ */
+        .extinction-timeline {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-soft);
+        }
+        .extinction-timeline h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--accent-vermillion);
+        }
+        .ext-timeline-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            padding: 1rem 0;
+            border-bottom: 1px dashed var(--border-light);
+        }
+        .ext-timeline-item:last-child {
+            border-bottom: none;
+        }
+        .ext-year {
+            font-family: var(--font-mono);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--accent-vermillion);
+            min-width: 80px;
+            padding-top: 0.1rem;
+        }
+        .ext-info h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+        .ext-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        /* endangered grid */
+        .endangered-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .endangered-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            box-shadow: 0 4px 0 rgba(26, 16, 8, 0.08);
+            transition: all var(--transition-bounce);
+            cursor: pointer;
+            border-left: 5px solid var(--accent-vermillion);
+        }
+        .endangered-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-ink);
+            border-left-color: var(--accent-vermillion);
+            box-shadow: 0 8px 0 rgba(26, 16, 8, 0.15);
+        }
+        .endangered-card h3 {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .endangered-card .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 2px;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            margin-bottom: 0.8rem;
+        }
+        .badge-critical {
+            background: rgba(193, 58, 43, 0.15);
+            color: var(--accent-vermillion);
+            border: 1px solid rgba(193, 58, 43, 0.3);
+        }
+        .badge-severe {
+            background: rgba(139, 69, 19, 0.12);
+            color: var(--accent-rust);
+            border: 1px solid rgba(139, 69, 19, 0.3);
+        }
+        .badge-vulnerable {
+            background: rgba(184, 134, 11, 0.12);
+            color: var(--accent-gold);
+            border: 1px solid rgba(184, 134, 11, 0.3);
+        }
+        .badge-extinct {
+            background: rgba(26, 16, 8, 0.08);
+            color: var(--text-muted);
+            border: 1px solid rgba(26, 16, 8, 0.2);
+        }
+        .endangered-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0;
+        }
+        .endangered-card .meta-mini {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed var(--border-light);
+        }
+        /* ============ NEW: 语言地图SVG ============ */
+        .endangered-map-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-soft);
+        }
+        .endangered-map-section h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .endangered-map-svg {
+            width: 100%;
+            max-height: 400px;
+        }
+        .map-dot {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .map-dot:hover {
+            r: 8;
+            stroke-width: 3;
+        }
+        /* action section */
+        .action-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-top: 2.5rem;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+        }
+        .action-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-teal);
+            margin-bottom: 1rem;
+        }
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1.5rem;
+        }
+        .action-card {
+            padding: 1.5rem;
+            border: 1px dashed var(--border-light);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            transition: all var(--transition-bounce);
+        }
+        .action-card:hover {
+            border-color: var(--accent-teal);
+            background: rgba(26, 107, 90, 0.04);
+        }
+        .action-card .action-icon {
+            font-size: 2.2rem;
+            display: block;
+            margin-bottom: 0.6rem;
+        }
+        .action-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .action-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        /* ============ NEW: 语言复兴成功案例 ============ */
+        .success-section {
+            background: var(--bg-card);
+            border: 2px solid var(--accent-teal);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 0 rgba(26, 107, 90, 0.15);
+        }
+        .success-section h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: var(--accent-teal);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .success-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+        }
+        .success-card {
+            padding: 1.5rem;
+            border: 1px dashed var(--border-light);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent-teal);
+            transition: all var(--transition-bounce);
+        }
+        .success-card:hover {
+            border-color: var(--accent-teal);
+            background: rgba(26, 107, 90, 0.04);
+            transform: translateX(3px);
+        }
+        .success-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .success-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        /* footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 3px solid var(--border-ink);
+            margin-top: 3rem;
+            background: var(--bg-ink);
+            color: var(--text-on-dark);
+        }
+        .footer p { font-size: 0.85rem; }
+        .footer a { color: var(--accent-gold); text-decoration: none; }
+        @keyframes fadeIn {
+            from { opacity:0; transform: translateY(15px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+        @keyframes pulseAlert {
+            0%,100% { box-shadow: 0 4px 0 rgba(193,58,43,0.2); }
+            50% { box-shadow: 0 4px 0 rgba(193,58,43,0.5); }
+        }
+        @media (max-width: 768px) {
+            .endangered-grid { grid-template-columns: 1fr; }
+            .stats-dashboard { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='lingua_home.html'">📜 LinguaMundi</div>
+        <ul class="nav-links">
+            <li><a href="lingua_home.html">首页</a></li>
+            <li><a href="lingua_families.html">语言谱系</a></li>
+            <li><a href="lingua_scripts.html">文字系统</a></li>
+            <li><a href="lingua_compare.html">语言对比</a></li>
+            <li><a href="lingua_endangered.html" class="active">濒危语言</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>⚠️ 濒危语言档案</h1>
+        <p style="color:var(--text-muted); font-style:italic;">"每两周就有一门语言从地球上消失"</p>
+    </div>
+
+    <div class="container">
+        <div class="alert-banner" style="animation: pulseAlert 3s ease-in-out infinite;">
+            <h3>🚨 语言危机警报</h3>
+            <p>根据联合国教科文组织的数据，全球约<strong>40%的语言面临灭绝风险</strong>。约3,000种语言的使用者不足1,000人。语言不仅是交流工具，更是文化认同、传统知识和世界观的重要载体。当一门语言消失时，一种独特的理解世界的方式也随之消失。</p>
+        </div>
+
+        <!-- ============ NEW: 濒危数据仪表盘 ============ -->
+        <div class="stats-dashboard" id="statsDashboard"></div>
+
+        <!-- ============ NEW: 语言灭绝时间线 ============ -->
+        <div class="extinction-timeline">
+            <h3>🕯️ 近期灭绝或接近灭绝的语言</h3>
+            <div id="extinctionTimeline"></div>
+        </div>
+
+        <!-- ============ 濒危语言卡片 ============ -->
+        <div class="endangered-grid" id="endangeredGrid"></div>
+
+        <!-- ============ NEW: 语言复兴成功案例 ============ -->
+        <div class="success-section">
+            <h3>🌱 语言复兴的希望</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1.5rem;">这些语言的故事证明：灭绝并非不可避免</p>
+            <div class="success-grid" id="successGrid"></div>
+        </div>
+
+        <!-- ============ NEW: 濒危语言分布图 SVG ============ -->
+        <div class="endangered-map-section">
+            <h3>🗺️ 全球濒危语言热点地区</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1rem;">红色标记代表语言濒危热点区域</p>
+            <svg class="endangered-map-svg" viewBox="0 0 1000 450" xmlns="http://www.w3.org/2000/svg">
+                <rect width="1000" height="450" fill="none"/>
+                <!-- background regions -->
+                <ellipse cx="200" cy="120" rx="120" ry="80" fill="rgba(193,58,43,0.08)" stroke="rgba(193,58,43,0.3)" stroke-width="1"/>
+                <ellipse cx="500" cy="200" rx="80" ry="130" fill="rgba(193,58,43,0.06)" stroke="rgba(193,58,43,0.25)" stroke-width="1"/>
+                <ellipse cx="700" cy="160" rx="60" ry="50" fill="rgba(193,58,43,0.07)" stroke="rgba(193,58,43,0.25)" stroke-width="1"/>
+                <ellipse cx="800" cy="330" rx="50" ry="40" fill="rgba(193,58,43,0.06)" stroke="rgba(193,58,43,0.25)" stroke-width="1"/>
+                <ellipse cx="850" cy="220" rx="40" ry="55" fill="rgba(193,58,43,0.07)" stroke="rgba(193,58,43,0.25)" stroke-width="1"/>
+                <!-- hot spots -->
+                <circle cx="200" cy="115" r="6" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="200" y="100" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">北美原住民语言</text>
+                <circle cx="250" cy="270" r="5" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="250" y="258" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">亚马逊语言</text>
+                <circle cx="480" cy="220" r="6" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="480" y="205" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">非洲濒危语言</text>
+                <circle cx="700" cy="110" r="5" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="700" y="95" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">西伯利亚语言</text>
+                <circle cx="820" cy="140" r="6" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="830" y="128" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">东亚少数民族语言</text>
+                <circle cx="850" cy="230" r="5" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="865" y="225" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">太平洋岛屿语言</text>
+                <circle cx="810" cy="350" r="6" class="map-dot" fill="var(--accent-vermillion)" stroke="var(--border-ink)" stroke-width="2" opacity="0.9"/>
+                <text x="810" y="338" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-primary)">澳洲原住民语言</text>
+                <circle cx="620" cy="180" r="4" class="map-dot" fill="var(--accent-rust)" stroke="var(--border-ink)" stroke-width="2" opacity="0.8"/>
+                <text x="620" y="170" text-anchor="middle" font-family="var(--font-mono)" font-size="7" fill="var(--text-secondary)">高加索语言</text>
+            </svg>
+        </div>
+
+        <!-- ============ 保护行动 ============ -->
+        <div class="action-section">
+            <h2>🤝 语言保护行动</h2>
+            <p style="color:var(--text-muted);">每个人都可以为保护语言多样性贡献力量</p>
+            <div class="action-grid" id="actionGrid"></div>
+        </div>
+    </div>
+
+    <!-- footer -->
+    <footer class="footer">
+        <p>© 2025 LinguaMundi · 世界语言与文字系统</p>
+        <p style="font-size:0.75rem; opacity:0.7;">"语言的消亡是人类共同的损失" — 联合国教科文组织</p>
+        <p style="margin-top:0.5rem;">
+            <a href="lingua_home.html">首页</a> ·
+            <a href="lingua_families.html">语言谱系</a> ·
+            <a href="lingua_scripts.html">文字系统</a> ·
+            <a href="lingua_compare.html">语言对比</a>
+        </p>
+    </footer>
+
+    <script>
+        // ============ 统计仪表盘 ============
+        const statsDashData = [
+            { number:'3,045', label:'濒危语言总数(UNESCO)' },
+            { number:'~40%', label:'世界语言面临灭绝' },
+            { number:'14天', label:'平均语言消亡周期' },
+            { number:'228', label:'1950年以来灭绝' },
+            { number:'10', label:'最大语种覆盖半数人口' },
+            { number:'96%', label:'语言由仅4%人口使用' },
+        ];
+        document.getElementById('statsDashboard').innerHTML = statsDashData.map((d,i) => `
+        <div class="stats-dash-card" style="animation: fadeIn 0.5s ease ${i*0.06}s both;">
+          <div class="dash-number">${d.number}</div>
+          <div class="dash-label">${d.label}</div>
+        </div>
+      `).join('');
+
+        // ============ 灭绝时间线 ============
+        const extinctionData = [
+            { year:'2022', name:'纳提克语 (Nattik)', region:'印度安达曼群岛', desc:'最后一位母语者于2022年去世。大安达曼语系的语言之一。' },
+            { year:'2020', name:'图舍语 (Tusian)', region:'俄罗斯西伯利亚', desc:'最后一位流利使用者去世，仅余少量半使用者。属叶尼塞语系。' },
+            { year:'2010', name:'波语 (Bo)', region:'印度安达曼群岛', desc:'大安达曼语系的一种，最后一位使用者Boa Sr以85岁高龄去世，该语言存在了约65,000年。' },
+            { year:'2008', name:'埃雅克语 (Eyak)', region:'美国阿拉斯加', desc:'最后一位母语者Marie Smith Jones去世。语言学家已记录大量材料用于复兴。' },
+            { year:'1992', name:'乌比赫语 (Ubykh)', region:'土耳其', desc:'最后一位母语者Tevfik Esenç去世。乌比赫语以84个辅音音位闻名，曾是辅音最多的语言之一。' },
+            { year:'1974', name:'曼岛语 (Manx)', region:'英国曼岛', desc:'最后一位母语者Ned Maddrell去世。但后来通过复兴运动"复活"，现在有约1,800人使用。' },
+        ];
+        document.getElementById('extinctionTimeline').innerHTML = extinctionData.map((e,i) => `
+        <div class="ext-timeline-item" style="animation: fadeIn 0.5s ease ${i*0.08}s both;">
+          <span class="ext-year">${e.year}</span>
+          <div class="ext-info">
+            <h4>🕯️ ${e.name}</h4>
+            <p>📍 ${e.region} — ${e.desc}</p>
+          </div>
+        </div>
+      `).join('');
+
+        // ============ 濒危语言数据 (保留原有的 + 新增) ============
+        const endangeredData = [
+            {
+                name: '艾努语',
+                region: '日本北海道',
+                speakers: '少于10人(母语者)',
+                status: 'critical',
+                statusLabel: '极度濒危',
+                description: '艾努语是日本原住民艾努族的语言，与日语无亲缘关系。日本政府直到2019年才正式承认艾努族为原住民。目前仅有极少数老年人能流利使用艾努语。',
+                threat: '长期同化政策导致艾努人被强制学习日语，语言传承断裂',
+                revival: '日本已设立艾努文化振兴机构，开展语言复兴课程'
+            },
+            {
+                name: '尤奇语',
+                region: '美国加利福尼亚州',
+                speakers: '少于5人',
+                status: 'critical',
+                statusLabel: '极度濒危',
+                description: '尤奇语是加利福尼亚北部尤奇族的语言，被认为是孤立语言，与任何已知语系无关。其独特的计数系统基于数字8而非10。',
+                threat: '殖民扩张和强制同化政策导致人口锐减',
+                revival: '语言学家正与最后的使用者合作记录词汇和语法'
+            },
+            {
+                name: '曼岛语',
+                region: '英国曼岛',
+                speakers: '约1800人(第二语言)',
+                status: 'vulnerable',
+                statusLabel: '脆弱(正在复苏)',
+                description: '曼岛语是凯尔特语族的一种语言，1974年最后一位母语者去世，但通过复兴运动重新获得生命力。现在岛上学校开设曼岛语课程。',
+                threat: '英语的强势地位和人口外迁',
+                revival: '语言复兴成功案例，现为曼岛官方语言之一'
+            },
+            {
+                name: '赫雷罗语',
+                region: '纳米比亚',
+                speakers: '约15万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '赫雷罗语是班图语支的一种语言，拥有丰富的口述传统和独特的命名系统。虽然使用者数量较多，但年轻一代越来越多地使用英语和南非语。',
+                threat: '殖民历史影响和城市化的语言转变',
+                revival: '纳入纳米比亚教育体系，但资源有限'
+            },
+            {
+                name: '切罗基语',
+                region: '美国俄克拉荷马州',
+                speakers: '约2000人(流利)',
+                status: 'severe',
+                statusLabel: '严重濒危',
+                description: '切罗基语是易洛魁语系的语言，拥有独特的音节文字系统，由塞阔雅在1821年创造。这是美洲原住民唯一独立创造的书写系统。',
+                threat: '寄宿学校制度的历史创伤和语言传承断裂',
+                revival: '切罗基族正通过浸入式学校积极复兴语言'
+            },
+            {
+                name: '纳瓦霍语',
+                region: '美国西南部',
+                speakers: '约17万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '纳瓦霍语是北美使用人数最多的原住民语言。二战中纳瓦霍语密码兵使用该语言创造了无法破解的军事密码。语法极为复杂。',
+                threat: '年轻一代英语化趋势明显',
+                revival: '纳瓦霍族保留地学校教授纳瓦霍语，电台也有纳瓦霍语广播'
+            },
+            {
+                name: '奥克语',
+                region: '法国南部',
+                speakers: '约200万人(不同程度)',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '奥克语是罗曼语族的一种语言，曾是中世纪行吟诗人的语言。尽管使用者数量可观，但代际传承严重受阻。',
+                threat: '法国长期推行单一语言政策',
+                revival: '民间社团积极推广，部分学校开设双语课程'
+            },
+            {
+                name: '威尔士语',
+                region: '英国威尔士',
+                speakers: '约87万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱(复苏中)',
+                description: '威尔士语是凯尔特语族不列颠支的语言，拥有丰富的文学传统。20世纪末以来成功实现了语言复兴，现为威尔士官方语言。',
+                threat: '历史上英语的强势地位',
+                revival: '语言复兴最成功的案例之一，所有公立学校教授威尔士语'
+            },
+            {
+                name: '利沃尼亚语',
+                region: '拉脱维亚',
+                speakers: '约20人(第二语言)',
+                status: 'critical',
+                statusLabel: '极度濒危',
+                description: '利沃尼亚语是乌拉尔语系芬兰语支的语言，2013年最后一位母语者去世，但有一批年轻学者和学习者通过文献记录正在学习该语言。',
+                threat: '小语种被拉脱维亚语同化',
+                revival: '大学开设利沃尼亚语课程，年轻一代积极学习'
+            },
+            {
+                name: '瓜拉尼语',
+                region: '巴拉圭',
+                speakers: '约600万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱(特殊地位)',
+                description: '瓜拉尼语是美洲原住民语言中唯一获得官方地位的语言，与西班牙语并列为巴拉圭官方语言。是少数被非原住民广泛使用的原住民语言。',
+                threat: '城市化和西班牙语在正式场合的强势地位',
+                revival: '巴拉圭宪法保护，学校必修，但书面使用仍有限'
+            },
+            {
+                name: '海达语',
+                region: '加拿大海达瓜依群岛',
+                speakers: '约20人(流利)',
+                status: 'critical',
+                statusLabel: '极度濒危',
+                description: '海达语是孤立语言，与任何已知语系无关。拥有极其复杂的动词形态系统。海达族艺术家通过传统雕刻和歌唱传承语言。',
+                threat: '殖民寄宿学校制度和人口减少',
+                revival: '海达族社区开展浸入式语言巢项目，录制音频档案'
+            },
+            {
+                name: '索布语',
+                region: '德国东部',
+                speakers: '约2万人',
+                status: 'severe',
+                statusLabel: '严重濒危',
+                description: '索布语是西斯拉夫语支的少数民族语言，分为上索布语和下索布语两种。是德国唯一受到欧盟《区域或少数民族语言宪章》保护的少数民族语言。',
+                threat: '德语强势同化和人口减少',
+                revival: '提供学校双语教育，索布文化机构积极推广'
+            },
+            {
+                name: '伊努克提图特语',
+                region: '加拿大努纳武特地区',
+                speakers: '约3.7万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '伊努克提图特语是因纽特人的语言，拥有独特的音节文字系统。是加拿大努纳武特地区的官方语言之一，在北极地区的极寒环境中传承了数千年。',
+                threat: '英语和法语的强势地位，气候变化影响传统生活方式',
+                revival: '努纳武特政府推动伊努克提图特语为工作和教育语言'
+            },
+            {
+                name: '拉迪诺语',
+                region: '以色列及全球犹太社区',
+                speakers: '约10万人(不同程度)',
+                status: 'severe',
+                statusLabel: '严重濒危',
+                description: '拉迪诺语是15世纪被逐出西班牙的塞法迪犹太人后裔使用的语言。基本上是15世纪的西班牙语，融入了希伯来语、土耳其语和阿拉伯语词汇。',
+                threat: '大屠杀导致使用者锐减，年轻一代转向希伯来语',
+                revival: '以色列设立拉迪诺文化保护机构，大学开设相关课程'
+            },
+            {
+                name: '格陵兰语',
+                region: '格陵兰',
+                speakers: '约5.7万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '格陵兰语是爱斯基摩-阿留申语系中使用最广的语言，是格陵兰的官方语言。拥有极其复杂的多式综合语特征：一个单词可以表达整个句子的含义。',
+                threat: '丹麦语的历史影响和全球化压力',
+                revival: '格陵兰自治政府将格陵兰语作为主要官方语言推广'
+            },
+            {
+                name: '布鲁夏斯基语',
+                region: '巴基斯坦北部罕萨河谷',
+                speakers: '约10万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '布鲁夏斯基语是孤立语言，与任何已知语系无关。在兴都库什山脉的偏僻山谷中幸存了数千年。拥有独特的计数系统（二十进制）。',
+                threat: '乌尔都语和英语的教育体系影响',
+                revival: '当地学者编写词典和语法书，记录丰富的口述传统'
+            },
+            {
+                name: '罗姆语',
+                region: '欧洲各国(罗姆人社区)',
+                speakers: '约350万人(不同程度)',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '罗姆语是罗姆人(吉普赛人)的语言，属于印欧语系印度-伊朗语族，反映了罗姆人从印度次大陆迁移到欧洲的历史。拥有丰富的方言变体。',
+                threat: '社会边缘化和缺乏体制化教育支持',
+                revival: '欧盟资助罗姆语言文化项目，部分国家提供学校教育'
+            },
+            {
+                name: '库克群岛毛利语',
+                region: '库克群岛',
+                speakers: '约1.4万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '库克群岛毛利语与新西兰毛利语密切相关，但已发展为独立语言。拥有丰富的航海和自然知识词汇，反映了波利尼西亚文化与海洋的深厚联系。',
+                threat: '英语的官方地位和人口外迁至新西兰',
+                revival: '库克群岛政府在学校推广毛利语教学'
+            },
+            {
+                name: '弗里西亚语',
+                region: '荷兰弗里斯兰省',
+                speakers: '约48万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '弗里西亚语是英语最近的亲缘语言，二者同属日耳曼语族北海日耳曼语支。与英语的相似性可用古英语句子"Brea, buter, and grene tsis is god Englis and god Fryske"来说明。',
+                threat: '荷兰语的强势地位',
+                revival: '荷兰承认弗里西亚语为第二官方语言，学校必修'
+            },
+            {
+                name: '绍纳语',
+                region: '津巴布韦',
+                speakers: '约900万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '绍纳语是津巴布韦最大的班图语言，拥有丰富的口述文学传统和独特的名词类别系统。尽管使用人数众多，但全球化压力下英语地位持续增强。',
+                threat: '英语在高等教育和正式场合的主导地位',
+                revival: '津巴布韦宪法承认绍纳语为官方语言，电台和电视有绍纳语节目'
+            },
+            {
+                name: '科米语',
+                region: '俄罗斯科米共和国',
+                speakers: '约22万人',
+                status: 'severe',
+                statusLabel: '严重濒危',
+                description: '科米语是乌拉尔语系彼尔姆语支的语言，拥有丰富的民间传说和史诗传统。科米神话中的创世故事在乌拉尔地区广为流传。',
+                threat: '俄罗斯语的强势地位和城市化',
+                revival: '科米共和国将科米语列为官方语言，学校提供母语教育'
+            },
+            {
+                name: '萨米语群',
+                region: '挪威/瑞典/芬兰/俄罗斯',
+                speakers: '约3万人(所有变体)',
+                status: 'severe',
+                statusLabel: '严重濒危',
+                description: '萨米语是北欧原住民萨米人的语言，包含约9种并非完全互通的变体。最濒危的皮特萨米语和于默萨米语各仅有数十名使用者。',
+                threat: '数百年的强制同化政策和北欧主流语言的强势',
+                revival: '挪威、瑞典和芬兰的萨米议会积极推动语言复兴，建立萨米语学校和媒体'
+            },
+            {
+                name: '丁卡语',
+                region: '南苏丹',
+                speakers: '约450万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '丁卡语是尼罗-撒哈拉语系中使用人数最多的语言，拥有复杂的声调系统和丰富的牛群相关词汇，反映了丁卡人的牧牛文化传统。',
+                threat: '内战和不稳定的政治环境限制了教育发展',
+                revival: '南苏丹独立后丁卡语地位提升，但书面标准尚未完全统一'
+            },
+            {
+                name: '科萨语',
+                region: '南非',
+                speakers: '约820万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '科萨语是南非11种官方语言之一，最著名的特征是"搭嘴音"(click consonants)——通过舌头在不同位置发出咔嗒声。纳尔逊·曼德拉的母语。',
+                threat: '英语在南非高等教育和商业中的主导地位',
+                revival: '南非宪法保护科萨语，学校可选择科萨语作为教学语言'
+            },
+            {
+                name: '凯楚亚语',
+                region: '玻利维亚/秘鲁',
+                speakers: '约250万人',
+                status: 'vulnerable',
+                statusLabel: '脆弱',
+                description: '凯楚亚语(又称艾马拉语)是安第斯高原的原住民语言，拥有独特的"三值逻辑"系统。语法中包含对信息来源的强制标记(证据性)，被认为极其逻辑严密。',
+                threat: '西班牙语在城市和正式场合的主导',
+                revival: '玻利维亚将其列为官方语言，大学开设凯楚亚语言文化专业'
+            },
+        ];
+
+        document.getElementById('endangeredGrid').innerHTML = endangeredData.map((e, i) => `
+        <div class="endangered-card" style="animation: fadeIn 0.5s ease ${i*0.06}s both;">
+          <h3>${e.name}</h3>
+          <span class="status-badge badge-${e.status}">${e.statusLabel}</span>
+          <p>${e.description}</p>
+          <p style="font-size:0.82rem;"><strong>⚠️ 威胁：</strong>${e.threat}</p>
+          <p style="font-size:0.82rem; color:var(--accent-teal);"><strong>🌱 复兴：</strong>${e.revival}</p>
+          <div class="meta-mini">
+            <span>📍 ${e.region}</span>
+            <span>👥 ${e.speakers}</span>
+          </div>
+        </div>
+      `).join('');
+
+        // ============ 语言复兴成功案例 ============
+        const successData = [
+            { name:'希伯来语', region:'以色列', desc:'唯一成功从"死语言"全面复活为母语的语言。19世纪末至20世纪初，通过本-耶胡达的努力，希伯来语从仅用于宗教文献的语言变为以色列的官方语言和日常母语，目前有约900万使用者。' },
+            { name:'毛利语', region:'新西兰', desc:'1987年成为新西兰官方语言。通过Kohanga Reo(语言巢)运动——以社区为基础的学前浸入式教育——毛利语使用者从濒危边缘回升至约15万人。毛利语电视台和电台的建立进一步巩固了其地位。' },
+            { name:'夏威夷语', region:'美国夏威夷', desc:'1980年代，夏威夷语仅剩约30名儿童母语者。通过Pūnana Leo(语言巢)运动，现在已有超过18,000人会说夏威夷语，浸入式学校从学前班到高中全覆盖。' },
+            { name:'巴斯克语', region:'西班牙/法国', desc:'欧洲最古老的语言之一，经过数十年的复兴努力，现在有约75万使用者。巴斯克自治区政府大力推动巴斯克语在教育、媒体和公共行政中的使用。' },
+        ];
+        document.getElementById('successGrid').innerHTML = successData.map((s,i) => `
+        <div class="success-card" style="animation: fadeIn 0.5s ease ${i*0.08}s both;">
+          <h4>✨ ${s.name} <span style="font-size:0.75rem;color:var(--text-muted);">${s.region}</span></h4>
+          <p>${s.desc}</p>
+        </div>
+      `).join('');
+
+        // ============ NEW: 国际保护组织 ============
+        const orgsData = [
+            { name:'UNESCO', desc:'联合国教科文组织·濒危语言计划', url:'监测全球语言活力，发布《世界濒危语言地图集》，协调国际保护行动。' },
+            { name:'ELP', desc:'濒危语言计划 (Endangered Languages Project)', url:'由Google和First Peoples\' Cultural Council合作建立的全球性濒危语言信息平台。' },
+            { name:'SIL', desc:'国际语言学暑期学院 (SIL International)', url:'研究和记录全球语言，出版《民族语》(Ethnologue)，提供语言发展支持。' },
+            { name:'TLA', desc:'语言档案馆 (The Language Archive)', url:'位于荷兰马普心理语言学研究所，收藏全球濒危语言的多媒体语料。' },
+            { name:'FEL', desc:'濒危语言基金会 (Foundation for Endangered Languages)', url:'总部位于英国，资助濒危语言记录和复兴项目，出版年度期刊。' },
+            { name:'Living Tongues', desc:'活语言研究所 (Living Tongues Institute)', url:'专注于濒危语言的田野调查和数字工具开发，创建"会说话词典"。' },
+            { name:'Wikitongues', desc:'维基语言 (Wikitongues)', url:'全球志愿者网络，录制母语者口述视频，保存口语文化遗产。目标是记录每一种人类语言。' },
+            { name:'Terralingua', desc:'地球语言 (Terralingua)', url:'关注生物文化多样性，研究语言多样性、生物多样性与文化多样性之间的联系。出版<Langscape Magazine>。' },
+        ];
+        const orgsSection = document.createElement('div');
+        orgsSection.className = 'extinction-timeline';
+        orgsSection.style.marginTop = '2rem';
+        orgsSection.innerHTML = `
+          <h3 style="color:var(--accent-indigo);">🏛️ 国际语言保护组织</h3>
+          <p style="text-align:center;color:var(--text-muted);margin-bottom:1.5rem;">致力于记录、保护和复兴世界语言多样性的主要机构</p>
+          ${orgsData.map((o,i) => `
+          <div class="ext-timeline-item" style="animation: fadeIn 0.5s ease ${i*0.07}s both;">
+            <span class="ext-year" style="color:var(--accent-indigo);">${o.name}</span>
+            <div class="ext-info">
+              <h4>${o.desc}</h4>
+              <p>${o.url}</p>
+            </div>
+          </div>
+          `).join('')}`;
+        const diversitySection = document.querySelector('.family-ranking');
+        diversitySection.parentNode.insertBefore(orgsSection, diversitySection);
+
+        // ============ 行动建议 ============
+        const actions = [
+            { icon: '📚', title: '学习与了解', desc: '了解你所在地区的少数民族语言，学习几个基本词汇，理解其文化价值。' },
+            { icon: '🎙️', title: '记录与保存', desc: '支持语言记录项目，参与口述历史收集，帮助语言学家保存濒危语言。' },
+            { icon: '💰', title: '资助保护组织', desc: '捐助濒危语言基金会和原住民语言保护项目，为语言复兴提供资源支持。' },
+            { icon: '📢', title: '提高公众意识', desc: '在社交媒体上分享语言多样性的重要性，参与国际母语日(2月21日)活动。' },
+            { icon: '🎓', title: '支持母语教育', desc: '倡导双语教育和母语教学，支持少数民族语言纳入学校教育体系。' },
+            { icon: '📱', title: '技术赋能', desc: '支持濒危语言的数字工具开发——语音识别、在线词典、语言学习App等。' },
+        ];
+
+        document.getElementById('actionGrid').innerHTML = actions.map(a => `
+        <div class="action-card" style="animation: fadeIn 0.5s ease both;">
+          <span class="action-icon">${a.icon}</span>
+          <h4>${a.title}</h4>
+          <p>${a.desc}</p>
+        </div>
+      `).join('');
+
+        const style = document.createElement('style');
+        style.textContent =
+            '@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}';
+        document.head.appendChild(style);
+
+        // ============ NEW: 语言多样性指数排名 ============
+        const diversityRanking = [
+            { country:'巴布亚新几内亚', languages:'840', pop:'900万', density:'9.3', note:'全球语言密度最高' },
+            { country:'印度尼西亚', languages:'707', pop:'2.7亿', density:'0.26', note:'700+种活语言' },
+            { country:'尼日利亚', languages:'527', pop:'2.2亿', density:'0.24', note:'非洲语言最多国家' },
+            { country:'印度', languages:'456', pop:'14亿', density:'0.033', note:'23种官方语言' },
+            { country:'喀麦隆', languages:'279', pop:'2,700万', density:'1.03', note:'非洲语言密度最高之一' },
+            { country:'墨西哥', languages:'292', pop:'1.3亿', density:'0.22', note:'68种原住民语言群' },
+            { country:'中国', languages:'302', pop:'14亿', density:'0.022', note:'10种汉藏语系汉语族+少数民族语言' },
+            { country:'巴西', languages:'228', pop:'2.1亿', density:'0.11', note:'亚马逊语言多样性中心' },
+        ];
+        const diversityBarHTML = diversityRanking.map((d,i) => {
+            const maxDensity = 9.3;
+            const barWidth = Math.max(2, (d.density / maxDensity) * 100);
+            return `<div class="rank-item" style="animation: fadeIn 0.5s ease ${i*0.07}s both;">
+              <span class="rank-num">#${i+1}</span>
+              <span style="min-width:120px;font-weight:700;font-size:0.9rem;">${d.country}</span>
+              <span style="min-width:60px;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">${d.languages}种</span>
+              <div class="rank-bar-wrap">
+                <div class="rank-bar" style="width:${barWidth}%; background:var(--accent-teal);">${d.note}</div>
+              </div>
+            </div>`;
+        }).join('');
+        const diversitySection = document.createElement('div');
+        diversitySection.className = 'family-ranking';
+        diversitySection.style.margin = '2rem 0';
+        diversitySection.innerHTML = `<h3>🌐 语言多样性指数 · 国家排名</h3><p style="text-align:center;color:var(--text-muted);margin-bottom:1rem;font-style:italic;">每万人拥有的语言数量(语言密度)</p>` + diversityBarHTML;
+        const actionSection = document.querySelector('.action-section');
+        actionSection.parentNode.insertBefore(diversitySection, actionSection);
+
+        console.log('⚠️ LinguaMundi 濒危语言档案已加载 · 20种濒危语言');
+        console.log('📊 统计仪表盘: 6项指标 | 🕯️ 灭绝时间线: 6个记录');
+        console.log('🌱 复兴案例: 4个 | 🤝 保护行动: 6项建议');
+        console.log('🌐 语言多样性排名: 8个国家 | 🗺️ 濒危热点地图已渲染');
+        console.log('📋 濒危等级: Critical(极度)/Severe(严重)/Vulnerable(脆弱)');
+        console.log('🏛️ 国际保护组织: 8个机构 | 📊 数据来源: UNESCO/ELP/SIL Ethnologue');
+        console.log('⚡ 每两周消失一种语言 — 及时行动，保护语言多样性');
+    </script>
+</body>
+</html>

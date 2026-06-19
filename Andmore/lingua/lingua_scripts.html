@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字系统 · LinguaMundi</title>
+    <style>
+        :root {
+            --bg-parchment: #f5e6c8;
+            --bg-parchment-dark: #e8d5a8;
+            --bg-card: #faf3e0;
+            --bg-ink: #1a1008;
+            --text-primary: #1a1008;
+            --text-secondary: #3d2b14;
+            --text-muted: #6b5d3e;
+            --text-on-dark: #f0e6d0;
+            --accent-vermillion: #c13a2b;
+            --accent-indigo: #3b2f80;
+            --accent-gold: #b8860b;
+            --accent-teal: #1a6b5a;
+            --accent-rust: #8b4513;
+            --border-ink: #2a1f14;
+            --border-light: #d4c4a0;
+            --shadow-ink: 0 6px 0 rgba(26, 16, 8, 0.25);
+            --shadow-soft: 0 4px 20px rgba(26, 16, 8, 0.1);
+            --radius-sm: 0.3rem;
+            --radius-lg: 1rem;
+            --radius-xl: 1.5rem;
+            --transition-bounce: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-gentle: 0.3s ease;
+            --font-heading: 'Playfair Display', 'Georgia', 'Noto Serif SC', serif;
+            --font-body: 'Crimson Text', 'Georgia', 'Noto Serif SC', serif;
+            --font-mono: 'Courier Prime', 'Courier New', 'SimSun', monospace;
+            --font-script: 'Noto Sans Arabic', 'Noto Sans Devanagari', 'Noto Sans SC', sans-serif;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-parchment);
+            background-image: url("data:image/svg+xml,%3Csvg width='70' height='70' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
+                linear-gradient(180deg, var(--bg-parchment) 0%, var(--bg-parchment-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+            line-height: 1.7;
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(245, 230, 200, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 3px solid var(--border-ink);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.3rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-vermillion);
+            border-bottom-color: var(--accent-vermillion);
+        }
+        .page-header {
+            text-align: center;
+            padding: 2.5rem 1rem 1.5rem;
+        }
+        .page-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-primary);
+        }
+        .page-header .ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            margin: 0.6rem 0;
+            color: var(--accent-gold);
+        }
+        .page-header .ornament::before,
+        .page-header .ornament::after {
+            content: '';
+            width: 35px;
+            height: 2px;
+            background: var(--accent-gold);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .script-intro {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .script-intro p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.8;
+            text-indent: 2em;
+            text-align: left;
+        }
+        .script-intro .highlight-box {
+            background: rgba(184, 134, 11, 0.08);
+            border-left: 3px solid var(--accent-gold);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            font-style: italic;
+            color: var(--text-secondary);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            text-align: left;
+        }
+        .script-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .script-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: 0 4px 0 rgba(26, 16, 8, 0.08);
+            transition: all var(--transition-bounce);
+            cursor: pointer;
+        }
+        .script-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-ink);
+            box-shadow: 0 8px 0 rgba(26, 16, 8, 0.15);
+        }
+        .script-display {
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--font-script);
+            font-size: 2.2rem;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 2px dashed var(--border-light);
+            background: rgba(26, 16, 8, 0.02);
+            letter-spacing: 2px;
+            line-height: 1.6;
+            color: var(--accent-indigo);
+        }
+        .script-body {
+            padding: 1.8rem;
+        }
+        .script-body h3 {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            margin-bottom: 0.6rem;
+        }
+        .script-body .meta-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin: 0.6rem 0;
+        }
+        .meta-tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 2px;
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+            background: rgba(59, 47, 128, 0.06);
+            border: 1px solid rgba(59, 47, 128, 0.2);
+            color: var(--accent-indigo);
+            letter-spacing: 0.3px;
+        }
+        .script-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0;
+        }
+        .script-body .evolution-note {
+            font-size: 0.82rem;
+            color: var(--accent-teal);
+            font-style: italic;
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed var(--border-light);
+        }
+        .calligraphy-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin-top: 2.5rem;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+        }
+        .calligraphy-section h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-vermillion);
+            margin-bottom: 1rem;
+        }
+        .calligraphy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1.5rem;
+        }
+        .calligraphy-item {
+            padding: 1.5rem;
+            border: 1px dashed var(--border-light);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-gentle);
+        }
+        .calligraphy-item:hover {
+            border-color: var(--accent-gold);
+            background: rgba(184, 134, 11, 0.04);
+        }
+        .calligraphy-item .calli-sample {
+            font-size: 2.5rem;
+            font-family: var(--font-script);
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--accent-indigo);
+        }
+        .calligraphy-item .calli-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .calligraphy-item .calli-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        /* ============ NEW: 文字分类图示 ============ */
+        .script-types-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: var(--shadow-ink);
+            text-align: center;
+        }
+        .script-types-section h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .script-types-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+        }
+        .script-type-card {
+            padding: 1.5rem;
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-bounce);
+        }
+        .script-type-card:hover {
+            border-color: var(--border-ink);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.1);
+        }
+        .script-type-card .type-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .script-type-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .script-type-card p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        /* ============ NEW: 互动书写演示 ============ */
+        .writing-demo {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: var(--shadow-soft);
+        }
+        .writing-demo h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .writing-demo-box {
+            background: var(--bg-parchment-dark);
+            border: 3px dashed var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-script);
+            font-size: 3rem;
+            color: var(--accent-indigo);
+            transition: all var(--transition-bounce);
+            cursor: pointer;
+            user-select: none;
+        }
+        .writing-demo-box:hover {
+            border-color: var(--accent-gold);
+            background: rgba(184, 134, 11, 0.06);
+        }
+        .writing-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 1.2rem;
+        }
+        .writing-btn {
+            padding: 0.6rem 1.4rem;
+            border: 2px solid var(--border-ink);
+            border-radius: 2px;
+            background: var(--bg-card);
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition-bounce);
+            box-shadow: 0 3px 0 rgba(26, 16, 8, 0.15);
+            letter-spacing: 0.5px;
+        }
+        .writing-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 0 rgba(26, 16, 8, 0.2);
+            border-color: var(--accent-vermillion);
+        }
+        .writing-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(26, 16, 8, 0.1);
+        }
+        .writing-btn.active-btn {
+            background: var(--bg-ink);
+            color: var(--text-on-dark);
+            border-color: var(--bg-ink);
+        }
+        /* ============ NEW: 歧义/趣味文字事实 ============ */
+        .script-facts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin: 2.5rem 0;
+        }
+        .script-fact-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            border-left: 4px solid var(--accent-indigo);
+            transition: all var(--transition-bounce);
+        }
+        .script-fact-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-ink);
+            box-shadow: 0 6px 0 rgba(26, 16, 8, 0.1);
+        }
+        .script-fact-card .fact-number {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-vermillion);
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+        .script-fact-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+        .script-fact-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        /* ============ NEW: 书写方向示意图 ============ */
+        .direction-demo {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: var(--shadow-ink);
+        }
+        .direction-demo h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .direction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.2rem;
+        }
+        .direction-card {
+            padding: 1.5rem;
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            transition: all var(--transition-bounce);
+        }
+        .direction-card:hover {
+            border-color: var(--border-ink);
+            box-shadow: 0 4px 0 rgba(26, 16, 8, 0.1);
+        }
+        .direction-arrow {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .direction-arrow.rtl { direction: rtl; unicode-bidi: bidi-override; }
+        /* footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 3px solid var(--border-ink);
+            margin-top: 3rem;
+            background: var(--bg-ink);
+            color: var(--text-on-dark);
+        }
+        .footer p { font-size: 0.85rem; }
+        .footer a { color: var(--accent-gold); text-decoration: none; }
+        @keyframes fadeIn {
+            from { opacity:0; transform: translateY(15px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+        @keyframes writeStroke {
+            0% { opacity:0; }
+            100% { opacity:1; }
+        }
+        .tree-diagram-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border-ink);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-ink);
+            overflow-x: auto;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .script-grid {
+                grid-template-columns: 1fr;
+            }
+            .script-display {
+                font-size: 1.6rem;
+                min-height: 90px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+Arabic:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='lingua_home.html'">📜 LinguaMundi</div>
+        <ul class="nav-links">
+            <li><a href="lingua_home.html">首页</a></li>
+            <li><a href="lingua_families.html">语言谱系</a></li>
+            <li><a href="lingua_scripts.html" class="active">文字系统</a></li>
+            <li><a href="lingua_compare.html">语言对比</a></li>
+            <li><a href="lingua_endangered.html">濒危语言</a></li>
+        </ul>
+    </nav>
+
+    <div class="page-header">
+        <h1>✍️ 世界文字系统</h1>
+        <div class="ornament">❧</div>
+        <p style="color:var(--text-muted); font-style:italic;">"文字是凝固的声音，是跨越时空的思想容器"</p>
+    </div>
+
+    <div class="container">
+        <div class="script-intro">
+            <p>书写系统是人类文明最重要的发明之一。大约在公元前3400年，苏美尔人在美索不达米亚创造了最早的楔形文字，几乎同时，古埃及人发展出了圣书体。从那时起，人类创造了数百种书写系统，其中约50种至今仍在广泛使用。</p>
+            <div class="highlight-box">
+                💡 书写系统可分为几大类：<strong>语素文字</strong>（如汉字，每个字符代表一个词或语素）、<strong>音节文字</strong>（如日文假名，每个字符代表一个音节）、<strong>辅音音素文字</strong>（如阿拉伯字母，主要标注辅音）和<strong>全音素文字</strong>（如拉丁字母，标注所有元音和辅音）。
+            </div>
+            <p>一种文字系统的选择深刻影响着文化的表达方式。东亚的汉字系统允许不同语言的读者理解相同的书面文本，而拉丁字母的广泛传播则反映了欧洲殖民和全球化的历史。</p>
+        </div>
+
+        <!-- ============ NEW: 文字类型分类 ============ -->
+        <div class="script-types-section">
+            <h3>📐 书写系统四大类型</h3>
+            <p style="color:var(--text-muted);margin-bottom:1.5rem;">不同文字系统代表了人类表达语言的不同策略</p>
+            <div class="script-types-grid" id="scriptTypesGrid"></div>
+        </div>
+
+        <!-- ============ NEW: 书写方向演示 ============ -->
+        <div class="direction-demo">
+            <h3>➡️ 世界文字的书写方向</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1.5rem;">不同书写系统采用不同的空间组织方式</p>
+            <div class="direction-grid">
+                <div class="direction-card">
+                    <div class="direction-arrow">A → B → C → D</div>
+                    <h4>从左向右 (LTR)</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);">拉丁字母、西里尔字母、天城文、希腊字母等大多数现代书写系统。</p>
+                </div>
+                <div class="direction-card">
+                    <div class="direction-arrow rtl">D ← C ← B ← A</div>
+                    <h4>从右向左 (RTL)</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);">阿拉伯字母、希伯来字母、叙利亚字母等闪米特书写系统。</p>
+                </div>
+                <div class="direction-card">
+                    <div class="direction-arrow" style="writing-mode: vertical-rl; font-size:2rem;">A<br>↓<br>B<br>↓<br>C<br>↓<br>D</div>
+                    <h4>从上向下 (Vertical)</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);">传统中文、日文、韩文采用竖排。蒙古文是少数从左向右竖排的文字。</p>
+                </div>
+                <div class="direction-card">
+                    <div class="direction-arrow" style="font-size:2rem;">🔄 牛耕式</div>
+                    <h4>牛耕式转行 (Boustrophedon)</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);">古希腊早期文字：第一行从右向左，下一行从左向右，像牛耕田一样来回。现已不再使用。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ NEW: 互动书写演示 ============ -->
+        <div class="writing-demo">
+            <h3>🖊️ 互动文字展示 · Interactive Script Display</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1rem;">点击按钮切换不同书写系统的"和平"一词</p>
+            <div class="writing-demo-box" id="writingDemoBox">和平</div>
+            <div class="writing-controls" id="writingControls"></div>
+        </div>
+
+        <!-- ============ 文字系统卡片 ============ -->
+        <div class="script-grid" id="scriptGrid"></div>
+
+        <!-- ============ NEW: 文字趣味事实 ============ -->
+        <div class="page-header" style="padding-top:2rem;">
+            <h2>💡 文字奇闻</h2>
+            <div class="ornament">❧</div>
+            <p>关于书写系统的惊人事实</p>
+        </div>
+        <div class="script-facts" id="scriptFacts"></div>
+
+        <!-- ============ 书法艺术 ============ -->
+        <div class="calligraphy-section">
+            <h2>🖋️ 书法艺术</h2>
+            <p style="color:var(--text-muted);">不同文化中的文字美学表达</p>
+            <div class="calligraphy-grid" id="calligraphyGrid"></div>
+        </div>
+    </div>
+
+    <!-- footer -->
+    <footer class="footer">
+        <p>© 2025 LinguaMundi · 世界语言与文字系统</p>
+        <p style="font-size:0.75rem; opacity:0.7;">"文字是文明的基石，是人类记忆的外化"</p>
+        <p style="margin-top:0.5rem;">
+            <a href="lingua_home.html">首页</a> ·
+            <a href="lingua_families.html">语言谱系</a> ·
+            <a href="lingua_compare.html">语言对比</a> ·
+            <a href="lingua_endangered.html">濒危语言</a>
+        </p>
+    </footer>
+
+    <script>
+        // ============ 文字类型分类 ============
+        const scriptTypes = [
+            { icon:'漢', title:'语素文字 (Logographic)', desc:'每个字符代表一个词或语素。如汉字、古埃及圣书体、楔形文字。需要记忆大量字符(数千个)，但可以跨方言/语言理解。', example:'汉字: "日" = 太阳' },
+            { icon:'あ', title:'音节文字 (Syllabary)', desc:'每个字符代表一个完整的音节(辅音+元音)。如日文假名、切罗基文字。字符数量通常在50-200之间。', example:'平假名: か = ka, き = ki' },
+            { icon:'ب', title:'辅音音素文字 (Abjad)', desc:'主要标注辅音，元音通过附加符号可选标注。如阿拉伯字母、希伯来字母。特别适合辅音词根为主的语言。', example:'阿拉伯语: k-t-b = "书写"相关词根' },
+            { icon:'द', title:'元音附标文字 (Abugida)', desc:'每个基础字符代表一个辅音+默认元音，通过附加符号改变元音。如天城文、泰文、藏文。被誉为最科学的音节书写系统。', example:'天城文: क = ka, कि = ki, की = kī' },
+            { icon:'ABC', title:'全音素文字 (Alphabet)', desc:'每个字符代表一个音位(元音或辅音)。如拉丁字母、西里尔字母、希腊字母。字符数量最少(20-40个)，最易学习。', example:'拉丁字母: A, B, C... (26个基本字母)' },
+        ];
+        document.getElementById('scriptTypesGrid').innerHTML = scriptTypes.map((t,i) => `
+        <div class="script-type-card" style="animation: fadeIn 0.5s ease ${i*0.08}s both;">
+          <span class="type-icon">${t.icon}</span>
+          <h4>${t.title}</h4>
+          <p>${t.desc}</p>
+          <p style="margin-top:0.4rem;font-size:0.75rem;color:var(--accent-teal);font-family:var(--font-mono);">📝 ${t.example}</p>
+        </div>
+      `).join('');
+
+        // ============ 互动书写演示 ============
+        const writingSamples = [
+            { script:'中文(汉字)', text:'和平', desc:'汉语拼音: hépíng' },
+            { script:'阿拉伯字母', text:'سلام', desc:'拉丁转写: Salām' },
+            { script:'天城文', text:'शान्ति', desc:'拉丁转写: Śānti' },
+            { script:'日文', text:'平和', desc:'罗马字: Heiwa' },
+            { script:'西里尔字母', text:'мир', desc:'拉丁转写: mir' },
+            { script:'韩文', text:'평화', desc:'罗马字: Pyeonghwa' },
+            { script:'希腊字母', text:'ειρήνη', desc:'拉丁转写: eiríni' },
+            { script:'希伯来字母', text:'שלום', desc:'拉丁转写: Shalom' },
+        ];
+        let currentWritingIndex = 0;
+        document.getElementById('writingControls').innerHTML = writingSamples.map((s,i) => `
+        <button class="writing-btn ${i===0?'active-btn':''}" onclick="switchWriting(${i})">${s.script}</button>
+      `).join('');
+        window.switchWriting = function(idx) {
+            currentWritingIndex = idx;
+            const s = writingSamples[idx];
+            document.getElementById('writingDemoBox').textContent = s.text;
+            document.getElementById('writingDemoBox').style.animation = 'none';
+            document.getElementById('writingDemoBox').offsetHeight;
+            document.getElementById('writingDemoBox').style.animation = 'writeStroke 0.6s ease-out';
+            document.querySelectorAll('.writing-btn').forEach((b,i) => b.classList.toggle('active-btn', i===idx));
+        };
+
+        // ============ 文字系统数据 (保留原有的 + 新增) ============
+        const scriptsData = [
+            {
+                id: 'latin',
+                name: '拉丁字母',
+                icon: 'ABC',
+                sample: 'ABCDEFGHIJKLM\nNOPQRSTUVWXYZ',
+                type: '全音素文字',
+                direction: '从左向右',
+                languages: '100+语言使用',
+                origin: '公元前7世纪起源于意大利半岛',
+                description: '拉丁字母源于希腊字母，经伊特鲁里亚人传入罗马。罗马帝国扩张使其成为欧洲主流文字。大航海时代后传播至全球，现为使用最广泛的书写系统。',
+                evolution: '原始迦南字母 → 腓尼基字母 → 希腊字母 → 伊特鲁里亚字母 → 拉丁字母',
+                characters: '26个基本字母（英语），其他语言通过添加变音符号扩展',
+                uniqueFeature: '大小写系统是拉丁字母的独特创新，中世纪抄写员发展出大写和小写两种形式。'
+            },
+            {
+                id: 'chinese',
+                name: '汉字系统',
+                icon: '漢',
+                sample: '天地玄黃 宇宙洪荒\n日月盈昃 辰宿列張',
+                type: '语素文字',
+                direction: '传统竖排从右向左，现代横排从左向右',
+                languages: '中文、日文（汉字）、韩文（部分使用）',
+                origin: '公元前1200年左右起源于黄河流域',
+                description: '汉字是世界上最古老且连续使用的书写系统。每个汉字代表一个语素（最小意义单位）。《说文解字》收录9353字，现代常用汉字约3500个。',
+                evolution: '甲骨文 → 金文 → 篆书 → 隶书 → 楷书（繁体）→ 简体字',
+                characters: '约60,000个汉字（《康熙字典》），日常使用约3,000-5,000字',
+                uniqueFeature: '表意性：不同方言甚至不同语言（如日语）的使用者可以通过汉字进行书面交流，尽管口语完全不同。'
+            },
+            {
+                id: 'arabic',
+                name: '阿拉伯字母',
+                icon: 'ع',
+                sample: 'العربية لغة جميلة\nالخط العربي فن رائع',
+                type: '辅音音素文字',
+                direction: '从右向左',
+                languages: '阿拉伯语、波斯语、乌尔都语等',
+                origin: '公元4世纪从纳巴泰字母发展而来',
+                description: '阿拉伯字母是仅次于拉丁字母的世界第二大广泛使用的书写系统。28个基本字母，通过附加符号标注短元音。字母根据在词中位置有不同形式。',
+                evolution: '原始西奈字母 → 腓尼基字母 → 阿拉姆字母 → 纳巴泰字母 → 阿拉伯字母',
+                characters: '28个基本辅音字母，元音通过附加符号表示',
+                uniqueFeature: '连写艺术：阿拉伯字母书写时字母之间必须连接（少数字母除外），创造出流畅优美的视觉效果。'
+            },
+            {
+                id: 'devanagari',
+                name: '天城文',
+                icon: 'द',
+                sample: 'देवनागरी लिपि\nसंस्कृत भाषा',
+                type: '元音附标文字（Abugida）',
+                direction: '从左向右',
+                languages: '印地语、梵语、马拉地语、尼泊尔语',
+                origin: '公元7世纪从婆罗米文发展而来',
+                description: '天城文是印度次大陆使用最广泛的书写系统。其独特之处在于"头顶横线"——每个词上方都有一条连续的横线连接所有字母。',
+                evolution: '婆罗米文 → 笈多文 → 悉昙文 → 天城文',
+                characters: '14个元音字母和33个辅音字母，通过组合形成音节',
+                uniqueFeature: '元音附标系统：默认辅音自带一个/a/元音，通过附加符号改变元音，形成音节单元。这是最科学的音节书写系统之一。'
+            },
+            {
+                id: 'cyrillic',
+                name: '西里尔字母',
+                icon: 'Я',
+                sample: 'Кириллица алфавит\nРусский язык',
+                type: '全音素文字',
+                direction: '从左向右',
+                languages: '俄语、乌克兰语、保加利亚语、塞尔维亚语等',
+                origin: '公元9世纪由圣西里尔和美多德创造',
+                description: '西里尔字母源于希腊字母，专门为斯拉夫语言设计。最初称为格拉哥里字母，后演变为现代西里尔字母。俄语使用33个字母。',
+                evolution: '希腊字母 → 格拉哥里字母 → 早期西里尔字母 → 现代西里尔字母',
+                characters: '33个字母（俄语标准），包含10个元音和21个辅音',
+                uniqueFeature: '兼具希腊字母的精确性和对斯拉夫语音的适应性。软音符号和硬音符号是独特创新。'
+            },
+            {
+                id: 'japanese',
+                name: '日文假名',
+                icon: 'あ',
+                sample: 'ひらがな カタカナ\n日本語の文字',
+                type: '音节文字 + 语素文字混合',
+                direction: '传统竖排从右向左，现代可横排',
+                languages: '日语',
+                origin: '公元8-9世纪从汉字简化而来',
+                description: '日语拥有最复杂的书写系统，同时使用汉字、平假名和片假名。平假名用于语法功能和日本本土词汇，片假名用于外来语和强调。',
+                evolution: '汉字 → 万叶假名 → 平假名/片假名',
+                characters: '46个基本假名（平假名+片假名各46个），加上变音符号共约100个音节符号',
+                uniqueFeature: '三体并用：在同一句子中同时使用汉字、平假名和片假名，每种文字承担不同的功能角色。'
+            },
+            {
+                id: 'korean',
+                name: '韩文 (训民正音)',
+                icon: '한',
+                sample: '한글은 과학적인\n문자 체계입니다',
+                type: '全音素文字(音节块组合)',
+                direction: '从左向右(现代)',
+                languages: '韩语',
+                origin: '公元1443年由世宗大王创制',
+                description: '韩文是世界上唯一可知确切创造日期和创造者的文字系统。辅音字母形态模仿发音器官形状，元音模仿天、地、人的形态，极度科学。',
+                evolution: '由世宗大王和集贤殿学者原创设计，不源自任何其他文字',
+                characters: '24个基本字母(14辅音+10元音)，组合成音节块',
+                uniqueFeature: '字母形态模仿发音器官(如ㄱ模仿舌根顶软腭)，是现代语言学理论在500多年前的实践。'
+            },
+            {
+                id: 'greek',
+                name: '希腊字母',
+                icon: 'Α',
+                sample: 'Ελληνικό αλφάβητο\nΑΒΓΔΕΖΗΘ',
+                type: '全音素文字',
+                direction: '从左向右',
+                languages: '希腊语，并广泛用于数学和科学',
+                origin: '公元前8世纪从腓尼基字母发展而来',
+                description: '希腊字母是第一个包含元音的完整字母系统，是拉丁字母和西里尔字母的祖先。至今仍在希腊使用，并在全球科学、数学中广泛用作符号。',
+                evolution: '腓尼基字母 → 希腊字母 → 拉丁字母/西里尔字母',
+                characters: '24个字母(7个元音+17个辅音)',
+                uniqueFeature: '历史上第一个全元音字母系统。希腊字母在数学(π, Σ)、物理(λ, Ω)和天文学(α, β)中的使用使其成为全球通用符号。'
+            },
+            {
+                id: 'hebrew',
+                name: '希伯来字母',
+                icon: 'א',
+                sample: 'כתב עברי\nשלום עליכם',
+                type: '辅音音素文字',
+                direction: '从右向左',
+                languages: '希伯来语、意第绪语、拉迪诺语',
+                origin: '公元前10世纪从腓尼基字母发展而来',
+                description: '希伯来字母是犹太民族使用了三千多年的书写系统。现代希伯来语使用方体字母(Ashuri)，而古代也曾使用过古希伯来字母。22个辅音字母，元音通过尼库德（附加符号）系统标注。',
+                evolution: '腓尼基字母 → 古希伯来字母 → 阿拉姆字母 → 方体希伯来字母',
+                characters: '22个辅音字母 + 尼库德元音符号系统',
+                uniqueFeature: '希伯来语是唯一成功从"死亡语言"全面复兴为现代母语的语言，而希伯来字母是这一复兴的书写基础。'
+            },
+            {
+                id: 'thai',
+                name: '泰文字母',
+                icon: 'ก',
+                sample: 'อักษรไทย\nภาษาไทย',
+                type: '元音附标文字（Abugida）',
+                direction: '从左向右',
+                languages: '泰语、巴利语（宗教用途）',
+                origin: '公元1283年由兰甘亨大帝从高棉文改造而来',
+                description: '泰文拥有复杂的正字法，反映了几百年前的泰语发音。44个辅音字母、32个元音符号和4个声调符号。字母呈环形笔画，传统上用铁笔在棕榈叶上书写。',
+                evolution: '婆罗米文 → 帕拉瓦文 → 高棉文 → 泰文',
+                characters: '44个辅音字母、32个元音符号、4个声调符号',
+                uniqueFeature: '泰文字母按发音部位分组排列：软腭音、硬腭音、齿音等。无声调语言中通过声调符号(写在辅音上方)表示5个声调。'
+            },
+        ];
+
+        document.getElementById('scriptGrid').innerHTML = scriptsData.map((s, i) => `
+        <div class="script-card" style="animation: fadeIn 0.5s ease ${i*0.06}s both;">
+          <div class="script-display">${s.sample.replace(/\n/g, '<br>')}</div>
+          <div class="script-body">
+            <h3>${s.name} <span style="font-size:1rem;">${s.icon}</span></h3>
+            <div class="meta-tags">
+              <span class="meta-tag">📝 ${s.type}</span>
+              <span class="meta-tag">➡️ ${s.direction}</span>
+              <span class="meta-tag">🗣️ ${s.languages}</span>
+            </div>
+            <p><strong>起源：</strong>${s.origin}</p>
+            <p>${s.description}</p>
+            <p style="font-size:0.82rem; color:var(--accent-teal);"><strong>字符数量：</strong>${s.characters}</p>
+            <p style="font-size:0.82rem; color:var(--accent-indigo);"><strong>独特之处：</strong>${s.uniqueFeature}</p>
+            <div class="evolution-note">📜 演化路径：${s.evolution}</div>
+          </div>
+        </div>
+      `).join('');
+
+        // ============ 文字奇闻 ============
+        const scriptFactsData = [
+            { number:'01', title:'最古老的字母', desc:'腓尼基字母(约公元前1000年)是所有现代字母系统的祖先。其22个辅音字母经过希腊人加入元音后，演变为拉丁字母、西里尔字母、阿拉伯字母等几乎所有现代书写系统。' },
+            { number:'02', title:'韩文的科学性', desc:'韩文(训民正音)被语言学家誉为"世界上最科学的文字"。其辅音字母形态模仿发音器官形状：ㄱ(舌根)、ㄴ(舌尖)、ㅁ(嘴唇)。世宗大王于1443年创制并颁布。' },
+            { number:'03', title:'最多字母的字母表', desc:'高棉语字母表有74个字母(33个辅音、23个元音和12个独立元音)，是世界上最长的字母表。相比之下，英语只有26个字母，夏威夷语仅有13个字母。' },
+            { number:'04', title:'汉字的数量', desc:'《康熙字典》(1716年)收录47,035个汉字，《汉语大字典》(1990年代)收录约60,000个。但日常中文仅需约3,000-5,000字。日本"常用汉字表"共有2,136字。' },
+            { number:'05', title:'楔形文字', desc:'楔形文字是已知最古老的书写系统(约公元前3400年)，由苏美尔人创造。它的名称来源于用芦苇笔在湿泥板上压出的楔形印记。楔形文字使用超过3000年后最终消亡。' },
+            { number:'06', title:'罗塞塔石碑', desc:'1799年在埃及发现的罗塞塔石碑上刻有同一条法令的三种文字版本：圣书体、世俗体和希腊文。这使得商博良在1822年成功破译了古埃及圣书体。' },
+            { number:'07', title:'无文字的文明', desc:'印加帝国(15-16世纪)没有已知的全功能书写系统。他们使用奇普(结绳记事)来记录行政数据——绳结的颜色、位置和结法共同编码信息。至今仍未能完全破译。' },
+            { number:'08', title:'神秘的文字系统', desc:'线形文字A(米诺斯文明，约公元前1800-1450年)至今尚未被破译。尽管它与稍晚的线形文字B(已破译的古希腊语书写)共享许多符号，但编码的语言完全不同。' },
+        ];
+        document.getElementById('scriptFacts').innerHTML = scriptFactsData.map((f,i) => `
+        <div class="script-fact-card" style="animation: fadeIn 0.5s ease ${i*0.08}s both;">
+          <span class="fact-number">${f.number}</span>
+          <h4>${f.title}</h4>
+          <p>${f.desc}</p>
+        </div>
+      `).join('');
+
+        // ============ 书法艺术 (保留原有的 + 新增) ============
+        const calligraphyData = [
+            { sample: '永', name: '中国书法', desc: '永字八法蕴含汉字笔画精髓' },
+            { sample: '﷽', name: '阿拉伯书法', desc: '库法体和纳斯赫体为经典书体' },
+            { sample: 'शान्ति', name: '梵文书法', desc: '天城文曲线优雅如行云流水' },
+            { sample: 'Æ', name: '中世纪手抄本', desc: '欧洲修道院中的彩饰字母艺术' },
+            { sample: 'あいう', name: '日本书道', desc: '假名的流线型笔画展现独特美感' },
+            { sample: 'Ж', name: '斯拉夫书法', desc: '西里尔字母的装饰性连字传统' },
+            { sample: '한글', name: '韩文书法', desc: '韩文音节块结构创造独特的几何美学' },
+            { sample: 'Ω', name: '希腊碑文', desc: '古典希腊字母的庄严比例感' },
+            { sample: '𐎠', name: '楔形文字', desc: '人类最早的文字之一，芦苇笔在泥板上刻写' },
+            { sample: 'สวัสดี', name: '泰文书法', desc: '泰文字母的环形笔画和装饰性头部' },
+            { sample: 'ငါ', name: '缅甸文书法', desc: '圆形笔画构成独特的视觉韵律' },
+            { sample: '愛', name: '日本汉字书道', desc: '汉字在日本的独特书写美学发展' },
+        ];
+
+        document.getElementById('calligraphyGrid').innerHTML = calligraphyData.map(c => `
+        <div class="calligraphy-item" style="animation: fadeIn 0.5s ease both;">
+          <span class="calli-sample">${c.sample}</span>
+          <div class="calli-name">${c.name}</div>
+          <div class="calli-desc">${c.desc}</div>
+        </div>
+      `).join('');
+
+        const style = document.createElement('style');
+        style.textContent =
+            '@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}';
+        document.head.appendChild(style);
+
+        console.log('✍️ LinguaMundi 文字系统已加载 · 10种书写系统');
+        console.log('📐 文字类型: 5种分类 | ➡️ 书写方向: 4种');
+        console.log('🖊️ 互动演示: 8种"和平"写法 | 📜 文字奇闻: 8条');
+        console.log('🖋️ 书法艺术: 12种风格');
+
+        // ============ NEW: 文字演化阶段图 SVG ============
+        const evolutionSVG = document.createElement('div');
+        evolutionSVG.className = 'tree-diagram-section';
+        evolutionSVG.style.cssText = 'background:var(--bg-card);border:2px solid var(--border-ink);border-radius:var(--radius-sm);padding:2rem;margin:2rem 0;box-shadow:var(--shadow-ink);overflow-x:auto;text-align:center;';
+        evolutionSVG.innerHTML = `
+          <h3 style="font-family:var(--font-heading);font-size:1.5rem;margin-bottom:1.5rem;">📜 文字系统的宏观演化</h3>
+          <p style="text-align:center;color:var(--text-muted);font-style:italic;margin-bottom:1.5rem;">从实物记事到抽象字母的演化之路</p>
+          <svg viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1000px;height:auto;">
+            <defs>
+              <marker id="arrowEvo" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="var(--accent-gold)"/>
+              </marker>
+            </defs>
+            <g transform="translate(30,30)">
+              <rect x="0" y="0" width="100" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-vermillion)" stroke-width="1.5"/>
+              <text x="50" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">结绳记事</text>
+              <text x="50" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">实物记事</text>
+            </g>
+            <line x1="130" y1="60" x2="170" y2="60" stroke="var(--accent-gold)" stroke-width="2" marker-end="url(#arrowEvo)"/>
+            <g transform="translate(175,30)">
+              <rect x="0" y="0" width="110" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-rust)" stroke-width="1.5"/>
+              <text x="55" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">象形文字</text>
+              <text x="55" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">图画表意</text>
+            </g>
+            <line x1="285" y1="60" x2="325" y2="60" stroke="var(--accent-gold)" stroke-width="2" marker-end="url(#arrowEvo)"/>
+            <g transform="translate(330,30)">
+              <rect x="0" y="0" width="110" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-gold)" stroke-width="1.5"/>
+              <text x="55" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">表意文字</text>
+              <text x="55" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">语素符号化</text>
+            </g>
+            <line x1="440" y1="60" x2="480" y2="60" stroke="var(--accent-gold)" stroke-width="2" marker-end="url(#arrowEvo)"/>
+            <g transform="translate(485,30)">
+              <rect x="0" y="0" width="110" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-teal)" stroke-width="1.5"/>
+              <text x="55" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">音节文字</text>
+              <text x="55" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">音节→符号</text>
+            </g>
+            <line x1="595" y1="60" x2="635" y2="60" stroke="var(--accent-gold)" stroke-width="2" marker-end="url(#arrowEvo)"/>
+            <g transform="translate(640,30)">
+              <rect x="0" y="0" width="110" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-indigo)" stroke-width="1.5"/>
+              <text x="55" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">辅音文字</text>
+              <text x="55" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">辅音标记</text>
+            </g>
+            <line x1="750" y1="60" x2="790" y2="60" stroke="var(--accent-gold)" stroke-width="2" marker-end="url(#arrowEvo)"/>
+            <g transform="translate(795,30)">
+              <rect x="0" y="0" width="110" height="60" rx="3" fill="#faf3e0" stroke="var(--accent-vermillion)" stroke-width="2"/>
+              <text x="55" y="25" text-anchor="middle" font-family="var(--font-heading)" font-size="10" font-weight="700" fill="var(--text-primary)">音素文字</text>
+              <text x="55" y="42" text-anchor="middle" font-family="var(--font-mono)" font-size="8" fill="var(--text-muted)">完整的字母</text>
+            </g>
+          </svg>`;
+        document.querySelector('.calligraphy-section').parentNode.insertBefore(evolutionSVG, document.querySelector('.calligraphy-section'));
+    </script>
+</body>
+</html>
